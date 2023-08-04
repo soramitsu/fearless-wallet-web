@@ -9871,7 +9871,6 @@ __metadata:
     vue-property-decorator: ^9.1.2
     vue-router: ^3.2.0
     vue-template-compiler: 2.6.14
-    vue-virtual-draglist: ^2.7.4
     vuedraggable: ^2.24.3
     vuex: ^3.4.0
     vuex-class: ^0.3.2
@@ -16943,13 +16942,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sortable-dnd@npm:0.5.4":
-  version: 0.5.4
-  resolution: "sortable-dnd@npm:0.5.4"
-  checksum: 23f1721e00da20baba5d22435db70685d45df8ce8713cd526b559266945780b92c11744a2a8515d0ec2337c141b99f3d92f77cb2b1d7dc0fa0ec72d7d738cd22
-  languageName: node
-  linkType: hard
-
 "sortablejs@npm:1.10.2":
   version: 1.10.2
   resolution: "sortablejs@npm:1.10.2"
@@ -18780,15 +18772,6 @@ __metadata:
   version: 1.9.1
   resolution: "vue-template-es2015-compiler@npm:1.9.1"
   checksum: ad1e85662783be3ee262c323b05d12e6a5036fca24f16dc0f7ab92736b675919cb4fa4b79b28753eac73119b709d1b36789bf60e8ae423f50c4db35de9370e8b
-  languageName: node
-  linkType: hard
-
-"vue-virtual-draglist@npm:^2.7.4":
-  version: 2.7.4
-  resolution: "vue-virtual-draglist@npm:2.7.4"
-  dependencies:
-    sortable-dnd: 0.5.4
-  checksum: 9d97147c14dbd7c4f81727dae8885105c9c6fd8e0ee1c94c0c65cfb70a4ad283bb1a2a6069b691a6ac13fa8ba8d62004a3faf2b4bd64c9067d9cb221095b456c
   languageName: node
   linkType: hard
 

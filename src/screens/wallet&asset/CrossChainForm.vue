@@ -73,10 +73,10 @@ import { Getter } from 'vuex-class';
 import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import TransferForm from './TransferForm.vue';
 import type { SelectedWallet } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp, cut } from '@/helpers/common';
 import { formattedNumber } from '@/helpers/numbers';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 

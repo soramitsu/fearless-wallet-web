@@ -38,9 +38,9 @@
             :showBalance="false"
             :readonly="true"
           />
-        </div>
 
-        <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
+          <Input v-model="destinationAccount" placeholder="staking.rewardsDestination" size="big" />
+        </div>
 
         <InfoRow
           text="assets.networkFee"
@@ -48,9 +48,11 @@
           :price="feeValueString"
           borderType="default"
           icon="info"
-          :hideLastBorder="true"
+          textSize="mini"
           :iconClasses="['network-fee']"
         />
+
+        <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
       </div>
 
       <Button width="100%" size="big" fontSize="big" :text="btnText" @click="confirm" />
@@ -75,13 +77,12 @@ import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { myValidators } from '../validators/mock';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import StakingForm from '@/screens/staking/myStake/stakingForms/StakingForm.vue';
 import RedeemForm from '@/screens/staking/myStake/stakingForms/RedeemForm.vue';
 import UnstakingForm from '@/screens/staking/myStake/stakingForms/UnstakingForm.vue';
-import UnbondForm from '@/screens/staking/myStake/stakingForms/UnbondForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
@@ -89,7 +90,6 @@ import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
 
 @Component({
   components: {
-    UnbondForm,
     RedeemForm,
     StakingForm,
     WarningPopup,
@@ -102,6 +102,7 @@ export default class StakingManagement extends Vue {
   showConfirmationPasswordPopup = false;
   showWarningPopup = false;
   myValidators = myValidators;
+  destinationAccount = '';
   amount = '';
   step = 1;
   fee = '0.7';
@@ -223,7 +224,7 @@ export default class StakingManagement extends Vue {
   }
 
   .amount-input {
-    margin-top: 10px;
+    margin: 10px 0;
   }
 }
 </style>

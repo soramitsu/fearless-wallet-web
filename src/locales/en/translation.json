@@ -472,6 +472,9 @@
     "pendingRewards": "Pending rewards",
     "payoutAll": "Payout all",
     "rewardLess": "The reward is less than the network fee",
+    "regular": "Regular",
+    "nominationPool": "Nomination pools",
+    "rewardsDestination": "Rewards destination",
     "validatorsPayoutRewards": "Validators payout the rewards every 2-5 days. However, you can payout them by yourself, especially if rewards are close to expiring, but you will pay the fee."
   },
   "common": {

@@ -27,10 +27,11 @@
     <template v-if="step === 1 || step === 6">
       <InfoRow
         text="assets.networkFee"
-        :value="`${fee} ${stakingAsset}`"
-        :price="feeValueString"
         borderType="default"
         icon="info"
+        textSize="mini"
+        :value="`${fee} ${stakingAsset}`"
+        :price="feeValueString"
         :iconClasses="['network-fee']"
       />
 
@@ -56,7 +57,7 @@ import { Getter } from 'vuex-class';
 import { validators } from '../validators/mock';
 import type { GetAssetPrice } from '@/store';
 import type { SelectionValidator } from '@/interfaces';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectValidator from '@/screens/staking/myStake/validators/SelectValidator.vue';

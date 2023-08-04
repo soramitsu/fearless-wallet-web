@@ -501,14 +501,14 @@ export function makeCrossChain(
 }
 
 export function checkStaking(request: RequestCheckStaking): Promise<ResponseCheckStaking> {
-  return sendMessage('pri(accounts.checkStaking)', request);
+  return sendMessage('pri(staking.checkStaking)', request);
 }
 
 export function makeStaking(
   request: RequestStaking,
   callback: (data: BasicTxResponse) => void
 ): Promise<BasicTxResponse> {
-  return sendMessage('pri(accounts.staking)', request, callback);
+  return sendMessage('pri(staking.stake)', request, callback);
 }
 
 export function getSoraFees(): Promise<SoraFees> {

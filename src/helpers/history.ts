@@ -6,11 +6,11 @@ import type {
   HistoryServiceType,
   NetworkName,
 } from '@/interfaces';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { TransactionType, TransferType } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 import { formattedNumber } from '@/helpers/numbers';
 import store from '@/store';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 function getType(historyElement: HistoryElement): TransactionType {
   const { reward, transfer } = historyElement;

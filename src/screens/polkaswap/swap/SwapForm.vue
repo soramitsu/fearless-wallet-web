@@ -205,6 +205,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet, GetNetwork, GetAssetPrice } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
 import SwapSettings from '@/screens/polkaswap/swap/SwapSettings.vue';
@@ -213,7 +214,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
 import { Components } from '@/router/routes';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { checkSwap, getSoraFees } from '@/extension/messaging';
 import {
   getCurrencyOptions,

@@ -9,7 +9,7 @@
         </div>
 
         <div class="balance-loading">
-          <Loading :width="28" v-if="showShimmers" />
+          <Loading v-if="showShimmers" :width="28" />
         </div>
       </div>
     </header>
@@ -25,7 +25,13 @@
 
         <Scroll>
           <template v-if="isAllTab">
-            <StakingItem v-for="{ network, icon } in stakingItems" :key="network" :network="network" :icon="icon" />
+            <StakingItem
+              v-for="{ network, icon, type } in stakingItems"
+              :key="network"
+              :network="network"
+              :type="type"
+              :icon="icon"
+            />
           </template>
 
           <template v-else>
@@ -51,6 +57,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { StakingTab } from '@/interfaces/common';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { getShimmersVisibility } from '@/helpers/wallets';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
@@ -59,7 +66,6 @@ import StakingSettings from '@/screens/staking/StakingSettings.vue';
 import StakingItem from '@/screens/staking/StakingItem.vue';
 import MyStakingItem from '@/screens/staking/myStake/MyStakingItem.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 @Component({
   components: {
@@ -82,6 +88,12 @@ export default class Staking extends Vue {
     return [
       {
         network: 'Sora mainnet',
+        type: 'regular',
+        icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg',
+      },
+      {
+        network: 'Sora mainnet 2',
+        type: 'nominationPool',
         icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg',
       },
     ];

@@ -138,6 +138,7 @@ import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import History from './History.vue';
 import type { HistoryElement } from '@/interfaces/history';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
@@ -151,7 +152,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { firstCharToUp, isSora } from '@/helpers/common';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { getSummaryTransferableBalance } from '@/helpers/currencies';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 

@@ -1,9 +1,9 @@
 import { FPNumber } from '@sora-substrate/util';
 import type { NetworkName, AssetsPrice, ChangeWalletBalance } from '@/interfaces';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { isSora } from '@/helpers/common';
 import { addNumbers } from '@/helpers/numbers';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
@@ -161,7 +161,7 @@ function calcTransferableSendMinusFee(currency: TokenBalance | undefined, networ
   const transferable = currencyBalance.transferable ? +currencyBalance.transferable : 0;
 
   // Для Utility ассета вычитаем комиссию, тк комиссия всегда списывается в Utility токене
-  if (currencyBalance?.isUtility) {
+  if (currencyBalance.isUtility) {
     const result = new FPNumber(transferable).sub(new FPNumber(fee));
 
     return FPNumber.lt(result, FPNumber.ZERO) ? '0' : result.toString();

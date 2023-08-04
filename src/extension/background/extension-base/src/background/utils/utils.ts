@@ -1,10 +1,10 @@
 import { NetworkJson } from '@extension-base/types';
 import { BalanceItem } from '@extension-base/api/evm/types/ether';
 import { APIItemState } from '@extension-base/api/types/networks';
-import { TokenBalance } from '@extension-base/background/types/types';
 import { state } from '@extension-base/background/handlers';
 import { keyring } from '@polkadot/ui-keyring';
 import { isEthereumAddress } from '@polkadot/util-crypto';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import type { AssetName, NetworkName } from '@/interfaces';
 import { MAIN_NETWORKS, ETHEREUM_NETWORKS, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import { RelayChainName } from '@/interfaces';

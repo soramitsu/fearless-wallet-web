@@ -34,15 +34,15 @@
         @click="toggleVisible('showUnstakingForm', true)"
       />
 
-      <!-- <BorderButton
+      <BorderButton
         class="activity-button"
         text="staking.redeem"
         iconName="redeem"
         @click="toggleVisible('showRedeemForm', true)"
-      /> -->
+      />
 
       <!-- TEST -->
-      <!-- <BorderButton class="activity-button" text="validators" @click="toggleVisible('showYourValidatorsForm', true)" />
+      <BorderButton class="activity-button" text="validators" @click="toggleVisible('showYourValidatorsForm', true)" />
 
       <BorderButton
         class="activity-button"
@@ -50,7 +50,7 @@
         @click="toggleVisible('showControllerAccountForm', true)"
       />
 
-      <BorderButton class="activity-button" text="unbond" @click="toggleVisible('showUnbondForm', true)" /> -->
+      <BorderButton class="activity-button" text="rebond" @click="toggleVisible('showRebondForm', true)" />
 
       <BorderButton class="activity-button" text="rewards" @click="toggleVisible('showPendingRewardForm', true)" />
       <!-- TEST -->
@@ -112,6 +112,7 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { MyStakingTab } from '@/interfaces/common';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import MyStakeSettings from '@/screens/staking/myStake/MyStakeSettings.vue';
 import About from '@/screens/staking/myStake/About.vue';
 import Alerts from '@/screens/staking/myStake/Alerts.vue';
@@ -119,7 +120,6 @@ import History from '@/screens/staking/myStake/History.vue';
 import StakingManagement from '@/screens/staking/myStake/stakingForms/StakingManagement.vue';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { SORA_NETWORK_NAME, SORA_REWARD_ASSET } from '@/consts/sora';
 import YourValidatorsManagement from '@/screens/staking/myStake/validators/YourValidatorsManagement.vue';
@@ -146,7 +146,7 @@ export default class MyStake extends Vue {
   showStakingForm = false;
   showUnstakingForm = false;
   showRedeemForm = false;
-  showUnbondForm = false;
+  showRebondForm = false;
   showYourValidatorsForm = false;
   showControllerAccountForm = false;
   showPendingRewardForm = false;
@@ -155,7 +155,7 @@ export default class MyStake extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get showStakeForm() {
-    return this.showStakingForm || this.showUnstakingForm || this.showRedeemForm || this.showUnbondForm;
+    return this.showStakingForm || this.showUnstakingForm || this.showRedeemForm || this.showRebondForm;
   }
 
   get type() {
@@ -163,7 +163,7 @@ export default class MyStake extends Vue {
 
     if (this.showUnstakingForm) return 'unstaking';
 
-    if (this.showUnbondForm) return 'unbond';
+    if (this.showRebondForm) return 'rebond';
 
     return 'redeem';
   }
@@ -297,7 +297,7 @@ export default class MyStake extends Vue {
     this.showStakingForm = false;
     this.showUnstakingForm = false;
     this.showRedeemForm = false;
-    this.showUnbondForm = false;
+    this.showRebondForm = false;
     this.showYourValidatorsForm = false;
     this.showControllerAccountForm = false;
   }

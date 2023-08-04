@@ -1545,10 +1545,10 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.crossChain)':
         return this.makeCrossChain(id, port, request as RequestCrossChain);
 
-      case 'pri(accounts.checkStaking)':
+      case 'pri(staking.checkStaking)':
         return this.checkStaking(id, port, request as RequestCrossChain);
 
-      case 'pri(accounts.staking)':
+      case 'pri(staking.stake)':
         return this.makeStaking(id, port, request as RequestStaking);
 
       case 'pri(accounts.checkSwap)':

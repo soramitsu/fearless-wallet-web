@@ -10,7 +10,7 @@
         />
 
         <div class="wallet-balance__loading">
-          <Loading :width="28" v-if="showShimmers" />
+          <Loading v-if="showShimmers" :width="28" />
         </div>
       </div>
 

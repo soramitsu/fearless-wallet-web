@@ -26,9 +26,9 @@
     >
       <div class="description">
         <template v-if="showIcon">
-          <Identicon v-if="iconType === 'address'" :address="value" class="img" />
+          <Identicon v-if="isAddressIconType(iconType)" :address="value" class="img" />
 
-          <Icon v-else-if="icon === 'globus'" :icon="icon" className="img" />
+          <Icon v-else-if="isGlobusIcon(icon)" :icon="icon" className="img" />
 
           <ExternalLogo v-else :name="icon" class="img" />
         </template>
@@ -49,6 +49,14 @@ import Popup from './Popup.vue';
 
 type SpaceSize = 'small' | 'medium' | 'big';
 
+interface Options {
+  name: string;
+  value: string;
+  icon: string;
+  iconType: string;
+  isAll?: true;
+}
+
 @Component({
   components: { Popup },
 })
@@ -57,7 +65,7 @@ export default class SelectPopup extends Vue {
   formattedOptions: Record<string, string>[] = [];
 
   @Prop(String) value!: string;
-  @Prop(Array) options!: Record<string, string>[];
+  @Prop(Array) options!: Options[];
   @Prop(String) headerText!: string;
   @Prop(Number) top!: number;
   @Prop(Number) left!: number;
@@ -110,6 +118,14 @@ export default class SelectPopup extends Vue {
 
   toggle(value: string) {
     this.toggleValue(value);
+  }
+
+  isAddressIconType(iconType: string) {
+    return iconType === 'address';
+  }
+
+  isGlobusIcon(icon: string) {
+    return icon === 'globus';
   }
 }
 </script>

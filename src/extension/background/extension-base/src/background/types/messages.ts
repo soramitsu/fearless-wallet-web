@@ -202,11 +202,13 @@ export interface RequestSignatures {
   'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
   'pri(accounts.checkCrossChain)': [RequestCheckCrossChain, ResponseCheckCrossChain];
   'pri(accounts.crossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse];
-  'pri(accounts.checkStaking)': [RequestCheckStaking, ResponseCheckStaking];
-  'pri(accounts.staking)': [RequestStaking, BasicTxResponse, BasicTxResponse];
   'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
   'pri(accounts.swap)': [RequestSwap, ResponseMakeSwap];
   'pri(accounts.get.soraFees)': [null, SoraFees];
+
+  // staking
+  'pri(staking.checkStaking)': [RequestCheckStaking, ResponseCheckStaking];
+  'pri(staking.stake)': [RequestStaking, BasicTxResponse, BasicTxResponse];
 
   //ether
   'pri(balance.get.balance)': [null, BalanceJson];

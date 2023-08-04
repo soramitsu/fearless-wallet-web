@@ -3,10 +3,12 @@
     <InfoRow
       class="info-fee"
       text="assets.networkFee"
-      :value="`${fee} ${asset}`"
-      :price="valueString"
       textSize="mini"
       borderType="default"
+      icon="info"
+      :value="`${fee} ${asset}`"
+      :price="valueString"
+      :iconClasses="['network-fee']"
     />
 
     <!-- <div class="fee">
@@ -30,6 +32,8 @@
 
       {{ $t('staking.unstakingDisclaimers2') }}
     </div>
+
+    <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
   </div>
 </template>
 
@@ -37,7 +41,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { GetAssetPrice } from '@/store';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 

@@ -4,7 +4,7 @@
       <ExternalLogo :name="icon" class="network-icon" />
 
       <div class="network-description">
-        <div class="stake-name">Regular</div>
+        <div class="stake-name">{{ $t(`staking.${type}`) }}</div>
 
         <div class="network-name">{{ network }}</div>
       </div>
@@ -32,6 +32,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 @Component
 export default class StakingItem extends Vue {
   @Prop(String) network!: string;
+  @Prop(String) type!: 'Regular';
   @Prop(String) icon!: string;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
@@ -82,18 +83,17 @@ export default class StakingItem extends Vue {
       display: flex;
       justify-content: space-between;
       flex-direction: column;
+      text-align: left;
 
       .stake-name {
         font-size: 12px;
         font-weight: 700;
-        text-align: left;
       }
 
       .network-name {
         font-size: 20px;
         font-weight: 700;
         line-height: 25px;
-        text-align: left;
       }
     }
   }

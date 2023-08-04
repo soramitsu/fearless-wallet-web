@@ -1,5 +1,5 @@
 <template>
-  <Corners size="big" :isSelected="inputIsFocused && !readonly">
+  <Corners size="big" :isSelected="isSelected">
     <div :class="selectClasses">
       <div class="column left-column">
         <div class="header">{{ header }}</div>
@@ -33,7 +33,7 @@
           </button>
         </Corners>
 
-        <div class="balance">
+        <div v-if="showBalance" class="balance">
           {{ $t('assets.balance') }}
 
           <div :class="balanceValueClasses" @click="setMax">&nbsp;{{ $n(transferableAmount, 'decimal') }}</div>
@@ -47,8 +47,8 @@
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 @Component
 export default class SelectInput extends Vue {
@@ -60,11 +60,16 @@ export default class SelectInput extends Vue {
   @Prop({ default: '' }) value!: string;
   @Prop({ default: 0 }) transferableAmount!: number;
   @Prop({ default: true }) showRotateIcon!: boolean;
+  @Prop({ default: true }) showBalance!: boolean;
   @Prop({ default: false }) readonly!: boolean;
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+
+  get isSelected() {
+    return this.inputIsFocused && !this.readonly;
+  }
 
   get amountInternal() {
     if (this.syncedAmount === '') return '';
@@ -104,7 +109,7 @@ export default class SelectInput extends Vue {
     return [
       'select-button',
       {
-        'select-button-rotate': this.showRotateIcon && !this.readonly,
+        'select-button--rotate': this.showRotateIcon && !this.readonly,
         'select-button-readonly': this.readonly,
       },
     ];
@@ -210,12 +215,13 @@ export default class SelectInput extends Vue {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    justify-content: center;
 
     .corners-button {
       width: fit-content;
     }
 
-    .select-button-rotate {
+    .select-button--rotate {
       min-width: 122px;
     }
 

@@ -44,10 +44,9 @@ export default class Menu extends Vue {
   checkActive(menuItem: MenuItemType) {
     if (menuItem === 'wallet') {
       const isHighlightWalletItem = this.walletItems.includes(this.routeName);
+      const haveAssetId = this.$route.params.assetId !== undefined;
 
-      if (isHighlightWalletItem) return true;
-
-      if (this.$route.params.assetId !== undefined) return true;
+      if (isHighlightWalletItem || haveAssetId) return true;
     }
 
     if (menuItem === 'staking') {

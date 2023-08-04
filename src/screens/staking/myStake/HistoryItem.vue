@@ -1,13 +1,13 @@
 <template>
   <div class="history-item">
     <div class="column left">
-      <div class="name">
+      <span class="name">
         {{ name }}
-      </div>
+      </span>
 
-      <div class="date">
+      <span class="date">
         {{ date }}
-      </div>
+      </span>
     </div>
 
     <div class="column right">
@@ -26,10 +26,10 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { GetAssetPrice } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { getFormattedDate } from '@/helpers/common';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 @Component
 export default class HistoryItem extends Vue {
@@ -95,6 +95,8 @@ export default class HistoryItem extends Vue {
 
   .left {
     text-align: left;
+    display: flex;
+    flex-direction: column;
   }
 
   .right {

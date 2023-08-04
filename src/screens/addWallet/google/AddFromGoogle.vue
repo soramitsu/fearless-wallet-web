@@ -106,7 +106,11 @@ export default class AddFromGoogle extends Vue {
     this.token = this.getToken;
     const { files } = await getGoogleFiles(this.token);
 
-    if (files.length === 0) {
+    const regex = new RegExp('\\w+/\\w+');
+
+    const filterFiles = files.filter((el) => el && regex.test(el.description));
+
+    if (filterFiles.length === 0) {
       this.$router.push({
         name: Components.CreateGoogle,
         params: {
@@ -119,7 +123,7 @@ export default class AddFromGoogle extends Vue {
       return;
     }
 
-    files.forEach(({ id, description, name }) => {
+    filterFiles.forEach(({ id, description, name }) => {
       const [prepName] = name.split('.');
 
       const [address, ethID] = description.split('/');

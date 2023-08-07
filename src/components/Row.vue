@@ -6,13 +6,16 @@
 
     <div v-if="value" class="value">
       <div>
-        <Loading v-if="isLoading" />
-        <span v-else>{{ value }}</span>
-      </div>
+        <div>
+          <Loading v-if="isLoading" />
+          <span v-else>{{ value }}</span>
+        </div>
 
-      <div v-if="price" class="price">
-        <span>{{ price }}</span>
+        <div v-if="price" class="price">
+          <span>{{ price }}</span>
+        </div>
       </div>
+      <slot name="details"></slot>
     </div>
     <div v-else>-</div>
   </div>
@@ -56,7 +59,7 @@ export default class Row extends Vue {
   color: $default-white;
   .value {
     text-align: right;
-
+    display: flex;
     .price {
       color: $gray-color;
       margin-top: 3px;

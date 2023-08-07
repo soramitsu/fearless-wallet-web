@@ -1,6 +1,7 @@
 <template>
   <div class="asset">
     <AssetInfo :currency="currentCurrency" :price="assetPrice" :showShimmers="showShimmers" />
+
     <div v-if="!isSelectedNetworkHistory" class="activity">
       <BorderButton
         v-for="(button, index) in basicButtons"

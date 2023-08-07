@@ -33,8 +33,6 @@ export enum GettersTypes {
   getShowWarningNetwork = 'getShowWarningNetwork',
   showSoraCardBanner = 'showSoraCardBanner',
   isNetworkFavorite = 'isNetworkFavorite',
-  getAssetTipData = 'getAssetTipData',
-  getAssetPageNetwork = 'getAssetPageNetwork',
 }
 
 export type Getters = {
@@ -43,7 +41,6 @@ export type Getters = {
   [GettersTypes.getSelectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getSelectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.fiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
-  [GettersTypes.getAssetPageNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.isOnline](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getFiatId](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.hiddenAssets](state: State, getters?: GetterTree<State, State> & Getters): string[];
@@ -60,7 +57,6 @@ export type Getters = {
     getters?: GetterTree<State, State> & Getters
   ): GetAutoSelectNodesValueByNetwork;
   [GettersTypes.GET_QR](state: State, getters?: GetterTree<State, State> & Getters): Nullable<string>;
-  [GettersTypes.getAssetTipData](state: State, getters?: GetterTree<State, State> & Getters): AssetTipDataProps;
   [GettersTypes.getIsCustomSort](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -72,16 +68,8 @@ const getters: GetterTree<State, State> & Getters = {
     return selectedWallet;
   },
 
-  [GettersTypes.getAssetPageNetwork]({ selectNetworkAssetPage }): string {
-    return selectNetworkAssetPage;
-  },
-
   [GettersTypes.getBalances]({ balances }): TokenBalance[] {
     return balances;
-  },
-
-  [GettersTypes.getAssetTipData]({ assetTipShowed }): AssetTipDataProps {
-    return assetTipShowed;
   },
 
   [GettersTypes.hiddenAssets]({ selectedWallet, hiddenAssets }): any {

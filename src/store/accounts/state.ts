@@ -18,8 +18,6 @@ export type State = {
   qr: string | null;
   showPolkaswapAlert: boolean;
   showSoraCardBanner: boolean;
-  assetTipShowed: AssetTipDataProps;
-  selectNetworkAssetPage: string;
 };
 
 const state = (): State => {
@@ -37,8 +35,6 @@ const state = (): State => {
     hiddenWarningNetworks: accountController.getHiddenWarningNetworks(),
     showSoraCardBanner: Date.now() - accountController.getHidingSoraCardBannerTime() >= SORA_CARD_BANNER_RERUN,
     qr: null,
-    assetTipShowed: accountController.getAssetTipData(),
-    selectNetworkAssetPage: '',
   };
 };
 

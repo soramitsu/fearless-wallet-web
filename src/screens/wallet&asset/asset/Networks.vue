@@ -117,7 +117,6 @@ export default class Networks extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Mutation(AccountsMutationTypes.SET_ASSET_PAGE_NETWORK) setAssetPageNetwork!: (props: string) => void;
 
   get filteredNetworks() {
     const baseFilter = this.currency.balances.filter((el) => this.getNetwork(el.name).active);
@@ -190,10 +189,6 @@ export default class Networks extends Vue {
 
   openTab(name: string) {
     this.activeTabName = name;
-  }
-
-  selectHistory(network: string) {
-    this.setAssetPageNetwork(network);
   }
 
   toggleSelectFilter() {

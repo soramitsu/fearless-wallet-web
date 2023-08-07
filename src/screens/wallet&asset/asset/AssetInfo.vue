@@ -1,33 +1,34 @@
 <template>
-  <ContentForm :height="160" :isStaticHeight="true" :bottomRightCorner="true">
-    <div class="asset-info">
-      <div class="asset__icon">
-        <ExternalLogo :name="icon" :width="82" :height="82" />
-      </div>
-
-      <div class="asset-info__content">
-        <div class="asset__price">
-          <div class="asset__price-item asset__price-item-change">
-            <span :class="changePriceClasses">{{ priceChangeString }}</span>
-            <span :class="changePriceClasses">{{ fiatPriceChangeString }}</span>
-          </div>
-          <span class="asset__price-item">{{ assetPriceString }}</span>
-
-          <Icon icon="three-dots-vertical" className="asset__price-details" @click="() => {}" />
+  <Fragment>
+    <ContentForm :height="160" :isStaticHeight="true" :bottomRightCorner="true">
+      <div class="asset-info">
+        <div class="asset__icon">
+          <ExternalLogo :name="icon" :width="82" :height="82" />
         </div>
-        <div class="asset__balance">{{ countAssetsString }}</div>
-        <span class="asset__balance asset__balance--fiat">{{ transferableFiatBalanceInNetworkString }}</span>
 
-        <div class="asset__locked" @click="toggleBalanceDetailsPopup">
-          <div class="asset__locked-content">
-            <span class="asset__locked-title">{{ $t('assets.locked') }}</span>
-            <span>{{ lockedBalanceString }}</span>
-            <Icon icon="info" class="details-icon" />
+        <div class="asset-info__content">
+          <div class="asset__price">
+            <div class="asset__price-item asset__price-item-change">
+              <span :class="changePriceClasses">{{ priceChangeString }}</span>
+              <span :class="changePriceClasses">{{ fiatPriceChangeString }}</span>
+            </div>
+            <span class="asset__price-item">{{ assetPriceString }}</span>
+
+            <Icon icon="three-dots-vertical" className="asset__price-details" @click="() => {}" />
+          </div>
+          <div class="asset__balance">{{ countAssetsString }}</div>
+          <span class="asset__balance asset__balance--fiat">{{ transferableFiatBalanceInNetworkString }}</span>
+
+          <div class="asset__locked" @click="toggleBalanceDetailsPopup">
+            <div class="asset__locked-content">
+              <span class="asset__locked-title">{{ $t('assets.locked') }}</span>
+              <span>{{ lockedBalanceString }}</span>
+              <Icon icon="info" class="details-icon" />
+            </div>
           </div>
         </div>
       </div>
-    </div>
-
+    </ContentForm>
     <BalanceDetailsPopup
       v-if="showBalanceDetailsPopup"
       :network="selectedNetwork"
@@ -35,18 +36,23 @@
       :assetPrice="price"
       :closePopup="toggleBalanceDetailsPopup"
     />
-  </ContentForm>
+  </Fragment>
 </template>
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { AssetPrice } from '@/interfaces';
+import type { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import type { AssetPrice } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers/currencies';
 import { getSummaryLockedBalance } from '@/helpers/common';
+import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 
-@Component
+@Component({
+  components: {
+    BalanceDetailsPopup,
+  },
+})
 export default class AssetInfo extends Vue {
   showBalanceDetailsPopup = false;
 

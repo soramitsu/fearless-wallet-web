@@ -26,10 +26,11 @@
               v-for="({ name, icon }, index) in sortedNetoworks"
               :key="index"
               :text="name"
-              :value="getBalanceInNetwork(name)"
-              :price="price"
+              :value="getBalanceInNetworkString(name)"
+              :price="getFiatInNetworkString(name)"
               :icon="icon"
               :isIconPrepend="true"
+              @selectHistory="selectHistory(name)"
             />
           </div>
         </Scroll>
@@ -59,7 +60,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Getter, Mutation } from 'vuex-class';
 import { TokenBalance } from '@extension-base/background/types/types';
 import { NetworkJson } from '@extension-base/types';
 import HistoryItem from './HistoryItem.vue';
@@ -68,6 +69,8 @@ import type { GetAssetPrice, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+
 import { NetworksController } from '@/controllers';
 interface TabsOptions {
   label: string;
@@ -110,20 +113,24 @@ export default class Networks extends Vue {
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  @Mutation(AccountsMutationTypes.SET_ASSET_PAGE_NETWORK) setAssetPageNetwork!: (props: string) => void;
 
   get filteredNetworks() {
+    const baseFilter = this.currency.balances.filter((el) => this.getNetwork(el.name).active);
+
     if (this.activeTabName === 'MyAssets') {
-      return this.currency.balances.filter(({ transferable }) => {
+      return baseFilter.filter(({ transferable }) => {
         if (transferable && +transferable > 0) return true;
 
         return false;
       });
     }
 
-    return this.currency.balances;
+    return baseFilter;
   }
 
   get sortedNetoworks() {
@@ -160,11 +167,14 @@ export default class Networks extends Vue {
     ];
   }
 
+  get priceString() {
+    return `${this.fiatSymbol} ${this.$n(this.price, 'price')}`;
+  }
+
   get price() {
     const price = this.getTokenPrice(this.currency.priceId ?? '').price;
-    const prepPrice = price ? +price : 0;
 
-    return `${this.fiatSymbol} ${this.$n(prepPrice, 'price')}`;
+    return price ? +price : 0;
   }
 
   get isMainNetwork() {
@@ -182,17 +192,35 @@ export default class Networks extends Vue {
     this.activeTabName = name;
   }
 
+  selectHistory(network: string) {
+    this.setAssetPageNetwork(network);
+  }
+
   toggleSelectFilter() {
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
+  }
+
+  getBalanceInNetworkString(network: string) {
+    return `${this.$n(this.getBalanceInNetwork(network), 'decimal')} ${this.currency.symbol.toUpperCase()}`;
   }
 
   getBalanceInNetwork(network: string) {
     const balance = this.currency.balances.find((el) => el.name === network)?.transferable;
     const prepBalance = balance ? Number(balance) : 0;
 
-    return `${this.$n(prepBalance, 'decimal')} ${this.currency.symbol.toUpperCase()}`;
+    return prepBalance;
   }
 
+  getFiatBalanceInNetwork(network: string) {
+    const balance = this.currency.balances.find((el) => el.name === network)?.transferable;
+    const prepBalance = balance ? Number(balance) : 0;
+
+    return prepBalance * +this.price ?? 0;
+  }
+
+  getFiatInNetworkString(network: string) {
+    return `${this.fiatSymbol} ${this.$n(this.getFiatBalanceInNetwork(network), 'price')}`;
+  }
   filterValueUpdate(name: string) {
     this.filterValue = name;
   }

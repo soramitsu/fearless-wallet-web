@@ -36,7 +36,7 @@ import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extensi
 import { ethers } from 'ethers';
 import { getSubstrateAddressByEthAddress, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
 
-import { storage } from '../../stores/Storage';
+import { storage } from '@extension-base/stores/Storage';
 import type {
   MobileSigningRequest,
   RequestMobileSign,

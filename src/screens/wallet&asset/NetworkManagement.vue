@@ -12,7 +12,7 @@
         />
       </STab>
     </STabs>
-    <div class="container">
+    <div class="container" :class="networkListClasses">
       <Scroll>
         <ul class="network__list">
           <NetworkItem
@@ -33,16 +33,17 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Action, Getter, Mutation } from 'vuex-class';
 import { STab, STabs } from '@soramitsu/soramitsu-js-ui';
+import { NetworkJson } from '@extension-base/types';
 import NetworkItem from './NetworkItem.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as NetworksActionsTypes } from '@/store/networks/actions';
 import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
 
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { SetFavoriteNetwork, Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { updateCurrentAccountNetwork } from '@/extension/messaging';
+import BaseApi from '@/util/BaseApi';
 type Tab = {
   label: string;
   name: string;
@@ -61,7 +62,7 @@ type Tabs = {
     NetworkItem,
   },
 })
-export default class NetworkManage extends Vue {
+export default class NetworkManagement extends Vue {
   filterValue = '';
   activeTab: keyof Tabs = ALL_NETWORKS;
   value = '';
@@ -86,13 +87,15 @@ export default class NetworkManage extends Vue {
   @Getter(AccountGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountGettersTypes.getSelectedWallet) selectedWallet!: Wallet;
 
-  @Action(NetworksActionsTypes.TOGGLE_FAVORITE_NETWORK) setFavorite!: (props: SetFavoriteNetwork) => boolean;
+  @Action(NetworksActionsTypes.TOGGLE_FAVORITE_NETWORK) setFavorite!: (props: SetFavoriteNetwork) => Promise<boolean>;
   @Mutation(AccountMutationsTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
 
   get isGroupSelected() {
     return this.selectedNetwork === this.activeTab;
   }
-
+  get networkListClasses() {
+    return BaseApi.useIsPopup() ? '' : 'container--fullscreen';
+  }
   get networkGroup() {
     return { name: this.$t(`header.networkManagement.${this.activeTab}`), icon: 'all-networks' };
   }
@@ -156,8 +159,8 @@ export default class NetworkManage extends Vue {
     this.$notify({ title: prepNotification as string, message: '', type: 'success' });
   }
 
-  toggleFavorite(network: string) {
-    const isFavorite = this.setFavorite({ networkName: network, address: this.selectedWallet.address });
+  async toggleFavorite(network: string) {
+    const isFavorite = await this.setFavorite({ networkName: network, address: this.selectedWallet.address });
 
     const t = this.getLocale(isFavorite ? 'deleteFavorite' : 'addFavorite');
     const prepNotification = this.$t(t, { network });
@@ -199,6 +202,9 @@ export default class NetworkManage extends Vue {
 .container {
   height: 350px;
   overflow-y: hidden;
+}
+.container--fullscreen {
+  height: calc(100vh - 270px);
 }
 
 .network__list {

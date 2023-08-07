@@ -1,9 +1,9 @@
 import { Contract, ethers } from 'ethers';
-import { ETHEREUM_REFRESH_BALANCE_INTERVAL, SUB_TOKEN_REFRESH_BALANCE_INTERVAL } from '../../const/intervals';
-import { APIItemState } from '../types/networks';
-import { state } from '../../background/handlers';
-import { BalanceItem } from './types/ether';
-import { getERC20Contract } from './utils/eth';
+import { ETHEREUM_REFRESH_BALANCE_INTERVAL, SUB_TOKEN_REFRESH_BALANCE_INTERVAL } from '@extension-base/const/intervals';
+import { APIItemState } from '@extension-base/api/types/networks';
+import { state } from '@extension-base/background/handlers';
+import { BalanceItem } from '@extension-base/api/evm/types/ether';
+import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
 
 export async function getEtherBalance(networkKey: string, address: string): Promise<string> {
   const eth = state.getEvmApiMap[networkKey];

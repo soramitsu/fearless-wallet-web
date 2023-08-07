@@ -34,6 +34,7 @@ export enum GettersTypes {
   showSoraCardBanner = 'showSoraCardBanner',
   isNetworkFavorite = 'isNetworkFavorite',
   getAssetTipData = 'getAssetTipData',
+  getAssetPageNetwork = 'getAssetPageNetwork',
 }
 
 export type Getters = {
@@ -42,6 +43,7 @@ export type Getters = {
   [GettersTypes.getSelectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getSelectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.fiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
+  [GettersTypes.getAssetPageNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.isOnline](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getFiatId](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.hiddenAssets](state: State, getters?: GetterTree<State, State> & Getters): string[];
@@ -68,6 +70,10 @@ export type Getters = {
 const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getSelectedWallet]({ selectedWallet }): SelectedWallet {
     return selectedWallet;
+  },
+
+  [GettersTypes.getAssetPageNetwork]({ selectNetworkAssetPage }): string {
+    return selectNetworkAssetPage;
   },
 
   [GettersTypes.getBalances]({ balances }): TokenBalance[] {

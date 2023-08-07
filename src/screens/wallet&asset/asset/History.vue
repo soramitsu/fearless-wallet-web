@@ -1,6 +1,6 @@
 <template>
   <!-- IMPORTANT: if <Menu /> showed use 306 -->
-  <ContentForm :height="285" :isStaticHeight="true">
+  <ContentForm :height="285" :isStaticHeight="isStaticHeight">
     <div class="history">
       <div class="history-settings">
         <div class="history-label">{{ $t('assets.history') }}:</div>
@@ -40,6 +40,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworksController } from '@/controllers';
+import BaseApi from '@/util/BaseApi';
 
 @Component({
   components: { HistoryItem },
@@ -56,12 +57,16 @@ export default class History extends Vue {
   showLoader = false;
 
   @Prop(Object) currency!: TokenBalance;
+  @Prop(String) selectedNetwork!: string;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
 
   get isEmptyHistory() {
     return this.filteredHistory?.length === 0;
+  }
+
+  get isStaticHeight() {
+    return BaseApi.useIsPopup();
   }
 
   get historyContainerClasses() {

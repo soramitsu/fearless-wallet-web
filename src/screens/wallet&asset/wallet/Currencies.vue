@@ -24,12 +24,11 @@ import Draggable from 'vuedraggable';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { SelectedWallet } from '@/store';
-import type { AsyncFn } from '@/interfaces';
+import type { AsyncFn, AssetsPrice } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import CurrencyItem from '@/screens/wallet&asset/wallet/CurrencyItem.vue';
 import { TokenBalance, BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { AssetsPrice } from '@/interfaces';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
 type TimeoutSubscription = {

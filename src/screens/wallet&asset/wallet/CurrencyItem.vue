@@ -9,9 +9,7 @@
 
     <div class="descriptions-column">
       <div class="row first-row">
-        <div>
-          {{ tokenName }}
-        </div>
+        <div>{{ tokenName }}</div>
 
         <template>
           <Shimmer v-if="showShimmers" height="14px" width="60px" />
@@ -107,9 +105,11 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import { Components } from '@/router/routes';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { GetAssetPrice, GetNetwork } from '@/store/networks/types';
-import { filterBalanceItemsByNetwork } from '@/helpers/currencies';
+import {
+  filterBalanceItemsByNetwork,
+  getSummaryTransferableBalanceFilteredByActiveNetworks,
+} from '@/helpers/currencies';
 import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
-import { getSummaryTransferableBalance } from '@/helpers/common';
 
 @Component
 export default class CurrencyItem extends Vue {
@@ -226,7 +226,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get transferableAssetBalance() {
-    return +getSummaryTransferableBalance(this.assetData, this.selectedNetwork);
+    return +getSummaryTransferableBalanceFilteredByActiveNetworks(this.assetData, this.selectedNetwork);
   }
 
   get transferableFiatBalance() {

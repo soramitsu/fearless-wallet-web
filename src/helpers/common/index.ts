@@ -1,4 +1,4 @@
-import { addNumbers } from '../numbers';
+import { addNumbers } from '@/helpers/numbers';
 import { ALL_NETWORKS, NETWORK_GROUP } from '@/consts/networks';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
@@ -30,7 +30,7 @@ export function getSummaryTransferableWalletBalance(
   }, 0);
 }
 
-function getTransferableBalanceInNetwork(token: TokenBalance, network: string) {
+export function getTransferableBalanceInNetwork(token: TokenBalance, network: string) {
   return token.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
 }
 

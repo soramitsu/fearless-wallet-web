@@ -1,9 +1,9 @@
+import { NetworkJson } from '@extension-base/types';
 import type { AssetsPrice, FiatJson, GetHistory } from '@/interfaces';
 import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetActiveNodesByNetwork } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 export enum GettersTypes {
   networks = 'networks',

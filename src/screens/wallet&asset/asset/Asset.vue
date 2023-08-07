@@ -6,17 +6,18 @@
           <ExternalLogo :name="assetIcon" :width="82" :height="82" />
         </div>
 
-        <div class="asset-info__content" @click="toggleBalanceDetailsPopup">
+        <div class="asset-info__content">
           <div class="asset__price">
             <div class="asset__price-item asset__price-item-change">
               <span :class="changePriceClasses">{{ priceChangeString }}</span>
-              <span>{{ fiatPriceChangeString }}</span>
+              <span :class="changePriceClasses">{{ fiatPriceChangeString }}</span>
             </div>
-            <span class="asset__price-item">{{ transferableFiatBalanceInNetworkString }}</span>
             <span class="asset__price-item">{{ assetPriceString }}</span>
           </div>
-          <div class="asset__balance count-value">{{ countAssetsString }}</div>
-          <div class="asset__locked">
+          <div class="asset__balance">{{ countAssetsString }}</div>
+          <span class="asset__balance asset__balance--fiat">{{ transferableFiatBalanceInNetworkString }}</span>
+
+          <div class="asset__locked" @click="toggleBalanceDetailsPopup">
             <div class="asset__locked-content">
               <span class="asset__locked-title">{{ $t('assets.locked') }}</span>
               <span>{{ lockedBalanceString }}</span>
@@ -26,7 +27,7 @@
         </div>
       </div>
     </ContentForm>
-    <div v-if="!isSelectedNetworkGroup" class="activity">
+    <div v-if="!isSelectedNetworkHistory" class="activity">
       <BorderButton
         v-for="(button, index) in basicButtons"
         :class="button.class"
@@ -69,12 +70,18 @@
     </div>
 
     <Networks
-      v-if="isSelectedNetworkGroup"
+      v-if="isSelectedNetworkHistory"
       :currency="currentCurrency"
       @openHistoryDetailsForm="openHistoryDetailsForm"
+      @selectNetworkHistory="selectNetworkHistory"
     />
 
-    <History v-else :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
+    <History
+      v-else
+      :currency="currentCurrency"
+      :selectedNetwork="selectedNetworkForHistory"
+      @openHistoryDetailsForm="openHistoryDetailsForm"
+    />
 
     <SendForm
       v-if="showSendForm"
@@ -120,27 +127,6 @@
       :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
     />
 
-    <Blur v-if="showTipPopup" @click="toggleTipPopup">
-      <div class="popup-tip" :style="iconPosition">
-        <div class="controls">
-          <NetworkManagementButton
-            classes="background-ellipse"
-            :isGroupIcon="isGroupIcon"
-            :icon="selectedNetworkIcon"
-            :selectedNetwork="selectedNetwork"
-            @onToggle="toggleSelectNetworkPopupVisible"
-          />
-
-          <Icon icon="close" class="icon__close" @click.stop="toggleTipPopup" />
-        </div>
-
-        <div class="icon-arrow-tip">
-          <Icon icon="arrow-tip" width="120" height="100" />
-          <span class="popup-tip__message">{{ $t('assets.networkManagementTip') }}</span>
-        </div>
-      </div>
-    </Blur>
-
     <Blur v-if="showPopupButton" @click="togglePopupButton">
       <div class="popup-button">
         <BorderButton
@@ -171,6 +157,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import { getNativeAssetName } from '@extension-base/background/utils/utils';
+import { NetworkJson } from '@extension-base/types';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import History from './History.vue';
 import Networks from './Networks.vue';
@@ -193,10 +180,9 @@ import { Components } from '@/router/routes';
 import { NETWORK_GROUP } from '@/consts/networks';
 import { isSora } from '@/helpers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
-import { getSummaryLockedBalance, getSummaryTransferableBalance, isNetworkGroup } from '@/helpers/common/index';
+import { getSummaryLockedBalance, isNetworkGroup } from '@/helpers/common/index';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
-import { ONE_WEEK } from '@/consts/global';
+import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers/currencies';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 type ControlButtons = {
@@ -258,12 +244,16 @@ export default class Asset extends Vue {
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getAssetTipData) getAssetTipData!: AssetTipDataProps;
+  @Getter(AccountsGettersTypes.getAssetPageNetwork) assetPageNetwork!: string;
+
   @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
   @Mutation(AccountsMutationTypes.SET_ASSET_TIP_STATE) setAssetTipData!: (props: AssetTipDataProps) => void;
+  @Mutation(AccountsMutationTypes.SET_ASSET_PAGE_NETWORK) setAssetPageNetwork!: (props: string) => void;
+
   get isGroupIcon() {
     return isNetworkGroup(this.selectedNetwork);
   }
@@ -275,15 +265,23 @@ export default class Asset extends Vue {
   }
 
   get showShimmers() {
-    return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';
+    return !this.isOnline || !this.balances.length || this.currentNetwork?.state === 'pending';
   }
 
   get isNeedPopupButton() {
     return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;
   }
 
-  get isSelectedNetworkGroup() {
-    return NETWORK_GROUP.includes(this.selectedNetwork);
+  get selectedNetworkForHistory() {
+    if (!NETWORK_GROUP.includes(this.selectedNetwork)) return this.selectedNetwork;
+
+    return this.assetPageNetwork;
+  }
+
+  get isSelectedNetworkHistory() {
+    if (!NETWORK_GROUP.includes(this.selectedNetwork)) return false;
+
+    return this.assetPageNetwork === '';
   }
 
   get getPrice() {
@@ -307,7 +305,9 @@ export default class Asset extends Vue {
   }
 
   get showCrossChainButton() {
-    const network = this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork?.toLowerCase())!;
+    const network = this.networks.find(
+      ({ name }) => name.toLowerCase() === this.selectedNetworkForHistory?.toLowerCase()
+    )!;
 
     const asset = getNativeAssetName(this.selectedAsset);
     if (!network.xcm) return false;
@@ -374,7 +374,7 @@ export default class Asset extends Vue {
   }
 
   get displayAddressByNetwork() {
-    if (this.isSelectedNetworkGroup) return BaseApi.formatAddress(this.selectedWallet, this.mainNetwork);
+    if (this.isSelectedNetworkHistory) return BaseApi.formatAddress(this.selectedWallet, this.mainNetwork);
 
     return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
   }
@@ -429,7 +429,7 @@ export default class Asset extends Vue {
   }
 
   get transferableAssetBalance() {
-    return +getSummaryTransferableBalance(this.currentCurrency, this.selectedNetwork);
+    return +getSummaryTransferableBalanceFilteredByActiveNetworks(this.currentCurrency, this.selectedNetwork);
   }
 
   get transferableFiatBalance() {
@@ -460,6 +460,10 @@ export default class Asset extends Vue {
     this.historyElement = {};
   }
 
+  selectNetworkHistory(name: string) {
+    this.setAssetPageNetwork(name);
+  }
+
   toggleBalanceDetailsPopup() {
     if (this.showShimmers) {
       this.showBalanceDetailsPopup = false;
@@ -474,14 +478,7 @@ export default class Asset extends Vue {
     this.showPopupButton = !this.showPopupButton;
   }
 
-  toggleTipPopup() {
-    this.showTipPopup = !this.showTipPopup;
-
-    this.setAssetTipData({ count: +this.getAssetTipData.count + 1, time: Date.now() + ONE_WEEK });
-  }
-
   toggleSelectNetworkPopupVisible() {
-    if (this.showTipPopup === true) this.toggleTipPopup();
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
   }
 
@@ -561,10 +558,15 @@ export default class Asset extends Vue {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: 24px;
+        font-size: 22px;
         font-style: normal;
         font-weight: 700;
+
+        &--fiat {
+          font-size: 18px;
+        }
       }
+
       .asset__locked-content {
         display: flex;
         gap: 6px;

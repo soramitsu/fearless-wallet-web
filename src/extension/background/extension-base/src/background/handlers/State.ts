@@ -620,8 +620,6 @@ export default class State {
 
     addressIndex !== -1 ? network.favorite.splice(addressIndex, 1) : network.favorite.push(currentAccount.address);
 
-    this.setActiveNetworks(FAVORITE_NETWORKS);
-
     return true;
   }
 
@@ -695,7 +693,10 @@ export default class State {
 
           break;
         case POPULAR_NETWORKS:
-          if (network.rank) network.active = true;
+          if (network.rank !== undefined) {
+            network.active = true;
+            break;
+          }
 
           if (isAlreadySelectedType) break;
 

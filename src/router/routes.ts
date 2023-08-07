@@ -7,7 +7,8 @@ import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import { SORA_CARD_VISIBILITY } from '@/consts/global';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-
+import Networks from '@/screens/wallet&asset/asset/Networks.vue';
+import AssetHistory from '@/screens/wallet&asset/asset/AssetHistory.vue';
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Staking = () => import('@/screens/staking/Staking.vue');
 const History = () => import('@/screens/history/History.vue');
@@ -52,6 +53,8 @@ export enum Components {
   SoraSwap = 'SoraSwap',
   SoraCard = 'SoraCard',
   NoFound = 'NoFound',
+  AssetHistory = 'AssetHistory',
+  AssetNetworks = 'AssetNetworks',
 }
 
 const haveSelectedWallet = () => {
@@ -175,13 +178,24 @@ const routes: Array<RouteConfig> = [
         ],
       },
       {
-        path: ':network/:assetId',
-        name: Components.Asset,
+        path: 'asset/:assetId',
         component: Asset,
         beforeEnter: (to, from, next) => {
           store.commit(AccountsMutationTypes.SET_ASSET_PAGE_NETWORK, '');
           next();
         },
+        children: [
+          {
+            path: '',
+            name: Components.AssetNetworks,
+            component: Networks,
+          },
+          {
+            path: ':network',
+            name: Components.AssetHistory,
+            component: AssetHistory,
+          },
+        ],
       },
       {
         path: 'crowdloans',

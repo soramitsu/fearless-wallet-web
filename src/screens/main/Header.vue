@@ -130,7 +130,9 @@ export default class Header extends Vue {
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
 
   get showBackIcon() {
-    return this.$route.name === Components.Asset;
+    const route = this.$route.name;
+
+    return route === Components.AssetNetworks || route === Components.AssetHistory;
   }
 
   get isGroup() {

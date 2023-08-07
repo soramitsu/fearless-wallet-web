@@ -30,7 +30,7 @@
               :price="getFiatInNetworkString(name)"
               :icon="icon"
               :isIconPrepend="true"
-              @selectHistory="selectHistory(name)"
+              @selectHistory="$emit('selectNetworkHistory', name)"
             />
           </div>
         </Scroll>

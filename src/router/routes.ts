@@ -180,10 +180,6 @@ const routes: Array<RouteConfig> = [
       {
         path: 'asset/:assetId',
         component: Asset,
-        beforeEnter: (to, from, next) => {
-          store.commit(AccountsMutationTypes.SET_ASSET_PAGE_NETWORK, '');
-          next();
-        },
         children: [
           {
             path: '',

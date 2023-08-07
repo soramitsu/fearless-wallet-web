@@ -131,8 +131,6 @@ export default class Asset extends Vue {
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
-  @Mutation(AccountsMutationTypes.SET_ASSET_TIP_STATE) setAssetTipData!: (props: AssetTipDataProps) => void;
-  @Mutation(AccountsMutationTypes.SET_ASSET_PAGE_NETWORK) setAssetPageNetwork!: (props: string) => void;
 
   get isGroupIcon() {
     return isNetworkGroup(this.selectedNetwork);

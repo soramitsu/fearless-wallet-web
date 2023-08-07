@@ -1,4 +1,4 @@
-@Library('jenkins-library@fix/DOPS-2645/author-telegram-notification')
+@Library('jenkins-library@fix/DOPS-2645/author-telegram-notification') 
 
 def buildWithCred  = [
     [$class: 'UsernamePasswordMultiBinding', credentialsId: 'OAUTH_CLIENT_UPLOAD', usernameVariable: 'OAUTH_CLIENT_ID_UPLOAD', passwordVariable: 'OAUTH_CLIENT_SECRET_UPLOAD'],

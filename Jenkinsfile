@@ -1,4 +1,4 @@
-@Library('jenkins-library@fix/DOPS-2645/pr-links') 
+@Library('jenkins-library@')
 
 def buildWithCred  = [
     [$class: 'UsernamePasswordMultiBinding', credentialsId: 'OAUTH_CLIENT_UPLOAD', usernameVariable: 'OAUTH_CLIENT_ID_UPLOAD', passwordVariable: 'OAUTH_CLIENT_SECRET_UPLOAD'],
@@ -24,7 +24,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     nexusCredential:            'bot-fearless-rw',
     nexusProjectPath:           'fearless/extension',
     nexusNotification:           true,
-    nexusChatID:                "-1001727151155",
+    nexusChatID:                "-1001934877683",
     sonarProjectKey:            'fearless:fearless-wallet-web',
     sonarProjectName:           'fearless-wallet-web',
     sonarCredential:            'sonar_fearless_token',
@@ -35,7 +35,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     nexusFiles:                 [ '.zip'],
     chromeExtFile:              'fearless-wallet-extension-chrome.zip',
     mozillaExtFile:             'fearless-wallet-extension-firefox.zip',
-    uploadToNexusFor:           ['master','develop','stage','fix/DOPS-2645/pr-links-author'],
+    uploadToNexusFor:           ['master','develop','stage'],
     uploadToGoogleFor:          ['master'],
     uploadToFirefoxFor:         ['master'],
     buildWithCred:              buildWithCred,

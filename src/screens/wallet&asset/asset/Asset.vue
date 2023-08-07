@@ -138,7 +138,6 @@ import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import AssetInfo from '@/screens/wallet&asset/asset/AssetInfo.vue';
 import CrossChainForm from '@/screens/wallet&asset/CrossChainForm.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
-import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -171,7 +170,6 @@ type ControlButtons = {
     CrossChainForm,
     SelectNetworkPopup,
     HistoryDetailsForm,
-    BalanceDetailsPopup,
     SelectNetworkButton,
     NetworkManagementButton,
     NetworkManagement,

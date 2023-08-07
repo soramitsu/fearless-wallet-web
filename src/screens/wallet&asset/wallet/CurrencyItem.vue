@@ -270,7 +270,7 @@ export default class CurrencyItem extends Vue {
       return;
 
     this.$router.push({
-      name: Components.Asset,
+      name: Components.AssetNetworks,
       params: {
         assetId: this.assetData.assetId,
         network: this.redirectNetwork,

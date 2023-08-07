@@ -2,61 +2,18 @@
   <div class="asset">
     <AssetInfo :currency="currentCurrency" :price="assetPrice" :showShimmers="showShimmers" />
 
-    <div v-if="!isSelectedNetworkHistory" class="activity">
-      <BorderButton
-        v-for="(button, index) in basicButtons"
-        :class="button.class"
-        :text="button.text"
-        :iconName="button.icon"
-        @click="toggleVisible(button.formName)"
-        :key="index"
-      />
-
-      <BorderButton
-        v-if="showCrossChainButton"
-        class="activity-button"
-        text="assets.crossChain"
-        iconName="cross-chain"
-        @click="toggleVisible('showCrossChainForm')"
-      />
-
-      <BorderButton
-        v-if="showSwapButton"
-        class="activity-button"
-        text="assets.swap"
-        iconName="swap"
-        @click="openSoraSwap"
-      />
-
-      <BorderButton
-        v-if="showBuyButton && !isNeedPopupButton"
-        class="activity-button"
-        text="assets.buy"
-        iconName="plus-pink"
-        @click="toggleVisible('showBuyPopup')"
-      />
-
-      <BorderButton
-        v-if="isNeedPopupButton"
-        class="activity-button activity-button--settings"
-        iconName="three-dots-vertical"
-        @click="togglePopupButton"
-      />
-    </div>
-
-    <Networks
-      v-if="isSelectedNetworkHistory"
-      :currency="currentCurrency"
+    <router-view
       @openHistoryDetailsForm="openHistoryDetailsForm"
       @selectNetworkHistory="selectNetworkHistory"
-    />
-
-    <History
-      v-else
       :currency="currentCurrency"
-      :selectedNetwork="selectedNetworkForHistory"
-      @openHistoryDetailsForm="openHistoryDetailsForm"
-    />
+      :showBuyButton="showBuyButton"
+      :showCrossChainButton="showCrossChainButton"
+      :showSwapButton="showSwapButton"
+      :togglePopupButton="togglePopupButton"
+      :openSoraSwap="openSoraSwap"
+      @toggleVisible="toggleVisible"
+    >
+    </router-view>
 
     <SendForm
       v-if="showSendForm"
@@ -94,23 +51,6 @@
       :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
     />
 
-    <Blur v-if="showPopupButton" @click="togglePopupButton">
-      <div class="popup-button">
-        <BorderButton
-          class="activity-button activity-button--settings popup__button-width"
-          iconName="three-dots-vertical"
-          @click="togglePopupButton"
-        />
-        <BorderButton
-          v-if="showBuyButton"
-          class="activity-button"
-          text="assets.buy"
-          iconName="plus-pink"
-          @click="toggleVisible('showBuyPopup')"
-        />
-      </div>
-    </Blur>
-
     <NetworkManagement
       v-if="showSelectNetworkPopup"
       :type="selectedNetwork"
@@ -126,8 +66,6 @@ import { Getter, Mutation } from 'vuex-class';
 import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import { NetworkJson } from '@extension-base/types';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
-import History from './History.vue';
-import Networks from './Networks.vue';
 import type { HistoryElement } from '@/interfaces/history';
 import type { AssetTipDataProps, GetAssetPrice, SelectedWallet } from '@/store';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
@@ -150,21 +88,12 @@ import { isSora } from '@/helpers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { isNetworkGroup } from '@/helpers/common/index';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
-
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
-type ControlButtons = {
-  class: string;
-  text: string;
-  icon: string;
-  formName: ShowField;
-  isActive: boolean;
-};
+
 @Component({
   components: {
     AssetInfo,
     Blur,
-    History,
-    Networks,
     SendForm,
     BuyPopup,
     ReceiveForm,
@@ -178,22 +107,7 @@ type ControlButtons = {
 })
 export default class Asset extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
-  readonly basicButtons: ControlButtons[] = [
-    {
-      class: 'activity-button',
-      text: 'assets.sendButtonText',
-      icon: 'send',
-      formName: 'showSendForm',
-      isActive: true,
-    },
-    {
-      class: 'activity-button',
-      text: 'assets.receiveButtonText',
-      icon: 'receive',
-      formName: 'showReceiveForm',
-      isActive: true,
-    },
-  ];
+
   historyElement: HistoryElement | Record<string, string> = {};
   showSendForm = false;
   showReceiveForm = false;
@@ -234,10 +148,6 @@ export default class Asset extends Vue {
     return !this.isOnline || !this.balances.length || this.currentNetwork?.state === 'pending';
   }
 
-  get isNeedPopupButton() {
-    return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;
-  }
-
   get selectedNetworkForHistory() {
     if (!NETWORK_GROUP.includes(this.selectedNetwork)) return this.selectedNetwork;
 
@@ -257,10 +167,11 @@ export default class Asset extends Vue {
   get showCrossChainButton() {
     const network = this.networks.find(
       ({ name }) => name.toLowerCase() === this.selectedNetworkForHistory?.toLowerCase()
-    )!;
+    );
 
     const asset = getNativeAssetName(this.selectedAsset);
-    if (!network.xcm) return false;
+
+    if (!network || network.xcm === undefined) return false;
 
     return network.xcm.availableAssets.some((assetName) => assetName.toLowerCase() === asset);
   }
@@ -370,7 +281,12 @@ export default class Asset extends Vue {
   }
 
   selectNetworkHistory(name: string) {
-    this.setAssetPageNetwork(name);
+    this.$router.push({
+      name: Components.AssetHistory,
+      params: {
+        network: name,
+      },
+    });
   }
 
   togglePopupButton() {
@@ -457,26 +373,6 @@ export default class Asset extends Vue {
 
     .popup__button-width {
       width: 42px;
-    }
-  }
-
-  .activity {
-    display: flex;
-    justify-content: space-between;
-    gap: 5px;
-
-    .activity-button {
-      flex-grow: 1;
-
-      &:first-child {
-        margin-left: 0;
-      }
-
-      &--settings {
-        color: $pink-color;
-        flex-grow: 0;
-        margin: 0;
-      }
     }
   }
 }

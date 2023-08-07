@@ -14,7 +14,9 @@
             </div>
             <span class="asset__price-item">{{ assetPriceString }}</span>
 
-            <Icon icon="three-dots-vertical" className="asset__price-details" @click="() => {}" />
+            <div @click="toggleDetailsPopup">
+              <Icon icon="three-dots-vertical" className="asset__price-details" />
+            </div>
           </div>
           <div class="asset__balance">{{ countAssetsString }}</div>
           <span class="asset__balance asset__balance--fiat">{{ transferableFiatBalanceInNetworkString }}</span>
@@ -36,6 +38,16 @@
       :assetPrice="price"
       :closePopup="toggleBalanceDetailsPopup"
     />
+
+    <AccountSettingsPopup
+      v-if="showDetailsPopup"
+      :selectedNetwork="selectedNetwork"
+      :showNodeSwitch="true"
+      :showCopyAddress="false"
+      :handlerClose="toggleDetailsPopup"
+      :showExport="false"
+      :showReplaceAccount="false"
+    />
   </Fragment>
 </template>
 <script lang="ts">
@@ -47,14 +59,17 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers/currencies';
 import { getSummaryLockedBalance } from '@/helpers/common';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
+import AccountSettingsPopup from '@/screens/accounts/AccountSettingsPopup.vue';
 
 @Component({
   components: {
     BalanceDetailsPopup,
+    AccountSettingsPopup,
   },
 })
 export default class AssetInfo extends Vue {
   showBalanceDetailsPopup = false;
+  showDetailsPopup = false;
 
   @Prop(Object) price!: AssetPrice;
   @Prop(Object) currency!: TokenBalance;
@@ -131,6 +146,10 @@ export default class AssetInfo extends Vue {
     }
 
     this.showBalanceDetailsPopup = !this.showBalanceDetailsPopup;
+  }
+
+  toggleDetailsPopup() {
+    this.showDetailsPopup = !this.showDetailsPopup;
   }
 }
 </script>

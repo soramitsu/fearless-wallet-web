@@ -16,13 +16,13 @@
         <div class="label">{{ $t('accounts.export') }}</div>
       </div>
 
-      <div v-if="!isNodesRoute" class="row" @click="openNetwork">
+      <div v-if="showNodeSwitch" class="row" @click="openNetwork">
         <Icon icon="currency-switch" className="icon" />
 
         <div class="label">{{ $t('accounts.switchNode') }}</div>
       </div>
 
-      <div v-if="!isNodesRoute" class="row" @click="copyAddress">
+      <div v-if="showCopyAddress" class="row" @click="copyAddress">
         <Icon icon="copy-2" className="icon" />
 
         <div class="label">{{ $t('accounts.copyAddress') }}</div>
@@ -50,7 +50,8 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 @Component
 export default class AccountSettingsPopup extends Vue {
   @Prop(String) selectedNetwork!: string;
-  @Prop(Boolean) isNodesRoute!: boolean;
+  @Prop(Boolean) showNodeSwitch!: boolean;
+  @Prop(Boolean) showCopyAddress!: boolean;
   @Prop(Boolean) showExport!: boolean;
   @Prop(Number) buttonTopClick!: number;
   @Prop(Function) handlerClose!: VoidFunction;

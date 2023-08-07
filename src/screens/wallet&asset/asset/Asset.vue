@@ -13,6 +13,8 @@
               <span :class="changePriceClasses">{{ fiatPriceChangeString }}</span>
             </div>
             <span class="asset__price-item">{{ assetPriceString }}</span>
+
+            <Icon icon="three-dots-vertical" className="asset__price-details" @click="togglePopupButton" />
           </div>
           <div class="asset__balance">{{ countAssetsString }}</div>
           <span class="asset__balance asset__balance--fiat">{{ transferableFiatBalanceInNetworkString }}</span>
@@ -540,6 +542,15 @@ export default class Asset extends Vue {
           border-right: solid 1px transparent;
           padding: 4px;
         }
+        .asset__price-details {
+          width: 24px;
+          height: 24px;
+          position: absolute;
+          top: 15px;
+          right: 10px;
+          color: $default-white;
+        }
+
         .asset__price-item-change {
           display: flex;
           flex-flow: row nowrap;
@@ -660,6 +671,7 @@ export default class Asset extends Vue {
       }
 
       &--settings {
+        color: $pink-color;
         flex-grow: 0;
         margin: 0;
       }

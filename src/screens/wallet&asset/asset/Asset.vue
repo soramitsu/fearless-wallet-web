@@ -123,9 +123,6 @@ export default class Asset extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getAssetTipData) getAssetTipData!: AssetTipDataProps;
-  @Getter(AccountsGettersTypes.getAssetPageNetwork) assetPageNetwork!: string;
-
   @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
@@ -146,16 +143,22 @@ export default class Asset extends Vue {
     return !this.isOnline || !this.balances.length || this.currentNetwork?.state === 'pending';
   }
 
+  get selectedAssetNetwork() {
+    if (this.$route.params.network === undefined) return '';
+
+    return this.$route.params.network;
+  }
+
   get selectedNetworkForHistory() {
     if (!NETWORK_GROUP.includes(this.selectedNetwork)) return this.selectedNetwork;
 
-    return this.assetPageNetwork;
+    return this.selectedAssetNetwork;
   }
 
   get isSelectedNetworkHistory() {
     if (!NETWORK_GROUP.includes(this.selectedNetwork)) return false;
 
-    return this.assetPageNetwork === '';
+    return this.selectedAssetNetwork === '';
   }
 
   get providers() {
@@ -172,36 +175,6 @@ export default class Asset extends Vue {
     if (!network || network.xcm === undefined) return false;
 
     return network.xcm.availableAssets.some((assetName) => assetName.toLowerCase() === asset);
-  }
-
-  mounted() {
-    this.showAssetTipPopup();
-  }
-
-  showAssetTipPopup() {
-    const { count, time } = this.getAssetTipData;
-
-    if (count >= 2) {
-      this.showTipPopup = false;
-
-      return;
-    }
-
-    if (time === 0) {
-      this.showTipPopup = true;
-
-      return;
-    }
-
-    const now = Date.now();
-
-    if (now < time) {
-      this.showTipPopup = false;
-
-      return;
-    }
-
-    this.showTipPopup = true;
   }
 
   get showSwapButton() {

@@ -1,11 +1,8 @@
-const path = require('path');
-const fs = require('fs');
 const { env } = require('process');
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 const WebpackExtensionManifestPlugin = require('webpack-extension-manifest-plugin');
 const { defineConfig } = require('@vue/cli-service');
 const baseConfig = require('./vue.config.base');
-const pages = {};
 
 const manifestExtend = {
   key: env.EXTENSION_PUBLIC_KEY.replace(/ /g, ''),
@@ -14,25 +11,29 @@ const manifestExtend = {
   },
 };
 
-function getFileExtension(filename) {
-  return /[.]/.exec(filename) ? /[^.]+$/.exec(filename)[0] : undefined;
-}
-
-function getEntryFile(entryPath) {
-  return fs.readdirSync(entryPath);
-}
-
-const entries = getEntryFile(path.join(__dirname, `src/extension/entry`));
-
-entries.forEach((name) => {
-  const fileExtension = getFileExtension(name);
-  const fileName = name.replace('.' + fileExtension, '');
-  pages[fileName] = {
-    entry: `src/extension/entry/${name}`,
+const pages = {
+  popup: {
+    entry: 'src/extension/entry/popup.ts',
     template: 'public/index.html',
-    filename: `${fileName}.html`,
-  };
-});
+    filename: 'popup.html',
+    dependOn: 'vendors',
+  },
+  background: {
+    entry: 'src/extension/entry/background.ts',
+    template: 'public/index.html',
+    filename: 'background.html',
+  },
+  content: {
+    entry: 'src/extension/entry/content.ts',
+    template: 'public/index.html',
+    filename: 'content.html',
+  },
+  page: {
+    entry: 'src/extension/entry/page.ts',
+    template: 'public/index.html',
+    filename: 'page.html',
+  },
+};
 
 module.exports = defineConfig({
   ...baseConfig,

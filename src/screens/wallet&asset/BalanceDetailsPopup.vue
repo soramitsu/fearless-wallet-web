@@ -25,7 +25,6 @@ import { GetAssetPrice, SelectedWallet } from '@/store';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { AssetPrice } from '@/interfaces';
-import { NetworksController } from '@/controllers';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component
@@ -38,10 +37,6 @@ export default class LockedDetailsPopup extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
-
-  get selectedNetwork() {
-    return this.$route.params.network;
-  }
 
   get assetNameUpper() {
     return this.currency.symbol.toUpperCase();

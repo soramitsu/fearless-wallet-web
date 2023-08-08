@@ -6,9 +6,9 @@ import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import { SORA_CARD_VISIBILITY } from '@/consts/global';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import Networks from '@/screens/wallet&asset/asset/Networks.vue';
-import AssetHistory from '@/screens/wallet&asset/asset/AssetHistory.vue';
+
+const Networks = () => import('@/screens/wallet&asset/asset/Networks.vue');
+const AssetHistory = () => import('@/screens/wallet&asset/asset/AssetHistory.vue');
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Staking = () => import('@/screens/staking/Staking.vue');
 const History = () => import('@/screens/history/History.vue');
@@ -182,12 +182,16 @@ const routes: Array<RouteConfig> = [
         component: Asset,
         children: [
           {
-            path: '',
+            path: '/',
             name: Components.AssetNetworks,
             component: Networks,
+            beforeEnter: (to, from, next) => {
+              from.params.network = '';
+              next();
+            },
           },
           {
-            path: ':network',
+            path: ':selectedNetwork',
             name: Components.AssetHistory,
             component: AssetHistory,
           },

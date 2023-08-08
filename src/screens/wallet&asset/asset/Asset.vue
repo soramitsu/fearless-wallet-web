@@ -5,13 +5,13 @@
     <router-view
       @openHistoryDetailsForm="openHistoryDetailsForm"
       @selectNetworkHistory="selectNetworkHistory"
+      @toggleVisible="toggleVisible"
       :currency="currentCurrency"
       :showBuyButton="showBuyButton"
       :showCrossChainButton="showCrossChainButton"
       :showSwapButton="showSwapButton"
       :togglePopupButton="togglePopupButton"
       :openSoraSwap="openSoraSwap"
-      @toggleVisible="toggleVisible"
     >
     </router-view>
 
@@ -62,12 +62,12 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter, Mutation } from 'vuex-class';
+import { Getter } from 'vuex-class';
 import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import { NetworkJson } from '@extension-base/types';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import type { HistoryElement } from '@/interfaces/history';
-import type { AssetTipDataProps, GetAssetPrice, SelectedWallet } from '@/store';
+import type { GetAssetPrice, SelectedWallet } from '@/store';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
@@ -80,7 +80,6 @@ import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { NETWORK_GROUP } from '@/consts/networks';
@@ -144,15 +143,9 @@ export default class Asset extends Vue {
   }
 
   get selectedAssetNetwork() {
-    if (this.$route.params.network === undefined) return '';
+    if (this.$route.params.selectedNetwork === undefined) return '';
 
-    return this.$route.params.network;
-  }
-
-  get selectedNetworkForHistory() {
-    if (!NETWORK_GROUP.includes(this.selectedNetwork)) return this.selectedNetwork;
-
-    return this.selectedAssetNetwork;
+    return this.$route.params.selectedNetwork;
   }
 
   get isSelectedNetworkHistory() {
@@ -166,9 +159,7 @@ export default class Asset extends Vue {
   }
 
   get showCrossChainButton() {
-    const network = this.networks.find(
-      ({ name }) => name.toLowerCase() === this.selectedNetworkForHistory?.toLowerCase()
-    );
+    const network = this.networks.find(({ name }) => name.toLowerCase() === this.selectedAssetNetwork.toLowerCase());
 
     const asset = getNativeAssetName(this.selectedAsset);
 
@@ -255,7 +246,7 @@ export default class Asset extends Vue {
     this.$router.push({
       name: Components.AssetHistory,
       params: {
-        network: name,
+        selectedNetwork: name,
       },
     });
   }

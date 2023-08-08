@@ -6,32 +6,32 @@
       @openHistoryDetailsForm="openHistoryDetailsForm"
       @selectNetworkHistory="selectNetworkHistory"
       @toggleVisible="toggleVisible"
+      @togglePopupButton="togglePopupButton"
+      @openSoraSwap="openSoraSwap"
       :currency="currentCurrency"
       :showBuyButton="showBuyButton"
       :showCrossChainButton="showCrossChainButton"
       :showSwapButton="showSwapButton"
-      :togglePopupButton="togglePopupButton"
-      :openSoraSwap="openSoraSwap"
     >
     </router-view>
 
     <SendForm
       v-if="showSendForm"
-      :_selectedNetwork="selectedNetwork"
+      :_selectedNetwork="selectedAssetNetwork"
       :_selectedAssetId="selectedAssetId"
       :closeForm="toggleVisible.bind(null, 'showSendForm', false)"
     />
 
     <ReceiveForm
       v-if="showReceiveForm"
-      :_selectedNetwork="selectedNetwork"
+      :_selectedNetwork="selectedAssetNetwork"
       :selectedAssetId="selectedAssetId"
       :closeForm="toggleVisible.bind(null, 'showReceiveForm', false)"
     />
 
     <CrossChainForm
       v-if="showCrossChainForm"
-      :_originalNetwork="selectedNetwork"
+      :_originalNetwork="selectedAssetNetwork"
       :_selectedAssetId="selectedAssetId"
       :closeForm="toggleVisible.bind(null, 'showCrossChainForm', false)"
     />

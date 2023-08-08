@@ -5,7 +5,7 @@
       :class="button.class"
       :text="button.text"
       :iconName="button.icon"
-      @click="$emit('toggleVisible', `${button.formName}`)"
+      @click="onToggleVisible(button.formName)"
       :key="index"
     />
 
@@ -77,6 +77,9 @@ export default class Asset extends Vue {
   ];
   get isNeedPopupButton() {
     return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;
+  }
+  onToggleVisible(name: string) {
+    this.$emit('toggleVisible', name);
   }
 }
 </script>

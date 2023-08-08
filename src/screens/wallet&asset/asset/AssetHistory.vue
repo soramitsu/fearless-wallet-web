@@ -4,19 +4,19 @@
       :showBuyButton="showBuyButton"
       :showCrossChainButton="showCrossChainButton"
       :showSwapButton="showSwapButton"
-      :togglePopupButton="togglePopupButton"
-      :openSoraSwap="openSoraSwap"
+      v-on="$listeners"
     />
 
     <History :currency="currency" @openHistoryDetailsForm="$emit('openHistoryDetailsForm')" />
 
-    <Blur v-if="showPopupButton" @click="togglePopupButton">
+    <Blur v-if="showPopupButton" @click="$emit('togglePopupButton')">
       <div class="popup-button">
         <BorderButton
           class="activity-button activity-button--settings popup__button-width"
           iconName="three-dots-vertical"
-          @click="togglePopupButton"
+          @click="$emit('togglePopupButton')"
         />
+
         <BorderButton
           v-if="showBuyButton"
           class="activity-button"
@@ -48,5 +48,11 @@ export default class AssetHistory extends Vue {
   @Prop(Boolean) showPopupButton!: boolean;
   @Prop(Boolean) showCrossChainButton!: boolean;
   @Prop(Boolean) showSwapButton!: boolean;
+  onPopup() {
+    this.$emit('togglePopupButton');
+  }
+  onToggleVisible() {
+    this.$emit('toggleVisible', 'showBuyPopup');
+  }
 }
 </script>

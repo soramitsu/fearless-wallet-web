@@ -154,7 +154,7 @@ export default class Networks extends Vue {
     });
   }
   get selectedNetwork() {
-    return this.$route.params.network;
+    return this.$route.params.selectedNetwork;
   }
 
   get historyContainerClasses() {

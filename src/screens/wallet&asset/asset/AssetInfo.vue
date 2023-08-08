@@ -14,7 +14,7 @@
             </div>
             <span class="asset__price-item">{{ assetPriceString }}</span>
 
-            <div @click="toggleDetailsPopup">
+            <div v-if="showSettingsPopup" @click="toggleDetailsPopup">
               <Icon icon="three-dots-vertical" className="asset__price-details" />
             </div>
           </div>
@@ -33,7 +33,7 @@
     </ContentForm>
     <BalanceDetailsPopup
       v-if="showBalanceDetailsPopup"
-      :network="selectedNetwork"
+      :network="pickedNetwork"
       :currency="currency"
       :assetPrice="price"
       :closePopup="toggleBalanceDetailsPopup"
@@ -41,7 +41,7 @@
 
     <AccountSettingsPopup
       v-if="showDetailsPopup"
-      :selectedNetwork="selectedNetwork"
+      :selectedNetwork="selectedAssetNetwork"
       :showNodeSwitch="true"
       :showCopyAddress="false"
       :handlerClose="toggleDetailsPopup"
@@ -78,8 +78,22 @@ export default class AssetInfo extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
 
+  get pickedNetwork() {
+    if (this.selectedAssetNetwork !== '') return this.selectedAssetNetwork;
+
+    return this.selectedNetwork;
+  }
+
   get icon() {
     return this.currency.icon;
+  }
+
+  get selectedAssetNetwork() {
+    return this.$route.params.selectedNetwork;
+  }
+
+  get showSettingsPopup() {
+    return this.selectedAssetNetwork !== '' && this.selectedAssetNetwork !== undefined;
   }
 
   get priceChangeString() {

@@ -221,12 +221,10 @@ export default class AssetInfo extends Vue {
         flex-flow: row nowrap;
         gap: 4px;
       }
-      & > :not(:last-child) {
-        border-right: solid 1px $gray-color;
-        line-height: 1px;
-      }
 
       > :first-child {
+        border-right: solid 1px $gray-color;
+        line-height: 1px;
         padding-left: 0px;
       }
     }

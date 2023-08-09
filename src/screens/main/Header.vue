@@ -248,6 +248,7 @@ export default class Header extends Vue {
   display: flex;
   justify-content: space-between;
   height: $header-height;
+  min-height: $header-height;
   margin-bottom: 16px;
   gap: 2px;
 

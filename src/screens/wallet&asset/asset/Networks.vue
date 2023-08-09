@@ -1,6 +1,6 @@
 <template>
   <Fragment>
-    <ContentForm :height="330">
+    <ContentForm :height="330" :isStaticHeight="isStaticHeight">
       <div class="history">
         <div class="history-settings">
           <TabButton
@@ -72,6 +72,7 @@ import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 
 import { NetworksController } from '@/controllers';
+import BaseApi from '@/util/BaseApi';
 interface TabsOptions {
   label: string;
   tabName: 'Assets' | 'MyAssets';
@@ -117,6 +118,11 @@ export default class Networks extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  readonly popupHeight = 447;
+
+  get isStaticHeight() {
+    return BaseApi.useIsPopup();
+  }
 
   get filteredNetworks() {
     const baseFilter = this.currency.balances.filter((el) => this.getNetwork(el.name).active);

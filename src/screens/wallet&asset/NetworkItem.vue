@@ -14,14 +14,9 @@
         height="18"
         className="network__icon-state"
       />
-      <Icon
-        :icon="iconType"
-        :iconColor="iconColorFavorite"
-        width="18"
-        height="18"
-        className="network__icon-state"
-        @click.stop="onToggleState"
-      />
+      <div @click.stop="onToggleState">
+        <Icon :icon="iconType" :iconColor="iconColorFavorite" width="18" height="18" className="network__icon-state" />
+      </div>
     </div>
   </li>
 </template>

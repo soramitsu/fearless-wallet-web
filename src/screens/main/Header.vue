@@ -37,7 +37,7 @@
       />
 
       <NetworkManagementButton
-        classes="background-ellipse"
+        class="background-ellipse"
         :isGroupIcon="isGroup"
         :icon="selectedNetworkIcon"
         :selectedNetwork="networkManagementButtonText"

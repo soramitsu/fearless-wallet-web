@@ -39,7 +39,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as NetworksActionsTypes } from '@/store/networks/actions';
 import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
-
+import { isNetworkGroup } from '@/helpers/common';
 import { SetFavoriteNetwork, Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { updateCurrentAccountNetwork } from '@/extension/messaging';
@@ -93,9 +93,11 @@ export default class NetworkManagement extends Vue {
   get isGroupSelected() {
     return this.selectedNetwork === this.activeTab;
   }
+
   get networkListClasses() {
     return BaseApi.useIsPopup() ? '' : 'container--fullscreen';
   }
+
   get networkGroup() {
     return { name: this.$t(`header.networkManagement.${this.activeTab}`), icon: 'all-networks' };
   }
@@ -132,6 +134,10 @@ export default class NetworkManagement extends Vue {
 
   getLocale(key: string): string {
     return `header.networkManagement.${key}`;
+  }
+
+  mounted() {
+    if (isNetworkGroup(this.selectedNetwork)) this.activeTab = this.selectedNetwork as keyof Tabs;
   }
 
   isNetworkSelected({ name }: NetworkJson) {

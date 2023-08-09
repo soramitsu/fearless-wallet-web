@@ -56,8 +56,8 @@ const EVM_EXPLORERS_BASE_URLS: Record<string, string> = {
 } as const;
 
 const EXPLORERS_BASE_URLS: Record<string, string> = {
-  'polkadot assethub': 'assethub-polkadot.subscan.io',
-  'kusama assethub': 'assethub-kusama.subscan.io',
+  'polkadot assethub': 'assethub-polkadot',
+  'kusama assethub': 'assethub-kusama',
 } as const;
 const ETHEREUM_ADDRESS_LENGTH = 42;
 const ETHEREUM_ADDRESS_PREFIX = '0x';

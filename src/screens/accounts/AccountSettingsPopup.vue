@@ -109,10 +109,9 @@ export default class AccountSettingsPopup extends Vue {
   }
 
   openSubscan() {
-    const prepUrl =
-      this.substrateExplorerByNetwork !== '' ? this.substrateExplorerByNetwork : `${this.selectedNetwork}.subscan.io`;
+    const prepUrl = this.substrateExplorerByNetwork !== '' ? this.substrateExplorerByNetwork : this.selectedNetwork;
 
-    window.open(`https://${prepUrl}/account/${this.addressByNetwork}`);
+    window.open(`https://${prepUrl}.subscan.io/account/${this.addressByNetwork}`);
   }
 
   openExplorer() {

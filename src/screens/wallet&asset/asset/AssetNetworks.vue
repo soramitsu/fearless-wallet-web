@@ -60,7 +60,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter, Mutation } from 'vuex-class';
+import { Getter } from 'vuex-class';
 import { TokenBalance } from '@extension-base/background/types/types';
 import { NetworkJson } from '@extension-base/types';
 import HistoryItem from './HistoryItem.vue';
@@ -69,9 +69,8 @@ import type { GetAssetPrice, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-
 import { NetworksController } from '@/controllers';
+
 interface TabsOptions {
   label: string;
   tabName: 'Assets' | 'MyAssets';
@@ -83,7 +82,7 @@ interface TabsOptions {
 @Component({
   components: { HistoryItem, AssetRow },
 })
-export default class Networks extends Vue {
+export default class AssetNetworks extends Vue {
   readonly tabsOptions: TabsOptions[] = [
     {
       label: 'assets.networkAssets',

@@ -90,17 +90,11 @@ export default class AccountSettingsPopup extends Vue {
   }
 
   get substrateExplorerByNetwork() {
-    if (EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] !== undefined)
-      return EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork];
-
-    return '';
+    return EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] ?? '';
   }
 
   get evmExplorerByNetwork() {
-    if (EVM_EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] !== undefined)
-      return EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork];
-
-    return '';
+    return EVM_EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] ?? '';
   }
 
   openEvmExplorer() {

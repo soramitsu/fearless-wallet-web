@@ -28,7 +28,7 @@
         <div class="label">{{ $t('accounts.copyAddress') }}</div>
       </div>
 
-      <div class="row" @click="openSubscan">
+      <div class="row" @click="openExplorer">
         <Icon icon="globus" className="icon" />
 
         <div class="label">{{ buttonText }}</div>

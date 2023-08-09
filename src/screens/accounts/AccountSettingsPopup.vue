@@ -46,7 +46,7 @@ import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-
+import { EVM_EXPLORERS_BASE_URLS, EXPLORERS_BASE_URLS } from '@/consts/networks';
 @Component
 export default class AccountSettingsPopup extends Vue {
   @Prop(String) selectedNetwork!: string;
@@ -85,8 +85,39 @@ export default class AccountSettingsPopup extends Vue {
     this.close();
   }
 
+  get lowerCaseSelectedNetwork() {
+    return this.selectedNetwork.toLowerCase();
+  }
+
+  get substrateExplorerByNetwork() {
+    if (EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] !== undefined)
+      return EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork];
+
+    return '';
+  }
+
+  get evmExplorerByNetwork() {
+    if (EVM_EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] !== undefined)
+      return EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork];
+
+    return '';
+  }
+
+  openEvmExplorer() {
+    if (this.evmExplorerByNetwork !== '')
+      window.open(`https://${this.evmExplorerByNetwork}/address/${this.addressByNetwork}`);
+  }
+
   openSubscan() {
-    window.open(`https://${this.selectedNetwork}.subscan.io/account/${this.addressByNetwork}`);
+    const prepUrl =
+      this.substrateExplorerByNetwork !== '' ? this.substrateExplorerByNetwork : `${this.selectedNetwork}.subscan.io`;
+
+    window.open(`https://${prepUrl}/account/${this.addressByNetwork}`);
+  }
+
+  openExplorer() {
+    if (this.evmExplorerByNetwork !== '') return this.openEvmExplorer();
+    else if (this.substrateExplorerByNetwork !== '') this.openSubscan();
 
     this.close();
   }

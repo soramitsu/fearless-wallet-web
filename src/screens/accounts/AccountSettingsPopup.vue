@@ -90,7 +90,7 @@ export default class AccountSettingsPopup extends Vue {
   }
 
   get substrateExplorerByNetwork() {
-    return EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] ?? '';
+    return EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] ?? this.selectedNetwork;
   }
 
   get evmExplorerByNetwork() {
@@ -103,14 +103,12 @@ export default class AccountSettingsPopup extends Vue {
   }
 
   openSubscan() {
-    const prepUrl = this.substrateExplorerByNetwork !== '' ? this.substrateExplorerByNetwork : this.selectedNetwork;
-
-    window.open(`https://${prepUrl}.subscan.io/account/${this.addressByNetwork}`);
+    window.open(`https://${this.substrateExplorerByNetwork}.subscan.io/account/${this.addressByNetwork}`);
   }
 
   openExplorer() {
     if (this.evmExplorerByNetwork !== '') return this.openEvmExplorer();
-    else if (this.substrateExplorerByNetwork !== '') this.openSubscan();
+    else this.openSubscan();
 
     this.close();
   }

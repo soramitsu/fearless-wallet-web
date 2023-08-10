@@ -1,7 +1,3 @@
-// Copyright 2019-2022 @subwallet/extension-base
-// SPDX-License-Identifier: Apache-2.0
-
-// Stateless service handle runtime event on background
 import EventEmitter from 'eventemitter3';
 import { EventRegistry, EventItem, EventType } from './types';
 

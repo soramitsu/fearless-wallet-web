@@ -110,7 +110,7 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
-import { ALL_NETWORKS, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS } from '@/consts/networks';
 
 import { googleManage } from '@/controllers/googleController';
 import {
@@ -1346,13 +1346,7 @@ export default class Extension extends FWExtensionBase {
       case 'pri(networkMap.upsert)':
         return this.upsertNetworkMap(request as NetworkJson);
 
-      case 'pri(networkMap.enable.type)':
-        return this.enableNetworkType(request as string);
-
       case 'pri(networkMap.toggle.favorite)':
-        return this.toggleNetworkFavorite(request as string);
-
-      case 'pri(networkMap.setNetworks)':
         return this.toggleNetworkFavorite(request as string);
 
       case 'pri(networkMap.getSubscription)':

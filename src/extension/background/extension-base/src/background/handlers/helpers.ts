@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { assert } from '@polkadot/util';
 import { canDerive } from '@extension-base/utils/utils';
-import type { NetworkJson } from '@extension-base/types';
 import type { InjectedAccount } from '@polkadot/extension-inject/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 

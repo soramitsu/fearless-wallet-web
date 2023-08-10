@@ -124,7 +124,7 @@ export class FWCron {
         }
       },
     });
-
+    //TODO add support for Firefox because it lack of support for the "navigator.connection"
     navigator.connection.removeEventListener('change', () => {
       this.onConnectionChange();
     });

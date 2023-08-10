@@ -35,6 +35,7 @@ import { SignerPayloadRaw } from '@polkadot/types/types';
 import { JsonRpcProvider } from 'ethers';
 
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
+import { EventService } from '../../services/event-service';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -199,6 +200,7 @@ export default class State {
     authorizeAccountsCount: 0,
     dAppName: '',
   };
+  public eventService = new EventService();
 
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
@@ -1168,6 +1170,7 @@ export default class State {
   }
 
   public async init() {
+    await this.eventService.waitCryptoReady;
     await this.prepNetworkJson();
 
     this.initNetworkStates();

@@ -6,6 +6,7 @@
           class="balance"
           :balance="summaryTransferableBalance"
           :changeWalletBalance="changeWalletBalance"
+          :staticWidth="false"
           @click.native="$emit('openFiatsPopup', true)"
         />
 

@@ -854,7 +854,7 @@ export default class SwapForm extends Vue {
   color: $default-white;
 
   .receive-input {
-    margin: 7px 0 32px;
+    margin: 7px 0 14px;
   }
 
   .swap-icon {
@@ -869,7 +869,7 @@ export default class SwapForm extends Vue {
     border: 1px solid $secondary-background-color;
     opacity: 1;
     position: relative;
-    top: -110px;
+    top: -92px;
     cursor: pointer;
 
     &:hover {

@@ -7,8 +7,6 @@ import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import { SORA_CARD_VISIBILITY } from '@/consts/global';
 
-const AssetNetworks = () => import('@/screens/wallet&asset/asset/AssetNetworks.vue');
-const AssetHistory = () => import('@/screens/wallet&asset/asset/AssetHistory.vue');
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Staking = () => import('@/screens/staking/Staking.vue');
 const History = () => import('@/screens/history/History.vue');
@@ -20,7 +18,8 @@ const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 const Export = () => import('@/screens/accounts/Export.vue');
 
-const Networks = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/Networks.vue');
+const AssetNetworks = () =>
+  import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetNetworks.vue');
 const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetHistory.vue');
 const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');

@@ -1,14 +1,14 @@
-import { State } from './state';
-import type { GetterTree } from 'vuex';
-import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
   AuthUrlInfo,
-  Features,
   MetadataRequest,
   SigningRequest,
-} from '@/extension/background/extension-base/src/background/types/types';
+} from '@extension-base/background/types/types';
+import { State } from './state';
+import type { GetterTree } from 'vuex';
+import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import { Features } from '@/store/extension/types';
 
 export enum GettersTypes {
   authRequests = 'authRequests',

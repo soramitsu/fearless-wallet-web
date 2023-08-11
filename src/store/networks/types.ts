@@ -1,4 +1,4 @@
-import { NetworkJson } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { HexString } from '@polkadot/util/types';
 import type {

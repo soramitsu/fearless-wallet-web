@@ -5,12 +5,12 @@ import jwtDecode from 'jwt-decode';
 import { FPNumber } from '@sora-substrate/util';
 import type { JwtPayload } from 'jwt-decode';
 import type { Status } from '@/consts/soraCard';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { IS_PRODUCTION } from '@/consts/global';
 import { soraCardController } from '@/controllers';
 import { VerificationStatus, KycStatus } from '@/consts/soraCard';
 import { subscribeSoraCardToken } from '@/extension/messaging';
 import { SORA_NETWORK_NAME } from '@/consts/networks';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 type XorRestPrice = {
   euroToPay: string;

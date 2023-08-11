@@ -62,6 +62,7 @@ import type ValidatedInput from '@/components/ValidatedInput.vue';
 import type Input from '@/components/Input.vue';
 import type { AsyncFn, Fn } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { validatePhoneNumber } from '@/helpers';
 import { RESEND_INTERVAL, OTP_CODE_LENGTH, VerificationStatus, StepsKyc } from '@/consts/soraCard';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
@@ -71,7 +72,6 @@ import { soraCardController } from '@/controllers';
 import { MutationTypes as SoraCardMutationTypes } from '@/store/soraCard/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SORA_UTILITY_ASSET, SORA_NETWORK_NAME } from '@/consts/networks';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { calculateXOREuroBalance, isValidEuroBalanceXor } from '@/util/soraCard';
 import { getXORCurrency } from '@/helpers/currencies';
 

@@ -26,12 +26,12 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
+import { AccountJson } from '@extension-base/background/types/types';
 import type { Fn } from '@/interfaces/common';
 import { Components } from '@/router/routes';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { forgetAccount, initGoogleAuth } from '@/extension/messaging';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import { beaconController } from '@/controllers';
 
 @Component

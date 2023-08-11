@@ -1,11 +1,12 @@
+import { AccountJson, TokenBalance } from '@extension-base/background/types/types';
 import type { GetterTree } from 'vuex';
 import type { SelectedWallet, WalletInfo, GetAutoSelectNodesValueByNetwork, GetShowWarningNetworks } from './types';
 import type { State } from './state';
 import type { FiatJson } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import store from '@/store';
-import { AccountJson, Features, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { ALL_NETWORKS } from '@/consts/networks';
+import { Features } from '@/store/extension/types';
 
 export enum GettersTypes {
   getSelectedWallet = 'getSelectedWallet',

@@ -21,8 +21,8 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Action } from 'vuex-class';
+import { AuthUrlInfo } from '@extension-base/background/types/types';
 import type { AsyncFn, CustomEvent } from '@/interfaces';
-import { AuthUrlInfo } from '@/extension/background/extension-base/src/background/types/types';
 import { stripUrl } from '@/extension/background/extension-base/src/background/handlers/helpers';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 

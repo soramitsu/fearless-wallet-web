@@ -62,8 +62,8 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { TokenBalance } from '@extension-base/background/types/types';
-import { NetworkJson } from '@extension-base/types';
 import HistoryItem from './HistoryItem.vue';
+import type { NetworkJson } from '@extension-base/types';
 import type { GetHistory } from '@/interfaces';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';

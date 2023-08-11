@@ -62,7 +62,15 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch, Ref } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { NetworkJson } from '@extension-base/types';
+import {
+  AccountJson,
+  RequestCheckTransfer,
+  RequestCheckCrossChain,
+  RequestTransfer,
+  RequestCrossChain,
+  TokenBalance,
+} from '@extension-base/background/types/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
 import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
@@ -73,14 +81,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import {
-  AccountJson,
-  RequestCheckTransfer,
-  RequestCheckCrossChain,
-  RequestTransfer,
-  RequestCrossChain,
-  TokenBalance,
-} from '@/extension/background/extension-base/src/background/types/types';
 import { IS_EXTENSION } from '@/consts/global';
 
 @Component({

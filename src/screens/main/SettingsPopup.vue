@@ -44,7 +44,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
-import { Features } from '@/extension/background/extension-base/src/background/types/types';
+import { Features } from '@/store/extension/types';
 
 type SettingsItemType = 'Accounts';
 

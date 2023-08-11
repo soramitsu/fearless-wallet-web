@@ -56,10 +56,11 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { NetworkJson } from '@extension-base/types';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
+import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
@@ -72,7 +73,6 @@ import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NETWORK_GROUP } from '@/consts/networks';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { isNetworkGroup } from '@/helpers/common/index';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';

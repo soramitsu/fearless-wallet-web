@@ -1,13 +1,13 @@
 import axios from 'axios';
-import type { ActionTree, ActionContext } from 'vuex';
-import type { State } from '@/store/extension/state';
 import {
   AuthorizeRequest,
   ApproveAuthRequest,
   MetadataRequest,
   SigningRequest,
-  Features,
-} from '@/extension/background/extension-base/src/background/types/types';
+} from '@extension-base/background/types/types';
+import type { ActionTree, ActionContext } from 'vuex';
+import type { State } from '@/store/extension/state';
+import { Features } from '@/store/extension/types';
 import { Mutations, MutationTypes } from '@/store/extension/mutations';
 import {
   subscribeAuthorizeRequests,

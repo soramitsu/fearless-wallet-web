@@ -103,16 +103,16 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
-import { NetworkJson } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet } from '@/store';
 import type { AsyncFn } from '@/interfaces';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SORA_NETWORK_NAME } from '@/consts/networks';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
 import { soraCardController } from '@/controllers';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { IS_EXTENSION } from '@/consts/global';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { calculateXorRestPrice, calculateXOREuroBalance, isValidEuroBalanceXor } from '@/util/soraCard';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';

@@ -53,9 +53,9 @@
 <script lang="ts">
 import { Component, Vue, Ref } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
+import { AuthUrlInfo } from '@extension-base/background/types/types';
 import type { AsyncFn, Fn } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
-import { AuthUrlInfo } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';

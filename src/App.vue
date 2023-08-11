@@ -9,10 +9,10 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
+import { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import { ALL_NETWORKS } from './consts/networks';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
-import { AccountJson, BalanceJson, PriceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';

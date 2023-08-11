@@ -16,7 +16,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { ActiveTabAuthorizeStatus } from '@/extension/background/extension-base/src/background/types/types';
+import { ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
 
 @Component
 export default class ConnectionPopup extends Vue {

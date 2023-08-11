@@ -1,4 +1,4 @@
-import { NetworkJson } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { AssetsPrice, FiatJson, GetHistory } from '@/interfaces';
 import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetActiveNodesByNetwork } from './types';
 import type { GetterTree } from 'vuex';

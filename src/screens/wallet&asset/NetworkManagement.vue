@@ -33,8 +33,8 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Action, Getter, Mutation } from 'vuex-class';
 import { STab, STabs } from '@soramitsu/soramitsu-js-ui';
-import { NetworkJson } from '@extension-base/types';
 import NetworkItem from './NetworkItem.vue';
+import type { NetworkJson } from '@extension-base/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as NetworksActionsTypes } from '@/store/networks/actions';

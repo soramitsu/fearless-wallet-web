@@ -75,7 +75,6 @@
   "devDependencies": {
     "@open-web3/orml-types": "^2.0.1",
     "@polkadot/types": "^10.9.1",
-    "@rushstack/eslint-patch": "^1.1.4",
     "@types/chrome": "^0.0.200",
     "@types/electron-devtools-installer": "^2.2.2",
     "@types/file-saver": "^2.0.5",
@@ -108,7 +107,7 @@
     "electron-debug": "^3.2.0",
     "electron-devtools-installer": "^3.2.0",
     "env-cmd": "^10.1.0",
-    "eslint": "^7.29.0",
+    "eslint": "^8.46.0",
     "eslint-plugin-import": "^2.25.2",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.0.0",
@@ -143,6 +142,7 @@
     "@polkadot/x-fetch": "^12.3.2"
   },
   "license": "Apache-2.0",
+  "packageManager": "yarn@3.4.1",
   "lint-staged": {
     "*.{js,jsx,vue,ts,tsx}": [
       "yarn lint:precommit",

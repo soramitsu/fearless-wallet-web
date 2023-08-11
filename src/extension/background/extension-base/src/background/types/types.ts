@@ -102,6 +102,10 @@ export interface MetadataRequest {
   url: string;
 }
 
+export interface Features {
+  showSoraCard?: boolean;
+}
+
 export interface SigningRequest {
   account: AccountJson;
   id: string;

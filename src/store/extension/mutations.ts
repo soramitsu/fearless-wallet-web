@@ -4,6 +4,7 @@ import type { State } from './state';
 import {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
+  Features,
   MetadataRequest,
   ResponseAuthorizeList,
   SigningRequest,
@@ -15,6 +16,7 @@ export enum MutationTypes {
   DELETE_REQUEST = 'DELETE_REQUEST',
   SET_REQUEST = 'SET_REQUEST',
   SET_TAB_STATUS = 'SET_TAB_STATUS',
+  SET_FEATURES = 'SET_FEATURES',
 }
 
 interface SetPayload {
@@ -27,7 +29,8 @@ export type Mutations = {
   [MutationTypes.DELETE_AUTHLIST_ITEM](state: State, payload: string): void;
   [MutationTypes.DELETE_REQUEST](state: State, payload: keyof State['requests']): void;
   [MutationTypes.SET_REQUEST](state: State, payload: SetPayload): void;
-  [MutationTypes.SET_TAB_STATUS](state: State, props: ActiveTabAuthorizeStatus): void;
+  [MutationTypes.SET_TAB_STATUS](state: State, payload: ActiveTabAuthorizeStatus): void;
+  [MutationTypes.SET_FEATURES](state: State, features: Features): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -61,6 +64,10 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_TAB_STATUS](state, payload) {
     state.tabStatus = payload;
+  },
+
+  [MutationTypes.SET_FEATURES](state, features) {
+    // state.features = features;
   },
 };
 

@@ -83,6 +83,7 @@ import {
   SORA_XOR_ASSET_ID,
 } from '@/consts/networks';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
+import { IS_PRODUCTION } from '@/consts/global';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -359,12 +360,13 @@ export default class State {
   approvePolkaswap = async (authorizedAccounts: string[]): Promise<void> => {
     const { POLKASWAP } = URLS;
     const stripedUrl = stripUrl(POLKASWAP);
+    const origin = IS_PRODUCTION ? 'Polkaswap' : 'SubWallet Connect';
 
     this.authUrls[stripedUrl] = {
       authorizedAccounts,
       count: 0,
       id: getId(),
-      origin: 'SubWallet Connect',
+      origin,
       url: POLKASWAP,
       isAllowed: true,
       isAllowedMap: {},

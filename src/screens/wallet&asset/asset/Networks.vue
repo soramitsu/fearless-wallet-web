@@ -23,14 +23,14 @@
         <Scroll>
           <div class="networks" :class="historyContainerClasses">
             <AssetRow
-              v-for="({ name, icon }, index) in sortedNetoworks"
+              v-for="({ name, icon }, index) in sortedNetworks"
               :key="index"
               :text="name"
               :value="getBalanceInNetworkString(name)"
               :price="getFiatInNetworkString(name)"
               :icon="icon"
               :isIconPrepend="true"
-              @selectHistory="$emit('selectNetworkHistory', name)"
+              @selectHistory="selectNetworkHistory(name)"
             />
           </div>
         </Scroll>
@@ -70,6 +70,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { Components } from '@/router/routes';
 
 import { NetworksController } from '@/controllers';
 interface TabsOptions {
@@ -106,9 +107,11 @@ export default class Networks extends Vue {
     { name: this.$t('assets.filters.popularity'), value: 'popularity' },
     { name: this.$t('assets.filters.name'), value: 'name' },
   ];
+
   filterValue = 'fiat';
   activeTabName = 'Assets';
   showSelectNetworkPopup = false;
+
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -132,7 +135,7 @@ export default class Networks extends Vue {
     return baseFilter;
   }
 
-  get sortedNetoworks() {
+  get sortedNetworks() {
     return this.filteredNetworks.sort((a, b) => {
       if (this.filterValue === 'fiat') {
         const value1 = a.transferable ? +a.transferable : 0;
@@ -152,9 +155,6 @@ export default class Networks extends Vue {
 
       return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
     });
-  }
-  get selectedNetwork() {
-    return this.$route.params.selectedNetwork;
   }
 
   get historyContainerClasses() {
@@ -176,15 +176,17 @@ export default class Networks extends Vue {
     return price ? +price : 0;
   }
 
-  get isMainNetwork() {
-    return !!this.currency.balances?.find(
-      ({ name, isUtility, isNative }) =>
-        name.toLowerCase() === this.selectedNetwork?.toLowerCase() && (isUtility || isNative)
-    );
-  }
-
   get isEmptyHistory() {
     return false;
+  }
+
+  selectNetworkHistory(name: string) {
+    this.$router.push({
+      name: Components.AssetHistory,
+      params: {
+        selectedNetwork: name.toLowerCase(),
+      },
+    });
   }
 
   openTab(name: string) {

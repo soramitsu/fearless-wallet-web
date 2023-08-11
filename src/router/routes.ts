@@ -5,7 +5,6 @@ import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
-import { SORA_CARD_VISIBILITY } from '@/consts/global';
 
 const Networks = () => import('@/screens/wallet&asset/asset/Networks.vue');
 const AssetHistory = () => import('@/screens/wallet&asset/asset/AssetHistory.vue');
@@ -64,6 +63,7 @@ const haveSelectedWallet = () => {
 const haveAuthRequests = () => store.getters.authList.length;
 const haveSignRequests = () => store.getters.signList.length;
 const haveMetaRequests = () => store.getters.metaRequests.length;
+const showSoraCard = () => store.getters.features.showSoraCard;
 
 const routes: Array<RouteConfig> = [
   {
@@ -120,7 +120,7 @@ const routes: Array<RouteConfig> = [
     name: Components.SoraCard,
     component: SoraCard,
     beforeEnter: (to, from, next) => {
-      if (SORA_CARD_VISIBILITY) next();
+      if (showSoraCard()) next();
       else next({ name: Components.Wallet });
     },
   },

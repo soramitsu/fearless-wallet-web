@@ -5,6 +5,7 @@ import {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
   AuthUrlInfo,
+  Features,
   MetadataRequest,
   SigningRequest,
 } from '@/extension/background/extension-base/src/background/types/types';
@@ -16,6 +17,7 @@ export enum GettersTypes {
   signRequestPayload = 'signRequestPayload',
   signList = 'signList',
   tabStatus = 'tabStatus',
+  features = 'features',
 }
 
 export type Getters = {
@@ -59,6 +61,10 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.tabStatus]({ tabStatus }): ActiveTabAuthorizeStatus | null {
     return tabStatus;
+  },
+
+  [GettersTypes.features]({ features }): Features {
+    return features;
   },
 };
 

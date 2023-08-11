@@ -48,6 +48,7 @@ const MAIN_NETWORKS: Record<string, string> = {
   wnd: 'Westend',
   roc: 'Rococo',
 };
+
 const EVM_EXPLORERS_BASE_URLS: Record<string, string> = {
   ethereum: 'etherscan.io',
   'ethereum goerli': 'goerli.etherscan.io',
@@ -59,6 +60,7 @@ const EXPLORERS_BASE_URLS: Record<string, string> = {
   'polkadot assethub': 'assethub-polkadot',
   'kusama assethub': 'assethub-kusama',
 } as const;
+
 const ETHEREUM_ADDRESS_LENGTH = 42;
 const ETHEREUM_ADDRESS_PREFIX = '0x';
 const AUTO_CONNECT_MS = 6000;

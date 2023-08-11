@@ -31,6 +31,7 @@
         </div>
       </div>
     </ContentForm>
+
     <BalanceDetailsPopup
       v-if="showBalanceDetailsPopup"
       :network="pickedNetwork"
@@ -73,23 +74,29 @@ export default class AssetInfo extends Vue {
 
   @Prop(Object) price!: AssetPrice;
   @Prop(Object) currency!: TokenBalance;
-  @Prop(Boolean) showShimmers!: boolean;
-
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
+  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+
+  get selectedAssetNetwork() {
+    return this.$route.params.selectedNetwork;
+  }
 
   get pickedNetwork() {
-    if (this.selectedAssetNetwork !== '') return this.selectedAssetNetwork;
+    return this.selectedAssetNetwork ?? this.selectedNetwork;
+  }
 
-    return this.selectedNetwork;
+  get currentNetwork() {
+    return this.currency.balances?.find(({ name }) => name.toLowerCase() === this.pickedNetwork?.toLowerCase());
+  }
+
+  get showShimmers() {
+    return !this.isOnline || !this.balances.length || this.currentNetwork?.state === 'pending';
   }
 
   get icon() {
     return this.currency.icon;
-  }
-
-  get selectedAssetNetwork() {
-    return this.$route.params.selectedNetwork;
   }
 
   get showSettingsPopup() {
@@ -118,7 +125,7 @@ export default class AssetInfo extends Vue {
   }
 
   get transferableAssetBalance() {
-    return +getSummaryTransferableBalanceFilteredByActiveNetworks(this.currency, this.selectedNetwork);
+    return +getSummaryTransferableBalanceFilteredByActiveNetworks(this.currency, this.pickedNetwork);
   }
 
   get lockedBalanceString() {
@@ -191,9 +198,11 @@ export default class AssetInfo extends Vue {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+
     &:hover {
       cursor: pointer;
     }
+
     .asset__price {
       display: flex;
       flex-flow: row nowrap;
@@ -207,6 +216,7 @@ export default class AssetInfo extends Vue {
         border-right: solid 1px transparent;
         padding: 4px;
       }
+
       .asset__price-details {
         width: 24px;
         height: 24px;
@@ -221,6 +231,7 @@ export default class AssetInfo extends Vue {
         flex-flow: row nowrap;
         gap: 4px;
       }
+
       & > :not(:last-child) {
         border-right: solid 1px $gray-color;
         line-height: 1px;
@@ -230,6 +241,7 @@ export default class AssetInfo extends Vue {
         padding-left: 0px;
       }
     }
+
     .asset__balance {
       overflow: hidden;
       text-overflow: ellipsis;
@@ -247,9 +259,11 @@ export default class AssetInfo extends Vue {
       display: flex;
       gap: 6px;
       align-items: center;
+
       .asset__locked-title {
         color: $default-white;
       }
+
       .details-icon {
         width: 14px;
         height: 14px;

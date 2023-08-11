@@ -210,7 +210,7 @@ export default class SoraCardPage extends Vue {
     await this.getUserStatus();
 
     if (this.currentStatus === VerificationStatus.Rejected && this.wantsToPassKycAgain && this.hasFreeAttempts) {
-      if (this.isExtension) this.openPolkaswap(false);
+      if (this.isExtension) this.openPolkaswap();
       else this.step = StepsKyc.KycView;
 
       return;
@@ -223,7 +223,7 @@ export default class SoraCardPage extends Vue {
     }
 
     if (this.hasTokens) {
-      if (this.isExtension) this.openPolkaswap(false);
+      if (this.isExtension) this.openPolkaswap();
       else this.step = StepsKyc.KycView;
 
       return;
@@ -326,29 +326,27 @@ export default class SoraCardPage extends Vue {
     this.showX1Form = false;
   }
 
-  async openPolkaswap(check = true) {
+  async openPolkaswap() {
     const { POLKASWAP } = URLS;
     const { address: selectedAddress, name } = this.selectedWallet;
 
-    if (check) {
-      const stripPolkaswap = stripUrl(POLKASWAP);
-      const polkaswapAuth = this.authlist[stripPolkaswap];
+    const stripPolkaswap = stripUrl(POLKASWAP);
+    const polkaswapAuth = this.authlist[stripPolkaswap];
 
-      // polkaswap authorized
-      if (polkaswapAuth) {
-        const { authorizedAccounts } = polkaswapAuth;
+    // polkaswap authorized
+    if (polkaswapAuth) {
+      const { authorizedAccounts } = polkaswapAuth;
 
-        // but no current account
-        if (!authorizedAccounts.includes(selectedAddress)) {
-          const activeAccounts = [
-            selectedAddress,
-            ...this.wallets.filter(({ address }) => authorizedAccounts.includes(address)).map(({ address }) => address),
-          ];
+      // but no current account
+      if (!authorizedAccounts.includes(selectedAddress)) {
+        const activeAccounts = [
+          selectedAddress,
+          ...this.wallets.filter(({ address }) => authorizedAccounts.includes(address)).map(({ address }) => address),
+        ];
 
-          await updateAuthorization(activeAccounts, stripPolkaswap);
-        }
-      } else approvePolkaswapAuthRequest([selectedAddress]);
-    }
+        await updateAuthorization(activeAccounts, stripPolkaswap);
+      }
+    } else approvePolkaswapAuthRequest([selectedAddress]);
 
     window.open(`${POLKASWAP}/#/card?fearless=${selectedAddress}&name=${name}`);
   }

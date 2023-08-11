@@ -1,18 +1,11 @@
 import type { GetterTree } from 'vuex';
-import type {
-  SelectedWallet,
-  WalletInfo,
-  GetAutoSelectNodesValueByNetwork,
-  GetShowWarningNetworks,
-  AssetTipDataProps,
-} from './types';
+import type { SelectedWallet, WalletInfo, GetAutoSelectNodesValueByNetwork, GetShowWarningNetworks } from './types';
 import type { State } from './state';
 import type { FiatJson } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import store from '@/store';
-import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { AccountJson, Features, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { ALL_NETWORKS } from '@/consts/networks';
-import { SORA_CARD_VISIBILITY } from '@/consts/global';
 
 export enum GettersTypes {
   getSelectedWallet = 'getSelectedWallet',
@@ -148,8 +141,10 @@ const getters: GetterTree<State, State> & Getters = {
       return isCustomSort[address] ?? false;
     },
 
-  [GettersTypes.showSoraCardBanner]({ showSoraCardBanner }): boolean {
-    return SORA_CARD_VISIBILITY ?? showSoraCardBanner;
+  [GettersTypes.showSoraCardBanner]({ showSoraCardBanner }, getters): boolean {
+    const { showSoraCard } = getters?.features as Features;
+
+    return !!showSoraCard && showSoraCardBanner;
   },
 };
 

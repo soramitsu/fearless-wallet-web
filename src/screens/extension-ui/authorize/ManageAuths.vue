@@ -1,8 +1,8 @@
 <template>
   <AboveForm
     :header="header"
+    :fullScreen="true"
     :showBackIcon="showUpdateAuths"
-    :blur="true"
     :closeHandler="handlerClose"
     :handlerBack="updateUrl.bind(null, '')"
   >

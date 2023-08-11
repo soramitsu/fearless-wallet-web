@@ -4,6 +4,7 @@ import {
   AuthUrlInfo,
   MetadataRequest,
   SigningRequest,
+  Features,
 } from '@/extension/background/extension-base/src/background/types/types';
 
 export type State = {
@@ -14,6 +15,7 @@ export type State = {
   };
   authList: Record<string, AuthUrlInfo>;
   tabStatus: ActiveTabAuthorizeStatus | null;
+  features: Features;
 };
 
 const state = (): State => {
@@ -25,6 +27,9 @@ const state = (): State => {
     },
     authList: {},
     tabStatus: null,
+    features: {
+      showSoraCard: true,
+    },
   };
 };
 

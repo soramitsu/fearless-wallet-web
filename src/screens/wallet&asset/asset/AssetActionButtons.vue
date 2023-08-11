@@ -37,12 +37,22 @@
       v-if="isNeedPopupButton"
       class="activity-button activity-button--settings"
       iconName="three-dots-vertical"
-      @click="togglePopupButton"
+      @click="$emit('togglePopupButton')"
     />
   </div>
 </template>
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import { NetworkJson } from '@extension-base/types';
+import { getNativeAssetName } from '@extension-base/background/utils/utils';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { isSora } from '@/helpers';
+import { SelectedWallet } from '@/store';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { Components } from '@/router/routes';
+
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
 type ControlButtons = {
@@ -52,13 +62,9 @@ type ControlButtons = {
   formName: ShowField;
   isActive: boolean;
 };
+
 @Component
-export default class Asset extends Vue {
-  @Prop(Function) togglePopupButton!: () => void;
-  @Prop(Function) openSoraSwap!: () => void;
-  @Prop(Boolean) showBuyButton!: boolean;
-  @Prop(Boolean) showCrossChainButton!: boolean;
-  @Prop(Boolean) showSwapButton!: boolean;
+export default class AssetActionButtons extends Vue {
   readonly basicButtons: ControlButtons[] = [
     {
       class: 'activity-button',
@@ -75,14 +81,55 @@ export default class Asset extends Vue {
       isActive: true,
     },
   ];
+
+  @Prop(Object) currency!: TokenBalance;
+  @Prop(Boolean) showBuyButton!: boolean;
+  @Prop(String) assetId!: string;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+
+  get selectedNetwork() {
+    return this.$route.params.selectedNetwork ?? '';
+  }
+
+  get selectedAsset() {
+    return this.currency?.symbol?.toLowerCase() ?? '';
+  }
+
+  get showSwapButton() {
+    return isSora(this.selectedNetwork) && !this.selectedWallet.isMobile;
+  }
+
   get isNeedPopupButton() {
     return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;
   }
+
+  get showCrossChainButton() {
+    const network = this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase());
+
+    const asset = getNativeAssetName(this.selectedAsset);
+
+    if (!network || network.xcm === undefined) return false;
+
+    return network.xcm.availableAssets.some((assetName) => assetName.toLowerCase() === asset);
+  }
+
   onToggleVisible(name: string) {
     this.$emit('toggleVisible', name);
   }
+
+  openSoraSwap() {
+    this.$router.push({
+      name: Components.SoraSwap,
+      params: {
+        assetId: this.assetId,
+        reset: '',
+      },
+    });
+  }
 }
 </script>
+
 <style lang="scss" scoped>
 .activity {
   display: flex;

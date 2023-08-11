@@ -2,8 +2,8 @@
   <AboveForm :fullScreen="true" :closeHandler="closeForm">
     <template v-slot:header>
       <div class="header-content">
-        <div :class="classesBackIcon">
-          <Icon v-show="showBackIcon" icon="chevron-left" class="img" @click="back" />
+        <div :class="classesBackIcon" @click="back">
+          <Icon v-show="showBackIcon" icon="chevron-left" class="img" />
         </div>
 
         <div class="header">

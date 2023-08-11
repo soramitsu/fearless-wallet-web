@@ -633,7 +633,7 @@ export default class TransferForm extends Vue {
 
   toggleSelectedNetwork(value: string) {
     if (this.showSelectedAssetPopup) {
-      this.syncedAssetId = value.toLowerCase();
+      this.syncedAssetId = value;
 
       this.toggleAssetPopupVisibility();
     } else if (this.showSelectNetworkPopup) {

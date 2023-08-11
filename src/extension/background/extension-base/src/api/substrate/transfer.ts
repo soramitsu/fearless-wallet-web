@@ -16,11 +16,11 @@ export async function estimateFee(
   to: string,
   value: string | undefined,
   tokenBalance: TokenBalance
-): Promise<number> {
+): Promise<string> {
   const apiProps = state.getSubstrateApiMap[networkKey];
   const api = apiProps.api;
 
-  if (!api) return 0;
+  if (!api) return '0';
 
   await api.isReadyOrError;
 
@@ -31,18 +31,18 @@ export async function estimateFee(
     networkKey,
   });
 
-  if (!extrinsic) return 0;
+  if (!extrinsic) return '0';
 
   const { precision: utilityPrecision } = getUtilityProps(networkKey);
 
   try {
     const paymentInfo = await extrinsic.paymentInfo(to);
-    const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
+    const partialFee = paymentInfo ? +paymentInfo.partialFee : '0';
     const result = FPNumber.fromCodecValue(partialFee, utilityPrecision);
 
-    return result.toNumber();
+    return result.toString();
   } catch {
-    return 0;
+    return '0';
   }
 }
 

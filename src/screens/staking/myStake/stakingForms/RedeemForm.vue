@@ -5,10 +5,14 @@
     <InfoRow
       text="assets.networkFee"
       borderType="default"
+      icon="info"
       :value="`${fee} ${asset}`"
       :price="feeValueString"
       :hideLastBorder="false"
+      :iconClasses="['network-fee']"
     />
+
+    <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
   </div>
 </template>
 

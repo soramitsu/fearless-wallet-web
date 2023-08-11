@@ -14,7 +14,7 @@
       </div>
     </header>
 
-    <ContentForm :height="390">
+    <ContentForm :height="375">
       <div class="content">
         <StakingSettings
           :activeTabName="activeTabName"
@@ -59,7 +59,7 @@ import { Getter } from 'vuex-class';
 import type { StakingTab } from '@/interfaces/common';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
-import { getShimmersVisibility } from '@/helpers/wallets';
+import { getShimmersVisibility } from '@/helpers/shimmers';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import StakingSettings from '@/screens/staking/StakingSettings.vue';

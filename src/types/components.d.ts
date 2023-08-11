@@ -4,6 +4,7 @@ declare module '@vue/runtime-dom' {
     Loading: typeof import('@/components/Loading.vue')['Loading'];
     AboveForm: typeof import('@/components/AboveForm.vue')['AboveForm'];
     Alert: typeof import('@/components/Alert.vue')['Alert'];
+    AssetIcon: typeof import('@/components/AssetIcon.vue')['AssetIcon'];
     BorderButton: typeof import('@/components/BorderButton.vue')['BorderButton'];
     Button: typeof import('@/components/Button.vue')['Button'];
     Checkbox: typeof import('@/components/Checkbox.vue')['Checkbox'];
@@ -22,6 +23,7 @@ declare module '@vue/runtime-dom' {
     InfoRow: typeof import('@/components/InfoRow.vue')['InfoRow'];
     Input: typeof import('@/components/Input.vue')['Input'];
     Lazy: typeof import('@/components/Lazy.vue')['Lazy'];
+    Link: typeof import('@/components/Link.vue')['Link'];
     Loader: typeof import('@/components/Loader.vue')['Loader'];
     Loading: typeof import('@/components/Loading.vue')['Loading'];
     Logo: typeof import('@/components/Logo.vue')['Logo'];

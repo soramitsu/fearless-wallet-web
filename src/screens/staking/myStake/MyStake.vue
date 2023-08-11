@@ -1,115 +1,88 @@
 <template>
-  <div class="my-stake">
-    <div class="header">
-      <div class="left-part">
-        <CircleButton backgroundColor="light-black" iconName="chevron-left" @click.stop="backToStaking" />
+  <AboveForm :fullScreen="true" :header="network" :closeHandler="closeStake" :handlerBack="closeStake">
+    <div class="my-stake">
+      <div class="action-buttons">
+        <BorderButton
+          class="action-button"
+          text="staking.stakeMore"
+          iconName="stake"
+          @click="toggleVisible('showStakingForm', true)"
+        />
 
-        <div class="network">
-          {{ network }}
+        <BorderButton
+          class="action-button"
+          text="staking.unstake"
+          iconName="unstake"
+          @click="toggleVisible('showUnbondForm', true)"
+        />
+
+        <BorderButton
+          class="action-button"
+          text="staking.redeem"
+          iconName="redeem"
+          @click="toggleVisible('showRedeemForm', true)"
+        />
+
+        <div class="menu">
+          <Dropdown :options="actionOptions" :handler="openForm" type="dots" />
         </div>
       </div>
 
-      <CircleButton
-        :ref="dotsVerticalRef"
-        size="big"
-        iconName="dots-vertical"
-        backgroundColor="none"
-        backgroundColorHover="light-black"
-        @click="openAccountSettingsPopup(network)"
+      <ContentForm :height="450">
+        <Scroll>
+          <div class="content">
+            <MyStakeSettings :activeTabName="activeTabName" @update:activeTabName="updateActiveTabName" />
+
+            <About
+              v-if="isAbout"
+              :stakingCurrency="stakingCurrency"
+              :rewardedCurrency="rewardedCurrency"
+              :stakingAmount="stakingAmount"
+              :rewardedAmount="rewardedAmount"
+              :unstakingAmount="unstakingAmount"
+              :redeemableAmount="redeemableAmount"
+            />
+
+            <Alerts v-else-if="isAlerts" :alerts="alerts" />
+
+            <History v-else-if="isHistory" :history="history" />
+          </div>
+        </Scroll>
+      </ContentForm>
+
+      <StakingManagement
+        v-if="showStakingManagement"
+        :stakingCurrency="stakingCurrency"
+        :rewardedCurrency="rewardedCurrency"
+        :type="type"
+        :network="network"
+        @closeForm="closeStakingManagement"
+      />
+
+      <YourValidatorsManagement
+        v-if="showYourValidatorsForm"
+        :stakingCurrency="stakingCurrency"
+        @closeForm="toggleVisible('showYourValidatorsForm', false)"
+      />
+
+      <ControllerAccount
+        v-if="showControllerAccountForm"
+        :network="network"
+        @closeForm="toggleVisible('showControllerAccountForm', false)"
+      />
+
+      <PendingRewardForm
+        v-if="showPendingRewardForm"
+        :stakingCurrency="stakingCurrency"
+        :rewardedCurrency="rewardedCurrency"
+        @closeForm="toggleVisible('showPendingRewardForm', false)"
       />
     </div>
-
-    <div class="activity">
-      <BorderButton
-        class="activity-button"
-        text="staking.stakeMore"
-        iconName="stake"
-        @click="toggleVisible('showStakingForm', true)"
-      />
-
-      <BorderButton
-        class="activity-button"
-        text="staking.unstake"
-        iconName="unstake"
-        @click="toggleVisible('showUnstakingForm', true)"
-      />
-
-      <BorderButton
-        class="activity-button"
-        text="staking.redeem"
-        iconName="redeem"
-        @click="toggleVisible('showRedeemForm', true)"
-      />
-
-      <!-- TEST -->
-      <BorderButton class="activity-button" text="validators" @click="toggleVisible('showYourValidatorsForm', true)" />
-
-      <BorderButton
-        class="activity-button"
-        text="controllers"
-        @click="toggleVisible('showControllerAccountForm', true)"
-      />
-
-      <BorderButton class="activity-button" text="rebond" @click="toggleVisible('showRebondForm', true)" />
-
-      <BorderButton class="activity-button" text="rewards" @click="toggleVisible('showPendingRewardForm', true)" />
-      <!-- TEST -->
-    </div>
-
-    <ContentForm :height="329">
-      <Scroll>
-        <div class="content">
-          <MyStakeSettings :activeTabName="activeTabName" @update:activeTabName="updateActiveTabName" />
-
-          <About
-            v-if="isAbout"
-            :stakingCurrency="stakingCurrency"
-            :rewardedCurrency="rewardedCurrency"
-            :stakingAmount="stakingAmount"
-            :rewardedAmount="rewardedAmount"
-            :unstakingAmount="unstakingAmount"
-            :redeemableAmount="redeemableAmount"
-          />
-
-          <Alerts v-else-if="isAlerts" :alerts="alerts" />
-
-          <History v-else-if="isHistory" :history="history" />
-        </div>
-      </Scroll>
-    </ContentForm>
-
-    <StakingManagement
-      v-if="showStakeForm"
-      :stakingCurrency="stakingCurrency"
-      :rewardedCurrency="rewardedCurrency"
-      :type="type"
-      :network="network"
-      @closeForm="closeStakeForm"
-    />
-
-    <YourValidatorsManagement
-      v-if="showYourValidatorsForm"
-      :stakingCurrency="stakingCurrency"
-      @closeForm="toggleVisible('showYourValidatorsForm', false)"
-    />
-
-    <ControllerAccount
-      v-if="showControllerAccountForm"
-      :network="network"
-      @closeForm="toggleVisible('showControllerAccountForm', false)"
-    />
-
-    <PendingRewardForm
-      v-if="showPendingRewardForm"
-      :stakingCurrency="stakingCurrency"
-      :rewardedCurrency="rewardedCurrency"
-      @closeForm="toggleVisible('showPendingRewardForm', false)"
-    />
-  </div>
+  </AboveForm>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { MyStakingTab } from '@/interfaces/common';
 import type { TokenBalance } from '@extension-base/background/types/types';
@@ -118,16 +91,15 @@ import About from '@/screens/staking/myStake/About.vue';
 import Alerts from '@/screens/staking/myStake/Alerts.vue';
 import History from '@/screens/staking/myStake/History.vue';
 import StakingManagement from '@/screens/staking/myStake/stakingForms/StakingManagement.vue';
-import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getUtilityAsset } from '@/helpers/currencies';
-import { SORA_NETWORK_NAME, SORA_REWARD_ASSET } from '@/consts/sora';
+import { SORA_REWARD_ASSET } from '@/consts/sora';
 import YourValidatorsManagement from '@/screens/staking/myStake/validators/YourValidatorsManagement.vue';
 import ControllerAccount from '@/screens/staking/myStake/ControllerAccount.vue';
 import PendingRewardForm from '@/screens/staking/myStake/rewards/PendingRewardForm.vue';
 import { isSora } from '@/helpers';
 
-type ShowField = 'showStakingForm' | 'showUnstakingForm' | 'showRedeemForm' | 'showYourValidatorsForm';
+type ShowField = 'showStakingForm' | 'showUnbondForm' | 'showRedeemForm' | 'showYourValidatorsForm';
 
 @Component({
   components: {
@@ -142,10 +114,15 @@ type ShowField = 'showStakingForm' | 'showUnstakingForm' | 'showRedeemForm' | 's
   },
 })
 export default class MyStake extends Vue {
-  readonly dotsVerticalRef = 'dotsVertical';
+  readonly actionOptions = [
+    { label: 'staking.rebond', value: 'showRebondForm' },
+    { label: 'staking.yourValidators', value: 'showYourValidatorsForm' },
+    { label: 'staking.controllerAccount', value: 'showControllerAccountForm' },
+    { label: 'staking.pendingRewards', value: 'showPendingRewardForm' },
+  ];
   activeTabName: MyStakingTab = 'about';
   showStakingForm = false;
-  showUnstakingForm = false;
+  showUnbondForm = false;
   showRedeemForm = false;
   showRebondForm = false;
   showYourValidatorsForm = false;
@@ -155,14 +132,14 @@ export default class MyStake extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
-  get showStakeForm() {
-    return this.showStakingForm || this.showUnstakingForm || this.showRedeemForm || this.showRebondForm;
+  get showStakingManagement() {
+    return this.showStakingForm || this.showUnbondForm || this.showRedeemForm || this.showRebondForm;
   }
 
   get type() {
     if (this.showStakingForm) return 'staking';
 
-    if (this.showUnstakingForm) return 'unstaking';
+    if (this.showUnbondForm) return 'unbond';
 
     if (this.showRebondForm) return 'rebond';
 
@@ -278,33 +255,27 @@ export default class MyStake extends Vue {
     return '1.42';
   }
 
-  //TODO
-  @Watch('kek')
-  updateZIndexDotsVertical(value: boolean) {
-    const targetElement = (this.$refs[this.dotsVerticalRef] as Vue)?.$el as HTMLElement;
-
-    if (targetElement) targetElement.style.zIndex = value ? '200' : '0';
-  }
-
   updateActiveTabName(name: MyStakingTab) {
     this.activeTabName = name;
   }
 
-  backToStaking() {
-    this.$router.push({ name: Components.Staking });
-  }
-
-  closeStakeForm() {
+  closeStakingManagement() {
     this.showStakingForm = false;
-    this.showUnstakingForm = false;
+    this.showUnbondForm = false;
     this.showRedeemForm = false;
     this.showRebondForm = false;
-    this.showYourValidatorsForm = false;
-    this.showControllerAccountForm = false;
   }
 
   toggleVisible(field: ShowField, value: boolean) {
     this[field] = value;
+  }
+
+  openForm(field: ShowField) {
+    this[field] = true;
+  }
+
+  closeStake() {
+    return this.$router.back();
   }
 }
 </script>
@@ -377,38 +348,25 @@ export default class MyStake extends Vue {
     }
   }
 
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 50px;
-    margin-bottom: 15px;
-
-    .left-part {
-      display: flex;
-      align-items: center;
-
-      .network {
-        font-size: 24px;
-        font-weight: 600;
-        text-transform: uppercase;
-        margin-left: 15px;
-      }
-    }
-  }
-
-  .activity {
+  .action-buttons {
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px;
 
-    .activity-button {
+    .action-button {
       flex-grow: 1;
       margin-left: 5px;
 
       &:first-child {
         margin-left: 0;
       }
+    }
+
+    .menu {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      margin-left: 10px;
     }
   }
 }

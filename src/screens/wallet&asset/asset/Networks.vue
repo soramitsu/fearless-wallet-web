@@ -1,6 +1,6 @@
 <template>
   <Fragment>
-    <ContentForm :height="281">
+    <ContentForm :height="271">
       <div class="networks">
         <div class="networks-settings">
           <TabButton
@@ -23,7 +23,7 @@
         <Scroll>
           <div class="network-list" :class="historyContainerClasses">
             <AssetRow
-              v-for="({ name, icon }, index) in sortedNetoworks"
+              v-for="({ name, icon }, index) in sortedNetworks"
               :key="index"
               :text="name"
               :value="getBalanceInNetworkString(name)"
@@ -133,7 +133,7 @@ export default class Networks extends Vue {
     return baseFilter;
   }
 
-  get sortedNetoworks() {
+  get sortedNetworks() {
     return this.filteredNetworks.sort((a, b) => {
       if (this.filterValue === 'fiat') {
         const value1 = a.transferable ? +a.transferable : 0;

@@ -28,10 +28,20 @@
         <InfoRow text="staking.estimatedRewards" :value="`${apy}% APY`" borderType="default" />
       </ContentForm>
 
-      <ContentForm :height="100" :isStaticHeight="true" :bottomRightCorner="true">
+      <ContentForm :height="315" :isStaticHeight="true" :bottomRightCorner="true">
         <Scroll>
           <div class="form-layout">
             <div class="label">{{ $t('staking.identity') }}</div>
+
+            <InfoRow text="staking.legalName" :value="legalName" borderType="default" />
+
+            <InfoRow text="common.email" :value="email" borderType="default" color="pink-lavender" />
+
+            <InfoRow text="staking.web" :value="web" borderType="default" color="pink-lavender" />
+
+            <InfoRow text="common.twitter" :value="twitter" borderType="default" color="pink-lavender" />
+
+            <InfoRow text="staking.elementName" :value="elementName" borderType="default" color="pink-lavender" />
           </div>
         </Scroll>
       </ContentForm>
@@ -74,6 +84,26 @@ export default class ValidatorInfo extends Vue {
 
   get status() {
     return 'Elected';
+  }
+
+  get legalName() {
+    return 'Andy Brown';
+  }
+
+  get email() {
+    return 'andybrown@gmail.com';
+  }
+
+  get web() {
+    return 'www.andybrown.com';
+  }
+
+  get twitter() {
+    return '@andybrown';
+  }
+
+  get elementName() {
+    return '@andbrwn:web3.foundation';
   }
 
   get maxNominators() {

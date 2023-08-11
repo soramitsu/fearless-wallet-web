@@ -9,7 +9,7 @@
     <div class="staking-management">
       <Scroll>
         <Input
-          v-if="step === 1 || step === 6"
+          v-if="step === 1"
           v-model="selectedAccountName"
           placeholder="accounts.account"
           size="big"
@@ -17,7 +17,7 @@
         />
 
         <SelectInput
-          v-if="step === 1 || step === 6"
+          v-if="step === 1"
           class="amount-input"
           text="assets.amount"
           :transferableAmount="transferableAmount"
@@ -36,6 +36,7 @@
           :stakingCurrency="stakingCurrency"
           :rewardedCurrency="rewardedCurrency"
           :fee="fee"
+          :amount="amount"
           @openValidatorList="openValidatorList"
         />
 
@@ -141,6 +142,8 @@ export default class StakingManagement extends Vue {
       if (this.step === 4) return 'staking.recommended';
 
       if (this.step === 5) return 'staking.yourself';
+
+      if (this.step === 6) return 'common.confirmation';
     }
 
     return `staking.${this.type}`;

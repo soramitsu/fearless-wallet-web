@@ -12,6 +12,7 @@
         />
       </STab>
     </STabs>
+
     <div class="container" :class="networkListClasses">
       <Scroll>
         <ul class="network__list">

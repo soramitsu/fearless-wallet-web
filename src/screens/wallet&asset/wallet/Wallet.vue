@@ -108,7 +108,7 @@ import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
-import { getShimmersVisibility } from '@/helpers/wallets';
+import { getShimmersVisibility } from '@/helpers/shimmers';
 
 @Component({
   components: {
@@ -218,6 +218,7 @@ export default class Wallet extends Vue {
   get showShimmers() {
     return getShimmersVisibility();
   }
+
   get filteredCurrencies() {
     const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
 

@@ -1,5 +1,5 @@
 <template>
-  <ContentForm :height="225">
+  <ContentForm :height="214">
     <div class="history">
       <div class="history-settings">
         <div class="history-label">{{ $t('assets.history') }}:</div>

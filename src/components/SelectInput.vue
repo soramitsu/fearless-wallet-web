@@ -174,6 +174,7 @@ export default class SelectInput extends Vue {
     .header {
       font-weight: 700;
       font-size: 12px;
+      text-transform: uppercase;
     }
 
     .price {

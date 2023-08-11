@@ -15,16 +15,7 @@
       />
 
       <Tooltip text="staking.payout" target=".payout" placement="right" />
-    </template>
 
-    <InfoRow
-      v-if="step === 6"
-      text="staking.selectedValidators"
-      :value="`${selectedQuantity} (${$t('common.max')} ${maxValidators})`"
-      borderType="default"
-    />
-
-    <template v-if="step === 1 || step === 6">
       <InfoRow
         text="assets.networkFee"
         borderType="default"
@@ -33,20 +24,85 @@
         :price="feeValueString"
         :iconClasses="['network-fee']"
       />
-
-      <Link text="staking.learnAboutRewards" class="about-rewards" @click="openAboutRewards" />
-
-      <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
     </template>
 
     <SelectionValidatorsForm
-      v-else
+      v-else-if="showSelectionValidatorsForm"
       :step="step"
       :validators="validators"
       :maxValidators="maxValidators"
       @openValidatorList="openValidatorList"
       @updateSelectedValidators="updateSelectedValidators"
     />
+
+    <template v-if="step === 6">
+      <div class="asset-logo">
+        <Icon icon="asset-background" class="asset-background" :hover="false" />
+
+        <AssetIcon :icon="stakingCurrency.icon" :shadowColor="stakingCurrency.color" class="asset-highlight" />
+      </div>
+
+      <ContentForm :height="200" :isStaticHeight="true" :bottomRightCorner="true">
+        <InfoRow
+          text="staking.selectedValidators"
+          :value="`${selectedQuantity} (${$t('common.max')} ${maxValidators})`"
+          borderType="default"
+        />
+
+        <InfoRow text="accounts.account" :value="selectedAccountName" borderType="default" />
+
+        <InfoRow text="assets.amount" :value="amount" borderType="default" :price="amountValueString" />
+
+        <InfoRow
+          text="assets.networkFee"
+          borderType="default"
+          icon="info"
+          :value="`${fee} ${stakingAsset}`"
+          :price="feeValueString"
+          :iconClasses="['network-fee']"
+        />
+      </ContentForm>
+    </template>
+
+    <template v-if="step === 1 || step === 6">
+      <Link text="staking.learnAboutRewards" class="about-rewards" @click="openAboutRewards" />
+
+      <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
+    </template>
+
+    <template v-if="step === 6">
+      <div class="descriptions-row">
+        <Icon icon="gift" class="icon" />
+
+        <div>
+          {{ $t('staking.stakedTokens') }}
+        </div>
+      </div>
+
+      <div class="descriptions-row">
+        <Icon icon="information-rectangle" class="icon" />
+
+        <div>
+          {{ $t('staking.unstakeTokens') }}
+        </div>
+      </div>
+
+      <div class="descriptions-row">
+        <Icon icon="wallet-remove" class="icon" />
+
+        <div>
+          {{ $t('staking.tokensUnstaking') }}
+        </div>
+      </div>
+
+      <div class="descriptions-row">
+        <Icon icon="logout" class="icon" />
+
+        <div>
+          {{ $t('staking.afterUnstaking') }}
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -54,7 +110,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { validators } from '../validators/mock';
-import type { GetAssetPrice } from '@/store';
+import type { GetAssetPrice, SelectedWallet } from '@/store';
 import type { SelectionValidator } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -79,9 +135,19 @@ export default class StakingForm extends Vue {
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
   @Prop({ type: String }) fee!: string;
+  @Prop({ type: String }) amount!: string;
   @Prop({ type: Number }) step!: number;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+
+  get showSelectionValidatorsForm() {
+    return this.step !== 1 && this.step !== 6;
+  }
+
+  get selectedAccountName() {
+    return this.selectedWallet.name;
+  }
 
   get text() {
     return {
@@ -116,6 +182,12 @@ export default class StakingForm extends Vue {
 
   get payoutValueString() {
     const value = +this.payout * this.rewardedAssetPrice;
+
+    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
+  }
+
+  get amountValueString() {
+    const value = +this.amount * this.stakingAssetPrice;
 
     return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
   }
@@ -174,6 +246,40 @@ export default class StakingForm extends Vue {
 
   .about-rewards {
     margin: 20px 16px 16px;
+  }
+
+  .descriptions-row {
+    display: flex;
+    align-items: center;
+    color: $default-white;
+    text-align: left;
+    line-height: 20px;
+    margin: 20px 16px 16px;
+    font-size: 14px;
+
+    .icon {
+      margin-right: 10px;
+      max-width: 20px;
+      height: 20px;
+    }
+  }
+
+  .asset-logo {
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+    height: 200px;
+
+    .asset-background {
+      position: relative;
+      height: 200px;
+      left: 115px;
+    }
+
+    .asset-highlight {
+      position: relative;
+      left: -83px;
+    }
   }
 }
 </style>

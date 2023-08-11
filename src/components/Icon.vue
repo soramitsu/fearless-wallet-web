@@ -14,6 +14,7 @@ export default class Icon extends Vue {
   @Prop({ type: String, default: '32px' }) width!: string;
   @Prop({ type: String, default: '32px' }) height!: string;
   @Prop({ default: '' }) className!: string[] | string;
+  @Prop({ default: true }) hover!: boolean;
 
   get getIconColor() {
     return `icon--${this.iconColor}`;
@@ -24,7 +25,13 @@ export default class Icon extends Vue {
   }
 
   get getSvgClasses() {
-    const classes = ['svg-icon', ...[this.className].flat()];
+    const classes = [
+      'svg-icon',
+      {
+        'svg-icon--hover': this.hover,
+      },
+      ...[this.className].flat(),
+    ];
 
     if (this.iconColor) classes.push(this.getIconColor);
 
@@ -48,9 +55,13 @@ export default class Icon extends Vue {
   overflow: hidden;
   outline: none;
 }
-.svg-icon:hover {
-  opacity: 0.5;
+
+.svg-icon--hover {
+  &:hover {
+    opacity: 0.5;
+  }
 }
+
 .icon__inner {
   outline: none;
 }

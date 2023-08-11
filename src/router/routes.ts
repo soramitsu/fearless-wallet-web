@@ -134,6 +134,11 @@ const routes: Array<RouteConfig> = [
     component: PolkaswapDisclaimer,
   },
   {
+    path: '/my-stake/:network',
+    name: Components.MyStake,
+    component: MyStake,
+  },
+  {
     path: '/fearless',
     component: Main,
     children: [
@@ -175,11 +180,6 @@ const routes: Array<RouteConfig> = [
             component: Export,
           },
         ],
-      },
-      {
-        path: 'my-stake/:network',
-        name: Components.MyStake,
-        component: MyStake,
       },
       {
         path: ':network/:assetId',

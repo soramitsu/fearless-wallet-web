@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import AboveForm from '@/components/AboveForm.vue';
 import Alert from '@/components/Alert.vue';
+import AssetIcon from '@/components/AssetIcon.vue';
 import BorderButton from '@/components/BorderButton.vue';
 import Button from '@/components/Button.vue';
 import Checkbox from '@/components/Checkbox.vue';
@@ -44,6 +45,7 @@ import ValidatedInput from '@/components/ValidatedInput.vue';
 //add component to component.d.ts as well
 Vue.component('AboveForm', AboveForm);
 Vue.component('Alert', Alert);
+Vue.component('AssetIcon', AssetIcon);
 Vue.component('BorderButton', BorderButton);
 Vue.component('Button', Button);
 Vue.component('Checkbox', Checkbox);

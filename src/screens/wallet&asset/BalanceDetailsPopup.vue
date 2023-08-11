@@ -25,7 +25,6 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GetAssetPrice, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { AssetPrice } from '@/interfaces';
-import { NetworksController } from '@/controllers';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component

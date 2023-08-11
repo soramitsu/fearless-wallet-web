@@ -1,5 +1,5 @@
 <template>
-  <div class="corners">
+  <div :class="cornersClasses">
     <div :class="slotContainerClasses">
       <slot></slot>
     </div>
@@ -22,6 +22,14 @@ export default class Corners extends Vue {
   @Prop({ default: true }) topLeftCorner!: boolean;
   @Prop({ default: true }) bottomRightCorner!: boolean;
   @Prop({ default: 'medium' }) size!: Size;
+
+  get cornersClasses() {
+    return [
+      {
+        corners: this.topLeftCorner || this.bottomRightCorner,
+      },
+    ];
+  }
 
   get slotContainerClasses() {
     return [

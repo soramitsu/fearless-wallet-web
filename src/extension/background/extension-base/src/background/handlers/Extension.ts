@@ -1045,9 +1045,9 @@ export default class Extension extends FWExtensionBase {
     const [errors, , tokenInfo] = this.validateTransfer(assetId, from, password);
     const warnings: BasicTxWarning[] = [];
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
-
     const address = getSubstrateAddressByEthAddress(from);
-    let fee = 0;
+
+    let fee = '0';
     let fromAccountFreeBalance = '0';
 
     const tokenBalance = this.state.balanceMap[address].find(
@@ -1064,16 +1064,17 @@ export default class Extension extends FWExtensionBase {
       if (!isMainToken && tokenInfo.id) {
         const { fee: feeValue } = await getERC20TransactionObject(tokenInfo.id, networkKey, from, to, txVal);
 
-        fee = +ethers.formatEther(feeValue);
+        fee = ethers.formatEther(feeValue);
       } else {
         const { fee: feeValue } = await getEVMTransactionObject(networkKey, to, txVal);
 
-        fee = +ethers.formatEther(feeValue);
+        fee = ethers.formatEther(feeValue);
       }
     } else {
       // Estimate with DotSama API
 
       const feeNumber = await estimateFee(networkKey, to, amount, tokenBalance);
+
       fee = feeNumber;
       fromAccountFreeBalance =
         tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0';

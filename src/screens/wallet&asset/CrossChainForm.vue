@@ -27,9 +27,7 @@
         <div class="asset-logo">
           <div class="hr"></div>
 
-          <div class="background-circle" :style="circleStyles">
-            <ExternalLogo :name="currency.icon" :width="87" />
-          </div>
+          <shadowColor :icon="currency.icon" :color="currency.color" />
 
           <div class="hr"></div>
         </div>
@@ -101,12 +99,6 @@ export default class CrossChainForm extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
-  get circleStyles() {
-    return {
-      filter: `drop-shadow(0px 6.53061px 25px #${this.iconShadowColor})`,
-    };
-  }
-
   get directionText() {
     return `${this.$t('assets.from')} ${this.originalNetwork} ${this.$t('assets.to')} ${this.destinationNetwork} `;
   }
@@ -145,10 +137,6 @@ export default class CrossChainForm extends Vue {
 
   get assetName() {
     return (this.currency?.symbol ?? '').toUpperCase();
-  }
-
-  get iconShadowColor() {
-    return this.currency?.color ?? '';
   }
 
   get originNet() {
@@ -263,16 +251,6 @@ export default class CrossChainForm extends Vue {
       border: none;
       height: 1px;
       background: repeating-linear-gradient(90deg, $gray-color, $gray-color, 6px, transparent 6px, transparent 12px);
-    }
-
-    .background-circle {
-      width: 90px;
-      height: 90px;
-      background-color: #111;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
   }
 }

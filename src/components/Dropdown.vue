@@ -1,6 +1,14 @@
 <template>
-  <Corners>
-    <SDropdown type="button" buttonType="secondary" trigger="click" class="dropdown" size="mini" @select="handler">
+  <Corners :topLeftCorner="showCorners" :bottomRightCorner="showCorners">
+    <SDropdown
+      :type="type"
+      buttonType="secondary"
+      trigger="click"
+      placement="bottom-end"
+      class="dropdown"
+      size="mini"
+      @select="handler"
+    >
       {{ $t(label) }}
 
       <template slot="menu">
@@ -18,11 +26,16 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 @Component
 export default class Dropdown extends Vue {
   @Prop(String) value!: string;
+  @Prop({ default: 'button' }) type!: string;
   @Prop(Array) options!: Record<string, string>[];
   @Prop(Function) handler!: VoidFunction;
 
   get label() {
     return this.options.find(({ value }) => value === this.value)?.label ?? '';
+  }
+
+  get showCorners() {
+    return this.type === 'button';
   }
 }
 </script>
@@ -40,6 +53,10 @@ export default class Dropdown extends Vue {
     font-feature-settings: var(--s-font-feature-settings-heading);
     font-weight: 400;
     font-size: 14px;
+  }
+
+  .el-dropdown-selfdefine {
+    color: $grayish-white !important;
   }
 }
 

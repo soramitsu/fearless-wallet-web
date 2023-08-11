@@ -140,8 +140,6 @@ export default class StakingManagement extends Vue {
   }
 
   get rewardedAssetName() {
-    console.log('rewardedCurrency', this.rewardedCurrency);
-
     return this.rewardedCurrency?.symbol;
   }
 

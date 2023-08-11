@@ -241,7 +241,7 @@
     "networkIssues": "Network Issues",
     "originNet": "ORIGINAL NETWORK",
     "network": "NETWORK",
-    "amount": "AMOUNT",
+    "amount": "Amount",
     "amountIn": "AMOUNT IN {asset}",
     "value": "VALUE",
     "valueIn": "VALUE IN {asset}",
@@ -502,8 +502,17 @@
     "payoutAll": "Payout all",
     "rewardLess": "The reward is less than the network fee",
     "regular": "Regular",
+    "legalName": "Legal name",
+    "web": "Web",
+    "elementName": "Element name",
     "nominationPool": "Nomination pools",
     "rewardsDestination": "Rewards destination",
+    "rebond": "Rebond",
+    "unbond": "Unbond",
+    "stakedTokens": "Staked tokens generate rewards each era  (6 hours).",
+    "unstakeTokens": "If you want to unstake tokens, you will have to wait for the unstaking period (7 days).",
+    "tokensUnstaking": "Tokens in unstaking period generate no rewards",
+    "afterUnstaking": "After unstaking period you will need to redeem your tokens",
     "validatorsPayoutRewards": "Validators payout the rewards every 2-5 days. However, you can payout them by yourself, especially if rewards are close to expiring, but you will pay the fee."
   },
   "common": {
@@ -578,6 +587,7 @@
     "edit": "Edit",
     "status": "Status",
     "confirmation": "Confirmation",
+    "twitter": "Twitter",
     "areYouSure": "Are you sure?",
     "searchByAddress": "Search by address or name"
   }

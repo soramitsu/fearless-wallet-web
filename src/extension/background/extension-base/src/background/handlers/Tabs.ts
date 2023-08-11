@@ -158,7 +158,7 @@ export default class Tabs {
     return this.state.injectMetadata(url, request);
   }
 
-  metadataList(url: string): InjectedMetadataKnown[] {
+  metadataList(): InjectedMetadataKnown[] {
     return this.state.knownMetadata.map(({ genesisHash, specVersion }) => ({
       genesisHash,
       specVersion,
@@ -271,7 +271,7 @@ export default class Tabs {
         return this.extrinsicSign(url, request as SignerPayloadJSON);
 
       case 'pub(metadata.list)':
-        return this.metadataList(url);
+        return this.metadataList();
 
       case 'pub(metadata.provide)':
         return this.metadataProvide(url, request as MetadataDef);

@@ -38,6 +38,7 @@ module.exports = {
     '@typescript-eslint/no-use-before-define': ['off'],
     '@typescript-eslint/no-var-requires': ['off'],
     '@typescript-eslint/no-non-null-assertion': ['off'],
+    '@typescript-eslint/no-explicit-any': ['warn', { ignoreRestArgs: true }],
     'prettier/prettier': [
       'error',
       {

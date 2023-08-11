@@ -64,6 +64,10 @@ export default class App extends Vue {
 
     this.unregisterInactiveWorkers();
     this.setupWallet();
+    this.setupBalance();
+    this.fetchFiats();
+    this.setupPrice();
+    this.setupNetworks();
     this.setupSWPing();
     this.getUserStatus(); // SORA Card
   }
@@ -141,13 +145,6 @@ export default class App extends Vue {
 
   unsubscribe() {
     clearInterval(this.assetsPriceInterval!);
-  }
-
-  mounted() {
-    this.setupBalance();
-    this.fetchFiats();
-    this.setupPrice();
-    this.setupNetworks();
   }
 
   beforeUnmount() {

@@ -35,7 +35,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     nexusFiles:                 [ '.zip'],
     chromeExtFile:              'fearless-wallet-extension-chrome.zip',
     mozillaExtFile:             'fearless-wallet-extension-firefox.zip',
-    uploadToNexusFor:           ['master','develop','stage','fix/DOPS-2645/pr-link-for-squash'],
+    uploadToNexusFor:           ['master','develop','stage','fix/DOPS-2645/pr-link-for-squash-fearless'],
     uploadToGoogleFor:          ['master'],
     uploadToFirefoxFor:         ['master'],
     buildWithCred:              buildWithCred,

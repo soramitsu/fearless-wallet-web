@@ -232,12 +232,9 @@ export default class AssetInfo extends Vue {
         gap: 4px;
       }
 
-      & > :not(:last-child) {
+      > :first-child {
         border-right: solid 1px $gray-color;
         line-height: 1px;
-      }
-
-      > :first-child {
         padding-left: 0px;
       }
     }

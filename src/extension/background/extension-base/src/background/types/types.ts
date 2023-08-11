@@ -254,7 +254,6 @@ export interface BalanceJson {
 }
 
 export enum TransferErrorCode {
-  NOT_ENOUGH_VALUE = 'notEnoughValue',
   NOT_ENOUGH_FEE = 'notEnoughValue',
   INVALID_VALUE = 'invalidValue',
   INVALID_TOKEN = 'invalidToken',

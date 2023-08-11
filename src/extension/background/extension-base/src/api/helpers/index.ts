@@ -3,7 +3,6 @@ import ERC20Contract from '@extension-base/api/evm/helpers/ERC20Contract.json';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { state } from '@extension-base/background/handlers';
 import { CustomTokenType, CustomTokenJson, CustomToken } from '@extension-base/api/evm/types/ether';
-import type { ChainRegistry, DeleteCustomTokenParams } from '@extension-base/types';
 
 export function checkMainToken(networkKey: string, id: string): boolean {
   if (id === undefined) return false;
@@ -124,72 +123,4 @@ export function getTokensForChainRegistry(customTokenJson: CustomTokenJson) {
   }
 
   return customTokens;
-}
-
-export function deleteCustomTokens(
-  targetTokens: DeleteCustomTokenParams[],
-  customTokenState: CustomTokenJson,
-  chainRegistryMap: Record<string, ChainRegistry>
-) {
-  let needUpdateChainRegistry = false;
-  const deletedNfts: DeleteCustomTokenParams[] = [];
-  const deletedFungibleTokens: DeleteCustomTokenParams[] = [];
-
-  // handle token state
-  for (const targetToken of targetTokens) {
-    const tokenList = customTokenState[targetToken.type];
-    let processed = false;
-
-    for (let index = 0; index < tokenList.length; index++) {
-      if (
-        isEqualContractAddress(tokenList[index].id, targetToken.id) &&
-        tokenList[index].chain === targetToken.chain &&
-        tokenList[index].type === targetToken.type
-      ) {
-        if (tokenList[index].isCustom) {
-          tokenList.splice(index, 1);
-        } else {
-          tokenList[index].isDeleted = true;
-        }
-
-        processed = true;
-      }
-    }
-
-    if (processed) {
-      if (FUNGIBLE_TOKEN_STANDARDS.includes(targetToken.type)) {
-        needUpdateChainRegistry = true;
-        deletedFungibleTokens.push(targetToken);
-      } else {
-        deletedNfts.push(targetToken);
-      }
-    }
-  }
-
-  // update chain registry
-  if (needUpdateChainRegistry) {
-    for (const targetToken of deletedFungibleTokens) {
-      const chainRegistry = chainRegistryMap[targetToken.chain];
-
-      if (chainRegistry) {
-        let deleteKey = '';
-
-        for (const [key, token] of Object.entries(chainRegistry.assetsMap)) {
-          if (token.id && isEqualContractAddress(token.id, targetToken.id)) {
-            deleteKey = key;
-
-            break;
-          }
-        }
-
-        chainRegistryMap[targetToken.chain] = chainRegistry;
-      }
-    }
-  }
-
-  return {
-    newCustomTokenState: customTokenState,
-    newChainRegistryMap: chainRegistryMap,
-    deletedNfts,
-  };
 }

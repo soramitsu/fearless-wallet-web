@@ -156,7 +156,7 @@ export default class SoraCardPage extends Vue {
 
   get showBackIcon() {
     return (
-      [StepsKyc.TermsAndConditions, StepsKyc.Phone, StepsKyc.Email].includes(this.step) ||
+      [StepsKyc.TermsAndConditions, StepsKyc.Phone, StepsKyc.Email].some((el) => el === this.step) ||
       this.showX1Form ||
       this.showCountriesForm
     );

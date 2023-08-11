@@ -608,9 +608,9 @@ export default class AddWallet extends Vue {
     }
 
     //raw seed & mnemonic validation
-    const {
-      substrate: { keypairType: substrateKeypairType },
-    } = this.derivationPaths;
+    // const {
+    //   substrate: { keypairType: substrateKeypairType },
+    // } = this.derivationPaths;
 
     // const { address } = await createAccountSuri(this.suriSubstrate, substrateKeypairType);
 

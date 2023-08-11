@@ -1,5 +1,5 @@
 <template>
-  <li class="network" @click="$emit('onToggleNetworkType')">
+  <li class="network" @click="onSelect">
     <Icon v-if="isNetworkGroup" icon="all-networks" width="24" height="24" className="network__icon" />
     <ExternalLogo v-else :name="network.icon" width="24" height="24" class="img" />
 
@@ -14,6 +14,7 @@
         height="18"
         className="network__icon-state"
       />
+
       <div @click.stop="onToggleState">
         <Icon :icon="iconType" :iconColor="iconColorFavorite" width="18" height="18" className="network__icon-state" />
       </div>
@@ -58,7 +59,17 @@ export default class NetworkItem extends Vue {
   }
 
   onToggleState() {
+    if (this.isNetworkGroup) {
+      this.onSelect();
+
+      return;
+    }
+
     this.$emit('onToggleState');
+  }
+
+  onSelect() {
+    this.$emit('onToggleNetworkType');
   }
 }
 </script>

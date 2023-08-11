@@ -8,7 +8,7 @@
           :network="networkGroup"
           :isNetworkGroup="true"
           :isSelected="isGroupSelected"
-          @onToggleNetworkType="toggleNetworkType()"
+          @onToggleNetworkType="toggleNetworkType(isGroupSelected)"
         />
       </STab>
     </STabs>
@@ -19,7 +19,7 @@
             v-for="network in filteredOptionsNetworks"
             :network="network"
             :isSelected="isNetworkSelected(network)"
-            @onToggleNetworkType="enableSingleNetwork(network.name)"
+            @onToggleNetworkType="enableSingleNetwork(network.name, isNetworkSelected(network))"
             @onToggleState="toggleFavorite(network.name)"
             :key="network.name"
           />
@@ -144,7 +144,9 @@ export default class NetworkManagement extends Vue {
     return this.selectedNetwork === name;
   }
 
-  toggleNetworkType() {
+  toggleNetworkType(isGroupSelected: boolean) {
+    if (isGroupSelected) return;
+
     const network = this.tabs[this.activeTab].name;
     this.setSelectedNetwork(network);
 
@@ -157,7 +159,9 @@ export default class NetworkManagement extends Vue {
     this.$notify({ title: prepNotification as string, message: '', type: 'success' });
   }
 
-  enableSingleNetwork(network: string) {
+  enableSingleNetwork(network: string, isSelected: boolean) {
+    if (isSelected) return;
+
     this.setSelectedNetwork(network);
     updateCurrentAccountNetwork(network);
     const prepNotification = this.$t(this.getLocale('networkSelected'), { network });

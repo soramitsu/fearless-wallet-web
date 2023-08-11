@@ -28,7 +28,7 @@
         <div class="label">{{ $t('accounts.copyAddress') }}</div>
       </div>
 
-      <div class="row" @click="openSubscan">
+      <div class="row" @click="openExplorer">
         <Icon icon="globus" className="icon" />
 
         <div class="label">{{ buttonText }}</div>
@@ -46,7 +46,7 @@ import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-
+import { EVM_EXPLORERS_BASE_URLS, EXPLORERS_BASE_URLS } from '@/consts/networks';
 @Component
 export default class AccountSettingsPopup extends Vue {
   @Prop(String) selectedNetwork!: string;
@@ -85,8 +85,30 @@ export default class AccountSettingsPopup extends Vue {
     this.close();
   }
 
+  get lowerCaseSelectedNetwork() {
+    return this.selectedNetwork.toLowerCase();
+  }
+
+  get substrateExplorerByNetwork() {
+    return EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] ?? this.selectedNetwork;
+  }
+
+  get evmExplorerByNetwork() {
+    return EVM_EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] ?? '';
+  }
+
+  openEvmExplorer() {
+    if (this.evmExplorerByNetwork !== '')
+      window.open(`https://${this.evmExplorerByNetwork}/address/${this.addressByNetwork}`);
+  }
+
   openSubscan() {
-    window.open(`https://${this.selectedNetwork}.subscan.io/account/${this.addressByNetwork}`);
+    window.open(`https://${this.substrateExplorerByNetwork}.subscan.io/account/${this.addressByNetwork}`);
+  }
+
+  openExplorer() {
+    if (this.evmExplorerByNetwork !== '') return this.openEvmExplorer();
+    else this.openSubscan();
 
     this.close();
   }

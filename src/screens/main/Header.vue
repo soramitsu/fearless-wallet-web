@@ -2,12 +2,7 @@
   <header class="header">
     <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
       <div class="logo-container">
-        <CircleButton
-          v-if="showBackIcon"
-          backgroundColor="light-black"
-          iconName="chevron-left"
-          @click.stop="backToWallet"
-        />
+        <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconName="chevron-left" @click.stop="back" />
 
         <Logo v-else size="small" />
       </div>
@@ -42,7 +37,7 @@
       />
 
       <NetworkManagementButton
-        classes="background-ellipse"
+        class="background-ellipse"
         :isGroupIcon="isGroup"
         :icon="selectedNetworkIcon"
         :selectedNetwork="networkManagementButtonText"
@@ -229,8 +224,8 @@ export default class Header extends Vue {
     this.showConnectionPopup = !this.showConnectionPopup;
   }
 
-  backToWallet() {
-    this.$router.push({ name: Components.Wallet });
+  back() {
+    this.$router.back();
   }
 
   openFullScreen() {
@@ -253,6 +248,7 @@ export default class Header extends Vue {
   display: flex;
   justify-content: space-between;
   height: $header-height;
+  min-height: $header-height;
   margin-bottom: 16px;
   gap: 2px;
 

@@ -7,6 +7,8 @@ import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import { SORA_CARD_VISIBILITY } from '@/consts/global';
 
+const AssetNetworks = () => import('@/screens/wallet&asset/asset/AssetNetworks.vue');
+const AssetHistory = () => import('@/screens/wallet&asset/asset/AssetHistory.vue');
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Staking = () => import('@/screens/staking/Staking.vue');
 const History = () => import('@/screens/history/History.vue');
@@ -182,12 +184,16 @@ const routes: Array<RouteConfig> = [
         component: Asset,
         children: [
           {
-            path: '',
+            path: '/',
             name: Components.AssetNetworks,
-            component: Networks,
+            component: AssetNetworks,
+            beforeEnter: (to, from, next) => {
+              from.params.network = '';
+              next();
+            },
           },
           {
-            path: ':network',
+            path: ':selectedNetwork',
             name: Components.AssetHistory,
             component: AssetHistory,
           },

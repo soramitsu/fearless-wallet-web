@@ -79,8 +79,8 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
-import { HexString } from '@polkadot/util/types';
 import { ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
+import type { HexString } from '@polkadot/util/types';
 import type { SelectedWallet } from '@/store';
 import type { NetworkJson } from '@extension-base/types';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';

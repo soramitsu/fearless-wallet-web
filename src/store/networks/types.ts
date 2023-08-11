@@ -1,4 +1,4 @@
-import { NetworkJson } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { HexString } from '@polkadot/util/types';
 import type {
@@ -11,6 +11,8 @@ import type {
   Node,
   NetworkName,
   HistoryServiceType,
+  GiantsquidHistoryItem,
+  HistoryElement,
 } from '@/interfaces';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { KeyringJson } from '@polkadot/ui-keyring/types';
@@ -18,11 +20,10 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ActionContext } from 'vuex';
 import type { State } from '@/store/networks/state';
 import type { Mutations } from '@/store/networks/mutations';
-import { Wallet } from '@/store/accounts/types';
-import { GiantsquidHistoryItem, HistoryElement } from '@/interfaces';
+import type { Wallet } from '@/store/accounts/types';
 
 // getters
-export type GetNetwork = (networkName: NetworkName) => NetworkJson | undefined;
+export type GetNetwork = (networkName: string) => NetworkJson;
 export type GetNetworkGenesisHash = (networkName: NetworkName) => HexString;
 export type GetAssetIcon = (assetId: string) => string;
 export type GetAssetPrice = (priceId: string) => AssetPrice;

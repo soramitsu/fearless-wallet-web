@@ -69,6 +69,7 @@ import type {
   SetAutoSelectNode,
   GetAutoSelectNodesValueByNetwork,
   GetActiveNodesByNetwork,
+  GetNetwork,
 } from '@/store';
 import type { Fn } from '@/interfaces';
 import type { NetworkJson } from '@extension-base/types';
@@ -85,7 +86,7 @@ export default class Nodes extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getAutoSelectNodesValueByNetwork)
   getAutoSelectNodesValueByNetwork!: GetAutoSelectNodesValueByNetwork;
-  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getActiveNodesByNetwork) getActiveNodesByNetwork!: GetActiveNodesByNetwork;
   @Mutation(AccountsMutationTypes.SET_AUTO_SELECT_NODE) setAutoSelectNode!: Fn<SetAutoSelectNode>;
 
@@ -129,7 +130,7 @@ export default class Nodes extends Vue {
   }
 
   get networkJson() {
-    return this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase())!;
+    return this.getNetwork(this.selectedNetwork);
   }
 
   get selectedNetworkUpper() {

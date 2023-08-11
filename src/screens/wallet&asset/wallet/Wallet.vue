@@ -81,7 +81,7 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation, Action } from 'vuex-class';
 import { NetworkJson } from '@extension-base/types';
-import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset } from '@/store';
+import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset, GetNetwork } from '@/store';
 import type { AsyncFn, Fn, TabWallet } from '@/interfaces';
 import { BalanceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
@@ -148,7 +148,7 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;

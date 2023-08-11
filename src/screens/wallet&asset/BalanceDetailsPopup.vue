@@ -21,11 +21,10 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GetAssetPrice, SelectedWallet } from '@/store';
+import { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { AssetPrice } from '@/interfaces';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component
 export default class LockedDetailsPopup extends Vue {
@@ -36,7 +35,7 @@ export default class LockedDetailsPopup extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get assetNameUpper() {
     return this.currency.symbol.toUpperCase();

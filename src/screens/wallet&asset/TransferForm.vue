@@ -48,7 +48,7 @@
                 icon="rotate"
                 :placeholder="placeholderNetwork"
                 :isActiveRotate="showSelectNetworkPopup"
-                @click="toggleNetworkPopupVisibility"
+                @click="toggleValue('showSelectNetworkPopup')"
               />
 
               <Input
@@ -71,7 +71,7 @@
                 :isRotate="showSelectedAssetPopup"
                 @update:amount="updateAmount"
                 @setMax="setMax"
-                @toggleSelectAssetPopupVisibility="toggleAssetPopupVisibility"
+                @toggleSelectAssetPopupVisibility="toggleValue('showSelectedAssetPopup')"
               />
 
               <InputWithIcon
@@ -81,7 +81,7 @@
                 icon="rotate"
                 placeholder="assets.destNet"
                 :isActiveRotate="showDestNetPopup"
-                @click="toggleDestNetPopupVisibility"
+                @click="toggleValue('showDestNetPopup')"
               />
 
               <InputWithIcon
@@ -617,16 +617,8 @@ export default class TransferForm extends Vue {
     this.calculateEstimates();
   }
 
-  toggleAssetPopupVisibility() {
-    this.showSelectedAssetPopup = !this.showSelectedAssetPopup;
-  }
-
-  toggleNetworkPopupVisibility() {
-    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
-  }
-
-  toggleDestNetPopupVisibility() {
-    this.showDestNetPopup = !this.showDestNetPopup;
+  toggleValue(value: 'showSelectedAssetPopup' | 'showSelectNetworkPopup' | 'showDestNetPopup') {
+    this[value] = !this[value];
   }
 
   setRecipient(address = '') {
@@ -637,15 +629,15 @@ export default class TransferForm extends Vue {
     if (this.showSelectedAssetPopup) {
       this.syncedAssetId = value;
 
-      this.toggleAssetPopupVisibility();
+      this.toggleValue('showSelectedAssetPopup');
     } else if (this.showSelectNetworkPopup) {
       this.syncedNetwork = value;
 
-      this.toggleNetworkPopupVisibility();
+      this.toggleValue('showSelectNetworkPopup');
     } else {
       this.syncedDestNet = value;
 
-      this.toggleDestNetPopupVisibility();
+      this.toggleValue('showDestNetPopup');
     }
   }
 
@@ -820,9 +812,9 @@ export default class TransferForm extends Vue {
   }
 
   handlerCloseSelectPopup() {
-    if (this.showSelectedAssetPopup) this.toggleAssetPopupVisibility();
-    else if (this.showSelectNetworkPopup) this.toggleNetworkPopupVisibility();
-    else this.toggleDestNetPopupVisibility();
+    if (this.showSelectedAssetPopup) this.toggleValue('showSelectNetworkPopup');
+    else if (this.showSelectNetworkPopup) this.toggleValue('showSelectNetworkPopup');
+    else this.toggleValue('showDestNetPopup');
   }
 
   handlerCloseWarningAddressPopup() {

@@ -19,8 +19,8 @@
             v-for="network in filteredOptionsNetworks"
             :network="network"
             :isSelected="isNetworkSelected(network)"
-            @onToggleNetworkType="enableSingleNetwork(network.name, isNetworkSelected(network))"
-            @onToggleState="toggleFavorite(network.name)"
+            @onChangeNetwork="enableSingleNetwork(network.name, isNetworkSelected(network))"
+            @onToggleFavorite="toggleFavorite(network.name)"
             :key="network.name"
           />
         </ul>

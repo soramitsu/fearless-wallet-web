@@ -106,6 +106,10 @@ export function getNativeAssetName(asset: AssetName) {
   return asset.toLowerCase().replace('xc', '');
 }
 
+export function balanceItemByNetwork(balances: BalanceItem[], network: string) {
+  return balances.find((balance) => balance.name.toLowerCase() === network.toLowerCase());
+}
+
 export function getEthereumAssetName(asset: AssetName, network: NetworkName) {
   const assetLower = asset.toLowerCase();
 

@@ -65,11 +65,11 @@ export default class NetworkItem extends Vue {
       return;
     }
 
-    this.$emit('onToggleState');
+    this.$emit('onToggleFavorite');
   }
 
   onSelect() {
-    this.$emit('onToggleNetworkType');
+    this.$emit('onChangeNetwork');
   }
 }
 </script>

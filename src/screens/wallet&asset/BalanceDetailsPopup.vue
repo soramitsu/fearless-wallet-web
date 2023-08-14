@@ -8,8 +8,7 @@
           <div class="value">{{ $n(value, 'decimalPrecise') }} {{ assetNameUpper }}</div>
 
           <div v-if="getFiatValueVisible(fiat)" class="fiat-value">
-            {{ fiatSymbol }}
-            {{ $n(fiat, 'price') }}
+            {{ prepFiatValue(fiat) }}
           </div>
         </div>
       </div>
@@ -79,6 +78,10 @@ export default class LockedDetailsPopup extends Vue {
 
   get fiatPrice() {
     return this.getTokenPrice(this.currency.priceId ?? '').price ?? 0;
+  }
+
+  prepFiatValue(fiat: number) {
+    return `${this.fiatSymbol}${this.$n(fiat, 'price')} `;
   }
 
   getFiatValueVisible(value: number) {

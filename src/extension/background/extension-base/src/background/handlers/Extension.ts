@@ -1320,16 +1320,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {
-    const cb = createSubscription<'pri(soraCard.token)'>(id, port);
-
-    const subscription = this.state.soraCardTokenSubject.subscribe((token) => cb(token));
-
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
-
-    return true;
+    return this.state.soraCardService.soraCardTokenSubscribe(id, port);
   }
 
   authorizeApprovePolkaswap(authorizedAccounts: string[]): Promise<void> {

@@ -81,7 +81,7 @@ export default class Status extends Vue {
   }
 
   get iconName() {
-    if (this.isRejectedAndNotFreeAttempts) return require('@/assets/icons/sora-card.png');
+    if (this.isRejectedAndNotFreeAttempts) return require('@/assets/icons/sora-card-rejected.png');
 
     return require(`@/assets/icons/sora-card-${this.currentStatus.toLowerCase()}.png`);
   }

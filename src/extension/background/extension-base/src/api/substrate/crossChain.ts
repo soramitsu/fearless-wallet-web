@@ -9,8 +9,9 @@ import {
   getSubstrateAddressByEthAddress,
 } from '@extension-base/background/utils/utils';
 import { getAssetInfo } from '@extension-base/api/substrate/registry';
-import { TokenBalance, BasicTxResponse, SignerType } from '@extension-base/background/types/types';
+import { SignerType } from '@extension-base/background/types/types';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
+import type { TokenBalance, BasicTxResponse } from '@extension-base/background/types/types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { Interior } from '@/interfaces';
 import {

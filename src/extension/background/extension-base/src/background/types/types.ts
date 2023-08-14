@@ -56,6 +56,7 @@ type NullKeys<T> = { [K in keyof T]: IsNull<T, K> }[keyof T];
 
 export type SeedLengths = 12 | 24;
 export type Port = chrome.runtime.Port;
+
 export interface AccountJson extends KeyringPair$Meta {
   address: string;
   ethereumAddress: string;

@@ -1,4 +1,4 @@
-import { AccountJson } from '@extension-base/background/types/types';
+import type { AccountJson } from '@extension-base/background/types/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { WalletAddress, NetworkName } from '@/interfaces';
 
@@ -39,6 +39,7 @@ export type AssetTipDataProps = {
   count: number;
   time: number;
 };
+
 export type SetHiddenAsset = {
   assetId: string;
   value: boolean;

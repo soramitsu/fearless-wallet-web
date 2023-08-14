@@ -82,14 +82,16 @@ export default class Currencies extends Vue {
     });
   }
 
-  getAssetPrice(assetKey: string) {
+  getAssetPrice(assetKey: string | undefined) {
+    if (assetKey === undefined) return 0;
+
     if (Object.keys(this.prices).length && this.prices.tokenPriceMap[assetKey])
       return this.prices.tokenPriceMap[assetKey];
 
     return 0;
   }
 
-  getPriceChange(assetKey: string) {
+  getPriceChange(assetKey: string | undefined) {
     if (this.prices === undefined || this.prices.tokenPriceChange === undefined || assetKey === undefined) return 0;
 
     if (this.prices.tokenPriceChange[assetKey]) return this.prices.tokenPriceChange[assetKey] / 100;

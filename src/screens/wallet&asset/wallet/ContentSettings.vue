@@ -10,7 +10,7 @@
           :target="target"
           :class="classes"
           :text="label"
-          :isActive="activeTabName === tabName"
+          :isActive="syncedActiveTabName === tabName"
           @click="openTab(tabName)"
         />
       </template>
@@ -28,7 +28,7 @@
 
     <div v-if="isCurrenciesTab" class="settings-part">
       <SearchInput
-        v-if="!showAssetsManagementForm"
+        v-if="!syncedShowAssetsManagementForm"
         v-model="syncedFilterValue"
         placeholder="common.search"
         width="185px"

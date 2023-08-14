@@ -66,8 +66,9 @@ const mutations: MutationTree<State> & Mutations = {
     state.tabStatus = payload;
   },
 
+  // eslint-disable-next-line
   [MutationTypes.SET_FEATURES](state, features) {
-    state.features = features;
+    // state.features = features;
   },
 };
 

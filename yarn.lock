@@ -4918,7 +4918,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@walletconnect/core@npm:2.9.2":
+"@walletconnect/core@npm:^2.9.2":
   version: 2.9.2
   resolution: "@walletconnect/core@npm:2.9.2"
   dependencies:
@@ -5075,23 +5075,6 @@ __metadata:
   dependencies:
     tslib: 1.14.1
   checksum: fee03fcc70adb5635ab9419ea6ec6555aa2467bef650ad3b9526451c3a5cf247836db0f3ae3bb435d2e585d99e50c2ebe7dc9c429cfa3df900cf3fe4bd06d37f
-  languageName: node
-  linkType: hard
-
-"@walletconnect/sign-client@npm:^2.9.2":
-  version: 2.9.2
-  resolution: "@walletconnect/sign-client@npm:2.9.2"
-  dependencies:
-    "@walletconnect/core": 2.9.2
-    "@walletconnect/events": ^1.0.1
-    "@walletconnect/heartbeat": 1.2.1
-    "@walletconnect/jsonrpc-utils": 1.0.8
-    "@walletconnect/logger": ^2.0.1
-    "@walletconnect/time": ^1.0.2
-    "@walletconnect/types": 2.9.2
-    "@walletconnect/utils": 2.9.2
-    events: ^3.3.0
-  checksum: b91b271130ab6404c89a94e31bcf9b987c23bc4c5f86a75344b7f4ea1cd887996ae7876038ae35b430175af17529c4caf9bc332abe6e986d878439c7a3dba31a
   languageName: node
   linkType: hard
 
@@ -10261,7 +10244,7 @@ __metadata:
     "@vue/runtime-dom": ^3.3.4
     "@vue/test-utils": ^1.2.2
     "@vue/vue2-jest": ^27.0.0-alpha.3
-    "@walletconnect/sign-client": ^2.9.2
+    "@walletconnect/core": ^2.9.2
     "@walletconnect/types": ^2.9.2
     autoprefixer: ^10.4.14
     axios: ^0.27.2

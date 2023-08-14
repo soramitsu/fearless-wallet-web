@@ -1,16 +1,17 @@
 import axios from 'axios';
 import { loadScript, unloadScript } from 'vue-plugin-load-script';
 import { v4 as uuidv4 } from 'uuid';
+import { balanceItemByNetwork } from '@extension-base/background/utils/utils';
 import jwtDecode from 'jwt-decode';
 import { FPNumber } from '@sora-substrate/util';
 import type { JwtPayload } from 'jwt-decode';
 import type { Status } from '@/consts/soraCard';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { IS_PRODUCTION } from '@/consts/global';
 import { soraCardController } from '@/controllers';
 import { VerificationStatus, KycStatus } from '@/consts/soraCard';
 import { subscribeSoraCardToken } from '@/extension/messaging';
 import { SORA_NETWORK_NAME } from '@/consts/networks';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 type XorRestPrice = {
   euroToPay: string;
@@ -347,7 +348,7 @@ const subscribeCardToken = async (checkStatus: () => Promise<void>) => {
 };
 
 const calculateXOREuroBalance = ({ balances }: TokenBalance, xorPerEuroRatio: FPNumber): number => {
-  const balance = balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
+  const balance = balanceItemByNetwork(balances, SORA_NETWORK_NAME);
   const xorTotalBalance = balance?.muchTotal ?? FPNumber.ZERO;
   const xorBalanceInEuros = new FPNumber(xorTotalBalance).mul(xorPerEuroRatio).toNumber();
 
@@ -355,7 +356,7 @@ const calculateXOREuroBalance = ({ balances }: TokenBalance, xorPerEuroRatio: FP
 };
 
 const calculateXorRestPrice = ({ balances }: TokenBalance, xorPerEuroRatio: FPNumber): XorRestPrice => {
-  const balance = balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
+  const balance = balanceItemByNetwork(balances, SORA_NETWORK_NAME);
   const xorTotalBalance = new FPNumber(balance?.total ?? 0);
 
   const euroToPay = FPNumber.HUNDRED.add(FPNumber.ONE).sub(xorTotalBalance.mul(xorPerEuroRatio));

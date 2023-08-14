@@ -54,11 +54,11 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { AccountJson } from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import { createGoogleFile, exportAccount, validatePassword } from '@/extension/messaging';
 import { ICreateFile } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
 @Component
 export default class GoogleExportPopup extends Vue {

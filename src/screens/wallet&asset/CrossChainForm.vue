@@ -71,13 +71,13 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { getNativeAssetName } from '@extension-base/background/utils/utils';
-import { NetworkJson } from '@extension-base/types';
 import TransferForm from './TransferForm.vue';
-import type { GetNetwork, SelectedWallet } from '@/store';
+import type { NetworkJson } from '@extension-base/types';
+import type { SelectedWallet, GetNetwork } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp, cut } from '@/helpers/';
 import { formattedNumber } from '@/helpers/numbers';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component({

@@ -34,7 +34,11 @@ import {
 } from '@extension-base/api/substrate/crossChain';
 import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
 import { ethers } from 'ethers';
-import { getSubstrateAddressByEthAddress, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
+import {
+  balanceItemByNetwork,
+  getSubstrateAddressByEthAddress,
+  isRequireSubstrateAPI,
+} from '@extension-base/background/utils/utils';
 
 import { storage } from '@extension-base/stores/Storage';
 import { RequestConnectWalletConnect } from '../../services/wallet-connect-service/types';
@@ -1054,13 +1058,14 @@ export default class Extension extends FWExtensionBase {
 
     if (isEthereumAddress(from) && isEthereumAddress(to) && !isRequireSubstrateAPI(networkKey)) {
       const fromAccountFreeBalance = tokenBalance
-        ? tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0'
+        ? balanceItemByNetwork(tokenBalance.balances, networkKey)?.transferable ?? '0'
         : '0';
       const txVal = fromAccountFreeBalance || '0';
 
       // Estimate with EVM API
       if (!isMainToken && tokenInfo.id) {
-        const { fee: feeValue } = await getERC20TransactionObject(tokenInfo.id, networkKey, from, to, txVal);
+        const prepContractAddress = `0x${tokenInfo.id}`;
+        const { fee: feeValue } = await getERC20TransactionObject(prepContractAddress, networkKey, from, to, txVal);
 
         fee = +ethers.formatEther(feeValue);
       } else {
@@ -1073,8 +1078,7 @@ export default class Extension extends FWExtensionBase {
 
       const feeNumber = await estimateFee(networkKey, to, amount, tokenBalance);
       fee = feeNumber;
-      fromAccountFreeBalance =
-        tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0';
+      fromAccountFreeBalance = balanceItemByNetwork(tokenBalance.balances, networkKey)?.transferable ?? '0';
     }
 
     return {

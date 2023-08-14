@@ -6,6 +6,7 @@
           class="balance"
           :balance="summaryTransferableBalance"
           :changeWalletBalance="changeWalletBalance"
+          :staticWidth="false"
           @click.native="$emit('openFiatsPopup', true)"
         />
 
@@ -80,10 +81,10 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation, Action } from 'vuex-class';
-import { NetworkJson } from '@extension-base/types';
+import { BalanceJson, TokenBalance } from '@extension-base/background/types/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset, GetNetwork } from '@/store';
 import type { AsyncFn, Fn, TabWallet } from '@/interfaces';
-import { BalanceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import ContentSettings from '@/screens/wallet&asset/wallet/ContentSettings.vue';

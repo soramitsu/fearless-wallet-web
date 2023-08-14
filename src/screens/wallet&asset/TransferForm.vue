@@ -48,7 +48,7 @@
                 icon="rotate"
                 :placeholder="placeholderNetwork"
                 :isActiveRotate="showSelectNetworkPopup"
-                @click="toggleNetworkPopupVisibility"
+                @click="toggleValue('showSelectNetworkPopup')"
               />
 
               <Input
@@ -71,7 +71,7 @@
                 :isRotate="showSelectedAssetPopup"
                 @update:amount="updateAmount"
                 @setMax="setMax"
-                @toggleSelectAssetPopupVisibility="toggleAssetPopupVisibility"
+                @toggleSelectAssetPopupVisibility="toggleValue('showSelectedAssetPopup')"
               />
 
               <InputWithIcon
@@ -81,7 +81,7 @@
                 icon="rotate"
                 placeholder="assets.destNet"
                 :isActiveRotate="showDestNetPopup"
-                @click="toggleDestNetPopupVisibility"
+                @click="toggleValue('showDestNetPopup')"
               />
 
               <InputWithIcon
@@ -188,15 +188,16 @@ import { Component, Vue, Prop, Watch, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import { getEthereumAssetName, getNativeAssetName } from '@extension-base/background/utils/utils';
-import { NetworkJson } from '@extension-base/types';
+import { RequestCheckTransfer, RequestCheckCrossChain, TokenBalance } from '@extension-base/background/types/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import HistoryBook from './HistoryBook.vue';
 import EditAddressBook from './EditAddressBook.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
 import InputWithIcon from './InputWithIcon.vue';
+import type { NetworkJson } from '@extension-base/types';
 import type { GetAssetPrice, GetNetwork } from '@/store';
-import type { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
+import type { AccountJson } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import FloatInput from '@/components/FloatInput.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -206,11 +207,6 @@ import { cut, firstCharToUp, getClipboard } from '@/helpers/';
 import { getCurrencyOptions, getUtilityAsset } from '@/helpers/currencies';
 import { VALID_SUBSTRATE_ADDRESS, VALID_ETHEREUM_ADDRESS, CHAIN_IDS } from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
-import {
-  RequestCheckTransfer,
-  RequestCheckCrossChain,
-  TokenBalance,
-} from '@/extension/background/extension-base/src/background/types/types';
 import { checkTransfer, checkCrossChain } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 
@@ -617,16 +613,8 @@ export default class TransferForm extends Vue {
     this.calculateEstimates();
   }
 
-  toggleAssetPopupVisibility() {
-    this.showSelectedAssetPopup = !this.showSelectedAssetPopup;
-  }
-
-  toggleNetworkPopupVisibility() {
-    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
-  }
-
-  toggleDestNetPopupVisibility() {
-    this.showDestNetPopup = !this.showDestNetPopup;
+  toggleValue(value: 'showSelectedAssetPopup' | 'showSelectNetworkPopup' | 'showDestNetPopup') {
+    this[value] = !this[value];
   }
 
   setRecipient(address = '') {
@@ -637,15 +625,15 @@ export default class TransferForm extends Vue {
     if (this.showSelectedAssetPopup) {
       this.syncedAssetId = value;
 
-      this.toggleAssetPopupVisibility();
+      this.toggleValue('showSelectedAssetPopup');
     } else if (this.showSelectNetworkPopup) {
       this.syncedNetwork = value;
 
-      this.toggleNetworkPopupVisibility();
+      this.toggleValue('showSelectNetworkPopup');
     } else {
       this.syncedDestNet = value;
 
-      this.toggleDestNetPopupVisibility();
+      this.toggleValue('showDestNetPopup');
     }
   }
 
@@ -820,9 +808,9 @@ export default class TransferForm extends Vue {
   }
 
   handlerCloseSelectPopup() {
-    if (this.showSelectedAssetPopup) this.toggleAssetPopupVisibility();
-    else if (this.showSelectNetworkPopup) this.toggleNetworkPopupVisibility();
-    else this.toggleDestNetPopupVisibility();
+    if (this.showSelectedAssetPopup) this.toggleValue('showSelectNetworkPopup');
+    else if (this.showSelectNetworkPopup) this.toggleValue('showSelectNetworkPopup');
+    else this.toggleValue('showDestNetPopup');
   }
 
   handlerCloseWarningAddressPopup() {

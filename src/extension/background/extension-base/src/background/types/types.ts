@@ -7,8 +7,8 @@ import { Subscription } from 'rxjs';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 import MetadataStore from '@extension-base/stores/Metadata';
-import { NetworkJson } from '@extension-base/types';
 import { JsonRpcProvider } from 'ethers';
+import type { NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type { SubmittableExtrinsicFunction } from '@polkadot/api/promise/types';
@@ -56,6 +56,7 @@ type NullKeys<T> = { [K in keyof T]: IsNull<T, K> }[keyof T];
 
 export type SeedLengths = 12 | 24;
 export type Port = chrome.runtime.Port;
+
 export interface AccountJson extends KeyringPair$Meta {
   address: string;
   ethereumAddress: string;

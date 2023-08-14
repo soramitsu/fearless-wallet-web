@@ -25,7 +25,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { NetworkJson } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 
@@ -65,11 +65,11 @@ export default class NetworkItem extends Vue {
       return;
     }
 
-    this.$emit('onToggleState');
+    this.$emit('onToggleFavorite');
   }
 
   onSelect() {
-    this.$emit('onToggleNetworkType');
+    this.$emit('onChangeNetwork');
   }
 }
 </script>

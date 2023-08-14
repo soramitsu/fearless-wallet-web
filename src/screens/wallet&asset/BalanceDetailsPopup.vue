@@ -8,8 +8,7 @@
           <div class="value">{{ $n(value, 'decimalPrecise') }} {{ assetNameUpper }}</div>
 
           <div v-if="getFiatValueVisible(fiat)" class="fiat-value">
-            {{ fiatSymbol }}
-            {{ $n(fiat, 'price') }}
+            {{ prepFiatValue(fiat) }}
           </div>
         </div>
       </div>
@@ -20,9 +19,9 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { AssetPrice } from '@/interfaces';
 
@@ -79,6 +78,10 @@ export default class LockedDetailsPopup extends Vue {
 
   get fiatPrice() {
     return this.getTokenPrice(this.currency.priceId ?? '').price ?? 0;
+  }
+
+  prepFiatValue(fiat: number) {
+    return `${this.fiatSymbol}${this.$n(fiat, 'price')} `;
   }
 
   getFiatValueVisible(value: number) {

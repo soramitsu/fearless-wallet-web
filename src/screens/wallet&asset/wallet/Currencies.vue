@@ -23,11 +23,11 @@
 import Draggable from 'vuedraggable';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
+import { TokenBalance, BalanceJson } from '@extension-base/background/types/types';
 import type { SelectedWallet } from '@/store';
 import type { AsyncFn, AssetsPrice } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import CurrencyItem from '@/screens/wallet&asset/wallet/CurrencyItem.vue';
-import { TokenBalance, BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
@@ -82,14 +82,16 @@ export default class Currencies extends Vue {
     });
   }
 
-  getAssetPrice(assetKey: string) {
+  getAssetPrice(assetKey: string | undefined) {
+    if (assetKey === undefined) return 0;
+
     if (Object.keys(this.prices).length && this.prices.tokenPriceMap[assetKey])
       return this.prices.tokenPriceMap[assetKey];
 
     return 0;
   }
 
-  getPriceChange(assetKey: string) {
+  getPriceChange(assetKey: string | undefined) {
     if (this.prices === undefined || this.prices.tokenPriceChange === undefined || assetKey === undefined) return 0;
 
     if (this.prices.tokenPriceChange[assetKey]) return this.prices.tokenPriceChange[assetKey] / 100;

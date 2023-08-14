@@ -3,7 +3,7 @@
 
 import { BN } from '@polkadot/util';
 import { EXTENSION_PREFIX } from '@extension-base/defaults';
-import { NetworkJson } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 
 export function sumBN(inputArr: BN[]) {

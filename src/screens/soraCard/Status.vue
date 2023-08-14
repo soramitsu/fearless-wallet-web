@@ -48,11 +48,14 @@ import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { VerificationStatus } from '@/consts/soraCard';
 import { Components } from '@/router/routes';
 import { MutationTypes as SoraCardMutationTypes } from '@/store/soraCard/mutations';
+import { IS_EXTENSION } from '@/consts/global';
 
 @Component({
   components: { UnsupportedCountries },
 })
 export default class Status extends Vue {
+  readonly isExtension = IS_EXTENSION;
+
   @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
   @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;
   @Mutation(SoraCardMutationTypes.SET_WILL_TO_KYC_PASS_KYC_AGAIN) setWillToPassKycAgain!: Fn<boolean>;
@@ -112,6 +115,12 @@ export default class Status extends Vue {
   }
 
   retry() {
+    if (this.isExtension) {
+      this.$emit('openPolkaswap');
+
+      return;
+    }
+
     if (this.isRejected) {
       this.setWillToPassKycAgain(true);
       this.$emit('openStartPage');

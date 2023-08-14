@@ -1,4 +1,4 @@
-import { NetworkJson } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { AssetsPrice, History, FiatJson } from '@/interfaces';
 
 export type State = {

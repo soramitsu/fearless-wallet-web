@@ -105,7 +105,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Identicon } from '@polkadot/vue-identicon';
 import { Getter } from 'vuex-class';
-import { NetworkJson } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
 import type { SelectedWallet } from '@/store';
 import { getType, getSignTransfer, getHistoryValue, getFormattedDate, getHumanTransferFee } from '@/helpers/history';

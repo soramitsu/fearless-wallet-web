@@ -18,7 +18,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
-import { NetworkJson } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { Fn } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';

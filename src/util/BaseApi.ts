@@ -7,6 +7,7 @@ import {
   isEthereumAddress,
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
+import type { AccountJson } from '@extension-base/background/types/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
@@ -16,7 +17,6 @@ import { isDerivationPathValid, isJsonValid, jsonRestore } from '@/extension/mes
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { NetworksController } from '@/controllers';
 import store from '@/store';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import { IS_EXTENSION } from '@/consts/global';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;

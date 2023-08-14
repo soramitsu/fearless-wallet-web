@@ -95,23 +95,26 @@ import BaseApi from '@/util/BaseApi';
 import { tieAccount, windowOpen } from '@/extension/messaging';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 import { AsyncFn, Fn } from '@/interfaces';
-
 import { ALL_NETWORKS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common';
 import { cut } from '@/helpers';
 
 @Component({
-  components: { ConnectionPopup, NetworkManagement, NetworkManagementButton },
+  components: {
+    ConnectionPopup,
+    NetworkManagement,
+    NetworkManagementButton,
+  },
 })
 export default class Header extends Vue {
   readonly walletNameRef = 'walletName';
   readonly settingsNameRef = 'settingsName';
   readonly isPopup = BaseApi.useIsPopup();
+  readonly selectNetworkButtonRef = 'selectNetworkButton';
+  readonly allNetworksIcon = 'all-networks';
   showConnectionPopup = false;
   showSelectNetworkPopup = false;
-  readonly selectNetworkButtonRef = 'selectNetworkButton';
-  networkGoups = ['all', 'popular', 'favorites'];
-  readonly allNetworksIcon = 'all-networks';
+
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -249,6 +252,7 @@ export default class Header extends Vue {
   min-height: $header-height;
   margin-bottom: 16px;
   gap: 2px;
+  min-height: 48px;
 
   .logo-container {
     width: 48px;

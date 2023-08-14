@@ -188,15 +188,16 @@ import { Component, Vue, Prop, Watch, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import { getEthereumAssetName, getNativeAssetName } from '@extension-base/background/utils/utils';
-import { NetworkJson } from '@extension-base/types';
+import { RequestCheckTransfer, RequestCheckCrossChain, TokenBalance } from '@extension-base/background/types/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import HistoryBook from './HistoryBook.vue';
 import EditAddressBook from './EditAddressBook.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
 import InputWithIcon from './InputWithIcon.vue';
+import type { NetworkJson } from '@extension-base/types';
 import type { GetAssetPrice, GetNetwork } from '@/store';
-import type { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
+import type { AccountJson } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import FloatInput from '@/components/FloatInput.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -206,11 +207,6 @@ import { cut, firstCharToUp, getClipboard } from '@/helpers/';
 import { getCurrencyOptions, getUtilityAsset } from '@/helpers/currencies';
 import { VALID_SUBSTRATE_ADDRESS, VALID_ETHEREUM_ADDRESS, CHAIN_IDS } from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
-import {
-  RequestCheckTransfer,
-  RequestCheckCrossChain,
-  TokenBalance,
-} from '@/extension/background/extension-base/src/background/types/types';
 import { checkTransfer, checkCrossChain } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 

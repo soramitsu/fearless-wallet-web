@@ -52,8 +52,8 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { TabWallet } from '@/interfaces/common';
 import type { SelectedWallet } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 interface TabsOptions {
   label: string;

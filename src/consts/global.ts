@@ -13,7 +13,6 @@ const MOONPAY_API_KEY = IS_PRODUCTION ? process.env.MOONPAY_PROD_API_KEY : proce
 const IS_EXTENSION = chrome.extension !== undefined;
 const APP_VERSION = packages.version;
 const ONE_WEEK = 604800000;
-const SORA_CARD_VISIBILITY = false; // TODO перейти на удаленный JSON
 
 export {
   APP_WIDTH,
@@ -28,6 +27,5 @@ export {
   MOONPAY_API_KEY,
   IS_EXTENSION,
   APP_VERSION,
-  SORA_CARD_VISIBILITY,
   ONE_WEEK,
 };

@@ -164,10 +164,18 @@ export default class Preview extends Vue {
   }
 
   get euroBalanceXOR() {
+    if (!this.currencyXOR) return 0;
+
     return calculateXOREuroBalance(this.currencyXOR, this.xorPerEuroRatio) ?? 0;
   }
 
   get restPriceXOR() {
+    if (!this.currencyXOR)
+      return {
+        euroToPay: '0',
+        euroToPayInXor: '0',
+      };
+
     return calculateXorRestPrice(this.currencyXOR, this.xorPerEuroRatio);
   }
 

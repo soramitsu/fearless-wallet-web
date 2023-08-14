@@ -5,7 +5,7 @@ import {
   MetadataRequest,
   SigningRequest,
 } from '@extension-base/background/types/types';
-import { Features } from '@/store/extension/types';
+import type { Features } from '@/store/extension/types';
 
 export type State = {
   requests: {

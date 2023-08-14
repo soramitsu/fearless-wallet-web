@@ -398,7 +398,7 @@
         "statusText": "Верицикация отклонена",
         "text1": "Верицикация отклонена",
         "text2": "Ваша заявка отклонена.",
-        "text3": "PLACEHOLDER TEXT: *Display 'additional description' provided in the answer* (done by devs. We should check the format of the answer, to be sure it's human-readable)"
+        "text3": "Причина отклонения:"
       },
       "accepted": {
         "statusText": "Карта в пути",

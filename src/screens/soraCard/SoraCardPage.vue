@@ -34,7 +34,7 @@
 
       <KycView v-else-if="showKycView" @confirmKyc="redirectToView" />
 
-      <Status v-else-if="showStatus" @openStartPage="openStartPage" />
+      <Status v-else-if="showStatus" @openStartPage="openStartPage" @openPolkaswap="openPolkaswap" />
 
       <Loader v-else />
 
@@ -195,7 +195,7 @@ export default class SoraCardPage extends Vue {
 
   mounted() {
     if (this.isExtension) {
-      subscribeCardToken(this.checkKyc);
+      if (!this.hasTokens) subscribeCardToken(this.checkKyc);
 
       this.getAuthList();
     }

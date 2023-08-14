@@ -215,9 +215,8 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.FETCH_FEATURES]({ commit }) {
-    const { data } = await axios.get<Features>(URLS.FEATURES);
-
-    commit(MutationTypes.SET_FEATURES, data);
+    // const { data } = await axios.get<Features>(URLS.FEATURES);
+    // commit(MutationTypes.SET_FEATURES, data);
   },
 };
 

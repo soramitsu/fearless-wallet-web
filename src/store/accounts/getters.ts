@@ -143,9 +143,9 @@ const getters: GetterTree<State, State> & Getters = {
     },
 
   [GettersTypes.showSoraCardBanner]({ showSoraCardBanner }, getters): boolean {
-    const { showSoraCard } = getters?.features as Features;
+    const { soraCard } = getters?.features as Features;
 
-    return !!showSoraCard && showSoraCardBanner;
+    return !!soraCard && showSoraCardBanner;
   },
 };
 

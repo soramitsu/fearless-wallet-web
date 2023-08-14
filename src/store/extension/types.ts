@@ -1,3 +1,3 @@
 export interface Features {
-  showSoraCard?: boolean;
+  soraCard?: boolean;
 }

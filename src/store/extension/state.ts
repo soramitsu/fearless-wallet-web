@@ -28,7 +28,7 @@ const state = (): State => {
     authList: {},
     tabStatus: null,
     features: {
-      showSoraCard: true,
+      soraCard: true,
     },
   };
 };

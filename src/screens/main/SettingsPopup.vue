@@ -59,7 +59,7 @@ export default class SettingsPopup extends Vue {
   @Getter(ExtensionGettersTypes.features) features!: Features;
 
   get showSoraCard() {
-    return this.features.showSoraCard;
+    return this.features.soraCard;
   }
 
   get routeName() {

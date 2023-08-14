@@ -64,7 +64,7 @@ const haveSelectedWallet = () => {
 const haveAuthRequests = () => store.getters.authList.length;
 const haveSignRequests = () => store.getters.signList.length;
 const haveMetaRequests = () => store.getters.metaRequests.length;
-const showSoraCard = () => store.getters.features.showSoraCard;
+const showSoraCard = () => store.getters.features.soraCard;
 
 const routes: Array<RouteConfig> = [
   {

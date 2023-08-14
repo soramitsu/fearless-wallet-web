@@ -67,7 +67,7 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.SET_FEATURES](state, features) {
-    // state.features = features;
+    state.features = features;
   },
 };
 

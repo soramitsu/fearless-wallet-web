@@ -103,8 +103,7 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
-import type { NetworkJson } from '@extension-base/types';
-import type { SelectedWallet } from '@/store';
+import type { GetNetwork, SelectedWallet } from '@/store';
 import type { AsyncFn } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -131,11 +130,11 @@ export default class Preview extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
   @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Action(SoraCardActionTypes.GET_XOR_PER_EURO_RATIO) getXorPerEuroRatio!: AsyncFn;
 
   get networkIsReady() {
-    const network = this.networks.find(({ name }) => name.toLowerCase() === this.soraNetworkName);
+    const network = this.getNetwork(this.soraNetworkName);
 
     return network?.apiStatus === NETWORK_STATUS.CONNECTED;
   }

@@ -81,7 +81,7 @@ import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
 import { ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
 import type { HexString } from '@polkadot/util/types';
-import type { SelectedWallet } from '@/store';
+import type { GetNetwork, SelectedWallet } from '@/store';
 import type { NetworkJson } from '@extension-base/types';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
@@ -95,13 +95,16 @@ import BaseApi from '@/util/BaseApi';
 import { tieAccount, windowOpen } from '@/extension/messaging';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 import { AsyncFn, Fn } from '@/interfaces';
-
 import { ALL_NETWORKS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common';
 import { cut } from '@/helpers';
 
 @Component({
-  components: { ConnectionPopup, NetworkManagement, NetworkManagementButton },
+  components: {
+    ConnectionPopup,
+    NetworkManagement,
+    NetworkManagementButton,
+  },
 })
 export default class Header extends Vue {
   readonly walletNameRef = 'walletName';
@@ -120,7 +123,7 @@ export default class Header extends Vue {
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get showBackIcon() {
     const route = this.$route.name;
@@ -155,8 +158,7 @@ export default class Header extends Vue {
   }
 
   get decimals() {
-    return this.networks?.find((network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase())
-      ?.addressPrefix;
+    return this.getNetwork(this.selectedNetwork)?.addressPrefix;
   }
 
   get address() {

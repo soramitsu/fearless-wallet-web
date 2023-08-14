@@ -40,8 +40,7 @@
 <script lang="ts">
 import { Getter } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { SelectedWallet } from '@/store';
-import type { NetworkJson } from '@extension-base/types';
+import type { GetNetwork, SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -57,7 +56,7 @@ export default class AccountSettingsPopup extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get explorerType() {
     return this.getNetwork(this.selectedNetwork)?.externalApi?.history?.type;

@@ -1080,7 +1080,7 @@ export default class Extension extends FWExtensionBase {
       errors,
       warnings,
       fromAccountFree: fromAccountFreeBalance,
-      estimateFee: fee,
+      estimateFee: fee.toString(),
     } as unknown as ResponseCheckTransfer;
   }
 

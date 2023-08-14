@@ -196,7 +196,7 @@ import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
 import InputWithIcon from './InputWithIcon.vue';
 import type { NetworkJson } from '@extension-base/types';
-import type { GetAssetPrice } from '@/store';
+import type { GetAssetPrice, GetNetwork } from '@/store';
 import type { AccountJson } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import FloatInput from '@/components/FloatInput.vue';
@@ -256,7 +256,7 @@ export default class TransferForm extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get recipientCut() {
     return cut(this.syncedRecipient);
@@ -500,7 +500,7 @@ export default class TransferForm extends Vue {
   }
 
   get originNet() {
-    return this.networks.find(({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase())!;
+    return this.getNetwork(this.syncedNetwork);
   }
 
   get optionsDestNet() {
@@ -585,7 +585,9 @@ export default class TransferForm extends Vue {
     this.syncedDestNet = this.optionsDestNet?.[0]?.value ?? '';
     this.syncedValue = '';
 
-    if (this.isTransfer) this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
+    if (this.isTransfer) {
+      this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
+    }
   }
 
   @Watch('syncedDestNet')
@@ -629,7 +631,7 @@ export default class TransferForm extends Vue {
 
   toggleSelectedNetwork(value: string) {
     if (this.showSelectedAssetPopup) {
-      this.syncedAssetId = value.toLowerCase();
+      this.syncedAssetId = value;
 
       this.toggleAssetPopupVisibility();
     } else if (this.showSelectNetworkPopup) {

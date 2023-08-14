@@ -72,7 +72,7 @@ import {
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
-import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
+import type { GetNetwork, GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
 import { isSignLocked, makeSwap, makeTransfer, makeCrossChain, cancelMobileSignRequest } from '@/extension/messaging';
 import { beaconController, ExtensionController } from '@/controllers';
@@ -116,6 +116,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get classesInput() {
     return [
@@ -132,7 +133,7 @@ export default class ConfirmationPasswordPopup extends Vue {
       return this.balances.find(({ assetId }) => assetId === this.firstIcon)?.icon;
 
     // firstIcon === networkName for crossChain
-    return this.networks.find(({ name }) => name.toLowerCase() === this.firstIcon.toLowerCase())?.icon ?? '';
+    return this.getNetwork(this.firstIcon)?.icon ?? '';
   }
 
   get secondIconUrl() {
@@ -140,7 +141,7 @@ export default class ConfirmationPasswordPopup extends Vue {
       return this.balances.find(({ assetId }) => assetId === this.secondIcon)?.icon;
 
     // secondIcon === networkName for crossChain
-    return this.networks.find(({ name }) => name.toLowerCase() === this.secondIcon.toLowerCase())?.icon ?? '';
+    return this.getNetwork(this.secondIcon)?.icon ?? '';
   }
 
   get requestTransfer() {

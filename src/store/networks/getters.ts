@@ -74,9 +74,9 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getNetwork]:
     ({ networks }) =>
     (networkNameOrChainId: string) => {
-      const value = networkNameOrChainId?.toLowerCase();
+      const value = networkNameOrChainId.toLowerCase();
 
-      return networks.find(({ name, chainId }) => name.toLowerCase() === value || chainId.toLowerCase() === value);
+      return networks.find(({ name, chainId }) => name.toLowerCase() === value || chainId.toLowerCase() === value)!;
     },
 
   [GettersTypes.getNetworkGenesisHash]:

@@ -35,7 +35,8 @@ import { SignerPayloadRaw } from '@polkadot/types/types';
 import { JsonRpcProvider } from 'ethers';
 
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
-import { EventService } from '../../services/event-service';
+import WalletConnectService from '@extension-base/services/wallet-connect-service';
+import { EventService } from '@extension-base/services/event-service';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -201,7 +202,7 @@ export default class State {
     dAppName: '',
   };
   public eventService = new EventService();
-
+  public walletConnectService = new WalletConnectService(this);
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }

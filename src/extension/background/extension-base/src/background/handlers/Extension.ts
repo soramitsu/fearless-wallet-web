@@ -1334,7 +1334,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   connectWalletConnect(request: RequestConnectWalletConnect) {
-    console.info(request);
+    this.state.walletConnectService.addConnection(request.uri);
   }
 
   async handle<TMessageType extends MessageTypes>(

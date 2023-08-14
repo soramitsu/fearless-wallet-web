@@ -37,6 +37,7 @@ import { ethers } from 'ethers';
 import { getSubstrateAddressByEthAddress, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
 
 import { storage } from '@extension-base/stores/Storage';
+import { RequestConnectWalletConnect } from '../../services/wallet-connect-service/types';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -1332,6 +1333,10 @@ export default class Extension extends FWExtensionBase {
     return this.state.approvePolkaswap(authorizedAccounts);
   }
 
+  connectWalletConnect(request: RequestConnectWalletConnect) {
+    console.info(request);
+  }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -1575,6 +1580,9 @@ export default class Extension extends FWExtensionBase {
       case 'pri(transaction.history.get.subscription)':
         return this.subscribeHistory(id, port);
 
+      //Wallet Connect
+      case 'pri(walletConnect.connect)':
+        return this.connectWalletConnect(request as RequestConnectWalletConnect);
       default:
         throw new Error(`Unable to handle message of type ${type}`);
     }

@@ -2,6 +2,7 @@ import { metadataExpand } from '@polkadot/extension-chains';
 import { selectableNetworks } from '@polkadot/networks';
 import { getId } from '@extension-base/utils/utils';
 import { PORT_EXTENSION } from '@extension-base/defaults';
+import { RequestConnectWalletConnect } from './background/extension-base/src/services/wallet-connect-service/types';
 import type { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
@@ -544,4 +545,9 @@ export function validateNetwork(
 
 export function pingServiceWorker(): Promise<boolean> {
   return sendMessage('pri(app.port.ping)');
+}
+
+//Wallet Connect
+export async function newConnection(request: RequestConnectWalletConnect): Promise<boolean> {
+  return sendMessage('pri(walletConnect.connect)', request);
 }

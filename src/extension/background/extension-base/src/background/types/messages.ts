@@ -101,6 +101,7 @@ import type {
   SoraFees,
   SignerPayloadRaw,
 } from '@/interfaces';
+import type { RequestConnectWalletConnect } from '@extension-base/services/wallet-connect-service/types';
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
 export interface RequestSignatures {
@@ -225,4 +226,20 @@ export interface RequestSignatures {
   'pub(rpc.subscribe)': [RequestRpcSubscribe, number, JsonRpcResponse<unknown>];
   'pub(rpc.subscribeConnected)': [null, boolean, boolean];
   'pub(rpc.unsubscribe)': [RequestRpcUnsubscribe, boolean];
+
+  //Wallet Connect
+  'pri(walletConnect.connect)': [RequestConnectWalletConnect, boolean];
+  // 'pri(walletConnect.requests.connect.subscribe)': [null, WalletConnectSessionRequest[], WalletConnectSessionRequest[]];
+  // 'pri(walletConnect.session.approve)': [RequestApproveConnectWalletSession, boolean];
+  // 'pri(walletConnect.session.reject)': [RequestRejectConnectWalletSession, boolean];
+  // 'pri(walletConnect.session.reconnect)': [RequestReconnectConnectWalletSession, boolean];
+  // 'pri(walletConnect.session.subscribe)': [null, SessionTypes.Struct[], SessionTypes.Struct[]];
+  // 'pri(walletConnect.session.disconnect)': [RequestDisconnectWalletConnectSession, boolean];
+  // 'pri(walletConnect.requests.notSupport.subscribe)': [
+  //   null,
+  //   WalletConnectNotSupportRequest[],
+  //   WalletConnectNotSupportRequest[]
+  // ];
+  // 'pri(walletConnect.notSupport.approve)': [RequestApproveWalletConnectNotSupport, boolean];
+  // 'pri(walletConnect.notSupport.reject)': [RequestRejectWalletConnectNotSupport, boolean];
 }

@@ -1,5 +1,3 @@
-// Copyright 2019-2022 @polkadot/extension-bg authors & contributors
-// SPDX-License-Identifier: Apache-2.0
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { knownGenesis } from '@polkadot/networks/defaults';
@@ -10,7 +8,6 @@ import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
-
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import MetadataStore from '@extension-base/stores/Metadata';
 import { storage } from '@extension-base/stores/Storage';
@@ -33,9 +30,7 @@ import { stripUrl, withErrorLog } from '@extension-base/background/handlers/help
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { SignerPayloadRaw } from '@polkadot/types/types';
 import { JsonRpcProvider } from 'ethers';
-
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
-import { EventService } from '../../services/event-service';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -75,6 +70,7 @@ import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } fr
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
+import { EventService, SoraCardService } from '@/extension/background/extension-base/src/services';
 import { URLS } from '@/consts/urls';
 import {
   ALL_NETWORKS,
@@ -84,7 +80,6 @@ import {
   SORA_XOR_ASSET_ID,
 } from '@/consts/networks';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
-import { IS_PRODUCTION } from '@/consts/global';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -187,7 +182,6 @@ export default class State {
   public mobileSignRequests: Record<string, MobileSignRequest> = {};
   private historyMap: Record<string, TransactionHistoryItemType[]> = {};
   private historySubject = new Subject<Record<string, TransactionHistoryItemType[]>>();
-  public readonly soraCardTokenSubject: BehaviorSubject<string> = new BehaviorSubject<string>('');
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
   public readonly metaSubject = new BehaviorSubject<MetadataRequest[]>([]);
   public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
@@ -202,6 +196,7 @@ export default class State {
     dAppName: '',
   };
   public eventService = new EventService();
+  public soraCardService = new SoraCardService();
 
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
@@ -360,22 +355,11 @@ export default class State {
   }
 
   approvePolkaswap = async (authorizedAccounts: string[]): Promise<void> => {
-    const { POLKASWAP } = URLS;
-    const stripedUrl = stripUrl(POLKASWAP);
-    const origin = IS_PRODUCTION ? 'Polkaswap' : 'SubWallet Connect';
-
-    this.authUrls[stripedUrl] = {
-      authorizedAccounts,
-      count: 0,
-      id: getId(),
-      origin,
-      url: POLKASWAP,
-      isAllowed: true,
-      isAllowedMap: {},
-    };
+    this.soraCardService.approvePolkaswap(authorizedAccounts, this.authUrls);
 
     await this.saveCurrentAuthList();
-    await this.updateDefaultAuthAccounts(authorizedAccounts);
+
+    this.updateDefaultAuthAccounts(authorizedAccounts);
   };
 
   authComplete = (
@@ -410,7 +394,8 @@ export default class State {
       };
 
       await this.saveCurrentAuthList();
-      await this.updateDefaultAuthAccounts(authorizedAccounts);
+
+      this.updateDefaultAuthAccounts(authorizedAccounts);
 
       delete this.authRequests[id];
 

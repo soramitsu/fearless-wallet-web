@@ -234,7 +234,7 @@ export default class Tabs {
   }
 
   saveSoraCardRefreshToken(token: string): void {
-    this.state.soraCardTokenSubject.next(token);
+    this.state.soraCardService.tokenSubject.next(token);
   }
 
   async handle<TMessageType extends MessageTypes>(

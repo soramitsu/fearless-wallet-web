@@ -3,10 +3,10 @@ import type { GetterTree } from 'vuex';
 import type { SelectedWallet, WalletInfo, GetAutoSelectNodesValueByNetwork, GetShowWarningNetworks } from './types';
 import type { State } from './state';
 import type { FiatJson } from '@/interfaces';
+import type { Features } from '@/store/extension/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import store from '@/store';
 import { ALL_NETWORKS } from '@/consts/networks';
-import { Features } from '@/store/extension/types';
 
 export enum GettersTypes {
   getSelectedWallet = 'getSelectedWallet',

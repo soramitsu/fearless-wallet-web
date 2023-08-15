@@ -1,7 +1,5 @@
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
-import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
-import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import {
   keyExtractSuri,
@@ -40,7 +38,6 @@ import {
   isRequireSubstrateAPI,
 } from '@extension-base/background/utils/utils';
 
-import { storage } from '@extension-base/stores/Storage';
 import { RequestConnectWalletConnect } from '../../services/wallet-connect-service/types';
 import type {
   MobileSigningRequest,
@@ -252,9 +249,15 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  addressesSubscribe(id: string, port: Port): boolean {
+  async addressesSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(addresses.subscribe)'>(id, port);
-    const subscription = addressesObservable.subject.subscribe((addresses: SubjectInfo): void => {
+    const keyringService = this.state.keyringService;
+
+    await this.state.eventService.waitAccountReady;
+
+    const transformedAddresses = transformAccounts(keyringService.addresses);
+
+    const subscription = keyringService.addressesSubject.subscribe((addresses: SubjectInfo): void => {
       transformAccounts(addresses).then(cb);
     });
 
@@ -263,12 +266,19 @@ export default class Extension extends FWExtensionBase {
       subscription.unsubscribe();
     });
 
-    return true;
+    return transformedAddresses;
   }
 
-  accountsSubscribe(id: string, port: Port): boolean {
+  async accountsSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
-    const subscription = accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
+
+    const keyringService = this.state.keyringService;
+
+    await this.state.eventService.waitAccountReady;
+
+    const transformedAccounts = transformAccounts(keyringService.accounts);
+
+    const subscription = keyringService.accountSubject.subscribe((accounts: SubjectInfo): void => {
       transformAccounts(accounts).then(cb);
     });
 
@@ -277,7 +287,7 @@ export default class Extension extends FWExtensionBase {
       subscription.unsubscribe();
     });
 
-    return true;
+    return transformedAccounts;
   }
 
   authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): boolean {
@@ -430,14 +440,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async enableNetworkType(type: string): Promise<void> {
-    const currentAccount = await this.state.currentAccount;
-
-    if (currentAccount) {
-      this.state.selectedNetwork[currentAccount.address] = type;
-      storage.set({ selectedNetwork: this.state.selectedNetwork });
-    }
-
-    return this.state.setActiveNetworks(type);
+    this.state.enableNetworkType(type);
   }
 
   private async toggleNetworkFavorite(networkKey: string): Promise<void> {
@@ -487,8 +490,8 @@ export default class Extension extends FWExtensionBase {
   }
 
   private triggerWalletsSubscription(): boolean {
-    const accountsSubject = accountsObservable.subject;
-    const addressSubject = addressesObservable.subject;
+    const accountsSubject = this.state.keyringService.accountSubject;
+    const addressSubject = this.state.keyringService.addressesSubject;
 
     accountsSubject.next(accountsSubject.getValue());
     addressSubject.next(addressSubject.getValue());
@@ -1321,16 +1324,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {
-    const cb = createSubscription<'pri(soraCard.token)'>(id, port);
-
-    const subscription = this.state.soraCardTokenSubject.subscribe((token) => cb(token));
-
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
-
-    return true;
+    return this.state.soraCardService.soraCardTokenSubscribe(id, port);
   }
 
   authorizeApprovePolkaswap(authorizedAccounts: string[]): Promise<void> {

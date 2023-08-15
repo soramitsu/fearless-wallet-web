@@ -54,6 +54,7 @@
 import { Component, Vue, Ref } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
 import { AuthUrlInfo } from '@extension-base/background/types/types';
+import { stripUrl } from '@extension-base/background/handlers/helpers';
 import type { AsyncFn, Fn } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -80,7 +81,6 @@ import { updateAuthorization, approvePolkaswapAuthRequest } from '@/extension/me
 import { WalletInfo } from '@/store';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
-import { stripUrl } from '@/extension/background/extension-base/src/background/handlers/helpers';
 import { subscribeCardToken } from '@/util/soraCard';
 
 @Component({

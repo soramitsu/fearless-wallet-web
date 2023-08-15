@@ -8,7 +8,7 @@ import {
 } from '@extension-base/background/types/types';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
-import { Features } from '@/store/extension/types';
+import type { Features } from '@/store/extension/types';
 
 export enum MutationTypes {
   SET_AUTHLIST = 'SET_AUTHLIST',

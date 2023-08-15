@@ -7,7 +7,9 @@
 
           <div class="status">{{ $t(statusText) }}</div>
           <div class="status-description">{{ $t(statusDescription) }}</div>
-          <div v-if="statusDescription2" class="status-description2">{{ $t(statusDescription2) }}</div>
+          <div v-if="statusDescription2" class="status-description2">
+            {{ $t(statusDescription2) }} {{ additionalText }}
+          </div>
         </div>
       </Scroll>
     </ContentForm>
@@ -58,6 +60,7 @@ export default class Status extends Vue {
 
   @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
   @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;
+  @Getter(SoraCardGettersTypes.rejectReason) rejectReason!: string;
   @Mutation(SoraCardMutationTypes.SET_WILL_TO_KYC_PASS_KYC_AGAIN) setWillToPassKycAgain!: Fn<boolean>;
 
   get isRejected() {
@@ -65,7 +68,7 @@ export default class Status extends Vue {
   }
 
   get isRejectedAndNotFreeAttempts() {
-    return this.isRejected && this.hasFreeAttempts;
+    return this.isRejected && !this.hasFreeAttempts;
   }
 
   get statusesClasses() {
@@ -78,7 +81,7 @@ export default class Status extends Vue {
   }
 
   get iconName() {
-    if (this.isRejectedAndNotFreeAttempts) return require('@/assets/icons/sora-card.png');
+    if (this.isRejectedAndNotFreeAttempts) return require('@/assets/icons/sora-card-rejected.png');
 
     return require(`@/assets/icons/sora-card-${this.currentStatus.toLowerCase()}.png`);
   }
@@ -95,6 +98,10 @@ export default class Status extends Vue {
     return `soraCard.statuses.${this.currentStatus.toLowerCase()}.text2`;
   }
 
+  get additionalText() {
+    return this.isRejected && this.rejectReason ? this.rejectReason : '';
+  }
+
   get statusDescription2() {
     if (this.isRejectedAndNotFreeAttempts) return 'soraCard.statuses.noFreeAttempts.text3';
 
@@ -102,7 +109,7 @@ export default class Status extends Vue {
   }
 
   get showSecondButton() {
-    return this.isRejected || this.isRejectedAndNotFreeAttempts;
+    return this.isRejected && this.hasFreeAttempts;
   }
 
   get textRetryBtn() {

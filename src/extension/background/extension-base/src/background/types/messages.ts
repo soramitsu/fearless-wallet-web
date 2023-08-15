@@ -123,8 +123,8 @@ export interface RequestSignatures {
   'pri(accounts.show)': [RequestAccountShow, boolean];
   'pri(accounts.tie)': [RequestAccountTie, boolean];
   'pri(accounts.name)': [RequestAccountName, boolean];
-  'pri(accounts.subscribe)': [RequestAccountSubscribe, boolean, AccountJson[]];
-  'pri(addresses.subscribe)': [RequestAccountSubscribe, boolean, AccountJson[]];
+  'pri(accounts.subscribe)': [RequestAccountSubscribe, AccountJson[], AccountJson[]];
+  'pri(addresses.subscribe)': [RequestAccountSubscribe, AccountJson[], AccountJson[]];
   'pri(accounts.triggerSubscription)': [null, boolean];
   'pri(accounts.validate)': [RequestAccountValidate, boolean];
   'pri(accounts.changePassword)': [RequestAccountChangePassword, boolean];

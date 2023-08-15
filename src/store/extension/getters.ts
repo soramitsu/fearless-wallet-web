@@ -8,7 +8,7 @@ import {
 import { State } from './state';
 import type { GetterTree } from 'vuex';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import { Features } from '@/store/extension/types';
+import type { Features } from '@/store/extension/types';
 
 export enum GettersTypes {
   authRequests = 'authRequests',

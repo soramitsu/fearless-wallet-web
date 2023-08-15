@@ -177,3 +177,7 @@ export interface Resolver<T> {
   reject: (error: Error) => void;
   resolve: (result: T) => void;
 }
+
+export interface KeyringState {
+  isReady: boolean;
+}

@@ -98,7 +98,7 @@ import type {
   ResponseType,
   SigningRequest,
 } from '@extension-base/background/types/types';
-import type { CurrentAccountInfo } from '@extension-base/stores/CurrentAccountStore';
+import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   Asset,
   RequestTransactionHistoryAdd,
@@ -465,7 +465,7 @@ export default class Extension extends FWExtensionBase {
     };
   }
 
-  private _saveCurrentAccountAddress(address: string) {
+  private _saveCurrentAccountAddress(address: string, callback?: (account: CurrentAccountState) => void) {
     if (address === '') {
       this.state.setCurrentAccount(null);
 
@@ -483,7 +483,9 @@ export default class Extension extends FWExtensionBase {
       ethereumAddress: (ethereumAddress as string) ?? '',
     };
 
-    this.state.setCurrentAccount(accountInfo);
+    this.state.setCurrentAccount(accountInfo, () => {
+      callback && callback(accountInfo);
+    });
   }
 
   private triggerWalletsSubscription(): boolean {
@@ -501,8 +503,9 @@ export default class Extension extends FWExtensionBase {
 
     this.state.generateDefaultBalance(address);
 
-    this._saveCurrentAccountAddress(address);
-    this.state.updateKeyringState();
+    this._saveCurrentAccountAddress(address, () => {
+      this.triggerWalletsSubscription();
+    });
 
     return true;
   }

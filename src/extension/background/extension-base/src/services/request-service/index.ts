@@ -17,12 +17,14 @@ import {
   SigningRequest,
 } from '../../background/types';
 import { NetworkService } from '..';
-import ConnectWCRequestHandler from './handlers/ConnectWCRequestHandler';
-import NotSupportWCRequestHandler from './handlers/NotSupportWCRequestHandler';
-import PopupHandler from './handlers/PopupHandler';
-import AuthRequestHandler from './handlers/AuthRequestHandler';
-import MetadataRequestHandler from './handlers/MetadataRequestHandler';
-import SubstrateRequestHandler from './handlers/SubstrateRequestHandler';
+import {
+  ConnectWCRequestHandler,
+  NotSupportWCRequestHandler,
+  PopupHandler,
+  AuthRequestHandler,
+  MetadataRequestHandler,
+  SubstrateRequestHandler,
+} from './handlers';
 
 export class RequestService {
   readonly state: State;

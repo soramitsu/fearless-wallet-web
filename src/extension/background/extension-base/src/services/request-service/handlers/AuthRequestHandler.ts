@@ -18,7 +18,7 @@ import type {
 
 const AUTH_URLS_KEY = 'authUrls';
 
-export default class AuthRequestHandler {
+export class AuthRequestHandler {
   readonly requestService: RequestService;
   readonly state: State;
   readonly networkService: NetworkService;

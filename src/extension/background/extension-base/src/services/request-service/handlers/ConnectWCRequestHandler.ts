@@ -4,7 +4,7 @@ import { Resolver } from '../../../types';
 import { RequestWalletConnectSession, WalletConnectSessionRequest } from '../../wallet-connect-service/types';
 
 // WC = WalletConnect
-export default class ConnectWCRequestHandler {
+export class ConnectWCRequestHandler {
   readonly requestService: RequestService;
   readonly connectWCRequests: Record<string, RequestWalletConnectSession> = {};
   public readonly connectWCSubject: BehaviorSubject<WalletConnectSessionRequest[]> = new BehaviorSubject<

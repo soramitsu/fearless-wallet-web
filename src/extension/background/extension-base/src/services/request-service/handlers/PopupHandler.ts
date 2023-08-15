@@ -19,7 +19,7 @@ export const NORMAL_WINDOW_OPTS: chrome.windows.CreateData = {
   url: NOTIFICATION_URL,
 };
 
-export default class PopupHandler {
+export class PopupHandler {
   readonly requestService: RequestService;
   notification: BrowserConfirmationType = DEFAULT_NOTIFICATION_TYPE;
   windows: number[] = [];

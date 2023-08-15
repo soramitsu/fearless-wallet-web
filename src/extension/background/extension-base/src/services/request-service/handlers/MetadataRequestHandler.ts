@@ -8,7 +8,7 @@ import { Resolver } from '../../../types';
 import { getId } from '../../../utils';
 import { extractMetadata } from '../helper';
 
-export default class MetadataRequestHandler {
+export class MetadataRequestHandler {
   readonly requestService: RequestService;
   readonly #metaStore: MetadataStore = new MetadataStore();
   readonly #metaRequests: Record<string, MetaRequest> = {};

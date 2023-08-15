@@ -4,7 +4,7 @@ import { Resolver } from '../../../types';
 import { RequestWalletConnectNotSupport, WalletConnectNotSupportRequest } from '../../wallet-connect-service/types';
 
 // WC = WalletConnect
-export default class NotSupportWCRequestHandler {
+export class NotSupportWCRequestHandler {
   readonly requestService: RequestService;
   readonly notSupportWCRequests: Record<string, RequestWalletConnectNotSupport> = {};
   public readonly notSupportWCSubject: BehaviorSubject<WalletConnectNotSupportRequest[]> = new BehaviorSubject<

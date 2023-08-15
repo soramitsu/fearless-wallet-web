@@ -10,7 +10,7 @@ import { Resolver } from '../../../types';
 import { getId, isInternalRequest } from '../../../utils';
 import { RequestService } from '../..';
 
-export default class SubstrateRequestHandler {
+export class SubstrateRequestHandler {
   readonly #logger: Logger;
   readonly #requestService: RequestService;
   readonly #substrateRequests: Record<string, SignRequest> = {};

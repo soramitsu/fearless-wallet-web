@@ -61,7 +61,7 @@ export class FWSubscription {
   async start() {
     this.logger.log('Starting subscription');
     const currentAccount = await this.state.currentAccount;
-    const getAccountsExeptCurrent = this.state
+    const getAccountsExeptCurrent = this.state.keyringService
       .getSubstrateAccounts()
       .filter((el) => el.address !== currentAccount?.address);
 

@@ -172,3 +172,7 @@ export interface ChainRegistry {
   chainTokens: string[];
   assetsMap: Asset[];
 }
+
+export interface KeyringState {
+  isReady: boolean;
+}

@@ -1,3 +1,4 @@
+import type { SigningRequest } from '../types';
 import type { NetworkJson, RequestTransactionHistoryAdd, TransactionHistoryItemType } from '@extension-base/types';
 import type {
   InjectedAccount,
@@ -57,7 +58,6 @@ import type {
   RequestSigningIsLocked,
   ResponseSigningIsLocked,
   RequestSigningSubscribe,
-  SigningRequest,
   AllowedPath,
   RequestSaveTimeoutCache,
   GoogleFileId,

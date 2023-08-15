@@ -7,6 +7,7 @@ import { TypeRegistry } from '@polkadot/types';
 import { Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 import { RequestSignatures } from '@extension-base/background/types/messages';
+import { AuthUrlInfo } from './types/types';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { ProviderInterface } from '@polkadot/rpc-provider/types';
@@ -402,16 +403,6 @@ export interface AuthRequest extends Resolver<AuthResponse> {
 export type AuthUrls = Record<string, AuthUrlInfo>;
 
 export type AuthorizedAccountsDiff = [url: string, authorizedAccounts: AuthUrlInfo['authorizedAccounts']][];
-
-export interface AuthUrlInfo {
-  count: number;
-  id: string;
-  // this is from pre-0.44.1
-  isAllowed?: boolean;
-  origin: string;
-  url: string;
-  authorizedAccounts: string[];
-}
 
 export interface MetaRequest extends Resolver<boolean> {
   id: string;

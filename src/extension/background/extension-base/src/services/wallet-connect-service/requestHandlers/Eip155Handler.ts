@@ -1,13 +1,12 @@
-// Copyright 2019-2022 @subwallet/extension-base authors & contributors
-// SPDX-License-Identifier: Apache-2.0
+// import { formatJsonRpcError, formatJsonRpcResult } from '@json-rpc-tools/utils';
+import { formatJsonRpcError } from '@json-rpc-tools/utils';
 
-import { formatJsonRpcError, formatJsonRpcResult } from '@json-rpc-tools/utils';
-import { SignClientTypes } from '@walletconnect/types';
+// import { SignClientTypes } from '@walletconnect/types';
 import { getSdkError } from '@walletconnect/utils';
 import State from '../../../background/handlers/State';
 import WalletConnectService from '..';
-import { EIP155_SIGNING_METHODS } from '../consts';
-import { getEip155MessageAddress, getWCId, parseRequestParams } from '../utils';
+// import { EIP155_SIGNING_METHODS } from '../consts';
+// import { getEip155MessageAddress, getWCId, parseRequestParams } from '../utils';
 import { isSameAddress } from '../../../utils';
 
 export default class Eip155RequestHandler {
@@ -41,90 +40,90 @@ export default class Eip155RequestHandler {
       .catch(console.error);
   }
 
-  public handleRequest(requestEvent: SignClientTypes.EventArguments['session_request']) {
-    const { id, params, topic } = requestEvent;
-    const { chainId: _chainId, request } = params;
-    const method = request.method as EIP155_SIGNING_METHODS;
-    const requestSession = this.walletConnectService.getSession(topic);
+  // public handleRequest(requestEvent: SignClientTypes.EventArguments['session_request']) {
+  //   // const { id, params, topic } = requestEvent;
+  //   const { chainId: _chainId, request } = params;
+  //   const method = request.method as EIP155_SIGNING_METHODS;
+  //   const requestSession = this.walletConnectService.getSession(topic);
 
-    const url = requestSession.peer.metadata.url;
-    const sessionAccounts = requestSession.namespaces.eip155.accounts.map((account) => account.split(':')[2]);
+  //   // const url = requestSession.peer.metadata.url;
+  //   const sessionAccounts = requestSession.namespaces.eip155.accounts.map((account) => account.split(':')[2]);
 
-    if (
-      [
-        EIP155_SIGNING_METHODS.PERSONAL_SIGN,
-        EIP155_SIGNING_METHODS.ETH_SIGN,
-        EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA,
-        EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3,
-        EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4,
-      ].includes(method)
-    ) {
-      const address = getEip155MessageAddress(method, request.params);
+  //   if (
+  //     [
+  //       EIP155_SIGNING_METHODS.PERSONAL_SIGN,
+  //       EIP155_SIGNING_METHODS.ETH_SIGN,
+  //       EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA,
+  //       EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3,
+  //       EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4,
+  //     ].includes(method)
+  //   ) {
+  //     const address = getEip155MessageAddress(method, request.params);
 
-      this.checkAccount(address, sessionAccounts);
+  //     this.checkAccount(address, sessionAccounts);
 
-      this.state
-        .evmSign(
-          getWCId(id),
-          url,
-          method === EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA
-            ? EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4
-            : method,
-          request.params,
-          sessionAccounts
-        )
-        .then(async (signature) => {
-          await this.walletConnectService.responseRequest({
-            topic: topic,
-            response: formatJsonRpcResult(id, signature),
-          });
-        })
-        .catch((e) => {
-          this.handleError(topic, id, e);
-        });
-    } else if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
-      const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(request.params);
+  //     this.state;
+  //     // .evmSign(
+  //     //   getWCId(id),
+  //     //   url,
+  //     //   method === EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA
+  //     //     ? EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4
+  //     //     : method,
+  //     //   request.params,
+  //     //   sessionAccounts
+  //     // )
+  //     // .then(async (signature) => {
+  //     //   await this.walletConnectService.responseRequest({
+  //     //     topic: topic,
+  //     //     response: formatJsonRpcResult(id, signature),
+  //     //   });
+  //     // })
+  //     // .catch((e: any) => {
+  //     //   this.handleError(topic, id, e);
+  //     // });
+  //   } else if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
+  //     const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(request.params);
 
-      const address = tx.from;
+  //     const address = tx.from;
 
-      this.checkAccount(address, sessionAccounts);
+  //     this.checkAccount(address, sessionAccounts);
 
-      const chainId = _chainId.split(':')[1];
+  //     const chainId = _chainId.split(':')[1];
 
-      const [networkKey, chainInfo] = this.state.findNetworkKeyByChainId(chainId);
+  //     const [networkKey, chainInfo] = this.state.findNetworkKeyByChainId(chainId);
 
-      if (!networkKey || !chainInfo) {
-        throw new Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + address);
-      }
+  //     if (!networkKey || !chainInfo) {
+  //       throw new Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + address);
+  //     }
 
-      const chainState = this.state.getNetworkMap[networkKey];
+  //     const chainState = this.state.getNetworkMap[networkKey];
 
-      const createRequest = () => {
-        this.state
-          .evmSendTransaction(getWCId(id), url, networkKey, sessionAccounts, tx)
-          .then(async (signature) => {
-            await this.walletConnectService.responseRequest({
-              topic: topic,
-              response: formatJsonRpcResult(id, signature),
-            });
-          })
-          .catch((e) => {
-            this.handleError(topic, id, e);
-          });
-      };
+  //     const createRequest = () => {
+  //       // this.state
+  //       //   .evmSendTransaction(getWCId(id), url, networkKey, sessionAccounts, tx)
+  //       //   .then(async (signature) => {
+  //       //     await this.walletConnectService.responseRequest({
+  //       //       topic: topic,
+  //       //       response: formatJsonRpcResult(id, signature),
+  //       //     });
+  //       //   })
+  //       //   .catch((e) => {
+  //       //     this.handleError(topic, id, e);
+  //       //   });
+  //     };
 
-      if (!chainState.active) {
-        this.state
-          .en(networkKey)
-          .then(createRequest)
-          .catch(() => {
-            throw new Error(getSdkError('USER_REJECTED').message + ' Can not active chain: ' + chainInfo.name);
-          });
-      } else {
-        createRequest();
-      }
-    } else {
-      throw Error(getSdkError('INVALID_METHOD').message + ' ' + method);
-    }
-  }
+  //     if (!chainState.active) {
+  //       // this.state
+  //       //   .en(networkKey)
+  //       //   .then(createRequest)
+  //       //   .catch(() => {
+  //       //     throw new Error(getSdkError('USER_REJECTED').message + ' Can not active chain: ' + chainInfo.name);
+  //       //   });
+  //     } else {
+  //       createRequest();
+  //     }
+  //   } else {
+  //     throw Error(getSdkError('INVALID_METHOD').message + ' ' + method);
+  //   }
+  // }
 }

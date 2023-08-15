@@ -3,9 +3,9 @@ import {
   AuthorizeRequest,
   AuthUrlInfo,
   MetadataRequest,
-  SigningRequest,
 } from '@extension-base/background/types/types';
 import type { Features } from '@/store/extension/types';
+import { SigningRequest } from '@/extension/background/extension-base/src/background/types';
 
 export type State = {
   requests: {

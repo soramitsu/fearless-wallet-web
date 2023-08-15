@@ -1,11 +1,11 @@
-import {
+import { State } from './state';
+import type {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
   AuthUrlInfo,
   MetadataRequest,
-  SigningRequest,
 } from '@extension-base/background/types/types';
-import { State } from './state';
+import type { SigningRequest } from '@extension-base/background/types';
 import type { GetterTree } from 'vuex';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { Features } from '@/store/extension/types';

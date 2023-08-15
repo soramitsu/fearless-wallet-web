@@ -4,6 +4,7 @@
 import { BN } from '@polkadot/util';
 import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import { isEthereumAddress, decodeAddress, encodeAddress, ethereumEncode } from '@polkadot/util-crypto';
+import { EXTENSION_REQUEST_URL } from '../const';
 import type { NetworkJson } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 
@@ -73,4 +74,8 @@ export function isSameAddress(address1: string, address2: string) {
   }
 
   return reformatAddress(address1, 0) === reformatAddress(address2, 0);
+}
+
+export function isInternalRequest(url: string): boolean {
+  return url === EXTENSION_REQUEST_URL;
 }

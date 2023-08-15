@@ -39,6 +39,7 @@ import {
 } from '@extension-base/background/utils/utils';
 
 import { RequestConnectWalletConnect } from '../../services/wallet-connect-service/types';
+import { SigningRequest } from '../types';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -97,7 +98,6 @@ import type {
   ResponseSeedCreate,
   ResponseSeedValidate,
   ResponseType,
-  SigningRequest,
 } from '@extension-base/background/types/types';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
@@ -291,7 +291,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): boolean {
-    const queued = this.state.getAuthRequest(id);
+    const queued = this.state.requestService.getAuthRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -347,7 +347,9 @@ export default class Extension extends FWExtensionBase {
   authorizeSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(authorize.requests)'>(id, port);
 
-    const subscription = this.state.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
+    const subscription = this.state.requestService.authSubject.subscribe((requests: AuthorizeRequest[]): void =>
+      cb(requests)
+    );
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -358,7 +360,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async metadataApprove({ id }: RequestMetadataApprove): Promise<boolean> {
-    const queued = this.state.getMetaRequest(id);
+    const queued = this.state.requestService.getMetaRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -371,7 +373,7 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
   metadataReject({ id }: RequestMetadataReject): boolean {
-    const queued = this.state.getMetaRequest(id);
+    const queued = this.state.requestService.getMetaRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -385,7 +387,9 @@ export default class Extension extends FWExtensionBase {
   metadataSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(metadata.requests)'>(id, port);
 
-    const subscription = this.state.metaSubject.subscribe((requests: MetadataRequest[]): void => cb(requests));
+    const subscription = this.state.requestService.metaSubject.subscribe((requests: MetadataRequest[]): void =>
+      cb(requests)
+    );
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -542,7 +546,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): boolean {
-    const queued = this.state.getSignRequest(id);
+    const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -597,7 +601,7 @@ export default class Extension extends FWExtensionBase {
   signingApproveSignature({ id, signature }: RequestSigningApproveSignature): boolean {
     this.state.signature = signature;
 
-    const queued = this.state.getSignRequest(id);
+    const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -607,7 +611,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   signingCancel({ id }: RequestSigningCancel): boolean {
-    const queued = this.state.getSignRequest(id);
+    const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -629,7 +633,9 @@ export default class Extension extends FWExtensionBase {
   signingSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(signing.requests)'>(id, port);
 
-    const subscription = this.state.signSubject.subscribe((requests: SigningRequest[]): void => cb(requests));
+    const subscription = this.state.requestService.signSubject.subscribe((requests: SigningRequest[]): void =>
+      cb(requests)
+    );
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -719,7 +725,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async deleteAuthRequest(requestId: string): Promise<void> {
-    return this.state.deleteAuthRequest(requestId);
+    this.state.authorizeCancel({ id: requestId });
   }
 
   updateCurrentTabs({ tabs }: RequestActiveTabsUrlUpdate) {

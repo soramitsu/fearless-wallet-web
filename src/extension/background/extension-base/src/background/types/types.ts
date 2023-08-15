@@ -103,12 +103,6 @@ export interface MetadataRequest {
   url: string;
 }
 
-export interface SigningRequest {
-  account: AccountJson;
-  id: string;
-  request: RequestSign;
-  url: string;
-}
 export interface MobileSigningRequest {
   id: string;
   request: SignerPayloadRaw;
@@ -802,22 +796,6 @@ export interface MobileSignRequest extends Resolver<ResponseSigning> {
   id: string;
   request: SignerPayloadRaw;
 }
-
-const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
-
-export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
-  focused: true,
-  height: 640,
-  width: 577,
-  type: 'popup',
-  url: NOTIFICATION_URL,
-};
-
-export const NORMAL_WINDOW_OPTS: chrome.windows.CreateData = {
-  focused: true,
-  type: 'normal',
-  url: NOTIFICATION_URL,
-};
 
 export enum NotificationOptions {
   None,

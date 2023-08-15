@@ -22,7 +22,6 @@ import type {
   ResponseSigningIsLocked,
   ResponseTypes,
   SeedLengths,
-  SigningRequest,
   SubscriptionMessageTypes,
   Port,
   BalanceJson,
@@ -60,6 +59,7 @@ import type {
   SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
+import type { SigningRequest } from '@extension-base/background/types';
 
 const metadataGets = new Map<string, Promise<MetadataDef | null>>();
 

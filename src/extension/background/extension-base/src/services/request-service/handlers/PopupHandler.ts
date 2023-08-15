@@ -1,15 +1,21 @@
-import RequestService from '..';
+import { RequestService } from '..';
 import { withErrorLog } from '../../../background/handlers/helpers';
 import { DEFAULT_NOTIFICATION_TYPE } from '../consts';
 import { BrowserConfirmationType } from '../types';
 
-const NOTIFICATION_URL = chrome.extension.getURL('notification.html');
+const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
 
 export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
   focused: true,
   height: 640,
   width: 577,
   type: 'popup',
+  url: NOTIFICATION_URL,
+};
+
+export const NORMAL_WINDOW_OPTS: chrome.windows.CreateData = {
+  focused: true,
+  type: 'normal',
   url: NOTIFICATION_URL,
 };
 

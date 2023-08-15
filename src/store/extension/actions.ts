@@ -1,13 +1,9 @@
 import axios from 'axios';
-import {
-  AuthorizeRequest,
-  ApproveAuthRequest,
-  MetadataRequest,
-  SigningRequest,
-} from '@extension-base/background/types/types';
+import type { AuthorizeRequest, ApproveAuthRequest, MetadataRequest } from '@extension-base/background/types/types';
 import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from '@/store/extension/state';
 import type { Features } from '@/store/extension/types';
+import type { SigningRequest } from '@/extension/background/extension-base/src/background/types';
 import { Mutations, MutationTypes } from '@/store/extension/mutations';
 import {
   subscribeAuthorizeRequests,

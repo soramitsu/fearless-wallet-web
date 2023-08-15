@@ -4,7 +4,7 @@ import WalletConnect from '@walletconnect/sign-client';
 import { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
 import { getInternalError, getSdkError } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
-import RequestService from '../request-service';
+import { RequestService } from '..';
 import WalletConnectStorage from './storage';
 import { ALL_WALLET_CONNECT_EVENT, DEFAULT_WALLET_CONNECT_OPTIONS, WALLET_CONNECT_SUPPORTED_METHODS } from './consts';
 import { EIP155_SIGNING_METHODS, ResultApproveWalletConnectSession, WalletConnectSigningMethod } from './types';
@@ -162,7 +162,7 @@ export default class WalletConnectService {
         case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3:
         case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4:
         case EIP155_SIGNING_METHODS.ETH_SIGN:
-          this.eip155RequestHandler.handleRequest(requestEvent);
+          // this.eip155RequestHandler.handleRequest(requestEvent);
           break;
         default:
           throw Error(getSdkError('INVALID_METHOD').message + ' ' + method);

@@ -1,5 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
-import RequestService from '..';
+import { RequestService } from '..';
 import { Resolver } from '../../../types';
 import { RequestWalletConnectNotSupport, WalletConnectNotSupportRequest } from '../../wallet-connect-service/types';
 

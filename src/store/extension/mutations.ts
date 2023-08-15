@@ -1,11 +1,11 @@
 import Vue from 'vue';
-import {
+import type {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
   MetadataRequest,
   ResponseAuthorizeList,
-  SigningRequest,
 } from '@extension-base/background/types/types';
+import type { SigningRequest } from '@extension-base/background/types';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
 import type { Features } from '@/store/extension/types';

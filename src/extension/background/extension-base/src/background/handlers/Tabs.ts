@@ -68,7 +68,7 @@ export default class Tabs {
   }
 
   authorize(url: string, request: RequestAuthorizeTab): Promise<AuthResponse> {
-    return this.state.authorizeUrl(url, request);
+    return this.state.requestService.authorizeUrl(url, request);
   }
 
   accountsListAuthorized(url: string, { anyType }: RequestAccountList): InjectedAccount[] {
@@ -128,7 +128,7 @@ export default class Tabs {
     const address = request.address;
     const pair = this.getSigningPair(address);
 
-    return this.state.sign(url, new RequestBytesSign(request), {
+    return this.state.requestService.substrateRequestHandler.sign(url, new RequestBytesSign(request), {
       address: pair.address,
       ethereumAddress: pair.meta.ethereumAddress as string,
       name: (pair.meta.name as string) ?? '',
@@ -146,7 +146,7 @@ export default class Tabs {
 
     const signer = isMobile ? new BeaconSignerJSON(request) : new RequestExtrinsicSign(request);
 
-    return this.state.sign(url, signer, {
+    return this.state.requestService.substrateRequestHandler.sign(url, signer, {
       address: address,
       ethereumAddress: meta?.ethereumAddress as string,
       name: (meta?.name as string) ?? '',
@@ -155,7 +155,7 @@ export default class Tabs {
   }
 
   metadataProvide(url: string, request: MetadataDef): Promise<boolean> {
-    return this.state.injectMetadata(url, request);
+    return this.state.requestService.injectMetadata(url, request);
   }
 
   metadataList(): InjectedMetadataKnown[] {

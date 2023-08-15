@@ -1,5 +1,6 @@
 export const ALL_ACCOUNT_KEY = 'ALL';
 export const ALL_NETWORK_KEY = 'all';
+export const EXTENSION_REQUEST_URL = 'extension';
 
 export const moonbeamBaseChains = ['moonbase', 'moonbeam', 'moonriver'];
 export const IGNORE_GET_SUBSTRATE_FEATURES_LIST: string[] = [

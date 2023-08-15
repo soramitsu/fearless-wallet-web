@@ -1,6 +1,6 @@
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
-import { knownGenesis } from '@polkadot/networks/defaults';
+
 import { assert, u8aToHex } from '@polkadot/util';
 import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
@@ -9,7 +9,6 @@ import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
-import MetadataStore from '@extension-base/stores/Metadata';
 import { storage } from '@extension-base/stores/Storage';
 import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
 
@@ -33,28 +32,19 @@ import { JsonRpcProvider } from 'ethers';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import WalletConnectService from '@extension-base/services/wallet-connect-service';
 import { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
-import RequestService from '../../services/request-service';
 import type {
-  AuthorizeRequest,
   AuthRequest,
-  AuthResponse,
   AuthUrls,
-  MetadataRequest,
   MetaRequest,
   ResponseSigning,
-  SigningRequest,
   SignRequest,
   Resolver,
   AuthorizedAccountsDiff,
-  AccountJson,
-  RequestAuthorizeTab,
   RequestRpcSend,
   RequestRpcSubscribe,
   RequestRpcUnsubscribe,
-  RequestSign,
   ResponseRpcListProviders,
   Port,
-  RequestAuthorizeCancel,
   IState,
   ActiveTabAuthorizeStatus,
   ApiProps,
@@ -66,6 +56,7 @@ import type {
   BalanceMap,
   Providers,
   ResponseTotalBalances,
+  RequestAuthorizeCancel,
 } from '@extension-base/background/types/types';
 import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import type { ChainRegistry, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
@@ -73,7 +64,13 @@ import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } fr
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
-import { EventService, SoraCardService, KeyringService } from '@/extension/background/extension-base/src/services';
+import {
+  EventService,
+  SoraCardService,
+  KeyringService,
+  NetworkService,
+  RequestService,
+} from '@/extension/background/extension-base/src/services';
 import { URLS } from '@/consts/urls';
 import {
   ALL_NETWORKS,
@@ -86,47 +83,11 @@ import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/h
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
-function extractMetadata(store: MetadataStore): void {
-  store.allMap((map): void => {
-    const knownEntries = Object.entries(knownGenesis);
-    const defs: Record<string, { def: MetadataDef; index: number; key: string }> = {};
-    const removals: string[] = [];
-
-    Object.entries(map).forEach(([key, def]): void => {
-      const entry = knownEntries.find(([, hashes]) => hashes.includes(def.genesisHash));
-
-      if (entry) {
-        const [name, hashes] = entry;
-        const index = hashes.indexOf(def.genesisHash);
-
-        // flatten the known metadata based on the genesis index
-        // (lower is better/newer)
-        if (!defs[name] || defs[name].index > index) {
-          if (defs[name]) {
-            // remove the old version of the metadata
-            removals.push(defs[name].key);
-          }
-
-          defs[name] = { def, index, key };
-        }
-      } else {
-        // this is not a known entry, so we will just apply it
-        defs[key] = { def, index: 0, key };
-      }
-    });
-
-    removals.forEach((key) => store.remove(key));
-
-    Object.values(defs).forEach(({ def }) => addMetadata(def));
-  });
-}
-
 export const registry = new TypeRegistry();
 type APIs = {
   evm: Record<NetworkName, JsonRpcProvider>;
   substrate: Record<NetworkName, ApiProps>;
 };
-const metaStore = new MetadataStore();
 
 export default class State {
   private cron: FWCron;
@@ -182,9 +143,6 @@ export default class State {
   public mobileSignRequests: Record<string, MobileSignRequest> = {};
   private historyMap: Record<string, TransactionHistoryItemType[]> = {};
   private historySubject = new Subject<Record<string, TransactionHistoryItemType[]>>();
-  public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
-  public readonly metaSubject = new BehaviorSubject<MetadataRequest[]>([]);
-  public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
   public readonly mobileSignSubject = new BehaviorSubject<MobileSigningRequest[]>([]);
   public balanceService = new BalanceService();
   public lazyMap: Record<string, unknown> = {};
@@ -196,10 +154,11 @@ export default class State {
     dAppName: '',
   };
   public eventService = new EventService();
-  public requestService = new RequestService();
+  public keyringService = new KeyringService(this.eventService);
+  public networkService = new NetworkService(this.eventService);
+  public requestService = new RequestService(this, this.networkService, this.keyringService);
   public walletConnectService = new WalletConnectService(this, this.requestService);
   public soraCardService = new SoraCardService();
-  public keyringService = new KeyringService(this.eventService);
 
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
@@ -286,27 +245,11 @@ export default class State {
     return this.ready;
   }
 
-  public allAuthRequests(): AuthorizeRequest[] {
-    return Object.values(this.authRequests).map(({ id, request, url }): AuthorizeRequest => ({ id, request, url }));
-  }
-
-  public allMetaRequests(): MetadataRequest[] {
-    return Object.values(this.metaRequests).map(({ id, request, url }): MetadataRequest => ({ id, request, url }));
-  }
-
-  public allSignRequests(): SigningRequest[] {
-    return Object.values(this.signRequests).map(
-      ({ account, id, request, url }): SigningRequest => ({ account, id, request, url })
-    );
-  }
-
   public allMobileSignRequests(): MobileSigningRequest[] {
     return Object.values(this.mobileSignRequests).map(({ id, request }): MobileSigningRequest => ({ id, request }));
   }
 
   async injectFromStorage() {
-    extractMetadata(metaStore);
-
     const { authUrls, defaultAuthAccountSelection, fiatSymbol, injectedProviders, providers, selectedNetwork } =
       await this.getFromStorage([
         'fiatSymbol',
@@ -333,58 +276,6 @@ export default class State {
     await this.saveCurrentAuthList();
 
     this.updateDefaultAuthAccounts(authorizedAccounts);
-  };
-
-  authComplete = (
-    id: string,
-    resolve: (resValue: AuthResponse) => void,
-    reject: (error: Error) => void
-  ): Resolver<AuthResponse> => {
-    const complete = async (authorizedAccounts: string[] = [], isAllowed = true) => {
-      const {
-        id: idStr,
-        request: { origin },
-        url,
-      } = this.authRequests[id];
-
-      if (!isAllowed) {
-        delete this.authRequests[id];
-        this.updateIconAuth(true);
-
-        return;
-      }
-
-      const stripedUrl = stripUrl(url);
-
-      this.authUrls[stripedUrl] = {
-        authorizedAccounts,
-        count: 0,
-        isAllowed: true,
-        isAllowedMap: {},
-        id: idStr,
-        origin,
-        url,
-      };
-
-      await this.saveCurrentAuthList();
-
-      this.updateDefaultAuthAccounts(authorizedAccounts);
-
-      delete this.authRequests[id];
-
-      this.updateIconAuth(true);
-    };
-
-    return {
-      reject: (error: Error): void => {
-        complete([], false);
-        reject(error);
-      },
-      resolve: ({ authorizedAccounts, result }: AuthResponse): void => {
-        complete(authorizedAccounts);
-        resolve({ authorizedAccounts, result });
-      },
-    };
   };
 
   public getAuthorize(update: (value: AuthUrls) => void): void {
@@ -707,14 +598,8 @@ export default class State {
     return this.currentTabStatus;
   }
 
-  deleteAuthRequest(requestId: string) {
-    delete this.authRequests[requestId];
-
-    this.updateIconAuth(true);
-  }
-
   async authorizeCancel({ id }: RequestAuthorizeCancel): Promise<boolean> {
-    const queued = await this.getAuthRequest(id);
+    const queued = await this.requestService.getAuthRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -726,7 +611,7 @@ export default class State {
     return true;
   }
 
-  private saveCurrentAuthList() {
+  public saveCurrentAuthList() {
     return storage.set({ authUrls: this.authUrls });
   }
 
@@ -748,51 +633,6 @@ export default class State {
     this.networkMapSubject.next(this.networkMap);
     this.networkMapStore.set('NetworkMap', this.networkMap);
   }
-
-  private metaComplete = (
-    id: string,
-    resolve: (result: boolean) => void,
-    reject: (error: Error) => void
-  ): Resolver<boolean> => {
-    const complete = (): void => {
-      delete this.metaRequests[id];
-
-      this.updateIconMeta(true);
-    };
-
-    return {
-      reject: (error: Error): void => {
-        complete();
-        reject(error);
-      },
-      resolve: (result: boolean): void => {
-        complete();
-        resolve(result);
-      },
-    };
-  };
-
-  private signComplete = (
-    id: string,
-    resolve: (result: ResponseSigning) => void,
-    reject: (error: Error) => void
-  ): Resolver<ResponseSigning> => {
-    const complete = (): void => {
-      delete this.signRequests[id];
-      this.updateIconSign(true);
-    };
-
-    return {
-      reject: (error: Error): void => {
-        complete();
-        reject(error);
-      },
-      resolve: (result: ResponseSigning): void => {
-        complete();
-        resolve(result);
-      },
-    };
-  };
 
   private signMobileComplete = (
     id: string,
@@ -847,74 +687,12 @@ export default class State {
     return this.authUrls;
   }
 
-  updateIconAuth(shouldClose?: boolean): void {
-    const allAuthRequests = this.allAuthRequests();
-
-    this.authSubject.next(allAuthRequests);
-
-    this.updateIcon(shouldClose);
-  }
-
-  updateIconMeta(shouldClose?: boolean): void {
-    const allMetaRequests = this.allMetaRequests();
-
-    this.metaSubject.next(allMetaRequests);
-    this.updateIcon(shouldClose);
-  }
-
-  updateIconSign(shouldClose?: boolean): void {
-    const allSignRequests = this.allSignRequests();
-
-    this.signSubject.next(allSignRequests);
-    this.updateIcon(shouldClose);
-  }
-
   updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
     authorizedAccountDiff.forEach(([url, authorizedAccountDiff]) => {
       this.authUrls[url].authorizedAccounts = authorizedAccountDiff;
     });
 
     return this.saveCurrentAuthList();
-  }
-
-  async authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<AuthResponse> {
-    const idStr = stripUrl(url);
-
-    // Do not enqueue duplicate authorization requests.
-    const isDuplicate = Object.values(this.authRequests).some((request) => request.idStr === idStr);
-
-    assert(!isDuplicate, `The source ${url} has a pending authorization request`);
-
-    if (this.authUrls[idStr]) {
-      // this url was seen in the past
-      assert(
-        this.authUrls[idStr].authorizedAccounts || this.authUrls[idStr].isAllowed,
-        `The source ${url} is not allowed to interact with this extension`
-      );
-
-      return {
-        authorizedAccounts: [],
-        result: false,
-      };
-    }
-
-    return new Promise((res, rej): void => {
-      const id = getId();
-
-      const { reject, resolve } = this.authComplete(id, res, rej);
-
-      this.authRequests[id] = {
-        reject,
-        resolve,
-        id,
-        idStr,
-        request,
-        url,
-      };
-
-      this.updateIconAuth();
-      this.requestService.popupOpen();
-    });
   }
 
   ensureUrlAuthorized(url: string): boolean {
@@ -924,34 +702,6 @@ export default class State {
     assert(entry, `The source ${url} has not been enabled yet`);
 
     return true;
-  }
-
-  injectMetadata(url: string, request: MetadataDef): Promise<boolean> {
-    return new Promise((resolve, reject): void => {
-      const id = getId();
-
-      this.metaRequests[id] = {
-        ...this.metaComplete(id, resolve, reject),
-        id,
-        request,
-        url,
-      };
-
-      this.updateIconMeta();
-      this.requestService.popupOpen();
-    });
-  }
-
-  getAuthRequest(id: string): AuthRequest {
-    return this.authRequests[id];
-  }
-
-  getMetaRequest(id: string): MetaRequest {
-    return this.metaRequests[id];
-  }
-
-  getSignRequest(id: string): SignRequest {
-    return this.signRequests[id];
   }
 
   getMobileSignRequest(id: string): MobileSignRequest {
@@ -1049,25 +799,9 @@ export default class State {
   }
 
   saveMetadata(meta: MetadataDef): void {
-    metaStore.set(meta.genesisHash, meta);
+    this.requestService.saveMetadata(meta);
 
     addMetadata(meta);
-  }
-
-  sign(url: string, request: RequestSign, account: AccountJson): Promise<ResponseSigning> {
-    const id = getId();
-
-    return new Promise((resolve, reject): void => {
-      this.signRequests[id] = {
-        ...this.signComplete(id, resolve, reject),
-        account,
-        id,
-        request,
-        url,
-      };
-      this.updateIconSign();
-      this.requestService.popupOpen();
-    });
   }
 
   signMobile(request: SignerPayloadRaw): Promise<ResponseSigning> {

@@ -172,3 +172,8 @@ export interface ChainRegistry {
   chainTokens: string[];
   assetsMap: Asset[];
 }
+
+export interface Resolver<T> {
+  reject: (error: Error) => void;
+  resolve: (result: T) => void;
+}

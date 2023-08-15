@@ -32,6 +32,7 @@
   "main": "index.js",
   "dependencies": {
     "@airgap/beacon-sdk": "^3.3.3",
+    "@json-rpc-tools/utils": "^1.7.6",
     "@polkadot/api": "^10.9.1",
     "@polkadot/extension-chains": "^0.46.5",
     "@polkadot/extension-dapp": "^0.46.5",
@@ -44,7 +45,7 @@
     "@sora-substrate/util": "1.17.6",
     "@soramitsu/soramitsu-js-ui": "^1.0.42",
     "@vespaiach/axios-fetch-adapter": "^0.3.1",
-    "@walletconnect/core": "^2.9.2",
+    "@walletconnect/sign-client": "^2.9.2",
     "axios": "^0.27.2",
     "bignumber.js": "^9.0.2",
     "country-code-emoji": "^2.3.0",

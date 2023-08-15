@@ -31,6 +31,7 @@ import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-b
 import { SignerPayloadRaw } from '@polkadot/types/types';
 import { JsonRpcProvider } from 'ethers';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
+import { CurrentAccountState } from '../../stores/CurrentAccountStore';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -426,6 +427,12 @@ export default class State {
     }
   }
 
+  public updateKeyringState(isReady = true, callback?: () => void): void {
+    this.keyringService.updateKeyringState(isReady);
+
+    callback && callback();
+  }
+
   public updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
     if (!tab || !tab.url) {
       this.currentTabStatus = {
@@ -457,7 +464,7 @@ export default class State {
     const currentAccount = await this.currentAccount;
 
     if (currentAccount) {
-      this.keyringService.setCurrentAccount({ ...currentAccount });
+      this.setCurrentAccount({ ...currentAccount });
 
       return;
     }
@@ -472,7 +479,7 @@ export default class State {
         },
       ] = accounts;
 
-      this.keyringService.setCurrentAccount({
+      this.setCurrentAccount({
         address,
         name: name as string,
         ethereumAddress: ethereumAddress as string,
@@ -482,7 +489,7 @@ export default class State {
       return;
     }
 
-    this.keyringService.setCurrentAccount(null);
+    this.setCurrentAccount(null);
   }
 
   public upsertNetworkMap(data: NetworkJson): boolean {
@@ -1291,6 +1298,22 @@ export default class State {
 
   get currentAccount() {
     return this.keyringService.currentAccount;
+  }
+
+  public setCurrentAccount(data: CurrentAccountState, callback?: () => void): void {
+    this.updateServiceInfo();
+
+    // logic for Sora library
+    if (data?.address && !data.isMobile) {
+      const pair = keyring.getPair(data?.address);
+
+      apiSora.account = { json: null as any, pair };
+
+      this.subscribeTotalXorBalance();
+    }
+
+    this.keyringService.setCurrentAccount(data);
+    callback && callback();
   }
 
   public subscribeTotalXorBalance() {

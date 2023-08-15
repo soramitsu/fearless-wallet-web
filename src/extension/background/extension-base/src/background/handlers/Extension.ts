@@ -1,7 +1,5 @@
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
-import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
-import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import {
   keyExtractSuri,
@@ -469,7 +467,7 @@ export default class Extension extends FWExtensionBase {
 
   private _saveCurrentAccountAddress(address: string) {
     if (address === '') {
-      this.state.keyringService.setCurrentAccount(null);
+      this.state.setCurrentAccount(null);
 
       return;
     }
@@ -485,12 +483,12 @@ export default class Extension extends FWExtensionBase {
       ethereumAddress: (ethereumAddress as string) ?? '',
     };
 
-    this.state.keyringService.setCurrentAccount(accountInfo);
+    this.state.setCurrentAccount(accountInfo);
   }
 
   private triggerWalletsSubscription(): boolean {
-    const accountsSubject = accountsObservable.subject;
-    const addressSubject = addressesObservable.subject;
+    const accountsSubject = this.state.keyringService.accountSubject;
+    const addressSubject = this.state.keyringService.addressesSubject;
 
     accountsSubject.next(accountsSubject.getValue());
     addressSubject.next(addressSubject.getValue());
@@ -504,6 +502,7 @@ export default class Extension extends FWExtensionBase {
     this.state.generateDefaultBalance(address);
 
     this._saveCurrentAccountAddress(address);
+    this.state.updateKeyringState();
 
     return true;
   }

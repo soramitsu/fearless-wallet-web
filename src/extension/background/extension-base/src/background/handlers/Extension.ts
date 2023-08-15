@@ -100,7 +100,7 @@ import type {
   ResponseType,
   SigningRequest,
 } from '@extension-base/background/types/types';
-import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import type { CurrentAccountInfo } from '@extension-base/stores/CurrentAccountStore';
 import type {
   Asset,
   RequestTransactionHistoryAdd,
@@ -467,7 +467,7 @@ export default class Extension extends FWExtensionBase {
     };
   }
 
-  private _saveCurrentAccountAddress(address: string, callback?: (account: CurrentAccountState) => void) {
+  private _saveCurrentAccountAddress(address: string) {
     if (address === '') {
       this.state.keyringService.setCurrentAccount(null);
 
@@ -486,7 +486,6 @@ export default class Extension extends FWExtensionBase {
     };
 
     this.state.keyringService.setCurrentAccount(accountInfo);
-    callback && callback(accountInfo);
   }
 
   private triggerWalletsSubscription(): boolean {
@@ -504,9 +503,7 @@ export default class Extension extends FWExtensionBase {
 
     this.state.generateDefaultBalance(address);
 
-    this._saveCurrentAccountAddress(address, () => {
-      this.triggerWalletsSubscription();
-    });
+    this._saveCurrentAccountAddress(address);
 
     return true;
   }
@@ -1324,16 +1321,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {
-    const cb = createSubscription<'pri(soraCard.token)'>(id, port);
-
-    const subscription = this.state.soraCardTokenSubject.subscribe((token) => cb(token));
-
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
-
-    return true;
+    return this.state.soraCardService.soraCardTokenSubscribe(id, port);
   }
 
   authorizeApprovePolkaswap(authorizedAccounts: string[]): Promise<void> {

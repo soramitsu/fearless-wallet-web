@@ -400,7 +400,7 @@
         "statusText": "Verification rejected",
         "text1": "Verification rejected",
         "text2": "Your application has been rejected.",
-        "text3": "PLACEHOLDER TEXT: *Display 'additional description' provided in the answer* (done by devs. We should check the format of the answer, to be sure it's human-readable)"
+        "text3": "Reason for rejection:"
       },
       "accepted": {
         "statusText": "Card is on the way",

@@ -18,7 +18,7 @@ export type Mutations = {
   [MutationTypes.SET_KYC_STATUS](state: State, status: Nullable<KycStatus>): void;
   [MutationTypes.SET_VERIFICATION_STATUS](state: State, status: Nullable<VerificationStatus>): void;
   [MutationTypes.SET_REJECT_REASON](state: State, rejectReason: string): void;
-  [MutationTypes.SET_WILL_TO_KYC_PASS_KYC_AGAIN](state: State, will: boolean): void;
+  [MutationTypes.SET_WILL_TO_KYC_PASS_KYC_AGAIN](state: State, value: boolean): void;
   [MutationTypes.SET_HAS_KYC_ATTEMPTS](state: State, hasAttempt: boolean): void;
   [MutationTypes.SET_XOR_PER_EURO_RATIO](state: State, ratio: number): void;
 };
@@ -40,8 +40,8 @@ const mutations: MutationTree<State> & Mutations = {
     state.rejectReason = rejectReason;
   },
 
-  [MutationTypes.SET_WILL_TO_KYC_PASS_KYC_AGAIN](state, will) {
-    state.wantsToPassKycAgain = will;
+  [MutationTypes.SET_WILL_TO_KYC_PASS_KYC_AGAIN](state, value) {
+    state.wantsToPassKycAgain = value;
   },
 
   [MutationTypes.SET_HAS_KYC_ATTEMPTS](state, hasAttempt) {

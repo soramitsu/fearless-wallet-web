@@ -65,11 +65,11 @@ export default class App extends Vue {
 
     this.unregisterInactiveWorkers();
     this.setupWallet();
+    this.setupNetworks();
     this.setupBalance();
     this.fetchFiats();
     this.fetchFeatures();
     this.setupPrice();
-    this.setupNetworks();
     this.setupSWPing();
     this.getUserStatus(); // SORA Card
   }
@@ -136,16 +136,15 @@ export default class App extends Vue {
   }
 
   async setupWallet() {
-    const accounts = subscribeAddresses((accounts) => {
+    const accounts = await subscribeAddresses((accounts) => {
       this.onAccountUpdate(accounts, true);
     });
 
-    const addresses = subscribeAccounts((accounts) => {
+    const addresses = await subscribeAccounts((accounts) => {
       this.onAccountUpdate(accounts);
     });
 
-    const [currentAccounts, currentAddreses] = await Promise.all([accounts, addresses]);
-    this.onAccountUpdate([...currentAddreses, ...currentAccounts]);
+    this.onAccountUpdate([...accounts, ...addresses]);
   }
 
   unsubscribe() {

@@ -135,14 +135,17 @@ export default class App extends Vue {
     }
   }
 
-  setupWallet() {
-    subscribeAddresses((accounts) => {
+  async setupWallet() {
+    const accounts = subscribeAddresses((accounts) => {
       this.onAccountUpdate(accounts, true);
     });
 
-    subscribeAccounts((accounts) => {
+    const addresses = subscribeAccounts((accounts) => {
       this.onAccountUpdate(accounts);
     });
+
+    const [currentAccounts, currentAddreses] = await Promise.all([accounts, addresses]);
+    this.onAccountUpdate([...currentAddreses, ...currentAccounts]);
   }
 
   unsubscribe() {

@@ -297,11 +297,11 @@ export function rejectMetaRequest(id: string): Promise<boolean> {
   return sendMessage('pri(metadata.reject)', { id });
 }
 
-export function subscribeAccounts(cb: (accounts: AccountJson[]) => void): Promise<boolean> {
+export function subscribeAccounts(cb: (accounts: AccountJson[]) => void): Promise<AccountJson[]> {
   return sendMessage('pri(accounts.subscribe)', null, cb);
 }
 
-export function subscribeAddresses(cb: (accounts: AccountJson[]) => void): Promise<boolean> {
+export function subscribeAddresses(cb: (accounts: AccountJson[]) => void): Promise<AccountJson[]> {
   return sendMessage('pri(addresses.subscribe)', null, cb);
 }
 

@@ -6,7 +6,7 @@ import { knownGenesis } from '@polkadot/networks/defaults';
 import { assert, u8aToHex } from '@polkadot/util';
 import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
-import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
+import { base64Decode } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
@@ -15,7 +15,7 @@ import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import MetadataStore from '@extension-base/stores/Metadata';
 import { storage } from '@extension-base/stores/Storage';
 import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
-import CurrentAccountStore, { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+
 import BalanceService from '@extension-base/shared/balanceService';
 import AuthorizeStore from '@extension-base/stores/Authorize';
 import { initWeb3Api } from '@extension-base/api/evm';
@@ -36,6 +36,7 @@ import { JsonRpcProvider } from 'ethers';
 
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import { EventService } from '../../services/event-service';
+import { KeyringService } from '../../services/keyring-service';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -156,7 +157,6 @@ export default class State {
   private readonly priceStore = new PriceStore();
   private readonly evmChainSubject = new Subject<AuthUrls>();
   private readonly authorizeUrlSubject = new Subject<AuthUrls>();
-  private readonly currentAccountStore = new CurrentAccountStore();
   public authUrls: AuthUrls = {};
   public signature: HexString | null = null;
   public defaultAuthAccountSelection: string[] = [];
@@ -202,6 +202,7 @@ export default class State {
     dAppName: '',
   };
   public eventService = new EventService();
+  public keyringService = new KeyringService(this.eventService);
 
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
@@ -472,12 +473,12 @@ export default class State {
     const currentAccount = await this.currentAccount;
 
     if (currentAccount) {
-      this.setCurrentAccount({ ...currentAccount });
+      this.keyringService.setCurrentAccount({ ...currentAccount });
 
       return;
     }
 
-    const accounts = this.getSubstrateAccounts();
+    const accounts = this.keyringService.getSubstrateAccounts();
 
     if (accounts.length) {
       const [
@@ -487,7 +488,7 @@ export default class State {
         },
       ] = accounts;
 
-      this.setCurrentAccount({
+      this.keyringService.setCurrentAccount({
         address,
         name: name as string,
         ethereumAddress: ethereumAddress as string,
@@ -497,7 +498,7 @@ export default class State {
       return;
     }
 
-    this.setCurrentAccount(null);
+    this.keyringService.setCurrentAccount(null);
   }
 
   public upsertNetworkMap(data: NetworkJson): boolean {
@@ -582,13 +583,22 @@ export default class State {
     return true;
   }
 
+  public async enableNetworkType(type: string): Promise<void> {
+    const currentAccount = await this.currentAccount;
+
+    if (currentAccount) {
+      this.selectedNetwork[currentAccount.address] = type;
+      storage.set({ selectedNetwork: this.selectedNetwork });
+    }
+
+    return this.setActiveNetworks(type);
+  }
+
   public updateServiceInfo() {
-    this.getCurrentAccount((currentAccountInfo) => {
-      this.serviceInfoSubject.next({
-        networkMap: this.networkMap,
-        apiMap: this.apis,
-        currentAccountInfo,
-      });
+    this.serviceInfoSubject.next({
+      networkMap: this.networkMap,
+      apiMap: this.apis,
+      currentAccountInfo: this.keyringService.currentAccount,
     });
   }
 
@@ -1097,12 +1107,8 @@ export default class State {
     });
   }
 
-  public getAccountAddress(): Promise<string | null | undefined> {
-    return new Promise((resolve) => {
-      this.getCurrentAccount((account) => {
-        account ? resolve(account.address) : resolve(null);
-      });
-    });
+  public getAccountAddress(): string | null | undefined {
+    return this.keyringService.currentAccount?.address;
   }
 
   public refreshPrice() {
@@ -1240,18 +1246,17 @@ export default class State {
   }
 
   public updateXorTotalBalance(muchTotal: FPNumber): void {
-    this.getCurrentAccount((account) => {
-      if (!account) return;
+    const currentAccount = this.keyringService.currentAccount;
+    if (!currentAccount) return;
 
-      const { address } = account;
+    const { address } = currentAccount;
 
-      const currencyIndex = this.balanceMap[address].findIndex(({ assetId }) => assetId === SORA_XOR_ASSET_ID);
+    const currencyIndex = this.balanceMap[address].findIndex(({ assetId }) => assetId === SORA_XOR_ASSET_ID);
 
-      const token = this.balanceMap[address][currencyIndex];
-      const index = token.balances.findIndex(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
+    const token = this.balanceMap[address][currencyIndex];
+    const index = token.balances.findIndex(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
 
-      this.balanceMap[address][currencyIndex].balances[index].muchTotal = muchTotal.toString();
-    });
+    this.balanceMap[address][currencyIndex].balances[index].muchTotal = muchTotal.toString();
   }
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
@@ -1301,32 +1306,7 @@ export default class State {
   }
 
   get currentAccount() {
-    return new Promise<CurrentAccountState>((res) => {
-      this.getCurrentAccount((value) => {
-        res(value);
-      });
-    });
-  }
-
-  public getCurrentAccount(update: (value: CurrentAccountState) => void): void {
-    this.currentAccountStore.get('CurrentAccountInfo', update);
-  }
-
-  public setCurrentAccount(data: CurrentAccountState, callback?: () => void): void {
-    this.currentAccountStore.set('CurrentAccountInfo', data, () => {
-      this.updateServiceInfo();
-
-      // logic for Sora library
-      if (data?.address && !data.isMobile) {
-        const pair = keyring.getPair(data?.address);
-
-        apiSora.account = { json: null as any, pair };
-
-        this.subscribeTotalXorBalance();
-      }
-
-      callback && callback();
-    });
+    return this.keyringService.currentAccount;
   }
 
   public subscribeTotalXorBalance() {
@@ -1344,19 +1324,9 @@ export default class State {
   }
 
   private updateBalanceStore(networkKey: string, item: Partial<BalanceItem>) {
-    this.getCurrentAccount((currentAccountInfo) => {
-      if (currentAccountInfo)
-        this.balanceService
-          .updateBalanceStore(networkKey, currentAccountInfo.address, item)
-          .catch((e) => console.warn(e));
-    });
-  }
-
-  public getSubstrateAccounts() {
-    const accounts = keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
-    const addresses = keyring.getAddresses();
-
-    return [...accounts, ...addresses];
+    const currentAccount = this.keyringService.currentAccount;
+    if (currentAccount)
+      this.balanceService.updateBalanceStore(networkKey, currentAccount.address, item).catch((e) => console.warn(e));
   }
 
   public generateDefaultBalance(address: string) {
@@ -1368,7 +1338,7 @@ export default class State {
   }
 
   public generateDefaultBalanceMap() {
-    this.getSubstrateAccounts().forEach(({ address }) => this.generateDefaultBalance(address));
+    this.keyringService.getSubstrateAccounts().forEach(({ address }) => this.generateDefaultBalance(address));
   }
 
   public accountExportPrivateKey({
@@ -1481,22 +1451,20 @@ export default class State {
     });
 
     if (items.length) {
-      this.getAccountAddress().then((currentAddress) => {
-        if (currentAddress === address) {
-          const oldItems = this.historyMap[network] || [];
+      if (this.keyringService.currentAddress === address) {
+        const oldItems = this.historyMap[network] || [];
 
-          this.historyMap[network] = this.combineHistories(oldItems, items);
-          // this.saveHistoryToStorage(address, network, this.historyMap[network]);
-          callback && callback(this.historyMap[network]);
+        this.historyMap[network] = this.combineHistories(oldItems, items);
+        // this.saveHistoryToStorage(address, network, this.historyMap[network]);
+        callback && callback(this.historyMap[network]);
 
-          this.lazyNext('setHistory', () => {
-            this.publishHistory();
-          });
-        } else {
-          // this.saveHistoryToStorage(address, network, items);
-          callback && callback(this.historyMap[network]);
-        }
-      });
+        this.lazyNext('setHistory', () => {
+          this.publishHistory();
+        });
+      } else {
+        // this.saveHistoryToStorage(address, network, items);
+        callback && callback(this.historyMap[network]);
+      }
     }
   }
 

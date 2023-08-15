@@ -89,7 +89,7 @@ export default class Eip155RequestHandler {
 
       this.checkAccount(address, sessionAccounts);
 
-      const chainId = parseInt(_chainId.split(':')[1]);
+      const chainId = _chainId.split(':')[1];
 
       const [networkKey, chainInfo] = this.state.findNetworkKeyByChainId(chainId);
 
@@ -97,7 +97,7 @@ export default class Eip155RequestHandler {
         throw new Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + address);
       }
 
-      const chainState = this.state.getChainStateByKey(networkKey);
+      const chainState = this.state.getNetworkMap[networkKey];
 
       const createRequest = () => {
         this.state
@@ -114,13 +114,12 @@ export default class Eip155RequestHandler {
       };
 
       if (!chainState.active) {
-        //TODO add chainservice or refactoring
-        // this.state.chainService
-        //   .enableChain(networkKey)
-        //   .then(createRequest)
-        //   .catch(() => {
-        //     throw new Error(getSdkError('USER_REJECTED').message + ' Can not active chain: ' + chainInfo.name);
-        //   });
+        this.state
+          .en(networkKey)
+          .then(createRequest)
+          .catch(() => {
+            throw new Error(getSdkError('USER_REJECTED').message + ' Can not active chain: ' + chainInfo.name);
+          });
       } else {
         createRequest();
       }

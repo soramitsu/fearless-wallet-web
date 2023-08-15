@@ -28,7 +28,7 @@ import { prepNetworkNames } from '@extension-base/const/networks';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
 import { getMockCurrencies, isEthereumNetwork, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
-import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
+import { MobileSigningRequest, MobileSignRequest } from '@extension-base/background/types/types';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { SignerPayloadRaw } from '@polkadot/types/types';
@@ -37,6 +37,7 @@ import { JsonRpcProvider } from 'ethers';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import WalletConnectService from '@extension-base/services/wallet-connect-service';
 import { EventService } from '@extension-base/services/event-service';
+import RequestService from '../../services/request-service';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -132,9 +133,7 @@ type APIs = {
 const metaStore = new MetadataStore();
 
 export default class State {
-  public notification = 'popup';
   private cron: FWCron;
-  public windows: number[] = [];
   public prices: {
     json: PriceJson;
     timestamp: number;
@@ -203,7 +202,8 @@ export default class State {
     dAppName: '',
   };
   public eventService = new EventService();
-  public walletConnectService = new WalletConnectService(this);
+  public requestService = new RequestService();
+  public walletConnectService = new WalletConnectService(this, this.requestService);
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }
@@ -307,51 +307,21 @@ export default class State {
     return Object.values(this.mobileSignRequests).map(({ id, request }): MobileSigningRequest => ({ id, request }));
   }
 
-  popupClose(): void {
-    this.windows.forEach((id: number) => withErrorLog(() => chrome.windows.remove(id)));
-
-    this.windows = [];
-  }
-
-  popupOpen(): void {
-    if (this.notification && this.notification !== 'extension')
-      chrome.windows.getCurrent((win) => {
-        const popupOptions = { ...POPUP_WINDOW_OPTS };
-
-        if (win) {
-          popupOptions.left = (win.left || 0) + (win.width || 0) - (POPUP_WINDOW_OPTS.width || 0) - 20;
-          popupOptions.top = (win.top || 0) + 75;
-        }
-
-        chrome.windows.create(popupOptions, (window): void => {
-          if (window) this.windows.push(window.id || 0);
-        });
-      });
-  }
-
   async injectFromStorage() {
     extractMetadata(metaStore);
 
-    const {
-      authUrls,
-      defaultAuthAccountSelection,
-      fiatSymbol,
-      injectedProviders,
-      providers,
-      windows,
-      selectedNetwork,
-    } = await this.getFromStorage([
-      'fiatSymbol',
-      'authUrls',
-      'selectedNetwork',
-      'defaultAuthAccountSelection',
-      'injectedProviders',
-      'providers',
-      'windows',
-    ]);
+    const { authUrls, defaultAuthAccountSelection, fiatSymbol, injectedProviders, providers, selectedNetwork } =
+      await this.getFromStorage([
+        'fiatSymbol',
+        'authUrls',
+        'selectedNetwork',
+        'defaultAuthAccountSelection',
+        'injectedProviders',
+        'providers',
+        'windows',
+      ]);
 
     if (authUrls && Object.keys(authUrls).length) this.authUrls = authUrls;
-    if (windows && windows.length) this.windows = windows;
     if (fiatSymbol) this.setFiatSymbol(fiatSymbol);
     if (selectedNetwork) this.selectedNetwork = selectedNetwork;
     if (injectedProviders) this.injectedProviders = new Map(injectedProviders);
@@ -581,6 +551,17 @@ export default class State {
     });
 
     return true;
+  }
+
+  public async enableNetworkType(type: string): Promise<void> {
+    const currentAccount = await this.currentAccount;
+
+    if (currentAccount) {
+      this.selectedNetwork[currentAccount.address] = type;
+      storage.set({ selectedNetwork: this.selectedNetwork });
+    }
+
+    return this.setActiveNetworks(type);
   }
 
   public updateServiceInfo() {
@@ -859,7 +840,7 @@ export default class State {
     });
 
     if (shouldClose && text === '') {
-      this.popupClose();
+      this.requestService.popupClose();
     }
   }
 
@@ -941,7 +922,7 @@ export default class State {
       };
 
       this.updateIconAuth();
-      this.popupOpen();
+      this.requestService.popupOpen();
     });
   }
 
@@ -966,7 +947,7 @@ export default class State {
       };
 
       this.updateIconMeta();
-      this.popupOpen();
+      this.requestService.popupOpen();
     });
   }
 
@@ -1062,6 +1043,20 @@ export default class State {
     return provider.unsubscribe(request.type, request.method, request.subscriptionId);
   }
 
+  findNetworkKeyByChainId(_chainId?: string | null): [string | undefined, NetworkJson | undefined] {
+    if (!_chainId) {
+      return [undefined, undefined];
+    }
+
+    const rs = Object.entries(this.getNetworkMap).find(([, chainInfo]) => chainInfo.chainId === _chainId);
+
+    if (rs) {
+      return rs;
+    } else {
+      return [undefined, undefined];
+    }
+  }
+
   saveMetadata(meta: MetadataDef): void {
     metaStore.set(meta.genesisHash, meta);
 
@@ -1080,7 +1075,7 @@ export default class State {
         url,
       };
       this.updateIconSign();
-      this.popupOpen();
+      this.requestService.popupOpen();
     });
   }
 

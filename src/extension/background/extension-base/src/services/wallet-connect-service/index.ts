@@ -4,6 +4,7 @@ import WalletConnect from '@walletconnect/sign-client';
 import { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
 import { getInternalError, getSdkError } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
+import RequestService from '../request-service';
 import WalletConnectStorage from './storage';
 import { ALL_WALLET_CONNECT_EVENT, DEFAULT_WALLET_CONNECT_OPTIONS, WALLET_CONNECT_SUPPORTED_METHODS } from './consts';
 import { EIP155_SIGNING_METHODS, ResultApproveWalletConnectSession, WalletConnectSigningMethod } from './types';
@@ -12,14 +13,16 @@ import Eip155Handler from './requestHandlers/Eip155Handler';
 
 export default class WalletConnectService {
   readonly state: State;
+  readonly requestService: RequestService;
   readonly eip155RequestHandler: Eip155Handler;
   private client: WalletConnect | undefined;
   public readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]> = new BehaviorSubject<SessionTypes.Struct[]>(
     []
   );
 
-  constructor(state: State) {
+  constructor(state: State, requestService: RequestService) {
     this.state = state;
+    this.requestService = requestService;
     this.eip155RequestHandler = new Eip155Handler(this.state, this);
 
     this.initClient();
@@ -106,7 +109,7 @@ export default class WalletConnectService {
   onSessionProposal(proposal: SignClientTypes.EventArguments['session_proposal']) {
     this.checkClient();
 
-    this.#requestService.addConnectWCRequest(convertConnectRequest(proposal));
+    this.requestService.addConnectWCRequest(convertConnectRequest(proposal));
   }
 
   onSessionRequest(requestEvent: SignClientTypes.EventArguments['session_request']) {
@@ -128,7 +131,7 @@ export default class WalletConnectService {
         .map((namespace) => namespace.methods)
         .flat();
 
-      const chainInfoMap = this.state.getChainInfoMap();
+      const chainInfoMap = this.state.getNetworkMap;
 
       const [requestNamespace] = chainId.split(':');
 
@@ -171,7 +174,7 @@ export default class WalletConnectService {
         const requestSession = this.getSession(topic);
         const notSupportRequest = convertNotSupportRequest(requestEvent, requestSession.peer.metadata.url);
 
-        this.#requestService.addNotSupportWCRequest(notSupportRequest);
+        this.requestService.addNotSupportWCRequest(notSupportRequest);
       } catch (e) {
         console.info(e);
       }

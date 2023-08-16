@@ -195,6 +195,15 @@ export default class WalletConnectService {
     this.client?.on('session_delete', this.updateSessions.bind(this));
   }
 
+  public async disconnect(topic: string) {
+    await this.client?.disconnect({
+      topic: topic,
+      reason: getSdkError('USER_DISCONNECTED'),
+    });
+
+    this.updateSessions();
+  }
+
   // Remove old listener
   removeListener() {
     this.checkClient();

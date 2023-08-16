@@ -938,3 +938,15 @@ export type BeaconRawSignCallBack = (tx: SignerPayloadRaw) => string;
 
 export type BalanceMap = Record<WalletAddress, TokenBalance[]>;
 export type NetworkMap = Record<string, NetworkJson>;
+
+export interface EvmSignRequest {
+  account: AccountJson;
+  hashPayload: string;
+  canSign: boolean;
+}
+
+export interface EvmSignatureRequest extends EvmSignRequest {
+  id: string;
+  type: string;
+  payload: unknown;
+}

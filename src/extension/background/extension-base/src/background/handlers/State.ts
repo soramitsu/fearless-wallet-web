@@ -1,10 +1,10 @@
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
+import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 
 import { assert, u8aToHex } from '@polkadot/util';
 import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
-import { base64Decode } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
@@ -57,6 +57,8 @@ import type {
   Providers,
   ResponseTotalBalances,
   RequestAuthorizeCancel,
+  AccountJson,
+  EvmSignatureRequest,
 } from '@extension-base/background/types/types';
 import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import type { ChainRegistry, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
@@ -1222,5 +1224,114 @@ export default class State {
     }
 
     return false;
+  }
+
+  public async evmSign(
+    id: string,
+    url: string,
+    method: string,
+    params: any,
+    allowedAccounts: string[]
+  ): Promise<string | undefined> {
+    let address = '';
+    let payload: any;
+    const [p1, p2] = params as [string, string];
+
+    if (typeof p1 === 'string' && isEthereumAddress(p1)) {
+      address = p1;
+      payload = p2;
+    } else if (typeof p2 === 'string' && isEthereumAddress(p2)) {
+      address = p2;
+      payload = p1;
+    }
+
+    if (address === '' || !payload) {
+      throw new Error('Not found address or payload to sign');
+    }
+
+    if (
+      [
+        'eth_sign',
+        'personal_sign',
+        'eth_signTypedData',
+        'eth_signTypedData_v1',
+        'eth_signTypedData_v3',
+        'eth_signTypedData_v4',
+      ].indexOf(method) < 0
+    ) {
+      throw new Error('Not found sign method');
+    }
+
+    if (['eth_signTypedData_v3', 'eth_signTypedData_v4'].indexOf(method) > -1) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/no-unsafe-assignment
+      payload = JSON.parse(payload);
+    }
+
+    // Check sign abiblity
+    if (!allowedAccounts.find((acc) => acc.toLowerCase() === address.toLowerCase())) {
+      throw new Error('Account ' + address + ' not in allowed list');
+    }
+
+    const pair = keyring.getPair(address);
+
+    if (!pair) {
+      throw new Error('Cannot find pair with address: ' + address);
+    }
+
+    const account: AccountJson = {
+      address: pair.address,
+      ethereumAddress: pair.meta.ethereumAddress as string,
+      name: pair.meta.name as string,
+    };
+
+    let hashPayload = '';
+    let canSign = false;
+
+    switch (method) {
+      case 'personal_sign':
+        canSign = true;
+        hashPayload = payload as string;
+        break;
+      case 'eth_sign':
+      case 'eth_signTypedData':
+      case 'eth_signTypedData_v1':
+      case 'eth_signTypedData_v3':
+      case 'eth_signTypedData_v4':
+        if (!account.isExternal) {
+          canSign = true;
+        }
+
+        break;
+      default:
+        throw new Error('Not found sign method');
+    }
+
+    const signPayload: EvmSignatureRequest = {
+      account: account,
+      type: method,
+      payload: payload as unknown,
+      hashPayload: hashPayload,
+      canSign: canSign,
+      id,
+    };
+    console.info(signPayload);
+
+    return '';
+    // return this.requestService
+    //   .addConfirmation(id, url, 'evmSignatureRequest', signPayload, {
+    //     requiredPassword: false,
+    //     address,
+    //   })
+    //   .then(({ isApproved, payload }) => {
+    //     if (isApproved) {
+    //       if (payload) {
+    //         return payload;
+    //       } else {
+    //         throw new Error('Not found signature');
+    //       }
+    //     } else {
+    //       throw new Error('User rejected request');
+    //     }
+    //   });
   }
 }

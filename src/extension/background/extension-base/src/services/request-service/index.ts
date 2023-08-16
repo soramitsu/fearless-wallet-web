@@ -97,6 +97,7 @@ export class RequestService {
   }
 
   // Auth
+
   public get authSubject(): BehaviorSubject<AuthorizeRequest[]> {
     return this.authRequestHandler.authSubject;
   }
@@ -203,11 +204,11 @@ export class RequestService {
   // General methods
   public get numRequests(): number {
     return (
-      // this.numMetaRequests +
-      // this.numAuthRequests +
-      // this.numSubstrateRequests +
-      // this.numEvmRequests +
-      this.numConnectWCRequests + this.numNotSupportWCRequests
+      this.numMetaRequests +
+      this.numAuthRequests +
+      this.numSubstrateRequests +
+      this.numConnectWCRequests +
+      this.numNotSupportWCRequests
     );
   }
 }

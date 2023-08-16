@@ -4,11 +4,17 @@ import { SignerPayloadJSON } from '@polkadot/types/types/extrinsic';
 import { logger as createLogger } from '@polkadot/util/logger';
 import { Logger } from '@polkadot/util/types';
 import { keyring } from '@polkadot/ui-keyring';
-import { SignRequest, SigningRequest, ResponseSigning, RequestSign, AccountJson } from '../../../background/types';
-import RequestExtrinsicSign from '../../../signers/RequestExtrinsicSign';
-import { Resolver } from '../../../types';
-import { getId, isInternalRequest } from '../../../utils';
-import { RequestService } from '../..';
+import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
+import { Resolver } from '@extension-base/types';
+import { getId, isInternalRequest } from '@extension-base/utils';
+import {
+  SignRequest,
+  SigningRequest,
+  ResponseSigning,
+  RequestSign,
+  AccountJson,
+} from '@extension-base/background/types';
+import { RequestService } from '@extension-base/services';
 
 export class SubstrateRequestHandler {
   readonly #logger: Logger;

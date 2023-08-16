@@ -15,7 +15,32 @@ export interface WalletConnectSessionRequest extends BaseWalletConnectSessionReq
 export interface WalletConnectNotSupportRequest extends BaseWalletConnectSessionRequest {
   request: SignClientTypes.EventArguments['session_request'];
 }
+export interface RequestRejectConnectWalletSession {
+  id: string;
+}
 
+export interface RequestApproveConnectWalletSession {
+  id: string;
+  accounts: string[];
+}
+
+export interface RequestReconnectConnectWalletSession {
+  id: string;
+}
+
+export interface RequestDisconnectWalletConnectSession {
+  topic: string;
+}
+
+// Not support
+
+export interface RequestRejectWalletConnectNotSupport {
+  id: string;
+}
+
+export interface RequestApproveWalletConnectNotSupport {
+  id: string;
+}
 export type ResultApproveWalletConnectSession = EngineTypes.ApproveParams;
 export interface RequestWalletConnectSession extends WalletConnectSessionRequest, Resolver<void> {}
 export interface RequestWalletConnectNotSupport extends WalletConnectNotSupportRequest, Resolver<void> {}

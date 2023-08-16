@@ -1,7 +1,10 @@
 import { BehaviorSubject } from 'rxjs';
-import { RequestService } from '..';
-import { Resolver } from '../../../types';
-import { RequestWalletConnectNotSupport, WalletConnectNotSupportRequest } from '../../wallet-connect-service/types';
+import { Resolver } from '@extension-base/types';
+import { RequestService } from '@extension-base/services';
+import {
+  RequestWalletConnectNotSupport,
+  WalletConnectNotSupportRequest,
+} from '@extension-base/services/wallet-connect-service/types';
 
 // WC = WalletConnect
 export class NotSupportWCRequestHandler {

@@ -1,3 +1,4 @@
+import { SessionTypes } from '@walletconnect/types/dist/types/sign-client/session';
 import type { SigningRequest } from '../types';
 import type { NetworkJson, RequestTransactionHistoryAdd, TransactionHistoryItemType } from '@extension-base/types';
 import type {
@@ -101,7 +102,17 @@ import type {
   SoraFees,
   SignerPayloadRaw,
 } from '@/interfaces';
-import type { RequestConnectWalletConnect } from '@extension-base/services/wallet-connect-service/types';
+import type {
+  RequestApproveConnectWalletSession,
+  RequestApproveWalletConnectNotSupport,
+  RequestConnectWalletConnect,
+  RequestDisconnectWalletConnectSession,
+  RequestReconnectConnectWalletSession,
+  RequestRejectConnectWalletSession,
+  RequestRejectWalletConnectNotSupport,
+  WalletConnectNotSupportRequest,
+  WalletConnectSessionRequest,
+} from '@extension-base/services/wallet-connect-service/types';
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
 export interface RequestSignatures {
@@ -190,7 +201,7 @@ export interface RequestSignatures {
   'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
   'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
   'pri(accounts.checkCrossChain)': [RequestCheckCrossChain, ResponseCheckCrossChain];
-  'pri(accounts.crossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse]; // TODO
+  'pri(accounts.crossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse];
   'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
   'pri(accounts.swap)': [RequestSwap, ResponseMakeSwap];
   'pri(accounts.get.soraFees)': [null, SoraFees];
@@ -229,17 +240,17 @@ export interface RequestSignatures {
 
   //Wallet Connect
   'pri(walletConnect.connect)': [RequestConnectWalletConnect, boolean];
-  // 'pri(walletConnect.requests.connect.subscribe)': [null, WalletConnectSessionRequest[], WalletConnectSessionRequest[]];
-  // 'pri(walletConnect.session.approve)': [RequestApproveConnectWalletSession, boolean];
-  // 'pri(walletConnect.session.reject)': [RequestRejectConnectWalletSession, boolean];
-  // 'pri(walletConnect.session.reconnect)': [RequestReconnectConnectWalletSession, boolean];
-  // 'pri(walletConnect.session.subscribe)': [null, SessionTypes.Struct[], SessionTypes.Struct[]];
-  // 'pri(walletConnect.session.disconnect)': [RequestDisconnectWalletConnectSession, boolean];
-  // 'pri(walletConnect.requests.notSupport.subscribe)': [
-  //   null,
-  //   WalletConnectNotSupportRequest[],
-  //   WalletConnectNotSupportRequest[]
-  // ];
-  // 'pri(walletConnect.notSupport.approve)': [RequestApproveWalletConnectNotSupport, boolean];
-  // 'pri(walletConnect.notSupport.reject)': [RequestRejectWalletConnectNotSupport, boolean];
+  'pri(walletConnect.requests.connect.subscribe)': [null, WalletConnectSessionRequest[], WalletConnectSessionRequest[]];
+  'pri(walletConnect.session.approve)': [RequestApproveConnectWalletSession, boolean];
+  'pri(walletConnect.session.reject)': [RequestRejectConnectWalletSession, boolean];
+  'pri(walletConnect.session.reconnect)': [RequestReconnectConnectWalletSession, boolean];
+  'pri(walletConnect.session.subscribe)': [null, SessionTypes.Struct[], SessionTypes.Struct[]];
+  'pri(walletConnect.session.disconnect)': [RequestDisconnectWalletConnectSession, boolean];
+  'pri(walletConnect.requests.notSupport.subscribe)': [
+    null,
+    WalletConnectNotSupportRequest[],
+    WalletConnectNotSupportRequest[]
+  ];
+  'pri(walletConnect.notSupport.approve)': [RequestApproveWalletConnectNotSupport, boolean];
+  'pri(walletConnect.notSupport.reject)': [RequestRejectWalletConnectNotSupport, boolean];
 }

@@ -10,6 +10,7 @@ import {
 } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
 import { keyring } from '@polkadot/ui-keyring';
+import { getSdkError } from '@walletconnect/utils';
 import {
   getERC20TransactionObject,
   getEVMTransactionObject,
@@ -36,10 +37,28 @@ import {
   balanceItemByNetwork,
   getSubstrateAddressByEthAddress,
   isRequireSubstrateAPI,
+  uniqueStringArray,
 } from '@extension-base/background/utils/utils';
 
-import { RequestConnectWalletConnect } from '../../services/wallet-connect-service/types';
+import { ProposalTypes, SessionTypes } from '@walletconnect/types';
+import {
+  RequestApproveConnectWalletSession,
+  RequestApproveWalletConnectNotSupport,
+  RequestConnectWalletConnect,
+  RequestDisconnectWalletConnectSession,
+  RequestRejectConnectWalletSession,
+  RequestRejectWalletConnectNotSupport,
+  ResultApproveWalletConnectSession,
+  WalletConnectNotSupportRequest,
+  WalletConnectSessionRequest,
+} from '../../services/wallet-connect-service/types';
 import { SigningRequest } from '../types';
+import { WALLET_CONNECT_EIP155_NAMESPACE } from '../../services/wallet-connect-service/consts';
+import {
+  isProposalExpired,
+  isSupportWalletConnectNamespace,
+  isSupportWalletConnectChain,
+} from '../../services/wallet-connect-service/utils';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -1341,6 +1360,188 @@ export default class Extension extends FWExtensionBase {
     this.state.walletConnectService.addConnection(request.uri);
   }
 
+  private connectWCSubscribe(id: string, port: chrome.runtime.Port): WalletConnectSessionRequest[] {
+    const cb = createSubscription<'pri(walletConnect.requests.connect.subscribe)'>(id, port);
+    const subscription = this.state.requestService.connectWCSubject.subscribe(
+      (requests: WalletConnectSessionRequest[]): void => cb(requests)
+    );
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+      subscription.unsubscribe();
+    });
+
+    return this.state.requestService.allConnectWCRequests;
+  }
+
+  private async approveWalletConnectSession({
+    accounts: selectedAccounts,
+    id,
+  }: RequestApproveConnectWalletSession): Promise<boolean> {
+    const request = this.state.requestService.getConnectWCRequest(id);
+
+    if (isProposalExpired(request.request.params)) {
+      throw new Error('The proposal has been expired');
+    }
+
+    const wcId = request.request.id;
+    const params = request.request.params;
+
+    const requiredNamespaces: ProposalTypes.RequiredNamespaces = params.requiredNamespaces;
+    const optionalNamespaces: ProposalTypes.OptionalNamespaces = params.optionalNamespaces;
+
+    const availableNamespaces: ProposalTypes.RequiredNamespaces = {};
+
+    const namespaces: SessionTypes.Namespaces = {};
+    const chainInfoMap = this.state.getNetworkMap;
+
+    Object.entries(requiredNamespaces).forEach(([key, namespace]) => {
+      if (isSupportWalletConnectNamespace(key)) {
+        if (namespace.chains) {
+          const unSupportChains = namespace.chains.filter((chain) => !isSupportWalletConnectChain(chain, chainInfoMap));
+
+          if (unSupportChains.length) {
+            throw new Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + unSupportChains.toString());
+          }
+
+          availableNamespaces[key] = namespace;
+        }
+      } else {
+        throw new Error(getSdkError('UNSUPPORTED_NAMESPACE_KEY').message + ' ' + key);
+      }
+    });
+
+    Object.entries(optionalNamespaces).forEach(([key, namespace]) => {
+      if (isSupportWalletConnectNamespace(key)) {
+        if (namespace.chains) {
+          const supportChains =
+            namespace.chains.filter((chain) => isSupportWalletConnectChain(chain, chainInfoMap)) || [];
+
+          const requiredNameSpace = availableNamespaces[key];
+          const defaultChains: string[] = [];
+
+          if (requiredNameSpace) {
+            availableNamespaces[key] = {
+              chains: [...(requiredNameSpace.chains || defaultChains), ...(supportChains || defaultChains)],
+              events: requiredNameSpace.events,
+              methods: requiredNameSpace.methods,
+            };
+          } else {
+            if (supportChains.length) {
+              availableNamespaces[key] = {
+                chains: supportChains,
+                events: namespace.events,
+                methods: namespace.methods,
+              };
+            }
+          }
+        }
+      }
+    });
+
+    Object.entries(availableNamespaces).forEach(([key, namespace]) => {
+      if (namespace.chains) {
+        const accounts: string[] = [];
+
+        const chains = uniqueStringArray(namespace.chains);
+
+        chains.forEach((chain) => {
+          accounts.push(
+            ...selectedAccounts
+              .filter((address) => isEthereumAddress(address) === (key === WALLET_CONNECT_EIP155_NAMESPACE))
+              .map((address) => `${chain}:${address}`)
+          );
+        });
+
+        namespaces[key] = {
+          accounts,
+          methods: namespace.methods,
+          events: namespace.events,
+          chains: chains,
+        };
+      }
+    });
+
+    const result: ResultApproveWalletConnectSession = {
+      id: wcId,
+      namespaces: namespaces,
+      relayProtocol: params.relays[0].protocol,
+    };
+
+    await this.state.walletConnectService.approveSession(result);
+    request.resolve();
+
+    return true;
+  }
+
+  private async rejectWalletConnectSession({ id }: RequestRejectConnectWalletSession): Promise<boolean> {
+    const request = this.state.requestService.getConnectWCRequest(id);
+
+    const wcId = request.request.id;
+
+    if (isProposalExpired(request.request.params)) {
+      request.reject(new Error('The proposal has been expired'));
+
+      return true;
+    }
+
+    await this.state.walletConnectService.rejectSession(wcId);
+    request.reject(new Error('USER_REJECTED'));
+
+    return true;
+  }
+
+  private subscribeWalletConnectSessions(id: string, port: chrome.runtime.Port): SessionTypes.Struct[] {
+    const cb = createSubscription<'pri(walletConnect.session.subscribe)'>(id, port);
+
+    const subscription = this.state.walletConnectService.sessionSubject.subscribe((rs) => {
+      cb(rs);
+    });
+
+    port.onDisconnect.addListener((): void => {
+      subscription.unsubscribe();
+      this.cancelSubscription(id);
+    });
+
+    return this.state.walletConnectService.sessions;
+  }
+
+  private async disconnectWalletConnectSession({ topic }: RequestDisconnectWalletConnectSession): Promise<boolean> {
+    await this.state.walletConnectService.disconnect(topic);
+
+    return true;
+  }
+
+  private WCNotSupportSubscribe(id: string, port: chrome.runtime.Port): WalletConnectNotSupportRequest[] {
+    const cb = createSubscription<'pri(walletConnect.requests.notSupport.subscribe)'>(id, port);
+    const subscription = this.state.requestService.notSupportWCSubject.subscribe(
+      (requests: WalletConnectNotSupportRequest[]): void => cb(requests)
+    );
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+      subscription.unsubscribe();
+    });
+
+    return this.state.requestService.allNotSupportWCRequests;
+  }
+
+  private approveWalletConnectNotSupport({ id }: RequestApproveWalletConnectNotSupport): boolean {
+    const request = this.state.requestService.getNotSupportWCRequest(id);
+
+    request.resolve();
+
+    return true;
+  }
+
+  private rejectWalletConnectNotSupport({ id }: RequestRejectWalletConnectNotSupport): boolean {
+    const request = this.state.requestService.getNotSupportWCRequest(id);
+
+    request.reject(new Error('USER_REJECTED'));
+
+    return true;
+  }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -1587,6 +1788,32 @@ export default class Extension extends FWExtensionBase {
       //Wallet Connect
       case 'pri(walletConnect.connect)':
         return this.connectWalletConnect(request as RequestConnectWalletConnect);
+
+      case 'pri(walletConnect.requests.connect.subscribe)':
+        return this.connectWCSubscribe(id, port);
+
+      case 'pri(walletConnect.session.approve)':
+        return this.approveWalletConnectSession(request as RequestApproveConnectWalletSession);
+
+      case 'pri(walletConnect.session.reject)':
+        return this.rejectWalletConnectSession(request as RequestRejectConnectWalletSession);
+
+      case 'pri(walletConnect.session.subscribe)':
+        return this.subscribeWalletConnectSessions(id, port);
+
+      case 'pri(walletConnect.session.disconnect)':
+        return this.disconnectWalletConnectSession(request as RequestDisconnectWalletConnectSession);
+
+      // Not support
+      case 'pri(walletConnect.requests.notSupport.subscribe)':
+        return this.WCNotSupportSubscribe(id, port);
+
+      case 'pri(walletConnect.notSupport.approve)':
+        return this.approveWalletConnectNotSupport(request as RequestApproveWalletConnectNotSupport);
+
+      case 'pri(walletConnect.notSupport.reject)':
+        return this.rejectWalletConnectNotSupport(request as RequestRejectWalletConnectNotSupport);
+
       default:
         throw new Error(`Unable to handle message of type ${type}`);
     }

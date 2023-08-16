@@ -125,3 +125,13 @@ export function getSubstrateAddressByEthAddress(address: string) {
     ? accounts.find(({ meta: { ethereumAddress } }) => ethereumAddress === address)?.address ?? address
     : address;
 }
+
+export const uniqueStringArray = (array: string[]): string[] => {
+  const map: Record<string, string> = {};
+
+  array.forEach((v) => {
+    map[v] = v;
+  });
+
+  return Object.keys(map);
+};

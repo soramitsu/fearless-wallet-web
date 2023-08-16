@@ -1,20 +1,18 @@
 import { BehaviorSubject } from 'rxjs';
 import { assert } from '@polkadot/util';
-import { stripUrl } from '../../../background/handlers/helpers';
-import AuthorizeStore from '../../../stores/Authorize';
-import { Resolver } from '../../../types';
-import { KeyringService } from '../../keyring-service';
-
-import State from '../../../background/handlers/State';
-import { getId } from '../../../utils';
-import { NetworkService, RequestService } from '../..';
+import { stripUrl } from '@extension-base/background/handlers/helpers';
+import { Resolver } from '@extension-base/types';
+import AuthorizeStore from '@extension-base/stores/Authorize';
+import State from '@extension-base/background/handlers/State';
+import { getId } from '@extension-base/utils';
+import { NetworkService, RequestService, KeyringService } from '@extension-base/services';
 import type {
   AuthRequest,
   AuthResponse,
   AuthUrls,
   AuthorizeRequest,
   RequestAuthorizeTab,
-} from '../../../background/types';
+} from '@extension-base/background/types';
 
 const AUTH_URLS_KEY = 'authUrls';
 

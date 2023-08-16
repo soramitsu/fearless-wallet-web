@@ -1,12 +1,12 @@
 import { knownMetadata, addMetadata } from '@polkadot/extension-chains';
 import { MetadataDef } from '@polkadot/extension-inject/types';
 import { BehaviorSubject } from 'rxjs';
-import { RequestService } from '..';
-import { MetaRequest, MetadataRequest } from '../../../background/types';
-import MetadataStore from '../../../stores/Metadata';
-import { Resolver } from '../../../types';
-import { getId } from '../../../utils';
-import { extractMetadata } from '../helper';
+import { MetaRequest, MetadataRequest } from '@extension-base/background/types';
+import MetadataStore from '@extension-base/stores/Metadata';
+import { Resolver } from '@extension-base/types';
+import { getId } from '@extension-base/utils';
+import { RequestService } from '@extension-base/services';
+import { extractMetadata } from '@extension-base/services/request-service/helper';
 
 export class MetadataRequestHandler {
   readonly requestService: RequestService;

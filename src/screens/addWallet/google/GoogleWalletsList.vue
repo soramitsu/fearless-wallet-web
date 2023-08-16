@@ -38,7 +38,7 @@
                   :border="false"
                   :iconName="file.isComplete ? 'check' : file.isLoading ? 'loader' : ''"
                   :iconType="file.isLoading ? 'loading' : ''"
-                  :disabled="!file.password?.length || file.isLoading || file.isComplete"
+                  :disabled="!file.password.length || file.isLoading || file.isComplete"
                   :text="file.isLoading || file.isComplete ? '' : 'common.confirm'"
                   @click="onConfirm(index)"
                 />

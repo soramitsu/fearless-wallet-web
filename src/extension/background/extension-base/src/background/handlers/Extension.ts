@@ -204,9 +204,9 @@ export default class Extension extends FWExtensionBase {
 
     if (type === 'native') {
       const pair = keyring.getAccount(address);
-      const ethereumAddress = pair?.meta.ethereumAddress as string;
+      const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
 
-      if (ethereumAddress !== '') keyring.forgetAccount(ethereumAddress);
+      if (ethereumAddress) keyring.forgetAccount(ethereumAddress);
 
       keyring.forgetAccount(address);
     } else keyring.forgetAddress(address);

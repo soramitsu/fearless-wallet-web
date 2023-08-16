@@ -161,7 +161,7 @@ export default class GoogleExportPopup extends Vue {
   prepUploadMeta(json: KeyringPair$Json, ethWalletId?: string): ICreateFile['options'] {
     return {
       name: json.meta.name as string,
-      address: ethWalletId ? `${json.address}/${ethWalletId}` : (json.meta.ethereumAddress as string),
+      address: ethWalletId ? `${json.address}/${ethWalletId}` : (json.meta.ethereumAddress as string) ?? '',
       password: this.password,
     };
   }

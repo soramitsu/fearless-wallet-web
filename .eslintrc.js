@@ -1,5 +1,3 @@
-require('@rushstack/eslint-patch/modern-module-resolution');
-
 module.exports = {
   root: true,
   env: {
@@ -38,6 +36,7 @@ module.exports = {
     '@typescript-eslint/no-use-before-define': ['off'],
     '@typescript-eslint/no-var-requires': ['off'],
     '@typescript-eslint/no-non-null-assertion': ['off'],
+    '@typescript-eslint/no-explicit-any': ['warn', { ignoreRestArgs: true }],
     'prettier/prettier': [
       'error',
       {

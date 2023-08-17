@@ -55,7 +55,7 @@
 import { Getter, Action } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { FilesState, AsyncFn } from '@/interfaces';
-import { cut } from '@/helpers/common';
+import { cut } from '@/helpers';
 import { SelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';

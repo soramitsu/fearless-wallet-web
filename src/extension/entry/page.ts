@@ -21,6 +21,7 @@ class Page {
 
   init() {
     this.setMaxListeners();
+
     redirectIfPhishing()
       .then((gotRedirected) => {
         if (!gotRedirected) this.inject();

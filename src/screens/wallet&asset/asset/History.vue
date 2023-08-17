@@ -1,6 +1,6 @@
 <template>
   <!-- IMPORTANT: if <Menu /> showed use 306 -->
-  <ContentForm :height="366">
+  <ContentForm :height="273">
     <div class="history">
       <div class="history-settings">
         <div class="history-label">{{ $t('assets.history') }}:</div>
@@ -36,9 +36,9 @@ import { Getter } from 'vuex-class';
 import HistoryItem from './HistoryItem.vue';
 import type { FilterHistory, GetHistory } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworksController } from '@/controllers';
 
 @Component({
@@ -60,7 +60,7 @@ export default class History extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get selectedNetwork() {
-    return this.$route.params.network;
+    return this.$route.params.selectedNetwork;
   }
 
   get isEmptyHistory() {
@@ -89,7 +89,7 @@ export default class History extends Vue {
     if (this.filterHistoryValue === 'all') return this.history;
 
     const field = this.filterHistoryValue as 'transfer' | 'reward' | 'extrinsic';
-    const filteredHistory = this.history.filter((historyItem) => historyItem[field] !== null);
+    const filteredHistory = this.history.filter((historyItem) => historyItem[field]);
 
     return filteredHistory;
   }
@@ -112,7 +112,11 @@ export default class History extends Vue {
   }
 
   async fetchHistory() {
-    if (this.history.length !== 0 || !this.isMainNetwork) return;
+    if (
+      this.history.length !== 0 ||
+      (!this.isMainNetwork && this.selectedNetwork !== 'Ethereum' && this.selectedNetwork !== 'Ethereum Goerli')
+    )
+      return;
 
     this.showLoader = true;
 

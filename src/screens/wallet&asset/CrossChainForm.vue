@@ -28,7 +28,7 @@
           <div class="hr"></div>
 
           <div class="background-circle" :style="circleStyles">
-            <ExternalLogo :name="currency.icon" :width="87" />
+            <ExternalLogo v-if="currency" :name="currency.icon" :width="87" />
           </div>
 
           <div class="hr"></div>
@@ -72,13 +72,13 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import TransferForm from './TransferForm.vue';
-import type { SelectedWallet } from '@/store';
+import type { NetworkJson } from '@extension-base/types';
+import type { SelectedWallet, GetNetwork } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { firstCharToUp, cut } from '@/helpers/common';
+import { firstCharToUp, cut } from '@/helpers/';
 import { formattedNumber } from '@/helpers/numbers';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component({
   components: { TransferForm },
@@ -101,6 +101,7 @@ export default class CrossChainForm extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get circleStyles() {
     return {
@@ -153,11 +154,11 @@ export default class CrossChainForm extends Vue {
   }
 
   get originNet() {
-    return this.networks.find(({ name }) => name.toLowerCase() === this.originalNetwork.toLowerCase());
+    return this.getNetwork(this.originalNetwork);
   }
 
   get destNet() {
-    return this.networks.find(({ name }) => name.toLowerCase() === this.destinationNetwork.toLowerCase());
+    return this.getNetwork(this.destinationNetwork);
   }
 
   get originNetIcon() {
@@ -184,14 +185,16 @@ export default class CrossChainForm extends Vue {
     this.originalNetwork = this._originalNetwork;
 
     this.$nextTick(() => {
-      const originNet = this.networks.find(({ name }) => name.toLowerCase() === this._originalNetwork.toLowerCase());
+      const originNet = this.getNetwork(this._originalNetwork);
       const asset = getNativeAssetName(this.assetName);
 
       const destChainId = originNet?.xcm?.availableDestinations.find(({ assets }) =>
         assets.some((assetName) => assetName.toLowerCase() === asset)
       )?.chainId;
 
-      const { name: destName } = this.networks.find(({ chainId }) => chainId === destChainId)!;
+      if (!destChainId) return;
+
+      const { name: destName } = this.getNetwork(destChainId)!;
 
       this.destinationNetwork = destName;
     });

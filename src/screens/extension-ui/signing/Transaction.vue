@@ -27,7 +27,6 @@
           sizeWidth="medium"
           :address="payload.address"
           :transactionId="request.id"
-          :firstIcon="f"
           :payload="payload"
           @close="onClose"
         />
@@ -41,8 +40,8 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
+import { AccountJson, SigningRequest } from '@extension-base/background/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import { AccountJson, SigningRequest } from '@/extension/background/extension-base/src/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import Checkbox from '@/components/Checkbox.vue';
 import WalletInfo from '@/screens/extension-ui/signing/WalletInfo.vue';

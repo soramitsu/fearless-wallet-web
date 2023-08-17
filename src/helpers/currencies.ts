@@ -1,26 +1,22 @@
-import type { NetworkName, AssetsPrice, ChangeWalletBalance } from '@/interfaces';
-import { ALL_NETWORKS, SORA_UTILITY_ASSET, SORA_NETWORK_NAME } from '@/consts/networks';
+import { Wallet } from 'ethers';
+import { getNativeAssetName } from '@extension-base/background/utils/utils';
+import { APIItemState } from '@extension-base/api/types/networks';
+import type { NetworkJson } from '@extension-base/types';
+import type { BalanceItem } from '@extension-base/api/evm/types/ether';
+import type { TokenBalance } from '@extension-base/background/types/types';
+import type { NetworkName, AssetsPrice } from '@/interfaces';
+import {
+  SORA_UTILITY_ASSET,
+  SORA_NETWORK_NAME,
+  FAVORITE_NETWORKS,
+  POPULAR_NETWORKS,
+  ALL_NETWORKS,
+} from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { isSora } from '@/helpers/common';
-import { addNumbers } from '@/helpers/numbers';
-import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
-import { getNativeAssetName } from '@/extension/background/extension-base/src/background/utils/utils';
-
-function getTransferableBalanceInNetwork(token: TokenBalance, network: string) {
-  return token.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
-}
-
-function getSummaryTransferableBalance(token: TokenBalance, network = ALL_NETWORKS) {
-  if (network !== ALL_NETWORKS) return getTransferableBalanceInNetwork(token, network);
-
-  return token.balances.reduce((result, { state, transferable }) => {
-    if (state === APIItemState.READY && transferable) result += +transferable;
-
-    return result;
-  }, 0);
-}
+import { isSora } from '@/helpers';
+import store from '@/store';
+import { getSummaryTransferableBalance, getTransferableBalanceInNetwork, isNetworkGroup } from '@/helpers/common';
 
 function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }: AssetsPrice, network: NetworkName) {
   const relayChains = [];
@@ -78,45 +74,6 @@ function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }:
   ];
 }
 
-function getSummaryTransferableWalletBalance(tokens: TokenBalance[], price: AssetsPrice, network: NetworkName): number {
-  return tokens.reduce((result, { balances, priceId }) => {
-    balances.forEach(({ state, transferable, name }) => {
-      if (network !== ALL_NETWORKS && name !== network) return;
-
-      if (state === APIItemState.READY) {
-        const tokenPrice = price.tokenPriceMap[priceId ?? ''] ?? 0;
-        const assetCount = +(transferable ?? 0);
-        const assetValue = assetCount * tokenPrice;
-
-        result += assetValue;
-      }
-    });
-
-    return result;
-  }, 0);
-}
-
-function getChangeWalletBalance(tokens: TokenBalance[], price: AssetsPrice, network: NetworkName): ChangeWalletBalance {
-  const changeAssets = tokens.map((token) => {
-    const priceChange = price?.tokenPriceChange[token.priceId ?? ''] ?? 0;
-    const totalBalance = +getSummaryTransferableBalance(token, network);
-    const currentPercent = 100 + (priceChange ?? 0);
-    const oldBalance = (totalBalance / currentPercent) * 100;
-    const changeAmount = totalBalance - oldBalance;
-
-    return { totalBalance, changeAmount };
-  });
-
-  const totalChange = +addNumbers(changeAssets.map(({ changeAmount }) => changeAmount));
-  const totalBalance = +addNumbers(changeAssets.map(({ totalBalance }) => totalBalance));
-  const totalPercentChange = totalBalance === 0 ? 0 : (totalChange / totalBalance) * 100;
-
-  return {
-    percent: totalPercentChange,
-    amount: totalChange,
-  };
-}
-
 function getProviderUrl(name: 'moonpay' | 'ramp', asset: string, address: string) {
   const { MOONPAY, RAMP } = BASE_URLS_PREFIX;
 
@@ -152,13 +109,40 @@ const getXORCurrency = (balances: TokenBalance[]) => {
   return balances.find(({ symbol }) => symbol === SORA_UTILITY_ASSET && isSora(SORA_NETWORK_NAME))!;
 };
 
+function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: string) {
+  const network = store.getters.getNetwork(balance.name) as NetworkJson;
+
+  const favoriteNetworks = store.getters.getFavoriteNetworksNames as { name: string; favorite: string[] }[];
+  const { address } = store.getters.getSelectedWallet as Wallet;
+
+  if (selectedNetwork === POPULAR_NETWORKS) return !!network.rank;
+
+  if (selectedNetwork === FAVORITE_NETWORKS) {
+    return favoriteNetworks.some(
+      ({ name, favorite }) => name.toLowerCase() === balance.name.toLowerCase() && favorite.includes(address)
+    );
+  }
+
+  return balance.name.toLowerCase() === selectedNetwork.toLowerCase();
+}
+
+export function getSummaryTransferableBalanceFilteredByActiveNetworks(token: TokenBalance, network = ALL_NETWORKS) {
+  if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
+
+  return token.balances.reduce((result, { state, name, transferable }) => {
+    const network = store.getters.getNetwork(name) as NetworkJson;
+
+    if (state === APIItemState.READY && network.active && transferable) result += +transferable;
+
+    return result;
+  }, 0);
+}
+
 export {
   getCurrencyOptions,
   getProviderUrl,
   defaultSortingCurrencies,
   getUtilityAsset,
   getXORCurrency,
-  getChangeWalletBalance,
-  getSummaryTransferableWalletBalance,
-  getSummaryTransferableBalance,
+  filterBalanceItemsByNetwork,
 };

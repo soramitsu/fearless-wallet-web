@@ -7,7 +7,7 @@ import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import type { ApiProps } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
-import { isSora } from '@/helpers/common';
+import { isSora } from '@/helpers';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 
 function createApiObject(): ApiProps {
@@ -73,9 +73,10 @@ function onConnected(networkName: string) {
   state.apis.substrate[networkName].isApiReady = false; // todo ??? apiObject.isApiInitialized;
 }
 
-function onDisconnect(networkName: string) {
-  // возможно лишнее
-  const api = state.apis.substrate[networkName];
+async function onDisconnect(networkName: string) {
+  const api = state.getSubstrateApiMap[networkName];
+
+  if (!state.networkMap[networkName].active) return;
 
   if (api === undefined) return;
 
@@ -83,21 +84,20 @@ function onDisconnect(networkName: string) {
   api.isApiConnected = false;
   api.isApiReady = false;
 
-  const { apiRetry, nodeIndex } = api;
+  const { apiRetry } = api;
 
   if (apiRetry < MAX_CONTINUE_RETRY) return;
 
-  api.provider?.disconnect();
+  await api.provider?.disconnect();
   const network = state.networkMap[networkName];
   api.nodeIndex += 1;
 
-  if (nodeIndex <= network.nodes.length - 1) {
+  if (api.nodeIndex <= network.nodes.length - 1) {
     api.apiRetry = 0;
     api.provider = undefined;
     api.api = undefined;
     api.apiUrl = '';
 
-    // eslint-disable-next-line no-use-before-define
     if (navigator.onLine) initApi(network);
 
     return;
@@ -120,12 +120,12 @@ function onReady(networkName: string) {
 export async function initApi(network: NetworkJson): Promise<void> {
   const { name: networkName, nodes, isEthereum } = network;
 
-  if (state.apis.substrate[networkName] === undefined) {
+  if (state.getSubstrateApiMap[networkName] === undefined) {
     // return EVM HTTP Placeholder
-    state.apis.substrate[networkName] = isEthereum ? generateEvmHttpApi() : createApiObject();
+    state.getSubstrateApiMap[networkName] = isEthereum ? generateEvmHttpApi() : createApiObject();
   }
 
-  const { nodeIndex } = state.apis.substrate[networkName];
+  const { nodeIndex } = state.getSubstrateApiMap[networkName];
 
   const autoSelectNode = network.isManual ? null : nodes[nodeIndex].url;
   const currentProvider = autoSelectNode ?? network.currentProvider;

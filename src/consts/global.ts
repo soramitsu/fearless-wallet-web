@@ -12,8 +12,7 @@ const RAMP_API_KEY = IS_PRODUCTION ? process.env.RAMP_PROD_API_KEY : process.env
 const MOONPAY_API_KEY = IS_PRODUCTION ? process.env.MOONPAY_PROD_API_KEY : process.env.MOONPAY_TEST_API_KEY;
 const IS_EXTENSION = chrome.extension !== undefined;
 const APP_VERSION = packages.version;
-
-const SORA_CARD_VISIBILITY = false; // TODO перейти на удаленный JSON
+const ONE_WEEK = 604800000;
 
 export {
   APP_WIDTH,
@@ -28,5 +27,5 @@ export {
   MOONPAY_API_KEY,
   IS_EXTENSION,
   APP_VERSION,
-  SORA_CARD_VISIBILITY,
+  ONE_WEEK,
 };

@@ -1,7 +1,7 @@
+import { AccountJson, TokenBalance } from '@extension-base/background/types/types';
 import type { SelectedWallet, SelectedNetworks, AutoSelectNode } from './types';
 import type { NetworkName, WalletAddress } from '@/interfaces';
 import { accountController } from '@/controllers';
-import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { SORA_CARD_BANNER_RERUN } from '@/consts/soraCard';
 
 export type State = {
@@ -26,7 +26,6 @@ const state = (): State => {
     selectedFiat: accountController.getSelectedFiat(),
     selectedNetworks: accountController.getSelectedNetwork(),
     isOnline: navigator.onLine,
-    // isOnline: true,
     balances: [],
     hiddenAssets: accountController.getHiddenAssets(),
     accounts: accountController.getAccounts(),

@@ -24,10 +24,11 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { firstCharToUp } from '@/helpers/common';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import type { NetworkJson } from '@extension-base/types';
+import { firstCharToUp } from '@/helpers';
 import { upsertNetworkMap } from '@/extension/messaging';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GetNetwork } from '@/store';
 
 @Component
 export default class EditNodeForm extends Vue {
@@ -40,13 +41,14 @@ export default class EditNodeForm extends Vue {
   @Prop(String) _url!: string;
   @Prop(Boolean) isActive!: boolean;
   @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get buttonText() {
     return this.isEdit ? 'common.save' : 'accounts.addNode';
   }
 
   get networkJson() {
-    return this.networks.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!;
+    return this.getNetwork(this.network);
   }
 
   get isEdit() {

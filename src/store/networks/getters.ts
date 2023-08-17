@@ -1,9 +1,9 @@
+import type { NetworkJson } from '@extension-base/types';
 import type { AssetsPrice, FiatJson, GetHistory } from '@/interfaces';
 import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetActiveNodesByNetwork } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 export enum GettersTypes {
   networks = 'networks',
@@ -18,10 +18,16 @@ export enum GettersTypes {
   getActiveNodesByNetwork = 'getActiveNodesByNetwork',
   getAllNetworksIsReadyToUse = 'getAllNetworksIsReadyToUse',
   getAssetsPriceInterval = 'getAssetsPriceInterval',
+  getFavoriteNetworksNames = 'getFavoriteNetworksNames',
 }
 
 export type Getters = {
   [GettersTypes.networks](state: State, getters?: GetterTree<State, State> & Getters, rootState?: any): NetworkJson[];
+  [GettersTypes.getFavoriteNetworksNames](
+    state: State,
+    getters?: GetterTree<State, State> & Getters,
+    rootState?: any
+  ): { name: string; favorite: string[] }[];
   [GettersTypes.allNetworks](
     state: State,
     getters?: GetterTree<State, State> & Getters,
@@ -57,6 +63,9 @@ const getters: GetterTree<State, State> & Getters = {
       ? state.networks
       : state.networks.filter(({ name }) => !ETHEREUM_NETWORKS.includes(name));
   },
+  [GettersTypes.getFavoriteNetworksNames]({ networks }): { name: string; favorite: string[] }[] {
+    return networks.filter((el) => el.favorite.length).map(({ name, favorite }) => ({ name, favorite }));
+  },
 
   [GettersTypes.allNetworks]({ networks }): NetworkJson[] {
     return networks;
@@ -65,9 +74,9 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getNetwork]:
     ({ networks }) =>
     (networkNameOrChainId: string) => {
-      const value = networkNameOrChainId?.toLowerCase();
+      const value = networkNameOrChainId.toLowerCase();
 
-      return networks.find(({ name, chainId }) => name.toLowerCase() === value || chainId.toLowerCase() === value);
+      return networks.find(({ name, chainId }) => name.toLowerCase() === value || chainId.toLowerCase() === value)!;
     },
 
   [GettersTypes.getNetworkGenesisHash]:

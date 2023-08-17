@@ -66,6 +66,7 @@ cryptoWaitReady()
       store: new AccountsStore(),
       type: 'sr25519',
     });
+    state.eventService.emit('crypto.ready', true);
   })
   .catch((error): void => {
     console.error('initialization failed', error);

@@ -76,7 +76,7 @@ export default class GoogleWalletsList extends Vue {
 
     const { json, ethJson, password } = this.items[index];
 
-    if (!json || !ethJson || !password) return;
+    if (!json || !password) return;
 
     const { value: isValid } = await isJsonValid(json, password);
 
@@ -88,8 +88,7 @@ export default class GoogleWalletsList extends Vue {
 
     if (this.items[index].isError) this.setItemValue(index, { isError: false });
 
-    await jsonRestore(ethJson, password);
-
+    if (ethJson) await jsonRestore(ethJson, password);
     const address = await jsonRestore(json, password);
 
     this.setItemValue(index, { isComplete: true, isLoading: false });
@@ -107,7 +106,7 @@ export default class GoogleWalletsList extends Vue {
     }
 
     if (file.json === undefined) this.$emit('getFile', file.id, index);
-    if (file.ethJson === undefined) this.$emit('getFile', file.ethWalletID, index);
+    if (file.ethJson === undefined && file.ethWalletID) this.$emit('getFile', file.ethWalletID, index);
 
     this.setItemValue(index, { active: value });
   }

@@ -172,7 +172,7 @@ function getFormattedHistory(
 function getEthereumApiKey(url: string): string | undefined {
   const keys = [
     { name: 'etherscan', key: process.env.ETHERSCAN_API_KEY },
-    { name: 'bscscan', key: process.env.BSC_API_KEY },
+    { name: 'bscscan', key: process.env.BSCSCAN_API_KEY },
   ];
 
   return keys.find((el) => url.includes(el.name))?.key;

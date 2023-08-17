@@ -9,6 +9,8 @@
     horizontalPlacement="right"
   >
     <div class="settings">
+      <SettingMenuItem title="header.settings.wc" icon="account" @onOpen="open('WalletConnectInit')" />
+
       <SettingMenuItem title="header.settings.accounts" icon="account" @onOpen="open('Accounts')" />
 
       <SettingMenuItem v-if="showSoraCard" title="soraCard.title" icon="card" @onOpen="open('SoraCard')" />
@@ -46,7 +48,7 @@ import { SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
-type SettingsItemType = 'Accounts';
+type SettingsItemType = 'Accounts' | 'SoraCard' | 'PolkaswapDisclaimer' | 'WalletConnectInit';
 
 @Component({
   components: { SettingMenuItem },

@@ -16,7 +16,7 @@ const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue')
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 const Export = () => import('@/screens/accounts/Export.vue');
-
+const WalletConnectInit = () => import('@/screens/walletConnect/WalletConnectInit.vue');
 const AssetNetworks = () =>
   import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetNetworks.vue');
 const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetHistory.vue');
@@ -55,6 +55,7 @@ export enum Components {
   NoFound = 'NoFound',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
+  WalletConnectInit = 'WalletConnectInit',
 }
 
 const haveSelectedWallet = () => {
@@ -156,6 +157,11 @@ const routes: Array<RouteConfig> = [
           else if (haveMetaRequests()) next({ name: Components.MetaRequest });
           else next();
         },
+      },
+      {
+        path: 'wallet-connect',
+        name: Components.WalletConnectInit,
+        component: WalletConnectInit,
       },
       {
         path: 'accounts',

@@ -134,6 +134,7 @@
     "walletManagement": "Wallet management",
     "settingsAndManagement": "Settings and account management",
     "settings": {
+      "wc": "Wallet Connect",
       "accounts": "Accounts",
       "currency": "Currency",
       "polkaswapDisclaimer": "Polkaswap disclaimer",
@@ -318,6 +319,10 @@
   },
   "auth": {
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
+  },
+  "walletConnect": {
+    "approve": "Approve",
+    "reject": "Reject"
   },
   "soraCard": {
     "getCard": "Get SORA Card",

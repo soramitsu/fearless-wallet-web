@@ -132,6 +132,7 @@
     "walletManagement": "Управление кошельком",
     "settingsAndManagement": "Настройки и управление аккаунтом",
     "settings": {
+      "wc": "Wallet Connect",
       "accounts": "Аккаунты",
       "currency": "Валюты",
       "polkaswapDisclaimer": "Polkaswap disclaimer",
@@ -316,6 +317,10 @@
   },
   "auth": {
     "noAccounts": "У вас нет аккаунта. Пожалуйста, создайте учетную запись и обновите страницу приложения."
+  },
+  "walletConnect": {
+    "approve": "Подтвердить",
+    "reject": "Отменить"
   },
   "soraCard": {
     "getCard": "Получить карту СОРА",

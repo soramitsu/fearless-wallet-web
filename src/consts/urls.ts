@@ -6,6 +6,8 @@ const CHAINS = IS_PRODUCTION
 
 const FIATS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
 
+const FEATURES = '';
+
 const XCM_LOCATIONS =
   'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/xcm/xcm_token_locations.json';
 
@@ -19,6 +21,11 @@ const BASE_URLS_PREFIX = {
 
 const BASE_URLS_SUFFIX = {
   SUBSCAN: 'subscan.io',
+};
+
+const EXPLORERS: Record<string, string> = {
+  Ethereum: 'https://etherscan.io/',
+  'Ethereum Goerli': 'https://goerli.etherscan.io/',
 };
 
 const FEARLESS_TERMS = 'https://fearlesswallet.io/terms/';
@@ -43,7 +50,9 @@ const POLKASWAP = IS_PRODUCTION ? 'https://polkaswap.io' : 'https://exchange.dev
 
 const URLS = {
   FIATS,
+  FEATURES,
   CHAINS,
+  EXPLORERS,
   FEARLESS_TERMS,
   FEARLESS_PRIVACY,
   FEARLESS_WALLET,

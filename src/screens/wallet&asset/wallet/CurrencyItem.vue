@@ -9,9 +9,7 @@
 
     <div class="descriptions-column">
       <div class="row first-row">
-        <div>
-          {{ tokenName }}
-        </div>
+        <div>{{ tokenName }}</div>
 
         <template>
           <Shimmer v-if="showShimmers" height="14px" width="60px" />
@@ -100,14 +98,17 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { CustomEvent, Fn, ToggleFnProp } from '@/interfaces';
 import type { SetHiddenAsset, SelectedWallet } from '@/store';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { GetAssetPrice, GetNetwork } from '@/store/networks/types';
-import { getSummaryTransferableBalance } from '@/helpers/currencies';
+import {
+  filterBalanceItemsByNetwork,
+  getSummaryTransferableBalanceFilteredByActiveNetworks,
+} from '@/helpers/currencies';
 import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 
 @Component
@@ -178,9 +179,9 @@ export default class CurrencyItem extends Vue {
 
   get networkBadges() {
     if (this.isCurrentNetwork) {
-      const { icon, name } = this.assetData.balances.find(
-        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
-      )!;
+      const { icon, name } = this.assetData.balances.find((balance) => {
+        return filterBalanceItemsByNetwork(balance, this.selectedNetwork);
+      })!;
 
       return [{ icon, name }];
     }
@@ -225,7 +226,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get transferableAssetBalance() {
-    return +getSummaryTransferableBalance(this.assetData, this.selectedNetwork);
+    return +getSummaryTransferableBalanceFilteredByActiveNetworks(this.assetData, this.selectedNetwork);
   }
 
   get transferableFiatBalance() {
@@ -269,7 +270,7 @@ export default class CurrencyItem extends Vue {
       return;
 
     this.$router.push({
-      name: Components.Asset,
+      name: Components.AssetNetworks,
       params: {
         assetId: this.assetData.assetId,
         network: this.redirectNetwork,
@@ -365,14 +366,6 @@ export default class CurrencyItem extends Vue {
 
       .price-change {
         margin-left: 2px;
-      }
-
-      .up-price {
-        color: rgba(126, 222, 155, 0.75);
-      }
-
-      .down-price {
-        color: #d0021b;
       }
 
       .total-balance {

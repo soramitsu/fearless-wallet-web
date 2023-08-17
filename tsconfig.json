@@ -14,7 +14,7 @@
     "noImplicitAny": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
-    "types": ["webpack-env", "jest", "node", "element-ui", "chrome"],
+    "types": ["webpack-env", "jest", "node", "element-ui", "chrome", "network-information-types"],
     "paths": {
       "@/*": ["src/*"],
       "@extension-base/*": ["src/extension/background/extension-base/src/*"]

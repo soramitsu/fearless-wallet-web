@@ -7,11 +7,11 @@ import type {
   HistoryServiceType,
   NetworkName,
 } from '@/interfaces';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { TransactionType, TransferType } from '@/interfaces';
-import { firstCharToUp } from '@/helpers/common';
+import { firstCharToUp } from '@/helpers';
 import { formattedNumber } from '@/helpers/numbers';
 import store from '@/store';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 function getType(historyElement: HistoryElement): TransactionType {
   const { reward, transfer } = historyElement;
@@ -134,17 +134,16 @@ function getFormattedHistory(
 ): SubqueryHistory {
   if (serviceType === 'giantsquid') {
     const nodes: HistoryElement[] = (history as GiantsquidHistoryItem[]).map(({ id, transfer }) => {
-      const { amount, from, success, timestamp, to } = transfer;
+      const { amount, from, success, timestamp, to, extrinsicHash } = transfer;
 
       return {
         id,
         timestamp: (new Date(timestamp).getTime() / 1000).toString(),
         address: '',
-        extrinsic: null,
-        reward: null,
         transfer: {
           amount,
           success,
+          hash: extrinsicHash,
           from: from.id,
           to: to.id,
           eventIdx: -1,
@@ -156,7 +155,7 @@ function getFormattedHistory(
     return { nodes, pageInfo: { endCursor: '', startCursor: '' } };
   }
 
-  if (serviceType === 'subsquid') {
+  if (serviceType === 'subsquid' || serviceType === 'etherscan') {
     const nodes: HistoryElement[] = (history as HistoryElement[]).map((historyElement) => {
       return {
         ...historyElement,
@@ -170,9 +169,19 @@ function getFormattedHistory(
   return history as SubqueryHistory;
 }
 
+function getEthereumApiKey(url: string): string | undefined {
+  const keys = [
+    { name: 'etherscan', key: process.env.ETHERSCAN_API_KEY },
+    { name: 'bscscan', key: process.env.BSC_API_KEY },
+  ];
+
+  return keys.find((el) => url.includes(el.name))?.key;
+}
+
 export {
   getType,
   getTypeFormatted,
+  getEthereumApiKey,
   getHumanTransferFee,
   getHistoryValue,
   getFormattedDate,

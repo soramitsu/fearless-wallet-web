@@ -139,6 +139,22 @@
         "text": "Язык",
         "translated": "Переведено командой"
       }
+    },
+    "networkManagement": {
+      "tabs": {
+        "all": "Все",
+        "favorites": "Избранные",
+        "popular": "Популярные"
+      },
+      "header": "Выберите сеть",
+      "all": "Все сети",
+      "favorites": "Избранные сети",
+      "favorite": "Избранная",
+      "popular": "Популярные сети",
+      "networkSelected": "{network} сеть выбрана",
+      "groupSelected": "{group} сети выбраны",
+      "addFavorite": "{network} сеть добавлена в избранные",
+      "deleteFavorite": "{network} сеть удалена из избранного"
     }
   },
   "menu": {
@@ -168,6 +184,16 @@
   },
   "assets": {
     "all": "Все",
+    "locked": "Заблокированно",
+    "myNetworks": "Мои сети",
+    "availableNetworks": "Доступные сети",
+    "networkAssets": "Ассеты в сетях",
+    "filters": {
+      "fiat": "Фиат баланс",
+      "popularity": "Популярность",
+      "name": "Имя"
+    },
+    "networkManagementTip": "Чтобы начать перевод и смотреть историю транзакций, выберете нужную сеть",
     "feeDescription": "Каждый раз, когда вы отправляете криптографию в блокчейн, взимается плата за сеть. По сути, сетевая плата — это вознаграждение для майнеров и узлов, которые транслируют вашу транзакцию в блокчейн.",
     "createContact": "Создать контакт",
     "saveAddressForAllNetwork": "Сохранить адрес для всех сетей",
@@ -192,7 +218,7 @@
     "slippageWarning": "Ваши транзакции будут отменены, если цена изменится неблагоприятно более чем на этот процент.",
     "preview": "Предпросмотр",
     "calculateFee": "Расчет комиссии",
-    "balanceDetails": "Детализация баланса",
+    "lockedDetails": "Детализация заблокированного баланса",
     "buyHeader": "Купить {asset} через",
     "buy": "Купить",
     "polkaswap": "Polkaswap",
@@ -218,6 +244,8 @@
     "valueIn": "ЗНАЧЕНИЕ В {asset}",
     "assetsAmount": "Сумма активов",
     "summary": "Итог",
+    "reserved": "Зарезервировано",
+    "frozen": "Заморожено",
     "transferable": "Передаваемые",
     "fee": "Комиссия",
     "total": "Суммарно",
@@ -269,6 +297,7 @@
     "switchNode": "Сменить ноду",
     "copyAddress": "Копировать адрес",
     "subscan": "Смотреть в Subscan",
+    "etherscan": "Смотреть в Etherscan",
     "deleteCustomNode": "Удалить пользовательскую ноду?",
     "careful": "Будьте осторожны",
     "sharingSecret": "Копирование или передача вашего секретного ключа очень рисковано, не отправляй его никому. Вы хотите продолжить?",
@@ -369,7 +398,7 @@
         "statusText": "Верицикация отклонена",
         "text1": "Верицикация отклонена",
         "text2": "Ваша заявка отклонена.",
-        "text3": "PLACEHOLDER TEXT: *Display 'additional description' provided in the answer* (done by devs. We should check the format of the answer, to be sure it's human-readable)"
+        "text3": "Причина отклонения:"
       },
       "accepted": {
         "statusText": "Карта в пути",

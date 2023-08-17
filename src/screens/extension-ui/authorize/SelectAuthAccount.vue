@@ -38,7 +38,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { WalletInfo } from '@/store';
-import { cut } from '@/helpers/common';
+import { cut } from '@/helpers';
 
 @Component
 export default class SelectAuthAccount extends Vue {

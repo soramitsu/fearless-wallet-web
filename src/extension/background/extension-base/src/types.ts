@@ -47,7 +47,7 @@ export interface RequestTransactionHistoryGet {
 }
 
 export interface DeleteCustomTokenParams {
-  smartContract: string;
+  id: string;
   chain: string;
   type: CustomTokenType;
 }
@@ -104,7 +104,6 @@ export type Asset = {
   isUtility?: true;
   isNative?: true;
   existentialDeposit?: string;
-  contractAddress?: string;
 };
 
 export interface NetworkJson {
@@ -156,6 +155,8 @@ export interface NetworkJson {
   addressPrefix: number;
   types: TypesForMobile;
   options?: string[];
+  rank?: number;
+  favorite: string[];
   xcm?: {
     xcmVersion: 'v1' | 'v2' | 'v3';
     availableAssets: string[];
@@ -170,4 +171,8 @@ export interface ChainRegistry {
   chainDecimals: number[];
   chainTokens: string[];
   assetsMap: Asset[];
+}
+
+export interface KeyringState {
+  isReady: boolean;
 }

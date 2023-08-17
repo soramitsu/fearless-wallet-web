@@ -1,23 +1,18 @@
-// Copyright 2019-2022 @polkadot/extension-bg authors & contributors
-// SPDX-License-Identifier: Apache-2.0
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { knownGenesis } from '@polkadot/networks/defaults';
 import { assert, u8aToHex } from '@polkadot/util';
 import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
-import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
+import { base64Decode } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
-
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import MetadataStore from '@extension-base/stores/Metadata';
 import { storage } from '@extension-base/stores/Storage';
-import EthProvider from '@extension-base/api/evm/ethProvider';
 import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
-import CurrentAccountStore, { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
-import { initEvmTokenState } from '@extension-base/api/evm/utils/eth';
+
 import BalanceService from '@extension-base/shared/balanceService';
 import AuthorizeStore from '@extension-base/stores/Authorize';
 import { initWeb3Api } from '@extension-base/api/evm';
@@ -27,15 +22,16 @@ import { getCurrentProvider, getId } from '@extension-base/utils/utils';
 import { initApi } from '@extension-base/api/substrate/api';
 import { axios } from '@extension-base/utils/axios';
 import { prepNetworkNames } from '@extension-base/const/networks';
-import { DEFAULT_EVM_TOKENS } from '@extension-base/api/tokens/evm/defaultEvmToken';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
 import { getMockCurrencies, isEthereumNetwork, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
 import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
-
 import { SignerPayloadRaw } from '@polkadot/types/types';
+import { JsonRpcProvider } from 'ethers';
+import { KeyringAddress } from '@polkadot/ui-keyring/types';
+import { CurrentAccountState } from '../../stores/CurrentAccountStore';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -75,9 +71,16 @@ import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } fr
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
+import { EventService, SoraCardService, KeyringService } from '@/extension/background/extension-base/src/services';
 import { URLS } from '@/consts/urls';
-import { ALL_NETWORKS, SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
-import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/currencies';
+import {
+  ALL_NETWORKS,
+  FAVORITE_NETWORKS,
+  POPULAR_NETWORKS,
+  SORA_NETWORK_NAME,
+  SORA_XOR_ASSET_ID,
+} from '@/consts/networks';
+import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -118,7 +121,7 @@ function extractMetadata(store: MetadataStore): void {
 
 export const registry = new TypeRegistry();
 type APIs = {
-  evm: Record<NetworkName, EthProvider>;
+  evm: Record<NetworkName, JsonRpcProvider>;
   substrate: Record<NetworkName, ApiProps>;
 };
 const metaStore = new MetadataStore();
@@ -149,7 +152,6 @@ export default class State {
   private readonly priceStore = new PriceStore();
   private readonly evmChainSubject = new Subject<AuthUrls>();
   private readonly authorizeUrlSubject = new Subject<AuthUrls>();
-  private readonly currentAccountStore = new CurrentAccountStore();
   public authUrls: AuthUrls = {};
   public signature: HexString | null = null;
   public defaultAuthAccountSelection: string[] = [];
@@ -167,6 +169,7 @@ export default class State {
   public networksJson: NetworkJson[] = []; // from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJson>>();
+  public selectedNetwork: Record<string, string> = {};
   public serviceInfoSubject = new Subject<ServiceInfo>();
   public balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
@@ -179,7 +182,6 @@ export default class State {
   public mobileSignRequests: Record<string, MobileSignRequest> = {};
   private historyMap: Record<string, TransactionHistoryItemType[]> = {};
   private historySubject = new Subject<Record<string, TransactionHistoryItemType[]>>();
-  public readonly soraCardTokenSubject: BehaviorSubject<string> = new BehaviorSubject<string>('');
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
   public readonly metaSubject = new BehaviorSubject<MetadataRequest[]>([]);
   public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
@@ -193,6 +195,9 @@ export default class State {
     authorizeAccountsCount: 0,
     dAppName: '',
   };
+  public eventService = new EventService();
+  public soraCardService = new SoraCardService();
+  public keyringService = new KeyringService(this.eventService);
 
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
@@ -322,19 +327,28 @@ export default class State {
   async injectFromStorage() {
     extractMetadata(metaStore);
 
-    const { authUrls, defaultAuthAccountSelection, fiatSymbol, injectedProviders, providers, windows } =
-      await this.getFromStorage([
-        'fiatSymbol',
-        'authUrls',
-        'defaultAuthAccountSelection',
-        'injectedProviders',
-        'providers',
-        'windows',
-      ]);
+    const {
+      authUrls,
+      defaultAuthAccountSelection,
+      fiatSymbol,
+      injectedProviders,
+      providers,
+      windows,
+      selectedNetwork,
+    } = await this.getFromStorage([
+      'fiatSymbol',
+      'authUrls',
+      'selectedNetwork',
+      'defaultAuthAccountSelection',
+      'injectedProviders',
+      'providers',
+      'windows',
+    ]);
 
     if (authUrls && Object.keys(authUrls).length) this.authUrls = authUrls;
     if (windows && windows.length) this.windows = windows;
     if (fiatSymbol) this.setFiatSymbol(fiatSymbol);
+    if (selectedNetwork) this.selectedNetwork = selectedNetwork;
     if (injectedProviders) this.injectedProviders = new Map(injectedProviders);
     if (providers) this.providers = providers;
     if (defaultAuthAccountSelection && defaultAuthAccountSelection.length)
@@ -342,21 +356,11 @@ export default class State {
   }
 
   approvePolkaswap = async (authorizedAccounts: string[]): Promise<void> => {
-    const { POLKASWAP } = URLS;
-    const stripedUrl = stripUrl(POLKASWAP);
-
-    this.authUrls[stripedUrl] = {
-      authorizedAccounts,
-      count: 0,
-      id: getId(),
-      origin: 'SubWallet Connect',
-      url: POLKASWAP,
-      isAllowed: true,
-      isAllowedMap: {},
-    };
+    this.soraCardService.approvePolkaswap(authorizedAccounts, this.authUrls);
 
     await this.saveCurrentAuthList();
-    await this.updateDefaultAuthAccounts(authorizedAccounts);
+
+    this.updateDefaultAuthAccounts(authorizedAccounts);
   };
 
   authComplete = (
@@ -391,7 +395,8 @@ export default class State {
       };
 
       await this.saveCurrentAuthList();
-      await this.updateDefaultAuthAccounts(authorizedAccounts);
+
+      this.updateDefaultAuthAccounts(authorizedAccounts);
 
       delete this.authRequests[id];
 
@@ -420,6 +425,12 @@ export default class State {
         update(this.authorizeCached);
       });
     }
+  }
+
+  public updateKeyringState(isReady = true, callback?: () => void): void {
+    this.keyringService.updateKeyringState(isReady);
+
+    callback && callback();
   }
 
   public updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
@@ -458,7 +469,7 @@ export default class State {
       return;
     }
 
-    const accounts = this.getSubstrateAccounts();
+    const accounts = this.keyringService.getSubstrateAccounts();
 
     if (accounts.length) {
       const [
@@ -541,23 +552,21 @@ export default class State {
     if (this.lockNetworkMap) return false; // todo ???
 
     this.lockNetworkMap = true; // todo ???
+    const network = this.networkMap[networkKey];
 
-    delete this.apis.substrate[networkKey]; // todo можно и не удалять по идее, значение api для сети будет = undefined
+    delete this.apis.substrate[networkKey];
 
-    if (this.networkMap[networkKey].isEthereum && this.networkMap[networkKey].isEthereum)
-      delete this.apis.evm[networkKey]; // todo аналогично
+    if (network.isEthereum && network.isEthereum) delete this.apis.evm[networkKey]; // todo аналогично
 
-    this.networkMap[networkKey].active = false;
-    this.networkMap[networkKey].apiStatus = NETWORK_STATUS.DISCONNECTED;
+    network.active = false;
+    network.apiStatus = NETWORK_STATUS.DISCONNECTED;
     this.networkMapSubject.next(this.networkMap);
-    this.networkMapStore.set('NetworkMap', this.networkMap);
     this.updateServiceInfo();
+    this.networkMapStore.set('NetworkMap', this.networkMap);
     this.lockNetworkMap = false;
 
     this.getAuthorize((data) => {
-      if (this.networkMap[networkKey].isEthereum) {
-        this.evmChainSubject.next(data);
-      }
+      if (network.isEthereum) this.evmChainSubject.next(data);
 
       this.authorizeUrlSubject.next(data);
     });
@@ -565,13 +574,22 @@ export default class State {
     return true;
   }
 
+  public async enableNetworkType(type: string): Promise<void> {
+    const currentAccount = await this.currentAccount;
+
+    if (currentAccount) {
+      this.selectedNetwork[currentAccount.address] = type;
+      storage.set({ selectedNetwork: this.selectedNetwork });
+    }
+
+    return this.setActiveNetworks(type);
+  }
+
   public updateServiceInfo() {
-    this.getCurrentAccount((currentAccountInfo) => {
-      this.serviceInfoSubject.next({
-        networkMap: this.networkMap,
-        apiMap: this.apis,
-        currentAccountInfo,
-      });
+    this.serviceInfoSubject.next({
+      networkMap: this.networkMap,
+      apiMap: this.apis,
+      currentAccountInfo: this.keyringService.currentAccount,
     });
   }
 
@@ -583,8 +601,134 @@ export default class State {
 
   public refreshDotSamaApi(key: string) {
     const network = this.networkMap[key];
+    const api = this.getSubstrateApiMap[key];
+
+    if (api) {
+      api.nodeIndex = 0;
+      api.apiRetry = 0;
+    }
 
     if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network);
+  }
+
+  public getNetworkGroupType() {
+    return this.getNetworkGroupType;
+  }
+
+  async setFavoriteNetwork(networkName: string): Promise<boolean> {
+    const network = this.networkMap[networkName];
+    const currentAccount = await this.currentAccount;
+
+    if (!currentAccount) return false;
+
+    const addressIndex = network.favorite.findIndex((address) => address === currentAccount.address);
+
+    addressIndex !== -1 ? network.favorite.splice(addressIndex, 1) : network.favorite.push(currentAccount.address);
+
+    return true;
+  }
+
+  public selectedNetworksExceptAddress(address: string): string[] {
+    const result: string[] = [];
+    Object.keys(this.selectedNetwork).forEach((el) => {
+      if (el !== address) result.push(this.selectedNetwork[el]);
+    });
+
+    return result;
+  }
+
+  public isPopularNetworksSelected(network: NetworkJson, address: string) {
+    const networks = this.selectedNetworksExceptAddress(address);
+
+    return network.rank !== undefined && networks.some((el) => el === POPULAR_NETWORKS);
+  }
+
+  public isNetworkSelectedInAnotherWallet(network: NetworkJson, selectedType: string, address: string) {
+    if (Object.values(this.selectedNetwork).some((el) => el === ALL_NETWORKS)) return true;
+    if (this.isPopularNetworksSelected(network, address)) return true;
+    if (this.isFavoriteNetworkSelected(network, address)) return true;
+    if (this.isSingleNetworkSelected(selectedType, address)) return true;
+
+    return false;
+  }
+
+  public isSingleNetworkSelected(selectedType: string, address: string) {
+    const networks = this.selectedNetworksExceptAddress(address);
+    const isTypeAlreadySelected = networks.some((network) => network === selectedType);
+    const isNotGroup =
+      selectedType !== ALL_NETWORKS && selectedType !== POPULAR_NETWORKS && selectedType !== FAVORITE_NETWORKS;
+
+    return isNotGroup && isTypeAlreadySelected;
+  }
+
+  public isFavoriteNetworkSelected(network: NetworkJson, address: string) {
+    const favorites = network.favorite.filter((el) => el !== address);
+
+    return favorites.some((el) => this.selectedNetwork[el] === FAVORITE_NETWORKS);
+  }
+
+  public async setActiveNetworks(type: string) {
+    const currentAccount = await this.currentAccount;
+
+    if (!currentAccount) return;
+
+    this.subscription.stop();
+    this.cron.stop();
+
+    Object.keys(this.networkMap).forEach((key) => {
+      const network = this.networkMap[key];
+      const { name } = network;
+      const isFavorite = network.favorite.some((address) => address === currentAccount.address);
+      const isAlreadySelectedType = this.isNetworkSelectedInAnotherWallet(network, type, currentAccount.address);
+
+      switch (type) {
+        case ALL_NETWORKS:
+          network.active = true;
+
+          break;
+        case FAVORITE_NETWORKS:
+          if (isFavorite) {
+            network.active = true;
+            break;
+          }
+
+          if (isAlreadySelectedType) break;
+
+          network.active = false;
+
+          break;
+        case POPULAR_NETWORKS:
+          if (network.rank !== undefined) {
+            network.active = true;
+            break;
+          }
+
+          if (isAlreadySelectedType) break;
+
+          network.active = false;
+          break;
+        default: //type = single network, like Moonriver etc
+          if (isAlreadySelectedType) break;
+
+          network.active = type === network.name;
+      }
+
+      if (!network.active) {
+        if (this.apis.substrate[name]) {
+          this.apis.substrate[name].provider?.disconnect();
+          delete this.apis.substrate[name];
+        } else if (this.apis.evm[name]) {
+          this.apis.evm[name].provider.destroy();
+          delete this.apis.evm[name];
+        }
+      }
+    });
+
+    this.networkMapSubject.next(this.networkMap);
+    this.networkMapStore.set('NetworkMap', this.networkMap);
+    this.updateServiceInfo();
+
+    this.initNetworkStates(true);
   }
 
   getCurrentTabStatus() {
@@ -954,12 +1098,8 @@ export default class State {
     });
   }
 
-  public getAccountAddress(): Promise<string | null | undefined> {
-    return new Promise((resolve) => {
-      this.getCurrentAccount((account) => {
-        account ? resolve(account.address) : resolve(null);
-      });
-    });
+  public getAccountAddress(): string | null | undefined {
+    return this.keyringService.currentAccount?.address;
   }
 
   public refreshPrice() {
@@ -989,25 +1129,38 @@ export default class State {
     this.networksJson = networks.filter((el) => !el.disabled);
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
+    const networksFromStorage = await new Promise<Record<string, NetworkJson>>((res) => {
+      this.networkMapStore.get('NetworkMap', (accountsFromStorage) => {
+        res(accountsFromStorage);
+      });
+    });
 
-    this.networksJson.forEach(
-      (network) =>
-        (result[network.name] = {
-          ...network,
-          key: network.name,
-          isEthereum: isEthereumNetwork(network.name),
-          genesisHash: `0x${network.chainId}`,
-          chainType: 'substrate',
-          active: true,
-          customNodes: [],
-          currentProvider: network.nodes[0].url,
-          providers: network.nodes.reduce<Record<string, string>>((result, { name, url }) => {
-            result[name] = url;
+    this.networksJson.forEach((network) => {
+      const prepCurrentProvider = network.nodes[0].url;
+      const prepNodes: Record<string, string> = {};
 
-            return result;
-          }, {}),
-        })
-    );
+      network.nodes.map((node) => {
+        prepNodes[node.name] = node.url;
+      });
+
+      const isEthereum = isEthereumNetwork(network.name);
+      const networkFromStorage = networksFromStorage ? networksFromStorage[network.name] : undefined;
+
+      const favorite = networkFromStorage && networkFromStorage.favorite ? networkFromStorage.favorite : [];
+
+      result[network.name] = {
+        ...network,
+        key: network.name,
+        isEthereum,
+        genesisHash: `0x${network.chainId}`,
+        chainType: isEthereum ? 'ethereum' : 'substrate',
+        active: true,
+        customNodes: [],
+        favorite,
+        providers: prepNodes,
+        currentProvider: prepCurrentProvider,
+      };
+    });
 
     this.networkMapStore.set('NetworkMap', result);
     this.networkMap = result;
@@ -1016,40 +1169,39 @@ export default class State {
   }
 
   public async init() {
+    await this.eventService.waitCryptoReady;
     await this.prepNetworkJson();
 
     this.initNetworkStates();
     this.updateServiceInfo();
   }
 
-  public initNetworkStates() {
-    this.networkMapStore.get('NetworkMap', async (storedNetworkMap) => {
-      for (const [key, network] of Object.entries(storedNetworkMap)) {
-        if (network.active) {
-          if ((network.isEthereum && key === 'ethereum') || key === 'ethereum_goerli') {
-            this.apis.evm[key] = initWeb3Api(key === 'ethereum' ? 'ethereum' : 'ethereum_goerli');
-          } else initApi(network);
-        }
-      }
-
-      this.initCustomTokenState();
+  resetApiRetries() {
+    Object.values(this.getSubstrateApiMap).forEach((api) => {
+      api.nodeIndex = 0;
+      api.apiRetry = 0;
     });
   }
 
-  public initCustomTokenState() {
-    this.customTokenStore.get('EvmToken', (storedCustomTokens) => {
-      if (!storedCustomTokens) this.customTokenState = DEFAULT_EVM_TOKENS;
-      else {
-        const processedEvmTokens = initEvmTokenState(storedCustomTokens, this.networkMap);
-
-        this.customTokenState = { ...processedEvmTokens };
+  public initNetworkStates(reset?: boolean) {
+    this.networkMapStore.get('NetworkMap', async (storedNetworkMap) => {
+      for (const [key, network] of Object.entries(storedNetworkMap)) {
+        if (network.active) {
+          if (network.isEthereum && !isRequireSubstrateAPI(key)) {
+            this.apis.evm[key] = initWeb3Api(network.currentProvider as string);
+          } else {
+            if (reset) this.resetApiRetries();
+            initApi(network);
+          }
+        }
       }
 
-      this.customTokenStore.set('EvmToken', this.customTokenState);
-      this.customTokenSubject.next(this.customTokenState);
+      this.onReady();
     });
+  }
 
-    this.onReady();
+  public getWallets(): KeyringAddress[] {
+    return [...keyring.getAccounts(), ...keyring.getAddresses()];
   }
 
   public setPrice(priceData: PriceJson, callback?: (priceData: PriceJson) => void): void {
@@ -1085,40 +1237,43 @@ export default class State {
   }
 
   public updateXorTotalBalance(muchTotal: FPNumber): void {
-    this.getCurrentAccount((account) => {
-      if (!account) return;
+    const currentAccount = this.keyringService.currentAccount;
+    if (!currentAccount) return;
 
-      const { address } = account;
+    const { address } = currentAccount;
 
-      const currencyIndex = this.balanceMap[address].findIndex(({ assetId }) => assetId === SORA_XOR_ASSET_ID);
+    const currencyIndex = this.balanceMap[address].findIndex(({ assetId }) => assetId === SORA_XOR_ASSET_ID);
 
-      const token = this.balanceMap[address][currencyIndex];
-      const index = token.balances.findIndex(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
+    const token = this.balanceMap[address][currencyIndex];
+    const index = token.balances.findIndex(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
 
-      this.balanceMap[address][currencyIndex].balances[index].muchTotal = muchTotal.toString();
-    });
+    this.balanceMap[address][currencyIndex].balances[index].muchTotal = muchTotal.toString();
   }
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
-    const currencyIndex = this.balanceMap[address].findIndex(({ assetId: _assetId, symbol, relayChain }) => {
-      const isExistingAssetId = _assetId === item.id;
-      const isExistingDisplayName = symbol === item.symbol;
-      const isExistingAsset = isExistingDisplayName && relayChain === item.relayChain;
+    const { reserved, free, locked, frozen, total, transferable, state, id, relayChain, symbol } = item;
 
-      return isExistingAssetId || isExistingAsset;
-    });
+    const balancesByAddress = this.balanceMap[address];
+    const currencyIndex = balancesByAddress.findIndex(
+      ({ assetId: _assetId, symbol: _symbol, relayChain: _relayChain }) => {
+        const isExistingAssetId = _assetId === id;
+        const isExistingDisplayName = _symbol === symbol;
+        const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
 
-    const token = this.balanceMap[address][currencyIndex];
-    const index = token.balances.findIndex(({ name }) => {
+        return isExistingAssetId || isExistingAsset;
+      }
+    );
+
+    const asset = balancesByAddress[currencyIndex];
+    const assetIndex = asset.balances.findIndex(({ name }) => {
       const key = prepNetworkNames[name] ?? name;
 
       return key === networkKey;
     });
 
-    const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
-    const { reserved, free, locked, frozen, total, transferable, state } = item;
+    const balanceItem = asset.balances[assetIndex];
 
-    this.balanceMap[address][currencyIndex].balances[index] = {
+    asset.balances[assetIndex] = {
       ...balanceItem,
       reserved,
       free,
@@ -1142,32 +1297,23 @@ export default class State {
   }
 
   get currentAccount() {
-    return new Promise<CurrentAccountState>((res) => {
-      this.getCurrentAccount((value) => {
-        res(value);
-      });
-    });
-  }
-
-  public getCurrentAccount(update: (value: CurrentAccountState) => void): void {
-    this.currentAccountStore.get('CurrentAccountInfo', update);
+    return this.keyringService.currentAccount;
   }
 
   public setCurrentAccount(data: CurrentAccountState, callback?: () => void): void {
-    this.currentAccountStore.set('CurrentAccountInfo', data, () => {
-      this.updateServiceInfo();
+    this.updateServiceInfo();
 
-      // logic for Sora library
-      if (data?.address && !data.isMobile) {
-        const pair = keyring.getPair(data?.address);
+    // logic for Sora library
+    if (data?.address && !data.isMobile) {
+      const pair = keyring.getPair(data?.address);
 
-        apiSora.account = { json: null as any, pair };
+      apiSora.account = { json: null as any, pair };
 
-        this.subscribeTotalXorBalance();
-      }
+      this.subscribeTotalXorBalance();
+    }
 
-      callback && callback();
-    });
+    this.keyringService.setCurrentAccount(data);
+    callback && callback();
   }
 
   public subscribeTotalXorBalance() {
@@ -1185,19 +1331,9 @@ export default class State {
   }
 
   private updateBalanceStore(networkKey: string, item: Partial<BalanceItem>) {
-    this.getCurrentAccount((currentAccountInfo) => {
-      if (currentAccountInfo)
-        this.balanceService
-          .updateBalanceStore(networkKey, currentAccountInfo.address, item)
-          .catch((e) => console.warn(e));
-    });
-  }
-
-  public getSubstrateAccounts() {
-    const accounts = keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
-    const addresses = keyring.getAddresses();
-
-    return [...accounts, ...addresses];
+    const currentAccount = this.keyringService.currentAccount;
+    if (currentAccount)
+      this.balanceService.updateBalanceStore(networkKey, currentAccount.address, item).catch((e) => console.warn(e));
   }
 
   public generateDefaultBalance(address: string) {
@@ -1209,14 +1345,14 @@ export default class State {
   }
 
   public generateDefaultBalanceMap() {
-    this.getSubstrateAccounts().forEach(({ address }) => this.generateDefaultBalance(address));
+    this.keyringService.getSubstrateAccounts().forEach(({ address }) => this.generateDefaultBalance(address));
   }
 
   public accountExportPrivateKey({
     address,
     password,
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    const exportedJson = keyring.backupAccount(keyring.getPair(address), password);
+    const exportedJson = keyring.getPair(address).toJson(password);
     const decoded = decodePair(password, base64Decode(exportedJson.encoded), exportedJson.encoding.type);
 
     return {
@@ -1322,22 +1458,20 @@ export default class State {
     });
 
     if (items.length) {
-      this.getAccountAddress().then((currentAddress) => {
-        if (currentAddress === address) {
-          const oldItems = this.historyMap[network] || [];
+      if (this.keyringService.currentAddress === address) {
+        const oldItems = this.historyMap[network] || [];
 
-          this.historyMap[network] = this.combineHistories(oldItems, items);
-          // this.saveHistoryToStorage(address, network, this.historyMap[network]);
-          callback && callback(this.historyMap[network]);
+        this.historyMap[network] = this.combineHistories(oldItems, items);
+        // this.saveHistoryToStorage(address, network, this.historyMap[network]);
+        callback && callback(this.historyMap[network]);
 
-          this.lazyNext('setHistory', () => {
-            this.publishHistory();
-          });
-        } else {
-          // this.saveHistoryToStorage(address, network, items);
-          callback && callback(this.historyMap[network]);
-        }
-      });
+        this.lazyNext('setHistory', () => {
+          this.publishHistory();
+        });
+      } else {
+        // this.saveHistoryToStorage(address, network, items);
+        callback && callback(this.historyMap[network]);
+      }
     }
   }
 

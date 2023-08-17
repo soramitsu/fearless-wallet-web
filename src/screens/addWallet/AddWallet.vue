@@ -136,6 +136,7 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Action, Getter } from 'vuex-class';
+import type { AccountJson } from '@extension-base/background/types/types';
 import type { DerivationPaths, ImportType, ValidateJsonResult, MnemonicConfirmation, AsyncFn } from '@/interfaces';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { SelectedWallet } from '@/store';
@@ -160,7 +161,6 @@ import {
   windowOpen,
   updateCurrentAccountAddress,
 } from '@/extension/messaging';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
@@ -608,9 +608,9 @@ export default class AddWallet extends Vue {
     }
 
     //raw seed & mnemonic validation
-    const {
-      substrate: { keypairType: substrateKeypairType },
-    } = this.derivationPaths;
+    // const {
+    //   substrate: { keypairType: substrateKeypairType },
+    // } = this.derivationPaths;
 
     // const { address } = await createAccountSuri(this.suriSubstrate, substrateKeypairType);
 

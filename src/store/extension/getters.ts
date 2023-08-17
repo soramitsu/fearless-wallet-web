@@ -1,13 +1,14 @@
-import { State } from './state';
-import type { GetterTree } from 'vuex';
-import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
   AuthUrlInfo,
   MetadataRequest,
   SigningRequest,
-} from '@/extension/background/extension-base/src/background/types/types';
+} from '@extension-base/background/types/types';
+import { State } from './state';
+import type { GetterTree } from 'vuex';
+import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import type { Features } from '@/store/extension/types';
 
 export enum GettersTypes {
   authRequests = 'authRequests',
@@ -16,6 +17,7 @@ export enum GettersTypes {
   signRequestPayload = 'signRequestPayload',
   signList = 'signList',
   tabStatus = 'tabStatus',
+  features = 'features',
 }
 
 export type Getters = {
@@ -59,6 +61,10 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.tabStatus]({ tabStatus }): ActiveTabAuthorizeStatus | null {
     return tabStatus;
+  },
+
+  [GettersTypes.features]({ features }): Features {
+    return features;
   },
 };
 

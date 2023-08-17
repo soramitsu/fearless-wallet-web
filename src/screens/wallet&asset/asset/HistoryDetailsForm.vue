@@ -94,7 +94,7 @@
         </div>
       </div>
 
-      <Button size="big" :text="$t('accounts.subscan')" @click="openSubscan" />
+      <Button size="big" :text="buttonText" @click="openExplorer" />
     </div>
 
     <Tooltip text="common.copied" target=".copy" placement="bottom" trigger="click" />
@@ -105,13 +105,15 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Identicon } from '@polkadot/vue-identicon';
 import { Getter } from 'vuex-class';
+import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
 import type { SelectedWallet } from '@/store';
 import { getType, getSignTransfer, getHistoryValue, getFormattedDate, getHumanTransferFee } from '@/helpers/history';
-import { cut } from '@/helpers/common';
+import { cut } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
-
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { URLS } from '@/consts/urls';
 @Component({
   components: {
     Identicon,
@@ -119,12 +121,30 @@ import BaseApi from '@/util/BaseApi';
 })
 export default class HistoryDetailsForm extends Vue {
   @Prop(String) assetId!: string;
+  @Prop(String) historyType!: string;
   @Prop(Object) historyElement!: HistoryElement;
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
 
   get isTransfer() {
     return this.type === 'transfer';
+  }
+
+  get getNetworkByAsset() {
+    return this.allNetworks.find((network) => network.assets.some((asset) => asset.id === this.assetId));
+  }
+
+  get explorerType() {
+    return this.getNetworkByAsset?.externalApi?.history?.type;
+  }
+
+  get explorerUrl() {
+    return this.getNetworkByAsset?.externalApi?.history?.url;
+  }
+
+  get buttonText() {
+    return this.$t(this.explorerType === 'etherscan' ? 'accounts.etherscan' : 'accounts.subscan');
   }
 
   get isExtrinsic() {
@@ -243,15 +263,22 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get selectedNetwork() {
-    return this.$route.params.network;
+    return this.$route.params.selectedNetwork;
   }
 
   copy(value: string) {
     navigator.clipboard.writeText(value);
   }
 
-  openSubscan() {
+  openExplorer() {
     const addressByNetwork = BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
+
+    if (this.explorerType === 'etherscan') {
+      window.open(`${URLS.EXPLORERS[this.selectedNetwork]}/tx/${this.historyElement?.transfer?.hash}`);
+
+      return;
+    }
+
     const url = this.isExtrinsic
       ? `https://${this.selectedNetwork}.subscan.io/extrinsic/${this.hash}`
       : `https://${this.selectedNetwork}.subscan.io/account/${addressByNetwork}`;

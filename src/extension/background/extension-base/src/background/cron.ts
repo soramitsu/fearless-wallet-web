@@ -13,7 +13,7 @@ import {
   CRON_REFRESH_PRICE_INTERVAL,
   CRON_UPDATE_JSON_INTERVAL,
 } from '@extension-base/const/intervals';
-import { NetworkJson } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 import type FWState from '@extension-base/background/handlers/State';
 import type { FWSubscription } from '@extension-base/background/handlers/subscriptions';
 import type { ServiceInfo } from '@extension-base/background/types/types';
@@ -74,18 +74,13 @@ export class FWCron {
   };
 
   init = () => {
-    this.state.getCurrentAccount((currentAccountInfo) => {
-      if (!this.state.isReady) return;
-      if (!currentAccountInfo?.address) return;
+    if (!this.state.isReady) return;
+    if (!this.state.keyringService.currentAccount?.address) return;
 
-      if (
-        Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
-        Object.keys(this.state.getEvmApiMap).length !== 0
-      ) {
-        this.state.refreshPrice();
-        this.updateApiMapStatus();
-      }
-    });
+    if (Object.keys(this.state.getSubstrateApiMap).length !== 0 || Object.keys(this.state.getEvmApiMap).length !== 0) {
+      this.state.refreshPrice();
+      this.updateApiMapStatus();
+    }
   };
 
   start = () => {
@@ -93,19 +88,15 @@ export class FWCron {
 
     this.logger.log('Starting cron jobs');
     this.addCron('refreshJsons', () => this.state.init(), CRON_UPDATE_JSON_INTERVAL, false);
+    const currentAccount = this.state.keyringService.currentAccount;
 
-    this.state.getCurrentAccount((currentAccountInfo) => {
-      if (!currentAccountInfo?.address) return;
+    if (!currentAccount?.address) return;
 
-      if (
-        Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
-        Object.keys(this.state.getEvmApiMap).length !== 0
-      ) {
-        this.addCron('refreshPrice', () => this.state.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
-        this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
-        this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
-      }
-    });
+    if (Object.keys(this.state.getSubstrateApiMap).length !== 0 || Object.keys(this.state.getEvmApiMap).length !== 0) {
+      this.addCron('refreshPrice', () => this.state.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
+      this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
+      this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
+    }
 
     this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
       next: (serviceInfo) => {
@@ -124,7 +115,7 @@ export class FWCron {
         }
       },
     });
-
+    //TODO add support for Firefox because it lack of support for the "navigator.connection"
     navigator.connection.removeEventListener('change', () => {
       this.onConnectionChange();
     });
@@ -165,10 +156,8 @@ export class FWCron {
   recoverApiMap = () => {
     const apiMap = this.state.getApiMap;
 
-    for (const [key, evm] of Object.entries(apiMap.evm)) {
-      evm.provider._ready().catch(() => {
-        this.state.refreshWeb3Api(key);
-      });
+    for (const [key] of Object.entries(apiMap.evm)) {
+      this.state.refreshWeb3Api(key);
     }
 
     for (const [key, substrate] of Object.entries(apiMap.substrate)) {
@@ -177,13 +166,12 @@ export class FWCron {
       });
     }
 
-    this.state.getCurrentAccount((account) => {
-      if (!account) return;
+    const currentAccount = this.state.keyringService.currentAccount;
+    if (!currentAccount) return;
 
-      const { address, ethereumAddress } = account;
+    const { address, ethereumAddress } = currentAccount;
 
-      this.subscriptions.subscribeBalances(address, ethereumAddress);
-    });
+    this.subscriptions.subscribeBalances(address, ethereumAddress);
   };
 
   updateApiMapStatus = () => {
@@ -206,7 +194,8 @@ export class FWCron {
     for (const [key, evm] of Object.entries(apiMap.evm)) {
       const apiStatus = networkMap[key].apiStatus;
 
-      evm.provider.ready
+      evm
+        ._waitUntilReady()
         .then(() => {
           if (!apiStatus) this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
           else if (apiStatus !== NETWORK_STATUS.CONNECTED) {
@@ -214,9 +203,7 @@ export class FWCron {
           }
         })
         .catch(() => {
-          if (!apiStatus) {
-            this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
-          } else if (apiStatus !== NETWORK_STATUS.CONNECTING) {
+          if (!apiStatus || apiStatus !== NETWORK_STATUS.CONNECTING) {
             this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
           }
         });

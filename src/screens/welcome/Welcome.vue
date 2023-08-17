@@ -82,11 +82,11 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { AccountJson } from '@extension-base/background/types/types';
 import { Components } from '@/router/routes';
 import { URLS } from '@/consts/urls';
 import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 import { initGoogleAuth } from '@/extension/messaging';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { IS_EXTENSION } from '@/consts/global';
 

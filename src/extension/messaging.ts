@@ -37,7 +37,6 @@ import type {
   ValidateJsonResult,
   RequestAccountMeta,
   ResponseAccountMeta,
-  DisableNetworkResponse,
   ValidateNetworkResponse,
   RequestCheckSwap,
   ResponseCheckSwap,
@@ -45,7 +44,7 @@ import type {
   ResponseMakeSwap,
   ResponseTotalBalances,
   MobileSigningRequest,
-} from '@/extension/background/extension-base/src/background/types/types';
+} from '@extension-base/background/types/types';
 import type { Message, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
@@ -298,16 +297,20 @@ export function rejectMetaRequest(id: string): Promise<boolean> {
   return sendMessage('pri(metadata.reject)', { id });
 }
 
-export function subscribeAccounts(cb: (accounts: AccountJson[]) => void): Promise<boolean> {
+export function subscribeAccounts(cb: (accounts: AccountJson[]) => void): Promise<AccountJson[]> {
   return sendMessage('pri(accounts.subscribe)', null, cb);
 }
 
-export function subscribeAddresses(cb: (accounts: AccountJson[]) => void): Promise<boolean> {
+export function subscribeAddresses(cb: (accounts: AccountJson[]) => void): Promise<AccountJson[]> {
   return sendMessage('pri(addresses.subscribe)', null, cb);
 }
 
 export function triggerAccountsSubscription(): Promise<boolean> {
   return sendMessage('pri(accounts.triggerSubscription)');
+}
+
+export function updateCurrentAccountNetwork(address: string): Promise<boolean> {
+  return sendMessage('pri(accounts.update.currentNetwork)', address);
 }
 
 export function updateCurrentAccountAddress(address: string): Promise<boolean> {
@@ -519,24 +522,16 @@ export function upsertNetworkMap(data: NetworkJson): Promise<boolean> {
   return sendMessage('pri(networkMap.upsert)', data);
 }
 
+export function toggleNetworkType(type: string): Promise<void> {
+  return sendMessage('pri(networkMap.setNetwork)', type);
+}
+
+export function toggleFavoriteNetwork(name: string): Promise<void> {
+  return sendMessage('pri(networkMap.toggle.favorite)', name);
+}
+
 export function getNetworkMap(): Promise<Record<string, NetworkJson>> {
   return sendMessage('pri(networkMap.getNetworkMap)');
-}
-
-export function removeNetworkMap(networkKey: string): Promise<boolean> {
-  return sendMessage('pri(networkMap.removeOne)', networkKey);
-}
-
-export function disableNetworkMap(networkKey: string): Promise<DisableNetworkResponse> {
-  return sendMessage('pri(networkMap.disableOne)', networkKey);
-}
-
-export function enableNetworks(targetKeys: string[]): Promise<boolean> {
-  return sendMessage('pri(networkMap.enableMany)', targetKeys);
-}
-
-export function disableNetworks(targetKeys: string[]): Promise<boolean> {
-  return sendMessage('pri(networkMap.disableMany)', targetKeys);
 }
 
 export function validateNetwork(
@@ -545,18 +540,6 @@ export function validateNetwork(
   existedNetwork?: NetworkJson
 ): Promise<ValidateNetworkResponse> {
   return sendMessage('pri(apiMap.validate)', { provider, isEthereum, existedNetwork });
-}
-
-export function disableAllNetwork(): Promise<boolean> {
-  return sendMessage('pri(networkMap.disableAll)', null);
-}
-
-export function enableAllNetwork(): Promise<boolean> {
-  return sendMessage('pri(networkMap.enableAll)', null);
-}
-
-export function resetDefaultNetwork(): Promise<boolean> {
-  return sendMessage('pri(networkMap.resetDefault)', null);
 }
 
 export function pingServiceWorker(): Promise<boolean> {

@@ -1,101 +1,172 @@
 <template>
-  <div>
-    <header class="header">
-      <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
-        <div class="logo-container">
-          <CircleButton
-            v-if="showBackIcon"
-            backgroundColor="light-black"
-            iconName="chevron-left"
-            @click.stop="backToWallet"
-          />
+  <header class="header">
+    <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
+      <div class="logo-container">
+        <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconName="chevron-left" @click.stop="back" />
 
-          <Logo v-else size="small" />
-        </div>
+        <Logo v-else size="small" />
+      </div>
 
-        <div class="wallet-name">
-          <div class="name">{{ name }}</div>
+      <div class="wallet-name">
+        <div class="name" @click.stop="toggleSelectWalletPopupVisible">
+          <span class="wallet-title">{{ name }}</span>
 
           <Rotate :isActive="syncedShowSelectWalletPopup">
             <SIcon name="chevron-bottom-16" />
           </Rotate>
         </div>
-
-        <Tooltip text="header.walletManagement" target=".header-part-left" placement="right" />
-      </div>
-
-      <div class="header-part">
-        <CircleButton
-          v-if="isPopup"
-          iconName="expand"
-          backgroundColor="light-black"
-          class="button-margin"
-          tooltipText="common.fullScreen"
-          target=".expand"
-          placement="bottom"
-          @click="openFullScreen"
-        />
-
-        <div v-if="isPopup" class="background-ellipse button-margin" @click="toggleConnectionPopup">
-          <Loading v-if="!tabStatus" />
-
-          <template v-else>
-            <div class="connect" :class="statusConnectedClasses"></div>
-            <span>{{ $t(statusConnectedText) }}</span>
-          </template>
+        <div v-if="!isGroup" class="copy-adress" @click.stop="copyAddress">
+          <span>{{ cutAddress }}</span>
+          <Icon icon="copy" className="copy" />
+          <Tooltip text="common.copied" target=".copy" placement="top" trigger="click" />
         </div>
-
-        <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" :handlerClose="toggleConnectionPopup" />
-
-        <Tooltip text="header.connectionStatus" target=".background-ellipse" placement="top" />
-
-        <CircleButton
-          :ref="settingsNameRef"
-          iconName="settings"
-          class="button-margin"
-          backgroundColor="none"
-          placement="left"
-          target=".settings"
-          tooltipText="header.settingsAndManagement"
-          @click="toggleSettingsVisible"
-        />
       </div>
-    </header>
-  </div>
+
+      <Tooltip text="header.walletManagement" target=".header-part-left" placement="right" />
+    </div>
+
+    <div class="header-part header-part-right">
+      <CircleButton
+        v-if="isPopup"
+        iconName="expand"
+        backgroundColor="light-black"
+        tooltipText="common.fullScreen"
+        target=".expand"
+        placement="bottom"
+        @click="openFullScreen"
+      />
+
+      <NetworkManagementButton
+        class="background-ellipse"
+        :isGroupIcon="isGroup"
+        :icon="selectedNetworkIcon"
+        :selectedNetwork="networkManagementButtonText"
+        @onToggle="toggleSelectNetworkPopupVisible"
+      />
+
+      <div v-if="isPopup" class="background-ellipse" @click="toggleConnectionPopup">
+        <Loading v-if="!tabStatus" />
+
+        <template v-else>
+          <div class="connect" :class="statusConnectedClasses"></div>
+        </template>
+      </div>
+
+      <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" :handlerClose="toggleConnectionPopup" />
+
+      <Tooltip text="header.connectionStatus" target=".background-ellipse" placement="top" />
+
+      <CircleButton
+        :ref="settingsNameRef"
+        iconName="settings"
+        size="big"
+        backgroundColor="none"
+        placement="left"
+        target=".settings"
+        tooltipText="header.settingsAndManagement"
+        @click="toggleSettingsVisible"
+      />
+
+      <NetworkManagement
+        v-if="showSelectNetworkPopup"
+        :type="selectedNetwork"
+        :handlerClose="toggleSelectNetworkPopupVisible"
+      />
+    </div>
+  </header>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
-import type { SelectedWallet } from '@/store';
+import { Getter, Action, Mutation } from 'vuex-class';
+import { ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
+import type { HexString } from '@polkadot/util/types';
+import type { GetNetwork, SelectedWallet } from '@/store';
+import type { NetworkJson } from '@extension-base/types';
+import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
+import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
-import { windowOpen } from '@/extension/messaging';
-import { ActiveTabAuthorizeStatus } from '@/extension/background/extension-base/src/background/types/types';
+import { tieAccount, windowOpen } from '@/extension/messaging';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
-import { AsyncFn } from '@/interfaces';
+import { AsyncFn, Fn } from '@/interfaces';
+import { ALL_NETWORKS } from '@/consts/networks';
+import { isNetworkGroup } from '@/helpers/common';
+import { cut } from '@/helpers';
 
 @Component({
-  components: { ConnectionPopup },
+  components: {
+    ConnectionPopup,
+    NetworkManagement,
+    NetworkManagementButton,
+  },
 })
 export default class Header extends Vue {
   readonly walletNameRef = 'walletName';
   readonly settingsNameRef = 'settingsName';
   readonly isPopup = BaseApi.useIsPopup();
-
+  readonly selectNetworkButtonRef = 'selectNetworkButton';
+  readonly allNetworksIcon = 'all-networks';
   showConnectionPopup = false;
+  showSelectNetworkPopup = false;
 
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(ExtensionGettersTypes.tabStatus) tabStatus!: ActiveTabAuthorizeStatus;
   @Action(ExtensionActionTypes.FETCH_TAB_STATUS) fetchTabStatus!: AsyncFn<ActiveTabAuthorizeStatus>;
+  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get showBackIcon() {
-    return this.$route.name === Components.Asset;
+    const route = this.$route.name;
+
+    return route === Components.AssetNetworks || route === Components.AssetHistory;
+  }
+
+  get isGroup() {
+    return isNetworkGroup(this.selectedNetwork);
+  }
+
+  get networkManagementButtonText() {
+    if (this.isGroup) {
+      return this.$t(`header.networkManagement.${this.selectedNetwork}`);
+    }
+
+    return this.selectedNetwork;
+  }
+
+  get selectedNetworkIcon() {
+    if (this.isGroup) return this.allNetworksIcon;
+
+    const network = this.getNetwork(this.selectedNetwork);
+
+    if (network) return network.icon;
+
+    return this.allNetworksIcon;
+  }
+
+  get cutAddress() {
+    return cut(this.address, 5);
+  }
+
+  get decimals() {
+    return this.getNetwork(this.selectedNetwork)?.addressPrefix;
+  }
+
+  get address() {
+    if (this.selectedWallet.address === '') return '';
+
+    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
+
+    return BaseApi.encodeAddress(this.selectedWallet.address, this.decimals);
   }
 
   get name() {
@@ -108,6 +179,26 @@ export default class Header extends Vue {
 
   get statusConnectedText() {
     return !this.tabStatus || !this.tabStatus.isAuthorize ? 'header.notConnected' : 'header.connected';
+  }
+
+  copyAddress() {
+    navigator.clipboard.writeText(this.address);
+  }
+
+  toggleSelectedNetwork(network: string) {
+    if (this.selectedNetwork === network) return;
+
+    const prepNetwork: HexString | null = network === ALL_NETWORKS ? null : `0x${this.getNetwork(network).chainId}`;
+
+    this.setSelectedNetwork(network);
+
+    tieAccount(this.selectedWallet.address, prepNetwork);
+
+    this.toggleSelectNetworkPopupVisible();
+  }
+
+  toggleSelectNetworkPopupVisible() {
+    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
   }
 
   @Watch('syncedShowSelectWalletPopup')
@@ -134,8 +225,8 @@ export default class Header extends Vue {
     this.showConnectionPopup = !this.showConnectionPopup;
   }
 
-  backToWallet() {
-    this.$router.push({ name: Components.Wallet });
+  back() {
+    this.$router.back();
   }
 
   openFullScreen() {
@@ -158,7 +249,10 @@ export default class Header extends Vue {
   display: flex;
   justify-content: space-between;
   height: $header-height;
+  min-height: $header-height;
   margin-bottom: 16px;
+  gap: 2px;
+  min-height: 48px;
 
   .logo-container {
     width: 48px;
@@ -171,8 +265,12 @@ export default class Header extends Vue {
   .s-icon-arrows-arrows-diagonals-bltr-24 {
     font-size: 18px !important;
   }
-
+  .header-part-right {
+    gap: 4px;
+    justify-content: flex-end;
+  }
   .header-part-left {
+    gap: 10px;
     &:hover {
       cursor: pointer;
     }
@@ -188,18 +286,32 @@ export default class Header extends Vue {
 
     .wallet-name {
       display: flex;
-      align-items: center;
-      height: 48px;
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 5px;
 
       .name {
-        max-width: 220px;
+        display: flex;
+        max-width: 190px;
         font-weight: 700;
         font-size: 24px;
-        margin: 0 5px 0 10px;
         align-items: center;
         overflow: hidden;
         text-overflow: ellipsis;
-        white-space: nowrap;
+        .wallet-title {
+          text-overflow: ellipsis;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+      }
+      .copy-adress {
+        display: flex;
+        flex-flow: row nowrap;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 400;
+        color: $default-white;
       }
     }
 
@@ -207,17 +319,11 @@ export default class Header extends Vue {
       margin-top: 5px;
     }
 
-    .button-margin {
-      margin-left: 5px;
-    }
-
     .background-ellipse {
       display: flex;
-      justify-content: center;
       align-items: center;
       height: 32px;
-      width: 145px;
-      padding: 0 12px;
+      padding: 12px;
       font-size: 12px;
       line-height: 18px;
       border-radius: 20px;
@@ -230,7 +336,28 @@ export default class Header extends Vue {
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    margin-right: 8px;
+  }
+  .network-management {
+    justify-content: space-between;
+    width: 137px;
+    height: 32px;
+    display: flex;
+    gap: 4px;
+  }
+
+  .icon--down {
+    height: 9px;
+    width: 9px;
+  }
+
+  .icon--network {
+    height: 16px;
+    width: 16px;
+  }
+  .copy {
+    filter: invert(0.5);
+    width: 20px;
+    height: 20px;
   }
 
   .success-connect {

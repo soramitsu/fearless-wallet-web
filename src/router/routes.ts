@@ -5,7 +5,6 @@ import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
-import { SORA_CARD_VISIBILITY } from '@/consts/global';
 
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Staking = () => import('@/screens/staking/Staking.vue');
@@ -18,6 +17,9 @@ const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 const Export = () => import('@/screens/accounts/Export.vue');
 
+const AssetNetworks = () =>
+  import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetNetworks.vue');
+const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetHistory.vue');
 const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
 const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/Disclaimer.vue');
@@ -51,6 +53,8 @@ export enum Components {
   SoraSwap = 'SoraSwap',
   SoraCard = 'SoraCard',
   NoFound = 'NoFound',
+  AssetHistory = 'AssetHistory',
+  AssetNetworks = 'AssetNetworks',
 }
 
 const haveSelectedWallet = () => {
@@ -60,6 +64,7 @@ const haveSelectedWallet = () => {
 const haveAuthRequests = () => store.getters.authList.length;
 const haveSignRequests = () => store.getters.signList.length;
 const haveMetaRequests = () => store.getters.metaRequests.length;
+const showSoraCard = () => store.getters.features.soraCard;
 
 const routes: Array<RouteConfig> = [
   {
@@ -116,7 +121,7 @@ const routes: Array<RouteConfig> = [
     name: Components.SoraCard,
     component: SoraCard,
     beforeEnter: (to, from, next) => {
-      if (SORA_CARD_VISIBILITY) next();
+      if (showSoraCard()) next();
       else next({ name: Components.Wallet });
     },
   },
@@ -174,9 +179,24 @@ const routes: Array<RouteConfig> = [
         ],
       },
       {
-        path: ':network/:assetId',
-        name: Components.Asset,
+        path: 'asset/:assetId',
         component: Asset,
+        children: [
+          {
+            path: '/',
+            name: Components.AssetNetworks,
+            component: AssetNetworks,
+            beforeEnter: (to, from, next) => {
+              from.params.network = '';
+              next();
+            },
+          },
+          {
+            path: ':selectedNetwork',
+            name: Components.AssetHistory,
+            component: AssetHistory,
+          },
+        ],
       },
       {
         path: 'crowdloans',

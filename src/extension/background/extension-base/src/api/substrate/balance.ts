@@ -1,133 +1,15 @@
 import { ApiPromise } from '@polkadot/api';
-import { BN } from '@polkadot/util';
-import { Contract } from 'ethers';
 import { state } from '@extension-base/background/handlers';
-import { SUB_TOKEN_REFRESH_BALANCE_INTERVAL, ASTAR_REFRESH_BALANCE_INTERVAL } from '@extension-base/const/intervals';
-import { sumBN } from '@extension-base/utils';
 import { isEthereumNetwork } from '@extension-base/background/utils/utils';
-import { getEVMBalance } from '@extension-base/api/evm/balance';
-import EthProvider from '@extension-base/api/evm/ethProvider';
-import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
 import { APIItemState } from '@extension-base/api/types/networks';
-import { getRegistry } from '@extension-base/api/substrate/registry';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
-import type { Asset } from '@extension-base/types';
 import type { ApiProps } from '@extension-base/background/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { RelayChainName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
-import { CHAIN_IDS, SORA_UTILITY_ASSET, SORA_MAINNET, SORA_TEST } from '@/consts/networks';
-
-function subscribeERC20Interval(
-  addresses: string[],
-  networkKey: string,
-  api: ApiPromise,
-  web3ApiMap: Record<string, EthProvider>,
-  subCallback: (rs: Partial<BalanceItem>) => void
-): () => void {
-  let tokenList: Asset[] = [];
-  const ERC20ContractMap = {} as Record<string, Contract>;
-
-  const getTokenBalances = async () => {
-    for (const { symbol } of tokenList) {
-      let free = new BN(0);
-
-      try {
-        const contract = ERC20ContractMap[symbol];
-        const balances = addresses.map((address): Promise<string> => {
-          return contract.methods.balanceOf(address).call();
-        });
-        const bals = await Promise.all(balances);
-
-        free = sumBN(bals.map((bal) => new BN(bal || 0)));
-
-        subCallback({
-          state: APIItemState.READY,
-          key: networkKey,
-          symbol,
-          reserved: '0',
-          frozen: '0',
-          free: free.toString(),
-          chain: networkKey,
-        });
-      } catch (err) {
-        console.info('There is problem when fetching ' + symbol + ' token balance', err);
-      }
-    }
-  };
-
-  getRegistry(networkKey, api)
-    .then(({ assetsMap }) => {
-      tokenList = assetsMap.filter(({ contractAddress }) => !!contractAddress);
-
-      tokenList.forEach(({ contractAddress, symbol }) => {
-        if (contractAddress) {
-          ERC20ContractMap[symbol] = getERC20Contract(networkKey, contractAddress, web3ApiMap);
-        }
-      });
-      getTokenBalances();
-    })
-    .catch(console.warn);
-
-  const interval = setInterval(getTokenBalances, SUB_TOKEN_REFRESH_BALANCE_INTERVAL);
-
-  return () => {
-    clearInterval(interval);
-  };
-}
-
-export function subscribeEVMBalance(
-  networkKey: string,
-  api: ApiPromise,
-  addresses: string[],
-  web3ApiMap: Record<string, EthProvider>,
-  callback: (networkKey: string, rs: Partial<BalanceItem>) => void
-) {
-  const balanceItem = {
-    state: APIItemState.PENDING,
-    free: '0',
-    reserved: '0',
-    miscFrozen: '0',
-    frozen: '0',
-  } as BalanceItem;
-
-  function getBalance() {
-    getEVMBalance(networkKey, addresses, web3ApiMap)
-      .then((balances) => {
-        balanceItem.free = balances.toString();
-        balanceItem.state = APIItemState.READY;
-
-        callback(networkKey, balanceItem);
-      })
-      .catch(console.warn);
-  }
-
-  function subCallback(item: Partial<BalanceItem>) {
-    callback(networkKey, item);
-  }
-
-  getBalance();
-
-  const interval = setInterval(getBalance, ASTAR_REFRESH_BALANCE_INTERVAL);
-  const unsub = subscribeERC20Interval(addresses, networkKey, api, web3ApiMap, subCallback);
-
-  return () => {
-    clearInterval(interval);
-    unsub && unsub();
-  };
-}
-
-export function checkMainToken(networkKey: string, id: string): boolean {
-  if (id === undefined) return false;
-
-  return (
-    state.networksJson
-      .find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())!
-      .assets.find((asset) => asset.id === id)?.isUtility ?? false
-  );
-}
+import { CHAIN_IDS, SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/networks';
 
 async function subscribeTokensBalance(
   address: string,
@@ -284,10 +166,6 @@ export function subscribeBalance(
 
   const unsubList = Object.entries(state.getSubstrateApiMap).map(async ([networkKey, apiProps]) => {
     await apiProps.api?.isReadyOrError;
-
-    if (['ethereum', 'ethereum_goerli'].includes(networkKey)) {
-      return subscribeEVMBalance(networkKey, apiProps.api!, [ethereumAddress], state.getEvmApiMap, setBalance); // todo [ethereumAddress] -> ethereumAddress
-    }
 
     const addressForNetwork = isEthereumNetwork(networkKey) ? ethereumAddress : address;
 

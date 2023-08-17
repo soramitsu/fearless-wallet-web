@@ -1,5 +1,5 @@
 <template>
-  <SCol class="auth-content" width="100%" v-bind:key="request.id">
+  <SCol class="auth-content" width="100%" v-bind:key="request.id" @click.native="click">
     <SRow>
       <SCol :span="9" class="s-flex s-justify-start">
         <span class="auth-item-name">{{ request.origin }}</span>
@@ -7,7 +7,7 @@
 
       <SCol :span="3">
         <SRow flex justify="space-between">
-          <span class="authorized-account__count" @click="$emit('openUpdateAuths', stripUrl)">
+          <span class="authorized-account__count">
             {{ authorizedAccounts }}
           </span>
 
@@ -21,8 +21,8 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Action } from 'vuex-class';
-import type { AsyncFn } from '@/interfaces';
-import { AuthUrlInfo } from '@/extension/background/extension-base/src/background/types/types';
+import { AuthUrlInfo } from '@extension-base/background/types/types';
+import type { AsyncFn, CustomEvent } from '@/interfaces';
 import { stripUrl } from '@/extension/background/extension-base/src/background/handlers/helpers';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 
@@ -44,6 +44,12 @@ export default class AuthItem extends Vue {
   removeAuth() {
     this.deleteAuthConnection(this.stripUrl);
   }
+
+  click(event: CustomEvent) {
+    const classList = event.target?.classList;
+
+    if (!classList.contains('trash')) this.$emit('openUpdateAuths', this.stripUrl);
+  }
 }
 </script>
 
@@ -58,18 +64,17 @@ export default class AuthItem extends Vue {
 }
 
 .auth-content {
+  cursor: pointer;
   padding: 16px 0;
   border-bottom: 1px solid $default-background-color;
 }
 
 .authorized-account__count {
-  cursor: pointer;
   white-space: nowrap;
   color: rgba(0, 238, 119, 1);
 }
 
 .trash {
-  cursor: pointer;
   height: 16px;
   width: 16px;
 }

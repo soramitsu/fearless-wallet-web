@@ -11,6 +11,7 @@ import {
   AppMetadata,
   defaultEventCallbacks,
 } from '@airgap/beacon-sdk';
+import type { MobileSigningRequest } from '@extension-base/background/types/types';
 import type {
   PayloadJSON,
   PermissionSuccess,
@@ -24,7 +25,6 @@ import { MOONBEAM_GENESISHASH, WESTEND_GENESISHASH } from '@/consts/networks';
 import store from '@/store';
 import { MutationTypes as AccountMutationTypes } from '@/store/accounts/mutations';
 import { approveSignMobileSignature, subscribeMobileSigningRequests } from '@/extension/messaging';
-import { MobileSigningRequest } from '@/extension/background/extension-base/src/background/types/types';
 class BeaconController {
   private app: DAppClient;
   private serializer = new Serializer();

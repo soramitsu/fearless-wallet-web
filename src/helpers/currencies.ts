@@ -4,7 +4,7 @@ import { APIItemState } from '@extension-base/api/types/networks';
 import type { NetworkJson } from '@extension-base/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { TokenBalance } from '@extension-base/background/types/types';
-import type { NetworkName, AssetsPrice } from '@/interfaces';
+import type { NetworkName, AssetsPrice, BuyProvider } from '@/interfaces';
 import {
   SORA_UTILITY_ASSET,
   SORA_NETWORK_NAME,
@@ -74,7 +74,7 @@ function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }:
   ];
 }
 
-function getProviderUrl(name: 'moonpay' | 'ramp', asset: string, address: string) {
+function getProviderUrl(name: BuyProvider, asset: string, address: string) {
   const { MOONPAY, RAMP } = BASE_URLS_PREFIX;
 
   const provider = {

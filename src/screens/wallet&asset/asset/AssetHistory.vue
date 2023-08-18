@@ -32,9 +32,12 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
 import History from './History.vue';
 import type { TokenBalance } from '@extension-base/background/types/types';
+import type { Features } from '@/store/extension/types';
 import AssetActionButtons from '@/screens/wallet&asset/asset/AssetActionButtons.vue';
+import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
 @Component({
   components: {
@@ -46,6 +49,7 @@ export default class AssetHistory extends Vue {
   showPopupButton = false;
 
   @Prop(Object) currency!: TokenBalance;
+  @Getter(ExtensionGettersTypes.features) features!: Nullable<Features>;
 
   get selectedAssetId() {
     return this.$route.params.assetId ?? '';
@@ -62,7 +66,11 @@ export default class AssetHistory extends Vue {
   }
 
   get showBuyButton() {
-    return this.providers.length !== 0 && this.mainNetwork?.toLowerCase() === this.selectedNetwork.toLowerCase();
+    const providers = this.providers.filter((provider) => this.features?.fiat[provider]);
+
+    if (providers.length === 0) return false;
+
+    return this.mainNetwork?.toLowerCase() === this.selectedNetwork.toLowerCase();
   }
 
   get selectedNetwork() {

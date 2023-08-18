@@ -21,7 +21,7 @@ export class EventService extends EventEmitter<EventRegistry> {
   private generateWaitPromise<T extends EventType>(eventType: T): Promise<boolean> {
     return new Promise((resolve) => {
       this.once(eventType, (isReady) => {
-        resolve(isReady);
+        resolve(isReady as boolean);
       });
     });
   }

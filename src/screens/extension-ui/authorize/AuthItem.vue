@@ -1,5 +1,5 @@
 <template>
-  <SCol class="auth-content" width="100%" v-bind:key="request.id" @click.native="click">
+  <SCol class="auth-content" width="100%" v-bind:key="request.id" @click.native="onClick">
     <SRow>
       <SCol :span="9" class="s-flex s-justify-start">
         <span class="auth-item-name">{{ request.origin }}</span>
@@ -45,7 +45,7 @@ export default class AuthItem extends Vue {
     this.deleteAuthConnection(this.stripUrl);
   }
 
-  click(event: CustomEvent) {
+  onClick(event: CustomEvent) {
     const classList = event.target?.classList;
 
     if (!classList.contains('trash')) this.$emit('openUpdateAuths', this.stripUrl);

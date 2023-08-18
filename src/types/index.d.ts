@@ -1,4 +1,4 @@
-type Nullable<T> = T | null | undefined;
+declare type Nullable<T> = T | null | undefined;
 
 type Megabit = number;
 type Millisecond = number;

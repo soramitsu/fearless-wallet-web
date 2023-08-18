@@ -1,3 +1,7 @@
 export interface Features {
-  soraCard?: boolean;
+  fiat: {
+    soraCard: boolean;
+    moonpay: boolean;
+    ramp: boolean;
+  };
 }

@@ -30,6 +30,7 @@ import type {
   ChangeWalletBalance,
   NetworkName,
   AssetName,
+  BuyProvider,
 } from '@/interfaces';
 
 export interface PrepareExternalRequest {
@@ -951,7 +952,7 @@ export interface TokenBalance {
   precision: number;
   relayChain: RelayChainName;
   icon: string;
-  providers: string[];
+  providers: BuyProvider[];
   balances: BalanceItem[];
   color?: string;
 }

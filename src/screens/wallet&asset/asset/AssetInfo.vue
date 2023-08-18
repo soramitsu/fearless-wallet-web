@@ -206,7 +206,7 @@ export default class AssetInfo extends Vue {
     .asset__price {
       display: flex;
       flex-flow: row nowrap;
-      font-family: Sora;
+      font-family: Sora, sans-serif;
       color: $gray-color;
       line-height: 1px;
 

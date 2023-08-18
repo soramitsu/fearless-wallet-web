@@ -47,14 +47,14 @@
       v-if="showSendForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :_selectedAssetId="selectedCurrency.assetId"
-      :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false, {})"
+      :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', {}, false)"
     />
 
     <ReceiveForm
       v-if="showReceiveForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :selectedAssetId="selectedCurrency.assetId"
-      :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false, {})"
+      :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', {}, false)"
     />
 
     <NetworkManagement
@@ -326,8 +326,8 @@ export default class Wallet extends Vue {
 
   toggleVisibleActivityForm(
     field: 'showSendForm' | 'showReceiveForm',
-    value = true,
-    currency: { mainNetwork?: string; assetId?: string }
+    currency: { mainNetwork?: string; assetId?: string },
+    value = true
   ) {
     this.selectedCurrency = currency;
     this[field] = value;

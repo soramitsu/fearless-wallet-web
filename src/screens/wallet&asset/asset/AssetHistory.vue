@@ -76,7 +76,7 @@ export default class AssetHistory extends Vue {
   get showBuyButton() {
     const providers = this.providers.filter((provider) => this.features?.fiat[provider]);
 
-    if (providers.length !== 0) return false;
+    if (providers.length === 0) return false;
 
     return this.mainNetwork?.toLowerCase() === this.selectedNetwork.toLowerCase();
   }

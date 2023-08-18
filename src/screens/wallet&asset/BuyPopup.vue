@@ -2,7 +2,7 @@
   <Popup :headerText="headerText" :showBorder="true" :handlerClose="closePopup" sizeWidth="big">
     <div class="buy-content">
       <Button
-        v-for="provider in providers"
+        v-for="provider in providersFiltered"
         class="provider-button"
         :key="provider"
         :text="provider"

@@ -150,7 +150,7 @@ function sendMessage<TMessageType extends MessageTypes>(
     const id = getId();
 
     handlers[id] = { reject, resolve, subscriber };
-    port?.postMessage({ id, message, request: request || {} });
+    port?.postMessage({ id, message, request: request ?? {} });
   });
 }
 

@@ -63,7 +63,6 @@ export default class App extends Vue {
 
     if (IS_EXTENSION) this.extensionSubscribe();
 
-    this.unregisterInactiveWorkers();
     this.setupWallet();
     this.setupNetworks();
     this.setupBalance();
@@ -72,14 +71,6 @@ export default class App extends Vue {
     this.setupPrice();
     this.setupSWPing();
     this.getUserStatus(); // SORA Card
-  }
-
-  unregisterInactiveWorkers() {
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-      for (const registration of registrations) {
-        if (registration.active?.state !== 'activated') registration.unregister();
-      }
-    });
   }
 
   onUpdateOnlineStatus() {

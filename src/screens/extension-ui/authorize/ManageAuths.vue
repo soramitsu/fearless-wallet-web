@@ -25,7 +25,6 @@
 <script lang="ts">
 import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { STab, STabs } from '@soramitsu/soramitsu-js-ui';
 import type { AuthUrlInfo } from '@extension-base/background/types/types';
 import { AsyncFn } from '@/interfaces';
 import UpdateAuths from '@/screens/extension-ui/authorize/UpdateAuths.vue';
@@ -37,8 +36,6 @@ import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
   components: {
     AuthItem,
     UpdateAuths,
-    STab,
-    STabs,
   },
 })
 export default class ManageAuths extends Vue {

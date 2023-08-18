@@ -45,7 +45,7 @@
       />
 
       <div v-if="isPopup" class="background-ellipse" @click="toggleConnectionPopup">
-        <Loading v-if="!tabStatus" />
+        <Loading v-if="!tabStatus" :width="16" />
 
         <template v-else>
           <div class="connect" :class="statusConnectedClasses"></div>

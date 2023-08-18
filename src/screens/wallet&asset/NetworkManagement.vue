@@ -2,16 +2,13 @@
   <AboveForm :header="getLocale('header')" :fullScreen="true" :closeHandler="handlerClose">
     <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
 
-    <STabs v-model="activeTab" type="rounded" position="top">
-      <STab v-for="{ name, label } in tabs" class="button" :label="$t(label)" :name="name" :key="name">
-        <NetworkItem
-          :network="networkGroup"
-          :isNetworkGroup="true"
-          :isSelected="isGroupSelected"
-          @onToggleNetworkType="toggleNetworkType(isGroupSelected)"
-        />
-      </STab>
-    </STabs>
+    <Tabs v-model="activeTab" :tabs="tabs" />
+    <NetworkItem
+      :network="networkGroup"
+      :isNetworkGroup="true"
+      :isSelected="isGroupSelected"
+      @onToggleNetworkType="toggleNetworkType(isGroupSelected)"
+    />
     <div class="container" :class="networkListClasses">
       <Scroll>
         <ul class="network__list">
@@ -32,9 +29,9 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Action, Getter, Mutation } from 'vuex-class';
-import { STab, STabs } from '@soramitsu/soramitsu-js-ui';
 import NetworkItem from './NetworkItem.vue';
 import type { NetworkJson } from '@extension-base/types';
+import type { Tab } from '@/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as NetworksActionsTypes } from '@/store/networks/actions';
@@ -44,10 +41,6 @@ import { SetFavoriteNetwork, Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { updateCurrentAccountNetwork } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
-type Tab = {
-  label: string;
-  name: string;
-};
 
 type Tabs = {
   [ALL_NETWORKS]: Tab;
@@ -57,8 +50,6 @@ type Tabs = {
 
 @Component({
   components: {
-    STab,
-    STabs,
     NetworkItem,
   },
 })
@@ -212,9 +203,10 @@ export default class NetworkManagement extends Vue {
 .container {
   height: 350px;
   overflow-y: hidden;
-}
-.container--fullscreen {
-  height: calc(100vh - 270px);
+
+  &--fullscreen {
+    height: calc(100vh - 270px);
+  }
 }
 
 .network__list {
@@ -222,45 +214,5 @@ export default class NetworkManagement extends Vue {
   flex-flow: column nowrap;
   padding: 0;
   height: 100%;
-}
-</style>
-
-<style lang="scss">
-.el-tabs__nav {
-  background: #111111 !important;
-  color: $default-white !important;
-  gap: 14px;
-}
-
-.el-tabs__nav-wrap {
-  background: #111111 !important;
-}
-
-.el-tabs__item {
-  text-transform: uppercase;
-}
-
-.el-tabs__item.is-active {
-  border-radius: 30px !important;
-  background-color: #7700ee40 !important;
-  color: #ffffff75 !important;
-}
-
-.el-tabs__item:not(.is-active) {
-  border-radius: 30px !important;
-  background-color: $default-background-color !important;
-  color: #ffffff50 !important;
-}
-
-.el-tab-pane {
-  background-color: #111111 !important;
-  height: 100% !important;
-  width: 100% !important;
-  border-radius: 0 !important;
-}
-.el-tab-pane.button {
-  padding: 0;
-  display: block;
-  text-transform: none;
 }
 </style>

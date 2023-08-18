@@ -20,3 +20,8 @@ declare interface NavigatorNetworkInformation {
 }
 type Navigator = NavigatorNetworkInformation;
 type WorkerNavigator = NavigatorNetworkInformation;
+
+export type Tab = {
+  label: string;
+  name: string;
+};

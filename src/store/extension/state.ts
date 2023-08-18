@@ -15,7 +15,7 @@ export type State = {
   };
   authList: Record<string, AuthUrlInfo>;
   tabStatus: ActiveTabAuthorizeStatus | null;
-  features: Features;
+  features: Nullable<Features>;
 };
 
 const state = (): State => {
@@ -27,9 +27,7 @@ const state = (): State => {
     },
     authList: {},
     tabStatus: null,
-    features: {
-      soraCard: true,
-    },
+    features: null,
   };
 };
 

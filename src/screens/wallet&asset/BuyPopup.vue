@@ -15,7 +15,11 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import type { Features } from '@/store/extension/types';
+import type { Provider } from '@/interfaces';
 import { getProviderUrl } from '@/helpers/currencies';
+import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
 @Component
 export default class BuyPopup extends Vue {
@@ -23,12 +27,17 @@ export default class BuyPopup extends Vue {
   @Prop(String) address!: string;
   @Prop(Array) providers!: ('ramp' | 'moonpay')[];
   @Prop(Function) closePopup!: VoidFunction;
+  @Getter(ExtensionGettersTypes.features) features!: Nullable<Features>;
 
   get headerText() {
     return this.$t('assets.buyHeader', { asset: this.asset });
   }
 
-  openProvider(providerName: 'moonpay' | 'ramp') {
+  get providersFiltered() {
+    return this.providers.filter((provider) => this.features?.fiat[provider]);
+  }
+
+  openProvider(providerName: Provider) {
     const url = getProviderUrl(providerName, this.asset, this.address);
 
     window.open(url);

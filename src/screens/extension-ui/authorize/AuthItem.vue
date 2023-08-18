@@ -35,11 +35,13 @@ export default class AuthItem extends Vue {
   get stripUrl() {
     return stripUrl(this.request.url);
   }
+
   get faviconURl() {
     const url = new URL(this.request.url);
 
     return `https://icons.duckduckgo.com/ip3/${url.host}.ico`;
   }
+
   get authorizedAccounts() {
     const authListLength = this.request.authorizedAccounts.length;
 

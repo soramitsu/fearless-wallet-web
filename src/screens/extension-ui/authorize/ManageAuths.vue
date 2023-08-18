@@ -4,7 +4,7 @@
     :fullScreen="true"
     :showBackIcon="showUpdateAuths"
     :closeHandler="handlerClose"
-    :handlerBack="updateUrl.bind(null, '')"
+    :handlerBack="() => updateUrl('')"
   >
     <template v-if="!showUpdateAuths">
       <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />

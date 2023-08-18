@@ -65,14 +65,6 @@ export default class AssetHistory extends Vue {
     return currency ? currency.name : '';
   }
 
-  get showMoonpay() {
-    return this.features?.fiat.moonpay;
-  }
-
-  get showRamp() {
-    return this.features?.fiat.ramp;
-  }
-
   get showBuyButton() {
     const providers = this.providers.filter((provider) => this.features?.fiat[provider]);
 

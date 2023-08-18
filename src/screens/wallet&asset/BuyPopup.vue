@@ -17,7 +17,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Features } from '@/store/extension/types';
-import type { Provider } from '@/interfaces';
+import type { BuyProvider } from '@/interfaces';
 import { getProviderUrl } from '@/helpers/currencies';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
@@ -37,7 +37,7 @@ export default class BuyPopup extends Vue {
     return this.providers.filter((provider) => this.features?.fiat[provider]);
   }
 
-  openProvider(providerName: Provider) {
+  openProvider(providerName: BuyProvider) {
     const url = getProviderUrl(providerName, this.asset, this.address);
 
     window.open(url);

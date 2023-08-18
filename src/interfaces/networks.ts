@@ -47,12 +47,12 @@ type AssetType =
   | 'assets'
   | 'assetId'; // TODO add
 
-type Provider = 'moonpay' | 'ramp';
+type BuyProvider = 'moonpay' | 'ramp';
 
 type NetworkAsset = {
   assetId: string;
   staking?: string;
-  purchaseProviders?: Provider[];
+  purchaseProviders?: BuyProvider[];
   isUtility?: true;
   isNative?: true;
   type?: AssetType;
@@ -142,7 +142,7 @@ type EthereumHistoryResponse<T> = {
 export {
   Networks,
   Network,
-  Provider,
+  BuyProvider,
   AssetType,
   NetworkName,
   ExternalApi,

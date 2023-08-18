@@ -252,7 +252,6 @@ export default class Header extends Vue {
   min-height: $header-height;
   margin-bottom: 16px;
   gap: 2px;
-  min-height: 48px;
 
   .logo-container {
     width: 48px;

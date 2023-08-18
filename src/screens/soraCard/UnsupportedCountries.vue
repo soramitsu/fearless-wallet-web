@@ -51,7 +51,7 @@ export default class UnsupportedCountries extends Vue {
 
       .flag {
         margin-right: 10px;
-        font-family: 'Twemoji Country Flags';
+        font-family: 'Twemoji Country Flags', sans-serif;
       }
     }
   }

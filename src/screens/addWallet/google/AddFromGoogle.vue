@@ -106,9 +106,8 @@ export default class AddFromGoogle extends Vue {
     this.token = this.getToken;
     const { files } = await getGoogleFiles(this.token);
 
-    const regex = new RegExp('\\w+/\\w+');
     const jsonsWithoutEth = files.filter((el) => el.description === '' || el.description === 'undefined');
-
+    const regex = /\w+\/\w+/;
     const filterFiles = files.filter((el) => el && regex.test(el.description));
     const filesToImport = [...filterFiles, ...jsonsWithoutEth];
 

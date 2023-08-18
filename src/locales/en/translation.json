@@ -118,6 +118,8 @@
     "alertMessage": "This approval will add the metadata to your extension instance, allowing future requests to be decoded using this metadata"
   },
   "authorize": {
+    "substrate": "Substrate",
+    "wc": "Wallet Connect",
     "selfIdentifyOne": "An application, self-identifying as",
     "selfIdentifyTwo": "is requesting access from my",
     "accountsConnected": "Accounts connected to {url}",

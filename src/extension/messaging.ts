@@ -2,6 +2,7 @@ import { metadataExpand } from '@polkadot/extension-chains';
 import { selectableNetworks } from '@polkadot/networks';
 import { getId } from '@extension-base/utils/utils';
 import { PORT_EXTENSION } from '@extension-base/defaults';
+import { SessionTypes } from '@walletconnect/types';
 import {
   RequestApproveConnectWalletSession,
   RequestApproveWalletConnectNotSupport,
@@ -554,26 +555,32 @@ export function pingServiceWorker(): Promise<boolean> {
 }
 
 //Wallet Connect
-export async function newConnection(request: RequestConnectWalletConnect): Promise<boolean> {
+export function newConnection(request: RequestConnectWalletConnect): Promise<boolean> {
   return sendMessage('pri(walletConnect.connect)', request);
 }
 
-export async function approveWalletConnectSession(request: RequestApproveConnectWalletSession): Promise<boolean> {
+export function walletConnectSessionsSubscribe(
+  callback: (data: SessionTypes.Struct[] | null) => void
+): Promise<SessionTypes.Struct[] | null> {
+  return sendMessage('pri(walletConnect.session.subscribe)', null, callback);
+}
+
+export function approveWalletConnectSession(request: RequestApproveConnectWalletSession): Promise<boolean> {
   return sendMessage('pri(walletConnect.session.approve)', request);
 }
 
-export async function rejectWalletConnectSession(request: RequestRejectConnectWalletSession): Promise<boolean> {
+export function rejectWalletConnectSession(request: RequestRejectConnectWalletSession): Promise<boolean> {
   return sendMessage('pri(walletConnect.session.reject)', request);
 }
 
-export async function disconnectWalletConnectConnection(topic: string): Promise<boolean> {
+export function disconnectWalletConnectConnection(topic: string): Promise<boolean> {
   return sendMessage('pri(walletConnect.session.disconnect)', { topic });
 }
 
-export async function approveWalletConnectNotSupport(request: RequestApproveWalletConnectNotSupport): Promise<boolean> {
+export function approveWalletConnectNotSupport(request: RequestApproveWalletConnectNotSupport): Promise<boolean> {
   return sendMessage('pri(walletConnect.notSupport.approve)', request);
 }
 
-export async function rejectWalletConnectNotSupport(request: RequestRejectWalletConnectNotSupport): Promise<boolean> {
+export function rejectWalletConnectNotSupport(request: RequestRejectWalletConnectNotSupport): Promise<boolean> {
   return sendMessage('pri(walletConnect.notSupport.reject)', request);
 }

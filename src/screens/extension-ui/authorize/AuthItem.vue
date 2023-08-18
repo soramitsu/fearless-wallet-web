@@ -1,7 +1,8 @@
 <template>
   <SCol class="auth-content" width="100%" v-bind:key="request.id" @click.native="onClick">
-    <SRow>
-      <SCol :span="9" class="s-flex s-justify-start">
+    <div class="row">
+      <SCol :span="9" class="col">
+        <ExternalLogo :name="faviconURl" alt="favicon" />
         <span class="auth-item-name">{{ request.origin }}</span>
       </SCol>
 
@@ -14,7 +15,7 @@
           <Icon icon="trash" className="trash" @click="removeAuth" />
         </SRow>
       </SCol>
-    </SRow>
+    </div>
   </SCol>
 </template>
 
@@ -34,7 +35,11 @@ export default class AuthItem extends Vue {
   get stripUrl() {
     return stripUrl(this.request.url);
   }
+  get faviconURl() {
+    const url = new URL(this.request.url);
 
+    return `https://icons.duckduckgo.com/ip3/${url.host}.ico`;
+  }
   get authorizedAccounts() {
     const authListLength = this.request.authorizedAccounts.length;
 
@@ -77,5 +82,19 @@ export default class AuthItem extends Vue {
 .trash {
   height: 16px;
   width: 16px;
+}
+.icon-duck {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+}
+.col {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.row {
+  display: flex;
+  align-items: center;
 }
 </style>

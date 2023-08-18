@@ -8,15 +8,14 @@
   >
     <template v-if="!showUpdateAuths">
       <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
-      <STabs v-model="activeTab" type="rounded" position="top">
-        <STab v-for="{ name, label } in tabs" class="button" :label="$t(label)" :name="name" :key="name">
-          <div class="auth-items">
-            <Scroll>
-              <AuthItem v-for="el in filteredList" v-bind:key="el.id" :request="el" @openUpdateAuths="updateUrl" />
-            </Scroll>
-          </div>
-        </STab>
-      </STabs>
+
+      <Tabs v-model="activeTab" :tabs="tabs" />
+
+      <div class="auth-items">
+        <Scroll>
+          <AuthItem v-for="el in filteredList" v-bind:key="el.id" :request="el" @openUpdateAuths="updateUrl" />
+        </Scroll>
+      </div>
     </template>
 
     <UpdateAuths v-else :url="url" @updateUrl="updateUrl" />
@@ -27,9 +26,9 @@
 import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { STab, STabs } from '@soramitsu/soramitsu-js-ui';
-import UpdateAuths from './UpdateAuths.vue';
 import type { AuthUrlInfo } from '@extension-base/background/types/types';
 import { AsyncFn } from '@/interfaces';
+import UpdateAuths from '@/screens/extension-ui/authorize/UpdateAuths.vue';
 import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
@@ -49,11 +48,11 @@ export default class ManageAuths extends Vue {
   activeTab = 'substrate';
   tabs = {
     substrate: {
-      label: 'header.networkManagement.tabs.all',
+      label: 'authorize.substrate',
       name: 'substrate',
     },
     wc: {
-      label: 'header.networkManagement.tabs.all',
+      label: 'authorize.wc',
       name: 'wc',
     },
   };

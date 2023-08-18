@@ -556,7 +556,7 @@ export default class State {
 
     delete this.apis.substrate[networkKey];
 
-    if (network.isEthereum && network.isEthereum) delete this.apis.evm[networkKey]; // todo аналогично
+    if (network.isEthereum) delete this.apis.evm[networkKey]; // todo аналогично
 
     network.active = false;
     network.apiStatus = NETWORK_STATUS.DISCONNECTED;
@@ -1139,7 +1139,7 @@ export default class State {
       const prepCurrentProvider = network.nodes[0].url;
       const prepNodes: Record<string, string> = {};
 
-      network.nodes.map((node) => {
+      network.nodes.forEach((node) => {
         prepNodes[node.name] = node.url;
       });
 

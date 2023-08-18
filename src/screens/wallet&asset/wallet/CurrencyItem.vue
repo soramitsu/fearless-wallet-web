@@ -66,7 +66,7 @@
           class="button send"
           tooltipText="assets.sendButtonText"
           target=".send"
-          @click="toggleVisibleActivityForm('showSendForm', true, { mainNetwork, assetId })"
+          @click="toggleVisibleActivityForm('showSendForm', { mainNetwork, assetId })"
         />
 
         <CircleButton
@@ -75,7 +75,7 @@
           class="button receive"
           tooltipText="assets.receiveButtonText"
           target=".receive"
-          @click="toggleVisibleActivityForm('showReceiveForm', true, { mainNetwork, assetId })"
+          @click="toggleVisibleActivityForm('showReceiveForm', { mainNetwork, assetId })"
         />
 
         <CircleButton

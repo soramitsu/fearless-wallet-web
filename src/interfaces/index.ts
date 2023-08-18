@@ -8,4 +8,3 @@ export * from '@/interfaces/networks';
 export * from '@/interfaces/nodes';
 export * from '@/interfaces/crossChain';
 export * from '@/interfaces/google';
-// export * from '@/interfaces/ether';

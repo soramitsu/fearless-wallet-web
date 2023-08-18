@@ -1,4 +1,4 @@
-type Nullable<T> = T | null | undefined;
+declare type Nullable<T> = T | null | undefined;
 // network-information-api.d.ts
 
 type Megabit = number;

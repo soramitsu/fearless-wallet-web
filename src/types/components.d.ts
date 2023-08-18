@@ -40,6 +40,7 @@ declare module '@vue/runtime-dom' {
     TabButton: typeof import('@/components/TabButton.vue')['TabButton'];
     Tooltip: typeof import('@/components/Tooltip.vue')['Tooltip'];
     ValidatedInput: typeof import('@/components/ValidatedInput.vue')['ValidatedInput'];
+    Tabs: typeof import('@/components/Tabs.vue')['Tabs'];
   }
 }
 

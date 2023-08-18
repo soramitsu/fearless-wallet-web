@@ -1,4 +1,4 @@
-type Nullable<T> = T | null | undefined;
+declare type Nullable<T> = T | null | undefined;
 // network-information-api.d.ts
 
 type Megabit = number;
@@ -20,8 +20,3 @@ declare interface NavigatorNetworkInformation {
 }
 type Navigator = NavigatorNetworkInformation;
 type WorkerNavigator = NavigatorNetworkInformation;
-
-export type Tab = {
-  label: string;
-  name: string;
-};

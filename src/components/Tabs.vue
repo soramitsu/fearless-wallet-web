@@ -5,7 +5,7 @@
 </template>
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
-import type { Tab } from '@/types';
+import type { Tab } from '@/interfaces/ui';
 
 @Component({})
 export default class Tabs extends Vue {

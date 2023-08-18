@@ -31,7 +31,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Action, Getter, Mutation } from 'vuex-class';
 import NetworkItem from './NetworkItem.vue';
 import type { NetworkJson } from '@extension-base/types';
-import type { Tab } from '@/types';
+import type { Tab } from '@/interfaces/ui';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as NetworksActionsTypes } from '@/store/networks/actions';

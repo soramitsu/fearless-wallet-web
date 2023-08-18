@@ -1,9 +1,9 @@
 <template>
-  <div>
+  <AboveForm :fullScreen="true" :showBackIcon="true" :closeHandler="onBack" :handlerBack="onBack">
     <Input v-model="uri" :placeholder="placeholder" size="small" />
 
     <Button text="Submit" width="48%" size="big" fontSize="big" type="secondary" :border="false" @click="onSubmit" />
-  </div>
+  </AboveForm>
 </template>
 
 <script lang="ts">
@@ -24,6 +24,10 @@ export default class WalletConnectInit extends Vue {
 
   onSubmit() {
     newConnection({ uri: this.uri });
+  }
+
+  onBack() {
+    this.$router.back();
   }
 }
 </script>

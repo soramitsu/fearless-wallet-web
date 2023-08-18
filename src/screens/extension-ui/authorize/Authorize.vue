@@ -54,7 +54,6 @@ import { cancelAuthRequest } from '@/extension/messaging';
 @Component({
   components: {
     Hint,
-
     SelectAuthAccount,
   },
 })
@@ -74,6 +73,12 @@ export default class Authorize extends Vue {
 
   get request(): AuthorizeRequest {
     return this.requests[0];
+  }
+
+  get prepAccounts() {
+    return Object.values(this.state)
+      .filter(({ active }) => active)
+      .map(({ address }) => address);
   }
 
   @Watch('requests')
@@ -106,12 +111,6 @@ export default class Authorize extends Vue {
     });
 
     this.selectAll = value;
-  }
-
-  get prepAccounts() {
-    return Object.values(this.state)
-      .filter(({ active }) => active)
-      .map(({ address }) => address);
   }
 
   onApprove() {

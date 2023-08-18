@@ -10,7 +10,12 @@
   >
     <div class="settings">
       <SettingMenuItem title="header.settings.wc" icon="account" @onOpen="open('WalletConnectInit')" />
-
+      <SettingMenuItem
+        v-if="isExtension"
+        title="common.manageDApp"
+        icon="mechanic-tool"
+        @onOpen="openPopup('openManageAuths')"
+      />
       <SettingMenuItem title="header.settings.accounts" icon="account" @onOpen="open('Accounts')" />
 
       <SettingMenuItem v-if="showSoraCard" title="soraCard.title" icon="card" @onOpen="open('SoraCard')" />
@@ -26,13 +31,6 @@
       <SettingMenuItem title="header.settings.language.text" icon="language" @onOpen="openPopup('openLanguagePopup')" />
 
       <SettingMenuItem title="common.aboutApp" icon="info" @onOpen="openPopup('openAboutPopup')" />
-
-      <SettingMenuItem
-        v-if="isExtension"
-        title="common.manageDApp"
-        icon="mechanic-tool"
-        @onOpen="openPopup('openManageAuths')"
-      />
     </div>
   </Popup>
 </template>

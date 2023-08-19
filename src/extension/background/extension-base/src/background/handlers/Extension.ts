@@ -747,7 +747,7 @@ export default class Extension extends FWExtensionBase {
 
   getToken(): void {
     chrome.identity.getAuthToken({}, (token) => {
-      this.token = token;
+      this.token = token ?? '';
     });
   }
 

@@ -23,12 +23,20 @@ async function getActiveTabs() {
   });
 }
 
-chrome.runtime.onInstalled.addListener(async () => {
+chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === 'update' && state.onboardingService.user === 'new') {
+    state.onboardingService.changeUserType('regular');
+  }
+
   await initStorage();
 
   state.onInstall();
 
   getActiveTabs();
+});
+
+chrome.runtime.onUpdateAvailable.addListener((details) => {
+  console.info(details);
 });
 
 chrome.runtime.onConnect.addListener((port: Port) => {

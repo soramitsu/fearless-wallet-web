@@ -32,6 +32,7 @@ import { SignerPayloadRaw } from '@polkadot/types/types';
 import { JsonRpcProvider } from 'ethers';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import { CurrentAccountState } from '../../stores/CurrentAccountStore';
+import OnboardingService from '../../services/onboarding-service';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -198,7 +199,7 @@ export default class State {
   public eventService = new EventService();
   public soraCardService = new SoraCardService();
   public keyringService = new KeyringService(this.eventService);
-
+  public onboardingService = new OnboardingService();
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }
@@ -335,6 +336,7 @@ export default class State {
       providers,
       windows,
       selectedNetwork,
+      userType,
     } = await this.getFromStorage([
       'fiatSymbol',
       'authUrls',
@@ -343,8 +345,9 @@ export default class State {
       'injectedProviders',
       'providers',
       'windows',
+      'userType',
     ]);
-
+    if (userType) this.onboardingService.changeUserType(userType);
     if (authUrls && Object.keys(authUrls).length) this.authUrls = authUrls;
     if (windows && windows.length) this.windows = windows;
     if (fiatSymbol) this.setFiatSymbol(fiatSymbol);

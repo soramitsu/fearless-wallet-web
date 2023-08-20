@@ -3,7 +3,9 @@
     <div class="onboarding">
       <template v-if="showStartingScreen">
         <img class="onboarding__logo" src="@/assets/fearless-logo-animated.gif" alt="fearless-logo" />
-        <h1 class="onboarding__header">The DeFi Wallet for the <span class="onboarding__header--red">Future</span></h1>
+        <h1 class="onboarding__header">
+          {{ title.first }} <span class="onboarding__header--red">{{ title.last }}</span>
+        </h1>
       </template>
 
       <template v-else>
@@ -37,7 +39,10 @@ export default class Onboarding extends Vue {
   stories: OnboardingStories = [];
   showStartingScreen = true;
   activeStory = 1;
-
+  readonly title = {
+    first: 'The DeFi Wallet for the',
+    last: 'Future',
+  };
   get storiesLength() {
     return this.stories.length;
   }

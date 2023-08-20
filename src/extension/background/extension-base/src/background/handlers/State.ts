@@ -206,7 +206,7 @@ export default class State {
 
   constructor() {
     this.injectFromStorage();
-
+    this.onboardingService.init();
     this.subscription = new FWSubscription(this);
     this.cron = new FWCron(this, this.subscription);
     this.init();
@@ -336,7 +336,6 @@ export default class State {
       providers,
       windows,
       selectedNetwork,
-      userType,
     } = await this.getFromStorage([
       'fiatSymbol',
       'authUrls',
@@ -345,9 +344,7 @@ export default class State {
       'injectedProviders',
       'providers',
       'windows',
-      'userType',
     ]);
-    if (userType) this.onboardingService.changeUserType(userType);
     if (authUrls && Object.keys(authUrls).length) this.authUrls = authUrls;
     if (windows && windows.length) this.windows = windows;
     if (fiatSymbol) this.setFiatSymbol(fiatSymbol);

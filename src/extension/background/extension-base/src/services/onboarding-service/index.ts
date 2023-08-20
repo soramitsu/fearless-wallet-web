@@ -5,29 +5,33 @@ import type { OnBoardingStoriesLocales } from '@/interfaces';
 
 export default class OnboardingService {
   private userType: UserType = 'new';
-  public isOnboardingRequired = false;
+  public isRequired = false;
+  public seen = false;
+  private defaultLocale = 'en-EN';
   private stories: OnBoardingStoriesLocales = {};
-  private appVersion: string;
-
-  constructor() {
-    this.appVersion = chrome.runtime.getManifest().version;
-  }
 
   get user() {
     return this.userType;
   }
 
   async init(): Promise<void> {
-    const { appVersion, stories } = onboardingMocks;
+    const { onboarding } = await storage.get(['onboarding']);
 
-    this.isOnboardingRequired = appVersion === this.appVersion;
+    if (onboarding) {
+      this.isRequired = onboarding.isRequired;
+      this.changeUserType(onboarding.user);
+    }
 
-    this.stories = stories;
+    this.stories = onboardingMocks;
+
+    const userStories = onboardingMocks[this.defaultLocale][this.userType];
+
+    if (userStories.length) this.isRequired = true;
   }
 
   getStories(): GetStoriesResponse {
     return {
-      user: this.userType,
+      userType: this.userType,
       stories: this.stories,
     };
   }
@@ -35,6 +39,17 @@ export default class OnboardingService {
   changeUserType(type: UserType) {
     this.userType = type;
 
-    storage.set({ userType: type });
+    this.updateStorage();
+  }
+
+  updateStorage() {
+    storage.set({ onboarding: { user: this.userType, isRequired: this.isRequired, seen: this.seen } });
+  }
+
+  setSeen() {
+    this.isRequired = false;
+    this.seen = true;
+
+    this.updateStorage();
   }
 }

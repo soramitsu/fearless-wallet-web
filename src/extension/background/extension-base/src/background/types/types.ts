@@ -854,6 +854,11 @@ export interface IState {
   transaction: Record<string, TransactionHistoryItem[]>;
   addressBook: AddressBook;
   userType: UserType;
+  onboarding: {
+    user: UserType;
+    isRequired: boolean;
+    seen: boolean;
+  };
 }
 
 export interface GoogleFileId {

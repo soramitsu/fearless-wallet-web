@@ -1,13 +1,13 @@
 <template>
   <Fragment>
     <div class="onboarding">
-      <OnboardingStory />
+      <OnboardingStory v-if="currentStory" :story="currentStory" />
 
-      <StoryCounter :count="3" :activeIndex="1" />
+      <StoryCounter :count="storiesLength" :activeIndex="activeStory" />
 
       <div class="controls">
-        <BorderButton text="Skip" />
-        <Button class="button__continue" text="Next" />
+        <BorderButton text="Skip" @click="onSkip" />
+        <Button class="button__continue" text="Next" @click="onContinue" />
       </div>
     </div>
   </Fragment>
@@ -16,9 +16,10 @@
 import { Component, Vue } from 'vue-property-decorator';
 import OnboardingStory from './OnboardingStory.vue';
 import StoryCounter from './StoryCounter.vue';
-
 import { Components } from '@/router/routes';
 import { OnboardingStories } from '@/interfaces/ui';
+import { getOnboardingStories, setOnboardingSeen } from '@/extension/messaging';
+
 @Component({
   components: {
     OnboardingStory,
@@ -26,25 +27,45 @@ import { OnboardingStories } from '@/interfaces/ui';
   },
 })
 export default class Onboarding extends Vue {
-  stories: OnboardingStories = [
-    {
-      title: 'Story title',
-      description:
-        'All your assets available within your desktop, quickly access your assets on any parachain or solochain with a few clicks',
-      image: 'https://cdn.elearningindustry.com/wp-content/uploads/2023/01/Pocket-Guide-For-Onboarding-New-Hires.jpg',
-    },
-  ];
-  activeStory = 0;
+  stories: OnboardingStories = [];
+  activeStory = 1;
+
+  get storiesLength() {
+    return this.stories.length;
+  }
+
+  get currentStory() {
+    return this.stories[this.activeStory - 1];
+  }
+
+  async mounted() {
+    const { stories, userType } = await getOnboardingStories();
+
+    const fallbackLocale = this.$i18n.fallbackLocale.toString();
+    const currentLocale = this.$i18n.locale;
+
+    const localizedStories = stories[currentLocale] ?? stories[fallbackLocale];
+
+    this.stories = localizedStories[userType];
+  }
 
   onSkip() {
-    this.$router.push(Components.Welcome);
+    this.completeOnboarding();
   }
 
   onContinue() {
+    if (this.storiesLength === this.activeStory - 1) {
+      this.completeOnboarding();
+
+      return;
+    }
+
     this.activeStory += 1;
   }
-  async mounted() {
-    // this.stories = onboardingMocks[this.$i18n.locale] ?? onboardingMocks['en-EN'];
+
+  completeOnboarding() {
+    setOnboardingSeen();
+    this.$router.push(Components.Welcome);
   }
 }
 </script>

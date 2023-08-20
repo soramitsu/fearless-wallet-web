@@ -1,3 +1,4 @@
+import { GetStoriesResponse } from '../../services/onboarding-service/types';
 import type { NetworkJson, RequestTransactionHistoryAdd, TransactionHistoryItemType } from '@extension-base/types';
 import type {
   InjectedAccount,
@@ -100,7 +101,6 @@ import type {
   SignerPayloadJSON,
   SoraFees,
   SignerPayloadRaw,
-  OnboardingStories,
 } from '@/interfaces';
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
@@ -208,10 +208,11 @@ export interface RequestSignatures {
   'pri(price.get.price)': [RequestPrice, PriceJson];
   'pri(price.get.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];
   'pri(soraCard.token)': [RequestAuthorizeSubscribe, boolean, string];
+
   //OnBoarding
   'pri(onboarding.isRequired)': [null, boolean];
-  'pri(onboarding.get.stories)': [null, OnboardingStories];
-  'pri(onboarding.seen)': [null, null];
+  'pri(onboarding.get.stories)': [null, GetStoriesResponse];
+  'pri(onboarding.seen)': [null, void];
 
   // public/external requests, i.e. from a page
   'pub(soraCard.token)': [string, null];

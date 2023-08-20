@@ -227,8 +227,6 @@ const routes: Array<RouteConfig> = [
       },
     ],
     beforeEnter: (to, from, next) => {
-      next({ name: Components.Onboarding });
-
       if (!haveSelectedWallet()) next({ name: Components.Welcome });
       else next();
     },

@@ -19,7 +19,4 @@ export type OnBoardingStoriesLocales = {
   [key: string]: OnbordingType<OnboardingStories>;
 };
 
-export type OnboardingRequestResponse = {
-  appVersion: string;
-  stories: OnBoardingStoriesLocales;
-};
+export type OnboardingRequestResponse = OnBoardingStoriesLocales;

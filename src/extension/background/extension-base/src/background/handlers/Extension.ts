@@ -38,6 +38,7 @@ import {
   isRequireSubstrateAPI,
 } from '@extension-base/background/utils/utils';
 
+import { GetStoriesResponse } from '../../services/onboarding-service/types';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -1330,6 +1331,18 @@ export default class Extension extends FWExtensionBase {
     return this.state.approvePolkaswap(authorizedAccounts);
   }
 
+  isOnboardingRequired() {
+    return this.state.onboardingService.isRequired;
+  }
+
+  setOnboardingSeen() {
+    this.state.onboardingService.setSeen();
+  }
+
+  getOnboaringStories(): GetStoriesResponse {
+    return this.state.onboardingService.getStories();
+  }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -1572,6 +1585,16 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(transaction.history.get.subscription)':
         return this.subscribeHistory(id, port);
+
+      //OnBoarding
+      case 'pri(onboarding.get.stories)':
+        return this.getOnboaringStories();
+
+      case 'pri(onboarding.seen)':
+        return this.setOnboardingSeen();
+
+      case 'pri(onboarding.isRequired)':
+        return this.isOnboardingRequired();
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

@@ -1,13 +1,20 @@
 <template>
   <Fragment>
     <div class="onboarding">
-      <OnboardingStory v-if="currentStory" :story="currentStory" />
+      <template v-if="showStartingScreen">
+        <img class="onboarding__logo" src="@/assets/fearless-logo-animated.gif" alt="fearless-logo" />
+        <h1 class="onboarding__header">The DeFi Wallet for the <span class="onboarding__header--red">Future</span></h1>
+      </template>
 
-      <StoryCounter :count="storiesLength" :activeIndex="activeStory" />
+      <template v-else>
+        <OnboardingStory v-if="currentStory" :story="currentStory" />
 
-      <div class="controls">
-        <BorderButton text="Skip" @click="onSkip" />
-        <Button class="button__continue" text="Next" @click="onContinue" />
+        <StoryCounter :count="storiesLength" :activeIndex="activeStory" />
+      </template>
+
+      <div class="onboarding__controls">
+        <BorderButton v-if="!showStartingScreen" text="Skip" size="big" @click="onSkip" />
+        <Button class="button__primary" size="big" :text="buttonText" @click="onContinue" />
       </div>
     </div>
   </Fragment>
@@ -17,7 +24,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import OnboardingStory from './OnboardingStory.vue';
 import StoryCounter from './StoryCounter.vue';
 import { Components } from '@/router/routes';
-import { OnboardingStories } from '@/interfaces/ui';
+import { OnboardingStories } from '@/interfaces';
 import { getOnboardingStories, setOnboardingSeen } from '@/extension/messaging';
 
 @Component({
@@ -28,10 +35,17 @@ import { getOnboardingStories, setOnboardingSeen } from '@/extension/messaging';
 })
 export default class Onboarding extends Vue {
   stories: OnboardingStories = [];
+  showStartingScreen = true;
   activeStory = 1;
 
   get storiesLength() {
     return this.stories.length;
+  }
+
+  get buttonText() {
+    if (this.showStartingScreen) return 'Start';
+
+    return 'Next';
   }
 
   get currentStory() {
@@ -54,6 +68,12 @@ export default class Onboarding extends Vue {
   }
 
   onContinue() {
+    if (this.showStartingScreen) {
+      this.showStartingScreen = false;
+
+      return;
+    }
+
     if (this.storiesLength === this.activeStory - 1) {
       this.completeOnboarding();
 
@@ -77,14 +97,29 @@ export default class Onboarding extends Vue {
   justify-content: space-between;
   align-items: center;
   height: 100%;
-}
-.controls {
-  display: flex;
-  flex-flow: row nowrap;
-  gap: 5px;
-  width: 100%;
-  .button__continue {
-    flex-grow: 2;
+
+  &__logo {
+    width: 100%;
+  }
+
+  &__header {
+    font-size: 46px;
+    font-weight: 700;
+    letter-spacing: 0.54px;
+
+    &--red {
+      color: #e07;
+    }
+  }
+
+  &__controls {
+    display: flex;
+    flex-flow: row nowrap;
+    gap: 5px;
+    width: 100%;
+    .button__primary {
+      flex-grow: 2;
+    }
   }
 }
 </style>

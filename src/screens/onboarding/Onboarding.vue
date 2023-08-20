@@ -15,12 +15,13 @@
       </template>
 
       <div class="onboarding__controls">
-        <BorderButton v-if="!showStartingScreen" text="Skip" size="big" @click="onSkip" />
-        <Button class="button__primary" size="big" :text="buttonText" @click="onContinue" />
+        <BorderButton v-show="showSkip" text="common.skip" size="big" @click="onSkip" />
+        <Button class="button-main" size="big" :text="buttonText" @click="onContinue" />
       </div>
     </div>
   </Fragment>
 </template>
+
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import OnboardingStory from './OnboardingStory.vue';
@@ -36,21 +37,26 @@ import { getOnboardingStories, setOnboardingSeen } from '@/extension/messaging';
   },
 })
 export default class Onboarding extends Vue {
-  stories: OnboardingStories = [];
-  showStartingScreen = true;
-  activeStory = 1;
   readonly title = {
     first: 'The DeFi Wallet for the',
     last: 'Future',
   };
+  stories: OnboardingStories = [];
+  showStartingScreen = true;
+  activeStory = 1;
+
   get storiesLength() {
     return this.stories.length;
   }
 
-  get buttonText() {
-    if (this.showStartingScreen) return 'Start';
+  get showSkip() {
+    return !this.showStartingScreen;
+  }
 
-    return 'Next';
+  get buttonText() {
+    if (this.showStartingScreen) return 'common.start';
+
+    return 'common.next';
   }
 
   get currentStory() {
@@ -102,6 +108,7 @@ export default class Onboarding extends Vue {
   justify-content: space-between;
   align-items: center;
   height: 100%;
+  gap: 30px;
 
   &__logo {
     width: 100%;
@@ -111,9 +118,10 @@ export default class Onboarding extends Vue {
     font-size: 46px;
     font-weight: 700;
     letter-spacing: 0.54px;
+    margin: 0;
 
     &--red {
-      color: #e07;
+      color: $pink-color;
     }
   }
 
@@ -122,7 +130,8 @@ export default class Onboarding extends Vue {
     flex-flow: row nowrap;
     gap: 5px;
     width: 100%;
-    .button__primary {
+
+    .button-main {
       flex-grow: 2;
     }
   }

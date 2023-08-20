@@ -12,9 +12,7 @@ export default class StoryCounter extends Vue {
   @Prop(Number) count!: number;
 
   activeClass(index: number) {
-    if (this.activeIndex === index) return 'counter--active';
-
-    return '';
+    return this.activeIndex === index ? 'counter--active' : '';
   }
 }
 </script>
@@ -28,10 +26,10 @@ export default class StoryCounter extends Vue {
   width: 22px;
   height: 7px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.3);
+  background: $gray-2-color;
 
   &--active {
-    background: rgba(255, 255, 255, 0.75);
+    background: $default-white;
   }
 }
 </style>

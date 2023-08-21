@@ -85,7 +85,7 @@ export default class Onboarding extends Vue {
       return;
     }
 
-    if (this.storiesLength === this.activeStory - 1) {
+    if (this.storiesLength === this.activeStory) {
       this.completeOnboarding();
 
       return;
@@ -96,7 +96,8 @@ export default class Onboarding extends Vue {
 
   completeOnboarding() {
     setOnboardingSeen();
-    this.$router.push(Components.Welcome);
+
+    this.$router.push(Components.Wallet);
   }
 }
 </script>

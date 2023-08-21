@@ -31,8 +31,8 @@ import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-b
 import { SignerPayloadRaw } from '@polkadot/types/types';
 import { JsonRpcProvider } from 'ethers';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
+import { EventService, SoraCardService, KeyringService, OnboardingService } from '@extension-base/services';
 import { CurrentAccountState } from '../../stores/CurrentAccountStore';
-import OnboardingService from '../../services/onboarding-service';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -72,7 +72,6 @@ import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } fr
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
-import { EventService, SoraCardService, KeyringService } from '@/extension/background/extension-base/src/services';
 import { URLS } from '@/consts/urls';
 import {
   ALL_NETWORKS,

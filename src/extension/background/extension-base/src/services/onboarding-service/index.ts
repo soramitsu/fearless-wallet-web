@@ -1,9 +1,10 @@
 import { storage } from '@extension-base/stores/Storage';
-import { onboardingMocks } from './mocks';
+import { axios } from '../../utils';
+import { ONBOARDING_URL } from '../../const';
 import type { GetStoriesResponse, UserType } from './types';
 import type { OnBoardingStoriesLocales } from '@/interfaces';
 
-export default class OnboardingService {
+export class OnboardingService {
   private userType: UserType = 'new';
   public isRequired = false;
   public seen = false;
@@ -22,9 +23,10 @@ export default class OnboardingService {
       this.changeUserType(onboarding.user);
     }
 
-    this.stories = onboardingMocks;
+    const { data } = await axios.get<OnBoardingStoriesLocales>(ONBOARDING_URL);
+    this.stories = data;
 
-    const userStories = onboardingMocks[this.defaultLocale][this.userType];
+    const userStories = this.stories[this.defaultLocale][this.userType];
 
     if (userStories.length) this.isRequired = true;
   }

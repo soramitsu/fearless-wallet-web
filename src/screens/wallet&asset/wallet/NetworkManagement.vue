@@ -12,7 +12,7 @@
               <div class="unavailable">Network is unavailable</div>
             </div>
 
-            <Button
+            <FButton
               size="mini"
               class="switch-button"
               text="common.resolve"

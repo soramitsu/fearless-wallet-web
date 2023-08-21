@@ -40,7 +40,7 @@
           />
 
           <template v-else-if="step === 1">
-            <SelectInput
+            <FSelectInput
               text="assets.sendButtonText"
               :transferableAmount="transferableSendAmount"
               :value="sendValue"
@@ -53,7 +53,7 @@
               @toggleSelectAssetPopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'send')"
             />
 
-            <SelectInput
+            <FSelectInput
               class="receive-input"
               text="assets.receiveButtonText"
               :transferableAmount="transferableReceiveAmount"
@@ -135,7 +135,7 @@
             <div class="alert-content">
               {{ $t('common.readPolkaswapDisclaimer') }}
 
-              <Button
+              <FButton
                 width="85px"
                 size="mini"
                 fontSize="small"
@@ -148,7 +148,7 @@
           </Alert>
 
           <div class="buttons">
-            <Button
+            <FButton
               v-if="showSettings"
               size="big"
               text="assets.resetToDefault"
@@ -158,7 +158,7 @@
               @click="resetSettings"
             />
 
-            <Button
+            <FButton
               size="big"
               :text="buttonText"
               :disabled="buttonPreviewDisabled"
@@ -170,7 +170,7 @@
       </div>
     </Scroll>
 
-    <SelectPopup
+    <FSelectPopup
       v-if="showSelectPopup"
       placeholder="common.searchAmongAssets"
       verticalPlacement="top"

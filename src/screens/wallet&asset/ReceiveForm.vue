@@ -2,7 +2,7 @@
   <AboveForm header="assets.receiveFunds" :fullScreen="true" :closeHandler="closeForm">
     <div class="receive-form">
       <div>
-        <InputWithIcon
+        <FInputWithIcon
           v-model="selectedNetwork"
           placeholder="assets.network"
           icon="rotate"
@@ -38,13 +38,20 @@
           @click="saveQR"
         />
 
-        <Button size="big" class="button copy-qr" width="260px" text="assets.copyQR" iconName="share" @click="copyQR" />
+        <FButton
+          size="big"
+          class="button copy-qr"
+          width="260px"
+          text="assets.copyQR"
+          iconName="share"
+          @click="copyQR"
+        />
 
         <Tooltip :text="copyQRTooltip" target=".copy-qr" placement="bottom" trigger="click" />
       </div>
     </div>
 
-    <SelectPopup
+    <FSelectPopup
       v-if="showSelectNetworkPopup"
       class="select-network-popup"
       placeholder="common.searchNetwork"

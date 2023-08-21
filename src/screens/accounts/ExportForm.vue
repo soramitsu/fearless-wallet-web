@@ -4,7 +4,7 @@
       <Loader v-if="isLoading" />
       <template v-else>
         <div class="export-content">
-          <Input
+          <FInput
             v-model="exportType"
             placeholder="common.sourceType"
             size="big"
@@ -12,10 +12,10 @@
             :readonly="true"
           />
 
-          <Input v-model="substrateAddress" class="row" size="big" placeholder="Substrate" :readonly="true" />
+          <FInput v-model="substrateAddress" class="row" size="big" placeholder="Substrate" :readonly="true" />
         </div>
 
-        <Button size="big" fontSize="big" width="100%" text="Export" @click="proceed" />
+        <FButton size="big" fontSize="big" width="100%" text="Export" @click="proceed" />
       </template>
     </div>
   </AboveForm>

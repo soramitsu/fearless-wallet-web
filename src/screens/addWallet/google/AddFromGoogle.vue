@@ -13,7 +13,7 @@
     <GoogleWalletsList v-else-if="haveWalletsToImport" :items="files" @getFile="getFile" />
 
     <template v-slot:control>
-      <Button
+      <FButton
         v-if="!isLoading"
         size="big"
         fontSize="big"

@@ -4,7 +4,7 @@
       <div class="column left-column">
         <div class="header">{{ header }}</div>
 
-        <input
+        <FInput
           v-model="amountInternal"
           placeholder="0.00"
           @focus="setFocusValue(true)"

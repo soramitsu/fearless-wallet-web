@@ -1,8 +1,8 @@
 <template>
   <div class="update-accounts">
-    <SelectAuthAccount :selectAll="selectAll" :accounts="state" @onSelectAll="onSelectAll" @onSelect="onSelect" />
+    <FSelectAuthAccount :selectAll="selectAll" :accounts="state" @onSelectAll="onSelectAll" @onSelect="onSelect" />
 
-    <Button class="connect-button" width="100%" size="big" fontSize="big" :text="buttonText" @click="updateAuths" />
+    <FButton class="connect-button" width="100%" size="big" fontSize="big" :text="buttonText" @click="updateAuths" />
   </div>
 </template>
 

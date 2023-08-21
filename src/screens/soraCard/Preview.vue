@@ -73,7 +73,7 @@
     </ContentForm>
 
     <div class="buttons">
-      <Button
+      <FButton
         v-if="!isExtension"
         text="soraCard.haveCard"
         width="49%"
@@ -85,7 +85,7 @@
         @click="haveCard"
       />
 
-      <Button
+      <FButton
         :text="textIssueCardButton"
         :width="widthProceedBtn"
         size="big"

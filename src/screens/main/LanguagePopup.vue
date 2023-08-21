@@ -1,5 +1,5 @@
 <template>
-  <SelectPopup
+  <FSelectPopup
     verticalPlacement="top"
     horizontalPlacement="right"
     headerText="header.settings.language.translated"

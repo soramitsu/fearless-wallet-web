@@ -1,6 +1,6 @@
 <template>
   <div class="search-input-wrapper">
-    <Input v-model="vModel" :placeholder="placeholder" size="small" :style="inputStyle" />
+    <FInput v-model="vModel" :placeholder="placeholder" size="small" :style="inputStyle" />
 
     <SIcon name="basic-search-24" />
   </div>

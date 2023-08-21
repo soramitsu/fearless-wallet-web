@@ -1,7 +1,7 @@
 <template>
   <Popup :headerText="headerText" :showBorder="true" :handlerClose="closePopup" sizeWidth="big">
     <div class="buy-content">
-      <Button
+      <FButton
         v-for="provider in providersFiltered"
         class="provider-button"
         :key="provider"

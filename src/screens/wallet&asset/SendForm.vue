@@ -18,11 +18,11 @@
   >
     <div>
       <div class="row direction-column">
-        <Input v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
+        <FInput v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
 
         <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
 
-        <Input v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
+        <FInput v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
       </div>
 
       <Corners size="big" class="row">

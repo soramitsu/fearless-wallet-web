@@ -1,5 +1,5 @@
 <template>
-  <SelectPopup
+  <FSelectPopup
     class="select-network-popup"
     sizeWidth="big"
     placeholder="common.searchNetwork"

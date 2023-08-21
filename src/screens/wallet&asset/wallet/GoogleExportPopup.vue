@@ -36,7 +36,7 @@
         <span class="descriptions">{{ $t('wallet.googleExportSuccess') }}</span>
       </div>
 
-      <Button
+      <FButton
         v-if="!isUploading"
         text="common.confirm"
         width="100%"

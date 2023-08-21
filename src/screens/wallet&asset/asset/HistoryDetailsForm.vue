@@ -94,7 +94,7 @@
         </div>
       </div>
 
-      <Button size="big" :text="buttonText" @click="openExplorer" />
+      <FButton size="big" :text="buttonText" @click="openExplorer" />
     </div>
 
     <Tooltip text="common.copied" target=".copy" placement="bottom" trigger="click" />

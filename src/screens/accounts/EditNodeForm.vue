@@ -2,9 +2,9 @@
   <AboveForm :fullScreen="true" header="accounts.newNode" :closeHandler="closeForm">
     <div class="add-node-form">
       <div>
-        <Input v-model="networkCharUp" placeholder="accounts.network" size="big" class="row" :readonly="true" />
+        <FInput v-model="networkCharUp" placeholder="accounts.network" size="big" class="row" :readonly="true" />
 
-        <Input v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
+        <FInput v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
 
         <ValidatedInput
           v-model="url"
@@ -16,7 +16,7 @@
         />
       </div>
 
-      <Button size="big" :text="buttonText" :disabled="buttonDisabled" @click="updateNodes" />
+      <FButton size="big" :text="buttonText" :disabled="buttonDisabled" @click="updateNodes" />
     </div>
   </AboveForm>
 </template>

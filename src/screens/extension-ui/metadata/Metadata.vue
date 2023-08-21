@@ -21,7 +21,7 @@
         </div>
       </div>
 
-      <Button width="100%" text="metadata.appAccess" size="big" fontSize="big" @click="onApprove" />
+      <FButton width="100%" text="metadata.appAccess" size="big" fontSize="big" @click="onApprove" />
     </div>
   </AboveForm>
 </template>

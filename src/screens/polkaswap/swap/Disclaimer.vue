@@ -55,7 +55,7 @@
         </div>
       </Scroll>
 
-      <Button v-if="showSwitcher" size="big" text="common.continue" :disabled="buttonDisabled" @click="agree" />
+      <FButton v-if="showSwitcher" size="big" text="common.continue" :disabled="buttonDisabled" @click="agree" />
     </div>
   </AboveForm>
 </template>

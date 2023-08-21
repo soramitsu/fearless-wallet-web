@@ -1,6 +1,6 @@
 <template>
   <div class="wrapper" @click="click">
-    <Input
+    <FInput
       v-model="firstCharToUpVModel"
       size="big"
       class="rotate-input"

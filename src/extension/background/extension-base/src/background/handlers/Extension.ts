@@ -38,7 +38,6 @@ import {
   isRequireSubstrateAPI,
 } from '@extension-base/background/utils/utils';
 
-import { GetStoriesResponse } from '../../services/onboarding-service/types';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -121,6 +120,7 @@ import {
   GoogleAuthTypes,
   ICreateFile,
   IGetFilesResponse,
+  OnboardingStories,
   SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
@@ -1339,8 +1339,8 @@ export default class Extension extends FWExtensionBase {
     this.state.onboardingService.setSeen();
   }
 
-  getOnboaringStories(): GetStoriesResponse {
-    return this.state.onboardingService.getStories();
+  getOnboaringStories(lang: string): OnboardingStories {
+    return this.state.onboardingService.getStories(lang);
   }
 
   async handle<TMessageType extends MessageTypes>(
@@ -1588,7 +1588,7 @@ export default class Extension extends FWExtensionBase {
 
       //OnBoarding
       case 'pri(onboarding.get.stories)':
-        return this.getOnboaringStories();
+        return this.getOnboaringStories(request as string);
 
       case 'pri(onboarding.seen)':
         return this.setOnboardingSeen();

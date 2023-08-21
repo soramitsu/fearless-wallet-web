@@ -64,14 +64,9 @@ export default class Onboarding extends Vue {
   }
 
   async mounted() {
-    const { stories, userType } = await getOnboardingStories();
+    const stories = await getOnboardingStories(this.$i18n.locale);
 
-    const fallbackLocale = this.$i18n.fallbackLocale.toString();
-    const currentLocale = this.$i18n.locale;
-
-    const localizedStories = stories[currentLocale] ?? stories[fallbackLocale];
-
-    this.stories = localizedStories[userType];
+    this.stories = stories;
   }
 
   onSkip() {

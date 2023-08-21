@@ -4,5 +4,4 @@ export type UserType = 'new' | 'regular';
 
 export type GetStoriesResponse = {
   stories: OnBoardingStoriesLocales;
-  userType: UserType;
 };

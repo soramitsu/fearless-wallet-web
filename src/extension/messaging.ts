@@ -2,7 +2,6 @@ import { metadataExpand } from '@polkadot/extension-chains';
 import { selectableNetworks } from '@polkadot/networks';
 import { getId } from '@extension-base/utils/utils';
 import { PORT_EXTENSION } from '@extension-base/defaults';
-import { GetStoriesResponse } from './background/extension-base/src/services/onboarding-service/types';
 import type { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
@@ -57,6 +56,7 @@ import type {
   GoogleAuthTypes,
   ICreateFile,
   IGetFilesResponse,
+  OnboardingStories,
   SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
@@ -547,8 +547,8 @@ export function pingServiceWorker(): Promise<boolean> {
   return sendMessage('pri(app.port.ping)');
 }
 
-export function getOnboardingStories(): Promise<GetStoriesResponse> {
-  return sendMessage('pri(onboarding.get.stories)');
+export function getOnboardingStories(lang: string): Promise<OnboardingStories> {
+  return sendMessage('pri(onboarding.get.stories)', lang);
 }
 
 export function setOnboardingSeen(): Promise<void> {

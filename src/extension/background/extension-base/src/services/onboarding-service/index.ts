@@ -1,8 +1,8 @@
 import { storage } from '@extension-base/stores/Storage';
 import { axios } from '../../utils';
-import { ONBOARDING_URL } from '../../const';
-import type { GetStoriesResponse, UserType } from './types';
-import type { OnBoardingStoriesLocales } from '@/interfaces';
+import { FALLBACK_LANG, ONBOARDING_URL } from '../../const';
+import type { UserType } from './types';
+import type { OnBoardingStoriesLocales, OnboardingStories } from '@/interfaces';
 
 export class OnboardingService {
   private userType: UserType = 'new';
@@ -23,19 +23,26 @@ export class OnboardingService {
       this.changeUserType(onboarding.user);
     }
 
-    const { data } = await axios.get<OnBoardingStoriesLocales>(ONBOARDING_URL);
-    this.stories = data;
+    const res = await axios.get<OnBoardingStoriesLocales>(ONBOARDING_URL).catch(() => {
+      console.info('onboarding fetch error');
+    });
+
+    if (res && res.status === 200) this.stories = res.data;
+    else {
+      this.isRequired = false;
+
+      return;
+    }
 
     const userStories = this.stories[this.defaultLocale][this.userType];
 
     if (userStories.length) this.isRequired = true;
   }
 
-  getStories(): GetStoriesResponse {
-    return {
-      userType: this.userType,
-      stories: this.stories,
-    };
+  getStories(lang: string): OnboardingStories {
+    const localizeStories = this.stories[lang] ?? this.stories[FALLBACK_LANG];
+
+    return localizeStories[this.userType];
   }
 
   changeUserType(type: UserType) {

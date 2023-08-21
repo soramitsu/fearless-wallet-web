@@ -2,6 +2,7 @@
   <Fragment>
     <div class="onboarding">
       <template v-if="showStartingScreen">
+        <link v-for="(story, index) in stories" rel="preload" as="image" :href="story.image" :key="index" />
         <img class="onboarding__logo" src="@/assets/fearless-logo-animated.gif" alt="fearless-logo" />
         <h1 class="onboarding__header">
           {{ title.first }} <span class="onboarding__header--red">{{ title.last }}</span>

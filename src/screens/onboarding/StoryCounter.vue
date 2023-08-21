@@ -1,6 +1,6 @@
 <template>
   <div class="counters">
-    <div v-for="index in count" v-bind:key="index" class="counter" :class="activeClass(index)"></div>
+    <div v-for="index in count" :key="index" class="counter" :class="activeClass(index)"></div>
   </div>
 </template>
 <script lang="ts">

@@ -9,7 +9,7 @@
       </template>
 
       <template v-else>
-        <OnboardingStory v-if="currentStory" :story="currentStory" />
+        <OnboardingStory :story="currentStory" />
 
         <StoryCounter :count="storiesLength" :activeIndex="activeStory" />
       </template>
@@ -26,8 +26,8 @@
 import { Component, Vue } from 'vue-property-decorator';
 import OnboardingStory from './OnboardingStory.vue';
 import StoryCounter from './StoryCounter.vue';
+import type { OnboardingStories } from '@/interfaces';
 import { Components } from '@/router/routes';
-import { OnboardingStories } from '@/interfaces';
 import { getOnboardingStories, setOnboardingSeen } from '@/extension/messaging';
 
 @Component({

@@ -16,6 +16,7 @@ const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue')
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 const Export = () => import('@/screens/accounts/Export.vue');
+const Onboarding = () => import('@/screens/onboarding/Onboarding.vue');
 
 const AssetNetworks = () =>
   import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetNetworks.vue');
@@ -55,6 +56,7 @@ export enum Components {
   NoFound = 'NoFound',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
+  Onboarding = 'Onboarding',
 }
 
 const haveSelectedWallet = () => {
@@ -71,6 +73,11 @@ const routes: Array<RouteConfig> = [
     path: '/welcome',
     name: Components.Welcome,
     component: Welcome,
+  },
+  {
+    path: '/onboarding',
+    name: Components.Onboarding,
+    component: Onboarding,
   },
   {
     path: '*',

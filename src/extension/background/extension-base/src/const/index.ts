@@ -13,3 +13,6 @@ export const IGNORE_GET_SUBSTRATE_FEATURES_LIST: string[] = [
   'bobabase',
   'bobabeam',
 ];
+export const ONBOARDING_URL =
+  'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/appConfigs/onboarding/web.json';
+export const FALLBACK_LANG = 'en-EN';

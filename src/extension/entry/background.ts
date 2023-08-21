@@ -5,6 +5,7 @@ import '@polkadot/extension-inject/crossenv';
 import AccountsStore from '@extension-base/stores/Accounts';
 import { initStorage } from '@extension-base/stores/Storage';
 import { RequestSignatures } from '@extension-base/background/types/messages';
+
 import type { Port, TransportRequestMessage } from '@extension-base/background/types';
 
 async function getActiveTabs() {
@@ -23,12 +24,31 @@ async function getActiveTabs() {
   });
 }
 
-chrome.runtime.onInstalled.addListener(async () => {
+chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === 'update' && state.onboardingService.user === 'new') {
+    state.onboardingService.changeUserType('regular');
+  }
+
   await initStorage();
 
   state.onInstall();
 
   getActiveTabs();
+});
+
+chrome.runtime.onUpdateAvailable.addListener(() => {
+  //for FIREFOX
+  if (chrome.extension.getViews !== undefined) {
+    const windows = chrome.extension.getViews({});
+    // one window = background page => means we can update our extension
+    if (windows.length === 1) chrome.runtime.reload();
+  }
+
+  //TODO we need to move on from "@types/chrome" to "chrome-types" lib do something with beacon-sdk
+  //chrome after v116
+  (chrome.runtime as any).getContexts({}, (vals: Record<string, string>[]) => {
+    if (vals.length === 1) chrome.runtime.reload();
+  });
 });
 
 chrome.runtime.onConnect.addListener((port: Port) => {

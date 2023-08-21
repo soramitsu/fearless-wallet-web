@@ -100,6 +100,7 @@ import type {
   SignerPayloadJSON,
   SoraFees,
   SignerPayloadRaw,
+  OnboardingStories,
 } from '@/interfaces';
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
@@ -207,6 +208,11 @@ export interface RequestSignatures {
   'pri(price.get.price)': [RequestPrice, PriceJson];
   'pri(price.get.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];
   'pri(soraCard.token)': [RequestAuthorizeSubscribe, boolean, string];
+
+  //OnBoarding
+  'pri(onboarding.isRequired)': [null, boolean];
+  'pri(onboarding.get.stories)': [string, OnboardingStories];
+  'pri(onboarding.seen)': [null, void];
 
   // public/external requests, i.e. from a page
   'pub(soraCard.token)': [string, null];

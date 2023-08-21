@@ -140,6 +140,7 @@ import {
   GoogleAuthTypes,
   ICreateFile,
   IGetFilesResponse,
+  OnboardingStories,
   SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
@@ -773,7 +774,7 @@ export default class Extension extends FWExtensionBase {
 
   getToken(): void {
     chrome.identity.getAuthToken({}, (token) => {
-      this.token = token;
+      this.token = token ?? '';
     });
   }
 
@@ -1356,6 +1357,18 @@ export default class Extension extends FWExtensionBase {
     return this.state.approvePolkaswap(authorizedAccounts);
   }
 
+  isOnboardingRequired() {
+    return this.state.onboardingService.isRequired;
+  }
+
+  setOnboardingSeen() {
+    this.state.onboardingService.setSeen();
+  }
+
+  getOnboaringStories(lang: string): OnboardingStories {
+    return this.state.onboardingService.getStories(lang);
+  }
+
   connectWalletConnect(request: RequestConnectWalletConnect) {
     this.state.walletConnectService.addConnection(request.uri);
   }
@@ -1813,6 +1826,16 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(walletConnect.notSupport.reject)':
         return this.rejectWalletConnectNotSupport(request as RequestRejectWalletConnectNotSupport);
+
+      //OnBoarding
+      case 'pri(onboarding.get.stories)':
+        return this.getOnboaringStories(request as string);
+
+      case 'pri(onboarding.seen)':
+        return this.setOnboardingSeen();
+
+      case 'pri(onboarding.isRequired)':
+        return this.isOnboardingRequired();
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

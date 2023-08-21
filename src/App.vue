@@ -10,16 +10,19 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { ALL_NETWORKS } from './consts/networks';
+import { Components } from './router/routes';
 import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
+import { MutationTypes as ExtensionMutationTypes } from '@/store/extension/mutations';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import {
+  isOnboardingRequired,
   pingServiceWorker,
   subscribeAccounts,
   subscribeAddresses,
@@ -49,7 +52,7 @@ export default class App extends Vue {
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: AsyncFn;
   @Action(ExtensionActionTypes.FETCH_FEATURES) fetchFeatures!: AsyncFn;
-
+  @Mutation(ExtensionMutationTypes.SET_ONBOARDING) setOnboarding!: (payload: boolean) => void;
   get includeKeepAlive() {
     const components = ['Main'];
 
@@ -59,8 +62,8 @@ export default class App extends Vue {
   }
 
   async created() {
+    this.setupOnboarding();
     this.onUpdateOnlineStatus();
-
     if (IS_EXTENSION) this.extensionSubscribe();
 
     this.setupWallet();
@@ -71,6 +74,14 @@ export default class App extends Vue {
     this.setupPrice();
     this.setupSWPing();
     this.getUserStatus(); // SORA Card
+  }
+
+  async setupOnboarding() {
+    const isRequired = await isOnboardingRequired();
+
+    if (isRequired) {
+      this.$router.push({ name: Components.Onboarding });
+    }
   }
 
   onUpdateOnlineStatus() {

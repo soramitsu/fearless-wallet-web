@@ -18,6 +18,7 @@ export enum GettersTypes {
   signList = 'signList',
   tabStatus = 'tabStatus',
   features = 'features',
+  onboarding = 'onboarding',
 }
 
 export type Getters = {
@@ -34,6 +35,7 @@ export type Getters = {
     getters?: GetterTree<State, State> & Getters
   ): SignerPayloadJSON | SignerPayloadRaw;
   [GettersTypes.signList](state: State, getters?: GetterTree<State, State> & Getters): SigningRequest[];
+  [GettersTypes.onboarding](state: State, getters?: GetterTree<State, State> & Getters): boolean;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -69,6 +71,9 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.features]({ features }): Nullable<Features> {
     return features;
+  },
+  [GettersTypes.onboarding]({ onboarding }): boolean {
+    return onboarding;
   },
 };
 

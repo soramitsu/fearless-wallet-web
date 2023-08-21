@@ -11,7 +11,7 @@ import { EIP155_SIGNING_METHODS, ResultApproveWalletConnectSession, WalletConnec
 import { convertConnectRequest, convertNotSupportRequest, isSupportWalletConnectChain } from './utils';
 import Eip155Handler from './requestHandlers/Eip155Handler';
 
-export default class WalletConnectService {
+export class WalletConnectService {
   readonly state: State;
   readonly requestService: RequestService;
   readonly eip155RequestHandler: Eip155Handler;

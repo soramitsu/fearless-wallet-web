@@ -223,7 +223,7 @@ export default class GoogleExportPopup extends Vue {
     max-width: 350px;
 
     .s-icon-arrows-arrow-right-24 {
-      color: rgba(255, 255, 255, 0.3);
+      color: $gray-2-color;
       font-size: 30px !important;
       margin: 0 10px;
     }

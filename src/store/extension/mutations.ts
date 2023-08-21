@@ -17,6 +17,7 @@ export enum MutationTypes {
   SET_REQUEST = 'SET_REQUEST',
   SET_TAB_STATUS = 'SET_TAB_STATUS',
   SET_FEATURES = 'SET_FEATURES',
+  SET_ONBOARDING = 'SET_ONBOARDING',
 }
 
 interface SetPayload {
@@ -31,6 +32,7 @@ export type Mutations = {
   [MutationTypes.SET_REQUEST](state: State, payload: SetPayload): void;
   [MutationTypes.SET_TAB_STATUS](state: State, payload: ActiveTabAuthorizeStatus): void;
   [MutationTypes.SET_FEATURES](state: State, features: Features): void;
+  [MutationTypes.SET_ONBOARDING](state: State, payload: boolean): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -68,6 +70,10 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_FEATURES](state, features) {
     state.features = features;
+  },
+
+  [MutationTypes.SET_ONBOARDING](state, payload) {
+    state.onboarding = payload;
   },
 };
 

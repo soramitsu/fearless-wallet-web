@@ -30,7 +30,15 @@ import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-b
 import { SignerPayloadRaw } from '@polkadot/types/types';
 import { JsonRpcProvider } from 'ethers';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
-import WalletConnectService from '@extension-base/services/wallet-connect-service';
+import {
+  EventService,
+  SoraCardService,
+  KeyringService,
+  OnboardingService,
+  WalletConnectService,
+  NetworkService,
+  RequestService,
+} from '@extension-base/services';
 import { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   AuthRequest,
@@ -66,13 +74,6 @@ import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } fr
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
-import {
-  EventService,
-  SoraCardService,
-  KeyringService,
-  NetworkService,
-  RequestService,
-} from '@/extension/background/extension-base/src/services';
 import { URLS } from '@/consts/urls';
 import {
   ALL_NETWORKS,
@@ -161,14 +162,14 @@ export default class State {
   public requestService = new RequestService(this, this.networkService, this.keyringService);
   public walletConnectService = new WalletConnectService(this, this.requestService);
   public soraCardService = new SoraCardService();
-
+  public onboardingService = new OnboardingService();
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }
 
   constructor() {
     this.injectFromStorage();
-
+    this.onboardingService.init();
     this.subscription = new FWSubscription(this);
     this.cron = new FWCron(this, this.subscription);
     this.init();
@@ -262,7 +263,6 @@ export default class State {
         'providers',
         'windows',
       ]);
-
     if (authUrls && Object.keys(authUrls).length) this.authUrls = authUrls;
     if (fiatSymbol) this.setFiatSymbol(fiatSymbol);
     if (selectedNetwork) this.selectedNetwork = selectedNetwork;

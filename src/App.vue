@@ -53,6 +53,7 @@ export default class App extends Vue {
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: AsyncFn;
   @Action(ExtensionActionTypes.FETCH_FEATURES) fetchFeatures!: AsyncFn;
   @Mutation(ExtensionMutationTypes.SET_ONBOARDING) setOnboarding!: (payload: boolean) => void;
+
   get includeKeepAlive() {
     const components = ['Main'];
 
@@ -81,7 +82,9 @@ export default class App extends Vue {
     const isRequired = await isOnboardingRequired();
 
     if (isRequired) {
-      this.$router.push({ name: Components.Onboarding });
+      this.$router.push({ name: Components.Onboarding }).catch((failure) => {
+        console.info(failure);
+      });
     }
   }
 

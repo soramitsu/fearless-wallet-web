@@ -92,7 +92,7 @@ export default class Onboarding extends Vue {
   completeOnboarding() {
     setOnboardingSeen();
 
-    this.$router.push(Components.Wallet);
+    this.$router.push({ name: Components.Wallet });
   }
 }
 </script>

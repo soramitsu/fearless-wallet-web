@@ -70,7 +70,7 @@ const showSoraCard = () => store.getters.features?.fiat?.soraCard;
 
 const routes: Array<RouteConfig> = [
   {
-    path: '/welcome',
+    path: '/',
     name: Components.Welcome,
     component: Welcome,
   },
@@ -78,15 +78,6 @@ const routes: Array<RouteConfig> = [
     path: '/onboarding',
     name: Components.Onboarding,
     component: Onboarding,
-  },
-  {
-    path: '*',
-    name: Components.NoFound,
-    component: Welcome,
-    beforeEnter: (to, from, next) => {
-      if (haveSelectedWallet()) next({ name: Components.Wallet });
-      else next();
-    },
   },
   {
     path: '/google/:access_token',
@@ -147,10 +138,8 @@ const routes: Array<RouteConfig> = [
     component: Main,
     children: [
       {
-        path: '',
-        beforeEnter: (to, from, next) => {
-          next({ name: Components.Wallet });
-        },
+        path: '/',
+        redirect: Components.Wallet,
       },
       {
         path: 'wallet/:access_token?',

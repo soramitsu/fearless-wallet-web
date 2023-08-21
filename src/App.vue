@@ -63,7 +63,6 @@ export default class App extends Vue {
   }
 
   async created() {
-    this.setupOnboarding();
     this.onUpdateOnlineStatus();
     if (IS_EXTENSION) this.extensionSubscribe();
 
@@ -76,6 +75,12 @@ export default class App extends Vue {
     this.setupPrice();
     this.setupSWPing();
     this.getUserStatus(); // SORA Card
+  }
+
+  async mounted() {
+    setTimeout(() => {
+      this.setupOnboarding();
+    }, 0);
   }
 
   async setupOnboarding() {

@@ -71,6 +71,14 @@ const showSoraCard = () => store.getters.features?.fiat?.soraCard;
 const routes: Array<RouteConfig> = [
   {
     path: '/',
+    component: Welcome,
+    beforeEnter: (to, from, next) => {
+      if (haveSelectedWallet()) next({ name: Components.Wallet });
+      else next();
+    },
+  },
+  {
+    path: '/welcome',
     name: Components.Welcome,
     component: Welcome,
   },

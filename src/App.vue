@@ -77,10 +77,8 @@ export default class App extends Vue {
     this.getUserStatus(); // SORA Card
   }
 
-  async mounted() {
-    setTimeout(() => {
-      this.setupOnboarding();
-    }, 0);
+  mounted() {
+    this.setupOnboarding();
   }
 
   async setupOnboarding() {

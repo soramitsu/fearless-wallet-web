@@ -1,3 +1,4 @@
-export * from '@/extension/background/extension-base/src/services/event-service';
-export * from '@/extension/background/extension-base/src/services/keyring-service';
-export * from '@/extension/background/extension-base/src/services/sora-card-service';
+export * from '@extension-base/services/event-service';
+export * from '@extension-base/services/keyring-service';
+export * from '@extension-base/services/sora-card-service';
+export * from '@extension-base/services/onboarding-service';

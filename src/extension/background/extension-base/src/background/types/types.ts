@@ -8,6 +8,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 import MetadataStore from '@extension-base/stores/Metadata';
 import { JsonRpcProvider } from 'ethers';
+import { UserType } from '../../services/onboarding-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
@@ -852,6 +853,12 @@ export interface IState {
   connectedTabsUrl: string[];
   transaction: Record<string, TransactionHistoryItem[]>;
   addressBook: AddressBook;
+  userType: UserType;
+  onboarding: {
+    user: UserType;
+    isRequired: boolean;
+    seen: boolean;
+  };
 }
 
 export interface GoogleFileId {

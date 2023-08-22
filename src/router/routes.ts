@@ -139,9 +139,7 @@ const routes: Array<RouteConfig> = [
     children: [
       {
         path: '/',
-        beforeEnter: (to, from, next) => {
-          next({ name: Components.Wallet });
-        },
+        redirect: { name: Components.Wallet },
       },
       {
         path: 'wallet/:access_token?',

@@ -1,6 +1,6 @@
 <template>
   <div class="story">
-    <img class="story__image" :src="story.image" alt="story-img" />
+    <img :src="story.image" alt="story-img" />
     <h2>{{ story.title }}</h2>
     <p class="story__content">{{ story.description }}</p>
   </div>
@@ -21,15 +21,15 @@ export default class OnboardingStoryCard extends Vue {
   align-items: center;
   gap: 20px;
 
-  &__image {
-    width: 360px;
-    height: 300px;
-  }
-
   &__content {
     max-width: 380px;
     height: 60px;
     flex-shrink: 0;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    color: $default-white;
   }
 }
 </style>

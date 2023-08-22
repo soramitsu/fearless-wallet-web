@@ -5,6 +5,7 @@ import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
+import { isOnboardingRequired } from '@/extension/messaging';
 
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Staking = () => import('@/screens/staking/Staking.vue');
@@ -69,16 +70,6 @@ const haveMetaRequests = () => store.getters.metaRequests.length;
 const showSoraCard = () => store.getters.features?.fiat?.soraCard;
 
 const routes: Array<RouteConfig> = [
-  {
-    path: '',
-    name: Components.Welcome,
-    component: Welcome,
-  },
-  {
-    path: '/',
-    name: Components.Welcome,
-    component: Welcome,
-  },
   {
     path: '/welcome',
     name: Components.Welcome,
@@ -233,8 +224,11 @@ const routes: Array<RouteConfig> = [
   {
     path: '*',
     component: Welcome,
-    beforeEnter: (to, from, next) => {
-      if (haveSelectedWallet()) next({ name: Components.Wallet });
+    beforeEnter: async (to, from, next) => {
+      const isRequired = await isOnboardingRequired();
+
+      if (isRequired) next({ name: Components.Onboarding });
+      else if (haveSelectedWallet()) next({ name: Components.Wallet });
       else next();
     },
   },

@@ -199,6 +199,7 @@ export default class State {
   public soraCardService = new SoraCardService();
   public keyringService = new KeyringService(this.eventService);
   public onboardingService = new OnboardingService();
+
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }

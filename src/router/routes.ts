@@ -70,6 +70,16 @@ const showSoraCard = () => store.getters.features?.fiat?.soraCard;
 
 const routes: Array<RouteConfig> = [
   {
+    path: '',
+    name: Components.Welcome,
+    component: Welcome,
+  },
+  {
+    path: '/',
+    name: Components.Welcome,
+    component: Welcome,
+  },
+  {
     path: '/welcome',
     name: Components.Welcome,
     component: Welcome,

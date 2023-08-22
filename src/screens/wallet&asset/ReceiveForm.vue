@@ -2,7 +2,7 @@
   <AboveForm header="assets.receiveFunds" :fullScreen="true" :closeHandler="closeForm">
     <div class="receive-form">
       <div>
-        <FInputWithIcon
+        <InputWithIcon
           v-model="selectedNetwork"
           placeholder="assets.network"
           icon="rotate"
@@ -51,7 +51,7 @@
       </div>
     </div>
 
-    <FSelectPopup
+    <SelectPopup
       v-if="showSelectNetworkPopup"
       class="select-network-popup"
       placeholder="common.searchNetwork"

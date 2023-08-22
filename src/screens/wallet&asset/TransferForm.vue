@@ -41,7 +41,7 @@
         <div v-else class="transfer-form">
           <div>
             <template v-if="step === 1">
-              <FInputWithIcon
+              <InputWithIcon
                 v-if="isTransfer"
                 v-model="syncedNetwork"
                 class="row"
@@ -60,7 +60,7 @@
                 :readonly="true"
               />
 
-              <FSelectInput
+              <SelectInput
                 class="row"
                 text="assets.amount"
                 :transferableAmount="transferableAmount"
@@ -74,7 +74,7 @@
                 @toggleSelectAssetPopupVisibility="toggleValue('showSelectedAssetPopup')"
               />
 
-              <FInputWithIcon
+              <InputWithIcon
                 v-if="isCrossChain"
                 v-model="syncedDestNet"
                 class="row"
@@ -84,7 +84,7 @@
                 @click="toggleValue('showDestNetPopup')"
               />
 
-              <FInputWithIcon
+              <InputWithIcon
                 v-model="recipientCut"
                 class="row"
                 icon="close"
@@ -139,7 +139,7 @@
       </Scroll>
     </AboveForm>
 
-    <FSelectPopup
+    <SelectPopup
       v-if="showSelectPopup"
       :placeholder="placeholderSelectPopup"
       verticalPlacement="top"

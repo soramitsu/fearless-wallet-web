@@ -13,7 +13,7 @@
           </Alert>
 
           <div class="authorize-account-list">
-            <FSelectAuthAccount
+            <SelectAuthAccount
               :selectAll="selectAll"
               :accounts="state"
               @onSelectAll="onSelectAll"

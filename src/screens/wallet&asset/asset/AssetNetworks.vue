@@ -37,7 +37,7 @@
       </div>
     </ContentForm>
 
-    <FSelectPopup
+    <SelectPopup
       v-if="showSelectNetworkPopup"
       sizeWidth="medium"
       placeholder="common.searchNetwork"

@@ -1,5 +1,5 @@
 <template>
-  <FSelectPopup
+  <SelectPopup
     verticalPlacement="top"
     horizontalPlacement="right"
     placeholder="common.searchCurrency"

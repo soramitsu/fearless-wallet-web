@@ -40,7 +40,7 @@
           />
 
           <template v-else-if="step === 1">
-            <FSelectInput
+            <SelectInput
               text="assets.sendButtonText"
               :transferableAmount="transferableSendAmount"
               :value="sendValue"
@@ -53,7 +53,7 @@
               @toggleSelectAssetPopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'send')"
             />
 
-            <FSelectInput
+            <SelectInput
               class="receive-input"
               text="assets.receiveButtonText"
               :transferableAmount="transferableReceiveAmount"
@@ -170,7 +170,7 @@
       </div>
     </Scroll>
 
-    <FSelectPopup
+    <SelectPopup
       v-if="showSelectPopup"
       placeholder="common.searchAmongAssets"
       verticalPlacement="top"

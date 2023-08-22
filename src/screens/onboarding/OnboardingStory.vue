@@ -25,6 +25,7 @@ export default class OnboardingStoryCard extends Vue {
     max-width: 440px;
     max-height: 300px;
   }
+
   &__title {
     font-family: Unbounded, sans-serif;
     font-size: 24px;

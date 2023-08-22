@@ -16,7 +16,7 @@
       </template>
 
       <div class="onboarding__controls">
-        <BorderButton v-show="showSkip" text="common.skip" size="big" @click="onSkip" />
+        <Button v-show="showSkip" text="common.skip" type="secondary" :border="false" size="big" @click="onSkip" />
         <Button class="button-main" size="big" :text="buttonText" @click="onContinue" />
       </div>
     </div>
@@ -125,7 +125,7 @@ export default class Onboarding extends Vue {
   &__controls {
     display: flex;
     flex-flow: row nowrap;
-    gap: 5px;
+    gap: 10px;
     width: 100%;
 
     .button-main {

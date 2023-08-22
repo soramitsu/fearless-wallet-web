@@ -1,7 +1,7 @@
 <template>
   <div class="story">
-    <img :src="story.image" alt="story-img" />
-    <h2>{{ story.title }}</h2>
+    <img class="story__image" :src="story.image" alt="story-img" />
+    <h2 class="story__title">{{ story.title }}</h2>
     <p class="story__content">{{ story.description }}</p>
   </div>
 </template>
@@ -20,6 +20,16 @@ export default class OnboardingStoryCard extends Vue {
   flex-flow: column;
   align-items: center;
   gap: 20px;
+
+  &__image {
+    max-width: 440px;
+    max-height: 300px;
+  }
+  &__title {
+    font-family: Unbounded, sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+  }
 
   &__content {
     max-width: 380px;

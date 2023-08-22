@@ -2,6 +2,7 @@
   <Fragment>
     <div class="onboarding">
       <template v-if="showStartingScreen">
+        <link v-for="(story, index) in stories" rel="preload" as="image" :href="story.image" :key="index" />
         <img class="onboarding__logo" src="@/assets/fearless-logo-animated.gif" alt="fearless-logo" />
         <h1 class="onboarding__header">
           {{ title.first }} <span class="onboarding__header--red">{{ title.last }}</span>
@@ -15,7 +16,7 @@
       </template>
 
       <div class="onboarding__controls">
-        <BorderButton v-show="showSkip" text="common.skip" size="big" @click="onSkip" />
+        <Button v-show="showSkip" text="common.skip" type="secondary" :border="false" size="big" @click="onSkip" />
         <Button class="button-main" size="big" :text="buttonText" @click="onContinue" />
       </div>
     </div>
@@ -92,7 +93,7 @@ export default class Onboarding extends Vue {
   completeOnboarding() {
     setOnboardingSeen();
 
-    this.$router.push(Components.Wallet);
+    this.$router.push({ name: Components.Wallet });
   }
 }
 </script>
@@ -124,7 +125,7 @@ export default class Onboarding extends Vue {
   &__controls {
     display: flex;
     flex-flow: row nowrap;
-    gap: 5px;
+    gap: 10px;
     width: 100%;
 
     .button-main {

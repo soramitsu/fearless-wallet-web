@@ -144,7 +144,7 @@ export default class Auth extends Vue {
 
       ExtensionController.approveSignSignature(this.request.id, response.blockchainData.signature);
 
-      this.$router.push(Components.Main);
+      this.$router.push({ name: Components.Wallet });
     }
   }
 

@@ -687,7 +687,7 @@ export default class Extension extends FWExtensionBase {
       return true;
     }
 
-    const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
+    const url = `${chrome.runtime.getURL(`popup.html#${path}`)}`;
 
     if (!ALLOWED_PATH.includes(path)) {
       console.error('Not allowed to open the url:', url);

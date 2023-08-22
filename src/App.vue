@@ -34,7 +34,7 @@ import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { IS_EXTENSION } from '@/consts/global';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 
-@Component
+@Component({})
 export default class App extends Vue {
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
@@ -63,7 +63,6 @@ export default class App extends Vue {
   }
 
   async created() {
-    this.setupOnboarding();
     this.onUpdateOnlineStatus();
     if (IS_EXTENSION) this.extensionSubscribe();
 
@@ -77,11 +76,19 @@ export default class App extends Vue {
     this.getUserStatus(); // SORA Card
   }
 
+  mounted() {
+    setTimeout(() => {
+      this.setupOnboarding();
+    }, 100);
+  }
+
   async setupOnboarding() {
     const isRequired = await isOnboardingRequired();
 
     if (isRequired) {
-      this.$router.push({ name: Components.Onboarding });
+      this.$router.push({ name: Components.Onboarding }).catch((failure) => {
+        console.info(failure);
+      });
     }
   }
 

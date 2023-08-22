@@ -27,6 +27,7 @@ async function getActiveTabs() {
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'update' && state.onboardingService.user === 'new') {
     state.onboardingService.changeUserType('regular');
+    state.onboardingService.seen = false;
   }
 
   await initStorage();

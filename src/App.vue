@@ -34,7 +34,7 @@ import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { IS_EXTENSION } from '@/consts/global';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 
-@Component
+@Component({})
 export default class App extends Vue {
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
@@ -78,7 +78,9 @@ export default class App extends Vue {
   }
 
   mounted() {
-    this.setupOnboarding();
+    setTimeout(() => {
+      this.setupOnboarding();
+    }, 100);
   }
 
   async setupOnboarding() {

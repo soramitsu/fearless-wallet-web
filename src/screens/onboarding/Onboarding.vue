@@ -16,8 +16,8 @@
       </template>
 
       <div class="onboarding__controls">
-        <Button v-show="showSkip" text="common.skip" type="secondary" :border="false" size="big" @click="onSkip" />
-        <Button class="button-main" size="big" :text="buttonText" @click="onContinue" />
+        <FButton v-show="showSkip" text="common.skip" type="secondary" :border="false" size="big" @click="onSkip" />
+        <FButton class="button-main" size="big" :text="buttonText" @click="onContinue" />
       </div>
     </div>
   </Fragment>

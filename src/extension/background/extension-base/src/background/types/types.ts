@@ -837,6 +837,9 @@ export interface IState {
     isRequired: boolean;
     seen: boolean;
   };
+  'wc@2:client:0.3//session': Array<unknown>;
+  'wc@2:core:0.3//pairing': Array<unknown>;
+  'wc@2:core:0.3//subscription': Array<unknown>;
 }
 
 export interface GoogleFileId {

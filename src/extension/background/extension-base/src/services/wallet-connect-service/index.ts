@@ -5,6 +5,7 @@ import { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types
 import { getInternalError, getSdkError } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
 import { RequestService } from '..';
+import { storage } from '../../stores/Storage';
 import WalletConnectStorage from './storage';
 import { ALL_WALLET_CONNECT_EVENT, DEFAULT_WALLET_CONNECT_OPTIONS, WALLET_CONNECT_SUPPORTED_METHODS } from './consts';
 import { EIP155_SIGNING_METHODS, ResultApproveWalletConnectSession, WalletConnectSigningMethod } from './types';
@@ -28,17 +29,21 @@ export class WalletConnectService {
     this.initClient();
   }
 
-  get haveData(): boolean {
-    return true;
-    // const sessionStorage = localStorage.getItem('wc@2:client:0.3//session');
-    // const pairingStorage = localStorage.getItem('wc@2:core:0.3//pairing');
-    // const subscriptionStorage = localStorage.getItem('wc@2:core:0.3//subscription');
-    // const sessions: Array<unknown> = sessionStorage ? (JSON.parse(sessionStorage) as Array<unknown>) : [];
-    // const pairings: Array<unknown> = pairingStorage ? (JSON.parse(pairingStorage) as Array<unknown>) : [];
-    // const subscriptions: Array<unknown> = subscriptionStorage
-    //   ? (JSON.parse(subscriptionStorage) as Array<unknown>)
-    //   : [];
-    // return !!sessions.length || !!pairings.length || !!subscriptions.length;
+  async haveData(): Promise<boolean> {
+    const data = await storage.get([
+      'wc@2:client:0.3//session',
+      'wc@2:core:0.3//pairing',
+      'wc@2:core:0.3//subscription',
+    ]);
+
+    const sessionStorage = data['wc@2:client:0.3//session'];
+    const pairingStorage = data['wc@2:core:0.3//pairing'];
+    const subscriptionStorage = data['wc@2:core:0.3//subscription'];
+    const sessions: Array<unknown> = sessionStorage ? sessionStorage : [];
+    const pairings: Array<unknown> = pairingStorage ? pairingStorage : [];
+    const subscriptions: Array<unknown> = subscriptionStorage ? subscriptionStorage : [];
+
+    return !!sessions.length || !!pairings.length || !!subscriptions.length;
   }
 
   public addConnection(uri: string) {
@@ -83,9 +88,9 @@ export class WalletConnectService {
   }
 
   public async connect(uri: string) {
-    if (!this.haveData) {
-      await this.initClient();
-    }
+    const haveData = await this.haveData;
+
+    if (!haveData) await this.initClient();
 
     this.checkClient();
 

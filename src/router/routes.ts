@@ -135,17 +135,6 @@ const routes: Array<RouteConfig> = [
     component: PolkaswapDisclaimer,
   },
   {
-    path: '*',
-    component: Welcome,
-    beforeEnter: async (to, from, next) => {
-      const isRequired = await isOnboardingRequired();
-
-      if (isRequired) next({ name: Components.Onboarding });
-      else if (haveSelectedWallet()) next({ name: Components.Wallet });
-      else next();
-    },
-  },
-  {
     path: '/fearless',
     component: Main,
     children: [
@@ -229,6 +218,17 @@ const routes: Array<RouteConfig> = [
     ],
     beforeEnter: (to, from, next) => {
       if (!haveSelectedWallet()) next({ name: Components.Welcome });
+      else next();
+    },
+  },
+  {
+    path: '*',
+    component: Welcome,
+    beforeEnter: async (to, from, next) => {
+      const isRequired = await isOnboardingRequired();
+
+      if (isRequired) next({ name: Components.Onboarding });
+      else if (haveSelectedWallet()) next({ name: Components.Wallet });
       else next();
     },
   },

@@ -38,8 +38,8 @@
                   :border="false"
                   :iconName="file.isComplete ? 'check' : file.isLoading ? 'loader' : ''"
                   :iconType="file.isLoading ? 'loading' : ''"
-                  :disabled="!file.password.length || file.isLoading || file.isComplete"
-                  :text="file.isLoading || file.isComplete ? '' : 'common.confirm'"
+                  :disabled="isDisabled(file)"
+                  :text="buttonText(file)"
                   @click="onConfirm(index)"
                 />
               </div>
@@ -89,12 +89,21 @@ export default class GoogleWalletsList extends Vue {
     if (this.items[index].isError) this.setItemValue(index, { isError: false });
 
     if (ethJson) await jsonRestore(ethJson, password);
+
     const address = await jsonRestore(json, password);
 
+    await this.setSelectedWallet(address || this.selectedWallet.address);
     this.setItemValue(index, { isComplete: true, isLoading: false });
-    this.setSelectedWallet(address || this.selectedWallet.address);
 
     return true;
+  }
+
+  buttonText(file: FilesState) {
+    return file.isLoading || file.isComplete ? '' : 'common.confirm';
+  }
+
+  isDisabled(file: FilesState) {
+    return !file.password || !file.password.length || file.isLoading || file.isComplete;
   }
 
   onSelect(value: boolean, index: number) {

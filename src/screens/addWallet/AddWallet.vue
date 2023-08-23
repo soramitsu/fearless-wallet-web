@@ -153,14 +153,7 @@ import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
-import {
-  createAccountSuri,
-  forgetAccount,
-  updatePairMeta,
-  validatePassword,
-  windowOpen,
-  updateCurrentAccountAddress,
-} from '@/extension/messaging';
+import { createAccountSuri, forgetAccount, updatePairMeta, validatePassword, windowOpen } from '@/extension/messaging';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
@@ -407,13 +400,11 @@ export default class AddWallet extends Vue {
     if (step === 5) {
       this.isLoading = true;
 
-      const address = await this.saveKeypair();
-
-      updateCurrentAccountAddress(address);
+      await this.saveKeypair();
 
       this.isLoading = false;
 
-      if (this.isOnlyEthereumAccountFlow) this.$router.push({ name: Components.Wallet });
+      if (this.isOnlyEthereumAccountFlow) this.$router.push({ name: Components.Wallet }).catch(() => {});
 
       return;
     }

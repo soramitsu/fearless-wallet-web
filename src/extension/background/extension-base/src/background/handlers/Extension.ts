@@ -1365,7 +1365,7 @@ export default class Extension extends FWExtensionBase {
     this.state.onboardingService.setSeen();
   }
 
-  getOnboaringStories(lang: string): OnboardingStories {
+  getOnboardingStories(lang: string): OnboardingStories {
     return this.state.onboardingService.getStories(lang);
   }
 
@@ -1829,7 +1829,7 @@ export default class Extension extends FWExtensionBase {
 
       //OnBoarding
       case 'pri(onboarding.get.stories)':
-        return this.getOnboaringStories(request as string);
+        return this.getOnboardingStories(request as string);
 
       case 'pri(onboarding.seen)':
         return this.setOnboardingSeen();

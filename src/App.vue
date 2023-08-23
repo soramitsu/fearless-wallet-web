@@ -10,7 +10,6 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { ALL_NETWORKS } from './consts/networks';
-import { Components } from './router/routes';
 import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
@@ -22,7 +21,6 @@ import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import {
-  isOnboardingRequired,
   pingServiceWorker,
   subscribeAccounts,
   subscribeAddresses,
@@ -76,20 +74,12 @@ export default class App extends Vue {
     this.getUserStatus(); // SORA Card
   }
 
-  mounted() {
-    setTimeout(() => {
-      this.setupOnboarding();
-    }, 100);
-  }
-
-  async setupOnboarding() {
-    const isRequired = await isOnboardingRequired();
-
-    if (isRequired) {
-      this.$router.push({ name: Components.Onboarding }).catch((failure) => {
-        console.info(failure);
-      });
-    }
+  unregisterInactiveWorkers() {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const registration of registrations) {
+        if (registration.active?.state !== 'activated') registration.unregister();
+      }
+    });
   }
 
   onUpdateOnlineStatus() {

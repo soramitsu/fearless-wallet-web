@@ -163,6 +163,7 @@ export default class State {
   public walletConnectService = new WalletConnectService(this, this.requestService);
   public soraCardService = new SoraCardService();
   public onboardingService = new OnboardingService();
+
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }

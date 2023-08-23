@@ -135,7 +135,7 @@
             <div class="alert-content">
               {{ $t('common.readPolkaswapDisclaimer') }}
 
-              <Button
+              <FButton
                 width="85px"
                 size="mini"
                 fontSize="small"
@@ -148,7 +148,7 @@
           </Alert>
 
           <div class="buttons">
-            <Button
+            <FButton
               v-if="showSettings"
               size="big"
               text="assets.resetToDefault"
@@ -158,7 +158,7 @@
               @click="resetSettings"
             />
 
-            <Button
+            <FButton
               size="big"
               :text="buttonText"
               :disabled="buttonPreviewDisabled"

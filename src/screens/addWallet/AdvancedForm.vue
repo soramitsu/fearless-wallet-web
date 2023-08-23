@@ -5,7 +5,7 @@
     :closeHandler="closeAdvancedForm"
     :saveChanges="saveChanges"
   >
-    <Select
+    <FSelect
       v-model="substrateKeypairType"
       :options="optionsSubstrateKeyPair"
       placeholder="addWallet.substrateCryptoType"
@@ -13,12 +13,12 @@
       class="row"
     />
 
-    <Input v-model="substrateDP" class="row" placeholder="addWallet.substrateDP" size="big" />
+    <FInput v-model="substrateDP" class="row" placeholder="addWallet.substrateDP" size="big" />
 
     <div class="example-prompt">{{ $t('addWallet.example', { example }) }}</div>
 
     <template v-if="showEthereumDP">
-      <Input
+      <FInput
         v-model="ethereumKeypairType"
         class="row"
         placeholder="addWallet.ethereumCryptoType"
@@ -26,7 +26,7 @@
         size="big"
       />
 
-      <Input v-model="ethereumDP" class="row" placeholder="addWallet.ethereumDP" :maxlength="25" size="big" />
+      <FInput v-model="ethereumDP" class="row" placeholder="addWallet.ethereumDP" :maxlength="25" size="big" />
 
       <div class="example-prompt">{{ $t('addWallet.example', { example: ethereumDefaultDerivationPath }) }}</div>
     </template>

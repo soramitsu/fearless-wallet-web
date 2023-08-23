@@ -15,7 +15,7 @@
     </ContentForm>
 
     <div class="buttons">
-      <Button
+      <FButton
         text="common.close"
         width="49%"
         size="big"
@@ -26,7 +26,7 @@
         @click="close"
       />
 
-      <Button
+      <FButton
         v-if="showSecondButton"
         :text="textRetryBtn"
         width="49%"

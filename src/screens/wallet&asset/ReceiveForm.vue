@@ -38,7 +38,14 @@
           @click="saveQR"
         />
 
-        <Button size="big" class="button copy-qr" width="260px" text="assets.copyQR" iconName="share" @click="copyQR" />
+        <FButton
+          size="big"
+          class="button copy-qr"
+          width="260px"
+          text="assets.copyQR"
+          iconName="share"
+          @click="copyQR"
+        />
 
         <Tooltip :text="copyQRTooltip" target=".copy-qr" placement="bottom" trigger="click" />
       </div>

@@ -51,7 +51,7 @@
                 @click="toggleValue('showSelectNetworkPopup')"
               />
 
-              <Input
+              <FInput
                 v-else
                 v-model="originNetwork"
                 class="row"
@@ -126,7 +126,7 @@
             <slot v-else-if="step === 2"></slot>
           </div>
 
-          <Button
+          <FButton
             size="big"
             class="button"
             :disabled="buttonDisabled"

@@ -1050,15 +1050,26 @@ export default class Extension extends FWExtensionBase {
 
   private async checkTransfer({
     from,
-    networkKey,
+    networkKey: givenNetwork,
     to,
     assetId,
     relayChain,
     amount,
     password,
   }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
+    const networkKey = this.state.getNetworkByKey(givenNetwork)?.name;
+
     const [errors, , tokenInfo] = this.validateTransfer(assetId, from, password);
     const warnings: BasicTxWarning[] = [];
+    if (networkKey === undefined)
+      return {
+        errors,
+        warnings,
+        destEstimateFee: undefined,
+        fromAccountFree: '0',
+        estimateFee: '0',
+      };
+
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
 
     const address = getSubstrateAddressByEthAddress(from);

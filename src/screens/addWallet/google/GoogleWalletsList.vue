@@ -31,7 +31,7 @@
                   :isError="file.isError"
                 />
 
-                <Button
+                <FButton
                   class="button__confirm"
                   type="primary"
                   size="big"

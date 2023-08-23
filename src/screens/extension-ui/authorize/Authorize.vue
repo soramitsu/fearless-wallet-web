@@ -23,14 +23,14 @@
         </div>
 
         <div class="authorize__control">
-          <Button width="100%" text="metadata.appAccess" size="big" fontSize="big" @click="onApprove" />
+          <FButton width="100%" text="metadata.appAccess" size="big" fontSize="big" @click="onApprove" />
         </div>
       </template>
 
       <template v-else>
         <Alert :message="noAccountsMessage" />
 
-        <Button width="100%" text="common.understood" size="big" fontSize="big" @click="onReject" />
+        <FButton width="100%" text="common.understood" size="big" fontSize="big" @click="onReject" />
       </template>
     </div>
   </AboveForm>

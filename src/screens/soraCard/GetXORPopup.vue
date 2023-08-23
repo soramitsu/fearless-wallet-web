@@ -3,9 +3,9 @@
     <div class="content">
       <div>{{ $t('soraCard.getXORLabel') }}</div>
 
-      <Button v-if="!isExtension" width="100%" text="soraCard.buyXORWithEUR" class="button" @click="buyXORwithEUR" />
+      <FButton v-if="!isExtension" width="100%" text="soraCard.buyXORWithEUR" class="button" @click="buyXORwithEUR" />
 
-      <Button width="100%" text="soraCard.swapXOR" class="button" @click="openSoraSwap" />
+      <FButton width="100%" text="soraCard.swapXOR" class="button" @click="openSoraSwap" />
 
       <BorderButton width="100%" text="common.cancel" class="button" @click="handlerClose" />
     </div>

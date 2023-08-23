@@ -3,7 +3,7 @@
     <div v-if="isMobileSignRequired" class="transaction-mobile">
       <Loader />
 
-      <Button
+      <FButton
         text="common.cancel"
         width="100%"
         size="medium"
@@ -32,7 +32,7 @@
         />
       </div>
 
-      <Button size="big" class="button" text="assets.signTransaction" @click="onSign" />
+      <FButton size="big" class="button" text="assets.signTransaction" @click="onSign" />
     </div>
   </AboveForm>
 </template>

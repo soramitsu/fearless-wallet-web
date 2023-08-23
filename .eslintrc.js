@@ -51,6 +51,7 @@ module.exports = {
       { blankLine: 'always', prev: 'block', next: '*' },
       { blankLine: 'always', prev: '*', next: 'block' },
     ],
+    'vue/multi-word-component-names': ['warn'],
   },
   overrides: [
     {

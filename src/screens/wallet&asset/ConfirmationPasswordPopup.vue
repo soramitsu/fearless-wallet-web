@@ -24,7 +24,7 @@
           <Checkbox v-model="isSavePass" size="medium" :label="$t(min15Label)" />
         </div>
 
-        <Button
+        <FButton
           text="common.continue"
           width="100%"
           size="medium"

@@ -1,6 +1,6 @@
 <template>
   <div class="validate-input">
-    <Input
+    <FInput
       v-model="vModel"
       ref="input"
       :size="size"
@@ -20,13 +20,10 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, VModel, Ref } from 'vue-property-decorator';
-import Input from './Input.vue';
-
+import FInput from '@/components/FInput.vue';
 type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
 
-@Component({
-  components: { Input },
-})
+@Component({})
 export default class ValidatedInput extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) errorDescriptions!: string;
@@ -39,7 +36,7 @@ export default class ValidatedInput extends Vue {
   @Prop({ default: 'text' }) type!: Type;
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: 'big' }) size!: string;
-  @Ref('input') readonly inputComponent!: Input;
+  @Ref('input') readonly inputComponent!: FInput;
 
   get showErrorText() {
     return this.isError && this.errorDescriptions;

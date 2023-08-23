@@ -1,6 +1,6 @@
 <template>
   <div class="import-wallet">
-    <Select
+    <FSelect
       v-model="typeImport"
       placeholder="common.sourceType"
       size="big"
@@ -9,7 +9,7 @@
       :disabled="disabledSelect"
     />
 
-    <Input
+    <FInput
       v-if="notJsonImport"
       v-model="inputValue"
       ref="valueInput"
@@ -23,7 +23,7 @@
 
     <template v-else>
       <div class="row">
-        <Input
+        <FInput
           v-model="inputValue"
           type="text-file"
           size="big"
@@ -32,7 +32,13 @@
           :readonly="true"
         />
 
-        <Input v-model="syncedPasswordJson" size="big" placeholder="common.password" class="row" :showPassword="true" />
+        <FInput
+          v-model="syncedPasswordJson"
+          size="big"
+          placeholder="common.password"
+          class="row"
+          :showPassword="true"
+        />
       </div>
     </template>
 
@@ -126,11 +132,14 @@ export default class ImportWallet extends Vue {
   @Watch('typeImport')
   onTypeImportChanged() {
     this.$emit('reset');
-
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     this.$nextTick(() => this.valueInputComponent?.input.focus());
   }
 
   mounted() {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     this.valueInputComponent.input.focus();
   }
 

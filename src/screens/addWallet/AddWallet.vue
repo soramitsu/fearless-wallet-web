@@ -78,7 +78,7 @@
         <FinishForm v-if="showFinishForm" />
       </div>
       <div class="controls">
-        <Button
+        <FButton
           v-if="confirmMnemonicStep"
           size="big"
           fontSize="big"
@@ -89,7 +89,7 @@
           @click="resetAll"
         />
 
-        <Button
+        <FButton
           v-if="confirmMnemonicStep"
           size="big"
           fontSize="big"
@@ -100,7 +100,7 @@
           @click="skipStep"
         />
 
-        <Button
+        <FButton
           v-if="!showAdvancedForm"
           size="big"
           fontSize="big"

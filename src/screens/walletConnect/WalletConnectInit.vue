@@ -1,8 +1,10 @@
 <template>
   <AboveForm :fullScreen="true" :showBackIcon="true" :closeHandler="onBack" :handlerBack="onBack">
-    <Input v-model="uri" :placeholder="placeholder" size="small" />
+    <div class="wc-init-form">
+      <Input v-model="uri" :placeholder="placeholder" size="big" />
 
-    <Button text="Submit" width="48%" size="big" fontSize="big" type="secondary" :border="false" @click="onSubmit" />
+      <Button text="Submit" size="big" fontSize="big" :border="false" @click="onSubmit" />
+    </div>
   </AboveForm>
 </template>
 
@@ -31,4 +33,11 @@ export default class WalletConnectInit extends Vue {
   }
 }
 </script>
-<style></style>
+<style lang="scss" scoped>
+.wc-init-form {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  height: 100%;
+}
+</style>

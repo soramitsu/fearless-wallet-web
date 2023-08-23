@@ -1,36 +1,35 @@
 <template>
   <AboveForm :fullScreen="true" :showBackIcon="true" :closeHandler="onBack" :handlerBack="onBack">
     <div class="wc-init-form">
-      <Input v-model="uri" :placeholder="placeholder" size="big" />
+      <FInput v-model="uri" :placeholder="placeholder" size="big" />
 
-      <Button text="Submit" size="big" fontSize="big" :border="false" @click="onSubmit" />
+      <FButton text="Submit" size="big" fontSize="big" :border="false" @click="onSubmit" />
     </div>
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import { newConnection } from '@/extension/messaging';
+<script lang="ts" setup>
+import { onMounted } from 'vue';
+import { useRouter } from 'vue-router/composables';
 import { getClipboard } from '@/helpers';
+import { newConnection } from '@/extension/messaging';
 
-@Component({})
-export default class WalletConnectInit extends Vue {
-  placeholder = 'insert wallet connect url';
-  uri = '';
+const router = useRouter();
+const placeholder = 'insert wallet connect url';
+let uri = '';
 
-  async mounted() {
-    const clipboard = getClipboard();
+onMounted(() => {
+  const clipboard = getClipboard();
 
-    if (clipboard.startsWith('wc:')) this.uri = clipboard;
-  }
+  if (clipboard.startsWith('wc:')) uri = clipboard;
+});
 
-  onSubmit() {
-    newConnection({ uri: this.uri });
-  }
+function onSubmit() {
+  newConnection({ uri });
+}
 
-  onBack() {
-    this.$router.back();
-  }
+function onBack() {
+  router.back();
 }
 </script>
 <style lang="scss" scoped>

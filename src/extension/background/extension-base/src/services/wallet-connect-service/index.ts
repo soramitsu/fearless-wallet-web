@@ -26,7 +26,7 @@ export class WalletConnectService {
     this.requestService = requestService;
     this.eip155RequestHandler = new Eip155Handler(this.state, this);
 
-    this.initClient();
+    this.initClient().catch(console.error);
   }
 
   async haveData(): Promise<boolean> {
@@ -34,16 +34,19 @@ export class WalletConnectService {
       'wc@2:client:0.3//session',
       'wc@2:core:0.3//pairing',
       'wc@2:core:0.3//subscription',
+      'wc@2:core:0.3//history',
     ]);
 
     const sessionStorage = data['wc@2:client:0.3//session'];
+    const historyStorage = data['wc@2:core:0.3//history'];
     const pairingStorage = data['wc@2:core:0.3//pairing'];
     const subscriptionStorage = data['wc@2:core:0.3//subscription'];
     const sessions: Array<unknown> = sessionStorage ? sessionStorage : [];
     const pairings: Array<unknown> = pairingStorage ? pairingStorage : [];
     const subscriptions: Array<unknown> = subscriptionStorage ? subscriptionStorage : [];
+    const history: Array<unknown> = historyStorage ? historyStorage : [];
 
-    return !!sessions.length || !!pairings.length || !!subscriptions.length;
+    return !!sessions.length || !!pairings.length || !!subscriptions.length || !!history.length;
   }
 
   public addConnection(uri: string) {
@@ -68,11 +71,19 @@ export class WalletConnectService {
     }
   }
 
-  public async initClient() {
-    this.client = await WalletConnect.init({
-      ...DEFAULT_WALLET_CONNECT_OPTIONS,
-      storage: new WalletConnectStorage(),
-    });
+  async initClient(force?: boolean) {
+    this.removeListener();
+    const isHaveData = await this.haveData();
+
+    if (force || isHaveData) {
+      this.client = await WalletConnect.init({
+        ...DEFAULT_WALLET_CONNECT_OPTIONS,
+        storage: new WalletConnectStorage(),
+      });
+    }
+
+    this.updateSessions();
+    this.createListener();
   }
 
   public async responseRequest(response: EngineTypes.RespondParams) {
@@ -88,9 +99,9 @@ export class WalletConnectService {
   }
 
   public async connect(uri: string) {
-    const haveData = await this.haveData;
+    const haveData = await this.haveData();
 
-    if (!haveData) await this.initClient();
+    if (!haveData) await this.initClient(true);
 
     this.checkClient();
 
@@ -211,8 +222,6 @@ export class WalletConnectService {
 
   // Remove old listener
   removeListener() {
-    this.checkClient();
-
     ALL_WALLET_CONNECT_EVENT.forEach((event) => {
       this.client?.removeAllListeners(event);
     });

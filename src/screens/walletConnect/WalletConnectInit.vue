@@ -9,29 +9,31 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import { getClipboard } from '@/helpers';
 import { newConnection } from '@/extension/messaging';
 
 const router = useRouter();
+
 const placeholder = 'insert wallet connect url';
-let uri = '';
+const uri = ref('');
 
 onMounted(() => {
   const clipboard = getClipboard();
 
-  if (clipboard.startsWith('wc:')) uri = clipboard;
+  if (clipboard.startsWith('wc:')) uri.value = clipboard;
 });
 
 function onSubmit() {
-  newConnection({ uri });
+  newConnection({ uri: uri.value });
 }
 
 function onBack() {
   router.back();
 }
 </script>
+
 <style lang="scss" scoped>
 .wc-init-form {
   display: flex;

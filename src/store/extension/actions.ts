@@ -254,6 +254,7 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.SUBSCRIBE_WC_REQUESTS]() {
     const callback = (requests: SessionTypes.Struct[] | null) => {
+      console.info(requests, 'WC requests');
       if (requests === null) return;
 
       if (requests.length)

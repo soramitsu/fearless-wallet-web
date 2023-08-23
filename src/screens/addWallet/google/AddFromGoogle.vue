@@ -87,8 +87,12 @@ export default class AddFromGoogle extends Vue {
     return this.files.some((el) => el.active && !el.isComplete);
   }
 
+  get importAcquired() {
+    return this.files.every((el) => !el.isComplete);
+  }
+
   get isAllowedContinue() {
-    return this.isImportInProgress || this.isActiveNotComplete;
+    return this.isImportInProgress || this.isActiveNotComplete || this.importAcquired;
   }
 
   get header() {

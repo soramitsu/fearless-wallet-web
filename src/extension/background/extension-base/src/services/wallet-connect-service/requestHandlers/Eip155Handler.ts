@@ -3,7 +3,7 @@ import { SignClientTypes } from '@walletconnect/types';
 import { getSdkError } from '@walletconnect/utils';
 import { isSameAddress } from '@extension-base/utils';
 import State from '@extension-base/background/handlers/State';
-import WalletConnectService from '..';
+import { WalletConnectService } from '..';
 import { EIP155_SIGNING_METHODS } from '../consts';
 import { getEip155MessageAddress, getWCId, parseRequestParams } from '../utils';
 

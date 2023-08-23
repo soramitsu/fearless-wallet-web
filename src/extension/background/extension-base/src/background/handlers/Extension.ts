@@ -40,6 +40,8 @@ import {
   uniqueStringArray,
 } from '@extension-base/background/utils/utils';
 
+import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
+import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { ProposalTypes, SessionTypes } from '@walletconnect/types';
 import {
   RequestApproveConnectWalletSession,
@@ -144,7 +146,6 @@ import {
   SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
-
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
 const ETH_DERIVE_DEFAULT = "/m/44'/60'/0'/0/0";
@@ -271,13 +272,10 @@ export default class Extension extends FWExtensionBase {
 
   async addressesSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(addresses.subscribe)'>(id, port);
-    const keyringService = this.state.keyringService;
 
-    await this.state.eventService.waitAccountReady;
+    const transformedAddresses = transformAccounts(addressesObservable.subject.value);
 
-    const transformedAddresses = transformAccounts(keyringService.addresses);
-
-    const subscription = keyringService.addressesSubject.subscribe((addresses: SubjectInfo): void => {
+    const subscription = addressesObservable.subject.subscribe((addresses: SubjectInfo): void => {
       transformAccounts(addresses).then(cb);
     });
 
@@ -292,13 +290,9 @@ export default class Extension extends FWExtensionBase {
   async accountsSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
 
-    const keyringService = this.state.keyringService;
+    const transformedAccounts = transformAccounts(accountsObservable.subject.value);
 
-    await this.state.eventService.waitAccountReady;
-
-    const transformedAccounts = transformAccounts(keyringService.accounts);
-
-    const subscription = keyringService.accountSubject.subscribe((accounts: SubjectInfo): void => {
+    const subscription = accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
       transformAccounts(accounts).then(cb);
     });
 
@@ -514,8 +508,8 @@ export default class Extension extends FWExtensionBase {
   }
 
   private triggerWalletsSubscription(): boolean {
-    const accountsSubject = this.state.keyringService.accountSubject;
-    const addressSubject = this.state.keyringService.addressesSubject;
+    const accountsSubject = accountsObservable.subject;
+    const addressSubject = addressesObservable.subject;
 
     accountsSubject.next(accountsSubject.getValue());
     addressSubject.next(addressSubject.getValue());
@@ -524,23 +518,13 @@ export default class Extension extends FWExtensionBase {
   }
 
   private updateCurrentAccountAddress(address: string): boolean {
-    if (isEthereumAddress(address)) return true;
+    if (isEthereumAddress(address)) return false;
 
     this.state.generateDefaultBalance(address);
 
     this._saveCurrentAccountAddress(address, () => {
       this.triggerWalletsSubscription();
     });
-
-    return true;
-  }
-
-  private async updateCurrentAccountNetwork(network: string): Promise<boolean> {
-    const current = await this.state.currentAccount;
-
-    if (!current) return false;
-
-    this.state.selectedNetwork[current?.address] = network;
 
     return true;
   }

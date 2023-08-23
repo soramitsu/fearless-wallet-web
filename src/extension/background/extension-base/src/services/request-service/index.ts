@@ -2,7 +2,6 @@ import { BehaviorSubject } from 'rxjs';
 import { MetadataDef } from '@polkadot/extension-inject/types';
 import { WalletConnectNotSupportRequest, WalletConnectSessionRequest } from '../wallet-connect-service/types';
 import State from '../../background/handlers/State';
-import { KeyringService } from '../keyring-service';
 import {
   AccountJson,
   AuthorizeRequest,
@@ -36,14 +35,14 @@ export class RequestService {
   readonly authRequestHandler: AuthRequestHandler;
   readonly substrateRequestHandler: SubstrateRequestHandler;
 
-  constructor(state: State, networkService: NetworkService, private keyringService: KeyringService) {
+  constructor(state: State, networkService: NetworkService) {
     this.state = state;
     this.popupHandler = new PopupHandler(this);
     this.networkService = networkService;
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
-    this.authRequestHandler = new AuthRequestHandler(this.state, this, this.networkService, this.keyringService);
+    this.authRequestHandler = new AuthRequestHandler(this.state, this, this.networkService);
     this.substrateRequestHandler = new SubstrateRequestHandler(this);
   }
 

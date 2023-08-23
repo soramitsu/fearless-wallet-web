@@ -63,8 +63,9 @@ export default class App extends Vue {
   async created() {
     this.onUpdateOnlineStatus();
     if (IS_EXTENSION) this.extensionSubscribe();
-
     this.setupWallet();
+
+    this.unregisterInactiveWorkers();
     this.setupNetworks();
     this.setupBalance();
     this.fetchFiats();
@@ -136,14 +137,13 @@ export default class App extends Vue {
   }
 
   async setupWallet() {
-    const accounts = await subscribeAddresses((accounts) => {
-      this.onAccountUpdate(accounts, true);
-    });
-
-    const addresses = await subscribeAccounts((accounts) => {
+    const accounts = await subscribeAccounts((accounts) => {
       this.onAccountUpdate(accounts);
     });
 
+    const addresses = await subscribeAddresses((accounts) => {
+      this.onAccountUpdate(accounts, true);
+    });
     this.onAccountUpdate([...accounts, ...addresses]);
   }
 

@@ -5,7 +5,7 @@ import { Resolver } from '@extension-base/types';
 import AuthorizeStore from '@extension-base/stores/Authorize';
 import State from '@extension-base/background/handlers/State';
 import { getId } from '@extension-base/utils';
-import { NetworkService, RequestService, KeyringService } from '@extension-base/services';
+import { NetworkService, RequestService } from '@extension-base/services';
 import type {
   AuthRequest,
   AuthResponse,
@@ -27,19 +27,14 @@ export class AuthRequestHandler {
   private readonly evmChainSubject = new BehaviorSubject<AuthUrls>({});
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
 
-  constructor(
-    state: State,
-    requestService: RequestService,
-    networkService: NetworkService,
-    private keyringService: KeyringService
-  ) {
+  constructor(state: State, requestService: RequestService, networkService: NetworkService) {
     this.state = state;
     this.requestService = requestService;
     this.networkService = networkService;
   }
 
   private getAddressList(value = false): Record<string, boolean> {
-    const addressList = Object.keys(this.keyringService.accounts);
+    const addressList = Object.keys(this.state.getSubstrateAccounts());
 
     return addressList.reduce((addressList, v) => ({ ...addressList, [v]: value }), {});
   }

@@ -606,6 +606,10 @@ export default class State {
     if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network);
   }
 
+  public getNetworkByKey(key: string): NetworkJson | undefined {
+    return Object.values(this.networkMap).find((network) => network.name.toLowerCase() === key.toLowerCase());
+  }
+
   public getNetworkGroupType() {
     return this.getNetworkGroupType;
   }

@@ -7,7 +7,7 @@
       :network="networkGroup"
       :isNetworkGroup="true"
       :isSelected="isGroupSelected"
-      @onToggleNetworkType="toggleNetworkType(isGroupSelected)"
+      @onChangeNetwork="toggleNetworkType(isGroupSelected)"
     />
     <div class="container" :class="networkListClasses">
       <Scroll>

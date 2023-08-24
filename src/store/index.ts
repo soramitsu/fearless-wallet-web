@@ -31,6 +31,7 @@ const store = new Store({
 });
 
 export default store;
+export const useStore = () => store;
 
 export * from './accounts/types';
 export * from './networks/types';

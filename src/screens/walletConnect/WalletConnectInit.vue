@@ -3,12 +3,12 @@
     <div class="wc-init-form">
       <FInput v-model="uri" :placeholder="placeholder" size="big" />
 
-      <FButton text="Submit" size="big" fontSize="big" :border="false" @click="onSubmit" />
+      <FButton text="walletConnect.newConnection" size="big" fontSize="big" :border="false" @click="onSubmit" />
     </div>
   </AboveForm>
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import { getClipboard } from '@/helpers';
@@ -25,13 +25,9 @@ onMounted(() => {
   if (clipboard.startsWith('wc:')) uri.value = clipboard;
 });
 
-function onSubmit() {
-  newConnection({ uri: uri.value });
-}
+const onSubmit = () => newConnection({ uri: uri.value });
 
-function onBack() {
-  router.back();
-}
+const onBack = () => router.back();
 </script>
 
 <style lang="scss" scoped>

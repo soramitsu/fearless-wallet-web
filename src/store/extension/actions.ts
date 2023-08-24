@@ -259,7 +259,7 @@ const actions: ActionTree<State, State> & Actions = {
 
       if (requests.length)
         router.push({
-          name: Components.Transaction,
+          name: Components.WalletConnectSessionAuth,
         });
     };
 

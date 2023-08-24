@@ -4,14 +4,16 @@ import {
   AuthUrlInfo,
   MetadataRequest,
 } from '@extension-base/background/types/types';
+import type { SessionTypes } from '@walletconnect/types';
 import type { Features } from '@/store/extension/types';
-import { SigningRequest } from '@/extension/background/extension-base/src/background/types';
+import type { SigningRequest } from '@extension-base/background/types';
 
 export type State = {
   requests: {
     auth: AuthorizeRequest[];
     sign: SigningRequest[];
     meta: MetadataRequest[];
+    wc: SessionTypes.Struct[];
   };
   authList: Record<string, AuthUrlInfo>;
   tabStatus: ActiveTabAuthorizeStatus | null;
@@ -25,6 +27,7 @@ const state = (): State => {
       auth: [],
       meta: [],
       sign: [],
+      wc: [],
     },
     authList: {},
     tabStatus: null,

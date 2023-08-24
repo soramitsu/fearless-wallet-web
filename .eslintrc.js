@@ -30,6 +30,8 @@ module.exports = {
         multiline: 'always',
       },
     ],
+    'vue/define-props-declaration': 'off',
+    'vue/valid-define-props': 'off',
     'vue/html-indent': ['warn', 2],
     'vue/block-spacing': 1,
     '@typescript-eslint/explicit-function-return-type': ['off'],

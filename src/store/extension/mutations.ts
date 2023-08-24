@@ -1,4 +1,5 @@
 import Vue from 'vue';
+import { SessionTypes } from '@walletconnect/types';
 import type {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
@@ -22,7 +23,7 @@ export enum MutationTypes {
 
 interface SetPayload {
   type: keyof State['requests'];
-  requests: AuthorizeRequest[] | SigningRequest[] | MetadataRequest[];
+  requests: AuthorizeRequest[] | SigningRequest[] | MetadataRequest[] | SessionTypes.Struct[];
 }
 
 export type Mutations = {
@@ -49,6 +50,12 @@ const mutations: MutationTree<State> & Mutations = {
 
     if (type === 'meta') {
       state.requests.meta = [...(requests as MetadataRequest[])];
+
+      return;
+    }
+
+    if (type === 'wc') {
+      state.requests.wc = [...(requests as SessionTypes.Struct[])];
 
       return;
     }

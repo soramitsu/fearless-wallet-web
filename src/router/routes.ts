@@ -18,6 +18,7 @@ const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 const Export = () => import('@/screens/accounts/Export.vue');
 const WalletConnectInit = () => import('@/screens/walletConnect/WalletConnectInit.vue');
+const WalletConnectAuth = () => import('@/screens/walletConnect/WalletConnectAuth.vue');
 const Onboarding = () => import('@/screens/onboarding/Onboarding.vue');
 
 const AssetNetworks = () =>
@@ -59,6 +60,9 @@ export enum Components {
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
   WalletConnectInit = 'WalletConnectInit',
+  WalletConnectSessionAuth = 'WalletConnectSessionAuth',
+  WalletConnectSessionDetails = 'WalletConnectSessionDetails',
+  WalletConnectSessionRequest = 'WalletConnectSessionRequest',
   Onboarding = 'Onboarding',
 }
 
@@ -159,6 +163,16 @@ const routes: Array<RouteConfig> = [
       {
         path: 'wallet-connect',
         name: Components.WalletConnectInit,
+        component: WalletConnectInit,
+      },
+      {
+        path: 'wc-authorize',
+        name: Components.WalletConnectSessionAuth,
+        component: WalletConnectAuth,
+      },
+      {
+        path: 'wc-sign',
+        name: Components.WalletConnectSessionRequest,
         component: WalletConnectInit,
       },
       {

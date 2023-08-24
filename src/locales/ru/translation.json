@@ -320,7 +320,8 @@
   },
   "walletConnect": {
     "approve": "Подтвердить",
-    "reject": "Отменить"
+    "reject": "Отменить",
+    "newConnection": "Новое соединение"
   },
   "soraCard": {
     "getCard": "Получить карту СОРА",

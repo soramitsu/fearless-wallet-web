@@ -8,12 +8,7 @@
   </Corners>
 </template>
 
-<script>
-import { Vue, Component } from 'vue-property-decorator';
-
-@Component
-export default class InfoList extends Vue {}
-</script>
+<script lang="ts" setup></script>
 
 <style lang="scss" scoped>
 .info {
@@ -27,12 +22,12 @@ export default class InfoList extends Vue {}
   clip-path: $big-clip-path-left-top-and-right-bottom;
   width: 100%;
   margin-bottom: 14px;
-}
 
-.info__list {
-  display: grid;
-  grid-template-columns: 100px 1fr;
-  place-items: start;
-  gap: 8px;
+  &__list {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    place-items: start;
+    gap: 8px;
+  }
 }
 </style>

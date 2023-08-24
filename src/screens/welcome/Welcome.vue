@@ -14,7 +14,7 @@
     </div>
 
     <div>
-      <Button
+      <FButton
         width="100%"
         class="create-button"
         size="big"
@@ -24,7 +24,7 @@
       />
 
       <div class="additional-options">
-        <Button
+        <FButton
           class="import-button button--content-wrap"
           size="big"
           width="169px"
@@ -37,7 +37,7 @@
           @click="openAddWalletMobile"
         />
 
-        <Button
+        <FButton
           class="import-button button--content-wrap"
           size="big"
           width="169px"
@@ -50,7 +50,7 @@
           @click="manageGoogle"
         />
 
-        <Button
+        <FButton
           class="import-button button--content-wrap"
           size="big"
           fontSize="big"
@@ -82,11 +82,11 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { AccountJson } from '@extension-base/background/types/types';
 import { Components } from '@/router/routes';
 import { URLS } from '@/consts/urls';
 import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 import { initGoogleAuth } from '@/extension/messaging';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { IS_EXTENSION } from '@/consts/global';
 

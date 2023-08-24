@@ -1,11 +1,6 @@
 export const ALL_ACCOUNT_KEY = 'ALL';
 export const ALL_NETWORK_KEY = 'all';
 
-export const evmBlockExplorer: Record<string, string> = {
-  ethereum: 'https://api.etherscan.io',
-  ethereum_goerli: 'https://goerli.etherscan.io',
-};
-
 export const moonbeamBaseChains = ['moonbase', 'moonbeam', 'moonriver'];
 export const IGNORE_GET_SUBSTRATE_FEATURES_LIST: string[] = [
   'astarEvm',
@@ -18,3 +13,6 @@ export const IGNORE_GET_SUBSTRATE_FEATURES_LIST: string[] = [
   'bobabase',
   'bobabeam',
 ];
+export const ONBOARDING_URL =
+  'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/appConfigs/onboarding/web.json';
+export const FALLBACK_LANG = 'en-EN';

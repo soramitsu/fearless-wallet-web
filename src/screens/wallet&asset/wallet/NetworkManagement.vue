@@ -12,7 +12,7 @@
               <div class="unavailable">Network is unavailable</div>
             </div>
 
-            <Button
+            <FButton
               size="mini"
               class="switch-button"
               text="common.resolve"
@@ -28,9 +28,9 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { NetworkJson } from '@extension-base/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component
 export default class NetworkManagement extends Vue {

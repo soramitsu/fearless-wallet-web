@@ -1,7 +1,7 @@
+import type { AccountJson } from '@extension-base/background/types/types';
 import type { Node, NetworkName, WalletAddress } from '@/interfaces';
 import type { Lang } from '@/locales';
 import { LocalStorage } from '@/controllers/localStorageController';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
 class AccountController {
   private readonly lsAccount = new LocalStorage('account_');
@@ -15,6 +15,7 @@ class AccountController {
   private readonly selectedNetworkStorageName = 'selected-network';
   private readonly customSort = 'custom-sort';
   private readonly accounts = 'accounts';
+  private readonly assetTipData = 'asset-tip-data';
   private readonly hiddenAssets = 'hidden-assets';
   private readonly agreeSwapDisclaimer = 'agree-swap-disclaimer';
   private readonly hiddenWarningNetworks = 'hidden-warning-networks';
@@ -26,6 +27,10 @@ class AccountController {
 
   public setHidingSoraCardBannerTime(time: number) {
     this.lsAccount.set(this.hidingSoraCardBannerTime, time);
+  }
+
+  public setAssetTipData(count: number, time: number) {
+    this.lsAccount.set(this.assetTipData, { count, time });
   }
 
   public getHiddenWarningNetworks(): string[] {
@@ -129,6 +134,12 @@ class AccountController {
     const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
 
     return sequencesAssets.value ?? {};
+  }
+
+  public getAssetTipData(): { count: number; time: number } {
+    const sequencesAssets = this.lsAccount.get(this.assetTipData);
+
+    return sequencesAssets.value ?? { count: 0, time: 0 };
   }
 
   public getSequenceAssetsByAddress(address: string): string[] {

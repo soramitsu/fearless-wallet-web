@@ -29,7 +29,7 @@ export default class ComingSoon extends Vue {
 
   .name {
     margin-top: 25px;
-    color: rgba(255, 255, 255, 0.3);
+    color: $gray-2-color;
   }
 
   .img {

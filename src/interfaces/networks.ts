@@ -10,7 +10,7 @@ type SoraFees = {
 
 type NetworkName = string;
 
-type HistoryServiceType = 'subsquid' | 'giantsquid' | 'subquery';
+type HistoryServiceType = 'subsquid' | 'giantsquid' | 'subquery' | 'etherscan';
 
 interface ExternalApiElement {
   url: string;
@@ -20,7 +20,7 @@ interface ExternalApiElement {
 interface Explorer {
   types: string[];
   url: string;
-  type: 'subscan' | 'polkascan';
+  type: 'subscan' | 'polkascan' | 'etherscan';
 }
 
 type ExternalApi = {
@@ -42,14 +42,17 @@ type AssetType =
   | 'equilibrium'
   | 'ormlChain'
   | 'soraAsset'
+  | 'erc20'
   | 'token2'
   | 'assets'
   | 'assetId'; // TODO add
 
-type NetworkAssets = {
+type BuyProvider = 'moonpay' | 'ramp';
+
+type NetworkAsset = {
   assetId: string;
   staking?: string;
-  purchaseProviders?: string[];
+  purchaseProviders?: BuyProvider[];
   isUtility?: true;
   isNative?: true;
   type?: AssetType;
@@ -64,7 +67,7 @@ type Network = {
   api?: ApiPromise;
   provider?: WsProvider;
   nodes: Node[];
-  assets: NetworkAssets[];
+  assets: NetworkAsset[];
   chainId: string;
   parentId?: string;
   paraId?: string;
@@ -73,6 +76,7 @@ type Network = {
   settings: Record<string, any>;
   externalApi: ExternalApi;
   status: NetworkStatus;
+  rank?: number;
   fees?: SoraFees; // only Sora network
 };
 
@@ -85,9 +89,60 @@ interface ApiOptions {
   provider?: WsProvider;
 }
 
+type EthereumHistoryData = {
+  blockHash: string;
+  blockNumber: string;
+  confirmations: string;
+  contractAddress: string;
+  cumulativeGasUsed: string;
+  from: string;
+  functionName: string;
+  gas: string;
+  gasPrice: string;
+  gasUsed: string;
+  hash: string;
+  input: string;
+  isError: string;
+  methodId: string;
+  nonce: string;
+  timeStamp: string;
+  to: string;
+  transactionIndex: string;
+  txreceipt_status: string;
+  value: string;
+};
+
+type EthereumTokenHistoryData = {
+  blockNumber: string;
+  timeStamp: string;
+  hash: string;
+  nonce: string;
+  blockHash: string;
+  from: string;
+  contractAddress: string;
+  to: string;
+  value: string;
+  tokenName: string;
+  tokenSymbol: string;
+  tokenDecimal: string;
+  transactionIndex: string;
+  gas: string;
+  gasPrice: string;
+  gasUsed: string;
+  cumulativeGasUsed: string;
+  input: string;
+  confirmations: string;
+};
+type EthereumHistoryResponse<T> = {
+  message: string;
+  result: T[];
+  status: string;
+};
+
 export {
   Networks,
   Network,
+  BuyProvider,
   AssetType,
   NetworkName,
   ExternalApi,
@@ -96,4 +151,7 @@ export {
   HistoryServiceType,
   SoraFees,
   RelayChainName,
+  EthereumHistoryResponse,
+  EthereumHistoryData,
+  EthereumTokenHistoryData,
 };

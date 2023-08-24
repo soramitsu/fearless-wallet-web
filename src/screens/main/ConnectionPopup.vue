@@ -9,14 +9,14 @@
     zIndex="299"
   >
     <div class="notification-popup-content">
-      <div class="message">{{ $t(message) }}</div>
+      <div class="message">{{ message }}</div>
     </div>
   </Popup>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { ActiveTabAuthorizeStatus } from '@/extension/background/extension-base/src/background/types/types';
+import { ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
 
 @Component
 export default class ConnectionPopup extends Vue {

@@ -10,7 +10,7 @@
     <div v-if="isPendingWithResetForm" class="reset__form">
       <span class="message">{{ $t('mobileConnector.noAnswer') }}</span>
 
-      <Button
+      <FButton
         size="big"
         type="primary"
         :border="false"
@@ -19,7 +19,7 @@
         @click="onCancelRequest"
       />
 
-      <Button
+      <FButton
         size="big"
         type="secondary"
         :border="false"

@@ -15,8 +15,6 @@ Vue.use(Plugin);
 Vue.config.productionTip = false;
 Vue.config.devtools = process.env.NODE_ENV === 'development';
 
-console.info('initialization completed');
-
 new Vue({
   store,
   router,

@@ -18,11 +18,11 @@
   >
     <div>
       <div class="row direction-column">
-        <Input v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
+        <FInput v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
 
         <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
 
-        <Input v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
+        <FInput v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
       </div>
 
       <Corners size="big" class="row">
@@ -64,10 +64,10 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { SelectedWallet } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { addNumbers } from '@/helpers/numbers';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { getUtilityAsset } from '@/helpers/currencies';
 
 @Component({
@@ -138,6 +138,7 @@ export default class SendForm extends Vue {
 
   created() {
     this.assetId = this._selectedAssetId;
+
     this.selectedNetwork = this._selectedNetwork;
   }
 

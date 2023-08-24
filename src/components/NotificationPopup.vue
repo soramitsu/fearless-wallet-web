@@ -15,7 +15,7 @@
 
       <slot></slot>
 
-      <Button v-if="showAcceptButton" class="button" size="medium" :text="acceptButtonText" @click="handlerAccept" />
+      <FButton v-if="showAcceptButton" class="button" size="medium" :text="acceptButtonText" @click="handlerAccept" />
 
       <BorderButton
         v-if="showRejectButton"

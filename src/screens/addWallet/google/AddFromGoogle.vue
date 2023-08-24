@@ -13,7 +13,7 @@
     <GoogleWalletsList v-else-if="haveWalletsToImport" :items="files" @getFile="getFile" />
 
     <template v-slot:control>
-      <Button
+      <FButton
         v-if="!isLoading"
         size="big"
         fontSize="big"
@@ -87,8 +87,12 @@ export default class AddFromGoogle extends Vue {
     return this.files.some((el) => el.active && !el.isComplete);
   }
 
+  get importAcquired() {
+    return this.files.every((el) => !el.isComplete);
+  }
+
   get isAllowedContinue() {
-    return this.isImportInProgress || this.isActiveNotComplete;
+    return this.isImportInProgress || this.isActiveNotComplete || this.importAcquired;
   }
 
   get header() {
@@ -106,9 +110,8 @@ export default class AddFromGoogle extends Vue {
     this.token = this.getToken;
     const { files } = await getGoogleFiles(this.token);
 
-    const regex = new RegExp('\\w+/\\w+');
     const jsonsWithoutEth = files.filter((el) => el.description === '' || el.description === 'undefined');
-
+    const regex = /\w+\/\w+/;
     const filterFiles = files.filter((el) => el && regex.test(el.description));
     const filesToImport = [...filterFiles, ...jsonsWithoutEth];
 

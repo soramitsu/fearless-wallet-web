@@ -38,11 +38,13 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { Features } from '@/store/extension/types';
 import { Components } from '@/router/routes';
 import SettingMenuItem from '@/screens/main/SettingMenuItem.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { IS_EXTENSION, SORA_CARD_VISIBILITY } from '@/consts/global';
+import { IS_EXTENSION } from '@/consts/global';
+import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
 type SettingsItemType = 'Accounts';
 
@@ -54,9 +56,10 @@ export default class SettingsPopup extends Vue {
 
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(ExtensionGettersTypes.features) features!: Nullable<Features>;
 
   get showSoraCard() {
-    return SORA_CARD_VISIBILITY;
+    return this.features?.fiat?.soraCard;
   }
 
   get routeName() {

@@ -115,7 +115,7 @@ function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: stri
   const favoriteNetworks = store.getters.getFavoriteNetworksNames as { name: string; favorite: string[] }[];
   const { address } = store.getters.getSelectedWallet as Wallet;
 
-  if (selectedNetwork === POPULAR_NETWORKS) return !!network.rank;
+  if (selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
 
   if (selectedNetwork === FAVORITE_NETWORKS) {
     return favoriteNetworks.some(

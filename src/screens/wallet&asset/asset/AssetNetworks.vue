@@ -251,8 +251,8 @@ export default class AssetNetworks extends Vue {
     }
   }
   .asset-row {
-    padding-top: 10px;
-    padding-bottom: 10px;
+    padding-top: 16px;
+    padding-bottom: 16px;
   }
 
   .history-content {

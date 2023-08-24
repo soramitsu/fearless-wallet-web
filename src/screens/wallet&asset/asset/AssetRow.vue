@@ -42,5 +42,6 @@ export default class AssetRow extends Vue {
 <style lang="scss" scoped>
 .asset-row {
   cursor: pointer;
+  height: 56px;
 }
 </style>

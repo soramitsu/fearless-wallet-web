@@ -108,6 +108,7 @@ import { getChangeWalletBalance, getSummaryTransferableWalletBalance, isNetworkG
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
+import { BalanceItem } from '@/extension/background/extension-base/src/api/evm/types/ether';
 
 @Component({
   components: {
@@ -289,29 +290,30 @@ export default class Wallet extends Vue {
       return;
     }
 
+    const nonZeroBalanceCb = ({ transferable }: BalanceItem) => transferable && transferable !== '0';
+
     this.balances.forEach(({ assetId, balances }) => {
-      const index = balances.findIndex(({ transferable }) => transferable && transferable !== '0');
+      const index = balances.findIndex(nonZeroBalanceCb);
       const isZeroBalance = index === -1;
 
       if (isZeroBalance) this.setHiddenAssets({ assetId, value: false });
     });
-
     const assetsVisibleWithBalance = this.balances.filter(({ balances, assetId }) => {
-      const haveAssets = balances.findIndex(({ transferable }) => transferable && transferable !== '0') !== -1;
+      const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
       const isVisibleAsset = !this.hiddenAssets.includes(assetId);
 
       return isVisibleAsset && haveAssets;
     });
 
     const assetsInvisibleWithBalance = this.balances.filter(({ balances, assetId }) => {
-      const haveAssets = balances.findIndex(({ transferable }) => transferable && transferable !== '0') !== -1;
+      const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
       const isHiddenAsset = this.hiddenAssets.includes(assetId);
 
       return isHiddenAsset && haveAssets;
     });
 
     const assetsInvisibleWithoutBalance = this.balances.filter(({ balances, assetId }) => {
-      const notHaveAssets = balances.findIndex(({ transferable }) => transferable && transferable !== '0') === -1;
+      const notHaveAssets = balances.findIndex(nonZeroBalanceCb) === -1;
       const isHiddenAsset = this.hiddenAssets.includes(assetId);
 
       return isHiddenAsset && notHaveAssets;

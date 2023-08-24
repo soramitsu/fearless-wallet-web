@@ -170,12 +170,20 @@ export default class Extension extends FWExtensionBase {
     return this.state.cancelSubscription(id);
   }
 
+  public updateNetworkForNewWallet(address: string) {
+    const selectedNetwork = this.state.selectedNetwork[address] ?? ALL_NETWORKS;
+    this.state.setActiveNetworks(selectedNetwork);
+  }
+
   accountsCreateSuri({ password, suri, type, meta }: RequestAccountCreateSuri): string {
     const {
       pair: { address },
     } = keyring.addUri(suri, password, { ...meta, isMobile: false }, type);
 
-    if (!isEthereumAddress(address)) this.updateCurrentAccountAddress(address);
+    if (!isEthereumAddress(address)) {
+      this.updateNetworkForNewWallet(address);
+      this.updateCurrentAccountAddress(address);
+    }
 
     return address;
   }
@@ -421,7 +429,7 @@ export default class Extension extends FWExtensionBase {
       return new Promise((resolve, reject) => {
         try {
           keyring.restoreAccount(file, password);
-
+          if (!isEthereumAddress(address)) this.updateNetworkForNewWallet(address);
           this.updateCurrentAccountAddress(address);
           resolve(address);
         } catch (error) {

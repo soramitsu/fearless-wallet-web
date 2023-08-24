@@ -5,7 +5,7 @@ const CHAINS = IS_PRODUCTION
   ? `${BASE_URL}/master/chains/v1/chains.json`
   : `${BASE_URL}/develop-free/chains/v1/chains_dev.json`;
 
-const FIATS = `${BASE_URL}/android/2.0.8/fiat/fiats.json`;
+const FIATS = `'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';`;
 
 const FEATURES = `${BASE_URL}/develop-free/appConfigs/web_config.json`;
 

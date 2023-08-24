@@ -5,19 +5,13 @@
   </Fragment>
 </template>
 
-<script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
 import { Fragment } from 'vue-fragment';
 
-@Component({
-  components: {
-    Fragment,
-  },
-})
-export default class InfoItem extends Vue {
-  @Prop(String) name!: string;
-  @Prop([String, Number]) value!: string | number;
-}
+const { name, value } = defineProps({
+  name: { type: String, required: true },
+  value: { type: [String, Number], required: true },
+});
 </script>
 
 <style lang="scss" scoped>

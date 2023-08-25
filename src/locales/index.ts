@@ -32,7 +32,7 @@ export default new VueI18n({
       decimalPrecise: {
         style: 'decimal',
         minimumFractionDigits: 4,
-        maximumFractionDigits: 7,
+        maximumFractionDigits: 12,
       },
       price: {
         style: 'decimal',
@@ -59,7 +59,7 @@ export default new VueI18n({
       decimalPrecise: {
         style: 'decimal',
         minimumFractionDigits: 4,
-        maximumFractionDigits: 7,
+        maximumFractionDigits: 12,
       },
       price: {
         style: 'decimal',

@@ -1,11 +1,13 @@
-import type { ActionTree, ActionContext } from 'vuex';
-import type { State } from '@/store/extension/state';
+import axios from 'axios';
 import {
   AuthorizeRequest,
   ApproveAuthRequest,
   MetadataRequest,
   SigningRequest,
-} from '@/extension/background/extension-base/src/background/types/types';
+} from '@extension-base/background/types/types';
+import type { ActionTree, ActionContext } from 'vuex';
+import type { State } from '@/store/extension/state';
+import type { Features } from '@/store/extension/types';
 import { Mutations, MutationTypes } from '@/store/extension/mutations';
 import {
   subscribeAuthorizeRequests,
@@ -24,6 +26,7 @@ import router from '@/router';
 import { Components } from '@/router/routes';
 import { ExtensionController } from '@/controllers';
 import { SubstrateSignPayloadResponse } from '@/interfaces';
+import { URLS } from '@/consts/urls';
 
 export enum ActionTypes {
   SUBSCRIBE_AUTH_REQUESTS = 'SUBSCRIBE_AUTH_REQUESTS',
@@ -42,6 +45,7 @@ export enum ActionTypes {
   REJECT_META_REQUEST = 'REJECT_META_REQUEST',
   SUBSCRIBE_EXTENSION_REQUESTS = 'SUBSCRIBE_EXTENSION_REQUESTS',
   FETCH_TAB_STATUS = 'FETCH_TAB_STATUS',
+  FETCH_FEATURES = 'FETCH_FEATURES',
 }
 
 export type ApprovePayload = {
@@ -208,6 +212,12 @@ const actions: ActionTree<State, State> & Actions = {
     const tabStatus = await isTabAuthorize();
 
     commit(MutationTypes.SET_TAB_STATUS, tabStatus);
+  },
+
+  async [ActionTypes.FETCH_FEATURES]({ commit }) {
+    const { data } = await axios.get<Features>(URLS.FEATURES);
+
+    commit(MutationTypes.SET_FEATURES, data);
   },
 };
 

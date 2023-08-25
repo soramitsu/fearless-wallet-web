@@ -1,15 +1,17 @@
 import { IS_PRODUCTION } from '@/consts/global';
 
+const BASE_URL = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils';
 const CHAINS = IS_PRODUCTION
-  ? 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/chains/v1/chains.json'
-  : 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/chains/v1/chains_dev.json';
+  ? `${BASE_URL}/master/chains/v1/chains.json`
+  : `${BASE_URL}/develop-free/chains/v1/chains_dev.json`;
 
-const FIATS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
+const FIATS = `${BASE_URL}/master/fiat/fiats.json`;
 
-const XCM_LOCATIONS =
-  'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/xcm/xcm_token_locations.json';
+const FEATURES = `${BASE_URL}/develop-free/appConfigs/web_config.json`;
 
-const XCM_FEES = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/xcm/xcm_fees.json';
+const XCM_LOCATIONS = `${BASE_URL}/develop-free/xcm/xcm_token_locations.json`;
+
+const XCM_FEES = `${BASE_URL}/develop-free/xcm/xcm_fees.json`;
 
 const BASE_URLS_PREFIX = {
   MOONPAY: 'https://buy.moonpay.com',
@@ -19,6 +21,11 @@ const BASE_URLS_PREFIX = {
 
 const BASE_URLS_SUFFIX = {
   SUBSCAN: 'subscan.io',
+};
+
+const EXPLORERS: Record<string, string> = {
+  Ethereum: 'https://etherscan.io/',
+  'Ethereum Goerli': 'https://goerli.etherscan.io/',
 };
 
 const FEARLESS_TERMS = 'https://fearlesswallet.io/terms/';
@@ -42,8 +49,11 @@ const POLKASWAP_POLICY = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/priv
 const POLKASWAP = IS_PRODUCTION ? 'https://polkaswap.io' : 'https://exchange.dev.sora2.tachi.soramitsu.co.jp/'; // https://test.polkaswap.io
 
 const URLS = {
+  BASE_URL,
   FIATS,
+  FEATURES,
   CHAINS,
+  EXPLORERS,
   FEARLESS_TERMS,
   FEARLESS_PRIVACY,
   FEARLESS_WALLET,

@@ -54,5 +54,3 @@ export default class Tooltip extends Vue {
   }
 }
 </script>
-
-<style lang="scss" scoped></style>

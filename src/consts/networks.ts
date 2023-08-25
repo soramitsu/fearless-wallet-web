@@ -3,7 +3,13 @@ import { NetworkName } from '@/interfaces';
 
 const NOT_SUPPORTED_ALL_TRANSFER_NETWORKS = ['karura', 'acala', 'acala_testnet'];
 const SUBSTRATE_ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
-const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, 'ethereum', 'ethereum_gorli'];
+const ETHEREUM_NETWORKS = [
+  ...SUBSTRATE_ETHEREUM_NETWORKS,
+  'ethereum',
+  'ethereum goerli',
+  'binance smart chain',
+  'binance smart chain testnet',
+];
 const RELAY_CHAINS = ['polkadot', 'kusama', 'westend', 'rococo'];
 const NATIVE_PARACHAINS = [
   'statemint',
@@ -15,8 +21,10 @@ const NATIVE_PARACHAINS = [
   'rockmine',
 ];
 const NATIVE_NETWORKS = [...RELAY_CHAINS, ...NATIVE_PARACHAINS];
-const ALL_NETWORKS = 'All';
-
+const ALL_NETWORKS = 'all';
+const POPULAR_NETWORKS = 'popular';
+const FAVORITE_NETWORKS = 'favorites';
+const NETWORK_GROUP = [ALL_NETWORKS, POPULAR_NETWORKS, FAVORITE_NETWORKS];
 const POLKADOT_ID = '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3';
 const KUSAMA_ID = 'b0a8d493285c2df73290dfb7e61f870f17b41801197a149ca93654499ea3dafe';
 
@@ -36,10 +44,22 @@ const MAIN_NETWORKS: Record<string, string> = {
   dot: 'Polkadot',
   ksm: 'Kusama',
   ethereum: 'Ethereum',
-  ethereum_goerli: 'Ethereum_goerli',
+  'ethereum goerli': 'Ethereum Goerli',
   wnd: 'Westend',
   roc: 'Rococo',
 };
+
+const EVM_EXPLORERS_BASE_URLS: Record<string, string> = {
+  ethereum: 'etherscan.io',
+  'ethereum goerli': 'goerli.etherscan.io',
+  'binance smart chain': 'bscscan.com',
+  'binance smart chain testnet': 'testnet.bscscan.com',
+} as const;
+
+const EXPLORERS_BASE_URLS: Record<string, string> = {
+  'polkadot assethub': 'assethub-polkadot',
+  'kusama assethub': 'assethub-kusama',
+} as const;
 
 const ETHEREUM_ADDRESS_LENGTH = 42;
 const ETHEREUM_ADDRESS_PREFIX = '0x';
@@ -62,6 +82,9 @@ const SORA_UTILITY_ASSET = 'xor';
 
 export {
   ALL_NETWORKS,
+  POPULAR_NETWORKS,
+  FAVORITE_NETWORKS,
+  NETWORK_GROUP,
   RELAY_CHAINS,
   MAIN_NETWORKS,
   NATIVE_NETWORKS,
@@ -86,4 +109,6 @@ export {
   SORA_TEST,
   NETWORKS_ALIASES,
   SUBSTRATE_ETHEREUM_NETWORKS,
+  EXPLORERS_BASE_URLS,
+  EVM_EXPLORERS_BASE_URLS,
 };

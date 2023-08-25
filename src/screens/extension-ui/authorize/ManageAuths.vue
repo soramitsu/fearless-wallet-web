@@ -1,8 +1,8 @@
 <template>
   <AboveForm
     :header="header"
+    :fullScreen="true"
     :showBackIcon="showUpdateAuths"
-    :blur="true"
     :closeHandler="handlerClose"
     :handlerBack="updateUrl.bind(null, '')"
   >
@@ -23,8 +23,8 @@
 <script lang="ts">
 import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
+import { AuthUrlInfo } from '@extension-base/background/types/types';
 import UpdateAuths from './UpdateAuths.vue';
-import { AuthUrlInfo } from '@/extension/background/extension-base/src/background/types/types';
 import { AsyncFn } from '@/interfaces';
 import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';

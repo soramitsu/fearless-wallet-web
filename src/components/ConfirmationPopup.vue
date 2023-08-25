@@ -8,7 +8,7 @@
       </div>
 
       <div class="activity-bock">
-        <Button
+        <FButton
           text="common.no"
           width="48%"
           size="big"
@@ -18,7 +18,7 @@
           @click="handlerClose"
         />
 
-        <Button width="48%" size="big" fontSize="big" text="common.yes" @click="handlerAgree" />
+        <FButton width="48%" size="big" fontSize="big" text="common.yes" @click="handlerAgree" />
       </div>
     </div>
   </Popup>

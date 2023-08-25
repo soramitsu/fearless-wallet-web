@@ -42,6 +42,7 @@ export default class SoraCardBanner extends Vue {
 
   openSoraCardForm() {
     if (BaseApi.useIsPopup()) windowOpen('/sora-card');
+
     this.$router.push({ name: Components.SoraCard });
   }
 }

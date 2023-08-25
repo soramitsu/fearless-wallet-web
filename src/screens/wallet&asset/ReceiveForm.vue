@@ -38,7 +38,14 @@
           @click="saveQR"
         />
 
-        <Button size="big" class="button copy-qr" width="260px" text="assets.copyQR" iconName="share" @click="copyQR" />
+        <FButton
+          size="big"
+          class="button copy-qr"
+          width="260px"
+          text="assets.copyQR"
+          iconName="share"
+          @click="copyQR"
+        />
 
         <Tooltip :text="copyQRTooltip" target=".copy-qr" placement="bottom" trigger="click" />
       </div>
@@ -68,14 +75,14 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
+import type { NetworkJson } from '@extension-base/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import InputWithIcon from '@/screens/wallet&asset/InputWithIcon.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { cut } from '@/helpers/common';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { cut } from '@/helpers/';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component({
   components: { InputWithIcon },

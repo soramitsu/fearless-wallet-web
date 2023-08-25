@@ -42,8 +42,8 @@ export enum CustomTokenType {
 
 export interface CustomToken {
   // general interface for all kinds of tokens
-  smartContract: string;
   chain: string;
+  id: string;
   type: CustomTokenType;
   name?: string;
   symbol?: string;

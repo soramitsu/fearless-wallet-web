@@ -2,8 +2,8 @@
   <AboveForm :fullScreen="true" :closeHandler="closeForm">
     <template v-slot:header>
       <div class="header-content">
-        <div :class="classesBackIcon">
-          <Icon v-show="showBackIcon" icon="chevron-left" class="img" @click="back" />
+        <div :class="classesBackIcon" @click="back">
+          <Icon v-show="showBackIcon" icon="chevron-left" class="img" />
         </div>
 
         <div class="header">
@@ -135,7 +135,7 @@
             <div class="alert-content">
               {{ $t('common.readPolkaswapDisclaimer') }}
 
-              <Button
+              <FButton
                 width="85px"
                 size="mini"
                 fontSize="small"
@@ -148,7 +148,7 @@
           </Alert>
 
           <div class="buttons">
-            <Button
+            <FButton
               v-if="showSettings"
               size="big"
               text="assets.resetToDefault"
@@ -158,7 +158,7 @@
               @click="resetSettings"
             />
 
-            <Button
+            <FButton
               size="big"
               :text="buttonText"
               :disabled="buttonPreviewDisabled"
@@ -206,6 +206,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet, GetNetwork, GetAssetPrice } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
 import SwapSettings from '@/screens/polkaswap/swap/SwapSettings.vue';
@@ -215,7 +216,6 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID } from '@/consts/networks';
 import { Components } from '@/router/routes';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { checkSwap, getSoraFees } from '@/extension/messaging';
 import { getCurrencyOptions, getXORCurrency } from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
@@ -854,7 +854,7 @@ export default class SwapForm extends Vue {
   color: $default-white;
 
   .receive-input {
-    margin: 7px 0 32px;
+    margin: 7px 0 14px;
   }
 
   .swap-icon {
@@ -869,7 +869,7 @@ export default class SwapForm extends Vue {
     border: 1px solid $secondary-background-color;
     opacity: 1;
     position: relative;
-    top: -110px;
+    top: -92px;
     cursor: pointer;
 
     &:hover {

@@ -35,7 +35,7 @@
 
     <template v-slot:control>
       <div class="controls">
-        <Button
+        <FButton
           v-if="confirmMnemonicStep"
           size="big"
           fontSize="big"
@@ -46,7 +46,7 @@
           @click="resetAll"
         />
 
-        <Button
+        <FButton
           v-if="confirmMnemonicStep"
           size="big"
           fontSize="big"
@@ -57,7 +57,7 @@
           @click="skipStep"
         />
 
-        <Button
+        <FButton
           size="big"
           fontSize="big"
           width="100%"

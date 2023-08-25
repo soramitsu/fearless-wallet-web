@@ -3,7 +3,7 @@
 
 import { CustomTokenType, NetWorkGroup } from '@extension-base/api/evm/types/ether';
 import { NETWORK_STATUS } from './api/types/networks';
-import type { AssetType } from '@/interfaces';
+import type { AssetType, BuyProvider } from '@/interfaces';
 import { ExternalApi } from '@/interfaces';
 
 import { ContractType } from '@/interfaces/ether';
@@ -47,7 +47,7 @@ export interface RequestTransactionHistoryGet {
 }
 
 export interface DeleteCustomTokenParams {
-  smartContract: string;
+  id: string;
   chain: string;
   type: CustomTokenType;
 }
@@ -100,11 +100,10 @@ export type Asset = {
   icon: string;
   color: string;
   staking: string;
-  purchaseProviders?: string[];
+  purchaseProviders?: BuyProvider[];
   isUtility?: true;
   isNative?: true;
   existentialDeposit?: string;
-  contractAddress?: string;
 };
 
 export interface NetworkJson {
@@ -156,6 +155,8 @@ export interface NetworkJson {
   addressPrefix: number;
   types: TypesForMobile;
   options?: string[];
+  rank?: number;
+  favorite: string[];
   xcm?: {
     xcmVersion: 'v1' | 'v2' | 'v3';
     availableAssets: string[];
@@ -170,4 +171,8 @@ export interface ChainRegistry {
   chainDecimals: number[];
   chainTokens: string[];
   assetsMap: Asset[];
+}
+
+export interface KeyringState {
+  isReady: boolean;
 }

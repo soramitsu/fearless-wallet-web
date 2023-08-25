@@ -7,8 +7,9 @@ import { Subscription } from 'rxjs';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 import MetadataStore from '@extension-base/stores/Metadata';
-import EthProvider from '@extension-base/api/evm/ethProvider';
-import { NetworkJson } from '@extension-base/types';
+import { JsonRpcProvider } from 'ethers';
+import { UserType } from '../../services/onboarding-service/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type { SubmittableExtrinsicFunction } from '@polkadot/api/promise/types';
@@ -30,6 +31,7 @@ import type {
   ChangeWalletBalance,
   NetworkName,
   AssetName,
+  BuyProvider,
 } from '@/interfaces';
 
 export interface PrepareExternalRequest {
@@ -56,10 +58,12 @@ type NullKeys<T> = { [K in keyof T]: IsNull<T, K> }[keyof T];
 
 export type SeedLengths = 12 | 24;
 export type Port = chrome.runtime.Port;
+
 export interface AccountJson extends KeyringPair$Meta {
   address: string;
   ethereumAddress: string;
   genesisHash?: HexString | null;
+  network?: string;
   isExternal?: boolean;
   isHardware?: boolean;
   isMobile?: boolean;
@@ -249,7 +253,6 @@ export interface BalanceJson {
 }
 
 export enum TransferErrorCode {
-  NOT_ENOUGH_VALUE = 'notEnoughValue',
   NOT_ENOUGH_FEE = 'notEnoughValue',
   INVALID_VALUE = 'invalidValue',
   INVALID_TOKEN = 'invalidToken',
@@ -439,7 +442,7 @@ export type RequestCrossChain = PasswordRequestSign<RequestCheckCrossChain>;
 
 export interface RequestAccountExportPrivateKey {
   address: string;
-  password: string;
+  password?: string;
 }
 
 export interface ExternalRequestPromise {
@@ -530,7 +533,7 @@ export interface TokenBalanceRaw {
 }
 export interface ApiMap {
   substrate: Record<string, ApiProps>;
-  evm: Record<string, EthProvider>;
+  evm: Record<string, JsonRpcProvider>;
 }
 
 export interface ServiceInfo {
@@ -836,6 +839,7 @@ export interface IState {
   metaStore: MetadataStore;
   authUrls: AuthUrls;
   addresses: Record<string, string>;
+  selectedNetwork: Record<string, string>;
   defaultAuthAccountSelection: string[];
   injectedProviders: Map<Port, ProviderInterface>;
   notification: string;
@@ -849,6 +853,12 @@ export interface IState {
   connectedTabsUrl: string[];
   transaction: Record<string, TransactionHistoryItem[]>;
   addressBook: AddressBook;
+  userType: UserType;
+  onboarding: {
+    user: UserType;
+    isRequired: boolean;
+    seen: boolean;
+  };
 }
 
 export interface GoogleFileId {
@@ -946,9 +956,10 @@ export interface TokenBalance {
   priceId?: string;
   tokenName: string;
   symbol: string;
+  precision: number;
   relayChain: RelayChainName;
   icon: string;
-  providers: string[];
+  providers: BuyProvider[];
   balances: BalanceItem[];
   color?: string;
 }
@@ -956,3 +967,4 @@ export interface TokenBalance {
 export type BeaconRawSignCallBack = (tx: SignerPayloadRaw) => string;
 
 export type BalanceMap = Record<WalletAddress, TokenBalance[]>;
+export type NetworkMap = Record<string, NetworkJson>;

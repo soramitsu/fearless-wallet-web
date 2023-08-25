@@ -1,7 +1,7 @@
 <template>
   <div class="add-contact">
     <div class="form">
-      <Input v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
+      <FInput v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
 
       <ValidatedInput
         v-model="address"
@@ -14,7 +14,7 @@
       <Checkbox v-model="saveForAllNetworks" size="medium" :label="$t('assets.saveAddressForAllNetwork')" class="row" />
     </div>
 
-    <Button size="big" text="common.save" :disabled="buttonDisabled" @click="updateContact" />
+    <FButton size="big" text="common.save" :disabled="buttonDisabled" @click="updateContact" />
   </div>
 </template>
 

@@ -39,7 +39,8 @@
       v-if="showAccountSettingsPopup"
       :selectedNetwork="selectedNetwork"
       :handlerClose="closeAccountSettings"
-      :isNodesRoute="isNodesRoute"
+      :showNodeSwitch="!isNodesRoute"
+      :showCopyAddress="!isNodesRoute"
       :showExport="!isExportRoute"
       :showReplaceAccount="showReplaceAccount"
       :buttonTopClick="buttonTopClick"
@@ -91,12 +92,12 @@ import NodeSettingsPopup from './NodeSettingsPopup.vue';
 import AddEthereumAccountPopup from './AddEthereumAccountPopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import Nodes from './Nodes.vue';
-import type { SelectedWallet } from '@/store';
+import type { NetworkJson } from '@extension-base/types';
+import type { GetNetwork, SelectedWallet } from '@/store';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { upsertNetworkMap } from '@/extension/messaging';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 type NotificationType = 'delete' | 'export' | '';
 
@@ -127,6 +128,7 @@ export default class AccountsLayout extends Vue {
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get headers() {
     return this.notificationType === 'delete'
@@ -137,10 +139,6 @@ export default class AccountsLayout extends Vue {
           subtext: 'accounts.exportWarning',
         }
       : '';
-  }
-
-  get networkJson() {
-    return this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase())!;
   }
 
   get showExportForm() {
@@ -222,7 +220,7 @@ export default class AccountsLayout extends Vue {
     this.closeNotificationPopup();
   }
 
-  openAccountSettingsPopup(network = '', buttonTop: number) {
+  openAccountSettingsPopup(network = '', buttonTop = 0) {
     this.showAccountSettingsPopup = true;
     this.selectedNetwork = network;
     this.buttonTopClick = buttonTop;
@@ -261,11 +259,12 @@ export default class AccountsLayout extends Vue {
   }
 
   deleteNode() {
-    const customNodes = this.networkJson.customNodes.filter(
+    const network = this.getNetwork(this.selectedNetwork);
+    const customNodes = network.customNodes.filter(
       (node) => node.name !== this.selectedNodeName && node.url !== this.selectedNodeUrl
     );
     upsertNetworkMap({
-      ...this.networkJson,
+      ...network,
       customNodes,
     });
     this.childUpdatedNode(true);

@@ -7,9 +7,13 @@ const CHAINS = IS_PRODUCTION
 
 const FIATS = `${BASE_URL}/master/fiat/fiats.json`;
 
-const FEATURES = `${BASE_URL}/develop-free/appConfigs/web_config.json`;
+const FEATURES = IS_PRODUCTION
+  ? `${BASE_URL}/master/appConfigs/web_config.json`
+  : `${BASE_URL}/develop-free/appConfigs/web_config.json`;
 
-const XCM_LOCATIONS = `${BASE_URL}/develop-free/xcm/xcm_token_locations.json`;
+const XCM_LOCATIONS = IS_PRODUCTION
+  ? `${BASE_URL}/master/xcm/xcm_token_locations.json`
+  : `${BASE_URL}/develop-free/xcm/xcm_token_locations.json`;
 
 const XCM_FEES = `${BASE_URL}/develop-free/xcm/xcm_fees.json`;
 

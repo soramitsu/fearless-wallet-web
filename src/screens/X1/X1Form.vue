@@ -148,9 +148,11 @@ export default class X1Form extends Vue {
   flex-direction: column;
   justify-content: center;
   height: 100%;
+
   .scroll {
     height: 675px;
   }
+
   .scroll-collapse {
     height: 0;
   }

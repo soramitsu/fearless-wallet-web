@@ -12,7 +12,7 @@ const FEATURES = IS_PRODUCTION
   : `${BASE_URL}/develop-free/appConfigs/web_config.json`;
 
 const XCM_LOCATIONS = IS_PRODUCTION
-  ? `${BASE_URL}/master/xcm/xcm_token_locations.json`
+  ? `${BASE_URL}/master/xcm/v1/xcm_token_locations.json`
   : `${BASE_URL}/develop-free/xcm/xcm_token_locations.json`;
 
 const XCM_FEES = `${BASE_URL}/develop-free/xcm/xcm_fees.json`;

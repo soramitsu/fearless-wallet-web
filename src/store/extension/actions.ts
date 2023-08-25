@@ -1,9 +1,10 @@
 import axios from 'axios';
-import {
+import type {
   RequestApproveConnectWalletSession,
   RequestRejectConnectWalletSession,
+  WalletConnectSessionRequest,
+  WalletConnectSessions,
 } from '@extension-base/services/wallet-connect-service/types';
-import { SessionTypes } from '@walletconnect/types';
 import type { AuthorizeRequest, ApproveAuthRequest, MetadataRequest } from '@extension-base/background/types/types';
 import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from '@/store/extension/state';
@@ -25,6 +26,7 @@ import {
   approveWalletConnectSession,
   rejectWalletConnectSession,
   walletConnectSessionsSubscribe,
+  walletConnectRequestSubscribe,
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
@@ -48,7 +50,8 @@ export enum ActionTypes {
   APPROVE_META_REQUEST = 'APPROVE_META_REQUEST',
   REJECT_META_REQUEST = 'REJECT_META_REQUEST',
 
-  SUBSCRIBE_WC_REQUESTS = 'SUBSCRIBE_WC_REQUESTS',
+  SUBSCRIBE_WC_CONNECT_REQUESTS = 'SUBSCRIBE_WC_CONNECT_REQUESTS',
+  SUBSCRIBE_WC_SESSIONS = 'SUBSCRIBE_WC_SESSIONS',
   APPROVE_WC_REQUEST = 'APPROVE_WC_REQUEST',
   REJECT_WC_REQUEST = 'REJECT_WC_REQUEST',
 
@@ -83,7 +86,10 @@ export type Actions = {
   [ActionTypes.APPROVE_META_REQUEST](context: AugmentedExtensionContext, props: MetadataRequest): Promise<void>;
   [ActionTypes.REJECT_META_REQUEST](context: AugmentedExtensionContext, props: MetadataRequest): Promise<void>;
 
-  [ActionTypes.SUBSCRIBE_WC_REQUESTS](context: AugmentedExtensionContext): Promise<SessionTypes.Struct[] | null>;
+  [ActionTypes.SUBSCRIBE_WC_SESSIONS](context: AugmentedExtensionContext): Promise<WalletConnectSessions>;
+  [ActionTypes.SUBSCRIBE_WC_CONNECT_REQUESTS](
+    context: AugmentedExtensionContext
+  ): Promise<WalletConnectSessionRequest[]>;
   [ActionTypes.APPROVE_WC_REQUEST](
     context: AugmentedExtensionContext,
     props: RequestApproveConnectWalletSession
@@ -121,7 +127,7 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.APPROVE_AUTH_REQUEST]({ commit, dispatch }, { request, accounts }) {
     await approveAuthRequest(request.id, accounts);
 
-    commit(MutationTypes.DELETE_REQUEST, 'auth');
+    commit(MutationTypes.DELETE_REQUEST, 'authRequests');
 
     dispatch(ActionTypes.FETCH_TAB_STATUS);
   },
@@ -129,7 +135,7 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.REJECT_AUTH_REQUEST]({ commit, dispatch }, payload) {
     await deleteAuthRequest(payload.id);
 
-    commit(MutationTypes.DELETE_REQUEST, 'auth');
+    commit(MutationTypes.DELETE_REQUEST, 'authRequests');
 
     dispatch(ActionTypes.FETCH_TAB_STATUS);
   },
@@ -167,14 +173,14 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.APPROVE_META_REQUEST]({ commit, dispatch }, payload) {
     await approveMetaRequest(payload.id);
 
-    commit(MutationTypes.DELETE_REQUEST, 'meta');
+    commit(MutationTypes.DELETE_REQUEST, 'metaRequests');
 
     dispatch(ActionTypes.FETCH_TAB_STATUS);
   },
 
   async [ActionTypes.REJECT_META_REQUEST]({ commit, dispatch }, payload) {
     await rejectMetaRequest(payload.id);
-    commit(MutationTypes.DELETE_REQUEST, 'meta');
+    commit(MutationTypes.DELETE_REQUEST, 'metaRequests');
     dispatch(ActionTypes.FETCH_TAB_STATUS);
   },
 
@@ -197,7 +203,7 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.APPROVE_SIGN_PASSWORD]({ commit, dispatch }, { id, isSavePass, password }) {
     ExtensionController.approveSignPassword(id, isSavePass, password);
 
-    commit(MutationTypes.DELETE_REQUEST, 'sign');
+    commit(MutationTypes.DELETE_REQUEST, 'signRequests');
 
     router.push({ name: Components.Wallet });
 
@@ -207,7 +213,7 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.SIGN_SIGNATURE]({ commit, dispatch }, { payload, id }) {
     ExtensionController.approveSignSignature(id, payload.signature);
 
-    commit(MutationTypes.DELETE_REQUEST, 'sign');
+    commit(MutationTypes.DELETE_REQUEST, 'signRequests');
 
     dispatch(ActionTypes.FETCH_TAB_STATUS);
 
@@ -216,7 +222,7 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.SIGN_CANCEL]({ commit }, id) {
     await cancelSignRequest(id);
-    commit(MutationTypes.DELETE_REQUEST, 'sign');
+    commit(MutationTypes.DELETE_REQUEST, 'signRequests');
 
     router.push({ name: Components.Wallet });
   },
@@ -225,7 +231,7 @@ const actions: ActionTree<State, State> & Actions = {
     const auth = dispatch(ActionTypes.SUBSCRIBE_AUTH_REQUESTS);
     const sign = dispatch(ActionTypes.SUBSCRIBE_SIGN_REQUESTS);
     const meta = dispatch(ActionTypes.SUBSCRIBE_META_REQUESTS);
-    const wc = dispatch(ActionTypes.SUBSCRIBE_WC_REQUESTS);
+    const wc = dispatch(ActionTypes.SUBSCRIBE_WC_CONNECT_REQUESTS);
 
     return Promise.all([auth, sign, meta, wc]);
   },
@@ -252,8 +258,8 @@ const actions: ActionTree<State, State> & Actions = {
     //do something with request
   },
 
-  async [ActionTypes.SUBSCRIBE_WC_REQUESTS]() {
-    const callback = (requests: SessionTypes.Struct[] | null) => {
+  async [ActionTypes.SUBSCRIBE_WC_CONNECT_REQUESTS]() {
+    const callback = (requests: WalletConnectSessionRequest[]) => {
       console.info(requests, 'WC requests');
       if (requests === null) return;
 
@@ -261,6 +267,15 @@ const actions: ActionTree<State, State> & Actions = {
         router.push({
           name: Components.WalletConnectSessionAuth,
         });
+    };
+
+    return walletConnectRequestSubscribe(callback);
+  },
+
+  async [ActionTypes.SUBSCRIBE_WC_SESSIONS]() {
+    const callback = (requests: WalletConnectSessions) => {
+      console.info(requests, 'WC requests');
+      if (requests === null) return;
     };
 
     return walletConnectSessionsSubscribe(callback);

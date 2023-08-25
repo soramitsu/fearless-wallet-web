@@ -4,17 +4,19 @@ import {
   AuthUrlInfo,
   MetadataRequest,
 } from '@extension-base/background/types/types';
-import type { SessionTypes } from '@walletconnect/types';
 import type { Features } from '@/store/extension/types';
 import type { SigningRequest } from '@extension-base/background/types';
+import type {
+  WalletConnectSessionRequest,
+  WalletConnectSessions,
+} from '@extension-base/services/wallet-connect-service/types';
 
 export type State = {
-  requests: {
-    auth: AuthorizeRequest[];
-    sign: SigningRequest[];
-    meta: MetadataRequest[];
-    wc: SessionTypes.Struct[];
-  };
+  authRequests: AuthorizeRequest[];
+  signRequests: SigningRequest[];
+  metaRequests: MetadataRequest[];
+  wcConnectRequests: WalletConnectSessionRequest[];
+  wcSessions: WalletConnectSessions;
   authList: Record<string, AuthUrlInfo>;
   tabStatus: ActiveTabAuthorizeStatus | null;
   features: Nullable<Features>;
@@ -23,12 +25,11 @@ export type State = {
 
 const state = (): State => {
   return {
-    requests: {
-      auth: [],
-      meta: [],
-      sign: [],
-      wc: [],
-    },
+    authRequests: [],
+    signRequests: [],
+    metaRequests: [],
+    wcConnectRequests: [],
+    wcSessions: [],
     authList: {},
     tabStatus: null,
     features: null,

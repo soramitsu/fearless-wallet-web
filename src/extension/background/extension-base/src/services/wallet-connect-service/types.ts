@@ -1,5 +1,5 @@
 import { SignerPayloadJSON } from '@polkadot/types/types';
-import { EngineTypes, SignClientTypes } from '@walletconnect/types';
+import { EngineTypes, SignClientTypes, SessionTypes } from '@walletconnect/types';
 import { EvmSendTransactionParams } from '../../api/evm/types/ether';
 import { Resolver } from '../../types';
 //TODO refactoring types
@@ -11,6 +11,8 @@ type BaseWalletConnectSessionRequest = {
 export interface WalletConnectSessionRequest extends BaseWalletConnectSessionRequest {
   request: SignClientTypes.EventArguments['session_proposal'];
 }
+
+export type WalletConnectSessions = SessionTypes.Struct[] | null;
 
 export interface WalletConnectNotSupportRequest extends BaseWalletConnectSessionRequest {
   request: SignClientTypes.EventArguments['session_request'];

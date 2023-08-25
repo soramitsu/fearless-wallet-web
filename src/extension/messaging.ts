@@ -2,14 +2,15 @@ import { metadataExpand } from '@polkadot/extension-chains';
 import { selectableNetworks } from '@polkadot/networks';
 import { getId } from '@extension-base/utils/utils';
 import { PORT_EXTENSION } from '@extension-base/defaults';
-import { SessionTypes } from '@walletconnect/types';
 import {
   RequestApproveConnectWalletSession,
   RequestApproveWalletConnectNotSupport,
   RequestConnectWalletConnect,
   RequestRejectConnectWalletSession,
   RequestRejectWalletConnectNotSupport,
-} from './background/extension-base/src/services/wallet-connect-service/types';
+  WalletConnectSessionRequest,
+  WalletConnectSessions,
+} from '@extension-base/services/wallet-connect-service/types';
 import type { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
@@ -572,9 +573,15 @@ export function newConnection(request: RequestConnectWalletConnect): Promise<boo
   return sendMessage('pri(walletConnect.connect)', request);
 }
 
+export function walletConnectRequestSubscribe(
+  callback: (data: WalletConnectSessionRequest[]) => void
+): Promise<WalletConnectSessionRequest[]> {
+  return sendMessage('pri(walletConnect.requests.connect.subscribe)', null, callback);
+}
+
 export function walletConnectSessionsSubscribe(
-  callback: (data: SessionTypes.Struct[] | null) => void
-): Promise<SessionTypes.Struct[] | null> {
+  callback: (data: WalletConnectSessions) => void
+): Promise<WalletConnectSessions> {
   return sendMessage('pri(walletConnect.session.subscribe)', null, callback);
 }
 

@@ -39,30 +39,30 @@ export type Getters = {
 };
 
 const getters: GetterTree<State, State> & Getters = {
-  [GettersTypes.authRequests]({ requests }): AuthorizeRequest[] {
-    return requests.auth;
+  [GettersTypes.authRequests]({ authRequests }): AuthorizeRequest[] {
+    return authRequests;
   },
 
   [GettersTypes.authList]({ authList }): Record<string, AuthUrlInfo> {
     return authList;
   },
 
-  [GettersTypes.metaRequests]({ requests }): MetadataRequest[] {
-    return requests.meta;
+  [GettersTypes.metaRequests]({ metaRequests }): MetadataRequest[] {
+    return metaRequests;
   },
 
-  [GettersTypes.signRequestPayload]({ requests }): SignerPayloadJSON | SignerPayloadRaw {
+  [GettersTypes.signRequestPayload]({ signRequests }): SignerPayloadJSON | SignerPayloadRaw {
     const [
       {
         request: { payload },
       },
-    ] = requests.sign;
+    ] = signRequests;
 
     return payload;
   },
 
-  [GettersTypes.signList]({ requests }): SigningRequest[] {
-    return requests.sign;
+  [GettersTypes.signList]({ signRequests }): SigningRequest[] {
+    return signRequests;
   },
 
   [GettersTypes.tabStatus]({ tabStatus }): ActiveTabAuthorizeStatus | null {

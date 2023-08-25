@@ -5,7 +5,7 @@ const CHAINS = IS_PRODUCTION
   ? `${BASE_URL}/master/chains/v1/chains.json`
   : `${BASE_URL}/develop-free/chains/v1/chains_dev.json`;
 
-const FIATS = `https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json`;
+const FIATS = `${BASE_URL}/master/fiat/fiats.json`;
 
 const FEATURES = `${BASE_URL}/develop-free/appConfigs/web_config.json`;
 
@@ -49,6 +49,7 @@ const POLKASWAP_POLICY = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/priv
 const POLKASWAP = IS_PRODUCTION ? 'https://polkaswap.io' : 'https://exchange.dev.sora2.tachi.soramitsu.co.jp/'; // https://test.polkaswap.io
 
 const URLS = {
+  BASE_URL,
   FIATS,
   FEATURES,
   CHAINS,

@@ -9,5 +9,5 @@ module.exports = {
   collectCoverage: true,
   collectCoverageFrom: ['src/**/*.{js,jsx,ts,tsx,vue}'],
   coverageReporters: ['lcov'],
-  coveragePathIgnorePatterns: ['node_modules/', 'coverage/']
+  coveragePathIgnorePatterns: ['node_modules/', 'coverage/'],
 };

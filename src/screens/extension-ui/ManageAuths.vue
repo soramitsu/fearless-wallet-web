@@ -11,9 +11,14 @@
 
       <Tabs v-model="activeTab" :tabs="tabs" />
 
-      <div v-if="showSubstrateAuths" class="auth-items">
+      <div v-if="showSubstrateAuths && Object.keys(filteredList).length" class="auth-items">
         <Scroll>
-          <AuthItem v-for="el in filteredList" v-bind:key="el.id" :request="el" @openUpdateAuths="updateUrl" />
+          <AuthItem v-for="request in filteredList" :key="request.id" :request="request" @openUpdateAuths="updateUrl" />
+        </Scroll>
+      </div>
+      <div v-else-if="showWCAuths && wcFilteredList" class="auth-items">
+        <Scroll>
+          <WCAuthItem v-for="(el, index) in wcFilteredList" :key="index" :request="el" @openUpdateAuths="updateUrl" />
         </Scroll>
       </div>
     </template>
@@ -24,14 +29,17 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch } from 'vue';
+import type { WalletConnectSessions } from '@extension-base/services/wallet-connect-service/types';
 import type { AuthUrlInfo } from '@extension-base/background/types/types';
+import WCAuthItem from '@/screens/walletConnect/WCAuthItem.vue';
 import UpdateAuths from '@/screens/extension-ui/authorize/UpdateAuths.vue';
 import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { useStore } from '@/store';
 
 const store = useStore();
 const filteredList = ref<Record<string, AuthUrlInfo>>({});
-// const wcFilteredList = ref<Record<string, AuthUrlInfo>>({});
+const wcFilteredList = ref<WalletConnectSessions>(store.getters.wcSessions);
+console.info(wcFilteredList.value);
 const filterValue = ref('');
 const url = ref('');
 const activeTab = ref<'substrate' | 'wc'>('substrate');
@@ -45,10 +53,12 @@ const tabs = {
     name: 'wc',
   },
 };
-const emits = defineEmits(['close']);
+const emit = defineEmits(['close']);
 
 const showUpdateAuths = computed(() => url.value !== '');
 const showSubstrateAuths = computed(() => activeTab.value === 'substrate');
+const showWCAuths = computed(() => activeTab.value === 'wc');
+
 const header = computed(() => {
   if (showUpdateAuths.value) return { text: 'authorize.accountsConnected', localeProps: { url: url.value } };
 
@@ -79,7 +89,7 @@ const updateUrl = (value = '') => {
 
 const onBack = () => updateUrl('');
 
-const onClose = () => emits('close');
+const onClose = () => emit('close');
 </script>
 
 <style lang="scss" scoped>

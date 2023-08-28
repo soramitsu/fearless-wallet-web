@@ -1,9 +1,9 @@
 <template>
-  <SCol class="auth-content" width="100%" v-bind:key="request.id" @click.native="onClick">
+  <SCol class="auth-content" width="100%" @click.native="onClick">
     <div class="row">
       <SCol :span="9" class="col">
         <ExternalLogo :name="faviconURl" alt="favicon" />
-        <span class="auth-item-name">{{ request.origin }}</span>
+        <span class="auth-item-name">{{ stripedUrl }}</span>
       </SCol>
 
       <SCol :span="3">
@@ -21,26 +21,26 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { AuthUrlInfo } from '@extension-base/background/types/types';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
+import { SessionTypes } from '@walletconnect/types';
 import type { CustomEvent } from '@/interfaces';
 import { useStore } from '@/store';
+
 const store = useStore();
 
-const { request } = defineProps<{ request: AuthUrlInfo }>();
-
+const { request } = defineProps<{ request: SessionTypes.Struct }>();
 const emits = defineEmits(['openUpdateAuths']);
 
-const stripedUrl = computed(() => stripUrl(request.url));
+const stripedUrl = computed(() => stripUrl(request.peer.metadata.url));
 
 const faviconURl = computed(() => {
-  const host = new URL(request.url).host;
+  const host = new URL(request.peer.metadata.url).host;
 
   return `https://icons.duckduckgo.com/ip3/${host}.ico`;
 });
 
 const authorizedAccounts = computed(() => {
-  const authListLength = request.authorizedAccounts.length;
+  const authListLength = 1;
 
   return `${authListLength} account${authListLength !== 1 ? 's' : ''}`;
 });

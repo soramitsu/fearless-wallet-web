@@ -231,9 +231,10 @@ const actions: ActionTree<State, State> & Actions = {
     const auth = dispatch(ActionTypes.SUBSCRIBE_AUTH_REQUESTS);
     const sign = dispatch(ActionTypes.SUBSCRIBE_SIGN_REQUESTS);
     const meta = dispatch(ActionTypes.SUBSCRIBE_META_REQUESTS);
-    const wc = dispatch(ActionTypes.SUBSCRIBE_WC_CONNECT_REQUESTS);
+    const wcRequests = dispatch(ActionTypes.SUBSCRIBE_WC_CONNECT_REQUESTS);
+    const wcSessions = dispatch(ActionTypes.SUBSCRIBE_WC_SESSIONS);
 
-    return Promise.all([auth, sign, meta, wc]);
+    return Promise.all([auth, sign, meta, wcRequests, wcSessions]);
   },
 
   async [ActionTypes.FETCH_TAB_STATUS]({ commit }) {

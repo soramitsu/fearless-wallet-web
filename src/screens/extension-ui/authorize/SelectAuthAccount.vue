@@ -2,23 +2,23 @@
   <div class="auth-accounts">
     <Checkbox
       v-if="showAllCheckbox"
-      v-model.lazy="syncSelectAll"
+      :value="selectAll"
       size="big"
       label="Select all"
-      @change="(value) => $emit('onSelectAll', value)"
+      @change="(value) => emit('onSelectAll', value)"
     />
 
     <Scroll>
       <ul class="account__list">
-        <li v-for="(account, index) in accounts" class="auth-account" v-bind:key="index">
+        <li v-for="(account, index) in accounts" class="auth-account" :key="index">
           <div class="checkbox">
             <Checkbox
               class="account__checkbox"
               size="big"
               :name="account.address"
               :label="$t(account.name)"
-              v-model.lazy="account.active"
-              @change="(value) => $emit('onSelect', value, account.name)"
+              :value="account.active"
+              @change="(value) => emit('onSelect', value, account.name)"
             />
 
             <div v-if="account.isMobile" class="account__checkbox--mobile-icon">{{ $t('mobile') }}</div>
@@ -35,28 +35,20 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 import { WalletInfo } from '@/store';
 import { cut } from '@/helpers';
+const { selectAll, accounts } = defineProps<{ selectAll: boolean; accounts: Record<string, WalletInfo> }>();
+const emit = defineEmits(['onSelectAll', 'onSelect']);
 
-@Component
-export default class SelectAuthAccount extends Vue {
-  @PropSync('selectAll', { type: Boolean }) syncSelectAll!: boolean;
-  @Prop(Array) accounts!: WalletInfo[];
+const showAllCheckbox = computed(() => Object.keys(accounts).length);
 
-  get showAllCheckbox() {
-    return this.accounts.length !== 0;
-  }
+const cutAddress = (address: string) => cut(address);
 
-  cutAddress(address: string) {
-    return cut(address);
-  }
-
-  saveToClipboard(value: string) {
-    navigator.clipboard.writeText(value);
-  }
-}
+const saveToClipboard = (value: string) => {
+  navigator.clipboard.writeText(value);
+};
 </script>
 
 <style lang="scss" scoped>

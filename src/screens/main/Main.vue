@@ -36,7 +36,7 @@
 
     <AboutPopup v-if="showAboutPopup" :handlerClose="toggleAboutPopupVisible" />
 
-    <ManageAuths v-if="showManageAuthsVisible" @handlerClose="toggleManageAuthsVisible" />
+    <ManageAuths v-if="showManageAuthsVisible" @close="toggleManageAuthsVisible" />
 
     <router-view
       class="main-child"

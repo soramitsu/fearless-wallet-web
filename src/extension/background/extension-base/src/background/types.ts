@@ -7,7 +7,7 @@ import { TypeRegistry } from '@polkadot/types';
 import { Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 import { RequestSignatures } from '@extension-base/background/types/messages';
-import { AuthUrlInfo } from './types/types';
+import type { AccountJson, AuthUrlInfo } from './types/types';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { ProviderInterface } from '@polkadot/rpc-provider/types';
@@ -30,20 +30,6 @@ type NullKeys<T> = { [K in keyof T]: IsNull<T, K> }[keyof T];
 
 export type SeedLengths = 12 | 24;
 export type Port = chrome.runtime.Port;
-export interface AccountJson extends KeyringPair$Meta {
-  address: string;
-  genesisHash?: HexString | null;
-  isExternal?: boolean;
-  isHardware?: boolean;
-  isMobile?: boolean;
-  isHidden?: boolean;
-  isDefaultAuthSelected?: boolean;
-  name?: string;
-  parentAddress?: string;
-  suri?: string;
-  type?: KeypairType;
-  whenCreated?: number;
-}
 
 export type AccountWithChildren = AccountJson & {
   children?: AccountWithChildren[];

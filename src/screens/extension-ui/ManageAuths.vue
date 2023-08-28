@@ -11,7 +11,7 @@
 
       <Tabs v-model="activeTab" :tabs="tabs" />
 
-      <div class="auth-items">
+      <div v-if="showSubstrateAuths" class="auth-items">
         <Scroll>
           <AuthItem v-for="el in filteredList" v-bind:key="el.id" :request="el" @openUpdateAuths="updateUrl" />
         </Scroll>
@@ -31,10 +31,10 @@ import { useStore } from '@/store';
 
 const store = useStore();
 const filteredList = ref<Record<string, AuthUrlInfo>>({});
-
+// const wcFilteredList = ref<Record<string, AuthUrlInfo>>({});
 const filterValue = ref('');
 const url = ref('');
-const activeTab = ref('substrate');
+const activeTab = ref<'substrate' | 'wc'>('substrate');
 const tabs = {
   substrate: {
     label: 'authorize.substrate',
@@ -45,12 +45,10 @@ const tabs = {
     name: 'wc',
   },
 };
-const emits = defineEmits(['handleClose']);
+const emits = defineEmits(['close']);
 
-const showUpdateAuths = computed(() => {
-  return url.value !== '';
-});
-
+const showUpdateAuths = computed(() => url.value !== '');
+const showSubstrateAuths = computed(() => activeTab.value === 'substrate');
 const header = computed(() => {
   if (showUpdateAuths.value) return { text: 'authorize.accountsConnected', localeProps: { url: url.value } };
 
@@ -60,7 +58,7 @@ const header = computed(() => {
 onMounted(async () => {
   await store.dispatch('GET_AUTHLIST');
 
-  filteredList.value = store.getters.authlist;
+  filteredList.value = store.getters.authList;
 });
 
 function filteredData(value: string) {
@@ -80,7 +78,8 @@ const updateUrl = (value = '') => {
 };
 
 const onBack = () => updateUrl('');
-const onClose = () => emits('handleClose');
+
+const onClose = () => emits('close');
 </script>
 
 <style lang="scss" scoped>

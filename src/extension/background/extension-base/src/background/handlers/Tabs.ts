@@ -4,6 +4,8 @@
 import { PHISHING_PAGE_REDIRECT } from '@extension-base/defaults';
 import { checkIfDenied } from '@polkadot/phishing';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
+import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
+
 import { assert, isNumber } from '@polkadot/util';
 import { keyring } from '@polkadot/ui-keyring';
 import {
@@ -77,7 +79,7 @@ export default class Tabs {
 
   async accountsListAuthorized(url: string, { anyType }: RequestAccountList): Promise<InjectedAccount[]> {
     const transformedAccounts = transformAccounts(accountsObservable.subject.getValue(), anyType);
-    const transformedAddresses = transformAddresses(keyring.addresses.subject.getValue());
+    const transformedAddresses = transformAddresses(addressesObservable.subject.getValue());
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
 
     const filteredAuths = await this.filterForAuthorizedAccounts(totalAccounts, url);
@@ -97,7 +99,7 @@ export default class Tabs {
     this.accountSubs[id] = {
       subscription: accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
         const transformedAccounts = transformAccounts(accounts);
-        const transformedMobileAccount = transformAddresses(keyring.addresses.subject.value);
+        const transformedMobileAccount = transformAddresses(addressesObservable.subject.getValue());
         const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
 
         chrome.storage.local.set({ transformAccounts: allAccounts });

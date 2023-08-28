@@ -64,7 +64,7 @@ export class ConnectWCRequestHandler {
     };
 
     this.updateIconConnectWC();
-    this.requestService.popupOpen();
+    //    this.requestService.popupOpen();
   }
 
   public resetWallet() {

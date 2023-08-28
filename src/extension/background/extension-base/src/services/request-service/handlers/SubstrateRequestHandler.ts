@@ -7,14 +7,9 @@ import { keyring } from '@polkadot/ui-keyring';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import { Resolver } from '@extension-base/types';
 import { getId, isInternalRequest } from '@extension-base/utils';
-import {
-  SignRequest,
-  SigningRequest,
-  ResponseSigning,
-  RequestSign,
-  AccountJson,
-} from '@extension-base/background/types';
+import { SignRequest, SigningRequest, ResponseSigning, RequestSign } from '@extension-base/background/types';
 import { RequestService } from '@extension-base/services';
+import { AccountJson } from '../../../background/types/types';
 
 export class SubstrateRequestHandler {
   readonly logger: Logger;
@@ -98,7 +93,12 @@ export class SubstrateRequestHandler {
   ): Promise<ResponseSigning> {
     return new Promise((resolve, reject): void => {
       const pair = keyring.getPair(address);
-      const account: AccountJson = { address: pair.address, ...pair.meta };
+      const account: AccountJson = {
+        address: pair.address,
+        name: pair.meta.name as string,
+        ethereumAddress: (pair.meta.ethAddress as string) ?? '',
+        ...pair.meta,
+      };
 
       this.substrateRequests[id] = {
         ...this.signComplete(id, resolve, reject),

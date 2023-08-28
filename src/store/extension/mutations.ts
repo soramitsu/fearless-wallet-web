@@ -24,13 +24,22 @@ export enum MutationTypes {
 
 interface SetPayload {
   type: 'auth' | 'meta' | 'sign' | 'wcConnectRequests' | 'wcSessions';
-  requests: AuthorizeRequest[] | SigningRequest[] | MetadataRequest[] | SessionTypes.Struct[] | null;
+  requests:
+    | AuthorizeRequest[]
+    | SigningRequest[]
+    | MetadataRequest[]
+    | WalletConnectSessionRequest[]
+    | SessionTypes.Struct[]
+    | null;
 }
 
 export type Mutations = {
   [MutationTypes.SET_AUTHLIST](state: State, payload: ResponseAuthorizeList): void;
   [MutationTypes.DELETE_AUTHLIST_ITEM](state: State, payload: string): void;
-  [MutationTypes.DELETE_REQUEST](state: State, payload: 'authRequests' | 'metaRequests' | 'signRequests'): void;
+  [MutationTypes.DELETE_REQUEST](
+    state: State,
+    payload: 'authRequests' | 'metaRequests' | 'signRequests' | 'wcConnectRequests'
+  ): void;
   [MutationTypes.SET_REQUEST](state: State, payload: SetPayload): void;
   [MutationTypes.SET_TAB_STATUS](state: State, payload: ActiveTabAuthorizeStatus): void;
   [MutationTypes.SET_FEATURES](state: State, features: Features): void;

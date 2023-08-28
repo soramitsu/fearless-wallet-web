@@ -43,7 +43,7 @@ import { cut } from '@/helpers';
 @Component
 export default class SelectAuthAccount extends Vue {
   @PropSync('selectAll', { type: Boolean }) syncSelectAll!: boolean;
-  @Prop(Object) accounts!: WalletInfo[];
+  @Prop(Array) accounts!: WalletInfo[];
 
   get showAllCheckbox() {
     return this.accounts.length !== 0;

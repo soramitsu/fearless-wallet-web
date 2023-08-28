@@ -248,20 +248,23 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.SET_FEATURES, data);
   },
 
-  async [ActionTypes.APPROVE_WC_REQUEST](_, payload) {
+  async [ActionTypes.APPROVE_WC_REQUEST]({ commit, dispatch }, payload) {
     await approveWalletConnectSession(payload);
-    //do something with request
+    commit(MutationTypes.DELETE_REQUEST, 'wcConnectRequests');
+
+    dispatch(ActionTypes.FETCH_TAB_STATUS);
   },
 
-  async [ActionTypes.REJECT_WC_REQUEST](_, payload) {
+  async [ActionTypes.REJECT_WC_REQUEST]({ commit }, payload) {
     await rejectWalletConnectSession(payload);
-    //do something with request
+
+    commit(MutationTypes.DELETE_REQUEST, 'wcConnectRequests');
   },
 
-  async [ActionTypes.SUBSCRIBE_WC_CONNECT_REQUESTS]() {
+  async [ActionTypes.SUBSCRIBE_WC_CONNECT_REQUESTS]({ commit }) {
     const callback = (requests: WalletConnectSessionRequest[]) => {
+      commit(MutationTypes.SET_REQUEST, { type: 'wcConnectRequests', requests });
       console.info(requests, 'WC requests');
-      if (requests === null) return;
 
       if (requests.length)
         router.push({
@@ -272,10 +275,11 @@ const actions: ActionTree<State, State> & Actions = {
     return walletConnectRequestSubscribe(callback);
   },
 
-  async [ActionTypes.SUBSCRIBE_WC_SESSIONS]() {
+  async [ActionTypes.SUBSCRIBE_WC_SESSIONS]({ commit }) {
     const callback = (requests: WalletConnectSessions) => {
-      console.info(requests, 'WC requests');
-      if (requests === null) return;
+      commit(MutationTypes.SET_REQUEST, { type: 'wcSessions', requests });
+
+      console.info(requests, 'WC sessions');
     };
 
     return walletConnectSessionsSubscribe(callback);

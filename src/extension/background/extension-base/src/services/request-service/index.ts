@@ -3,7 +3,6 @@ import { MetadataDef } from '@polkadot/extension-inject/types';
 import { WalletConnectNotSupportRequest, WalletConnectSessionRequest } from '../wallet-connect-service/types';
 import State from '../../background/handlers/State';
 import {
-  AccountJson,
   AuthorizeRequest,
   AuthRequest,
   AuthResponse,
@@ -16,6 +15,7 @@ import {
   SigningRequest,
 } from '../../background/types';
 import { NetworkService } from '..';
+import { AccountJson } from '../../background/types/types';
 import {
   ConnectWCRequestHandler,
   NotSupportWCRequestHandler,

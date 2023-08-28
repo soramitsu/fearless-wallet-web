@@ -11,7 +11,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import type { WalletConnectSessionRequest } from '@/extension/background/extension-base/src/services/wallet-connect-service/types';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 
 import { WalletInfo, useStore } from '@/store';
@@ -25,8 +24,7 @@ import { AccountJson } from '@/extension/background/extension-base/src/backgroun
 const store = useStore();
 const state = ref<WalletInfo[]>([]);
 const selectAll = ref(true);
-const requests = computed<WalletConnectSessionRequest[]>(() => store.getters.wcConnectRequests);
-const id = computed(() => (requests.value.length ? requests.value[0].id : ''));
+const id = computed(() => (store.getters.wcConnectRequests.length ? store.getters.wcConnectRequests[0].id : ''));
 const isSupported = true;
 
 onMounted(() => {

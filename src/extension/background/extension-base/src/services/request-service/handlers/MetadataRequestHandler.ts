@@ -10,14 +10,14 @@ import { extractMetadata } from '@extension-base/services/request-service/helper
 
 export class MetadataRequestHandler {
   readonly requestService: RequestService;
-  readonly #metaStore: MetadataStore = new MetadataStore();
-  readonly #metaRequests: Record<string, MetaRequest> = {};
+  readonly metaStore: MetadataStore = new MetadataStore();
+  readonly metaRequests: Record<string, MetaRequest> = {};
   public readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
 
   constructor(requestService: RequestService) {
     this.requestService = requestService;
 
-    extractMetadata(this.#metaStore);
+    extractMetadata(this.metaStore);
   }
 
   public get knownMetadata(): MetadataDef[] {
@@ -25,19 +25,19 @@ export class MetadataRequestHandler {
   }
 
   public get allMetaRequests(): MetadataRequest[] {
-    return Object.values(this.#metaRequests).map(({ id, request, url }): MetadataRequest => ({ id, request, url }));
+    return Object.values(this.metaRequests).map(({ id, request, url }): MetadataRequest => ({ id, request, url }));
   }
 
   public get numMetaRequests(): number {
-    return Object.keys(this.#metaRequests).length;
+    return Object.keys(this.metaRequests).length;
   }
 
   public getMetaRequest(id: string): MetaRequest {
-    return this.#metaRequests[id];
+    return this.metaRequests[id];
   }
 
   public saveMetadata(meta: MetadataDef): void {
-    this.#metaStore.set(meta.genesisHash, meta);
+    this.metaStore.set(meta.genesisHash, meta);
 
     addMetadata(meta);
   }
@@ -53,7 +53,7 @@ export class MetadataRequestHandler {
     reject: (error: Error) => void
   ): Resolver<boolean> => {
     const complete = (): void => {
-      delete this.#metaRequests[id];
+      delete this.metaRequests[id];
       this.updateIconMeta(true);
     };
 
@@ -73,7 +73,7 @@ export class MetadataRequestHandler {
     return new Promise((resolve, reject): void => {
       const id = getId();
 
-      this.#metaRequests[id] = {
+      this.metaRequests[id] = {
         ...this.metaComplete(id, resolve, reject),
         id,
         request,
@@ -86,7 +86,7 @@ export class MetadataRequestHandler {
   }
 
   public resetWallet() {
-    for (const request of Object.values(this.#metaRequests)) {
+    for (const request of Object.values(this.metaRequests)) {
       request.reject(new Error('Reset wallet'));
     }
 

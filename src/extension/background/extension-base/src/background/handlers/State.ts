@@ -12,7 +12,6 @@ import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import { storage } from '@extension-base/stores/Storage';
 import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
 import BalanceService from '@extension-base/shared/balanceService';
-import AuthorizeStore from '@extension-base/stores/Authorize';
 import { initWeb3Api } from '@extension-base/api/evm';
 import PriceStore from '@extension-base/stores/Price';
 import { getTokenPrice } from '@extension-base/utils/coingecko';
@@ -24,7 +23,7 @@ import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
 import { getMockCurrencies, isEthereumNetwork, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
 import { MobileSigningRequest, MobileSignRequest } from '@extension-base/background/types/types';
-import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
+import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { SignerPayloadRaw } from '@polkadot/types/types';
 import { JsonRpcProvider } from 'ethers';
@@ -39,11 +38,8 @@ import {
 } from '@extension-base/services';
 import CurrentAccountStore, { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
-  AuthRequest,
   AuthUrls,
-  MetaRequest,
   ResponseSigning,
-  SignRequest,
   Resolver,
   AuthorizedAccountsDiff,
   RequestRpcSend,
@@ -110,12 +106,10 @@ export default class State {
   public chainRegistryMap: Record<string, ChainRegistry> = {};
   public chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
   public readonly unsubscriptionMap: Record<string, () => void> = {};
-  private readonly authorizeStore = new AuthorizeStore();
   private readonly currentAccountStore = new CurrentAccountStore();
   private readonly priceStore = new PriceStore();
   private readonly evmChainSubject = new Subject<AuthUrls>();
   private readonly authorizeUrlSubject = new Subject<AuthUrls>();
-  public authUrls: AuthUrls = {};
   public signature: HexString | null = null;
   public defaultAuthAccountSelection: string[] = [];
   private lockNetworkMap = false;
@@ -125,7 +119,6 @@ export default class State {
   };
   private priceStoreReady = false;
   public fiatSymbol = 'usd';
-  public authorizeCached: AuthUrls | undefined = undefined;
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
   public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
@@ -139,9 +132,6 @@ export default class State {
   public customTokenState: CustomTokenJson = { erc20: [] };
   public customTokenSubject = new Subject<CustomTokenJson>();
   public customTokenStore = new CustomTokenStore();
-  public authRequests: Record<string, AuthRequest> = {};
-  public metaRequests: Record<string, MetaRequest> = {};
-  public signRequests: Record<string, SignRequest> = {};
   public mobileSignRequests: Record<string, MobileSignRequest> = {};
   private historyMap: Record<string, TransactionHistoryItemType[]> = {};
   private historySubject = new Subject<Record<string, TransactionHistoryItemType[]>>();
@@ -159,7 +149,7 @@ export default class State {
   public networkService = new NetworkService(this.eventService);
   public requestService = new RequestService(this, this.networkService);
   public walletConnectService = new WalletConnectService(this, this.requestService);
-  public soraCardService = new SoraCardService();
+  public soraCardService = new SoraCardService(this.requestService);
   public onboardingService = new OnboardingService();
 
   public get knownMetadata(): MetadataDef[] {
@@ -196,15 +186,6 @@ export default class State {
     return this.apis;
   }
 
-  public setAuthorize(data: AuthUrls, callback?: () => void): void {
-    this.authorizeStore.set('authUrls', data, () => {
-      this.authorizeCached = data;
-      this.evmChainSubject.next(this.authorizeCached);
-      this.authorizeUrlSubject.next(this.authorizeCached);
-      callback && callback();
-    });
-  }
-
   public createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
     this.unsubscriptionMap[id] = unsubscribe;
   }
@@ -231,18 +212,6 @@ export default class State {
     return storage.get(key);
   }
 
-  private numAuthRequests() {
-    return Object.keys(this.authRequests).length;
-  }
-
-  private numMetaRequests() {
-    return Object.keys(this.metaRequests).length;
-  }
-
-  private numSignRequests() {
-    return Object.keys(this.signRequests).length;
-  }
-
   public isReady() {
     return this.ready;
   }
@@ -252,17 +221,15 @@ export default class State {
   }
 
   async injectFromStorage() {
-    const { authUrls, defaultAuthAccountSelection, fiatSymbol, injectedProviders, providers, selectedNetwork } =
+    const { defaultAuthAccountSelection, fiatSymbol, injectedProviders, providers, selectedNetwork } =
       await this.getFromStorage([
         'fiatSymbol',
-        'authUrls',
         'selectedNetwork',
         'defaultAuthAccountSelection',
         'injectedProviders',
         'providers',
         'windows',
       ]);
-    if (authUrls && Object.keys(authUrls).length) this.authUrls = authUrls;
     if (fiatSymbol) this.setFiatSymbol(fiatSymbol);
     if (selectedNetwork) this.selectedNetwork = selectedNetwork;
     if (injectedProviders) this.injectedProviders = new Map(injectedProviders);
@@ -272,24 +239,10 @@ export default class State {
   }
 
   approvePolkaswap = async (authorizedAccounts: string[]): Promise<void> => {
-    this.soraCardService.approvePolkaswap(authorizedAccounts, this.authUrls);
-
-    await this.saveCurrentAuthList();
+    this.soraCardService.approvePolkaswap(authorizedAccounts);
 
     this.updateDefaultAuthAccounts(authorizedAccounts);
   };
-
-  public getAuthorize(update: (value: AuthUrls) => void): void {
-    // This action can be use many by DApp interaction => caching it in memory
-    if (this.authorizeCached) {
-      update(this.authorizeCached);
-    } else {
-      this.authorizeStore.get('authUrls', (data) => {
-        this.authorizeCached = data;
-        update(this.authorizeCached);
-      });
-    }
-  }
 
   public updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
     if (!tab || !tab.url) {
@@ -308,14 +261,16 @@ export default class State {
         ? 'header.currentExtensionPage'
         : url.hostname;
 
-    const authorizeUrl = Object.keys(this.authUrls).filter((url) => url === tabHostName);
-    const isAuthorize = authorizeUrl.length !== 0;
+    this.requestService.getAuthorize((authUrls) => {
+      const authorizeUrl = Object.keys(authUrls).filter((url) => url === tabHostName);
+      const isAuthorize = authorizeUrl.length !== 0;
 
-    this.currentTabStatus = {
-      isAuthorize,
-      authorizeAccountsCount: isAuthorize ? this.authUrls[tabHostName].authorizedAccounts.length : 0,
-      dAppName: tabHostName,
-    };
+      this.currentTabStatus = {
+        isAuthorize,
+        authorizeAccountsCount: isAuthorize ? authUrls[tabHostName].authorizedAccounts.length : 0,
+        dAppName: tabHostName,
+      };
+    });
   }
 
   public async onInstall() {
@@ -423,7 +378,7 @@ export default class State {
     this.networkMapStore.set('NetworkMap', this.networkMap);
     this.lockNetworkMap = false;
 
-    this.getAuthorize((data) => {
+    this.requestService.getAuthorize((data) => {
       if (network.isEthereum) this.evmChainSubject.next(data);
 
       this.authorizeUrlSubject.next(data);
@@ -612,10 +567,6 @@ export default class State {
     return true;
   }
 
-  public saveCurrentAuthList() {
-    return storage.set({ authUrls: this.authUrls });
-  }
-
   updateDefaultAuthAccounts(defaultAuthAccountSelection: string[]) {
     this.defaultAuthAccountSelection = defaultAuthAccountSelection;
 
@@ -659,50 +610,27 @@ export default class State {
     };
   };
 
-  async updateIcon(shouldClose?: boolean): Promise<void> {
-    const authCount = this.numAuthRequests();
-    const metaCount = this.numMetaRequests();
-    const signCount = this.numSignRequests();
-
-    const text = authCount ? 'Auth' : metaCount ? 'Meta' : signCount ? `${signCount}` : '';
-
-    withErrorLog(() => {
-      if (chrome.browserAction) chrome.browserAction.setBadgeText({ text });
-      else chrome.action.setBadgeText({ text });
-    });
-
-    if (shouldClose && text === '') {
-      this.requestService.popupClose();
-    }
-  }
-
   async removeAuthorization(url: string): Promise<AuthUrls> {
-    const entry = this.authUrls[url];
+    const entries = await this.requestService.getAuthList();
+    const entry = entries[url];
 
     assert(entry, `The source ${url} is not known`);
 
-    delete this.authUrls[url];
+    delete entries[url];
 
-    await this.saveCurrentAuthList();
+    this.requestService.setAuthorize(entries);
 
-    return this.authUrls;
+    return entries;
   }
 
-  updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
+  async updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
+    const entries = await this.requestService.getAuthList();
+
     authorizedAccountDiff.forEach(([url, authorizedAccountDiff]) => {
-      this.authUrls[url].authorizedAccounts = authorizedAccountDiff;
+      entries[url].authorizedAccounts = authorizedAccountDiff;
     });
 
-    return this.saveCurrentAuthList();
-  }
-
-  ensureUrlAuthorized(url: string): boolean {
-    const stripedUrl = stripUrl(url);
-    const entry = this.authUrls[stripedUrl];
-
-    assert(entry, `The source ${url} has not been enabled yet`);
-
-    return true;
+    return this.requestService.setAuthorize(entries);
   }
 
   getMobileSignRequest(id: string): MobileSignRequest {
@@ -1079,6 +1007,7 @@ export default class State {
 
     return [...accounts, ...addresses];
   }
+
   public generateDefaultBalance(address: string) {
     if (address === '') return;
 

@@ -58,7 +58,7 @@ const header = computed(() => {
 });
 
 onMounted(async () => {
-  await store.dispatch('getAuthList');
+  await store.dispatch('GET_AUTHLIST');
 
   filteredList.value = store.getters.authlist;
 });

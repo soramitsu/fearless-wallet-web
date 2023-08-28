@@ -21,23 +21,22 @@ export class AuthRequestHandler {
   readonly state: State;
   readonly networkService: NetworkService;
   readonly authRequests: Record<string, AuthRequest> = {};
-  private authorizeCached: AuthUrls | undefined = undefined;
+  private authorizeCached: AuthUrls = {};
   private readonly authorizeStore = new AuthorizeStore();
   private readonly authorizeUrlSubject = new BehaviorSubject<AuthUrls>({});
   private readonly evmChainSubject = new BehaviorSubject<AuthUrls>({});
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
 
   constructor(state: State, requestService: RequestService, networkService: NetworkService) {
+    this.getAuthorize((auths) => {
+      if (!auths) this.authorizeCached = {};
+      else this.authorizeCached = auths;
+    });
     this.state = state;
     this.requestService = requestService;
     this.networkService = networkService;
   }
 
-  private getAddressList(value = false): Record<string, boolean> {
-    const addressList = Object.keys(this.state.getSubstrateAccounts());
-
-    return addressList.reduce((addressList, v) => ({ ...addressList, [v]: value }), {});
-  }
   public get numAuthRequests(): number {
     return Object.keys(this.authRequests).length;
   }
@@ -63,7 +62,7 @@ export class AuthRequestHandler {
 
   public getAuthorize(update: (value: AuthUrls) => void): void {
     // This action can be use many by DApp interaction => caching it in memory
-    if (this.authorizeCached) {
+    if (Object.keys(this.authorizeCached).length) {
       update(this.authorizeCached);
     } else {
       this.authorizeStore.get('authUrls', (data) => {
@@ -104,7 +103,7 @@ export class AuthRequestHandler {
 
       const stripedUrl = stripUrl(url);
 
-      this.state.authUrls[stripedUrl] = {
+      this.authorizeCached[stripedUrl] = {
         authorizedAccounts,
         count: 0,
         isAllowed: true,
@@ -114,7 +113,7 @@ export class AuthRequestHandler {
         url,
       };
 
-      await this.state.saveCurrentAuthList();
+      this.setAuthorize(this.authorizeCached);
 
       this.state.updateDefaultAuthAccounts(authorizedAccounts);
 
@@ -146,7 +145,7 @@ export class AuthRequestHandler {
     if (this.authRequests[idStr]) {
       // this url was seen in the past
       assert(
-        this.state.authUrls[idStr].authorizedAccounts || this.state.authUrls[idStr].isAllowed,
+        this.authorizeCached[idStr].authorizedAccounts || this.authorizeCached[idStr].isAllowed,
         `The source ${url} is not allowed to interact with this extension`
       );
 
@@ -191,12 +190,8 @@ export class AuthRequestHandler {
     const idStr = stripUrl(url);
 
     return new Promise((resolve, reject) => {
-      this.getAuthorize((value) => {
-        if (!value) {
-          value = {};
-        }
-
-        const entry = Object.keys(value).includes(idStr);
+      this.getAuthorize((authUrls) => {
+        const entry = Object.keys(authUrls).includes(idStr);
 
         if (!entry) {
           reject(new Error(`The source ${url} has not been enabled yet`));

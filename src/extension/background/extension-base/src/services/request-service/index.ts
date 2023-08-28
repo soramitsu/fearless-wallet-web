@@ -37,8 +37,8 @@ export class RequestService {
 
   constructor(state: State, networkService: NetworkService) {
     this.state = state;
-    this.popupHandler = new PopupHandler(this);
     this.networkService = networkService;
+    this.popupHandler = new PopupHandler(this);
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);

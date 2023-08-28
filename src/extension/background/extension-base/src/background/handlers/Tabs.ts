@@ -20,6 +20,8 @@ import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import type {
   AccountSub,
   AuthResponse,
+  AuthUrlInfo,
+  AuthUrls,
   MessageTypes,
   Port,
   RequestAccountList,
@@ -54,9 +56,11 @@ export default class Tabs {
     this.accountSubs = {};
   }
 
-  filterForAuthorizedAccounts(accounts: InjectedAccount[], url: string): InjectedAccount[] {
+  async filterForAuthorizedAccounts(accounts: InjectedAccount[], url: string): Promise<InjectedAccount[]> {
     const stripedUrl = stripUrl(url);
-    const auth = this.state.authUrls[stripedUrl];
+    const entries = await this.state.requestService.getAuthList();
+
+    const auth = entries[stripedUrl];
 
     return accounts.filter((allAcc) =>
       auth.authorizedAccounts
@@ -71,25 +75,34 @@ export default class Tabs {
     return this.state.requestService.authorizeUrl(url, request);
   }
 
-  accountsListAuthorized(url: string, { anyType }: RequestAccountList): InjectedAccount[] {
+  async accountsListAuthorized(url: string, { anyType }: RequestAccountList): Promise<InjectedAccount[]> {
     const transformedAccounts = transformAccounts(accountsObservable.subject.getValue(), anyType);
     const transformedAddresses = transformAddresses(keyring.addresses.subject.getValue());
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
 
-    return this.filterForAuthorizedAccounts(totalAccounts, url);
+    const filteredAuths = await this.filterForAuthorizedAccounts(totalAccounts, url);
+
+    return filteredAuths;
   }
 
-  accountsSubscribeAuthorized(url: string, id: string, port: Port): string {
+  async getAuthInfo(url: string, fromList?: AuthUrls): Promise<AuthUrlInfo | undefined> {
+    const authList = fromList || (await this.state.requestService.getAuthList());
+    const shortenUrl = stripUrl(url);
+
+    return authList[shortenUrl];
+  }
+
+  async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<string> {
     const cb = createSubscription<'pub(accounts.subscribe)'>(id, port);
     this.accountSubs[id] = {
-      subscription: accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
+      subscription: accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
         const transformedAccounts = transformAccounts(accounts);
         const transformedMobileAccount = transformAddresses(keyring.addresses.subject.value);
         const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
 
         chrome.storage.local.set({ transformAccounts: allAccounts });
 
-        const auths = this.filterForAuthorizedAccounts(allAccounts, url);
+        const auths = await this.filterForAuthorizedAccounts(allAccounts, url);
 
         cb(auths);
       }),
@@ -246,7 +259,7 @@ export default class Tabs {
   ): Promise<ResponseTypes[keyof ResponseTypes]> {
     if (type === 'pub(phishing.redirectIfDenied)') return this.redirectIfPhishing(url);
 
-    if (type !== 'pub(authorize.tab)') this.state.ensureUrlAuthorized(url);
+    if (type !== 'pub(authorize.tab)') await this.state.requestService.ensureUrlAuthorized(url);
 
     switch (type) {
       case 'pub(authorize.tab)':

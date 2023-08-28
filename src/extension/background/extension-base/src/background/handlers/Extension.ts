@@ -212,15 +212,17 @@ export default class Extension extends FWExtensionBase {
     const authorizedAccountsDiff: AuthorizedAccountsDiff = [];
 
     // cycle through authUrls and prepare the array of diff
-    Object.entries(this.state.authUrls).forEach(([url, urlInfo]) => {
-      if (!urlInfo.authorizedAccounts.includes(address)) {
-        return;
-      }
+    this.state.requestService.getAuthorize((authUrls) => {
+      Object.entries(authUrls).forEach(([url, urlInfo]) => {
+        if (!urlInfo.authorizedAccounts.includes(address)) {
+          return;
+        }
 
-      authorizedAccountsDiff.push([
-        url,
-        urlInfo.authorizedAccounts.filter((previousAddress) => previousAddress !== address),
-      ]);
+        authorizedAccountsDiff.push([
+          url,
+          urlInfo.authorizedAccounts.filter((previousAddress) => previousAddress !== address),
+        ]);
+      });
     });
 
     this.state.updateAuthorizedAccounts(authorizedAccountsDiff);
@@ -339,7 +341,9 @@ export default class Extension extends FWExtensionBase {
   }
 
   async getAuthList(): Promise<ResponseAuthorizeList> {
-    return { list: this.state.authUrls };
+    const list = await this.state.requestService.getAuthList();
+
+    return { list };
   }
 
   async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
@@ -354,13 +358,15 @@ export default class Extension extends FWExtensionBase {
         }
 
         const tabHostName = new URL(tab.url).hostname;
-        const authorizeUrl = Object.keys(this.state.authUrls).filter((url) => url === tabHostName);
-        const isAuthorize = authorizeUrl.length !== 0;
+        this.state.requestService.getAuthorize((authUrls) => {
+          const authorizeUrl = Object.keys(authUrls).filter((url) => url === tabHostName);
+          const isAuthorize = authorizeUrl.length !== 0;
 
-        resolve({
-          isAuthorize,
-          authorizeAccountsCount: isAuthorize ? this.state.authUrls[tabHostName].authorizedAccounts.length : 0,
-          dAppName: tabHostName,
+          resolve({
+            isAuthorize,
+            authorizeAccountsCount: isAuthorize ? authUrls[tabHostName].authorizedAccounts.length : 0,
+            dAppName: tabHostName,
+          });
         });
       });
     });

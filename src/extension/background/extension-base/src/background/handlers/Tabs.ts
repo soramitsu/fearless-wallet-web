@@ -88,7 +88,8 @@ export default class Tabs {
   }
 
   async getAuthInfo(url: string, fromList?: AuthUrls): Promise<AuthUrlInfo | undefined> {
-    const authList = fromList || (await this.state.requestService.getAuthList());
+    const auths = await this.state.requestService.getAuthList();
+    const authList = fromList || auths;
     const shortenUrl = stripUrl(url);
 
     return authList[shortenUrl];

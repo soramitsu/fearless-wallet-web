@@ -14,6 +14,10 @@ const Accounts = () => import('@/screens/accounts/Accounts.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
 const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
 const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue');
+const AuthManagment = () => import('@/screens/extension-ui/AuthManagment.vue');
+const ManageAuths = () => import('@/screens/extension-ui/ManageAuths.vue');
+const UpdateAuths = () => import('@/screens/extension-ui/authorize/UpdateAuths.vue');
+
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 const Export = () => import('@/screens/accounts/Export.vue');
@@ -49,6 +53,8 @@ export enum Components {
   Nodes = 'Nodes',
   Export = 'Export',
   Authorize = 'Authorize',
+  ManageAuths = 'ManageAuths',
+  UpdateAuths = 'UpdateAuths',
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
   CreateGoogle = 'CreateGoogle',
@@ -120,6 +126,22 @@ const routes: Array<RouteConfig> = [
     path: '/transaction',
     name: Components.Transaction,
     component: Transaction,
+  },
+  {
+    path: '/auth-management',
+    component: AuthManagment,
+    children: [
+      {
+        path: '/',
+        name: Components.ManageAuths,
+        component: ManageAuths,
+      },
+      {
+        path: ':index',
+        name: Components.UpdateAuths,
+        component: UpdateAuths,
+      },
+    ],
   },
   {
     path: '/sora-card',

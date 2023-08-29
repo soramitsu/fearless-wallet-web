@@ -1,30 +1,20 @@
 <template>
-  <AboveForm
-    :header="header"
-    :fullScreen="true"
-    :showBackIcon="showUpdateAuths"
-    :closeHandler="onClose"
-    :handlerBack="onBack"
-  >
-    <template v-if="!showUpdateAuths">
-      <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
+  <Fragment>
+    <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
 
-      <Tabs v-model="activeTab" :tabs="tabs" />
+    <Tabs v-model="activeTab" :tabs="tabs" />
 
-      <div v-if="showSubstrateAuths && Object.keys(filteredList).length" class="auth-items">
-        <Scroll>
-          <AuthItem v-for="request in filteredList" :key="request.id" :request="request" @openUpdateAuths="updateUrl" />
-        </Scroll>
-      </div>
-      <div v-else-if="showWCAuths && wcFilteredList" class="auth-items">
-        <Scroll>
-          <WCAuthItem v-for="(el, index) in wcFilteredList" :key="index" :request="el" @openUpdateAuths="updateUrl" />
-        </Scroll>
-      </div>
-    </template>
-
-    <UpdateAuths v-else :url="url" @updateUrl="updateUrl" />
-  </AboveForm>
+    <div v-if="showSubstrateAuths" class="auth-items">
+      <Scroll>
+        <AuthItem v-for="request in filteredList" :key="request.id" :request="request" @openUpdateAuths="updateUrl" />
+      </Scroll>
+    </div>
+    <div v-else-if="showWCAuths" class="auth-items">
+      <Scroll>
+        <WCAuthItem v-for="(el, index) in wcFilteredList" :key="index" :request="el" @openUpdateAuths="updateUrl" />
+      </Scroll>
+    </div>
+  </Fragment>
 </template>
 
 <script lang="ts" setup>
@@ -32,16 +22,15 @@ import { computed, onMounted, ref, watch } from 'vue';
 import type { WalletConnectSessions } from '@extension-base/services/wallet-connect-service/types';
 import type { AuthUrlInfo } from '@extension-base/background/types/types';
 import WCAuthItem from '@/screens/walletConnect/WCAuthItem.vue';
-import UpdateAuths from '@/screens/extension-ui/authorize/UpdateAuths.vue';
 import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { useStore } from '@/store';
 
 const store = useStore();
-const filteredList = ref<Record<string, AuthUrlInfo>>({});
-const wcFilteredList = ref<WalletConnectSessions>(store.getters.wcSessions);
-console.info(wcFilteredList.value);
 const filterValue = ref('');
-const url = ref('');
+
+const emit = defineEmits(['updateUrl']);
+const wcFilteredList = ref<WalletConnectSessions>(store.getters.wcSessions);
+
 const activeTab = ref<'substrate' | 'wc'>('substrate');
 const tabs = {
   substrate: {
@@ -53,43 +42,34 @@ const tabs = {
     name: 'wc',
   },
 };
-const emit = defineEmits(['close']);
 
-const showUpdateAuths = computed(() => url.value !== '');
-const showSubstrateAuths = computed(() => activeTab.value === 'substrate');
-const showWCAuths = computed(() => activeTab.value === 'wc');
+const showWCAuths = computed(() => activeTab.value === 'wc' && wcFilteredList);
 
-const header = computed(() => {
-  if (showUpdateAuths.value) return { text: 'authorize.accountsConnected', localeProps: { url: url.value } };
-
-  return 'common.manageDApp';
-});
+const filteredList = ref<Record<string, AuthUrlInfo>>({});
 
 onMounted(async () => {
-  await store.dispatch('GET_AUTHLIST');
-
-  filteredList.value = store.getters.authList;
+  filteredList.value = await filteredData();
 });
 
-function filteredData(value: string) {
-  const filtered = Object.entries<AuthUrlInfo>(store.getters.authlist).filter(([, { origin }]) => {
-    return origin.includes(value);
-  });
+const filteredData = async () => {
+  const list = await store.dispatch('GET_AUTHLIST');
 
-  return Object.fromEntries(filtered);
-}
+  if (filterValue.value === '') return list;
 
-watch(filterValue, (value: string) => {
-  filteredList.value = filteredData(value);
-});
+  const entries = Object.entries<AuthUrlInfo>(list);
+  const filtered = entries.filter(([, { origin }]) => origin.includes(filterValue.value));
 
-const updateUrl = (value = '') => {
-  url.value = value;
+  filteredList.value = Object.fromEntries(filtered);
 };
 
-const onBack = () => updateUrl('');
+watch(store.getters.authList, filteredData);
 
-const onClose = () => emit('close');
+const isAuthsExist = computed(() => Object.keys(filteredList).length);
+const showSubstrateAuths = computed(() => activeTab.value === 'substrate' && isAuthsExist);
+
+const updateUrl = (value: string) => {
+  emit('updateUrl', value);
+};
 </script>
 
 <style lang="scss" scoped>

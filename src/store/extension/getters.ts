@@ -17,6 +17,7 @@ import {
 export enum GettersTypes {
   authRequests = 'authRequests',
   authList = 'authList',
+  getAuthItem = 'getAuthItem',
   metaRequests = 'metaRequests',
   signRequestPayload = 'signRequestPayload',
   signList = 'signList',
@@ -30,6 +31,10 @@ export enum GettersTypes {
 export type Getters = {
   [GettersTypes.authRequests](state: State, getters?: GetterTree<State, State> & Getters): AuthorizeRequest[];
   [GettersTypes.authList](state: State, getters?: GetterTree<State, State> & Getters): Record<string, AuthUrlInfo>;
+  [GettersTypes.getAuthItem](
+    state: State,
+    getters?: GetterTree<State, State> & Getters
+  ): (value: string) => AuthUrlInfo | undefined;
   [GettersTypes.tabStatus](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -57,7 +62,11 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.authList]({ authList }): Record<string, AuthUrlInfo> {
     return authList;
   },
-
+  [GettersTypes.getAuthItem]:
+    ({ authList }) =>
+    (value: string) => {
+      return authList[value];
+    },
   [GettersTypes.metaRequests]({ metaRequests }): MetadataRequest[] {
     return metaRequests;
   },

@@ -6,91 +6,83 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
-import { AuthUrlInfo } from '@extension-base/background/types/types';
+<script lang="ts" setup>
+import { computed, onMounted, set, ref } from 'vue';
+import { useRoute } from 'vue-router/composables';
+import type { AuthUrls } from '@extension-base/background/types/types';
 import { updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
-import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
-import { WalletInfo } from '@/store';
-import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
-import { AsyncFn } from '@/interfaces';
-import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
+import { WalletInfo, useStore } from '@/store';
 
-@Component({
-  components: {
-    SelectAuthAccount,
-  },
-})
-export default class Authorize extends Vue {
-  selectAll = false;
-  state: Record<string, WalletInfo> = {};
+const route = useRoute();
+const store = useStore();
+const list = ref<AuthUrls>({});
+const selectAll = ref(false);
+const state = ref<Record<string, WalletInfo>>({});
+const emit = defineEmits(['onUpdate']);
+const url = computed(() => route.params.index);
+const buttonText = computed(() => {
+  const count = Object.values(state.value).filter((el) => el.active).length;
+  const tc = count === 1 ? 1 : 2;
 
-  @Prop(String) url!: string;
-  @Getter(AccountGettersTypes.getWallets) wallets!: WalletInfo[];
-  @Getter(ExtensionGettersTypes.authList) authlist!: Record<string, AuthUrlInfo>;
-  @Action(ExtensionActionTypes.GET_AUTHLIST) fetchAuthList!: AsyncFn;
+  return {
+    text: 'authorize.connectCountAccounts',
+    localeProps: { count, tc },
+  };
+});
 
-  get buttonText() {
-    const count = Object.values(this.state).filter((el) => el.active).length;
-    const tc = count === 1 ? 1 : 2;
+const prepAccounts = computed<string[]>(() => {
+  return Object.values(state)
+    .filter(({ active }) => active)
+    .map(({ address }) => address);
+});
 
-    return {
-      text: 'authorize.connectCountAccounts',
-      localeProps: { count, tc },
-    };
-  }
+onMounted(async () => {
+  list.value = await store.dispatch('GET_AUTHLIST');
 
-  get prepAccounts() {
-    return Object.values(this.state)
-      .filter(({ active }) => active)
-      .map(({ address }) => address);
-  }
+  const wallets: WalletInfo[] = store.getters.getWallets;
 
-  async mounted() {
-    const { authorizedAccounts } = this.authlist[this.url];
+  const { authorizedAccounts } = list.value[url.value] ?? {};
 
-    this.wallets.forEach(({ name, address, isMobile }) => {
-      const isAuthorized = authorizedAccounts.some((el: string) => el === address);
+  wallets.forEach(({ name, address, isMobile }) => {
+    const isAuthorized = authorizedAccounts.some((el: string) => el === address);
 
-      Vue.set(this.state, name, {
-        name: name,
-        address: address,
-        isMobile: isMobile,
-        active: isAuthorized,
-      });
+    set(state.value, name, {
+      name: name,
+      address: address,
+      isMobile: isMobile,
+      active: isAuthorized,
     });
+  });
 
-    this.selectAll = this.isAllSelected();
-  }
+  selectAll.value = isAllSelected();
+});
 
-  isAllSelected() {
-    return Object.values(this.state).every((value) => value.active === true);
-  }
+function isAllSelected() {
+  return Object.values(state.value).every((value) => value.active === true);
+}
 
-  onSelect(value: boolean, name: string) {
-    this.state[name].active = value;
-    this.selectAll = this.isAllSelected();
-  }
+function onSelect(value: boolean, name: string) {
+  state.value[name].active = value;
+  selectAll.value = isAllSelected();
+}
 
-  onSelectAll(value: boolean) {
-    Object.keys(this.state).forEach((key) => {
-      Vue.set(this.state, key, {
-        ...this.state[key],
-        active: value,
-      });
+function onSelectAll(value: boolean) {
+  Object.keys(state).forEach((key) => {
+    set(state.value, key, {
+      ...state.value[key],
+      active: value,
     });
+  });
 
-    this.selectAll = value;
-  }
+  selectAll.value = value;
+}
 
-  async updateAuths() {
-    await updateAuthorization(this.prepAccounts, this.url);
-    await this.fetchAuthList();
+async function updateAuths() {
+  await updateAuthorization(prepAccounts.value, url.value);
+  list.value = await store.dispatch('GET_AUTHLIST');
 
-    this.$emit('updateUrl');
-  }
+  emit('onUpdate');
 }
 </script>
 

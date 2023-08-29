@@ -10,12 +10,7 @@
   >
     <div class="settings">
       <SettingMenuItem title="header.settings.wc" icon="account" @onOpen="open('WalletConnectInit')" />
-      <SettingMenuItem
-        v-if="isExtension"
-        title="common.manageDApp"
-        icon="mechanic-tool"
-        @onOpen="openPopup('openManageAuths')"
-      />
+      <SettingMenuItem v-if="isExtension" title="common.manageDApp" icon="mechanic-tool" @onOpen="openManageAuths" />
       <SettingMenuItem title="header.settings.accounts" icon="account" @onOpen="open('Accounts')" />
 
       <SettingMenuItem v-if="showSoraCard" title="soraCard.title" icon="card" @onOpen="open('SoraCard')" />
@@ -68,6 +63,9 @@ export default class SettingsPopup extends Vue {
 
   openPopup(value: string) {
     this.$emit(value);
+  }
+  openManageAuths() {
+    this.$router.push({ name: Components.ManageAuths });
   }
 
   open(name: SettingsItemType) {

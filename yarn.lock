@@ -10472,7 +10472,8 @@ __metadata:
     vue-cli-plugin-chrome-extension-cli: ^1.1.4
     vue-cli-plugin-electron-builder: ^3.0.0-alpha.4
     vue-fragment: ^1.6.0
-    vue-i18n: 8
+    vue-i18n: ^8
+    vue-i18n-composable: ^2.0.0
     vue-plugin-load-script: 2.1.1
     vue-property-decorator: ^9.1.2
     vue-router: ^3.2.0
@@ -19609,7 +19610,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vue-i18n@npm:8, vue-i18n@npm:^8.28.2":
+"vue-i18n-composable@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "vue-i18n-composable@npm:2.0.0"
+  peerDependencies:
+    vue: ">=2.7 <3"
+    vue-i18n: ">=8 <9"
+  checksum: 7e43221dcd0df8aafa5457e678b7ee2a0f2441bf1512cd776266fe330fb7e4e1b4b6ce1a6df4bead4ad6dd5fc58e32f7d85f52a5a232386c7da3580561c31d10
+  languageName: node
+  linkType: hard
+
+"vue-i18n@npm:^8, vue-i18n@npm:^8.28.2":
   version: 8.28.2
   resolution: "vue-i18n@npm:8.28.2"
   checksum: e0721cc79b6539afa821edb9ce1028c7a661d7db9232888fe6beda7c4cd731c0f72875202046535ea7283715414625f456ea2da78676cb8097fdca7b6f4630c1

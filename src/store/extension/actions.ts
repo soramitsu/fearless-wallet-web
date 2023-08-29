@@ -9,7 +9,7 @@ import type { AuthorizeRequest, ApproveAuthRequest, MetadataRequest } from '@ext
 import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from '@/store/extension/state';
 import type { Features } from '@/store/extension/types';
-import type { SigningRequest } from '@extension-base/background/types';
+import type { AuthUrls, SigningRequest } from '@extension-base/background/types';
 import { Mutations, MutationTypes } from '@/store/extension/mutations';
 import {
   subscribeAuthorizeRequests,
@@ -79,7 +79,7 @@ export type Actions = {
   [ActionTypes.SUBSCRIBE_AUTH_REQUESTS](context: AugmentedExtensionContext): Promise<boolean>;
   [ActionTypes.APPROVE_AUTH_REQUEST](context: AugmentedExtensionContext, props: ApproveAuthRequest): Promise<void>;
   [ActionTypes.REJECT_AUTH_REQUEST](context: AugmentedExtensionContext, props: AuthorizeRequest): Promise<void>;
-  [ActionTypes.GET_AUTHLIST](context: AugmentedExtensionContext): Promise<void>;
+  [ActionTypes.GET_AUTHLIST](context: AugmentedExtensionContext): Promise<AuthUrls>;
   [ActionTypes.DELETE_AUTH_CONNECTION](context: AugmentedExtensionContext, props: string): Promise<void>;
 
   [ActionTypes.SUBSCRIBE_META_REQUESTS](context: AugmentedExtensionContext): Promise<boolean>;
@@ -144,6 +144,8 @@ const actions: ActionTree<State, State> & Actions = {
     const list = await getAuthList();
 
     commit(MutationTypes.SET_AUTHLIST, list);
+
+    return list.list;
   },
 
   async [ActionTypes.DELETE_AUTH_CONNECTION]({ commit }, id) {

@@ -45,12 +45,12 @@ const authorizedAccounts = computed(() => {
   return `${authListLength} account${authListLength !== 1 ? 's' : ''}`;
 });
 
-const onRemoveAuth = () => store.dispatch('DELETE_AUTH_CONNECTION', stripedUrl);
+const onRemoveAuth = () => store.dispatch('DELETE_AUTH_CONNECTION', stripedUrl.value);
 
 const onClick = (event: CustomEvent) => {
   const classList = event.target?.classList;
 
-  if (!classList.contains('trash')) emits('openUpdateAuths', stripedUrl);
+  if (!classList.contains('trash')) emits('openUpdateAuths', stripedUrl.value);
 };
 </script>
 

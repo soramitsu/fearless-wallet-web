@@ -5,7 +5,7 @@
 
       <div v-else class="header-content">
         <div class="activity align-left">
-          <div v-if="showBackIcon" class="icon icon-back" @click="$emit('handlerBack')">
+          <div v-if="showBackIcon" class="icon icon-back" @click="emit('back')">
             <Icon icon="chevron-left" />
           </div>
 
@@ -17,11 +17,11 @@
         <div class="header">{{ tHeader }}</div>
 
         <div class="activity align-right">
-          <div v-if="showCloseIcon" class="icon" @click="$emit('closeHandler')">
+          <div v-if="showCloseIcon" class="icon" @click="emit('close')">
             <SIcon name="basic-close-24" />
           </div>
 
-          <div v-show="showAcceptIcon" class="icon" @click="saveChanges">
+          <div v-show="showAcceptIcon" class="icon" @click="emit('saveChanges')">
             <SIcon name="basic-check-mark-24" />
           </div>
         </div>
@@ -34,48 +34,59 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, withDefaults } from 'vue';
+import { useI18n } from 'vue-i18n-composable';
 import type { ComponentText } from '@/interfaces';
 
-@Component
-export default class AboveForm extends Vue {
-  @Prop({ default: '' }) header!: ComponentText;
-  @Prop({ default: false }) blur!: boolean;
-  @Prop({ default: false }) showAcceptIcon!: boolean;
-  @Prop({ default: false }) showBackIcon!: boolean;
-  @Prop({ default: false }) fullScreen!: boolean;
-  @Prop({ default: true }) showCloseIcon!: boolean;
-  @Prop({ default: true }) showAnimation!: boolean;
-  @Prop({ default: () => () => null }) saveChanges!: VoidFunction;
-  // @Prop({ default: () => () => null }) handlerBack!: VoidFunction;
-  // @Prop(Function) closeHandler!: VoidFunction;
+const { t } = useI18n();
 
-  get tHeader() {
-    if (typeof this.header === 'string') return this.$t(this.header);
-
-    return this.$t(this.header.text, this.header.localeProps);
+const emit = defineEmits(['back', 'close', 'saveChanges']);
+const { blur, fullScreen, header, showAcceptIcon, showAnimation, showBackIcon, showCloseIcon } = withDefaults(
+  defineProps<{
+    header?: ComponentText;
+    blur?: boolean;
+    showAcceptIcon?: boolean;
+    showBackIcon?: boolean;
+    fullScreen?: boolean;
+    showCloseIcon?: boolean;
+    showAnimation?: boolean;
+  }>(),
+  {
+    header: '',
+    blur: false,
+    showAcceptIcon: false,
+    fullScreen: false,
+    showBackIcon: false,
+    showCloseIcon: true,
+    showAnimation: true,
   }
+);
 
-  get backgroundClasses() {
-    return [
-      'form-background',
-      {
-        'background-blur': this.blur,
-        'form-animation': this.showAnimation,
-      },
-    ];
-  }
+const tHeader = computed(() => {
+  if (typeof header === 'string') return t(header);
 
-  get aboveFormClasses() {
-    return [
-      'form',
-      {
-        fullscreen: this.fullScreen,
-      },
-    ];
-  }
-}
+  return t(header.text, header.localeProps);
+});
+
+const backgroundClasses = computed(() => {
+  return [
+    'form-background',
+    {
+      'background-blur': blur,
+      'form-animation': showAnimation,
+    },
+  ];
+});
+
+const aboveFormClasses = computed(() => {
+  return [
+    'form',
+    {
+      fullscreen: fullScreen,
+    },
+  ];
+});
 </script>
 
 <style lang="scss" scoped>

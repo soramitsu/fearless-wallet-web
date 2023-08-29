@@ -179,12 +179,13 @@ export class FWCron {
     for (const [key, apiProp] of Object.entries(apiMap.substrate)) {
       if (apiProp.isEthereumOnly) continue;
 
-      let status: NETWORK_STATUS = NETWORK_STATUS.CONNECTING;
-
       if (!navigator.onLine) {
         this.state.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
+
         continue;
       }
+
+      let status: NETWORK_STATUS = NETWORK_STATUS.CONNECTING;
 
       if (apiProp.isApiConnected) status = NETWORK_STATUS.CONNECTED;
 

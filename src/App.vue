@@ -43,7 +43,6 @@ export default class App extends Vue {
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: AsyncFn;
   @Action(NetworksActionTypes.FETCH_FIATS) fetchFiats!: AsyncFn;
   @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
-  @Action(AccountsActionTypes.ONLINE_STATUS_UPDATE) updateOnlineStatus!: AsyncFn;
   @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<AccountJson>;
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
 
@@ -56,8 +55,6 @@ export default class App extends Vue {
   }
 
   async created() {
-    this.onUpdateOnlineStatus();
-
     if (IS_EXTENSION) this.extensionSubscribe();
 
     this.unregisterInactiveWorkers();
@@ -76,10 +73,6 @@ export default class App extends Vue {
         if (registration.active?.state !== 'activated') registration.unregister();
       }
     });
-  }
-
-  onUpdateOnlineStatus() {
-    this.updateOnlineStatus();
   }
 
   setupSWPing() {

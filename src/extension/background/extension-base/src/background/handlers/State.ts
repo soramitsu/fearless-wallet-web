@@ -584,7 +584,7 @@ export default class State {
   public refreshDotSamaApi(key: string) {
     const network = this.networkMap[key];
 
-    if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network);
+    if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network, true);
   }
 
   getCurrentTabStatus() {

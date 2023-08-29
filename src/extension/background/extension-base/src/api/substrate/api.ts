@@ -117,12 +117,17 @@ function onReady(networkName: string) {
   state.apis.substrate[networkName].isApiReady = true;
 }
 
-export async function initApi(network: NetworkJson): Promise<void> {
+export async function initApi(network: NetworkJson, retry = false): Promise<void> {
   const { name: networkName, nodes, isEthereum } = network;
 
   if (state.apis.substrate[networkName] === undefined) {
     // return EVM HTTP Placeholder
     state.apis.substrate[networkName] = isEthereum ? generateEvmHttpApi() : createApiObject();
+  }
+
+  if (retry) {
+    state.apis.substrate[networkName].nodeIndex = 0;
+    state.apis.substrate[networkName].apiRetry = 0;
   }
 
   const { nodeIndex } = state.apis.substrate[networkName];

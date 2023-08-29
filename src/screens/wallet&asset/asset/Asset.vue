@@ -27,6 +27,7 @@
         class="activity-button"
         text="assets.sendButtonText"
         iconName="send"
+        :disabled="isOnline"
         @click="toggleVisible('showSendForm', true)"
       />
 
@@ -34,6 +35,7 @@
         class="activity-button"
         text="assets.receiveButtonText"
         iconName="receive"
+        :disabled="isOnline"
         @click="toggleVisible('showReceiveForm', true)"
       />
 
@@ -42,6 +44,7 @@
         class="activity-button"
         text="assets.crossChain"
         iconName="cross-chain"
+        :disabled="isOnline"
         @click="toggleVisible('showCrossChainForm', true)"
       />
 
@@ -50,6 +53,7 @@
         class="activity-button"
         text="assets.buy"
         iconName="plus-pink"
+        :disabled="isOnline"
         @click="toggleVisible('showBuyPopup', true)"
       />
 
@@ -58,6 +62,7 @@
         class="activity-button"
         text="assets.swap"
         iconName="swap"
+        :disabled="isOnline"
         @click="openSoraSwap"
       />
     </div>
@@ -186,9 +191,12 @@ export default class Asset extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+
+  get isOnline() {
+    return !navigator.onLine;
+  }
 
   get showShimmers() {
     return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';

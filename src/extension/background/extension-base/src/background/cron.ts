@@ -14,6 +14,7 @@ import {
   CRON_UPDATE_JSON_INTERVAL,
 } from '@extension-base/const/intervals';
 import { NetworkJson } from '@extension-base/types';
+import { api } from '@sora-substrate/util';
 import type FWState from '@extension-base/background/handlers/State';
 import type { FWSubscription } from '@extension-base/background/handlers/subscriptions';
 import type { ServiceInfo } from '@extension-base/background/types/types';
@@ -143,6 +144,8 @@ export class FWCron {
   };
 
   recoverApiMap = () => {
+    if (!navigator.onLine) return;
+
     const apiMap = this.state.getApiMap;
 
     for (const [key, evm] of Object.entries(apiMap.evm)) {
@@ -152,9 +155,12 @@ export class FWCron {
     }
 
     for (const [key, substrate] of Object.entries(apiMap.substrate)) {
-      substrate.api?.isReadyOrError.catch(() => {
+      if (substrate.api === undefined) {
         this.state.refreshDotSamaApi(key);
-      });
+        continue;
+      }
+
+      substrate.api?.isReadyOrError.catch(() => this.state.refreshDotSamaApi(key));
     }
 
     this.state.getCurrentAccount((account) => {
@@ -175,6 +181,11 @@ export class FWCron {
 
       let status: NETWORK_STATUS = NETWORK_STATUS.CONNECTING;
 
+      if (!navigator.onLine) {
+        this.state.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
+        continue;
+      }
+
       if (apiProp.isApiConnected) status = NETWORK_STATUS.CONNECTED;
 
       if (!networkMap[key].apiStatus) this.state.updateNetworkStatus(key, status);
@@ -185,6 +196,11 @@ export class FWCron {
 
     for (const [key, evm] of Object.entries(apiMap.evm)) {
       const apiStatus = networkMap[key].apiStatus;
+
+      if (!navigator.onLine) {
+        this.state.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
+        continue;
+      }
 
       evm.provider.ready
         .then(() => {

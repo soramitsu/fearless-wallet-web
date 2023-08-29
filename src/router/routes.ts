@@ -68,15 +68,6 @@ const routes: Array<RouteConfig> = [
     component: Welcome,
   },
   {
-    path: '*',
-    name: Components.NoFound,
-    component: Welcome,
-    beforeEnter: (to, from, next) => {
-      if (haveSelectedWallet()) next({ name: Components.Wallet });
-      else next();
-    },
-  },
-  {
     path: '/google/:access_token',
     name: Components.AddFromGoogle,
     component: AddFromGoogle,
@@ -136,9 +127,7 @@ const routes: Array<RouteConfig> = [
     children: [
       {
         path: '',
-        beforeEnter: (to, from, next) => {
-          next({ name: Components.Wallet });
-        },
+        redirect: { name: Components.Wallet },
       },
       {
         path: 'wallet/:access_token?',
@@ -201,6 +190,15 @@ const routes: Array<RouteConfig> = [
     ],
     beforeEnter: (to, from, next) => {
       if (!haveSelectedWallet()) next({ name: Components.Welcome });
+      else next();
+    },
+  },
+  {
+    path: '*',
+    name: Components.NoFound,
+    component: Welcome,
+    beforeEnter: (to, from, next) => {
+      if (haveSelectedWallet()) next({ name: Components.Wallet });
       else next();
     },
   },

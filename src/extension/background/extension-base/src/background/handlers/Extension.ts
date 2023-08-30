@@ -737,9 +737,12 @@ export default class Extension extends FWExtensionBase {
   }
 
   async removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
-    const list = await this.state.removeAuthorization(url);
+    const auths = await this.state.requestService.getAuthList();
+    delete auths[url];
+    await this.state.requestService.setAuthorize(auths);
+    const newList = await this.state.requestService.getAuthList();
 
-    return { list };
+    return { list: newList };
   }
 
   async deleteAuthRequest(requestId: string): Promise<void> {

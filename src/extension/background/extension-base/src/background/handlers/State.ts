@@ -25,7 +25,6 @@ import { getMockCurrencies, isEthereumNetwork, isRequireSubstrateAPI } from '@ex
 import { MobileSigningRequest, MobileSignRequest } from '@extension-base/background/types/types';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
-import { SignerPayloadRaw } from '@polkadot/types/types';
 import { JsonRpcProvider } from 'ethers';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import {
@@ -37,6 +36,7 @@ import {
   RequestService,
 } from '@extension-base/services';
 import CurrentAccountStore, { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import type { SignerPayloadRaw } from '@polkadot/types/types';
 import type {
   AuthUrls,
   ResponseSigning,
@@ -714,17 +714,12 @@ export default class State {
   }
 
   findNetworkKeyByChainId(_chainId?: string | null): [string | undefined, NetworkJson | undefined] {
-    if (!_chainId) {
-      return [undefined, undefined];
-    }
+    if (!_chainId) return [undefined, undefined];
 
     const rs = Object.entries(this.getNetworkMap).find(([, chainInfo]) => chainInfo.chainId === _chainId);
 
-    if (rs) {
-      return rs;
-    } else {
-      return [undefined, undefined];
-    }
+    if (rs) return rs;
+    else return [undefined, undefined];
   }
 
   saveMetadata(meta: MetadataDef): void {

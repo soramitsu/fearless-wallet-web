@@ -1,6 +1,6 @@
 <template>
   <AboveForm :header="header" :fullScreen="true" :showBackIcon="!showAuthDetails" @close="onClose" @back="onBack">
-    <router-view @updateUrl="updateUrl"></router-view>
+    <router-view></router-view>
   </AboveForm>
 </template>
 
@@ -20,15 +20,6 @@ const header = computed(() => {
 
   return 'common.manageDApp';
 });
-
-const updateUrl = (index: string) => {
-  router.push({
-    name: Components.UpdateAuths,
-    params: {
-      index,
-    },
-  });
-};
 
 const onBack = () => router.back();
 

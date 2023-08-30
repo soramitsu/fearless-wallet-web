@@ -1,4 +1,5 @@
 <template>
+  <!-- <router-link :to="{ name: Components.UpdateAuths }"> -->
   <SCol class="auth-content" width="100%" @click.native="onClick">
     <div class="row">
       <SCol :span="9" class="col">
@@ -17,6 +18,7 @@
       </SCol>
     </div>
   </SCol>
+  <!-- </router-link> -->
 </template>
 
 <script lang="ts" setup>
@@ -25,6 +27,7 @@ import { stripUrl } from '@extension-base/background/handlers/helpers';
 import { SessionTypes } from '@walletconnect/types';
 import type { CustomEvent } from '@/interfaces';
 import { useStore } from '@/store';
+// import { Components } from '@/router/routes';
 
 const store = useStore();
 

@@ -1,8 +1,6 @@
 <template>
   <div class="update-accounts">
-    <SelectAuthAccount :selectAll="selectAll" :accounts="state" @onSelectAll="onSelectAll" @onSelect="onSelect" />
-
-    <FButton class="connect-button" width="100%" size="big" fontSize="big" :text="buttonText" @click="updateAuths" />
+    <FButton class="connect-button" width="100%" size="big" fontSize="big" text="disconnect" @click="updateAuths" />
   </div>
 </template>
 
@@ -11,7 +9,7 @@ import { computed, onMounted, set, ref } from 'vue';
 import { useRoute } from 'vue-router/composables';
 import type { AuthUrls } from '@extension-base/background/types/types';
 import { updateAuthorization } from '@/extension/messaging';
-import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
+// import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import { WalletInfo, useStore } from '@/store';
 
 const route = useRoute();
@@ -21,18 +19,9 @@ const selectAll = ref(false);
 const state = ref<Record<string, WalletInfo>>({});
 const emit = defineEmits(['onUpdate']);
 const url = computed(() => route.params.index);
-const buttonText = computed(() => {
-  const count = Object.values(state.value).filter((el) => el.active).length;
-  const tc = count === 1 ? 1 : 2;
-
-  return {
-    text: 'authorize.connectCountAccounts',
-    localeProps: { count, tc },
-  };
-});
 
 const prepAccounts = computed<string[]>(() => {
-  return Object.values(state.value)
+  return Object.values(state)
     .filter(({ active }) => active)
     .map(({ address }) => address);
 });
@@ -62,21 +51,21 @@ function isAllSelected() {
   return Object.values(state.value).every((value) => value.active === true);
 }
 
-function onSelect(value: boolean, name: string) {
-  state.value[name].active = value;
-  selectAll.value = isAllSelected();
-}
+// function onSelect(value: boolean, name: string) {
+//   state.value[name].active = value;
+//   selectAll.value = isAllSelected();
+// }
 
-function onSelectAll(value: boolean) {
-  Object.keys(state.value).forEach((key) => {
-    set(state.value, key, {
-      ...state.value[key],
-      active: value,
-    });
-  });
+// function onSelectAll(value: boolean) {
+//   Object.keys(state).forEach((key) => {
+//     set(state.value, key, {
+//       ...state.value[key],
+//       active: value,
+//     });
+//   });
 
-  selectAll.value = value;
-}
+//   selectAll.value = value;
+// }
 
 async function updateAuths() {
   await updateAuthorization(prepAccounts.value, url.value);

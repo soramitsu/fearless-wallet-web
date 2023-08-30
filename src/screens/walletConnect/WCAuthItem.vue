@@ -1,38 +1,35 @@
 <template>
-  <!-- <router-link :to="{ name: Components.UpdateAuths }"> -->
-  <SCol class="auth-content" width="100%" @click.native="onClick">
+  <div class="auth-content" width="100%">
     <div class="row">
-      <SCol :span="9" class="col">
-        <ExternalLogo :name="faviconURl" alt="favicon" />
-        <span class="auth-item-name">{{ stripedUrl }}</span>
-      </SCol>
+      <router-link
+        :to="{ name: Components.WCAuthDetails, params: { topic: request.topic } }"
+        v-slot="{ navigate }"
+        @onRemove="onRemoveAuth"
+      >
+        <div class="row-content" @click="navigate">
+          <div class="col">
+            <ExternalLogo :name="faviconURl" alt="favicon" />
 
-      <SCol :span="3">
-        <SRow flex justify="space-between">
-          <span class="authorized-account__count">
-            {{ authorizedAccounts }}
-          </span>
+            <span class="auth-item-name">{{ stripedUrl }}</span>
+          </div>
 
-          <Icon icon="trash" className="trash" @click="onRemoveAuth" />
-        </SRow>
-      </SCol>
+          <span class="authorized-account__count">{{ authorizedAccounts }}</span>
+        </div>
+      </router-link>
+
+      <Icon className="trash row-controls" icon="trash" @click="onRemoveAuth" />
     </div>
-  </SCol>
-  <!-- </router-link> -->
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
 import { SessionTypes } from '@walletconnect/types';
-import type { CustomEvent } from '@/interfaces';
-import { useStore } from '@/store';
-// import { Components } from '@/router/routes';
+import { Components } from '@/router/routes';
 
-const store = useStore();
-
-const { request } = defineProps<{ request: SessionTypes.Struct }>();
-const emits = defineEmits(['openUpdateAuths']);
+const emit = defineEmits(['onRemove']);
+const { request } = defineProps<{ request: SessionTypes.Struct; token: string }>();
 
 const stripedUrl = computed(() => stripUrl(request.peer.metadata.url));
 
@@ -48,13 +45,7 @@ const authorizedAccounts = computed(() => {
   return `${authListLength} account${authListLength !== 1 ? 's' : ''}`;
 });
 
-const onRemoveAuth = () => store.dispatch('DELETE_AUTH_CONNECTION', stripedUrl);
-
-const onClick = (event: CustomEvent) => {
-  const classList = event.target?.classList;
-
-  if (!classList.contains('trash')) emits('openUpdateAuths', stripedUrl);
-};
+const onRemoveAuth = () => emit('onRemove', request.topic);
 </script>
 
 <style lang="scss" scoped>
@@ -62,7 +53,18 @@ const onClick = (event: CustomEvent) => {
   background-color: $default-background-color;
   margin: 17px 0;
 }
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 
+  &-content {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
 .auth-item-name {
   font-size: 16px;
 }
@@ -91,9 +93,5 @@ const onClick = (event: CustomEvent) => {
   display: flex;
   align-items: center;
   gap: 5px;
-}
-.row {
-  display: flex;
-  align-items: center;
 }
 </style>

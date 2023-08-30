@@ -9,7 +9,7 @@ import type { AuthorizeRequest, ApproveAuthRequest, MetadataRequest } from '@ext
 import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from '@/store/extension/state';
 import type { Features } from '@/store/extension/types';
-import type { AuthUrls, SigningRequest } from '@extension-base/background/types';
+import type { SigningRequest } from '@extension-base/background/types';
 import { Mutations, MutationTypes } from '@/store/extension/mutations';
 import {
   subscribeAuthorizeRequests,
@@ -79,7 +79,6 @@ export type Actions = {
   [ActionTypes.SUBSCRIBE_AUTH_REQUESTS](context: AugmentedExtensionContext): Promise<boolean>;
   [ActionTypes.APPROVE_AUTH_REQUEST](context: AugmentedExtensionContext, props: ApproveAuthRequest): Promise<void>;
   [ActionTypes.REJECT_AUTH_REQUEST](context: AugmentedExtensionContext, props: AuthorizeRequest): Promise<void>;
-  [ActionTypes.GET_AUTHLIST](context: AugmentedExtensionContext): Promise<AuthUrls>;
   [ActionTypes.DELETE_AUTH_CONNECTION](context: AugmentedExtensionContext, props: string): Promise<void>;
 
   [ActionTypes.SUBSCRIBE_META_REQUESTS](context: AugmentedExtensionContext): Promise<boolean>;
@@ -269,10 +268,7 @@ const actions: ActionTree<State, State> & Actions = {
       commit(MutationTypes.SET_REQUEST, { type: 'wcConnectRequests', requests });
       console.info(requests, 'WC requests');
 
-      if (requests.length)
-        router.push({
-          name: Components.WalletConnectSessionAuth,
-        });
+      if (requests.length) router.push({ name: Components.WalletConnectSessionAuth });
     };
 
     return walletConnectRequestSubscribe(callback);

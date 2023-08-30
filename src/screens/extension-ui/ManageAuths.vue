@@ -9,7 +9,8 @@
         <AuthItem
           v-for="request in filteredList"
           :key="request.id"
-          :request="request"
+          :authorized-accounts="request.authorizedAccounts"
+          :url="request.url"
           @openUpdateAuths="openDotSamaAuthDetails"
           @remove="onDotSamaRemoveAuth"
         />
@@ -21,7 +22,9 @@
           v-for="(el, index) in wcFilteredList"
           :key="index"
           :request="el"
+          :token="el.topic"
           @openUpdateAuths="openWCAuthDetails"
+          @remove="onWCRemoveuth"
         />
       </Scroll>
     </div>
@@ -38,12 +41,13 @@ import WCAuthItem from '@/screens/walletConnect/WCAuthItem.vue';
 import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { useStore } from '@/store';
 import { Components } from '@/router/routes';
+import { disconnectWalletConnectConnection } from '@/extension/messaging';
 
 const store = useStore();
 const filterValue = ref('');
 const router = useRouter();
 
-const wcFilteredList = ref<WalletConnectSessions>(store.getters.wcSessions);
+const wcFilteredList = computed<WalletConnectSessions>(() => store.getters.wcSessions);
 
 const activeTab = ref<'substrate' | 'wc'>('substrate');
 const tabs = {
@@ -100,6 +104,10 @@ const openWCAuthDetails = (index: string) => {
 const onDotSamaRemoveAuth = async (id: string) => {
   store.dispatch('DELETE_AUTH_CONNECTION', id);
   filteredList.value = await filteredData();
+};
+
+const onWCRemoveuth = async (id: string) => {
+  disconnectWalletConnectConnection(id);
 };
 </script>
 

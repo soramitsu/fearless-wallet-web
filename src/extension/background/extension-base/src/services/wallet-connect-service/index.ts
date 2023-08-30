@@ -196,7 +196,7 @@ export class WalletConnectService {
       }
 
       this.responseRequest({
-        topic: topic,
+        topic,
         response: formatJsonRpcError(id, (e as Error).message),
       }).catch(console.error);
     }

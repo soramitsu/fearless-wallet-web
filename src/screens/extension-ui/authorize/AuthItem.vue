@@ -1,53 +1,49 @@
 <template>
-  <div class="auth-content" width="100%" :key="request.id">
-    <div class="row">
-      <router-link class="row-content" :to="{ name: Components.UpdateAuths, params: { index: stripedUrl } }" tag="div">
-        <div class="col">
-          <ExternalLogo :name="faviconURl" alt="favicon" />
+  <router-link :to="{ name: Components.UpdateAuths, params: { id: stripedUrl } }" v-slot="{ navigate }">
+    <div class="auth-content" width="100%">
+      <div class="row">
+        <div class="row-content" @click="navigate">
+          <div class="col">
+            <ExternalLogo :name="faviconURl" alt="favicon" />
 
-          <span class="auth-item-name">{{ request.origin }}</span>
+            <span class="auth-item-name">{{ stripedUrl }}</span>
+          </div>
+
+          <span class="authorized-account__count">{{ authAccounts }}</span>
         </div>
 
-        <span class="authorized-account__count">{{ authorizedAccounts }}</span>
-      </router-link>
-
-      <Icon className="trash row-controls" icon="trash" @click="onRemoveAuth" />
+        <Icon className="trash row-controls" icon="trash" @click="onRemoveAuth" />
+      </div>
     </div>
-  </div>
+  </router-link>
 </template>
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { AuthUrlInfo } from '@extension-base/background/types/types';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
-// import type { CustomEvent } from '@/interfaces';
 import { Components } from '@/router/routes';
 
-const { request } = defineProps<{ request: AuthUrlInfo }>();
-
+const { authorizedAccounts, url } = defineProps<{
+  url: string;
+  authorizedAccounts: string[];
+}>();
 const emits = defineEmits(['openUpdateAuths', 'remove']);
 
-const stripedUrl = computed(() => stripUrl(request.url));
+const stripedUrl = computed(() => stripUrl(url));
 
 const faviconURl = computed(() => {
-  const host = new URL(request.url).host;
+  const host = new URL(url).host;
 
   return `https://icons.duckduckgo.com/ip3/${host}.ico`;
 });
 
-const authorizedAccounts = computed(() => {
-  const authListLength = request.authorizedAccounts.length;
+const authAccounts = computed(() => {
+  const authListLength = authorizedAccounts.length;
 
   return `${authListLength} account${authListLength !== 1 ? 's' : ''}`;
 });
 
 const onRemoveAuth = () => emits('remove', stripedUrl.value);
-
-// const onClick = (event: CustomEvent) => {
-//   const classList = event.target?.classList;
-
-//   if (!classList.contains('trash')) emits('openUpdateAuths', stripedUrl.value);
-// };
 </script>
 
 <style lang="scss" scoped>

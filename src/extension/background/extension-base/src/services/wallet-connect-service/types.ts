@@ -10,6 +10,7 @@ type BaseWalletConnectSessionRequest = {
 };
 export interface WalletConnectSessionRequest extends BaseWalletConnectSessionRequest {
   request: SignClientTypes.EventArguments['session_proposal'];
+  isPasswordRequired?: boolean;
 }
 
 export type WalletConnectSessions = SessionTypes.Struct[] | null;

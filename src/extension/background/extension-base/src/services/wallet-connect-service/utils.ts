@@ -3,7 +3,14 @@ import { ProposalTypes } from '@walletconnect/types/dist/types/sign-client/propo
 
 import { isEthereumAddress } from '@polkadot/util-crypto';
 
-import { WALLET_CONNECT_REQUEST_KEY, WALLET_CONNECT_SUPPORT_NAMESPACES } from './consts';
+import { findChainInfoByHalfGenesisHash, findChainInfoByChainId } from '../chain-service/helpers';
+import { NetworkJson } from '../../types';
+import {
+  WALLET_CONNECT_EIP155_NAMESPACE,
+  WALLET_CONNECT_POLKADOT_NAMESPACE,
+  WALLET_CONNECT_REQUEST_KEY,
+  WALLET_CONNECT_SUPPORT_NAMESPACES,
+} from './consts';
 import {
   EIP155_SIGNING_METHODS,
   WalletConnectNotSupportRequest,
@@ -89,16 +96,14 @@ export const isSupportWalletConnectNamespace = (namespace: string): boolean => {
   return WALLET_CONNECT_SUPPORT_NAMESPACES.includes(namespace);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const isSupportWalletConnectChain = (chain: string, chainInfoMap: Record<string, object>): boolean => {
-  return true;
-  // const [namespace, info] = chain.split(':');
-  //TODO перенести рефакторинг, нужно проверять сети на предмет поддержики Wallet Connect'ом
-  // if (namespace === WALLET_CONNECT_POLKADOT_NAMESPACE) {
-  //   return !!findChainInfoByHalfGenesisHash(chainInfoMap, info);
-  // } else if (namespace === WALLET_CONNECT_EIP155_NAMESPACE) {
-  //   return !!findChainInfoByChainId(chainInfoMap, parseInt(info));
-  // } else {
-  //   return false;
-  // }
+export const isSupportWalletConnectChain = (chain: string, chainInfoMap: Record<string, NetworkJson>): boolean => {
+  const [namespace, info] = chain.split(':');
+
+  if (namespace === WALLET_CONNECT_POLKADOT_NAMESPACE) {
+    return !!findChainInfoByHalfGenesisHash(chainInfoMap, info);
+  } else if (namespace === WALLET_CONNECT_EIP155_NAMESPACE) {
+    return !!findChainInfoByChainId(chainInfoMap, parseInt(info));
+  } else {
+    return false;
+  }
 };

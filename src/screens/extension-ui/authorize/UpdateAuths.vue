@@ -20,7 +20,7 @@ const list = ref<AuthUrls>({});
 const selectAll = ref(false);
 const state = ref<Record<string, WalletInfo>>({});
 const emit = defineEmits(['onUpdate']);
-const url = computed(() => route.params.index);
+const url = computed(() => route.params.id);
 const buttonText = computed(() => {
   const count = Object.values(state.value).filter((el) => el.active).length;
   const tc = count === 1 ? 1 : 2;
@@ -36,6 +36,8 @@ const prepAccounts = computed<string[]>(() => {
     .filter(({ active }) => active)
     .map(({ address }) => address);
 });
+
+const isAllSelected = () => Object.values(state.value).every((value) => value.active === true);
 
 onMounted(async () => {
   list.value = await store.dispatch('GET_AUTHLIST');
@@ -57,10 +59,6 @@ onMounted(async () => {
 
   selectAll.value = isAllSelected();
 });
-
-function isAllSelected() {
-  return Object.values(state.value).every((value) => value.active === true);
-}
 
 function onSelect(value: boolean, name: string) {
   state.value[name].active = value;

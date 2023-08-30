@@ -11,6 +11,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, set } from 'vue';
+import { useRouter } from 'vue-router/composables';
 import type { AccountJson } from '@extension-base/background/types/types';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import { WalletInfo, useStore } from '@/store';
@@ -21,6 +22,7 @@ import {
   rejectWalletConnectNotSupport,
 } from '@/extension/messaging';
 
+const router = useRouter();
 const store = useStore();
 const state = ref<Record<string, WalletInfo>>({});
 const selectAll = ref(true);
@@ -67,10 +69,12 @@ const onApprove = () => {
   isSupported
     ? approveWalletConnectSession({ accounts: selectedAccounts.value, id: id.value })
     : approveWalletConnectNotSupport({ id: id.value });
+  router.back();
 };
 
 const onReject = () => {
   isSupported ? rejectWalletConnectSession({ id: id.value }) : rejectWalletConnectNotSupport({ id: id.value });
+  router.back();
 };
 </script>
 

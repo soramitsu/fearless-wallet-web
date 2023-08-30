@@ -98,7 +98,7 @@ export default class Eip155RequestHandler {
       }
 
       const chainState = this.state.getNetworkMap[networkKey];
-      const signature = '';
+      const signature = ''; //TODO refactoring
       //this.requestService
 
       const createRequest = () => {

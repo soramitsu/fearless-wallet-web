@@ -1210,7 +1210,6 @@ export default class State {
     }
 
     if (['eth_signTypedData_v3', 'eth_signTypedData_v4'].indexOf(method) > -1) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/no-unsafe-assignment
       payload = JSON.parse(payload);
     }
 

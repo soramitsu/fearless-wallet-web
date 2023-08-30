@@ -62,6 +62,7 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.authList]({ authList }): Record<string, AuthUrlInfo> {
     return authList;
   },
+
   [GettersTypes.getAuthItem]:
     ({ authList }) =>
     (value: string) => {

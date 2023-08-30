@@ -17,6 +17,7 @@ const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue')
 const AuthManagment = () => import('@/screens/extension-ui/AuthManagment.vue');
 const ManageAuths = () => import('@/screens/extension-ui/ManageAuths.vue');
 const UpdateAuths = () => import('@/screens/extension-ui/authorize/UpdateAuths.vue');
+const WCAuthDetails = () => import('@/screens/walletConnect/WCAuthDetails.vue');
 
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
@@ -55,6 +56,7 @@ export enum Components {
   Authorize = 'Authorize',
   ManageAuths = 'ManageAuths',
   UpdateAuths = 'UpdateAuths',
+  WCAuthDetails = 'WCAuthDetails',
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
   CreateGoogle = 'CreateGoogle',
@@ -137,9 +139,14 @@ const routes: Array<RouteConfig> = [
         component: ManageAuths,
       },
       {
-        path: ':index',
+        path: '/dotsama/:id',
         name: Components.UpdateAuths,
         component: UpdateAuths,
+      },
+      {
+        path: 'wc/:topic',
+        name: Components.WCAuthDetails,
+        component: WCAuthDetails,
       },
     ],
   },

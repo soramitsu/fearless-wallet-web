@@ -6,7 +6,7 @@ import {
   isEthereumNetwork,
   getUtilityProps,
   getNativeAssetName,
-  getSubstrateAddressByEthAddress,
+  getSubstrateAddress,
 } from '@extension-base/background/utils/utils';
 import { getAssetInfo } from '@extension-base/api/substrate/registry';
 import { SignerType } from '@extension-base/background/types/types';
@@ -181,7 +181,7 @@ function getNativeTeleportParams(
 function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: string, amount: string, assetId: string) {
   const isToRelayChain = isRelayChain(destNet);
   const { xcm, parentId, name } = state.networkMap[originNet];
-  const { paraId } = state.networkMap[destNet];
+  const paraId = state.networkMap[destNet]?.paraId ?? 0;
   const xcmVersion = xcm!.xcmVersion.toUpperCase();
   const publicKey = decodeAddress(toAddress);
   const value = new BN(amount);
@@ -383,7 +383,7 @@ async function makeCrossChain({
 
   await apiProps.api?.isReady;
 
-  const address = getSubstrateAddressByEthAddress(from);
+  const address = getSubstrateAddress(from);
   const tokenBalance = state.balanceMap[address].find(({ assetId: _assetId }) => _assetId === assetId)!;
   const [, crossChainFee] = await estimateCrossChainFee(originNet, destinationNet, tokenBalance);
 

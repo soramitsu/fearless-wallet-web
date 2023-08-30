@@ -129,13 +129,15 @@ function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: stri
 export function getSummaryTransferableBalanceFilteredByActiveNetworks(token: TokenBalance, network = ALL_NETWORKS) {
   if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
 
-  return token.balances.reduce((result, { state, name, transferable }) => {
-    const network = store.getters.getNetwork(name) as NetworkJson;
+  return (
+    token.balances?.reduce((result, { state, name, transferable }) => {
+      const network = store.getters.getNetwork(name) as NetworkJson;
 
-    if (state === APIItemState.READY && network.active && transferable) result += +transferable;
+      if (state === APIItemState.READY && network.active && transferable) result += +transferable;
 
-    return result;
-  }, 0);
+      return result;
+    }, 0) ?? 0
+  );
 }
 
 export {

@@ -160,8 +160,7 @@ export default class Wallet extends Vue {
   get contentFormHeight() {
     const subtractionNumber = this.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
 
-    // IMPORTANT: if <Menu /> showed use 397
-    return 457 - subtractionNumber;
+    return 452 - subtractionNumber;
   }
 
   get showNetworkUnavailablePopup() {

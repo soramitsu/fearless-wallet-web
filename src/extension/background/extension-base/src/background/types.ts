@@ -7,7 +7,7 @@ import { TypeRegistry } from '@polkadot/types';
 import { Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 import { RequestSignatures } from '@extension-base/background/types/messages';
-import type { AccountJson, AuthUrlInfo } from './types/types';
+import type { AccountAuthType, AccountJson, AuthUrlInfo } from './types/types';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { ProviderInterface } from '@polkadot/rpc-provider/types';
@@ -99,6 +99,9 @@ export interface TransportRequestMessage<TMessageType extends MessageTypes> {
 
 export interface RequestAuthorizeTab {
   origin: string;
+  accountAuthType?: AccountAuthType;
+  allowedAccounts?: string[];
+  reConfirm?: boolean;
 }
 
 export interface RequestAuthorizeApprove {
@@ -384,6 +387,7 @@ export interface AuthRequest extends Resolver<AuthResponse> {
   idStr: string;
   request: RequestAuthorizeTab;
   url: string;
+  accountAuthType?: AccountAuthType;
 }
 
 export type AuthUrls = Record<string, AuthUrlInfo>;

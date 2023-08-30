@@ -6,14 +6,17 @@ import State from '@extension-base/background/handlers/State';
 import { WalletConnectService } from '..';
 import { EIP155_SIGNING_METHODS } from '../consts';
 import { getEip155MessageAddress, getWCId, parseRequestParams } from '../utils';
+import { RequestService } from '../../request-service';
 
 export default class Eip155RequestHandler {
   readonly walletConnectService: WalletConnectService;
   readonly state: State;
+  readonly requestService: RequestService;
 
-  constructor(state: State, walletConnectService: WalletConnectService) {
+  constructor(state: State, walletConnectService: WalletConnectService, requestService: RequestService) {
     this.state = state;
     this.walletConnectService = walletConnectService;
+    this.requestService = requestService;
   }
 
   private checkAccount(address: string, accounts: string[]) {
@@ -38,7 +41,7 @@ export default class Eip155RequestHandler {
       .catch(console.error);
   }
 
-  public handleRequest(requestEvent: SignClientTypes.EventArguments['session_request'], signature: string) {
+  public handleRequest(requestEvent: SignClientTypes.EventArguments['session_request']) {
     const { id, params, topic } = requestEvent;
     const { chainId: _chainId, request } = params;
     const method = request.method as EIP155_SIGNING_METHODS;
@@ -95,6 +98,8 @@ export default class Eip155RequestHandler {
       }
 
       const chainState = this.state.getNetworkMap[networkKey];
+      const signature = '';
+      //this.requestService
 
       const createRequest = () => {
         this.walletConnectService

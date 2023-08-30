@@ -11,8 +11,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, set } from 'vue';
+import type { AccountJson } from '@extension-base/background/types/types';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
-
 import { WalletInfo, useStore } from '@/store';
 import {
   approveWalletConnectSession,
@@ -20,7 +20,7 @@ import {
   rejectWalletConnectSession,
   rejectWalletConnectNotSupport,
 } from '@/extension/messaging';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
+
 const store = useStore();
 const state = ref<Record<string, WalletInfo>>({});
 const selectAll = ref(true);
@@ -28,10 +28,11 @@ const id = computed(() => (store.getters.wcConnectRequests.length ? store.getter
 const isSupported = true;
 
 onMounted(() => {
-  (store.getters.getAccounts as AccountJson[])
+  const accounts = store.getters.getAccounts as AccountJson[];
+  accounts
     .filter(({ ethereumAddress }) => ethereumAddress !== '')
     .forEach(({ name, ethereumAddress, isMobile }) => {
-      set(state, name, {
+      set(state.value, name, {
         name,
         address: ethereumAddress,
         isMobile: !!isMobile,
@@ -39,11 +40,28 @@ onMounted(() => {
       });
     });
 });
+
 const selectedAccounts = computed(() => Object.values(state.value).map((el) => el.address));
 
-const onSelect = () => {};
+function isAllSelected() {
+  return Object.values(state.value).every((value) => value.active === true);
+}
 
-const onSelectAll = () => {};
+const onSelect = (value: boolean, name: string) => {
+  state.value[name].active = value;
+  selectAll.value = isAllSelected();
+};
+
+const onSelectAll = (value: boolean) => {
+  Object.keys(state.value).forEach((key) => {
+    set(state.value, key, {
+      ...state.value[key],
+      active: value,
+    });
+  });
+
+  selectAll.value = value;
+};
 
 const onApprove = () => {
   isSupported

@@ -4,6 +4,7 @@ import { stripUrl } from '@extension-base/background/handlers/helpers';
 import { Resolver } from '@extension-base/types';
 import AuthorizeStore from '@extension-base/stores/Authorize';
 import State from '@extension-base/background/handlers/State';
+import { isEthereumAddress } from '@polkadot/util-crypto';
 import { getId } from '@extension-base/utils';
 import { NetworkService, RequestService } from '@extension-base/services';
 import type {
@@ -84,13 +85,14 @@ export class AuthRequestHandler {
 
   public authComplete = (
     id: string,
-    resolve: (resValue: AuthResponse) => void,
+    resolve: (resValue: boolean) => void,
     reject: (error: Error) => void
   ): Resolver<AuthResponse> => {
     const complete = async (authorizedAccounts: string[] = [], isAllowed = true) => {
       const {
         id: idStr,
         request: { origin },
+        accountAuthType,
         url,
       } = this.authRequests[id];
 
@@ -108,6 +110,7 @@ export class AuthRequestHandler {
         count: 0,
         isAllowed: true,
         isAllowedMap: {},
+        accountAuthType,
         id: idStr,
         origin,
         url,
@@ -127,50 +130,74 @@ export class AuthRequestHandler {
         complete([], false);
         reject(error);
       },
-      resolve: ({ authorizedAccounts, result }: AuthResponse): void => {
+      resolve: ({ authorizedAccounts }: AuthResponse): void => {
         complete(authorizedAccounts);
-        resolve({ authorizedAccounts, result });
+        resolve(true);
       },
     };
   };
 
-  public async authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<AuthResponse> {
-    const idStr = stripUrl(url);
+  public async authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<boolean> {
+    let authList = await this.getAuthList();
 
+    const accountAuthType = request.accountAuthType || 'substrate';
+
+    request.accountAuthType = accountAuthType;
+
+    if (!authList) authList = {};
+
+    const idStr = stripUrl(url);
     // Do not enqueue duplicate authorization requests.
     const isDuplicate = Object.values(this.authRequests).some((request) => request.idStr === idStr);
 
     assert(!isDuplicate, `The source ${url} has a pending authorization request`);
 
-    if (this.authRequests[idStr]) {
-      // this url was seen in the past
-      assert(
-        this.authorizeCached[idStr].authorizedAccounts || this.authorizeCached[idStr].isAllowed,
-        `The source ${url} is not allowed to interact with this extension`
-      );
+    const existedAuth = authList[idStr];
 
-      return {
-        authorizedAccounts: [],
-        result: false,
-      };
+    const existedAccountAuthType = existedAuth?.accountAuthType;
+    const confirmAnotherType = existedAccountAuthType !== 'both' && existedAccountAuthType !== request.accountAuthType;
+
+    if (request.reConfirm && existedAuth) request.origin = existedAuth.origin;
+
+    // Reconfirm if check auth for empty list
+    if (existedAuth) {
+      const inBlackList = existedAuth && !existedAuth.isAllowed;
+
+      if (inBlackList) {
+        throw new Error(`The source ${url} is not allowed to interact with this extension`);
+      }
+
+      let allowedListByRequestType = [...existedAuth.authorizedAccounts];
+
+      if (accountAuthType === 'evm') {
+        allowedListByRequestType = allowedListByRequestType.filter((a) => isEthereumAddress(a));
+      } else if (accountAuthType === 'substrate') {
+        allowedListByRequestType = allowedListByRequestType.filter((a) => !isEthereumAddress(a));
+      }
+
+      if (!confirmAnotherType && !request.reConfirm && allowedListByRequestType.length !== 0) {
+        // Prevent appear confirmation popup
+        return false;
+      }
     }
 
-    return new Promise((res, rej): void => {
+    return new Promise((resolve, reject): void => {
       const id = getId();
 
-      const { reject, resolve } = this.authComplete(id, res, rej);
-
       this.authRequests[id] = {
-        reject,
-        resolve,
+        ...this.authComplete(id, resolve, reject),
         id,
         idStr,
         request,
         url,
+        accountAuthType: request.accountAuthType,
       };
 
       this.updateIconAuth();
-      this.requestService.popupOpen();
+
+      if (Object.keys(this.authRequests).length < 2) {
+        this.requestService.popupOpen();
+      }
     });
   }
 

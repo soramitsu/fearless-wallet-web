@@ -5,7 +5,6 @@ import State from '../../background/handlers/State';
 import {
   AuthorizeRequest,
   AuthRequest,
-  AuthResponse,
   AuthUrls,
   MetadataRequest,
   MetaRequest,
@@ -117,7 +116,7 @@ export class RequestService {
     return this.authRequestHandler.getAuthList();
   }
 
-  public async authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<AuthResponse> {
+  public authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<boolean> {
     return this.authRequestHandler.authorizeUrl(url, request);
   }
 

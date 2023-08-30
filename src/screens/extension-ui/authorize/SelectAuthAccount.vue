@@ -2,15 +2,15 @@
   <div class="auth-accounts">
     <Checkbox
       v-if="showAllCheckbox"
-      :value="selectAll"
+      :value="props.selectAll"
       size="big"
       label="Select all"
       @change="(value) => emit('onSelectAll', value)"
     />
 
     <Scroll>
-      <ul class="account__list">
-        <li v-for="(account, index) in accounts" class="auth-account" :key="index">
+      <ul v-if="showAllCheckbox" class="account__list">
+        <li v-for="(account, index) in props.accounts" class="auth-account" :key="index">
           <div class="checkbox">
             <Checkbox
               class="account__checkbox"
@@ -37,18 +37,19 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { WalletInfo } from '@/store';
+import type { WalletInfo } from '@/store';
 import { cut } from '@/helpers';
-const { selectAll, accounts } = defineProps<{ selectAll: boolean; accounts: Record<string, WalletInfo> }>();
+
+type Props = { selectAll: boolean; accounts: Record<string, WalletInfo> };
+
+const props = defineProps<Props>();
 const emit = defineEmits(['onSelectAll', 'onSelect']);
 
-const showAllCheckbox = computed(() => Object.keys(accounts).length);
+const showAllCheckbox = computed(() => Object.keys(props.accounts).length);
 
 const cutAddress = (address: string) => cut(address);
 
-const saveToClipboard = (value: string) => {
-  navigator.clipboard.writeText(value);
-};
+const saveToClipboard = (value: string) => navigator.clipboard.writeText(value);
 </script>
 
 <style lang="scss" scoped>

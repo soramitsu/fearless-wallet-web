@@ -24,7 +24,7 @@ export class WalletConnectService {
   constructor(state: State, requestService: RequestService) {
     this.state = state;
     this.requestService = requestService;
-    this.eip155RequestHandler = new Eip155Handler(this.state, this);
+    this.eip155RequestHandler = new Eip155Handler(this.state, this, requestService);
 
     this.initClient().catch(console.error);
   }
@@ -178,7 +178,7 @@ export class WalletConnectService {
         case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3:
         case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4:
         case EIP155_SIGNING_METHODS.ETH_SIGN:
-          // this.eip155RequestHandler.handleRequest(requestEvent);
+          this.eip155RequestHandler.handleRequest(requestEvent);
           break;
         default:
           throw Error(getSdkError('INVALID_METHOD').message + ' ' + method);

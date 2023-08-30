@@ -21,7 +21,6 @@ import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import type {
   AccountSub,
-  AuthResponse,
   AuthUrlInfo,
   AuthUrls,
   MessageTypes,
@@ -73,7 +72,7 @@ export default class Tabs {
     );
   }
 
-  authorize(url: string, request: RequestAuthorizeTab): Promise<AuthResponse> {
+  authorize(url: string, request: RequestAuthorizeTab): Promise<boolean> {
     return this.state.requestService.authorizeUrl(url, request);
   }
 

@@ -195,7 +195,7 @@ export default class Asset extends Vue {
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
   get isOnline() {
-    return !navigator.onLine;
+    return navigator.onLine;
   }
 
   get showShimmers() {

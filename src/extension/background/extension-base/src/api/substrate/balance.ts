@@ -283,9 +283,8 @@ export function subscribeBalance(
   state.generateDefaultBalance(address);
 
   const unsubList = Object.entries(state.getSubstrateApiMap).map(async ([networkKey, apiProps]) => {
-    const isReady = await apiProps.api?.isReadyOrError.catch((e) => {
-      console.info(e);
-    });
+    const isReady = await apiProps.api?.isReadyOrError;
+
     if (!isReady) return;
 
     if (['ethereum', 'ethereum_goerli'].includes(networkKey)) {

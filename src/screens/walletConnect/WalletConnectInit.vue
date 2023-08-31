@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :fullScreen="true" :showBackIcon="true" @closeHandler="onBack" @handlerBack="onBack">
+  <AboveForm :fullScreen="true" :showBackIcon="false" @closeHandler="onBack">
     <div class="wc-init-form">
       <FInput v-model="uri" :placeholder="placeholder" size="big" />
 

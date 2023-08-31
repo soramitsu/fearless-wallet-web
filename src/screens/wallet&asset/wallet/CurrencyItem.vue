@@ -109,6 +109,7 @@ import { ALL_NETWORKS } from '@/consts/networks';
 import { GetAssetPrice, GetNetwork } from '@/store/networks/types';
 import { getSummaryTransferableBalance } from '@/helpers/currencies';
 import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
+import BaseApi from '@/util/BaseApi';
 
 @Component
 export default class CurrencyItem extends Vue {
@@ -153,7 +154,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get mainNetwork() {
-    return this.assetData.mainNetwork;
+    return this.assetData.mainNetwork?.toLowerCase();
   }
 
   get assetId() {
@@ -246,13 +247,18 @@ export default class CurrencyItem extends Vue {
   }
 
   get redirectNetwork(): string {
-    const network = this.assetData.balances[0];
+    const networks = this.assetData.balances;
+    const haveEthereumAccount = this.selectedWallet.ethereumAddress !== '';
 
-    return this.isCurrentNetwork
-      ? this.selectedNetwork
-      : this.mainNetwork !== undefined
-      ? this.mainNetwork
-      : network.name;
+    if (this.isCurrentNetwork) return this.selectedNetwork;
+
+    if (this.mainNetwork !== undefined && this.mainNetwork !== '') {
+      const isToMainNetwork = !haveEthereumAccount ? !BaseApi.isEthereumNetwork(this.mainNetwork) : true;
+
+      if (isToMainNetwork) return this.mainNetwork;
+    }
+
+    return networks[0].name;
   }
 
   openAssetPage(event: CustomEvent) {

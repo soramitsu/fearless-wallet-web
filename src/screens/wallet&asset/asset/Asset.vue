@@ -154,7 +154,6 @@ import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { firstCharToUp, isSora } from '@/helpers/common';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { getSummaryTransferableBalance } from '@/helpers/currencies';
@@ -292,9 +291,11 @@ export default class Asset extends Vue {
 
   get optionsNetworks() {
     const haveEthereumAccount = this.selectedWallet.ethereumAddress !== '';
+
     const walletBalance = (this.currentCurrency?.balances ?? []).filter(({ name }) =>
-      ETHEREUM_NETWORKS.includes(name) ? haveEthereumAccount : true
+      BaseApi.isEthereumNetwork(name) ? haveEthereumAccount : true
     );
+
     const filter = this.filterValue.trim().toLowerCase();
 
     return walletBalance

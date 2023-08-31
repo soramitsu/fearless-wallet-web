@@ -302,7 +302,7 @@ export default class Asset extends Vue {
       .map(({ name, type, icon }) => {
         return {
           name: firstCharToUp(name),
-          value: name,
+          value: name.toLowerCase(),
           icon,
           type,
         };

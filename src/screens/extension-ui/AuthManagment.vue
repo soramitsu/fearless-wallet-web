@@ -1,5 +1,11 @@
 <template>
-  <AboveForm :header="header" :fullScreen="true" :showBackIcon="!showAuthDetails" @close="onClose" @back="onBack">
+  <AboveForm
+    :header="header"
+    :fullScreen="true"
+    :showBackIcon="!showAuthDetails"
+    @closeHandler="onClose"
+    @backHandler="onBack"
+  >
     <router-view></router-view>
   </AboveForm>
 </template>

@@ -5,7 +5,7 @@
 
       <div v-else class="header-content">
         <div class="activity align-left">
-          <div v-if="showBackIcon" class="icon icon-back" @click="emit('back')">
+          <div v-if="showBackIcon" class="icon icon-back" @click="emit('backHandler')">
             <Icon icon="chevron-left" />
           </div>
 
@@ -17,7 +17,7 @@
         <div class="header">{{ tHeader }}</div>
 
         <div class="activity align-right">
-          <div v-if="showCloseIcon" class="icon" @click="emit('close')">
+          <div v-if="showCloseIcon" class="icon" @click="emit('closeHandler')">
             <SIcon name="basic-close-24" />
           </div>
 
@@ -41,7 +41,7 @@ import type { ComponentText } from '@/interfaces';
 
 const { t } = useI18n();
 
-const emit = defineEmits(['back', 'close', 'saveChanges']);
+const emit = defineEmits(['backHandler', 'closeHandler', 'saveChanges']);
 const { blur, fullScreen, header, showAcceptIcon, showAnimation, showBackIcon, showCloseIcon } = withDefaults(
   defineProps<{
     header?: ComponentText;

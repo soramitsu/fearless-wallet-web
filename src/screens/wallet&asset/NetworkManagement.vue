@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :header="getLocale('header')" :fullScreen="true" :closeHandler="handlerClose">
+  <AboveForm :header="getLocale('header')" :fullScreen="true" @closeHandler="handlerClose">
     <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
 
     <Tabs v-model="activeTab" :tabs="tabs" />

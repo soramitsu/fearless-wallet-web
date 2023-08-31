@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :fullScreen="true" :closeHandler="closeForm">
+  <AboveForm :fullScreen="true" @closeHandler="closeForm">
     <template v-slot:header>
       <div class="header-content">
         <div :class="classesBackIcon" @click="back">

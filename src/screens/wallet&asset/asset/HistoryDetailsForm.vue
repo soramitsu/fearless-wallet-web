@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="Details" :blur="true" :closeHandler="handlerClose">
+  <AboveForm header="Details" :blur="true" @closeHandler="handlerClose">
     <div class="details">
       <div class="descriptions">
         <div v-if="isExtrinsic" class="item">

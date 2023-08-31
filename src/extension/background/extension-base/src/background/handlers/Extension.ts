@@ -39,7 +39,7 @@ import {
   RequestUpdateMeta,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
-import { getSubstrateAddressByEthAddress, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
+import { getSubstrateAddress, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
 import type {
   ActiveTabAuthorizeStatus,
   BalanceJson,
@@ -973,7 +973,7 @@ export default class Extension extends FWExtensionBase {
     password: string | undefined
   ): [Array<BasicTxError>, KeyringPair | undefined, Asset] {
     const errors = [] as Array<BasicTxError>;
-    const substrateAddress = getSubstrateAddressByEthAddress(from);
+    const substrateAddress = getSubstrateAddress(from);
     const substratePair = keyring.getAccount(substrateAddress) ? keyring.getPair(substrateAddress) : undefined;
 
     if (password) {
@@ -1006,19 +1006,31 @@ export default class Extension extends FWExtensionBase {
 
   private async checkTransfer({
     from,
-    networkKey,
+    networkKey: givenNetwork,
     to,
     assetId,
     relayChain,
     amount,
     password,
   }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
+    const networkKey = this.state.getNetworkByKey(givenNetwork)?.name ?? '';
+
     const [errors, , tokenInfo] = this.validateTransfer(assetId, from, password);
     const web3ApiMap = this.state.getApiMap.evm;
     const warnings: BasicTxWarning[] = [];
+
+    if (networkKey === '')
+      return {
+        errors,
+        warnings,
+        destEstimateFee: undefined,
+        fromAccountFree: '0',
+        estimateFee: '0',
+      };
+
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
 
-    const address = getSubstrateAddressByEthAddress(from);
+    const address = getSubstrateAddress(from);
     let fee = 0;
     let fromAccountFreeBalance = '0';
 
@@ -1057,10 +1069,11 @@ export default class Extension extends FWExtensionBase {
   private async makeTransfer(
     id: string,
     port: Port,
-    { from, networkKey, password, to, assetId, amount, isSavePass, isMobile }: RequestTransfer
+    { from, networkKey: givenNetwork, password, to, assetId, amount, isSavePass, isMobile }: RequestTransfer
   ): Promise<BasicTxResponse | undefined> {
-    const txState: BasicTxResponse = {};
+    const networkKey = this.state.getNetworkByKey(givenNetwork)?.name ?? '';
 
+    const txState: BasicTxResponse = {};
     const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
 
     if (errors.length) {
@@ -1085,7 +1098,7 @@ export default class Extension extends FWExtensionBase {
 
     const ethereumAddress = fromKeyPair ? (fromKeyPair.meta.ethereumAddress as string | undefined) : '';
     const isEthereum = isEthereumAddress(from);
-    const address = isEthereum ? getSubstrateAddressByEthAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet to save pass
+    const address = isEthereum ? getSubstrateAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet to save pass
     const remainTime = fromKeyPair ? this.getRemainingTime(fromKeyPair) : 0;
 
     const savePass = () => {
@@ -1188,14 +1201,15 @@ export default class Extension extends FWExtensionBase {
 
   private async checkCrossChain({
     from,
-    originNet,
+    originNet: originNetKey,
     destinationNet,
     to,
     assetId,
     relayChain,
     amount,
   }: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
-    const address = getSubstrateAddressByEthAddress(from);
+    const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';
+    const address = getSubstrateAddress(from);
     const tokenBalance = this.state.balanceMap[address].find(
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
@@ -1215,13 +1229,24 @@ export default class Extension extends FWExtensionBase {
   private async makeCrossChain(
     id: string,
     port: Port,
-    { from, originNet, destinationNet, amount, password, to, assetId, isSavePass, isMobile }: RequestCrossChain
+    {
+      from,
+      originNet: originNetKey,
+      destinationNet,
+      amount,
+      password,
+      to,
+      assetId,
+      isSavePass,
+      isMobile,
+    }: RequestCrossChain
   ): Promise<void> {
+    const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';
     const [, fromKeyPair] = this.validateTransfer(assetId, from, password);
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
 
-    const address = getSubstrateAddressByEthAddress(from);
+    const address = getSubstrateAddress(from);
     const substratePair = keyring.getPair(address);
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 

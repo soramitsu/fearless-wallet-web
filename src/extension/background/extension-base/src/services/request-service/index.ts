@@ -23,6 +23,7 @@ import {
   MetadataRequestHandler,
   SubstrateRequestHandler,
 } from './handlers';
+import EvmRequestHandler from './handlers/EvmRequestHandler';
 
 export class RequestService {
   readonly state: State;
@@ -33,6 +34,7 @@ export class RequestService {
   readonly metadataRequestHandler: MetadataRequestHandler;
   readonly authRequestHandler: AuthRequestHandler;
   readonly substrateRequestHandler: SubstrateRequestHandler;
+  readonly evmRequestHandler: EvmRequestHandler;
 
   constructor(state: State, networkService: NetworkService) {
     this.state = state;
@@ -43,6 +45,7 @@ export class RequestService {
     this.metadataRequestHandler = new MetadataRequestHandler(this);
     this.authRequestHandler = new AuthRequestHandler(this.state, this, this.networkService);
     this.substrateRequestHandler = new SubstrateRequestHandler(this);
+    this.evmRequestHandler = new EvmRequestHandler(this);
   }
 
   public updateIcon(shouldClose?: boolean): void {
@@ -155,6 +158,11 @@ export class RequestService {
 
   public getSignRequest(id: string) {
     return this.substrateRequestHandler.getSignRequest(id);
+  }
+
+  //Evm
+  public get signWcSubject(): BehaviorSubject<SigningRequest[]> {
+    return this.evmRequestHandler.signSubject;
   }
 
   // WalletConnect Connect requests

@@ -663,6 +663,29 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
+  wcSigningSubscribe(id: string, port: Port): boolean {
+    const cb = createSubscription<'pri(walletConnect.signing.requests.subscribe)'>(id, port);
+
+    const subscription = this.state.requestService.signWcSubject.subscribe((requests: SigningRequest[]): void =>
+      cb(requests)
+    );
+
+    port.onDisconnect.addListener((): void => {
+      unsubscribe(id);
+      subscription.unsubscribe();
+    });
+
+    return true;
+  }
+
+  wcRequestApprove() {
+    //
+  }
+
+  wcRequestReject() {
+    //
+  }
+
   mobileSigningSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(mobileSigning.tx)'>(id, port);
 
@@ -1830,6 +1853,15 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(walletConnect.session.disconnect)':
         return this.disconnectWalletConnectSession(request as RequestDisconnectWalletConnectSession);
+
+      case 'pri(walletConnect.request.approve)':
+        return this.approveWalletConnectSession(request as RequestApproveConnectWalletSession);
+
+      case 'pri(walletConnect.request.reject)':
+        return this.rejectWalletConnectSession(request as RequestRejectConnectWalletSession);
+
+      case 'pri(walletConnect.signing.requests.subscribe)':
+        return this.subscribeWalletConnectSessions(id, port);
 
       // Not support
       case 'pri(walletConnect.requests.notSupport.subscribe)':

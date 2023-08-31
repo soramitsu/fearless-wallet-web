@@ -248,7 +248,6 @@ export interface RequestSignatures {
   'pri(walletConnect.connect)': [RequestConnectWalletConnect, boolean];
   'pri(walletConnect.requests.connect.subscribe)': [null, WalletConnectSessionRequest[], WalletConnectSessionRequest[]];
   'pri(walletConnect.session.approve)': [RequestApproveConnectWalletSession, boolean];
-  'pri(walletConnect.request.approve)': [{ address: string; password: string; topic: string }, boolean];
   'pri(walletConnect.session.reject)': [RequestRejectConnectWalletSession, boolean];
   'pri(walletConnect.session.reconnect)': [RequestReconnectConnectWalletSession, boolean];
   'pri(walletConnect.session.subscribe)': [null, SessionTypes.Struct[], SessionTypes.Struct[]];
@@ -260,4 +259,8 @@ export interface RequestSignatures {
   ];
   'pri(walletConnect.notSupport.approve)': [RequestApproveWalletConnectNotSupport, boolean];
   'pri(walletConnect.notSupport.reject)': [RequestRejectWalletConnectNotSupport, boolean];
+
+  'pri(walletConnect.signing.requests.subscribe)': [RequestSigningSubscribe, boolean, SigningRequest[]];
+  'pri(walletConnect.request.approve)': [{ address: string; password: string; topic: string }, boolean];
+  'pri(walletConnect.request.reject)': [{ topic: string }, boolean];
 }

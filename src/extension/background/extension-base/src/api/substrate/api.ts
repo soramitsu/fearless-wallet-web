@@ -83,15 +83,13 @@ function onDisconnect(networkName: string) {
   api.isApiConnected = false;
   api.isApiReady = false;
 
-  const { apiRetry, nodeIndex } = api;
-
-  if (apiRetry < MAX_CONTINUE_RETRY) return;
+  if (api.apiRetry < MAX_CONTINUE_RETRY) return;
+  const network = state.networkMap[networkName];
 
   api.provider?.disconnect();
-  const network = state.networkMap[networkName];
   api.nodeIndex += 1;
 
-  if (nodeIndex <= network.nodes.length - 1) {
+  if (api.nodeIndex <= network.nodes.length - 1) {
     api.apiRetry = 0;
     api.provider = undefined;
     api.api = undefined;

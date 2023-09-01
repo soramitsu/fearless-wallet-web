@@ -98,16 +98,16 @@ export default class Eip155RequestHandler {
       }
 
       const chainState = this.state.getNetworkMap[networkKey];
-      const signature = ''; //TODO refactoring
-      //this.requestService
 
       const createRequest = () => {
-        this.walletConnectService
-          .responseRequest({
-            topic,
-            response: formatJsonRpcResult(id, signature),
+        this.requestService.evmRequestHandler
+          .sign(requestEvent)
+          .then(async (signature) => {
+            await this.walletConnectService.responseRequest({
+              topic: topic,
+              response: formatJsonRpcResult(id, signature),
+            });
           })
-
           .catch((e) => {
             this.handleError(topic, id, e);
           });

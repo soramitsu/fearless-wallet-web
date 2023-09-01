@@ -1571,10 +1571,13 @@ export default class Extension extends FWExtensionBase {
     console.info(address, password, topic);
     // this.state.requestService.evmRequestHandler.handleWCRequest()
   }
-  wcRequestReject({ topic }: RequestDisconnectWalletConnectSession) {
-    console.info(topic);
 
-    //
+  wcRequestReject({ topic }: RequestDisconnectWalletConnectSession) {
+    const request = this.state.requestService.getSignRequest(topic);
+
+    request?.reject(new Error('USER_REJECTED'));
+
+    return true;
   }
 
   private WCNotSupportSubscribe(id: string, port: chrome.runtime.Port): WalletConnectNotSupportRequest[] {

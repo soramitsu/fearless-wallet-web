@@ -18,9 +18,8 @@ export type WalletConnectSessions = SessionTypes.Struct[] | null;
 export interface WalletConnectNotSupportRequest extends BaseWalletConnectSessionRequest {
   request: SignClientTypes.EventArguments['session_request'];
 }
-export interface WalletConnectTransactionRequest extends BaseWalletConnectSessionRequest {
-  request: SignClientTypes.EventArguments['session_request'];
-}
+export type WalletConnectTransactionRequest = SignClientTypes.EventArguments['session_request'];
+
 export interface RequestApproveWalletConnect {
   address: string;
   password: string;

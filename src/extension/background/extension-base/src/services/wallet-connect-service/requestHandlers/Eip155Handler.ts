@@ -5,7 +5,7 @@ import { isSameAddress } from '@extension-base/utils';
 import State from '@extension-base/background/handlers/State';
 import { WalletConnectService } from '..';
 import { EIP155_SIGNING_METHODS } from '../consts';
-import { getEip155MessageAddress, getWCId, parseRequestParams } from '../utils';
+import { getEip155MessageAddress, parseRequestParams } from '../utils';
 import { RequestService } from '../../request-service';
 
 export default class Eip155RequestHandler {
@@ -47,7 +47,7 @@ export default class Eip155RequestHandler {
     const method = request.method as EIP155_SIGNING_METHODS;
     const requestSession = this.walletConnectService.getSession(topic);
 
-    const url = requestSession.peer.metadata.url;
+    // const url = requestSession.peer.metadata.url;
     const sessionAccounts = requestSession.namespaces.eip155.accounts.map((account) => account.split(':')[2]);
 
     if (
@@ -63,16 +63,8 @@ export default class Eip155RequestHandler {
 
       this.checkAccount(address, sessionAccounts);
 
-      this.state
-        .evmSign(
-          getWCId(id),
-          url,
-          method === EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA
-            ? EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4
-            : method,
-          request.params,
-          sessionAccounts
-        )
+      this.requestService.evmRequestHandler
+        .sign(requestEvent)
         .then(async (signature) => {
           await this.walletConnectService.responseRequest({
             topic: topic,

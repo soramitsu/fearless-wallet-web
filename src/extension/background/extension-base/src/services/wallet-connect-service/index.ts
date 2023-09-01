@@ -205,9 +205,9 @@ export class WalletConnectService {
   createListener() {
     this.client?.on('session_proposal', this.onSessionProposal.bind(this));
     this.client?.on('session_request', this.onSessionRequest.bind(this));
-    this.client?.on('session_ping', (data) => console.info('ping', data));
-    this.client?.on('session_event', (data) => console.info('event', data));
-    this.client?.on('session_update', (data) => console.info('update', data));
+    this.client?.on('session_ping', (data: unknown) => console.info('ping', data));
+    this.client?.on('session_event', (data: unknown) => console.info('event', data));
+    this.client?.on('session_update', (data: unknown) => console.info('update', data));
     this.client?.on('session_delete', this.updateSessions.bind(this));
   }
 

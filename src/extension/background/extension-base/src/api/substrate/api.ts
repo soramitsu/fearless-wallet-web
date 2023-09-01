@@ -142,7 +142,7 @@ export async function initApi(network: NetworkJson, retry = false): Promise<void
   if (isSora(networkName)) soraConnection.open(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
   else {
     try {
-      const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS);
+      const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS, undefined, 10000);
 
       const api = new ApiPromise({ provider, noInitWarn: true });
 

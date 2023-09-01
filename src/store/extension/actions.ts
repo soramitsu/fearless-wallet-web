@@ -4,6 +4,7 @@ import type {
   RequestRejectConnectWalletSession,
   WalletConnectSessionRequest,
   WalletConnectSessions,
+  WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 import type { AuthorizeRequest, ApproveAuthRequest, MetadataRequest } from '@extension-base/background/types/types';
 import type { ActionTree, ActionContext } from 'vuex';
@@ -27,6 +28,7 @@ import {
   rejectWalletConnectSession,
   walletConnectSessionsSubscribe,
   walletConnectRequestSubscribe,
+  subscribeWalletConnectRequest,
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
@@ -51,6 +53,7 @@ export enum ActionTypes {
   REJECT_META_REQUEST = 'REJECT_META_REQUEST',
 
   SUBSCRIBE_WC_CONNECT_REQUESTS = 'SUBSCRIBE_WC_CONNECT_REQUESTS',
+  SUBSCRIBE_WC_REQUESTS = 'SUBSCRIBE_WC_REQUESTS',
   SUBSCRIBE_WC_SESSIONS = 'SUBSCRIBE_WC_SESSIONS',
   APPROVE_WC_REQUEST = 'APPROVE_WC_REQUEST',
   REJECT_WC_REQUEST = 'REJECT_WC_REQUEST',
@@ -85,6 +88,7 @@ export type Actions = {
   [ActionTypes.APPROVE_META_REQUEST](context: AugmentedExtensionContext, props: MetadataRequest): Promise<void>;
   [ActionTypes.REJECT_META_REQUEST](context: AugmentedExtensionContext, props: MetadataRequest): Promise<void>;
 
+  [ActionTypes.SUBSCRIBE_WC_REQUESTS](context: AugmentedExtensionContext): Promise<WalletConnectTransactionRequest[]>;
   [ActionTypes.SUBSCRIBE_WC_SESSIONS](context: AugmentedExtensionContext): Promise<WalletConnectSessions>;
   [ActionTypes.SUBSCRIBE_WC_CONNECT_REQUESTS](
     context: AugmentedExtensionContext
@@ -103,9 +107,6 @@ export type Actions = {
   [ActionTypes.APPROVE_SIGN_PASSWORD](context: AugmentedExtensionContext, payload: ApprovePayload): Promise<void>;
   [ActionTypes.SIGN_SIGNATURE](context: AugmentedExtensionContext, payload: SignPayload): Promise<void>;
   [ActionTypes.SUBSCRIBE_EXTENSION_REQUESTS](context: AugmentedExtensionContext): Promise<void[]>;
-
-  [ActionTypes.SUBSCRIBE_EXTENSION_REQUESTS](context: AugmentedExtensionContext): Promise<void[]>;
-
   [ActionTypes.FETCH_TAB_STATUS](context: AugmentedExtensionContext): Promise<void>;
 };
 
@@ -272,6 +273,17 @@ const actions: ActionTree<State, State> & Actions = {
     };
 
     return walletConnectRequestSubscribe(callback);
+  },
+
+  async [ActionTypes.SUBSCRIBE_WC_REQUESTS]({ commit }) {
+    const callback = (requests: WalletConnectTransactionRequest[]) => {
+      commit(MutationTypes.SET_REQUEST, { type: 'wcRequests', requests });
+      console.info(requests, 'WC requests');
+
+      if (requests.length) router.push({ name: Components.WCSignRequest });
+    };
+
+    return subscribeWalletConnectRequest(callback);
   },
 
   async [ActionTypes.SUBSCRIBE_WC_SESSIONS]({ commit }) {

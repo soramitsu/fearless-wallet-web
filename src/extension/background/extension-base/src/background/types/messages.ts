@@ -113,6 +113,7 @@ import type {
   RequestRejectWalletConnectNotSupport,
   WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
+  WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
@@ -260,7 +261,11 @@ export interface RequestSignatures {
   'pri(walletConnect.notSupport.approve)': [RequestApproveWalletConnectNotSupport, boolean];
   'pri(walletConnect.notSupport.reject)': [RequestRejectWalletConnectNotSupport, boolean];
 
-  'pri(walletConnect.signing.requests.subscribe)': [RequestSigningSubscribe, boolean, SigningRequest[]];
+  'pri(walletConnect.signing.requests.subscribe)': [
+    RequestSigningSubscribe,
+    WalletConnectTransactionRequest[],
+    WalletConnectTransactionRequest[]
+  ];
   'pri(walletConnect.request.approve)': [{ address: string; password: string; topic: string }, boolean];
   'pri(walletConnect.request.reject)': [{ topic: string }, boolean];
 }

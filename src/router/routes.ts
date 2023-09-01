@@ -24,6 +24,7 @@ const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue')
 const Export = () => import('@/screens/accounts/Export.vue');
 const WalletConnectInit = () => import('@/screens/walletConnect/WalletConnectInit.vue');
 const WalletConnectAuth = () => import('@/screens/walletConnect/WalletConnectAuth.vue');
+const WCSignRequest = () => import('@/screens/walletConnect/WCSignRequest.vue');
 const Onboarding = () => import('@/screens/onboarding/Onboarding.vue');
 
 const AssetNetworks = () =>
@@ -57,6 +58,7 @@ export enum Components {
   ManageAuths = 'ManageAuths',
   UpdateAuths = 'UpdateAuths',
   WCAuthDetails = 'WCAuthDetails',
+  WCSignRequest = 'WCSignRequest',
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
   CreateGoogle = 'CreateGoogle',
@@ -128,6 +130,11 @@ const routes: Array<RouteConfig> = [
     path: '/transaction',
     name: Components.Transaction,
     component: Transaction,
+  },
+  {
+    path: '/wc-transaction',
+    name: Components.WCSignRequest,
+    component: WCSignRequest,
   },
   {
     path: '/auth-management',

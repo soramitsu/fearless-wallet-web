@@ -10,6 +10,7 @@ import {
   RequestRejectWalletConnectNotSupport,
   WalletConnectSessionRequest,
   WalletConnectSessions,
+  WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 import type { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
@@ -603,4 +604,18 @@ export function approveWalletConnectNotSupport(request: RequestApproveWalletConn
 
 export function rejectWalletConnectNotSupport(request: RequestRejectWalletConnectNotSupport): Promise<boolean> {
   return sendMessage('pri(walletConnect.notSupport.reject)', request);
+}
+
+export function subscribeWalletConnectRequest(
+  cb: (data: WalletConnectTransactionRequest[]) => void
+): Promise<WalletConnectTransactionRequest[]> {
+  return sendMessage('pri(walletConnect.signing.requests.subscribe)', null, cb);
+}
+
+export function walletConnectRequestApprove(address: string, password: string, topic: string): Promise<boolean> {
+  return sendMessage('pri(walletConnect.request.approve)', { address, password, topic });
+}
+
+export function walletConnectRequestReject(topic: string): Promise<boolean> {
+  return sendMessage('pri(walletConnect.request.reject)', { topic });
 }

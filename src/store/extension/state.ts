@@ -9,6 +9,7 @@ import type { SigningRequest } from '@extension-base/background/types';
 import type {
   WalletConnectSessionRequest,
   WalletConnectSessions,
+  WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 
 export type State = {
@@ -16,6 +17,7 @@ export type State = {
   signRequests: SigningRequest[];
   metaRequests: MetadataRequest[];
   wcConnectRequests: WalletConnectSessionRequest[];
+  wcRequests: WalletConnectTransactionRequest[];
   wcSessions: WalletConnectSessions;
   authList: Record<string, AuthUrlInfo>;
   tabStatus: ActiveTabAuthorizeStatus | null;
@@ -29,6 +31,7 @@ const state = (): State => {
     signRequests: [],
     metaRequests: [],
     wcConnectRequests: [],
+    wcRequests: [],
     wcSessions: [],
     authList: {},
     tabStatus: null,

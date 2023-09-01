@@ -45,6 +45,7 @@ import { addresses as addressesObservable } from '@polkadot/ui-keyring/observabl
 import { ProposalTypes, SessionTypes } from '@walletconnect/types';
 import {
   RequestApproveConnectWalletSession,
+  RequestApproveWalletConnect,
   RequestApproveWalletConnectNotSupport,
   RequestConnectWalletConnect,
   RequestDisconnectWalletConnectSession,
@@ -53,6 +54,7 @@ import {
   ResultApproveWalletConnectSession,
   WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
+  WalletConnectTransactionRequest,
 } from '../../services/wallet-connect-service/types';
 import { SigningRequest } from '../types';
 import { WALLET_CONNECT_EIP155_NAMESPACE } from '../../services/wallet-connect-service/consts';
@@ -127,6 +129,7 @@ import type {
   NetworkJson,
   TransactionHistoryItemType,
 } from '@extension-base/types';
+
 import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
@@ -661,29 +664,6 @@ export default class Extension extends FWExtensionBase {
     });
 
     return true;
-  }
-
-  wcSigningSubscribe(id: string, port: Port): boolean {
-    const cb = createSubscription<'pri(walletConnect.signing.requests.subscribe)'>(id, port);
-
-    const subscription = this.state.requestService.signWcSubject.subscribe((requests: SigningRequest[]): void =>
-      cb(requests)
-    );
-
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
-
-    return true;
-  }
-
-  wcRequestApprove() {
-    //
-  }
-
-  wcRequestReject() {
-    //
   }
 
   mobileSigningSubscribe(id: string, port: Port): boolean {
@@ -1445,15 +1425,9 @@ export default class Extension extends FWExtensionBase {
   }: RequestApproveConnectWalletSession): Promise<boolean> {
     const request = this.state.requestService.getConnectWCRequest(id);
 
-    if (isProposalExpired(request.request.params)) {
-      throw new Error('The proposal has been expired');
-    }
-
-    const wcId = request.request.id;
-    const params = request.request.params;
-
-    const requiredNamespaces: ProposalTypes.RequiredNamespaces = params.requiredNamespaces;
-    const optionalNamespaces: ProposalTypes.OptionalNamespaces = params.optionalNamespaces;
+    if (isProposalExpired(request.request.params)) throw new Error('The proposal has been expired');
+    const { id: wcId, params } = request.request;
+    const { requiredNamespaces, optionalNamespaces } = params;
 
     const availableNamespaces: ProposalTypes.RequiredNamespaces = {};
 
@@ -1466,13 +1440,13 @@ export default class Extension extends FWExtensionBase {
           const unSupportChains = namespace.chains.filter((chain) => !isSupportWalletConnectChain(chain, chainInfoMap));
 
           if (unSupportChains.length) {
-            throw new Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + unSupportChains.toString());
+            throw new Error(`${getSdkError('UNSUPPORTED_CHAINS').message} ${unSupportChains.toString()}`);
           }
 
           availableNamespaces[key] = namespace;
         }
       } else {
-        throw new Error(getSdkError('UNSUPPORTED_NAMESPACE_KEY').message + ' ' + key);
+        throw new Error(`${getSdkError('UNSUPPORTED_NAMESPACE_KEY').message} ${key}`);
       }
     });
 
@@ -1486,8 +1460,9 @@ export default class Extension extends FWExtensionBase {
           const defaultChains: string[] = [];
 
           if (requiredNameSpace) {
+            const chains = [...(requiredNameSpace.chains || defaultChains), ...(supportChains || defaultChains)];
             availableNamespaces[key] = {
-              chains: [...(requiredNameSpace.chains || defaultChains), ...(supportChains || defaultChains)],
+              chains,
               events: requiredNameSpace.events,
               methods: requiredNameSpace.methods,
             };
@@ -1575,6 +1550,31 @@ export default class Extension extends FWExtensionBase {
     await this.state.walletConnectService.disconnect(topic);
 
     return true;
+  }
+
+  wcSigningSubscribe(id: string, port: Port): boolean {
+    const cb = createSubscription<'pri(walletConnect.signing.requests.subscribe)'>(id, port);
+
+    const subscription = this.state.requestService.signWcSubject.subscribe(
+      (requests: WalletConnectTransactionRequest[]): void => cb(requests)
+    );
+
+    port.onDisconnect.addListener((): void => {
+      unsubscribe(id);
+      subscription.unsubscribe();
+    });
+
+    return true;
+  }
+
+  wcRequestApprove({ address, password, topic }: RequestApproveWalletConnect) {
+    console.info(address, password, topic);
+    // this.state.requestService.evmRequestHandler.handleWCRequest()
+  }
+  wcRequestReject({ topic }: RequestDisconnectWalletConnectSession) {
+    console.info(topic);
+
+    //
   }
 
   private WCNotSupportSubscribe(id: string, port: chrome.runtime.Port): WalletConnectNotSupportRequest[] {
@@ -1870,10 +1870,10 @@ export default class Extension extends FWExtensionBase {
         return this.disconnectWalletConnectSession(request as RequestDisconnectWalletConnectSession);
 
       case 'pri(walletConnect.request.approve)':
-        return this.approveWalletConnectSession(request as RequestApproveConnectWalletSession);
+        return this.wcRequestApprove(request as RequestApproveWalletConnect);
 
       case 'pri(walletConnect.request.reject)':
-        return this.rejectWalletConnectSession(request as RequestRejectConnectWalletSession);
+        return this.wcRequestReject(request as RequestDisconnectWalletConnectSession);
 
       case 'pri(walletConnect.signing.requests.subscribe)':
         return this.subscribeWalletConnectSessions(id, port);

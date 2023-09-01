@@ -1,6 +1,9 @@
 import Vue from 'vue';
 import { SessionTypes } from '@walletconnect/types';
-import { WalletConnectSessionRequest } from '@extension-base/services/wallet-connect-service/types';
+import {
+  WalletConnectSessionRequest,
+  WalletConnectTransactionRequest,
+} from '@extension-base/services/wallet-connect-service/types';
 import type {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
@@ -23,12 +26,13 @@ export enum MutationTypes {
 }
 
 interface SetPayload {
-  type: 'auth' | 'meta' | 'sign' | 'wcConnectRequests' | 'wcSessions';
+  type: 'auth' | 'meta' | 'sign' | 'wcConnectRequests' | 'wcRequests' | 'wcSessions';
   requests:
     | AuthorizeRequest[]
     | SigningRequest[]
     | MetadataRequest[]
     | WalletConnectSessionRequest[]
+    | WalletConnectTransactionRequest[]
     | SessionTypes.Struct[]
     | null;
 }
@@ -66,6 +70,12 @@ const mutations: MutationTree<State> & Mutations = {
 
     if (type === 'wcConnectRequests') {
       state.wcConnectRequests = [...(requests as unknown as WalletConnectSessionRequest[])];
+
+      return;
+    }
+
+    if (type === 'wcRequests') {
+      state.wcRequests = [...(requests as unknown as WalletConnectTransactionRequest[])];
 
       return;
     }

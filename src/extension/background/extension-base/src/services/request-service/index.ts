@@ -1,6 +1,10 @@
 import { BehaviorSubject } from 'rxjs';
 import { MetadataDef } from '@polkadot/extension-inject/types';
-import { WalletConnectNotSupportRequest, WalletConnectSessionRequest } from '../wallet-connect-service/types';
+import {
+  WalletConnectNotSupportRequest,
+  WalletConnectSessionRequest,
+  WalletConnectTransactionRequest,
+} from '../wallet-connect-service/types';
 import State from '../../background/handlers/State';
 import {
   AuthorizeRequest,
@@ -161,7 +165,7 @@ export class RequestService {
   }
 
   //Evm
-  public get signWcSubject(): BehaviorSubject<SigningRequest[]> {
+  public get signWcSubject(): BehaviorSubject<WalletConnectTransactionRequest[]> {
     return this.evmRequestHandler.signSubject;
   }
 

@@ -149,6 +149,7 @@ import {
   SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
+import { IS_PRODUCTION } from '@/consts/global';
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
 const ETH_DERIVE_DEFAULT = "/m/44'/60'/0'/0/0";
@@ -1272,7 +1273,7 @@ export default class Extension extends FWExtensionBase {
 
     const extrinsic = await createCrossChainExtrinsic(assetId, originNet, destinationNet, to, amount!, tokenBalance);
 
-    console.info('CrossChain', extrinsic);
+    if (!IS_PRODUCTION) console.info('CrossChain', extrinsic);
 
     const [fee, crossChainFee] = await estimateCrossChainFee(originNet, destinationNet, tokenBalance, extrinsic);
 

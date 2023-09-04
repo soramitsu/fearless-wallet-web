@@ -162,8 +162,6 @@ export function subscribeBalance(
   ethereumAddress: string,
   setBalance: (networkKey: string, rs: Partial<BalanceItem>) => void
 ) {
-  state.generateDefaultBalance(address);
-
   const unsubList = Object.entries(state.getSubstrateApiMap).map(async ([networkKey, apiProps]) => {
     await apiProps.api?.isReadyOrError;
 

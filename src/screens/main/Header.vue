@@ -15,7 +15,7 @@
             <SIcon name="chevron-bottom-16" />
           </Rotate>
         </div>
-        <div v-if="!isGroup" class="copy-adress" @click.stop="copyAddress">
+        <div v-if="!isGroup && isAddressExists" class="copy-adress" @click.stop="copyAddress">
           <span>{{ cutAddress }}</span>
           <Icon icon="copy" className="copy" />
           <Tooltip text="common.copied" target=".copy" placement="top" trigger="click" />
@@ -129,6 +129,10 @@ export default class Header extends Vue {
     const route = this.$route.name;
 
     return route === Components.AssetNetworks || route === Components.AssetHistory;
+  }
+
+  get isAddressExists() {
+    return this.address !== '';
   }
 
   get isGroup() {

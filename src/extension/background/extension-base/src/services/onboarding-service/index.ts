@@ -36,7 +36,7 @@ export class OnboardingService {
 
     const userStories = this.stories[this.defaultLocale][this.userType];
 
-    if (userStories.length) this.isRequired = true;
+    if (userStories.length && process.env.NODE_ENV === 'production') this.isRequired = true;
   }
 
   getStories(lang: string): OnboardingStories {

@@ -77,6 +77,7 @@ export default class GoogleWalletsList extends Vue {
     const { json, ethJson, password } = this.items[index];
 
     if (!json || !password) return;
+    if (!json || !password) return;
 
     const { value: isValid } = await isJsonValid(json, password);
 

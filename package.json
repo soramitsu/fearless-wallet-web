@@ -1,10 +1,6 @@
 {
   "name": "fearless-wallet",
-<<<<<<< HEAD
   "version": "1.2.5",
-=======
-  "version": "1.2.4",
->>>>>>> 3fb4e7990bd524af42c40906f20450a6873fe2db
   "private": true,
   "author": {
     "email": "fearless.web@soramitsu.co.jp",

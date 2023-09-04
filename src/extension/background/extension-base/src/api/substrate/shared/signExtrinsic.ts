@@ -6,9 +6,9 @@ import { assert } from '@polkadot/util';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import KeyringSigner from '@extension-base/signers/KeyringSigner';
 import { unlockAccount } from '@extension-base/utils/keyring';
-import { SignerType } from '@extension-base/background/types/types';
-import type { ApiProps, ExternalRequestPromise } from '@extension-base/background/types/types';
+import type { ApiProps, ExternalRequestPromise } from '@/extension/background/extension-base/src/background/types';
 import type { HandleBasicTx } from '@extension-base/api/evm/transfer';
+import { SignerType } from '@/extension/background/extension-base/src/background/types';
 import { BeaconSigner } from '@/extension/background/extension-base/src/signers/BeaconSigner';
 
 interface AbstractSignExtrinsicProps {

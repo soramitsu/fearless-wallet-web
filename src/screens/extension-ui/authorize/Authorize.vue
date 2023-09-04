@@ -39,7 +39,7 @@
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { AuthorizeRequest, ApproveAuthRequest, AccountJson } from '@extension-base/background/types/types';
+import { AuthorizeRequest, ApproveAuthRequest, AccountJson } from '@extension-base/background/types';
 import { AsyncFn } from '@/interfaces';
 import Hint from '@/components/Hint.vue';
 import { Components } from '@/router/routes';
@@ -165,3 +165,4 @@ export default class Authorize extends Vue {
   }
 }
 </style>
+@/extension/background/extension-base/src/background/types

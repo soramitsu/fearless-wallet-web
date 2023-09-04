@@ -7,9 +7,9 @@ import { keyring } from '@polkadot/ui-keyring';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import { Resolver } from '@extension-base/types';
 import { getId, isInternalRequest } from '@extension-base/utils';
-import { SignRequest, SigningRequest, ResponseSigning, RequestSign } from '@extension-base/background/types';
 import { RequestService } from '@extension-base/services';
-import { AccountJson } from '../../../background/types/types';
+import type { SignRequest, ResponseSigning, RequestSign, AccountJson } from '@extension-base/background/types';
+import type { SigningRequest } from '@extension-base/background/types/types';
 
 export class SubstrateRequestHandler {
   readonly logger: Logger;

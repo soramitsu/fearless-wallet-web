@@ -16,7 +16,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
+import { ActiveTabAuthorizeStatus } from '@extension-base/background/types';
 
 @Component
 export default class ConnectionPopup extends Vue {
@@ -62,3 +62,4 @@ export default class ConnectionPopup extends Vue {
   width: 300px;
 }
 </style>
+@/extension/background/extension-base/src/background/types

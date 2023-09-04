@@ -16,7 +16,7 @@ import {
 import type { NetworkJson } from '@extension-base/types';
 import type FWState from '@extension-base/background/handlers/State';
 import type { FWSubscription } from '@extension-base/background/handlers/subscriptions';
-import type { ServiceInfo } from '@extension-base/background/types/types';
+import type { ServiceInfo } from '@/extension/background/extension-base/src/background/types';
 
 export class FWCron {
   subscriptions: FWSubscription;

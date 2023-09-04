@@ -1,7 +1,7 @@
 import type { ActionTree, ActionContext } from 'vuex';
 import type { Mutations } from '@/store/accounts/mutations';
 import type { State } from '@/store/accounts/state';
-import type { AccountJson, BalanceJson } from '@extension-base/background/types/types';
+import type { AccountJson, BalanceJson } from '@/extension/background/extension-base/src/background/types';
 import { MutationTypes } from '@/store/accounts/mutations';
 import { accountController } from '@/controllers/accountController';
 import router from '@/router';

@@ -6,7 +6,7 @@ import jwtDecode from 'jwt-decode';
 import { FPNumber } from '@sora-substrate/util';
 import type { JwtPayload } from 'jwt-decode';
 import type { Status } from '@/consts/soraCard';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { IS_PRODUCTION } from '@/consts/global';
 import { soraCardController } from '@/controllers';
 import { VerificationStatus, KycStatus } from '@/consts/soraCard';

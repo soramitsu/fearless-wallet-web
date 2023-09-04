@@ -4,7 +4,7 @@
 import { state } from '@extension-base/background/handlers';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
-import type { RequestSign } from '@extension-base/background/types/types';
+import type { RequestSign } from '@/extension/background/extension-base/src/background/types';
 
 export default class BeaconSignerJSON implements RequestSign {
   public readonly payload: SignerPayloadJSON;

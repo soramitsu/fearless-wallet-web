@@ -61,7 +61,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { TokenBalance } from '@extension-base/background/types/types';
+import { TokenBalance } from '@extension-base/background/types';
 import HistoryItem from './HistoryItem.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { GetHistory } from '@/interfaces';
@@ -257,3 +257,4 @@ export default class AssetNetworks extends Vue {
   }
 }
 </style>
+@/extension/background/extension-base/src/background/types

@@ -29,7 +29,7 @@
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Action, Getter } from 'vuex-class';
-import { MetadataRequest } from '@extension-base/background/types/types';
+import { MetadataRequest } from '@extension-base/background/types';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import Hint from '@/components/Hint.vue';
 import { Components } from '@/router/routes';
@@ -81,3 +81,4 @@ export default class MetaRequest extends Vue {
   }
 }
 </style>
+@/extension/background/extension-base/src/background/types

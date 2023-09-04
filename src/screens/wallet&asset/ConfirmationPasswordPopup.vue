@@ -69,7 +69,7 @@ import {
   RequestTransfer,
   RequestCrossChain,
   TokenBalance,
-} from '@extension-base/background/types/types';
+} from '@extension-base/background/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
 import type { GetNetwork, GetNetworkGenesisHash, SelectedWallet } from '@/store';
@@ -429,3 +429,4 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 }
 </style>
+@/extension/background/extension-base/src/background/types

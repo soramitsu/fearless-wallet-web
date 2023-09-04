@@ -22,7 +22,6 @@ import { prepNetworkNames } from '@extension-base/const/networks';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
 import { getMockCurrencies, isEthereumNetwork, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
-import { MobileSigningRequest, MobileSignRequest } from '@extension-base/background/types/types';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { JsonRpcProvider } from 'ethers';
@@ -61,13 +60,14 @@ import type {
   RequestAuthorizeCancel,
   AccountJson,
   EvmSignatureRequest,
-} from '@extension-base/background/types/types';
+} from '@/extension/background/extension-base/src/background/types';
 import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import type { ChainRegistry, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
+import { MobileSigningRequest, MobileSignRequest } from '@/extension/background/extension-base/src/background/types';
 import { URLS } from '@/consts/urls';
 import {
   ALL_NETWORKS,

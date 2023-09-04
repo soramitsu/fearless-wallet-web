@@ -32,7 +32,6 @@ import {
   makeCrossChain,
   estimateCrossChainFee,
 } from '@extension-base/api/substrate/crossChain';
-import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
 import { ethers, Wallet } from 'ethers';
 import {
   balanceItemByNetwork,
@@ -45,6 +44,7 @@ import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { ProposalTypes, SessionTypes } from '@walletconnect/types';
 import { HexString } from '@polkadot/util/types';
+import { SigningRequest } from '@extension-base/background/types/types';
 import {
   RequestApproveConnectWalletSession,
   RequestApproveWalletConnect,
@@ -57,14 +57,13 @@ import {
   WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
   WalletConnectTransactionRequest,
-} from '../../services/wallet-connect-service/types';
-import { SigningRequest } from '../types';
-import { WALLET_CONNECT_EIP155_NAMESPACE } from '../../services/wallet-connect-service/consts';
+} from '@extension-base/services/wallet-connect-service/types';
+import { WALLET_CONNECT_EIP155_NAMESPACE } from '@extension-base/services/wallet-connect-service/consts';
 import {
   isProposalExpired,
   isSupportWalletConnectNamespace,
   isSupportWalletConnectChain,
-} from '../../services/wallet-connect-service/utils';
+} from '@extension-base/services/wallet-connect-service/utils';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -123,7 +122,7 @@ import type {
   ResponseSeedCreate,
   ResponseSeedValidate,
   ResponseType,
-} from '@extension-base/background/types/types';
+} from '@/extension/background/extension-base/src/background/types';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   Asset,
@@ -137,6 +136,11 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
+import {
+  BasicTxErrorCode,
+  RequestUpdateMeta,
+  TransferErrorCode,
+} from '@/extension/background/extension-base/src/background/types';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
 

@@ -1,24 +1,20 @@
 import { BehaviorSubject } from 'rxjs';
 import { MetadataDef } from '@polkadot/extension-inject/types';
+import State from '@extension-base/background/handlers/State';
 import {
-  WalletConnectNotSupportRequest,
-  WalletConnectSessionRequest,
-  WalletConnectTransactionRequest,
-} from '../wallet-connect-service/types';
-import State from '../../background/handlers/State';
-import {
-  AuthorizeRequest,
   AuthRequest,
   AuthUrls,
-  MetadataRequest,
   MetaRequest,
   RequestAuthorizeTab,
   RequestSign,
   ResponseSigning,
-  SigningRequest,
-} from '../../background/types';
-import { NetworkService } from '..';
-import { AccountJson } from '../../background/types/types';
+  AccountJson,
+  AuthorizeRequest,
+  MetadataRequest,
+} from '@extension-base/background/types';
+import { WCSignRequest } from '@extension-base/services/request-service/types';
+import { SigningRequest } from '@extension-base/background/types/types';
+import EvmRequestHandler from '@extension-base/services/request-service/handlers/EvmRequestHandler';
 import {
   ConnectWCRequestHandler,
   NotSupportWCRequestHandler,
@@ -26,9 +22,13 @@ import {
   AuthRequestHandler,
   MetadataRequestHandler,
   SubstrateRequestHandler,
-} from './handlers';
-import EvmRequestHandler from './handlers/EvmRequestHandler';
-import { WCSignRequest } from './types';
+} from '@extension-base/services/request-service/handlers';
+import {
+  WalletConnectNotSupportRequest,
+  WalletConnectSessionRequest,
+  WalletConnectTransactionRequest,
+} from '../wallet-connect-service/types';
+import { NetworkService } from '..';
 
 export class RequestService {
   readonly state: State;

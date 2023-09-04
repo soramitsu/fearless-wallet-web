@@ -11,7 +11,7 @@ import type {
   MessageTypesWithSubscriptions,
   Port,
   SubscriptionMessageTypes,
-} from '@extension-base/background/types/types';
+} from '@/extension/background/extension-base/src/background/types';
 
 type SubscriptionName = 'balance' | 'xorTotalBalance';
 type Subscriptions = Record<string, Port>;

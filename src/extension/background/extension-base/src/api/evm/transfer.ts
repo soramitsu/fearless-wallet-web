@@ -1,12 +1,12 @@
 import { ethers, TransactionRequest } from 'ethers';
+import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
+import { state } from '@extension-base/background/handlers';
 import {
   BasicTxResponse,
   ExternalRequestPromise,
   ExternalRequestPromiseStatus,
   TransferErrorCode,
-} from '@extension-base/background/types/types';
-import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
-import { state } from '@extension-base/background/handlers';
+} from '@/extension/background/extension-base/src/background/types';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
 export type HandleTxResponse<T extends BasicTxResponse> = (data: T) => void;

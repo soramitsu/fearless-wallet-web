@@ -42,7 +42,7 @@ import { loadScript, unloadScript } from 'vue-plugin-load-script';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import { X1Api } from '@/util/x1';
 import { SORA_NETWORK_NAME, SORA_TEST } from '@/consts/networks';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -161,3 +161,4 @@ export default class X1Form extends Vue {
   }
 }
 </style>
+@/extension/background/extension-base/src/background/types

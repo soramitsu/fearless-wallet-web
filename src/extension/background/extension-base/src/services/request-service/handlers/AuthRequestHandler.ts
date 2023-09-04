@@ -7,13 +7,8 @@ import State from '@extension-base/background/handlers/State';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { getId } from '@extension-base/utils';
 import { NetworkService, RequestService } from '@extension-base/services';
-import type {
-  AuthRequest,
-  AuthResponse,
-  AuthUrls,
-  AuthorizeRequest,
-  RequestAuthorizeTab,
-} from '@extension-base/background/types';
+import { AuthorizeRequest } from '../../../background/types';
+import type { AuthRequest, AuthResponse, AuthUrls, RequestAuthorizeTab } from '@extension-base/background/types/types';
 
 const AUTH_URLS_KEY = 'authUrls';
 

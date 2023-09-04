@@ -1,7 +1,7 @@
 import { FPNumber } from '@sora-substrate/math';
 import { state } from '@extension-base/background/handlers';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { NetworkName } from '@/interfaces';
 
 type ExtrinsicTransferProps = {

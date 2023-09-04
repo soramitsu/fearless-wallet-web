@@ -53,7 +53,7 @@ import type {
   ResponseMakeSwap,
   ResponseTotalBalances,
   MobileSigningRequest,
-} from '@extension-base/background/types/types';
+} from '@/extension/background/extension-base/src/background/types';
 import type { Message, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
@@ -69,7 +69,7 @@ import type {
   SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
-import type { SigningRequest } from '@extension-base/background/types';
+import type { SigningRequest } from '@extension-base/background/types/types';
 
 const metadataGets = new Map<string, Promise<MetadataDef | null>>();
 

@@ -4,7 +4,7 @@ import { isEthereumNetwork } from '@extension-base/background/utils/utils';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
-import type { ApiProps } from '@extension-base/background/types/types';
+import type { ApiProps } from '@/extension/background/extension-base/src/background/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { RelayChainName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';

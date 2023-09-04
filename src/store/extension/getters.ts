@@ -9,8 +9,8 @@ import type {
   AuthorizeRequest,
   AuthUrlInfo,
   MetadataRequest,
-} from '@extension-base/background/types/types';
-import type { SigningRequest } from '@extension-base/background/types';
+} from '@/extension/background/extension-base/src/background/types';
+import type { SigningRequest } from '@extension-base/background/types/types';
 import type { GetterTree } from 'vuex';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { Features } from '@/store/extension/types';

@@ -21,7 +21,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { HistoryElement, NetworkName } from '@/interfaces';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, getSignTransfer } from '@/helpers/history';
 import { TransactionType } from '@/interfaces/history';
 import { cut } from '@/helpers';
@@ -119,3 +119,4 @@ export default class HistoryItem extends Vue {
   }
 }
 </style>
+@/extension/background/extension-base/src/background/types

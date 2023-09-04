@@ -11,7 +11,7 @@ import {
   AppMetadata,
   defaultEventCallbacks,
 } from '@airgap/beacon-sdk';
-import type { MobileSigningRequest } from '@extension-base/background/types/types';
+import type { MobileSigningRequest } from '@/extension/background/extension-base/src/background/types';
 import type {
   PayloadJSON,
   PermissionSuccess,

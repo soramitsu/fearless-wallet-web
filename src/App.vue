@@ -10,7 +10,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { ALL_NETWORKS } from './consts/networks';
-import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
+import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
@@ -183,3 +183,4 @@ body {
   background-size: cover;
 }
 </style>
+@/extension/background/extension-base/src/background/types

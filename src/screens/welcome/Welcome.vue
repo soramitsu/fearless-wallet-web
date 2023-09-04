@@ -82,7 +82,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { AccountJson } from '@extension-base/background/types/types';
+import type { AccountJson } from '@extension-base/background/types';
 import { Components } from '@/router/routes';
 import { URLS } from '@/consts/urls';
 import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
@@ -196,3 +196,4 @@ export default class Welcome extends Vue {
   }
 }
 </style>
+@/extension/background/extension-base/src/background/types

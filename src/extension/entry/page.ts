@@ -2,7 +2,7 @@ import { MESSAGE_ORIGIN_CONTENT } from '@extension-base/defaults';
 import { enable, handleResponse, redirectIfPhishing, saveSoraCardToken } from '@extension-base/page';
 import { RequestSignatures } from '@extension-base/background/types/messages';
 import type { Message } from '@extension-base/types';
-import type { TransportRequestMessage } from '@extension-base/background/types/types';
+import type { TransportRequestMessage } from '@/extension/background/extension-base/src/background/types';
 import { APP_VERSION } from '@/consts/global';
 
 class Page {

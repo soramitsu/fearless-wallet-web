@@ -9,7 +9,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, set, ref } from 'vue';
 import { useRoute } from 'vue-router/composables';
-import type { AuthUrls } from '@extension-base/background/types/types';
+import type { AuthUrls } from '@extension-base/background/types';
 import { updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import { WalletInfo, useStore } from '@/store';
@@ -96,3 +96,4 @@ async function updateAuths() {
   margin-top: 16px;
 }
 </style>
+@/extension/background/extension-base/src/background/types

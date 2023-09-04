@@ -3,7 +3,7 @@ import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import { APIItemState } from '@extension-base/api/types/networks';
 import type { NetworkJson } from '@extension-base/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import type { NetworkName, AssetsPrice, BuyProvider } from '@/interfaces';
 import {
   SORA_UTILITY_ASSET,

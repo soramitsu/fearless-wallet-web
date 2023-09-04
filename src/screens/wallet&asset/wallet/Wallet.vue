@@ -81,7 +81,7 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation, Action } from 'vuex-class';
-import { BalanceJson, TokenBalance } from '@extension-base/background/types/types';
+import { BalanceJson, TokenBalance } from '@extension-base/background/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset, GetNetwork } from '@/store';
 import type { AsyncFn, Fn, TabWallet } from '@/interfaces';
@@ -391,3 +391,4 @@ export default class Wallet extends Vue {
   }
 }
 </style>
+@/extension/background/extension-base/src/background/types

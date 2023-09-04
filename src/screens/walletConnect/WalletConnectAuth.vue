@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, set } from 'vue';
 import { useRouter } from 'vue-router/composables';
-import type { AccountJson } from '@extension-base/background/types/types';
+import type { AccountJson } from '@extension-base/background/types';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import { WalletInfo, useStore } from '@/store';
 import {
@@ -85,3 +85,4 @@ const onReject = () => {
   gap: 10px;
 }
 </style>
+@/extension/background/extension-base/src/background/types

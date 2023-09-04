@@ -1,4 +1,4 @@
-import type { IState } from '@extension-base/background/types/types';
+import type { IState } from '@/extension/background/extension-base/src/background/types';
 
 class Storage {
   set(value: Partial<IState>) {

@@ -79,7 +79,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
-import { ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
+import { ActiveTabAuthorizeStatus } from '@extension-base/background/types';
 import type { HexString } from '@polkadot/util/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import type { NetworkJson } from '@extension-base/types';
@@ -372,3 +372,4 @@ export default class Header extends Vue {
   }
 }
 </style>
+@/extension/background/extension-base/src/background/types

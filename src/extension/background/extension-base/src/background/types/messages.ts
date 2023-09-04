@@ -1,5 +1,5 @@
 import { SessionTypes } from '@walletconnect/types/dist/types/sign-client/session';
-import type { SigningRequest } from '../types';
+import type { SigningRequest } from '@extension-base/background/types/types';
 import type { NetworkJson, RequestTransactionHistoryAdd, TransactionHistoryItemType } from '@extension-base/types';
 import type {
   InjectedAccount,
@@ -89,7 +89,7 @@ import type {
   RequestUpdateMeta,
   ResponseTotalBalances,
   MobileSigningRequest,
-} from '@extension-base/background/types/types';
+} from '@/extension/background/extension-base/src/background/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
   DerivationPath,

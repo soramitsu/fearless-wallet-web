@@ -36,7 +36,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import type { WalletConnectSessions } from '@extension-base/services/wallet-connect-service/types';
-import type { AuthUrlInfo } from '@extension-base/background/types/types';
+import type { AuthUrlInfo } from '@extension-base/background/types';
 import WCAuthItem from '@/screens/walletConnect/WCAuthItem.vue';
 import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { useStore } from '@/store';
@@ -120,3 +120,4 @@ const onWCRemoveuth = async (id: string) => {
   height: calc(100% - 60px);
 }
 </style>
+@/extension/background/extension-base/src/background/types

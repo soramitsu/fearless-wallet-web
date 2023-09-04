@@ -4,7 +4,7 @@ import { api as apiSora, connection as soraConnection } from '@sora-substrate/ut
 import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
 import { state } from '@extension-base/background/handlers';
 import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
-import type { ApiProps } from '@extension-base/background/types/types';
+import type { ApiProps } from '@/extension/background/extension-base/src/background/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
 import { isSora } from '@/helpers';

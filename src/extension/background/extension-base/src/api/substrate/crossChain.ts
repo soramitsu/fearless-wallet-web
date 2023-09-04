@@ -9,11 +9,11 @@ import {
   getSubstrateAddress,
 } from '@extension-base/background/utils/utils';
 import { getAssetInfo } from '@extension-base/api/substrate/registry';
-import { SignerType } from '@extension-base/background/types/types';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
-import type { TokenBalance, BasicTxResponse } from '@extension-base/background/types/types';
+import type { TokenBalance, BasicTxResponse } from '@/extension/background/extension-base/src/background/types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { Interior } from '@/interfaces';
+import { SignerType } from '@/extension/background/extension-base/src/background/types';
 import {
   NATIVE_NETWORKS,
   RELAY_CHAINS,

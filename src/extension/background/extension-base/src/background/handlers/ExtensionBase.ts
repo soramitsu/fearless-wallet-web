@@ -21,7 +21,7 @@ import type {
   ResponseSigningIsLocked,
   ValidateJsonResult,
   RequestUpdateMeta,
-} from '@extension-base/background/types/types';
+} from '@/extension/background/extension-base/src/background/types';
 import type State from '@extension-base/background/handlers/State';
 import type { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';

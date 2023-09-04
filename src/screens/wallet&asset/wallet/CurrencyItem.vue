@@ -154,7 +154,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get mainNetwork() {
-    return this.assetData.mainNetwork;
+    return this.assetData.mainNetwork?.toLowerCase();
   }
 
   get assetId() {

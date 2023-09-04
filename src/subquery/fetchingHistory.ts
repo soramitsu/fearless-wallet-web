@@ -19,10 +19,9 @@ async function fetchSubqueryHistory(
   pageSize = 100,
   cursor: string | null = null
 ): Promise<SubqueryHistory> {
-  const {
-    data: { data },
-  } = await axios.post(url, {
-    query: `{
+  const res = await axios
+    .post(url, {
+      query: `{
       historyElements(
         after: ${cursor},
         first: ${pageSize},
@@ -47,9 +46,12 @@ async function fetchSubqueryHistory(
         }
       }
     }`,
-  });
+    })
+    .catch((e) => console.info(e));
 
-  return data?.historyElements;
+  if (res && res.data) return res.data?.historyElements;
+
+  return { nodes: [], pageInfo: { startCursor: '0', endCursor: '0' } };
 }
 
 async function fetchGiantsquidHistory(url: string, address: string): Promise<GiantsquidHistoryItem[]> {

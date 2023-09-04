@@ -30,19 +30,12 @@ import {
   makeCrossChain,
   estimateCrossChainFee,
 } from '@extension-base/api/substrate/crossChain';
-import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
-import { ethers } from 'ethers';
 import {
-  balanceItemByNetwork,
-  getSubstrateAddress,
-  isRequireSubstrateAPI,
-} from '@extension-base/background/utils/utils';
-
-import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
-import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
-import type {
+  BasicTxErrorCode,
   MobileSigningRequest,
   RequestMobileSign,
+  RequestUpdateMeta,
+  TransferErrorCode,
   ActiveTabAuthorizeStatus,
   BalanceJson,
   BasicTxError,
@@ -100,6 +93,15 @@ import type {
   ResponseType,
   SigningRequest,
 } from '@extension-base/background/types/types';
+import { ethers } from 'ethers';
+import {
+  balanceItemByNetwork,
+  getSubstrateAddress,
+  isRequireSubstrateAPI,
+} from '@extension-base/background/utils/utils';
+
+import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
+import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   Asset,
@@ -1105,7 +1107,6 @@ export default class Extension extends FWExtensionBase {
     const networkKey = this.state.getNetworkByKey(givenNetwork)?.name ?? '';
 
     const txState: BasicTxResponse = {};
-
     const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
 
     if (errors.length) {
@@ -1130,7 +1131,7 @@ export default class Extension extends FWExtensionBase {
 
     const ethereumAddress = fromKeyPair ? (fromKeyPair.meta.ethereumAddress as string | undefined) : '';
     const isEthereum = isEthereumAddress(from);
-    const address = getSubstrateAddress(from);
+    const address = isEthereum ? getSubstrateAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet to save pass
     const remainTime = fromKeyPair ? this.getRemainingTime(fromKeyPair) : 0;
 
     const savePass = () => {

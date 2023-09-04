@@ -9,7 +9,6 @@ export enum MutationTypes {
   SET_SELECTED_FIAT = 'SET_SELECTED_FIAT',
   SET_SELECTED_NETWORK = 'SET_SELECTED_NETWORK',
   SET_ACCOUNTS = 'SET_ACCOUNTS',
-  SET_ONLINE_STATUS = 'SET_ONLINE_STATUS',
   SET_ADDRESSES = 'SET_ADDRESSES',
   SET_CUSTOM_SORT = 'SET_CUSTOM_SORT',
   SET_AUTO_SELECT_NODE = 'SET_AUTO_SELECT_NODE',
@@ -28,7 +27,6 @@ export type Mutations = {
   [MutationTypes.SET_SELECTED_FIAT](state: State, props: string): void;
   [MutationTypes.SET_SELECTED_NETWORK](state: State, network: string): void;
   [MutationTypes.SET_ACCOUNTS](state: State, props: SetAccountsProps): void;
-  [MutationTypes.SET_ONLINE_STATUS](state: State, isOnline: boolean): void;
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: SetAutoSelectNode): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
   [MutationTypes.DELETE_QR](state: State): void;
@@ -63,10 +61,6 @@ const mutations: MutationTree<State> & Mutations = {
     accountController.setSelectedNetwork(address, network);
 
     state.selectedNetworks = { ...selectedNetworks, [address]: network };
-  },
-
-  [MutationTypes.SET_ONLINE_STATUS](state, isOnline) {
-    state.isOnline = isOnline;
   },
 
   [MutationTypes.SET_ACCOUNTS](state, { accounts, isMobileUpdate }) {

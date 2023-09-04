@@ -446,28 +446,6 @@ export interface SignRequest extends Resolver<ResponseSigning> {
   url: string;
 }
 
-const NOTIFICATION_URL = chrome.runtime.getURL('popup.html#/');
-
-export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
-  focused: true,
-  height: 640,
-  width: 577,
-  type: 'popup',
-  url: NOTIFICATION_URL,
-};
-
-export const NORMAL_WINDOW_OPTS: chrome.windows.CreateData = {
-  focused: true,
-  type: 'normal',
-  url: NOTIFICATION_URL,
-};
-
-export enum NotificationOptions {
-  None,
-  Normal,
-  PopUp,
-}
-
 export type CachedUnlocks = Record<string, number>;
 export interface AccountSub {
   subscription: Subscription;

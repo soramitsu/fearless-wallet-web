@@ -1044,7 +1044,8 @@ export default class Extension extends FWExtensionBase {
 
     const [errors, , tokenInfo] = this.validateTransfer(assetId, from, password);
     const warnings: BasicTxWarning[] = [];
-    if (networkKey === undefined)
+
+    if (networkKey === '')
       return {
         errors,
         warnings,

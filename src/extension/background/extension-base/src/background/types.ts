@@ -1,8 +1,6 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-/* eslint-disable no-use-before-define */
-
 import { TypeRegistry } from '@polkadot/types';
 import { Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '@extension-base/defaults';

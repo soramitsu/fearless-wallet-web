@@ -28,6 +28,7 @@ import {
   SubstrateRequestHandler,
 } from './handlers';
 import EvmRequestHandler from './handlers/EvmRequestHandler';
+import { WCSignRequest } from './types';
 
 export class RequestService {
   readonly state: State;
@@ -169,6 +170,10 @@ export class RequestService {
     return this.evmRequestHandler.signSubject;
   }
 
+  public signWcRequest(topic: string): WCSignRequest {
+    return this.evmRequestHandler.getSignWCRequest(topic);
+  }
+
   // WalletConnect Connect requests
   public getConnectWCRequest(id: string) {
     return this.connectWCRequestHandler.getConnectWCRequest(id);
@@ -184,6 +189,10 @@ export class RequestService {
 
   public get numConnectWCRequests(): number {
     return this.connectWCRequestHandler.numConnectWCRequests;
+  }
+
+  public get numSignWCRequests(): number {
+    return this.evmRequestHandler.numWcSignRequest;
   }
 
   public addConnectWCRequest(request: WalletConnectSessionRequest): void {
@@ -218,6 +227,7 @@ export class RequestService {
       this.numAuthRequests +
       this.numSubstrateRequests +
       this.numConnectWCRequests +
+      this.numSignWCRequests +
       this.numNotSupportWCRequests
     );
   }

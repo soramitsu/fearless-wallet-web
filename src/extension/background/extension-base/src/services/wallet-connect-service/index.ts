@@ -9,7 +9,7 @@ import { storage } from '../../stores/Storage';
 import WalletConnectStorage from './storage';
 import { ALL_WALLET_CONNECT_EVENT, DEFAULT_WALLET_CONNECT_OPTIONS, WALLET_CONNECT_SUPPORTED_METHODS } from './consts';
 import { EIP155_SIGNING_METHODS, ResultApproveWalletConnectSession, WalletConnectSigningMethod } from './types';
-import { convertConnectRequest, convertNotSupportRequest, isSupportWalletConnectChain } from './utils';
+import { convertConnectRequest, convertNotSupportRequest } from './utils';
 import Eip155Handler from './requestHandlers/Eip155Handler';
 
 export class WalletConnectService {
@@ -147,7 +147,7 @@ export class WalletConnectService {
         .map((namespace) => namespace.methods)
         .flat();
 
-      const chainInfoMap = this.state.getNetworkMap;
+      // const chainInfoMap = this.state.getNetworkMap;
 
       const [requestNamespace] = chainId.split(':');
 
@@ -159,9 +159,9 @@ export class WalletConnectService {
         throw Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + chainId);
       }
 
-      if (!isSupportWalletConnectChain(chainId, chainInfoMap)) {
-        throw Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + chainId);
-      }
+      // if (!isSupportWalletConnectChain(chainId, chainInfoMap)) {
+      //   throw Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + chainId);
+      // }
 
       if (!methods.includes(method)) {
         throw Error(getSdkError('UNAUTHORIZED_METHOD').message + ' ' + method);

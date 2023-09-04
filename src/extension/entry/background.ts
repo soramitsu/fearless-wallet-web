@@ -5,7 +5,6 @@ import '@polkadot/extension-inject/crossenv';
 import AccountsStore from '@extension-base/stores/Accounts';
 import { initStorage } from '@extension-base/stores/Storage';
 import { RequestSignatures } from '@extension-base/background/types/messages';
-
 import type { Port, TransportRequestMessage } from '@extension-base/background/types';
 
 async function getActiveTabs() {

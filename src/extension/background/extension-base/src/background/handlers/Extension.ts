@@ -14,6 +14,7 @@ import { getSdkError } from '@walletconnect/utils';
 import {
   getERC20TransactionObject,
   getEVMTransactionObject,
+  // handleTransfer,
   makeERC20Transfer,
   makeEVMTransfer,
 } from '@extension-base/api/evm/transfer';
@@ -32,7 +33,7 @@ import {
   estimateCrossChainFee,
 } from '@extension-base/api/substrate/crossChain';
 import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
-import { ethers } from 'ethers';
+import { ethers, Wallet } from 'ethers';
 import {
   balanceItemByNetwork,
   getSubstrateAddress,
@@ -43,6 +44,7 @@ import {
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { ProposalTypes, SessionTypes } from '@walletconnect/types';
+import { HexString } from '@polkadot/util/types';
 import {
   RequestApproveConnectWalletSession,
   RequestApproveWalletConnect,
@@ -1438,11 +1440,11 @@ export default class Extension extends FWExtensionBase {
     Object.entries(requiredNamespaces).forEach(([key, namespace]) => {
       if (isSupportWalletConnectNamespace(key)) {
         if (namespace.chains) {
-          const unSupportChains = namespace.chains.filter((chain) => !isSupportWalletConnectChain(chain, chainInfoMap));
+          // const unSupportChains = namespace.chains.filter((chain) => !isSupportWalletConnectChain(chain, chainInfoMap));
 
-          if (unSupportChains.length) {
-            throw new Error(`${getSdkError('UNSUPPORTED_CHAINS').message} ${unSupportChains.toString()}`);
-          }
+          // if (unSupportChains.length) {
+          //   throw new Error(`${getSdkError('UNSUPPORTED_CHAINS').message} ${unSupportChains.toString()}`);
+          // }
 
           availableNamespaces[key] = namespace;
         }
@@ -1568,13 +1570,23 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  wcRequestApprove({ address, password, topic }: RequestApproveWalletConnect) {
-    console.info(address, password, topic);
-    // this.state.requestService.evmRequestHandler.handleWCRequest()
+  async wcRequestApprove({ address, password, topic }: RequestApproveWalletConnect) {
+    const request = this.state.requestService.signWcRequest(topic);
+    const [, chainId] = request.request.params.chainId.split(':');
+    const network = Object.values(this.state.getNetworkMap).find((el) => el.chainId === chainId);
+    if (!network) return;
+
+    const privateKey = this.state.accountExportPrivateKey({ address, password });
+    const signer = new Wallet(privateKey.privateKey, this.state.getEvmApiMap[network.name]);
+    const txData = request.request.params.request.params[0] as { to: string; value: string };
+    // const tx = await getEVMTransactionObject(network.name, txData.to, txData.value);
+
+    const hash = await signer.sendTransaction(txData);
+    request.resolve({ id: request.request.topic, signature: hash.hash as HexString });
   }
 
   wcRequestReject({ topic }: RequestDisconnectWalletConnectSession) {
-    const request = this.state.requestService.getSignRequest(topic);
+    const request = this.state.requestService.signWcRequest(topic);
 
     request?.reject(new Error('USER_REJECTED'));
 
@@ -1880,7 +1892,7 @@ export default class Extension extends FWExtensionBase {
         return this.wcRequestReject(request as RequestDisconnectWalletConnectSession);
 
       case 'pri(walletConnect.signing.requests.subscribe)':
-        return this.subscribeWalletConnectSessions(id, port);
+        return this.wcSigningSubscribe(id, port);
 
       // Not support
       case 'pri(walletConnect.requests.notSupport.subscribe)':

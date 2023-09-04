@@ -1,4 +1,9 @@
-import { State } from './state';
+import type { State } from './state';
+import type {
+  WalletConnectSessionRequest,
+  WalletConnectSessions,
+  WalletConnectTransactionRequest,
+} from '@extension-base/services/wallet-connect-service/types';
 import type {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
@@ -9,10 +14,6 @@ import type { SigningRequest } from '@extension-base/background/types';
 import type { GetterTree } from 'vuex';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { Features } from '@/store/extension/types';
-import {
-  WalletConnectSessionRequest,
-  WalletConnectSessions,
-} from '@/extension/background/extension-base/src/services/wallet-connect-service/types';
 
 export enum GettersTypes {
   authRequests = 'authRequests',
@@ -26,6 +27,7 @@ export enum GettersTypes {
   onboarding = 'onboarding',
   wcConnectRequests = 'wcConnectRequests',
   wcSessions = 'wcSessions',
+  wcSignList = 'wcSignList',
 }
 
 export type Getters = {
@@ -52,6 +54,10 @@ export type Getters = {
     getters?: GetterTree<State, State> & Getters
   ): WalletConnectSessionRequest[];
   [GettersTypes.wcSessions](state: State, getters?: GetterTree<State, State> & Getters): WalletConnectSessions;
+  [GettersTypes.wcSignList](
+    state: State,
+    getters?: GetterTree<State, State> & Getters
+  ): WalletConnectTransactionRequest[];
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -101,6 +107,9 @@ const getters: GetterTree<State, State> & Getters = {
   },
   [GettersTypes.wcSessions]({ wcSessions }): WalletConnectSessions {
     return wcSessions;
+  },
+  [GettersTypes.wcSignList]({ wcRequests }): WalletConnectTransactionRequest[] {
+    return wcRequests;
   },
 };
 

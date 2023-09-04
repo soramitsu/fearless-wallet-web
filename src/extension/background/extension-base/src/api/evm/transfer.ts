@@ -48,10 +48,10 @@ export async function handleTransfer(
   networkKey: string,
   privateKey: string,
   callback: (data: BasicTxResponse) => void
-) {
+): Promise<string | undefined> {
   const web3Api = state.getEvmApiMap[networkKey];
   const signer = new ethers.Wallet(privateKey, web3Api);
-
+  let hash: string | undefined;
   const response: BasicTxResponse = {
     errors: [],
   };
@@ -59,6 +59,7 @@ export async function handleTransfer(
   try {
     const tx = await signer.sendTransaction(transactionObject);
     response.callHash = tx.hash;
+    hash = tx.hash;
     response.status = true;
     response.txError = false;
     callback(response);
@@ -74,6 +75,8 @@ export async function handleTransfer(
     });
     callback(response);
   }
+
+  return hash;
 }
 
 export async function getEVMTransactionObject(

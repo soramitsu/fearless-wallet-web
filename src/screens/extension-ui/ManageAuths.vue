@@ -61,7 +61,7 @@ const tabs = {
   },
 };
 
-const showWCAuths = computed(() => activeTab.value === 'wc' && wcFilteredList);
+const showWCAuths = computed(() => activeTab.value === 'wc' && wcFilteredList.value?.length);
 
 const filteredList = ref<Record<string, AuthUrlInfo>>({});
 

@@ -17,14 +17,14 @@ const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue')
 const AuthManagment = () => import('@/screens/extension-ui/AuthManagment.vue');
 const ManageAuths = () => import('@/screens/extension-ui/ManageAuths.vue');
 const UpdateAuths = () => import('@/screens/extension-ui/authorize/UpdateAuths.vue');
-const WCAuthDetails = () => import('@/screens/walletConnect/WCAuthDetails.vue');
+const WalletConnectAuthDetails = () => import('@/screens/walletConnect/WalletConnectAuthDetails.vue');
 
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 const Export = () => import('@/screens/accounts/Export.vue');
 const WalletConnectInit = () => import('@/screens/walletConnect/WalletConnectInit.vue');
 const WalletConnectAuth = () => import('@/screens/walletConnect/WalletConnectAuth.vue');
-const WCSignRequest = () => import('@/screens/walletConnect/WCSignRequest.vue');
+const WalletConnectSignRequest = () => import('@/screens/walletConnect/WalletConnectSignRequest.vue');
 const Onboarding = () => import('@/screens/onboarding/Onboarding.vue');
 
 const AssetNetworks = () =>
@@ -57,8 +57,6 @@ export enum Components {
   Authorize = 'Authorize',
   ManageAuths = 'ManageAuths',
   UpdateAuths = 'UpdateAuths',
-  WCAuthDetails = 'WCAuthDetails',
-  WCSignRequest = 'WCSignRequest',
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
   CreateGoogle = 'CreateGoogle',
@@ -71,8 +69,10 @@ export enum Components {
   AssetNetworks = 'AssetNetworks',
   WalletConnectInit = 'WalletConnectInit',
   WalletConnectSessionAuth = 'WalletConnectSessionAuth',
+  WalletConnectAuthDetails = 'WalletConnectAuthDetails',
   WalletConnectSessionDetails = 'WalletConnectSessionDetails',
   WalletConnectSessionRequest = 'WalletConnectSessionRequest',
+  WalletConnectSignRequest = 'WalletConnectSignRequest',
   Onboarding = 'Onboarding',
 }
 
@@ -133,8 +133,8 @@ const routes: Array<RouteConfig> = [
   },
   {
     path: '/wc-transaction',
-    name: Components.WCSignRequest,
-    component: WCSignRequest,
+    name: Components.WalletConnectSignRequest,
+    component: WalletConnectSignRequest,
   },
   {
     path: '/auth-management',
@@ -152,8 +152,8 @@ const routes: Array<RouteConfig> = [
       },
       {
         path: 'wc/:topic',
-        name: Components.WCAuthDetails,
-        component: WCAuthDetails,
+        name: Components.WalletConnectAuthDetails,
+        component: WalletConnectAuthDetails,
       },
     ],
   },

@@ -285,7 +285,7 @@ const actions: ActionTree<State, State> & Actions = {
       commit(MutationTypes.SET_REQUEST, { type: 'wcRequests', requests });
       console.info(requests, 'WC requests');
 
-      if (requests.length) router.push({ name: Components.WCSignRequest });
+      if (requests.length) router.push({ name: Components.WalletConnectSignRequest });
     };
 
     return subscribeWalletConnectRequest(callback);

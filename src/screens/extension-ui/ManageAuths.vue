@@ -18,7 +18,7 @@
     </div>
     <div v-else-if="showWCAuths" class="auth-items">
       <Scroll>
-        <WCAuthItem
+        <WalletConnectAuthItem
           v-for="(el, index) in wcFilteredList"
           :key="index"
           :request="el"
@@ -37,7 +37,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import type { WalletConnectSessions } from '@extension-base/services/wallet-connect-service/types';
 import type { AuthUrlInfo } from '@extension-base/background/types';
-import WCAuthItem from '@/screens/walletConnect/WCAuthItem.vue';
+import WalletConnectAuthItem from '@/screens/walletConnect/WalletConnectAuthItem.vue';
 import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { useStore } from '@/store';
 import { Components } from '@/router/routes';

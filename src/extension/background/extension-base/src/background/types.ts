@@ -1,13 +1,10 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-/* eslint-disable no-use-before-define */
-
 import { TypeRegistry } from '@polkadot/types';
 import { Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 import { RequestSignatures } from '@extension-base/background/types/messages';
-import { NOTIFICATION_URL } from './types/types';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { ProviderInterface } from '@polkadot/rpc-provider/types';
@@ -447,6 +444,28 @@ export interface SignRequest extends Resolver<ResponseSigning> {
   id: string;
   request: RequestSign;
   url: string;
+}
+
+const NOTIFICATION_URL = chrome.runtime.getURL('popup.html#/');
+
+export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
+  focused: true,
+  height: 640,
+  width: 577,
+  type: 'popup',
+  url: NOTIFICATION_URL,
+};
+
+export const NORMAL_WINDOW_OPTS: chrome.windows.CreateData = {
+  focused: true,
+  type: 'normal',
+  url: NOTIFICATION_URL,
+};
+
+export enum NotificationOptions {
+  None,
+  Normal,
+  PopUp,
 }
 
 export type CachedUnlocks = Record<string, number>;

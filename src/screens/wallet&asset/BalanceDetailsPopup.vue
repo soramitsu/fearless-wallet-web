@@ -24,6 +24,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { AssetPrice } from '@/interfaces';
+import { ALL_NETWORKS } from '@/consts/networks';
 
 @Component
 export default class LockedDetailsPopup extends Vue {
@@ -41,9 +42,15 @@ export default class LockedDetailsPopup extends Vue {
   }
 
   get detailsBalance() {
-    const { frozen, locked, reserved, total, transferable } = this.currency.balances.reduce(
+    const balances =
+      this.network === ALL_NETWORKS
+        ? this.currency.balances
+        : [this.currency.balances.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!];
+
+    const { frozen, locked, reserved, total, transferable } = balances.reduce(
       (prev, curr) => {
         const network = this.getNetwork(curr.name);
+
         if (!network.active) return prev;
 
         const frozen = (prev.frozen += curr.frozen ? +curr.frozen : 0);

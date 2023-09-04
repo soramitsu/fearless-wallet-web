@@ -118,7 +118,7 @@ export function getEthereumAssetName(asset: AssetName, network: NetworkName) {
     : assetLower;
 }
 
-export function getSubstrateAddressByEthAddress(address: string) {
+export function getSubstrateAddress(address: string) {
   const accounts = keyring.getAccounts();
 
   return isEthereumAddress(address)

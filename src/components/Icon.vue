@@ -48,9 +48,11 @@ export default class Icon extends Vue {
   overflow: hidden;
   outline: none;
 }
+
 .svg-icon:hover {
   opacity: 0.5;
 }
+
 .icon__inner {
   outline: none;
 }

@@ -404,7 +404,7 @@ export default class AddWallet extends Vue {
 
       this.isLoading = false;
 
-      if (this.isOnlyEthereumAccountFlow) this.$router.push({ name: Components.Wallet });
+      if (this.isOnlyEthereumAccountFlow) this.$router.push({ name: Components.Wallet }).catch(() => {});
 
       return;
     }

@@ -1,6 +1,7 @@
 import { IS_PRODUCTION } from '@/consts/global';
 
 const BASE_URL = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils';
+
 const CHAINS = IS_PRODUCTION
   ? `${BASE_URL}/master/chains/v1/chains.json`
   : `${BASE_URL}/develop-free/chains/v1/chains_dev.json`;

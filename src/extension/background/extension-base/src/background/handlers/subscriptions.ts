@@ -140,9 +140,11 @@ export class FWSubscription {
       this.state.setBalanceItem(networkKey, rs, address);
     };
 
+    this.state.generateDefaultBalance(address);
+
     const unsub = subscribeBalance(address, ethereumAddress, setBalance);
 
-    const unsubEvm = subscribeEvmBalance(address, ethereumAddress, setBalance);
+    const unsubEvm = ethereumAddress ? subscribeEvmBalance(address, ethereumAddress, setBalance) : null;
 
     if (onlyRunOnFirstTime) {
       unsub && unsub();

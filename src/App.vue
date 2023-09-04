@@ -36,7 +36,6 @@ import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 export default class App extends Vue {
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
-  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
   @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: Fn<SetNetworksStatusProps>;
   @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: Fn<SetAssetsPriceProps>;
@@ -45,7 +44,6 @@ export default class App extends Vue {
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
   @Action(NetworksActionTypes.FETCH_FIATS) fetchFiats!: AsyncFn;
   @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
-  @Action(AccountsActionTypes.ONLINE_STATUS_UPDATE) updateOnlineStatus!: AsyncFn;
   @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<AccountJson>;
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: AsyncFn;
@@ -61,7 +59,6 @@ export default class App extends Vue {
   }
 
   async created() {
-    this.onUpdateOnlineStatus();
     if (IS_EXTENSION) this.extensionSubscribe();
     this.setupWallet();
 
@@ -81,10 +78,6 @@ export default class App extends Vue {
         if (registration.active?.state !== 'activated') registration.unregister();
       }
     });
-  }
-
-  onUpdateOnlineStatus() {
-    this.updateOnlineStatus();
   }
 
   setupSWPing() {

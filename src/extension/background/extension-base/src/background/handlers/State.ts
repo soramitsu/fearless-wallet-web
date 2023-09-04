@@ -603,7 +603,7 @@ export default class State {
       api.apiRetry = 0;
     }
 
-    if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network);
+    if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network, true);
   }
 
   public getNetworkByKey(key: string): NetworkJson | undefined {
@@ -1203,7 +1203,7 @@ export default class State {
       for (const [key, network] of Object.entries(storedNetworkMap)) {
         if (network.active) {
           if (network.isEthereum && !isRequireSubstrateAPI(key)) {
-            this.apis.evm[key] = initWeb3Api(network.currentProvider as string);
+            this.apis.evm[key] = initWeb3Api(network.currentProvider);
           } else {
             if (reset) this.resetApiRetries();
             initApi(network);

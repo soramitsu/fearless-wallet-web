@@ -156,7 +156,7 @@ export default class Nodes extends Vue {
     upsertNetworkMap({
       ...this.networkJson,
       ...prepData,
-      isManual: this.autoSelectNode,
+      isManual: !this.autoSelectNode,
     });
   }
 

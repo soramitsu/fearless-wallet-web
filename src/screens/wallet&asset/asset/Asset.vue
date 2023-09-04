@@ -27,6 +27,7 @@
         class="activity-button"
         text="assets.sendButtonText"
         iconName="send"
+        :disabled="isOffline"
         @click="toggleVisible('showSendForm', true)"
       />
 
@@ -34,6 +35,7 @@
         class="activity-button"
         text="assets.receiveButtonText"
         iconName="receive"
+        :disabled="isOffline"
         @click="toggleVisible('showReceiveForm', true)"
       />
 
@@ -42,6 +44,7 @@
         class="activity-button"
         text="assets.crossChain"
         iconName="cross-chain"
+        :disabled="isOffline"
         @click="toggleVisible('showCrossChainForm', true)"
       />
 
@@ -50,6 +53,7 @@
         class="activity-button"
         text="assets.buy"
         iconName="plus-pink"
+        :disabled="isOffline"
         @click="toggleVisible('showBuyPopup', true)"
       />
 
@@ -58,6 +62,7 @@
         class="activity-button"
         text="assets.swap"
         iconName="swap"
+        :disabled="isOffline"
         @click="openSoraSwap"
       />
     </div>
@@ -149,7 +154,6 @@ import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { firstCharToUp, isSora } from '@/helpers/common';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { getSummaryTransferableBalance } from '@/helpers/currencies';
@@ -186,12 +190,15 @@ export default class Asset extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
+  get isOffline() {
+    return !navigator.onLine;
+  }
+
   get showShimmers() {
-    return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';
+    return this.isOffline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';
   }
 
   get providers() {
@@ -284,16 +291,18 @@ export default class Asset extends Vue {
 
   get optionsNetworks() {
     const haveEthereumAccount = this.selectedWallet.ethereumAddress !== '';
+
     const walletBalance = (this.currentCurrency?.balances ?? []).filter(({ name }) =>
-      ETHEREUM_NETWORKS.includes(name) ? haveEthereumAccount : true
+      BaseApi.isEthereumNetwork(name) ? haveEthereumAccount : true
     );
+
     const filter = this.filterValue.trim().toLowerCase();
 
     return walletBalance
       .map(({ name, type, icon }) => {
         return {
           name: firstCharToUp(name),
-          value: name,
+          value: name.toLowerCase(),
           icon,
           type,
         };

@@ -584,7 +584,7 @@ export default class State {
   public refreshDotSamaApi(key: string) {
     const network = this.networkMap[key];
 
-    if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network);
+    if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network, true);
   }
 
   getCurrentTabStatus() {
@@ -608,6 +608,10 @@ export default class State {
     reject(new Error('Cancelled'));
 
     return true;
+  }
+
+  public getNetworkByKey(key: string): NetworkJson | undefined {
+    return Object.values(this.networkMap).find((network) => network.name.toLowerCase() === key.toLowerCase());
   }
 
   private saveCurrentAuthList() {

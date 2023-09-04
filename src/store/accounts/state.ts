@@ -9,7 +9,6 @@ export type State = {
   selectedFiat: string;
   selectedNetworks: SelectedNetworks;
   accounts: AccountJson[];
-  isOnline: boolean;
   balances: TokenBalance[];
   hiddenAssets: Record<WalletAddress, string[]>;
   autoSelectNode: AutoSelectNode;
@@ -25,8 +24,6 @@ const state = (): State => {
     selectedWallet: accountController.getSelectedWallet(),
     selectedFiat: accountController.getSelectedFiat(),
     selectedNetworks: accountController.getSelectedNetwork(),
-    isOnline: navigator.onLine,
-    // isOnline: true,
     balances: [],
     hiddenAssets: accountController.getHiddenAssets(),
     accounts: accountController.getAccounts(),

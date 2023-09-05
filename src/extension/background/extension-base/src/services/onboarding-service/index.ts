@@ -3,7 +3,6 @@ import { axios } from '../../utils';
 import { FALLBACK_LANG, ONBOARDING_URL } from '../../const';
 import type { UserType } from './types';
 import type { OnBoardingStoriesLocales, OnboardingStories } from '@/interfaces';
-import { IS_PRODUCTION } from '@/consts/global';
 
 export class OnboardingService {
   private userType: UserType = 'new';
@@ -37,7 +36,7 @@ export class OnboardingService {
 
     const userStories = this.stories[this.defaultLocale][this.userType];
 
-    if (userStories.length && IS_PRODUCTION) this.isRequired = true;
+    if (userStories.length) this.isRequired = true;
   }
 
   getStories(lang: string): OnboardingStories {

@@ -1,13 +1,11 @@
 <template>
   <Fragment>
-    <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
-
     <Tabs v-model="activeTab" :tabs="tabs" />
 
     <div v-if="showSubstrateAuths" class="auth-items">
       <Scroll>
         <AuthItem
-          v-for="request in filteredList"
+          v-for="request in substrateList"
           :key="request.id"
           :authorized-accounts="request.authorizedAccounts"
           :url="request.url"
@@ -44,7 +42,7 @@ import { Components } from '@/router/routes';
 import { disconnectWalletConnectConnection } from '@/extension/messaging';
 
 const store = useStore();
-const filterValue = ref('');
+const substrateList = ref<Record<string, AuthUrlInfo>>({});
 const router = useRouter();
 
 const wcFilteredList = computed<WalletConnectSessions>(() => store.getters.wcSessions);
@@ -63,24 +61,11 @@ const tabs = {
 
 const showWCAuths = computed(() => activeTab.value === 'wc' && wcFilteredList.value?.length);
 
-const filteredList = ref<Record<string, AuthUrlInfo>>({});
-
-const filteredData = async () => {
-  const list = await store.dispatch('GET_AUTHLIST');
-
-  if (filterValue.value === '') return list;
-
-  const entries = Object.entries<AuthUrlInfo>(list);
-  const filtered = entries.filter(([, { origin }]) => origin.includes(filterValue.value));
-
-  filteredList.value = Object.fromEntries(filtered);
-};
-
 onMounted(async () => {
-  filteredList.value = await filteredData();
+  substrateList.value = await store.dispatch('GET_AUTHLIST');
 });
 
-const isAuthsExist = computed(() => Object.keys(filteredList.value).length);
+const isAuthsExist = computed(() => Object.keys(substrateList.value).length);
 const showSubstrateAuths = computed(() => activeTab.value === 'substrate' && isAuthsExist.value);
 
 const openDotSamaAuthDetails = (index: string) => {
@@ -103,7 +88,8 @@ const openWCAuthDetails = (index: string) => {
 
 const onDotSamaRemoveAuth = async (id: string) => {
   store.dispatch('DELETE_AUTH_CONNECTION', id);
-  filteredList.value = await filteredData();
+
+  substrateList.value = await store.dispatch('GET_AUTHLIST');
 };
 
 const onWCRemoveuth = async (id: string) => {

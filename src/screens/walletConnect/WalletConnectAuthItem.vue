@@ -1,11 +1,7 @@
 <template>
   <div class="auth-content" width="100%">
     <div class="row">
-      <router-link
-        :to="{ name: Components.WCAuthDetails, params: { topic: request.topic } }"
-        v-slot="{ navigate }"
-        @onRemove="onRemoveAuth"
-      >
+      <router-link :to="to" v-slot="{ navigate }" @onRemove="onRemoveAuth">
         <div class="row-content" @click="navigate">
           <div class="col">
             <ExternalLogo :name="faviconURl" alt="favicon" />
@@ -29,8 +25,15 @@ import { SessionTypes } from '@walletconnect/types';
 import { Components } from '@/router/routes';
 
 const emit = defineEmits(['onRemove']);
-const { request } = defineProps<{ request: SessionTypes.Struct; token: string }>();
-
+const { request } = defineProps<{
+  request: SessionTypes.Struct;
+  to?: {
+    name: typeof Components;
+    params: Record<string, string>;
+  };
+  url?: string;
+}>();
+const to = { name: Components.WalletConnectAuthDetails, params: { topic: request.topic } };
 const stripedUrl = computed(() => stripUrl(request.peer.metadata.url));
 
 const faviconURl = computed(() => {

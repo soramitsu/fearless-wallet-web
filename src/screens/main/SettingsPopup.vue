@@ -9,7 +9,7 @@
     horizontalPlacement="right"
   >
     <div class="settings">
-      <SettingMenuItem title="header.settings.wc" icon="account" @onOpen="open('WalletConnectInit')" />
+      <SettingMenuItem title="header.settings.wc" icon="wallet-connect" @onOpen="open('WalletConnectInit')" />
       <SettingMenuItem v-if="isExtension" title="common.manageDApp" icon="mechanic-tool" @onOpen="openManageAuths" />
       <SettingMenuItem title="header.settings.accounts" icon="account" @onOpen="open('Accounts')" />
 

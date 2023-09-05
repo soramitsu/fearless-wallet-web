@@ -603,7 +603,7 @@ export default class State {
       api.apiRetry = 0;
     }
 
-    if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network, true);
+    if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network);
   }
 
   public getNetworkByKey(key: string): NetworkJson | undefined {

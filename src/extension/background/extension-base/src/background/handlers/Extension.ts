@@ -30,12 +30,19 @@ import {
   makeCrossChain,
   estimateCrossChainFee,
 } from '@extension-base/api/substrate/crossChain';
+import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
+import { ethers } from 'ethers';
 import {
-  BasicTxErrorCode,
+  balanceItemByNetwork,
+  getSubstrateAddress,
+  isRequireSubstrateAPI,
+} from '@extension-base/background/utils/utils';
+
+import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
+import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
+import type {
   MobileSigningRequest,
   RequestMobileSign,
-  RequestUpdateMeta,
-  TransferErrorCode,
   ActiveTabAuthorizeStatus,
   BalanceJson,
   BasicTxError,
@@ -93,15 +100,7 @@ import {
   ResponseType,
   SigningRequest,
 } from '@extension-base/background/types/types';
-import { ethers } from 'ethers';
-import {
-  balanceItemByNetwork,
-  getSubstrateAddress,
-  isRequireSubstrateAPI,
-} from '@extension-base/background/utils/utils';
 
-import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
-import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   Asset,

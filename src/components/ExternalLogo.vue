@@ -10,7 +10,6 @@ import { NetworksController } from '@/controllers';
 export default class ExternalLogo extends Vue {
   @Prop(String) name!: string;
   @Prop(String) alt?: string;
-
   @Prop({ default: 32 }) width!: number;
 
   get style() {

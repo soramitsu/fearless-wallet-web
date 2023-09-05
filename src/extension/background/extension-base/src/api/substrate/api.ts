@@ -120,7 +120,7 @@ export async function initApi(network: NetworkJson, retry = false): Promise<void
 
   if (state.getSubstrateApiMap[networkName] === undefined) {
     // return EVM HTTP Placeholder
-    state.apis.substrate[networkName] = isEthereum ? generateEvmHttpApi() : createApiObject();
+    state.getSubstrateApiMap[networkName] = isEthereum ? generateEvmHttpApi() : createApiObject();
   }
 
   if (retry) {

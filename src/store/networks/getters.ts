@@ -3,7 +3,7 @@ import type { AssetsPrice, FiatJson, GetHistory } from '@/interfaces';
 import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetActiveNodesByNetwork } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
-import BaseApi from '@/util/BaseApi';
+import { ETHEREUM_NETWORKS } from '@/consts/networks';
 
 export enum GettersTypes {
   networks = 'networks',
@@ -59,7 +59,9 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.networks](state, getters, rootState): NetworkJson[] {
     const haveEthereumAccount = rootState.account.selectedWallet.ethereumAddress !== '';
 
-    return haveEthereumAccount ? state.networks : state.networks.filter(({ name }) => !BaseApi.isEthereumNetwork(name));
+    return haveEthereumAccount
+      ? state.networks
+      : state.networks.filter(({ name }) => !ETHEREUM_NETWORKS.includes(name));
   },
   [GettersTypes.getFavoriteNetworksNames]({ networks }): { name: string; favorite: string[] }[] {
     return networks.filter((el) => el.favorite.length).map(({ name, favorite }) => ({ name, favorite }));

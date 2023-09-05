@@ -10,6 +10,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { ALL_NETWORKS } from './consts/networks';
+import { beaconController } from './controllers/beaconController';
 import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
@@ -73,6 +74,20 @@ export default class App extends Vue {
     this.setupPrice();
     this.setupSWPing();
     this.getUserStatus(); // SORA Card
+  }
+
+  mounted() {
+    this.mobileWalletListeners();
+  }
+
+  mobileWalletListeners() {
+    beaconController.onRateReached(() => {
+      this.$notify({
+        message: this.$t('mobileConnector.rateLimitWarning.message') as string,
+        title: this.$t('mobileConnector.rateLimitWarning.title') as string,
+        type: 'warning',
+      });
+    });
   }
 
   unregisterInactiveWorkers() {

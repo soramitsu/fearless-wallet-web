@@ -91,5 +91,5 @@ export const createTransactionFromRLP = (rlp: string): Transaction | null => {
 };
 
 export const getERC20Contract = (network: string, contractAddress: string): Contract => {
-  return new Contract(contractAddress, abi, state.getEvmApiMap[network]);
+  return new Contract(`0x${contractAddress}`, abi, state.getEvmApiMap[network]);
 };

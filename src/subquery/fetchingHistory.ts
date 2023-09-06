@@ -149,10 +149,10 @@ async function fetchEthereumTokenHistory(
     params: {
       module: 'account',
       action: 'tokentx',
-      contractAddress,
+      contractAddress: `0x${contractAddress}`,
       page: 1,
       offset: 50,
-      sort: 'asc',
+      sort: 'desc',
       apikey,
     },
     signal,
@@ -169,7 +169,7 @@ async function fetchEthereumTokenHistory(
   return res.data.result.map(({ timeStamp, value, gasUsed, from, to, hash }, index) => ({
     address,
     id: String(index),
-    timestamp: timeStamp,
+    timestamp: (+timeStamp * 1000).toString(),
     transfer: {
       amount: ethers.formatUnits(value, decimal),
       hash,
@@ -193,7 +193,7 @@ async function fetchEthereumHistory(url: string, address: string): Promise<Histo
       address,
       page: 1,
       offset: 50,
-      sort: 'asc',
+      sort: 'desc',
       apikey,
     },
     signal,
@@ -208,7 +208,7 @@ async function fetchEthereumHistory(url: string, address: string): Promise<Histo
   return res.data.result.map(({ timeStamp, value, gasUsed, from, isError, to, hash }, index) => ({
     address,
     id: String(index),
-    timestamp: timeStamp,
+    timestamp: (+timeStamp * 1000).toString(),
     transfer: {
       amount: value,
       hash,

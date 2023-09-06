@@ -53,9 +53,9 @@ function subscribeERC20Interval(
     }
   };
 
-  network.assets.forEach(({ id, isUtility, symbol }) => {
+  network.assets.forEach(({ id: contractAddress, isUtility, symbol }) => {
     if (!isUtility) {
-      ERC20ContractMap[symbol] = getERC20Contract(networkKey, id);
+      ERC20ContractMap[symbol] = getERC20Contract(networkKey, contractAddress);
     }
   });
 

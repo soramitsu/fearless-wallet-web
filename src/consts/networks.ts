@@ -7,6 +7,8 @@ const ETHEREUM_NETWORKS = [
   ...SUBSTRATE_ETHEREUM_NETWORKS,
   'ethereum',
   'ethereum goerli',
+  'polygon mainnet',
+  'polygon mumbai',
   'binance smart chain',
   'binance smart chain testnet',
 ];

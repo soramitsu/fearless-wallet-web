@@ -27,7 +27,7 @@ export default class OnboardingStoryCard extends Vue {
   }
 
   &__title {
-    font-family: 'Unbounded', sans-serif;
+    font-family: Unbounded, sans-serif;
     font-size: 24px;
     font-weight: 700;
   }

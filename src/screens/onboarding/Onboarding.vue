@@ -99,10 +99,6 @@ export default class Onboarding extends Vue {
 </script>
 
 <style lang="scss" scoped>
-@font-face {
-  font-family: 'Unbounded';
-  src: local('Unbounded'), url('@/assets/fonts/Unbounded-Bold.ttf') format('truetype');
-}
 .onboarding {
   display: flex;
   flex-flow: column;
@@ -119,7 +115,6 @@ export default class Onboarding extends Vue {
     font-size: 46px;
     font-weight: 700;
     letter-spacing: 0.54px;
-    font-family: 'Unbounded', sans-serif;
     margin: 0;
 
     &--red {

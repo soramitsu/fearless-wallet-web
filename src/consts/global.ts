@@ -10,7 +10,7 @@ const AUTHOR = 'Soramitsu';
 const AUTHOR_WEBSITE = '';
 const AUTO_UPDATE_ASSETS_PRICE_MS = 1000 * 60 * 5;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
-const ONLY_SORA = onlySora(true); // only for testing functionality
+const ONLY_SORA = onlySora(false); // only for testing functionality
 const RAMP_API_KEY = IS_PRODUCTION ? process.env.RAMP_PROD_API_KEY : process.env.RAMP_TEST_API_KEY;
 const MOONPAY_API_KEY = IS_PRODUCTION ? process.env.MOONPAY_PROD_API_KEY : process.env.MOONPAY_TEST_API_KEY;
 const IS_EXTENSION = chrome.extension !== undefined;

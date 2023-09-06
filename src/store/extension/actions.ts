@@ -286,7 +286,7 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.SUBSCRIBE_WC_CONNECT_NO_SUPPORTED_REQUESTS]({ commit }) {
     const callback = (requests: WalletConnectNotSupportRequest[]) => {
-      commit(MutationTypes.SET_REQUEST, { type: 'wcConnectRequests', requests });
+      commit(MutationTypes.SET_REQUEST, { type: 'wcNotSupportedRequests', requests });
       console.info(requests, 'WC not supported requests');
 
       if (requests.length) router.push({ name: Components.WalletConnectNotSupportedRequest });
@@ -298,7 +298,7 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.REJECT_WC_NOT_SUPPORTED_REQUEST]({ commit }, payload) {
     await rejectWalletConnectSession(payload);
 
-    commit(MutationTypes.DELETE_REQUEST, 'wcConnectRequests');
+    commit(MutationTypes.DELETE_REQUEST, 'wcNotSupportedRequests');
   },
 
   async [ActionTypes.SUBSCRIBE_WC_REQUESTS]({ commit }) {

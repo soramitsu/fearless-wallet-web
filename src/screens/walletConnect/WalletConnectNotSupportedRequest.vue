@@ -6,7 +6,6 @@
 
 <script setup lang="ts">
 import type { WalletConnectTransactionRequest } from '@extension-base/services/wallet-connect-service/types';
-import { walletConnectRequestReject } from '@/extension/messaging';
 
 import { useStore } from '@/store';
 const store = useStore();
@@ -14,7 +13,7 @@ const store = useStore();
 const [request]: WalletConnectTransactionRequest[] = store.getters.wcSignList;
 
 const onReject = () => {
-  walletConnectRequestReject(request.topic);
+  store.dispatch('REJECT_WC_NOT_SUPPORTED_REQUEST', request.topic);
 };
 </script>
 

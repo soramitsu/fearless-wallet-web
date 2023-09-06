@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import { SessionTypes } from '@walletconnect/types';
 import {
+  WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
@@ -26,12 +27,13 @@ export enum MutationTypes {
 }
 
 interface SetPayload {
-  type: 'auth' | 'meta' | 'sign' | 'wcConnectRequests' | 'wcRequests' | 'wcSessions';
+  type: 'auth' | 'meta' | 'sign' | 'wcConnectRequests' | 'wcNotSupportedRequests' | 'wcRequests' | 'wcSessions';
   requests:
     | AuthorizeRequest[]
     | SigningRequest[]
     | MetadataRequest[]
     | WalletConnectSessionRequest[]
+    | WalletConnectNotSupportRequest[]
     | WalletConnectTransactionRequest[]
     | SessionTypes.Struct[]
     | null;
@@ -42,7 +44,7 @@ export type Mutations = {
   [MutationTypes.DELETE_AUTHLIST_ITEM](state: State, payload: string): void;
   [MutationTypes.DELETE_REQUEST](
     state: State,
-    payload: 'authRequests' | 'metaRequests' | 'signRequests' | 'wcConnectRequests'
+    payload: 'authRequests' | 'metaRequests' | 'signRequests' | 'wcConnectRequests' | 'wcNotSupportedRequests'
   ): void;
   [MutationTypes.SET_REQUEST](state: State, payload: SetPayload): void;
   [MutationTypes.SET_TAB_STATUS](state: State, payload: ActiveTabAuthorizeStatus): void;
@@ -70,6 +72,12 @@ const mutations: MutationTree<State> & Mutations = {
 
     if (type === 'wcConnectRequests') {
       state.wcConnectRequests = [...(requests as unknown as WalletConnectSessionRequest[])];
+
+      return;
+    }
+
+    if (type === 'wcNotSupportedRequests') {
+      state.wcNotSupportedRequests = [...(requests as unknown as WalletConnectNotSupportRequest[])];
 
       return;
     }

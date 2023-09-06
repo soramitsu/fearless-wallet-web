@@ -1,6 +1,7 @@
 import type { Features } from '@/store/extension/types';
 import type { SigningRequest } from '@extension-base/background/types/types';
 import type {
+  WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
   WalletConnectSessions,
   WalletConnectTransactionRequest,
@@ -17,7 +18,7 @@ export type State = {
   signRequests: SigningRequest[];
   metaRequests: MetadataRequest[];
   wcConnectRequests: WalletConnectSessionRequest[];
-  wcNotSupportedRequests: WalletConnectTransactionRequest[];
+  wcNotSupportedRequests: WalletConnectNotSupportRequest[];
   wcRequests: WalletConnectTransactionRequest[];
   wcSessions: WalletConnectSessions;
   authList: Record<string, AuthUrlInfo>;

@@ -1,3 +1,8 @@
+import type { Vec, Struct, u32, bool, BTreeMap, u128, Enum, Option, U8aFixed } from '@polkadot/types-codec';
+import type { AccountId32 } from '@polkadot/types/interfaces/runtime';
+import type { ITuple } from '@polkadot/types-codec/types';
+import type { Data } from '@polkadot/types';
+
 export enum StakingRewardsDestination {
   /** not used in sora */
   // Staked = 'Staked',
@@ -15,9 +20,9 @@ export interface ValidatorInfo {
 
 export interface ValidatorInfoFull extends ValidatorInfo {
   rewardPoints: number;
-  nominations: Others;
-  identity: any; // PalletIdentityRegistration
-  apy: number;
+  nominators: Others;
+  identity: PalletIdentityRegistration;
+  apy: string;
   stake: Omit<ValidatorExposure, 'others'>;
 }
 
@@ -76,3 +81,50 @@ export type StakeReturn = {
   stakeReturn: string;
   stakeReturnReward: string;
 };
+
+export interface PalletStakingNominations extends Struct {
+  readonly targets: Vec<AccountId32>;
+  readonly submittedIn: u32;
+  readonly suppressed: bool;
+}
+
+export interface PalletStakingEraRewardPoints extends Struct {
+  readonly total: u32;
+  readonly individual: BTreeMap<AccountId32, u32>;
+}
+
+export type NominatorReward = {
+  rewardPerEra: string;
+  rewardPerDay: string;
+  rewardPerYear: string;
+};
+
+export interface PalletIdentityRegistration extends Struct {
+  readonly judgements: Vec<ITuple<[u32, PalletIdentityJudgement]>>;
+  readonly deposit: u128;
+  readonly info: PalletIdentityIdentityInfo;
+}
+
+export interface PalletIdentityJudgement extends Enum {
+  readonly isUnknown: boolean;
+  readonly isFeePaid: boolean;
+  readonly asFeePaid: u128;
+  readonly isReasonable: boolean;
+  readonly isKnownGood: boolean;
+  readonly isOutOfDate: boolean;
+  readonly isLowQuality: boolean;
+  readonly isErroneous: boolean;
+  readonly type: 'Unknown' | 'FeePaid' | 'Reasonable' | 'KnownGood' | 'OutOfDate' | 'LowQuality' | 'Erroneous';
+}
+
+interface PalletIdentityIdentityInfo extends Struct {
+  readonly additional: Vec<ITuple<[Data, Data]>>;
+  readonly display: Data;
+  readonly legal: Data;
+  readonly web: Data;
+  readonly riot: Data;
+  readonly email: Data;
+  readonly pgpFingerprint: Option<U8aFixed>;
+  readonly image: Data;
+  readonly twitter: Data;
+}

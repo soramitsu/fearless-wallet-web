@@ -4,7 +4,7 @@ import { isEthereumNetwork } from '@extension-base/background/utils/utils';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
-import { calculating } from './test/test';
+import { getValidatorsInfo } from './testStaking/test';
 import type { ApiProps } from '@extension-base/background/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { RelayChainName } from '@/interfaces';
@@ -26,7 +26,11 @@ async function subscribeTokensBalance(
   } = state.networksJson.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())!;
   const relayChain = CHAIN_IDS[parentId!] ?? (networkName as RelayChainName);
 
-  if (isSora(networkName)) calculating(api);
+  if (isSora(networkName)) {
+    // getNominatorsReward(api, 'cnRuNZdDB156ohr7DrVDq5Dkn6QUBWLm4sxqhXunRc1jJKnua');
+
+    console.log('ValidatorsInfo', await getValidatorsInfo(api));
+  }
 
   if (networkName === 'Equilibrium') {
     const pallet = api!.rx.query.system.account(address);

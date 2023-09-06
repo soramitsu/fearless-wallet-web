@@ -149,10 +149,11 @@ export default class App extends Vue {
       this.onAccountUpdate(accounts);
     });
 
-    const addresses = await subscribeAddresses((accounts) => {
+    this.onAccountUpdate([...accounts]);
+
+    subscribeAddresses((accounts) => {
       this.onAccountUpdate(accounts, true);
     });
-    this.onAccountUpdate([...accounts, ...addresses]);
   }
 
   unsubscribe() {

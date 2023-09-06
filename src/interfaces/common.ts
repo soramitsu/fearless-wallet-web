@@ -102,7 +102,7 @@ type Placement =
   | 'bottom-end'
   | 'left-end';
 
-type ToggleFnProp = (type: string, flag: boolean, data: object) => void;
+type ToggleFnProp = (type: string, data: object, flag?: boolean) => void;
 
 export {
   DerivationPath,

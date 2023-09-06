@@ -1,6 +1,6 @@
 <template>
   <Scroll>
-    <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText) }}</div>
+    <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText()) }}</div>
 
     <Draggable v-else v-model="filteredBalances" handle=".handle" :key="selectedWallet.address">
       <CurrencyItem
@@ -23,13 +23,12 @@
 import Draggable from 'vuedraggable';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
+import { TokenBalance, BalanceJson } from '@extension-base/background/types/types';
 import type { SelectedWallet } from '@/store';
-import type { AsyncFn } from '@/interfaces';
+import type { AsyncFn, AssetsPrice } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import CurrencyItem from '@/screens/wallet&asset/wallet/CurrencyItem.vue';
-import { TokenBalance, BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { AssetsPrice } from '@/interfaces';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
 type TimeoutSubscription = {
@@ -53,44 +52,51 @@ export default class Currencies extends Vue {
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
   @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
 
-  get mainText() {
-    if (!this.isOnline) return 'common.offlineStatus';
+  mainText() {
+    if (!navigator.onLine) return 'common.offlineStatus';
 
     return this.filterValue !== '' ? 'wallet.nothingFound' : 'wallet.allAssetsHidden';
   }
 
+  get isOnline() {
+    return navigator.onLine;
+  }
+
   get showAllAssetsHiddenText() {
+    if (!this.isOnline) return true;
+
     if (this.showAssetsManagementForm) return false;
 
     const allHidden = this.balances.every(({ assetId }) => this.hiddenAssets.includes(assetId));
 
-    return this.balances.length === this.hiddenAssets.length || allHidden || !this.isOnline;
+    return this.balances.length === this.hiddenAssets.length || allHidden || !navigator.onLine;
   }
 
   get filteredBalances() {
     return this.balances;
   }
 
-  onDrop(props: any) {
+  set filteredBalances(balances) {
     this.setBalance({
-      details: props.list,
+      details: balances,
       reset: false,
       saveSequence: true,
     });
   }
 
-  getAssetPrice(assetKey: string) {
+  getAssetPrice(assetKey: string | undefined) {
+    if (assetKey === undefined) return 0;
+
     if (Object.keys(this.prices).length && this.prices.tokenPriceMap[assetKey])
       return this.prices.tokenPriceMap[assetKey];
 
     return 0;
   }
 
-  getPriceChange(assetKey: string) {
+  getPriceChange(assetKey: string | undefined) {
     if (this.prices === undefined || this.prices.tokenPriceChange === undefined || assetKey === undefined) return 0;
 
     if (this.prices.tokenPriceChange[assetKey]) return this.prices.tokenPriceChange[assetKey] / 100;

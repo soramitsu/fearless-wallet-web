@@ -59,6 +59,7 @@ import type {
   GoogleAuthTypes,
   ICreateFile,
   IGetFilesResponse,
+  OnboardingStories,
   SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
@@ -300,11 +301,11 @@ export function rejectMetaRequest(id: string): Promise<boolean> {
   return sendMessage('pri(metadata.reject)', { id });
 }
 
-export function subscribeAccounts(cb: (accounts: AccountJson[]) => void): Promise<boolean> {
+export function subscribeAccounts(cb: (accounts: AccountJson[]) => void): Promise<AccountJson[]> {
   return sendMessage('pri(accounts.subscribe)', null, cb);
 }
 
-export function subscribeAddresses(cb: (accounts: AccountJson[]) => void): Promise<boolean> {
+export function subscribeAddresses(cb: (accounts: AccountJson[]) => void): Promise<AccountJson[]> {
   return sendMessage('pri(addresses.subscribe)', null, cb);
 }
 
@@ -558,4 +559,16 @@ export function validateNetwork(
 
 export function pingServiceWorker(): Promise<boolean> {
   return sendMessage('pri(app.port.ping)');
+}
+
+export function getOnboardingStories(lang: string): Promise<OnboardingStories> {
+  return sendMessage('pri(onboarding.get.stories)', lang);
+}
+
+export function setOnboardingSeen(): Promise<void> {
+  return sendMessage('pri(onboarding.seen)');
+}
+
+export function isOnboardingRequired(): Promise<boolean> {
+  return sendMessage('pri(onboarding.isRequired)');
 }

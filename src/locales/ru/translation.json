@@ -109,7 +109,11 @@
     "requesting": "Запрашиваем разрешения...",
     "connected": "Мобильный кошелек, подключенн к Fearless Wallet Extension",
     "noAnswer": "Ответ от вашего кошелька еще не получен. Пожалуйста, убедитесь, что кошелек открыт",
-    "signMobile": "Чтобы подписать с помощью мобильного устройства, проверьте, что ваш мобильный клиент открыт на странице Beacon dApp, и нажмите «Подписать»."
+    "signMobile": "Чтобы подписать с помощью мобильного устройства, проверьте, что ваш мобильный клиент открыт на странице Beacon dApp, и нажмите «Подписать».",
+    "rateLimitWarning": {
+      "title": "Слишком много транзакций!",
+      "message": "Matrix сеть загружена, попробуйте снова позже"
+    }
   },
   "metadata": {
     "text": "Метадата",
@@ -246,7 +250,7 @@
     "summary": "Итог",
     "reserved": "Зарезервировано",
     "frozen": "Заморожено",
-    "transferable": "Передаваемые",
+    "transferable": "Доступно",
     "fee": "Комиссия",
     "total": "Суммарно",
     "signTransaction": "Подпишите транзакцию",
@@ -399,7 +403,7 @@
         "statusText": "Верицикация отклонена",
         "text1": "Верицикация отклонена",
         "text2": "Ваша заявка отклонена.",
-        "text3": "PLACEHOLDER TEXT: *Display 'additional description' provided in the answer* (done by devs. We should check the format of the answer, to be sure it's human-readable)"
+        "text3": "Причина отклонения:"
       },
       "accepted": {
         "statusText": "Карта в пути",
@@ -531,7 +535,6 @@
     "understood": "Понятно",
     "cancel": "Отмена",
     "close": "Закрыть",
-    "next": "Далее",
     "save": "Сохранить",
     "yes": "Да",
     "no": "Нет",
@@ -554,9 +557,11 @@
     "acceptContinue": "Принять и продолжить",
     "email": "Email",
     "start": "Начать",
+    "next": "Далее",
     "and": "и",
     "read": "Читать",
     "about": "О приложении",
+    "skip": "Пропустить",
     "supportFeedback": "Поддержка & Фидбек",
     "socialMedia": "Социальные медиа",
     "communityWallet": "Сообщество кошелька",

@@ -77,30 +77,30 @@
       @selectNetworkHistory="selectNetworkHistory"
     />
 
-    <History
-      v-else
+    <router-view
       :currency="currentCurrency"
-      :selectedNetwork="selectedNetworkForHistory"
       @openHistoryDetailsForm="openHistoryDetailsForm"
-    />
+      @toggleVisible="toggleVisible"
+    >
+    </router-view>
 
     <SendForm
       v-if="showSendForm"
-      :_selectedNetwork="selectedNetwork"
+      :_selectedNetwork="selectedAssetNetwork"
       :_selectedAssetId="selectedAssetId"
       @closeForm="toggleVisible('showSendForm', false)"
     />
 
     <ReceiveForm
       v-if="showReceiveForm"
-      :_selectedNetwork="selectedNetwork"
+      :_selectedNetwork="selectedAssetNetwork"
       :selectedAssetId="selectedAssetId"
       @closeForm="toggleVisible('showReceiveForm', false)"
     />
 
     <CrossChainForm
       v-if="showCrossChainForm"
-      :_originalNetwork="selectedNetwork"
+      :_originalNetwork="selectedAssetNetwork"
       :_selectedAssetId="selectedAssetId"
       @closeForm="toggleVisible('showCrossChainForm', false)"
     />
@@ -110,14 +110,6 @@
       :handlerClose="closeHistoryDetailsForm"
       :historyElement="historyElement"
       :assetId="selectedAssetId"
-    />
-
-    <BalanceDetailsPopup
-      v-if="showBalanceDetailsPopup"
-      :network="selectedNetwork"
-      :currency="currentCurrency"
-      :assetPrice="assetPrice"
-      :closePopup="toggleBalanceDetailsPopup"
     />
 
     <BuyPopup
@@ -151,63 +143,43 @@
       :type="selectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
     />
-
-    <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter, Mutation } from 'vuex-class';
-import { getNativeAssetName } from '@extension-base/background/utils/utils';
-import { NetworkJson } from '@extension-base/types';
+import { Getter } from 'vuex-class';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
-import History from './History.vue';
-import Networks from './Networks.vue';
+import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
-import type { GetAssetPrice, AssetTipDataProps, SelectedWallet } from '@/store';
+import type { GetAssetPrice, SelectedWallet, GetNetwork } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
-import Blur from '@/components/Blur.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
+import AssetInfo from '@/screens/wallet&asset/asset/AssetInfo.vue';
 import CrossChainForm from '@/screens/wallet&asset/CrossChainForm.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
-import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { Components } from '@/router/routes';
 import { NETWORK_GROUP } from '@/consts/networks';
-import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers/currencies';
-import { isSora } from '@/helpers';
-import { getSummaryLockedBalance, isNetworkGroup } from '@/helpers/common/index';
+import { isNetworkGroup } from '@/helpers/common/index';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
-type ControlButtons = {
-  class: string;
-  text: string;
-  icon: string;
-  formName: ShowField;
-  isActive: boolean;
-};
 
 @Component({
   components: {
-    Blur,
-    History,
-    Networks,
+    AssetInfo,
     SendForm,
     BuyPopup,
     ReceiveForm,
     CrossChainForm,
     SelectNetworkPopup,
     HistoryDetailsForm,
-    BalanceDetailsPopup,
     SelectNetworkButton,
     NetworkManagementButton,
     NetworkManagement,
@@ -215,47 +187,28 @@ type ControlButtons = {
 })
 export default class Asset extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
-  readonly basicButtons: ControlButtons[] = [
-    {
-      class: 'activity-button',
-      text: 'assets.sendButtonText',
-      icon: 'send',
-      formName: 'showSendForm',
-      isActive: true,
-    },
-    {
-      class: 'activity-button',
-      text: 'assets.receiveButtonText',
-      icon: 'receive',
-      formName: 'showReceiveForm',
-      isActive: true,
-    },
-  ];
-  historyElement: HistoryElement | Record<string, string> = {};
+
+  historyElement: HistoryElement | Record<string, string> | undefined;
   showSendForm = false;
   showReceiveForm = false;
   showCrossChainForm = false;
   showBuyPopup = false;
-  showPopupButton = false;
   showTipPopup = false;
-  showHistoryDetailsForm = false;
   showSelectNetworkPopup = false;
-  showBalanceDetailsPopup = false;
   filterValue = '';
 
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getAssetTipData) getAssetTipData!: AssetTipDataProps;
-  @Getter(AccountsGettersTypes.getAssetPageNetwork) assetPageNetwork!: string;
-  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
-  @Mutation(AccountsMutationTypes.SET_ASSET_TIP_STATE) setAssetTipData!: (props: AssetTipDataProps) => void;
-  @Mutation(AccountsMutationTypes.SET_ASSET_PAGE_NETWORK) setAssetPageNetwork!: (props: string) => void;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+
+  get showHistoryDetailsForm() {
+    return this.historyElement !== undefined;
+  }
 
   get isGroupIcon() {
     return isNetworkGroup(this.selectedNetwork);
@@ -267,109 +220,24 @@ export default class Asset extends Vue {
     return this.getNetwork(this.selectedNetwork).icon;
   }
 
-  get showShimmers() {
-    return !this.isOnline || !this.balances.length || this.currentNetwork?.state === 'pending';
-  }
-
-  get isNeedPopupButton() {
-    return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;
-  }
-
-  get selectedNetworkForHistory() {
-    if (!NETWORK_GROUP.includes(this.selectedNetwork)) return this.selectedNetwork;
-
-    return this.assetPageNetwork;
+  get selectedAssetNetwork() {
+    return this.$route.params.selectedNetwork ?? '';
   }
 
   get isSelectedNetworkHistory() {
     if (!NETWORK_GROUP.includes(this.selectedNetwork)) return false;
 
-    return this.assetPageNetwork === '';
-  }
-
-  get getPrice() {
-    return this.getAssetPrice(this.currentCurrency.priceId ?? '0');
-  }
-
-  get priceChangeString() {
-    return this.$n(this.getPrice.priceChange, 'percent');
-  }
-
-  get fiatPriceChangeString() {
-    return `(${this.fiatSymbol}${this.$n(this.transferableFiatBalance * this.getPrice.priceChange, 'price')})`;
-  }
-
-  get assetIcon() {
-    return this.currentCurrency.icon;
+    return this.selectedAssetNetwork === '';
   }
 
   get providers() {
     return this.currentCurrency.providers ?? [];
   }
 
-  get showCrossChainButton() {
-    const network = this.networks.find(
-      ({ name }) => name.toLowerCase() === this.selectedNetworkForHistory?.toLowerCase()
-    )!;
-
-    const asset = getNativeAssetName(this.selectedAsset);
-    if (!network.xcm) return false;
-
-    return network.xcm.availableAssets.some((assetName) => assetName.toLowerCase() === asset);
-  }
-
-  mounted() {
-    this.showAssetTipPopup();
-  }
-
-  showAssetTipPopup() {
-    const { count, time } = this.getAssetTipData;
-
-    if (count >= 2) {
-      this.showTipPopup = false;
-
-      return;
-    }
-
-    if (time === 0) {
-      this.showTipPopup = true;
-
-      return;
-    }
-
-    const now = Date.now();
-
-    if (now < time) {
-      this.showTipPopup = false;
-
-      return;
-    }
-
-    this.showTipPopup = true;
-  }
-
-  get showSwapButton() {
-    return isSora(this.selectedNetwork) && !this.selectedWallet.isMobile;
-  }
-
-  get currentNetwork() {
-    return this.currentCurrency.balances?.find(
-      ({ name }) => name.toLowerCase() === this.selectedNetwork?.toLowerCase()
-    );
-  }
-
-  get isMainNetwork() {
-    return this.currentNetwork && this.currentNetwork.name === this.mainNetwork;
-  }
-
   get mainNetwork() {
     const currency = this.currentCurrency.balances?.find((network) => network.isUtility || network.isNative);
 
     return currency ? currency.name : '';
-  }
-
-  get showBuyButton() {
-    return this.providers.length !== 0 && this.mainNetwork?.toLowerCase() === this.selectedNetwork?.toLowerCase();
   }
 
   get currentCurrency() {
@@ -380,10 +248,6 @@ export default class Asset extends Vue {
     if (this.isSelectedNetworkHistory) return BaseApi.formatAddress(this.selectedWallet, this.mainNetwork);
 
     return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
-  }
-
-  get assetPriceString() {
-    return `1 ${this.selectedAssetUpper} = ${this.fiatSymbol}${this.$n(this.assetPrice.price, 'price')}`;
   }
 
   get selectedAssetId() {
@@ -408,43 +272,6 @@ export default class Asset extends Vue {
     return this.getAssetPrice(this.currentCurrency.priceId ?? '');
   }
 
-  get countAssetsString() {
-    if (!this.currentCurrency) return `0 ${this.selectedAssetUpper}`;
-
-    const total = this.$n(this.transferableAssetBalance, 'decimal');
-
-    return `${total} ${this.selectedAssetUpper}`;
-  }
-
-  get lockedBalanceString() {
-    const lockedBalance = getSummaryLockedBalance(this.currentCurrency);
-
-    return `${this.$n(lockedBalance, 'price')} ${this.selectedAssetUpper}`;
-  }
-
-  get changePriceClasses() {
-    const classes = ['price-change'];
-
-    if (this.getPrice.priceChange > 0) classes.push('up-price');
-    else if (this.getPrice.priceChange < 0) classes.push('down-price');
-
-    return classes;
-  }
-
-  get transferableAssetBalance() {
-    return +getSummaryTransferableBalanceFilteredByActiveNetworks(this.currentCurrency, this.selectedNetwork);
-  }
-
-  get transferableFiatBalance() {
-    return this.transferableAssetBalance * this.assetPrice.price;
-  }
-
-  get transferableFiatBalanceInNetworkString() {
-    if (!this.currentCurrency) return `${this.fiatSymbol} 0`;
-
-    return `${this.fiatSymbol} ${this.$n(this.transferableFiatBalance, 'price')}`;
-  }
-
   toggleVisible(field: ShowField, value = true) {
     this[field] = value;
   }
@@ -454,45 +281,15 @@ export default class Asset extends Vue {
   }
 
   openHistoryDetailsForm(historyElement: HistoryElement) {
-    this.showHistoryDetailsForm = true;
     this.historyElement = historyElement;
   }
 
   closeHistoryDetailsForm() {
-    this.showHistoryDetailsForm = false;
-    this.historyElement = {};
-  }
-
-  selectNetworkHistory(name: string) {
-    this.setAssetPageNetwork(name);
-  }
-
-  toggleBalanceDetailsPopup() {
-    if (this.showShimmers) {
-      this.showBalanceDetailsPopup = false;
-
-      return;
-    }
-
-    this.showBalanceDetailsPopup = !this.showBalanceDetailsPopup;
-  }
-
-  togglePopupButton() {
-    this.showPopupButton = !this.showPopupButton;
+    this.historyElement = undefined;
   }
 
   toggleSelectNetworkPopupVisible() {
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
-  }
-
-  openSoraSwap() {
-    this.$router.push({
-      name: Components.SoraSwap,
-      params: {
-        assetId: this.selectedAssetId,
-        reset: '',
-      },
-    });
   }
 }
 </script>
@@ -505,92 +302,6 @@ export default class Asset extends Vue {
   width: 100%;
   height: 450px;
 
-  .asset-info {
-    display: flex;
-    align-items: center;
-    height: 100%;
-    gap: 20px;
-
-    .asset__icon {
-      background: $secondary-background-color;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 14px;
-      margin: 16px;
-    }
-
-    .asset-info__content {
-      display: flex;
-      justify-content: space-between;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 10px;
-      &:hover {
-        cursor: pointer;
-      }
-      .asset__price {
-        display: flex;
-        flex-flow: row nowrap;
-        font-family: Sora;
-        color: $gray-color;
-        line-height: 1px;
-
-        .asset__price-item {
-          font-size: 12px;
-          font-weight: 400;
-          border-right: solid 1px transparent;
-          padding: 4px;
-        }
-        .asset__price-item-change {
-          display: flex;
-          flex-flow: row nowrap;
-          gap: 4px;
-        }
-        & > :not(:last-child) {
-          border-right: solid 1px $gray-color;
-          line-height: 1px;
-        }
-
-        > :first-child {
-          padding-left: 0px;
-        }
-      }
-      .asset__balance {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-size: 22px;
-        font-style: normal;
-        font-weight: 700;
-
-        &--fiat {
-          font-size: 18px;
-        }
-      }
-
-      .asset__locked-content {
-        display: flex;
-        gap: 6px;
-        align-items: center;
-        .asset__locked-title {
-          color: $default-white;
-        }
-        .details-icon {
-          width: 14px;
-          height: 14px;
-          min-height: 14px;
-          min-width: 14px;
-          color: $grayish-white;
-
-          &:hover {
-            color: $default-white;
-          }
-        }
-      }
-    }
-  }
   .popup-tip {
     position: absolute;
     display: flex;
@@ -599,12 +310,14 @@ export default class Asset extends Vue {
     height: 100px;
     width: 100%;
     gap: 10px;
+
     .controls {
       display: flex;
       flex-flow: row nowrap;
       align-items: center;
       gap: 15px;
     }
+
     .background-ellipse {
       display: flex;
       align-items: center;
@@ -616,12 +329,15 @@ export default class Asset extends Vue {
       background-color: $default-background-color;
       user-select: none;
     }
+
     .popup-tip__message {
       width: 260px;
     }
+
     .popup__button-width {
       width: 42px;
     }
+
     .icon-arrow-tip {
       display: flex;
       flex-flow: column;
@@ -630,42 +346,10 @@ export default class Asset extends Vue {
       padding-right: 60px;
       gap: 20px;
     }
+
     .icon__close {
       height: 18px;
       width: 18px;
-    }
-  }
-  .popup-button {
-    position: absolute;
-    display: flex;
-    flex-flow: column;
-    align-items: flex-end;
-    top: 250px;
-    left: 465px;
-    height: 100px;
-    gap: 10px;
-
-    .popup__button-width {
-      width: 42px;
-    }
-  }
-
-  .activity {
-    display: flex;
-    justify-content: space-between;
-    gap: 5px;
-
-    .activity-button {
-      flex-grow: 1;
-
-      &:first-child {
-        margin-left: 0;
-      }
-
-      &--settings {
-        flex-grow: 0;
-        margin: 0;
-      }
     }
   }
 }

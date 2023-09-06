@@ -10,18 +10,18 @@
             :tooltipText="tooltipText"
             :target="target"
             :class="classes"
-            :text="label"
+            :label="label"
             :isActive="activeTabName === tabName"
             @click="openTab(tabName)"
           />
 
-          <div class="filter__icon" @click="toggleSelectFilter">
+          <div class="filter__icon" @click="toggleSelectFilterPopupVisibility">
             <Icon icon="filter" className="filter" />
           </div>
         </div>
 
         <Scroll>
-          <div class="network-list" :class="historyContainerClasses">
+          <div class="network networks-content">
             <AssetRow
               v-for="({ name, icon }, index) in sortedNetworks"
               :key="index"
@@ -30,7 +30,7 @@
               :price="getFiatInNetworkString(name)"
               :icon="icon"
               :isIconPrepend="true"
-              @selectHistory="selectHistory(name)"
+              @selectHistory="selectNetworkHistory(name)"
             />
           </div>
         </Scroll>
@@ -38,7 +38,7 @@
     </ContentForm>
 
     <SelectPopup
-      v-if="showSelectNetworkPopup"
+      v-if="showSelectFilterPopup"
       sizeWidth="medium"
       placeholder="common.searchNetwork"
       verticalPlacement="top"
@@ -51,27 +51,27 @@
       :left="50"
       :showSearch="false"
       :showIcon="false"
-      :options="historyDropdownOption"
+      :options="filterDropdownOption"
       :toggleValue="filterValueUpdate"
-      :handlerClose="toggleSelectFilter"
+      :handlerClose="toggleSelectFilterPopupVisibility"
     />
   </Fragment>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter, Mutation } from 'vuex-class';
+import { Getter } from 'vuex-class';
 import { TokenBalance } from '@extension-base/background/types/types';
-import { NetworkJson } from '@extension-base/types';
 import HistoryItem from './HistoryItem.vue';
+import type { NetworkJson } from '@extension-base/types';
 import type { GetHistory } from '@/interfaces';
-import type { GetAssetPrice, SelectedWallet } from '@/store';
+import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-
+import { Components } from '@/router/routes';
 import { NetworksController } from '@/controllers';
+
 interface TabsOptions {
   label: string;
   tabName: 'Assets' | 'MyAssets';
@@ -83,7 +83,7 @@ interface TabsOptions {
 @Component({
   components: { HistoryItem, AssetRow },
 })
-export default class Networks extends Vue {
+export default class AssetNetworks extends Vue {
   readonly tabsOptions: TabsOptions[] = [
     {
       label: 'assets.networkAssets',
@@ -101,26 +101,27 @@ export default class Networks extends Vue {
     },
   ];
 
-  readonly historyDropdownOption = [
+  readonly filterDropdownOption = [
     { name: this.$t('assets.filters.fiat'), value: 'fiat' },
     { name: this.$t('assets.filters.popularity'), value: 'popularity' },
     { name: this.$t('assets.filters.name'), value: 'name' },
   ];
+
   filterValue = 'fiat';
   activeTabName = 'Assets';
-  showSelectNetworkPopup = false;
+  showSelectFilterPopup = false;
+
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Mutation(AccountsMutationTypes.SET_ASSET_PAGE_NETWORK) setAssetPageNetwork!: (props: string) => void;
 
   get filteredNetworks() {
-    const baseFilter = this.currency.balances.filter((el) => this.getNetwork(el.name).active);
+    const baseFilter = this.currency.balances?.filter((el) => this.getNetwork(el.name).active);
 
     if (this.activeTabName === 'MyAssets') {
       return baseFilter.filter(({ transferable }) => {
@@ -134,10 +135,10 @@ export default class Networks extends Vue {
   }
 
   get sortedNetworks() {
-    return this.filteredNetworks.sort((a, b) => {
+    return this.filteredNetworks?.sort((a, b) => {
       if (this.filterValue === 'fiat') {
-        const value1 = a.transferable ? +a.transferable : 0;
-        const value2 = b.transferable ? +b.transferable : 0;
+        const value1 = +(a.transferable ?? 0);
+        const value2 = +(b.transferable ?? 0);
 
         return value2 - value1;
       }
@@ -146,25 +147,15 @@ export default class Networks extends Vue {
         const value1 = NetworksController.getNetwork(a.name).rank ?? Infinity;
         const value2 = NetworksController.getNetwork(a.name).rank ?? Infinity;
 
-        if (value1 === value2) return 0;
-
-        return value1 > value2 ? 1 : -1;
+        return value1 - value2;
       }
 
-      return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+      return a.name.localeCompare(b.name);
     });
   }
+
   get selectedNetwork() {
     return this.$route.params.network;
-  }
-
-  get historyContainerClasses() {
-    return [
-      'networks-content',
-      {
-        'empty-history': this.isEmptyHistory,
-      },
-    ];
   }
 
   get priceString() {
@@ -174,30 +165,24 @@ export default class Networks extends Vue {
   get price() {
     const price = this.getTokenPrice(this.currency.priceId ?? '').price;
 
-    return price ? +price : 0;
+    return +(price ?? 0);
   }
 
-  get isMainNetwork() {
-    return !!this.currency.balances?.find(
-      ({ name, isUtility, isNative }) =>
-        name.toLowerCase() === this.selectedNetwork?.toLowerCase() && (isUtility || isNative)
-    );
-  }
-
-  get isEmptyHistory() {
-    return false;
+  selectNetworkHistory(name: string) {
+    this.$router.push({
+      name: Components.AssetHistory,
+      params: {
+        selectedNetwork: name.toLowerCase(),
+      },
+    });
   }
 
   openTab(name: string) {
     this.activeTabName = name;
   }
 
-  selectHistory(network: string) {
-    this.setAssetPageNetwork(network);
-  }
-
-  toggleSelectFilter() {
-    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
+  toggleSelectFilterPopupVisibility() {
+    this.showSelectFilterPopup = !this.showSelectFilterPopup;
   }
 
   getBalanceInNetworkString(network: string) {
@@ -221,8 +206,11 @@ export default class Networks extends Vue {
   getFiatInNetworkString(network: string) {
     return `${this.fiatSymbol} ${this.$n(this.getFiatBalanceInNetwork(network), 'price')}`;
   }
+
   filterValueUpdate(name: string) {
     this.filterValue = name;
+
+    this.toggleSelectFilterPopupVisibility();
   }
 }
 </script>
@@ -253,13 +241,18 @@ export default class Networks extends Vue {
     }
   }
 
+  .asset-row {
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
   .networks-content {
     height: 100%;
     display: flex;
     flex-direction: column;
   }
 
-  .network-list {
+  .network {
     height: 200px;
   }
 }

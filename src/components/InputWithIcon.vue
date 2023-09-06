@@ -1,6 +1,6 @@
 <template>
   <div class="wrapper" @click="click">
-    <Input
+    <FInput
       v-model="firstCharToUpVModel"
       size="big"
       class="rotate-input"
@@ -13,7 +13,7 @@
       <SIcon name="chevron-bottom-16" />
     </Rotate>
 
-    <div v-else-if="icon === 'close' && firstCharToUpVModel !== ''" class="icon" @click="clickIcon">
+    <div v-else-if="isCloseIcon" class="icon" @click="clickIcon">
       <Icon icon="close" class="close-icon" />
     </div>
   </div>
@@ -39,6 +39,10 @@ export default class InputWithIcon extends Vue {
 
   get firstCharToUpVModel() {
     return firstCharToUp(this.vModel);
+  }
+
+  get isCloseIcon() {
+    return this.icon === 'close' && this.firstCharToUpVModel !== '';
   }
 
   click() {

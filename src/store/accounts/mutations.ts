@@ -1,7 +1,7 @@
 import type { MutationTree } from 'vuex';
-import type { AssetTipDataProps, SelectedWallet, SetAccountsProps, SetAutoSelectNode, SetHiddenAsset } from './types';
+import type { SelectedWallet, SetAccountsProps, SetAutoSelectNode, SetHiddenAsset } from './types';
 import type { State } from './state';
-import type { BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
+import type { BalanceJson } from '@extension-base/background/types/types';
 import { accountController } from '@/controllers';
 
 export enum MutationTypes {
@@ -9,7 +9,6 @@ export enum MutationTypes {
   SET_SELECTED_FIAT = 'SET_SELECTED_FIAT',
   SET_SELECTED_NETWORK = 'SET_SELECTED_NETWORK',
   SET_ACCOUNTS = 'SET_ACCOUNTS',
-  SET_ONLINE_STATUS = 'SET_ONLINE_STATUS',
   SET_ADDRESSES = 'SET_ADDRESSES',
   SET_CUSTOM_SORT = 'SET_CUSTOM_SORT',
   SET_AUTO_SELECT_NODE = 'SET_AUTO_SELECT_NODE',
@@ -20,8 +19,6 @@ export enum MutationTypes {
   HIDE_NETWORK_WARNING = 'HIDE_NETWORK_WARNING',
   SET_BALANCE = 'SET_BALANCE',
   SET_SORA_CARD_BANNER_VISIBILITY = 'SET_SORA_CARD_BANNER_VISIBILITY',
-  SET_ASSET_TIP_STATE = 'SET_ASSET_TIP_STATE',
-  SET_ASSET_PAGE_NETWORK = 'SET_ASSET_PAGE_NETWORK',
 }
 
 export type Mutations = {
@@ -30,12 +27,9 @@ export type Mutations = {
   [MutationTypes.SET_SELECTED_FIAT](state: State, props: string): void;
   [MutationTypes.SET_SELECTED_NETWORK](state: State, network: string): void;
   [MutationTypes.SET_ACCOUNTS](state: State, props: SetAccountsProps): void;
-  [MutationTypes.SET_ONLINE_STATUS](state: State, isOnline: boolean): void;
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: SetAutoSelectNode): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
-  [MutationTypes.SET_ASSET_TIP_STATE](state: State, props: AssetTipDataProps): void;
   [MutationTypes.DELETE_QR](state: State): void;
-  [MutationTypes.SET_ASSET_PAGE_NETWORK](state: State, props: string): void;
   [MutationTypes.SET_HIDDEN_ASSET](state: State, props: SetHiddenAsset): void;
   [MutationTypes.SET_CUSTOM_SORT](state: State, props: string): void;
   [MutationTypes.HIDE_POLKASWAP_ALERT](state: State, value: boolean): void;
@@ -67,10 +61,6 @@ const mutations: MutationTree<State> & Mutations = {
     accountController.setSelectedNetwork(address, network);
 
     state.selectedNetworks = { ...selectedNetworks, [address]: network };
-  },
-
-  [MutationTypes.SET_ONLINE_STATUS](state, isOnline) {
-    state.isOnline = isOnline;
   },
 
   [MutationTypes.SET_ACCOUNTS](state, { accounts, isMobileUpdate }) {
@@ -116,10 +106,6 @@ const mutations: MutationTree<State> & Mutations = {
     state.qr = payload;
   },
 
-  [MutationTypes.SET_ASSET_PAGE_NETWORK](state, payload) {
-    state.selectNetworkAssetPage = payload;
-  },
-
   [MutationTypes.SET_SORA_CARD_BANNER_VISIBILITY](state, value) {
     accountController.setHidingSoraCardBannerTime(Date.now());
 
@@ -149,12 +135,6 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_BALANCE](state, { details }) {
     state.balances = details;
-  },
-
-  [MutationTypes.SET_ASSET_TIP_STATE](state, payload) {
-    state.assetTipShowed = payload;
-
-    accountController.setAssetTipData(payload.count, payload.time);
   },
 
   [MutationTypes.SET_HIDDEN_ASSET](state, { assetId, value }) {

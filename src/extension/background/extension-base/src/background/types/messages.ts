@@ -1,5 +1,4 @@
-import { NetworkJson, RequestTransactionHistoryAdd, TransactionHistoryItemType } from '@extension-base/types';
-import { GenericExtrinsicPayload } from '@polkadot/types';
+import type { NetworkJson, RequestTransactionHistoryAdd, TransactionHistoryItemType } from '@extension-base/types';
 import type {
   InjectedAccount,
   MetadataDef,
@@ -104,6 +103,7 @@ import type {
   SignerPayloadJSON,
   SoraFees,
   SignerPayloadRaw,
+  OnboardingStories,
 } from '@/interfaces';
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
@@ -126,8 +126,8 @@ export interface RequestSignatures {
   'pri(accounts.show)': [RequestAccountShow, boolean];
   'pri(accounts.tie)': [RequestAccountTie, boolean];
   'pri(accounts.name)': [RequestAccountName, boolean];
-  'pri(accounts.subscribe)': [RequestAccountSubscribe, boolean, AccountJson[]];
-  'pri(addresses.subscribe)': [RequestAccountSubscribe, boolean, AccountJson[]];
+  'pri(accounts.subscribe)': [RequestAccountSubscribe, AccountJson[], AccountJson[]];
+  'pri(addresses.subscribe)': [RequestAccountSubscribe, AccountJson[], AccountJson[]];
   'pri(accounts.triggerSubscription)': [null, boolean];
   'pri(accounts.validate)': [RequestAccountValidate, boolean];
   'pri(accounts.changePassword)': [RequestAccountChangePassword, boolean];
@@ -215,6 +215,11 @@ export interface RequestSignatures {
   'pri(price.get.price)': [RequestPrice, PriceJson];
   'pri(price.get.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];
   'pri(soraCard.token)': [RequestAuthorizeSubscribe, boolean, string];
+
+  //OnBoarding
+  'pri(onboarding.isRequired)': [null, boolean];
+  'pri(onboarding.get.stories)': [string, OnboardingStories];
+  'pri(onboarding.seen)': [null, void];
 
   // public/external requests, i.e. from a page
   'pub(soraCard.token)': [string, null];

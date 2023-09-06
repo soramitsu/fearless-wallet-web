@@ -6,6 +6,7 @@
           class="balance"
           :balance="summaryTransferableBalance"
           :changeWalletBalance="changeWalletBalance"
+          :staticWidth="false"
           @click.native="$emit('openFiatsPopup', true)"
         />
 
@@ -46,14 +47,14 @@
       v-if="showSendForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :_selectedAssetId="selectedCurrency.assetId"
-      @closeForm="toggleVisibleActivityForm('showSendForm', false, {})"
+      @closeForm="toggleVisibleActivityForm('showSendForm', {}, false)"
     />
 
     <ReceiveForm
       v-if="showReceiveForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :selectedAssetId="selectedCurrency.assetId"
-      @closeForm="toggleVisibleActivityForm('showReceiveForm', false, {})"
+      @closeForm="toggleVisibleActivityForm('showReceiveForm', {}, false)"
     />
 
     <NetworkManagement
@@ -80,10 +81,10 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation, Action } from 'vuex-class';
-import { NetworkJson } from '@extension-base/types';
-import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset } from '@/store';
+import { BalanceJson, TokenBalance } from '@extension-base/background/types/types';
+import type { NetworkJson } from '@extension-base/types';
+import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset, GetNetwork } from '@/store';
 import type { AsyncFn, Fn, TabWallet } from '@/interfaces';
-import { BalanceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
@@ -109,6 +110,7 @@ import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 import { getShimmersVisibility } from '@/helpers/shimmers';
+import { BalanceItem } from '@/extension/background/extension-base/src/api/evm/types/ether';
 
 @Component({
   components: {
@@ -146,11 +148,10 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
-  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
@@ -160,7 +161,6 @@ export default class Wallet extends Vue {
   get contentFormHeight() {
     const subtractionNumber = this.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
 
-    // IMPORTANT: if <Menu /> not showed use 457
     return CONTENT_FORM_HEIGHT - subtractionNumber;
   }
 
@@ -281,29 +281,30 @@ export default class Wallet extends Vue {
       return;
     }
 
+    const nonZeroBalanceCb = ({ transferable }: BalanceItem) => transferable && transferable !== '0';
+
     this.balances.forEach(({ assetId, balances }) => {
-      const index = balances.findIndex(({ transferable }) => transferable && transferable !== '0');
+      const index = balances.findIndex(nonZeroBalanceCb);
       const isZeroBalance = index === -1;
 
       if (isZeroBalance) this.setHiddenAssets({ assetId, value: false });
     });
-
     const assetsVisibleWithBalance = this.balances.filter(({ balances, assetId }) => {
-      const haveAssets = balances.findIndex(({ transferable }) => transferable && transferable !== '0') !== -1;
+      const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
       const isVisibleAsset = !this.hiddenAssets.includes(assetId);
 
       return isVisibleAsset && haveAssets;
     });
 
     const assetsInvisibleWithBalance = this.balances.filter(({ balances, assetId }) => {
-      const haveAssets = balances.findIndex(({ transferable }) => transferable && transferable !== '0') !== -1;
+      const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
       const isHiddenAsset = this.hiddenAssets.includes(assetId);
 
       return isHiddenAsset && haveAssets;
     });
 
     const assetsInvisibleWithoutBalance = this.balances.filter(({ balances, assetId }) => {
-      const notHaveAssets = balances.findIndex(({ transferable }) => transferable && transferable !== '0') === -1;
+      const notHaveAssets = balances.findIndex(nonZeroBalanceCb) === -1;
       const isHiddenAsset = this.hiddenAssets.includes(assetId);
 
       return isHiddenAsset && notHaveAssets;
@@ -318,8 +319,8 @@ export default class Wallet extends Vue {
 
   toggleVisibleActivityForm(
     field: 'showSendForm' | 'showReceiveForm',
-    value = true,
-    currency: { mainNetwork?: string; assetId?: string }
+    currency: { mainNetwork?: string; assetId?: string },
+    value = true
   ) {
     this.selectedCurrency = currency;
     this[field] = value;

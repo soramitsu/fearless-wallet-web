@@ -94,7 +94,7 @@
         </div>
       </div>
 
-      <Button size="big" :text="buttonText" @click="openExplorer" />
+      <FButton size="big" :text="buttonText" @click="openExplorer" />
     </div>
 
     <Tooltip text="common.copied" target=".copy" placement="bottom" trigger="click" />
@@ -104,7 +104,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { NetworkJson } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
 import type { SelectedWallet } from '@/store';
 import { getType, getSignTransfer, getHistoryValue, getHumanTransferFee } from '@/helpers/history';
@@ -259,7 +259,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get selectedNetwork() {
-    return this.$route.params.network;
+    return this.$route.params.selectedNetwork;
   }
 
   copy(value: string) {

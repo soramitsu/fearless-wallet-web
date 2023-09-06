@@ -2,9 +2,9 @@
   <AboveForm :fullScreen="true" header="accounts.newNode" :closeHandler="closeForm">
     <div class="add-node-form">
       <div>
-        <Input v-model="networkCharUp" placeholder="accounts.network" size="big" class="row" :readonly="true" />
+        <FInput v-model="networkCharUp" placeholder="accounts.network" size="big" class="row" :readonly="true" />
 
-        <Input v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
+        <FInput v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
 
         <ValidatedInput
           v-model="url"
@@ -16,7 +16,7 @@
         />
       </div>
 
-      <Button size="big" :text="buttonText" :disabled="buttonDisabled" @click="updateNodes" />
+      <FButton size="big" :text="buttonText" :disabled="buttonDisabled" @click="updateNodes" />
     </div>
   </AboveForm>
 </template>
@@ -28,6 +28,7 @@ import type { NetworkJson } from '@extension-base/types';
 import { firstCharToUp } from '@/helpers';
 import { upsertNetworkMap } from '@/extension/messaging';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GetNetwork } from '@/store';
 
 @Component
 export default class EditNodeForm extends Vue {
@@ -40,13 +41,14 @@ export default class EditNodeForm extends Vue {
   @Prop(String) _url!: string;
   @Prop(Boolean) isActive!: boolean;
   @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get buttonText() {
     return this.isEdit ? 'common.save' : 'accounts.addNode';
   }
 
   get networkJson() {
-    return this.networks.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!;
+    return this.getNetwork(this.network);
   }
 
   get isEdit() {

@@ -14,8 +14,9 @@ $default-white: rgba(255, 255, 255, 0.75); // #ffffffbf
 $grayish-white: rgba(255, 255, 255, 0.65);
 $grayish-white-2: #ffffff80;
 $gray-color: rgba(255, 255, 255, 0.5);
-$pink-color: #EE0077;
-$orange-color: #FC3317;
+$gray-2-color: rgba(255, 255, 255, 0.3);
+$pink-color: #ee0077;
+$orange-color: #fc3317;
 $simple-orange-color: #ee7700;
 $success-color: #00ee77;
 $reject-color: #ed0e0e;
@@ -28,7 +29,12 @@ $secondary-border: 1px solid $secondary-background-color;
 $big-clip-path-left-top-and-right-bottom: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
 $big-clip-path-left-top: polygon(20px 0, 100% 0, 100% calc(100% - 20px), 100% 100%, 0 100%, 0 20px);
 
-$medium-clip-path-left-top-and-right-bottom: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+$medium-clip-path-left-top-and-right-bottom: polygon(
+  8px 0,
+  100% 0,
+  100% calc(100% - 8px),
+  calc(100% - 8px) 100%,
+  0 100%,
+  0 8px
+);
 $medium-clip-path-left-top: polygon(8px 0, 100% 0, 100% calc(100% - 8px), 100% 100%, 0 100%, 0 8px);
-
-

@@ -3,7 +3,7 @@
 
 import { CustomTokenType, NetWorkGroup } from '@extension-base/api/evm/types/ether';
 import { NETWORK_STATUS } from './api/types/networks';
-import type { AssetType } from '@/interfaces';
+import type { AssetType, BuyProvider } from '@/interfaces';
 import { ExternalApi } from '@/interfaces';
 
 import { ContractType } from '@/interfaces/ether';
@@ -100,7 +100,7 @@ export type Asset = {
   icon: string;
   color: string;
   staking: string;
-  purchaseProviders?: string[];
+  purchaseProviders?: BuyProvider[];
   isUtility?: true;
   isNative?: true;
   existentialDeposit?: string;
@@ -171,4 +171,8 @@ export interface ChainRegistry {
   chainDecimals: number[];
   chainTokens: string[];
   assetsMap: Asset[];
+}
+
+export interface KeyringState {
+  isReady: boolean;
 }

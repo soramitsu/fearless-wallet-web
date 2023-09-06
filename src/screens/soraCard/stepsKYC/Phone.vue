@@ -2,7 +2,7 @@
   <div class="phone-confirmation">
     <div>
       <div class="phone-input">
-        <Input
+        <FInput
           v-model="countryCode"
           ref="countryCode"
           size="big"
@@ -41,7 +41,7 @@
       <Disclaimer />
     </div>
 
-    <Button
+    <FButton
       :text="verifyBtnText"
       width="100%"
       size="big"
@@ -179,6 +179,8 @@ export default class Phone extends Vue {
   }
 
   set phoneNumber(value: string) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     if (value.length === 0) this.countryCodeComponent.input.focus();
 
     const isDeleteSymbol = value.length < this.phoneNumberInternal.length;
@@ -235,6 +237,8 @@ export default class Phone extends Vue {
   }
 
   async mounted() {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     this.countryCodeComponent.input.focus();
     soraCardController.removePWEmail();
 

@@ -8,8 +8,7 @@
           <div class="value">{{ $n(value, 'decimalPrecise') }} {{ assetNameUpper }}</div>
 
           <div v-if="getFiatValueVisible(fiat)" class="fiat-value">
-            {{ fiatSymbol }}
-            {{ $n(fiat, 'price') }}
+            {{ prepFiatValue(fiat) }}
           </div>
         </div>
       </div>
@@ -22,10 +21,10 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GetAssetPrice, SelectedWallet } from '@/store';
+import { GetAssetPrice, SelectedWallet, GetNetwork } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { AssetPrice } from '@/interfaces';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import { ALL_NETWORKS } from '@/consts/networks';
 
 @Component
 export default class LockedDetailsPopup extends Vue {
@@ -36,20 +35,22 @@ export default class LockedDetailsPopup extends Vue {
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
-
-  get selectedNetwork() {
-    return this.$route.params.network;
-  }
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get assetNameUpper() {
     return this.currency.symbol.toUpperCase();
   }
 
   get detailsBalance() {
-    const { frozen, locked, reserved, total, transferable } = this.currency.balances.reduce(
+    const balances =
+      this.network === ALL_NETWORKS
+        ? this.currency.balances
+        : [this.currency.balances.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!];
+
+    const { frozen, locked, reserved, total, transferable } = balances.reduce(
       (prev, curr) => {
         const network = this.getNetwork(curr.name);
+
         if (!network.active) return prev;
 
         const frozen = (prev.frozen += curr.frozen ? +curr.frozen : 0);
@@ -84,6 +85,10 @@ export default class LockedDetailsPopup extends Vue {
 
   get fiatPrice() {
     return this.getTokenPrice(this.currency.priceId ?? '').price ?? 0;
+  }
+
+  prepFiatValue(fiat: number) {
+    return `${this.fiatSymbol}${this.$n(fiat, 'price')} `;
   }
 
   getFiatValueVisible(value: number) {

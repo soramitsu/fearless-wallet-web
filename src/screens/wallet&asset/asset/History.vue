@@ -55,9 +55,12 @@ export default class History extends Vue {
   showLoader = false;
 
   @Prop(Object) currency!: TokenBalance;
-  @Prop(String) selectedNetwork!: string;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+
+  get selectedNetwork() {
+    return this.$route.params.selectedNetwork;
+  }
 
   get isEmptyHistory() {
     return this.filteredHistory?.length === 0;

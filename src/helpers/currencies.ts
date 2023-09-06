@@ -2,15 +2,14 @@ import { FPNumber } from '@sora-substrate/util';
 import { Wallet } from 'ethers';
 import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import { APIItemState } from '@extension-base/api/types/networks';
-import type { NetworkName, AssetsPrice } from '@/interfaces';
+import type { NetworkName, AssetsPrice, BuyProvider } from '@/interfaces';
 import type { NetworkJson } from '@extension-base/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
-import { BASE_URLS_PREFIX } from '@/consts/urls';
+import { FAVORITE_NETWORKS, POPULAR_NETWORKS, ALL_NETWORKS } from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
-import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-
+import { BASE_URLS_PREFIX } from '@/consts/urls';
 import { isSora } from '@/helpers';
 import store from '@/store';
 import { getSummaryTransferableBalance, isNetworkGroup } from '@/helpers/common';
@@ -75,7 +74,7 @@ function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }:
   ];
 }
 
-function getProviderUrl(name: 'moonpay' | 'ramp', asset: string, address: string) {
+function getProviderUrl(name: BuyProvider, asset: string, address: string) {
   const { MOONPAY, RAMP } = BASE_URLS_PREFIX;
 
   const provider = {
@@ -143,7 +142,7 @@ function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: stri
   const favoriteNetworks = store.getters.getFavoriteNetworksNames as { name: string; favorite: string[] }[];
   const { address } = store.getters.selectedWallet as Wallet;
 
-  if (selectedNetwork === POPULAR_NETWORKS) return !!network.rank;
+  if (selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
 
   if (selectedNetwork === FAVORITE_NETWORKS) {
     return favoriteNetworks.some(
@@ -157,13 +156,15 @@ function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: stri
 export function getSummaryTransferableBalanceFilteredByActiveNetworks(token: TokenBalance, network = ALL_NETWORKS) {
   if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
 
-  return token.balances.reduce((result, { state, name, transferable }) => {
-    const network = store.getters.getNetwork(name) as NetworkJson;
+  return (
+    token.balances?.reduce((result, { state, name, transferable }) => {
+      const network = store.getters.getNetwork(name) as NetworkJson;
 
-    if (state === APIItemState.READY && network.active && transferable) result += +transferable;
+      if (state === APIItemState.READY && network.active && transferable) result += +transferable;
 
-    return result;
-  }, 0);
+      return result;
+    }, 0) ?? 0
+  );
 }
 
 export {

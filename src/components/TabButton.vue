@@ -1,8 +1,8 @@
 <template>
   <div>
     <Corners>
-      <div :class="tabButtonClasses" @click="$emit('click')" :title="title">
-        {{ $t(text) }}
+      <div :class="tabButtonClasses" :title="title" @click="$emit('click')">
+        {{ $t(label) }}
       </div>
     </Corners>
 
@@ -10,27 +10,30 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+type Props = {
+  label?: string;
+  title?: string;
+  isActive?: boolean;
+  placementTooltip?: string;
+  tooltipText?: string;
+  target?: string;
+};
+defineEmits(['click']);
+const props = withDefaults(defineProps<Props>(), {
+  label: '',
+  title: '',
+  placementTooltip: 'top',
+  isActive: false,
+});
 
-@Component
-export default class TabButton extends Vue {
-  @Prop({ default: '' }) text!: string;
-  @Prop({ default: '' }) title!: string;
-  @Prop({ default: 'top' }) placementTooltip!: string;
-  @Prop(String) tooltipText!: string;
-  @Prop(String) target!: string;
-  @Prop({ default: false }) isActive!: boolean;
-
-  get tabButtonClasses() {
-    return [
-      'tab-button',
-      {
-        'active-background': this.isActive,
-      },
-    ];
-  }
-}
+const tabButtonClasses = computed(() => [
+  'tab-button',
+  {
+    'active-background': props.isActive,
+  },
+]);
 </script>
 
 <style lang="scss" scoped>

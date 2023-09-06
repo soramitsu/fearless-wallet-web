@@ -6,7 +6,7 @@ declare module '@vue/runtime-dom' {
     Alert: typeof import('@/components/Alert.vue')['Alert'];
     AssetIcon: typeof import('@/components/AssetIcon.vue')['AssetIcon'];
     BorderButton: typeof import('@/components/BorderButton.vue')['BorderButton'];
-    Button: typeof import('@/components/Button.vue')['Button'];
+    FButton: typeof import('@/components/FButton.vue')['Button'];
     Checkbox: typeof import('@/components/Checkbox.vue')['Checkbox'];
     CircleButton: typeof import('@/components/CircleButton.vue')['CircleButton'];
     ComingSoon: typeof import('@/components/ComingSoon.vue')['ComingSoon'];
@@ -21,7 +21,7 @@ declare module '@vue/runtime-dom' {
     Icon: typeof import('@/components/Icon.vue')['Icon'];
     InformationBlock: typeof import('@/components/InformationBlock.vue')['InformationBlock'];
     InfoRow: typeof import('@/components/InfoRow.vue')['InfoRow'];
-    Input: typeof import('@/components/Input.vue')['Input'];
+    FInput: typeof import('@/components/FInput.vue')['Input'];
     Lazy: typeof import('@/components/Lazy.vue')['Lazy'];
     Link: typeof import('@/components/Link.vue')['Link'];
     Loader: typeof import('@/components/Loader.vue')['Loader'];
@@ -34,7 +34,7 @@ declare module '@vue/runtime-dom' {
     Rotate: typeof import('@/components/Rotate.vue')['Rotate'];
     Scroll: typeof import('@/components/Scroll.vue')['Scroll'];
     SearchInput: typeof import('@/components/SearchInput.vue')['SearchInput'];
-    Select: typeof import('@/components/Select.vue')['Select'];
+    FSelect: typeof import('@/components/FSelect.vue')['Select'];
     SelectPopup: typeof import('@/components/SelectPopup.vue')['SelectPopup'];
     Shimmer: typeof import('@/components/Shimmer.vue')['Shimmer'];
     SelectInput: typeof import('@/components/SelectInput.vue')['SelectInput'];
@@ -42,6 +42,7 @@ declare module '@vue/runtime-dom' {
     TabButton: typeof import('@/components/TabButton.vue')['TabButton'];
     Tooltip: typeof import('@/components/Tooltip.vue')['Tooltip'];
     ValidatedInput: typeof import('@/components/ValidatedInput.vue')['ValidatedInput'];
+    Tabs: typeof import('@/components/Tabs.vue')['Tabs'];
   }
 }
 

@@ -34,10 +34,7 @@ import { Getter, Mutation } from 'vuex-class';
 import WalletInfo from './WalletInfo.vue';
 import type { SelectedWallet } from '@/store';
 import type { Fn, CustomEvent } from '@/interfaces';
-import type {
-  AccountJson,
-  ResponseTotalBalances,
-} from '@/extension/background/extension-base/src/background/types/types';
+import type { AccountJson, ResponseTotalBalances } from '@extension-base/background/types/types';
 import type { CurrentAccountInfo } from '@/extension/background/extension-base/src/stores/CurrentAccountStore';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';

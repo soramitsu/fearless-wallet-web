@@ -106,7 +106,11 @@
     "requesting": "Requesting permissions...",
     "connected": "Mobile wallet connected to Fearless Wallet Extension",
     "noAnswer": "No answer from your wallet received yet. Please make sure the wallet is open",
-    "signMobile": "To sign using a mobile device, make sure your mobile client is open on the Beacon dApp screen and click Sign."
+    "signMobile": "To sign using a mobile device, make sure your mobile client is open on the Beacon dApp screen and click Sign.",
+    "rateLimitWarning": {
+      "title": "Too many transaction",
+      "message": "Matrix node is busy, please try again later"
+    }
   },
   "googleExport": {
     "prepData": "Preparing data...",
@@ -401,7 +405,7 @@
         "statusText": "Verification rejected",
         "text1": "Verification rejected",
         "text2": "Your application has been rejected.",
-        "text3": "PLACEHOLDER TEXT: *Display 'additional description' provided in the answer* (done by devs. We should check the format of the answer, to be sure it's human-readable)"
+        "text3": "Reason for rejection:"
       },
       "accepted": {
         "statusText": "Card is on the way",
@@ -533,7 +537,6 @@
     "understood": "Understood",
     "cancel": "Cancel",
     "close": "Close",
-    "next": "Next",
     "save": "Save",
     "yes": "Yes",
     "no": "No",
@@ -556,9 +559,11 @@
     "acceptContinue": "Accept and continue",
     "email": "Email",
     "start": "Let’s start",
+    "next": "Next",
     "and": "and",
     "read": "Read",
     "about": "About",
+    "skip": "Skip",
     "supportFeedback": "Support & Feedback",
     "socialMedia": "Social Media",
     "communityWallet": "Community wallet",

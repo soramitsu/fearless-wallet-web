@@ -53,9 +53,9 @@ function subscribeERC20Interval(
     }
   };
 
-  network.assets.forEach(({ id, isUtility, symbol }) => {
+  network.assets.forEach(({ id: contractAddress, isUtility, symbol }) => {
     if (!isUtility) {
-      ERC20ContractMap[symbol] = getERC20Contract(networkKey, id);
+      ERC20ContractMap[symbol] = getERC20Contract(networkKey, contractAddress);
     }
   });
 
@@ -122,11 +122,8 @@ export function subscribeEvmBalance(
   ethereumAddress: string,
   setBalance: (networkKey: string, rs: Partial<BalanceItem>) => void
 ) {
-  state.generateDefaultBalance(address);
-
-  const unsubList = Object.entries(state.getEvmApiMap).map(([networkKey]) => {
-    return subscribeEVMBalance(networkKey, ethereumAddress, setBalance); // todo [ethereumAddress] -> ethereumAddress
-  });
+  const entries = Object.entries(state.getEvmApiMap);
+  const unsubList = entries.map(([networkKey]) => subscribeEVMBalance(networkKey, ethereumAddress, setBalance));
 
   return () => {
     unsubList.forEach((sub) => {

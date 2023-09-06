@@ -23,14 +23,14 @@
         </div>
 
         <div class="authorize__control">
-          <Button width="100%" text="metadata.appAccess" size="big" fontSize="big" @click="onApprove" />
+          <FButton width="100%" text="metadata.appAccess" size="big" fontSize="big" @click="onApprove" />
         </div>
       </template>
 
       <template v-else>
         <Alert :message="noAccountsMessage" />
 
-        <Button width="100%" text="common.understood" size="big" fontSize="big" @click="onReject" />
+        <FButton width="100%" text="common.understood" size="big" fontSize="big" @click="onReject" />
       </template>
     </div>
   </AboveForm>
@@ -39,11 +39,7 @@
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import {
-  AuthorizeRequest,
-  ApproveAuthRequest,
-  AccountJson,
-} from '@/extension/background/extension-base/src/background/types/types';
+import { AuthorizeRequest, ApproveAuthRequest, AccountJson } from '@extension-base/background/types/types';
 import { AsyncFn } from '@/interfaces';
 import Hint from '@/components/Hint.vue';
 import { Components } from '@/router/routes';

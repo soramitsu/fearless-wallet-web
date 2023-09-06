@@ -16,19 +16,19 @@
         <div class="label">{{ $t('accounts.export') }}</div>
       </div>
 
-      <div v-if="!isNodesRoute" class="row" @click="openNetwork">
+      <div v-if="showNodeSwitch" class="row" @click="openNetwork">
         <Icon icon="currency-switch" className="icon" />
 
         <div class="label">{{ $t('accounts.switchNode') }}</div>
       </div>
 
-      <div v-if="!isNodesRoute" class="row" @click="copyAddress">
+      <div v-if="showCopyAddress" class="row" @click="copyAddress">
         <Icon icon="copy-2" className="icon" />
 
         <div class="label">{{ $t('accounts.copyAddress') }}</div>
       </div>
 
-      <div class="row" @click="openSubscan">
+      <div class="row" @click="openExplorer">
         <Icon icon="globus" className="icon" />
 
         <div class="label">{{ buttonText }}</div>
@@ -40,23 +40,23 @@
 <script lang="ts">
 import { Getter } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { SelectedWallet } from '@/store';
-import type { NetworkJson } from '@extension-base/types';
+import type { GetNetwork, SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-
+import { EVM_EXPLORERS_BASE_URLS, EXPLORERS_BASE_URLS } from '@/consts/networks';
 @Component
 export default class AccountSettingsPopup extends Vue {
   @Prop(String) selectedNetwork!: string;
-  @Prop(Boolean) isNodesRoute!: boolean;
+  @Prop(Boolean) showNodeSwitch!: boolean;
+  @Prop(Boolean) showCopyAddress!: boolean;
   @Prop(Boolean) showExport!: boolean;
   @Prop(Number) buttonTopClick!: number;
   @Prop(Function) handlerClose!: VoidFunction;
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get explorerType() {
     return this.getNetwork(this.selectedNetwork)?.externalApi?.history?.type;
@@ -84,8 +84,30 @@ export default class AccountSettingsPopup extends Vue {
     this.close();
   }
 
+  get lowerCaseSelectedNetwork() {
+    return this.selectedNetwork.toLowerCase();
+  }
+
+  get substrateExplorerByNetwork() {
+    return EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] ?? this.selectedNetwork;
+  }
+
+  get evmExplorerByNetwork() {
+    return EVM_EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] ?? '';
+  }
+
+  openEvmExplorer() {
+    if (this.evmExplorerByNetwork !== '')
+      window.open(`https://${this.evmExplorerByNetwork}/address/${this.addressByNetwork}`);
+  }
+
   openSubscan() {
-    window.open(`https://${this.selectedNetwork}.subscan.io/account/${this.addressByNetwork}`);
+    window.open(`https://${this.substrateExplorerByNetwork}.subscan.io/account/${this.addressByNetwork}`);
+  }
+
+  openExplorer() {
+    if (this.evmExplorerByNetwork !== '') return this.openEvmExplorer();
+    else this.openSubscan();
 
     this.close();
   }

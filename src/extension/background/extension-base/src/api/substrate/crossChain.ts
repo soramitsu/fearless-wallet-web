@@ -6,17 +6,14 @@ import {
   isEthereumNetwork,
   getUtilityProps,
   getNativeAssetName,
-  getSubstrateAddressByEthAddress,
+  getSubstrateAddress,
 } from '@extension-base/background/utils/utils';
 import { getAssetInfo } from '@extension-base/api/substrate/registry';
+import { SignerType } from '@extension-base/background/types/types';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
+import type { TokenBalance, BasicTxResponse } from '@extension-base/background/types/types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { Interior } from '@/interfaces';
-import {
-  TokenBalance,
-  BasicTxResponse,
-  SignerType,
-} from '@/extension/background/extension-base/src/background/types/types';
 import {
   NATIVE_NETWORKS,
   RELAY_CHAINS,
@@ -77,15 +74,13 @@ function interiorHelper(interiors: Interior, nativeParachainIds: number[], origi
 
 function getConcreteAsset(originNet: NetworkName, isToRelayChain: boolean, assetId: string, isNative = false) {
   const tokenInfo = getAssetInfo(assetId);
-  const { paraId: originNetParaId } = state.networkMap[originNet];
-
-  const { xcm, parentId } = state.networkMap[originNet];
+  const { xcm, parentId, paraId: originNetParaId } = state.networkMap[originNet];
 
   // This Polkadot or Kusama
   if (parentId === undefined)
     return {
       interior: { Here: '' },
-      parents: isToRelayChain ? 1 : 0, // Это isNative телепорт, соответственно parents формируется как для isNative
+      parents: isToRelayChain ? 1 : 0, // Это isNative телепорт, потому что он из RelayChain -> соответственно parents формируется как для isNative
     };
 
   const { assets: xcmLocationsAssets } = state.xcmLocations.find(({ chainId }) => chainId === parentId)!;
@@ -131,7 +126,7 @@ function getNativeTeleportParams(
   const isFromRelayChain = isRelayChain(originNet);
   const isToRelayChain = isRelayChain(destNet);
   const { xcm, parentId, name } = state.networkMap[originNet];
-  const { paraId } = state.networkMap[destNet];
+  const paraId = state.networkMap[destNet]?.paraId ?? 0;
   const xcmVersion = xcm!.xcmVersion.toUpperCase();
   const publicKey = decodeAddress(toAddress);
   const value = new BN(amount);
@@ -184,7 +179,7 @@ function getNativeTeleportParams(
 function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: string, amount: string, assetId: string) {
   const isToRelayChain = isRelayChain(destNet);
   const { xcm, parentId, name } = state.networkMap[originNet];
-  const { paraId } = state.networkMap[destNet];
+  const paraId = state.networkMap[destNet]?.paraId ?? 0;
   const xcmVersion = xcm!.xcmVersion.toUpperCase();
   const publicKey = decodeAddress(toAddress);
   const value = new BN(amount);
@@ -386,7 +381,7 @@ async function makeCrossChain({
 
   await apiProps.api?.isReady;
 
-  const address = getSubstrateAddressByEthAddress(from);
+  const address = getSubstrateAddress(from);
   const tokenBalance = state.balanceMap[address].find(({ assetId: _assetId }) => _assetId === assetId)!;
   const [, crossChainFee] = await estimateCrossChainFee(originNet, destinationNet, tokenBalance);
 

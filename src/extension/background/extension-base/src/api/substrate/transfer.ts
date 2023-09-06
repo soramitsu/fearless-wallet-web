@@ -2,13 +2,8 @@ import { FPNumber } from '@sora-substrate/util';
 import { state } from '@extension-base/background/handlers';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
-import { getUtilityProps, getSubstrateAddressByEthAddress } from '@extension-base/background/utils/utils';
-import {
-  BasicTxResponse,
-  TransferErrorCode,
-  SignerType,
-  TokenBalance,
-} from '@/extension/background/extension-base/src/background/types/types';
+import { getUtilityProps, getSubstrateAddress } from '@extension-base/background/utils/utils';
+import { BasicTxResponse, TransferErrorCode, SignerType, TokenBalance } from '@extension-base/background/types/types';
 import { NetworkName } from '@/interfaces';
 
 export async function estimateFee(
@@ -86,7 +81,7 @@ export async function makeTransfer({
 
   await apiProps.api?.isReady;
 
-  const address = getSubstrateAddressByEthAddress(from);
+  const address = getSubstrateAddress(from);
   const tokenBalance = state.balanceMap[address].find(({ assetId: _assetId }) => _assetId === assetId)!;
 
   const extrinsic = createExtrinsicTransfer({

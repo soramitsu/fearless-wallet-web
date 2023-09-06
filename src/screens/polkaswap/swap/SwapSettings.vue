@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Select
+    <FSelect
       v-model="syncedMarketType"
       :options="optionsSubstrateKeyPair"
       placeholder="assets.market"

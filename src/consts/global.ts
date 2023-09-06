@@ -14,7 +14,6 @@ const IS_EXTENSION = chrome.extension !== undefined;
 const APP_VERSION = packages.version;
 const CONTENT_FORM_HEIGHT = 382;
 const ONE_WEEK = 604800000;
-const SORA_CARD_VISIBILITY = false; // TODO перейти на удаленный JSON
 
 export {
   APP_WIDTH,
@@ -29,7 +28,6 @@ export {
   MOONPAY_API_KEY,
   IS_EXTENSION,
   APP_VERSION,
-  SORA_CARD_VISIBILITY,
   CONTENT_FORM_HEIGHT,
   ONE_WEEK,
 };

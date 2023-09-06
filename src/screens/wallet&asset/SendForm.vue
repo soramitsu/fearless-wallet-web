@@ -18,11 +18,11 @@
   >
     <div>
       <div class="row direction-column">
-        <Input v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
+        <FInput v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
 
         <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
 
-        <Input v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
+        <FInput v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
       </div>
 
       <Corners size="big" class="row">
@@ -84,7 +84,6 @@ export default class SendForm extends Vue {
   @Prop(String) _selectedNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getAssetPageNetwork) assetPageNetwork!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
@@ -139,7 +138,7 @@ export default class SendForm extends Vue {
   created() {
     this.assetId = this._selectedAssetId;
 
-    this.selectedNetwork = this.assetPageNetwork !== '' ? this.assetPageNetwork : this._selectedNetwork;
+    this.selectedNetwork = this._selectedNetwork;
   }
 
   closeForm() {

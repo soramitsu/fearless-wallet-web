@@ -46,7 +46,7 @@
         </div>
       </div>
 
-      <Button width="100%" text="common.start" class="proceed-button" @click="proceed" />
+      <FButton width="100%" text="common.start" class="proceed-button" @click="proceed" />
 
       <BorderButton width="100%" text="common.cancel" @click="handlerClose" />
     </div>

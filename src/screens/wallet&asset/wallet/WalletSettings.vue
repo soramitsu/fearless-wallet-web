@@ -9,8 +9,8 @@
           :tooltipText="tooltipText"
           :target="target"
           :class="classes"
-          :text="label"
-          :isActive="activeTabName === tabName"
+          :label="label"
+          :isActive="syncedActiveTabName === tabName"
           @click="openTab(tabName)"
         />
       </template>
@@ -21,14 +21,14 @@
         class="hide-zero"
         target=".hide-zero"
         placementTooltip="right"
-        :text="toggleButtonText"
+        :label="toggleButtonText"
         @click="$emit('toggleCurrenciesVisible', allCurrenciesHidden)"
       />
     </div>
 
     <div v-if="isCurrenciesTab" class="settings-part">
       <SearchInput
-        v-if="!showAssetsManagementForm"
+        v-if="!syncedShowAssetsManagementForm"
         v-model="syncedFilterValue"
         placeholder="common.search"
         width="185px"

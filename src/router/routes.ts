@@ -5,7 +5,7 @@ import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
-import { SORA_CARD_VISIBILITY } from '@/consts/global';
+import { isOnboardingRequired } from '@/extension/messaging';
 
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const History = () => import('@/screens/history/History.vue');
@@ -16,11 +16,15 @@ const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue')
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 const Export = () => import('@/screens/accounts/Export.vue');
+const Onboarding = () => import('@/screens/onboarding/Onboarding.vue');
+
+const AssetNetworks = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetNetworks.vue');
+const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetHistory.vue');
 
 const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
-const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/Disclaimer.vue');
 const Polkaswap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/Polkaswap.vue');
+const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/Disclaimer.vue');
 
 const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/AddWallet.vue');
 const AddFromGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/AddFromGoogle.vue');
@@ -54,6 +58,9 @@ export enum Components {
   SoraCard = 'SoraCard',
   NoFound = 'NoFound',
   MyStake = 'MyStake',
+  AssetHistory = 'AssetHistory',
+  AssetNetworks = 'AssetNetworks',
+  Onboarding = 'Onboarding',
 }
 
 const haveSelectedWallet = () => {
@@ -63,6 +70,7 @@ const haveSelectedWallet = () => {
 const haveAuthRequests = () => store.getters.authList.length;
 const haveSignRequests = () => store.getters.signList.length;
 const haveMetaRequests = () => store.getters.metaRequests.length;
+const showSoraCard = () => store.getters.features?.fiat?.soraCard;
 
 const routes: Array<RouteConfig> = [
   {
@@ -71,13 +79,9 @@ const routes: Array<RouteConfig> = [
     component: Welcome,
   },
   {
-    path: '*',
-    name: Components.NoFound,
-    component: Welcome,
-    beforeEnter: (to, from, next) => {
-      if (haveSelectedWallet()) next({ name: Components.Wallet });
-      else next();
-    },
+    path: '/onboarding',
+    name: Components.Onboarding,
+    component: Onboarding,
   },
   {
     path: '/google/:access_token',
@@ -119,7 +123,7 @@ const routes: Array<RouteConfig> = [
     name: Components.SoraCard,
     component: SoraCard,
     beforeEnter: (to, from, next) => {
-      if (SORA_CARD_VISIBILITY) next();
+      if (showSoraCard()) next();
       else next({ name: Components.Wallet });
     },
   },
@@ -143,10 +147,8 @@ const routes: Array<RouteConfig> = [
     component: Main,
     children: [
       {
-        path: '',
-        beforeEnter: (to, from, next) => {
-          next({ name: Components.Wallet });
-        },
+        path: '/',
+        redirect: { name: Components.Wallet },
       },
       {
         path: 'wallet/:access_token?',
@@ -182,9 +184,20 @@ const routes: Array<RouteConfig> = [
         ],
       },
       {
-        path: ':network/:assetId',
-        name: Components.Asset,
+        path: 'asset/:assetId',
         component: Asset,
+        children: [
+          {
+            path: '/',
+            name: Components.AssetNetworks,
+            component: AssetNetworks,
+          },
+          {
+            path: ':selectedNetwork',
+            name: Components.AssetHistory,
+            component: AssetHistory,
+          },
+        ],
       },
       {
         path: 'crowdloans',
@@ -209,6 +222,17 @@ const routes: Array<RouteConfig> = [
     ],
     beforeEnter: (to, from, next) => {
       if (!haveSelectedWallet()) next({ name: Components.Welcome });
+      else next();
+    },
+  },
+  {
+    path: '*',
+    component: Welcome,
+    beforeEnter: async (to, from, next) => {
+      const isRequired = await isOnboardingRequired();
+
+      if (isRequired) next({ name: Components.Onboarding });
+      else if (haveSelectedWallet()) next({ name: Components.Wallet });
       else next();
     },
   },

@@ -47,7 +47,7 @@
       </div>
     </Scroll>
 
-    <Button size="big" fontSize="big" width="100%" text="assets.createContact" @click="setAddress(' ')" />
+    <FButton size="big" fontSize="big" width="100%" text="assets.createContact" @click="setAddress(' ')" />
   </div>
 </template>
 

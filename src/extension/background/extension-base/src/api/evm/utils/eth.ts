@@ -4,7 +4,7 @@ import BNEther from 'bn.js';
 import RLP from 'rlp';
 import { Contract } from 'ethers';
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import ERC20Contract from '@extension-base/api/evm/helpers/ERC20Contract.json';
+import { abi } from '@extension-base/api/evm/helpers/ERC20Contract.json';
 import { state } from '@extension-base/background/handlers';
 
 export function isEqualContractAddress(address1: string, address2: string) {
@@ -90,6 +90,6 @@ export const createTransactionFromRLP = (rlp: string): Transaction | null => {
   }
 };
 
-export const getERC20Contract = (networkKey: string, assetAddress: string): Contract => {
-  return new Contract(assetAddress, ERC20Contract.abi, state.getEvmApiMap[networkKey]);
+export const getERC20Contract = (network: string, contractAddress: string): Contract => {
+  return new Contract(`0x${contractAddress}`, abi, state.getEvmApiMap[network]);
 };

@@ -24,7 +24,7 @@
       <Disclaimer />
     </div>
 
-    <Button
+    <FButton
       text="common.acceptContinue"
       width="100%"
       size="big"

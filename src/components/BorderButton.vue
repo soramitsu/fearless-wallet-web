@@ -1,6 +1,6 @@
 <template>
   <Corners :hover="hover" :size="size" :topLeftCorner="topLeftCorner" :bottomRightCorner="bottomRightCorner">
-    <Button
+    <FButton
       type="secondary"
       :border="true"
       :borderRadius="borderRadius"

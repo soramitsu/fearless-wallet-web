@@ -1,7 +1,5 @@
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
-import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
-import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import {
   keyExtractSuri,
@@ -34,9 +32,14 @@ import {
 } from '@extension-base/api/substrate/crossChain';
 import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
 import { ethers } from 'ethers';
-import { getSubstrateAddressByEthAddress, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
+import {
+  balanceItemByNetwork,
+  getSubstrateAddress,
+  isRequireSubstrateAPI,
+} from '@extension-base/background/utils/utils';
 
-import { storage } from '@extension-base/stores/Storage';
+import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
+import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -100,6 +103,7 @@ import type {
   RequestCheckStaking,
   ResponseCheckStaking,
 } from '@extension-base/background/types/types';
+
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   Asset,
@@ -113,7 +117,7 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
-import { ALL_NETWORKS, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS } from '@/consts/networks';
 
 import { googleManage } from '@/controllers/googleController';
 import {
@@ -122,10 +126,11 @@ import {
   GoogleAuthTypes,
   ICreateFile,
   IGetFilesResponse,
+  OnboardingStories,
   SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
-
+import { IS_PRODUCTION } from '@/consts/global';
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
 const ETH_DERIVE_DEFAULT = "/m/44'/60'/0'/0/0";
@@ -170,12 +175,20 @@ export default class Extension extends FWExtensionBase {
     return this.state.cancelSubscription(id);
   }
 
+  public updateNetworkForNewWallet(address: string) {
+    const selectedNetwork = this.state.selectedNetwork[address] ?? ALL_NETWORKS;
+    this.state.setActiveNetworks(selectedNetwork);
+  }
+
   accountsCreateSuri({ password, suri, type, meta }: RequestAccountCreateSuri): string {
     const {
       pair: { address },
     } = keyring.addUri(suri, password, { ...meta, isMobile: false }, type);
 
-    if (!isEthereumAddress(address)) this.updateCurrentAccountAddress(address);
+    if (!isEthereumAddress(address)) {
+      this.updateNetworkForNewWallet(address);
+      this.updateCurrentAccountAddress(address);
+    }
 
     return address;
   }
@@ -208,9 +221,9 @@ export default class Extension extends FWExtensionBase {
 
     if (type === 'native') {
       const pair = keyring.getAccount(address);
-      const ethereumAddress = pair?.meta.ethereumAddress as string;
+      const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
 
-      if (ethereumAddress !== '') keyring.forgetAccount(ethereumAddress);
+      if (ethereumAddress) keyring.forgetAccount(ethereumAddress);
 
       keyring.forgetAccount(address);
     } else keyring.forgetAddress(address);
@@ -250,8 +263,11 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  addressesSubscribe(id: string, port: Port): boolean {
+  async addressesSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(addresses.subscribe)'>(id, port);
+
+    const transformedAddresses = transformAccounts(addressesObservable.subject.value);
+
     const subscription = addressesObservable.subject.subscribe((addresses: SubjectInfo): void => {
       transformAccounts(addresses).then(cb);
     });
@@ -261,11 +277,14 @@ export default class Extension extends FWExtensionBase {
       subscription.unsubscribe();
     });
 
-    return true;
+    return transformedAddresses;
   }
 
-  accountsSubscribe(id: string, port: Port): boolean {
+  async accountsSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
+
+    const transformedAccounts = transformAccounts(accountsObservable.subject.value);
+
     const subscription = accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
       transformAccounts(accounts).then(cb);
     });
@@ -275,7 +294,7 @@ export default class Extension extends FWExtensionBase {
       subscription.unsubscribe();
     });
 
-    return true;
+    return transformedAccounts;
   }
 
   authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): boolean {
@@ -415,7 +434,7 @@ export default class Extension extends FWExtensionBase {
       return new Promise((resolve, reject) => {
         try {
           keyring.restoreAccount(file, password);
-
+          if (!isEthereumAddress(address)) this.updateNetworkForNewWallet(address);
           this.updateCurrentAccountAddress(address);
           resolve(address);
         } catch (error) {
@@ -428,14 +447,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async enableNetworkType(type: string): Promise<void> {
-    const currentAccount = await this.state.currentAccount;
-
-    if (currentAccount) {
-      this.state.selectedNetwork[currentAccount.address] = type;
-      storage.set({ selectedNetwork: this.state.selectedNetwork });
-    }
-
-    return this.state.setActiveNetworks(type);
+    this.state.enableNetworkType(type);
   }
 
   private async toggleNetworkFavorite(networkKey: string): Promise<void> {
@@ -495,23 +507,13 @@ export default class Extension extends FWExtensionBase {
   }
 
   private updateCurrentAccountAddress(address: string): boolean {
-    if (isEthereumAddress(address)) return true;
+    if (isEthereumAddress(address)) return false;
 
     this.state.generateDefaultBalance(address);
 
     this._saveCurrentAccountAddress(address, () => {
       this.triggerWalletsSubscription();
     });
-
-    return true;
-  }
-
-  private async updateCurrentAccountNetwork(network: string): Promise<boolean> {
-    const current = await this.state.currentAccount;
-
-    if (!current) return false;
-
-    this.state.selectedNetwork[current?.address] = network;
 
     return true;
   }
@@ -656,7 +658,7 @@ export default class Extension extends FWExtensionBase {
       return true;
     }
 
-    const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
+    const url = `${chrome.runtime.getURL(`popup.html#${path}`)}`;
 
     if (!ALLOWED_PATH.includes(path)) {
       console.error('Not allowed to open the url:', url);
@@ -743,7 +745,7 @@ export default class Extension extends FWExtensionBase {
 
   getToken(): void {
     chrome.identity.getAuthToken({}, (token) => {
-      this.token = token;
+      this.token = token ?? '';
     });
   }
 
@@ -1002,7 +1004,7 @@ export default class Extension extends FWExtensionBase {
     password: string | undefined
   ): [Array<BasicTxError>, KeyringPair | undefined, Asset] {
     const errors = [] as Array<BasicTxError>;
-    const substrateAddress = getSubstrateAddressByEthAddress(from);
+    const substrateAddress = getSubstrateAddress(from);
     const substratePair = keyring.getAccount(substrateAddress) ? keyring.getPair(substrateAddress) : undefined;
 
     if (password) {
@@ -1035,19 +1037,31 @@ export default class Extension extends FWExtensionBase {
 
   private async checkTransfer({
     from,
-    networkKey,
+    networkKey: givenNetwork,
     to,
     assetId,
     relayChain,
     amount,
     password,
   }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
+    const networkKey = this.state.getNetworkByKey(givenNetwork)?.name ?? '';
+
     const [errors, , tokenInfo] = this.validateTransfer(assetId, from, password);
     const warnings: BasicTxWarning[] = [];
-    const isMainToken = checkMainToken(networkKey, tokenInfo.id);
-    const address = getSubstrateAddressByEthAddress(from);
 
-    let fee = '0';
+    if (networkKey === '')
+      return {
+        errors,
+        warnings,
+        destEstimateFee: undefined,
+        fromAccountFree: '0',
+        estimateFee: '0',
+      };
+
+    const isMainToken = checkMainToken(networkKey, tokenInfo.id);
+    const address = getSubstrateAddress(from);
+
+    let fee = 0;
     let fromAccountFreeBalance = '0';
 
     const tokenBalance = this.state.balanceMap[address].find(
@@ -1056,13 +1070,14 @@ export default class Extension extends FWExtensionBase {
 
     if (isEthereumAddress(from) && isEthereumAddress(to) && !isRequireSubstrateAPI(networkKey)) {
       const fromAccountFreeBalance = tokenBalance
-        ? tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0'
+        ? balanceItemByNetwork(tokenBalance.balances, networkKey)?.transferable ?? '0'
         : '0';
       const txVal = fromAccountFreeBalance || '0';
 
       // Estimate with EVM API
       if (!isMainToken && tokenInfo.id) {
-        const { fee: feeValue } = await getERC20TransactionObject(tokenInfo.id, networkKey, from, to, txVal);
+        const prepContractAddress = `0x${tokenInfo.id}`;
+        const { fee: feeValue } = await getERC20TransactionObject(prepContractAddress, networkKey, from, to, txVal);
 
         fee = ethers.formatEther(feeValue);
       } else {
@@ -1076,25 +1091,25 @@ export default class Extension extends FWExtensionBase {
       const feeNumber = await estimateFee(networkKey, to, amount, tokenBalance);
 
       fee = feeNumber;
-      fromAccountFreeBalance =
-        tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0';
+      fromAccountFreeBalance = balanceItemByNetwork(tokenBalance.balances, networkKey)?.transferable ?? '0';
     }
 
     return {
       errors,
       warnings,
       fromAccountFree: fromAccountFreeBalance,
-      estimateFee: fee,
+      estimateFee: fee.toString(),
     } as unknown as ResponseCheckTransfer;
   }
 
   private async makeTransfer(
     id: string,
     port: Port,
-    { from, networkKey, password, to, assetId, amount, isSavePass, isMobile }: RequestTransfer
+    { from, networkKey: givenNetwork, password, to, assetId, amount, isSavePass, isMobile }: RequestTransfer
   ): Promise<BasicTxResponse | undefined> {
-    const txState: BasicTxResponse = {};
+    const networkKey = this.state.getNetworkByKey(givenNetwork)?.name ?? '';
 
+    const txState: BasicTxResponse = {};
     const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
 
     if (errors.length) {
@@ -1119,7 +1134,7 @@ export default class Extension extends FWExtensionBase {
 
     const ethereumAddress = fromKeyPair ? (fromKeyPair.meta.ethereumAddress as string | undefined) : '';
     const isEthereum = isEthereumAddress(from);
-    const address = isEthereum ? getSubstrateAddressByEthAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet to save pass
+    const address = isEthereum ? getSubstrateAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet to save pass
     const remainTime = fromKeyPair ? this.getRemainingTime(fromKeyPair) : 0;
 
     const savePass = () => {
@@ -1209,21 +1224,22 @@ export default class Extension extends FWExtensionBase {
 
   private async checkCrossChain({
     from,
-    originNet,
+    originNet: originNetKey,
     destinationNet,
     to,
     assetId,
     relayChain,
     amount,
   }: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
-    const address = getSubstrateAddressByEthAddress(from);
+    const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';
+    const address = getSubstrateAddress(from);
     const tokenBalance = this.state.balanceMap[address].find(
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
     const extrinsic = await createCrossChainExtrinsic(assetId, originNet, destinationNet, to, amount!, tokenBalance);
 
-    console.info('CrossChain', extrinsic);
+    if (!IS_PRODUCTION) console.info('CrossChain', extrinsic);
 
     const [fee, crossChainFee] = await estimateCrossChainFee(originNet, destinationNet, tokenBalance, extrinsic);
 
@@ -1236,13 +1252,24 @@ export default class Extension extends FWExtensionBase {
   private async makeCrossChain(
     id: string,
     port: Port,
-    { from, originNet, destinationNet, amount, password, to, assetId, isSavePass, isMobile }: RequestCrossChain
+    {
+      from,
+      originNet: originNetKey,
+      destinationNet,
+      amount,
+      password,
+      to,
+      assetId,
+      isSavePass,
+      isMobile,
+    }: RequestCrossChain
   ): Promise<void> {
+    const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';
     const [, fromKeyPair] = this.validateTransfer(assetId, from, password);
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
 
-    const address = getSubstrateAddressByEthAddress(from);
+    const address = getSubstrateAddress(from);
     const substratePair = keyring.getPair(address);
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 
@@ -1332,20 +1359,23 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {
-    const cb = createSubscription<'pri(soraCard.token)'>(id, port);
-
-    const subscription = this.state.soraCardTokenSubject.subscribe((token) => cb(token));
-
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
-
-    return true;
+    return this.state.soraCardService.soraCardTokenSubscribe(id, port);
   }
 
   authorizeApprovePolkaswap(authorizedAccounts: string[]): Promise<void> {
     return this.state.approvePolkaswap(authorizedAccounts);
+  }
+
+  isOnboardingRequired() {
+    return this.state.onboardingService.isRequired;
+  }
+
+  setOnboardingSeen() {
+    this.state.onboardingService.setSeen();
+  }
+
+  getOnboardingStories(lang: string): OnboardingStories {
+    return this.state.onboardingService.getStories(lang);
   }
 
   async handle<TMessageType extends MessageTypes>(
@@ -1362,13 +1392,7 @@ export default class Extension extends FWExtensionBase {
       case 'pri(networkMap.upsert)':
         return this.upsertNetworkMap(request as NetworkJson);
 
-      case 'pri(networkMap.enable.type)':
-        return this.enableNetworkType(request as string);
-
       case 'pri(networkMap.toggle.favorite)':
-        return this.toggleNetworkFavorite(request as string);
-
-      case 'pri(networkMap.setNetworks)':
         return this.toggleNetworkFavorite(request as string);
 
       case 'pri(networkMap.getSubscription)':
@@ -1602,6 +1626,16 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(transaction.history.get.subscription)':
         return this.subscribeHistory(id, port);
+
+      //OnBoarding
+      case 'pri(onboarding.get.stories)':
+        return this.getOnboardingStories(request as string);
+
+      case 'pri(onboarding.seen)':
+        return this.setOnboardingSeen();
+
+      case 'pri(onboarding.isRequired)':
+        return this.isOnboardingRequired();
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

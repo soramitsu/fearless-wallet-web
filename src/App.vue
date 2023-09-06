@@ -10,10 +10,12 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { ALL_NETWORKS } from './consts/networks';
+import { beaconController } from './controllers/beaconController';
+import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
-import { AccountJson, BalanceJson, PriceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
+import { MutationTypes as ExtensionMutationTypes } from '@/store/extension/mutations';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
@@ -31,23 +33,23 @@ import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { IS_EXTENSION } from '@/consts/global';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 
-@Component
+@Component({})
 export default class App extends Vue {
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
-  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
   @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: Fn<SetNetworksStatusProps>;
-  @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: Fn<SetAccountsProps>;
   @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: Fn<SetAssetsPriceProps>;
+  @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: Fn<SetAccountsProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: Fn<string>;
-  @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: AsyncFn;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
   @Action(NetworksActionTypes.FETCH_FIATS) fetchFiats!: AsyncFn;
   @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
-  @Action(AccountsActionTypes.ONLINE_STATUS_UPDATE) updateOnlineStatus!: AsyncFn;
   @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<AccountJson>;
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
+  @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: AsyncFn;
+  @Action(ExtensionActionTypes.FETCH_FEATURES) fetchFeatures!: AsyncFn;
+  @Mutation(ExtensionMutationTypes.SET_ONBOARDING) setOnboarding!: (payload: boolean) => void;
 
   get includeKeepAlive() {
     const components = ['Main'];
@@ -58,18 +60,31 @@ export default class App extends Vue {
   }
 
   async created() {
-    this.onUpdateOnlineStatus();
-
     if (IS_EXTENSION) this.extensionSubscribe();
+    this.setupWallet();
 
     this.unregisterInactiveWorkers();
-    this.setupWallet();
+    this.setupNetworks();
     this.setupBalance();
     this.fetchFiats();
+    this.fetchFeatures();
     this.setupPrice();
-    this.setupNetworks();
     this.setupSWPing();
     this.getUserStatus(); // SORA Card
+  }
+
+  mounted() {
+    this.mobileWalletListeners();
+  }
+
+  mobileWalletListeners() {
+    beaconController.onRateReached(() => {
+      this.$notify({
+        message: this.$t('mobileConnector.rateLimitWarning.message') as string,
+        title: this.$t('mobileConnector.rateLimitWarning.title') as string,
+        type: 'warning',
+      });
+    });
   }
 
   unregisterInactiveWorkers() {
@@ -78,10 +93,6 @@ export default class App extends Vue {
         if (registration.active?.state !== 'activated') registration.unregister();
       }
     });
-  }
-
-  onUpdateOnlineStatus() {
-    this.updateOnlineStatus();
   }
 
   setupSWPing() {
@@ -133,14 +144,15 @@ export default class App extends Vue {
     }
   }
 
-  setupWallet() {
-    subscribeAddresses((accounts) => {
-      this.onAccountUpdate(accounts, true);
-    });
-
-    subscribeAccounts((accounts) => {
+  async setupWallet() {
+    const accounts = await subscribeAccounts((accounts) => {
       this.onAccountUpdate(accounts);
     });
+
+    const addresses = await subscribeAddresses((accounts) => {
+      this.onAccountUpdate(accounts, true);
+    });
+    this.onAccountUpdate([...accounts, ...addresses]);
   }
 
   unsubscribe() {

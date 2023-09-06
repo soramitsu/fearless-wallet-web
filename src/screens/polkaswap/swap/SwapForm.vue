@@ -2,8 +2,8 @@
   <AboveForm :fullScreen="true" :closeHandler="closeForm">
     <template v-slot:header>
       <div class="header-content">
-        <div :class="classesBackIcon">
-          <Icon v-show="showBackIcon" icon="chevron-left" class="img" @click="back" />
+        <div :class="classesBackIcon" @click="back">
+          <Icon v-show="showBackIcon" icon="chevron-left" class="img" />
         </div>
 
         <div class="header">
@@ -135,7 +135,7 @@
             <div class="alert-content">
               {{ $t('common.readPolkaswapDisclaimer') }}
 
-              <Button
+              <FButton
                 width="85px"
                 size="mini"
                 fontSize="small"
@@ -148,7 +148,7 @@
           </Alert>
 
           <div class="buttons">
-            <Button
+            <FButton
               v-if="showSettings"
               size="big"
               text="assets.resetToDefault"
@@ -158,7 +158,7 @@
               @click="resetSettings"
             />
 
-            <Button
+            <FButton
               size="big"
               :text="buttonText"
               :disabled="buttonPreviewDisabled"
@@ -841,7 +841,7 @@ export default class SwapForm extends Vue {
   color: $default-white;
 
   .receive-input {
-    margin: 7px 0 32px;
+    margin: 7px 0 14px;
   }
 
   .swap-icon {
@@ -856,7 +856,7 @@ export default class SwapForm extends Vue {
     border: $secondary-border;
     opacity: 1;
     position: relative;
-    top: -110px;
+    top: -92px;
     cursor: pointer;
 
     &:hover {

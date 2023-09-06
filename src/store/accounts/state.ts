@@ -1,7 +1,7 @@
-import type { SelectedWallet, SelectedNetworks, AutoSelectNode, AssetTipDataProps } from './types';
+import { AccountJson, TokenBalance } from '@extension-base/background/types/types';
+import type { SelectedWallet, SelectedNetworks, AutoSelectNode } from './types';
 import type { NetworkName, WalletAddress } from '@/interfaces';
 import { accountController } from '@/controllers';
-import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { SORA_CARD_BANNER_RERUN } from '@/consts/soraCard';
 
 export type State = {
@@ -9,7 +9,6 @@ export type State = {
   selectedFiat: string;
   selectedNetworks: SelectedNetworks;
   accounts: AccountJson[];
-  isOnline: boolean;
   balances: TokenBalance[];
   hiddenAssets: Record<WalletAddress, string[]>;
   autoSelectNode: AutoSelectNode;
@@ -18,8 +17,6 @@ export type State = {
   qr: string | null;
   showPolkaswapAlert: boolean;
   showSoraCardBanner: boolean;
-  assetTipShowed: AssetTipDataProps;
-  selectNetworkAssetPage: string;
 };
 
 const state = (): State => {
@@ -27,7 +24,6 @@ const state = (): State => {
     selectedWallet: accountController.getSelectedWallet(),
     selectedFiat: accountController.getSelectedFiat(),
     selectedNetworks: accountController.getSelectedNetwork(),
-    isOnline: navigator.onLine,
     balances: [],
     hiddenAssets: accountController.getHiddenAssets(),
     accounts: accountController.getAccounts(),
@@ -37,8 +33,6 @@ const state = (): State => {
     hiddenWarningNetworks: accountController.getHiddenWarningNetworks(),
     showSoraCardBanner: Date.now() - accountController.getHidingSoraCardBannerTime() >= SORA_CARD_BANNER_RERUN,
     qr: null,
-    assetTipShowed: accountController.getAssetTipData(),
-    selectNetworkAssetPage: '',
   };
 };
 

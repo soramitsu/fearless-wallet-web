@@ -7,7 +7,6 @@ import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 function getShimmersVisibility() {
   const selectedNetwork: string = store.getters[AccountsGettersTypes.selectedNetwork];
-  const isOnline: boolean = store.getters[AccountsGettersTypes.isOnline];
   const networks: NetworkJson[] = store.getters[NetworksGettersTypes.networks];
 
   if (selectedNetwork !== ALL_NETWORKS) {
@@ -18,7 +17,7 @@ function getShimmersVisibility() {
 
   const isPendingExists = networks.some(({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING);
 
-  return !isOnline || isPendingExists;
+  return isPendingExists;
 }
 
 export { getShimmersVisibility };

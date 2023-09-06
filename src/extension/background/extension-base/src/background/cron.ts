@@ -13,7 +13,7 @@ import {
   CRON_REFRESH_PRICE_INTERVAL,
   CRON_UPDATE_JSON_INTERVAL,
 } from '@extension-base/const/intervals';
-import { NetworkJson } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 import type FWState from '@extension-base/background/handlers/State';
 import type { FWSubscription } from '@extension-base/background/handlers/subscriptions';
 import type { ServiceInfo } from '@extension-base/background/types/types';
@@ -74,9 +74,9 @@ export class FWCron {
   };
 
   init = () => {
-    this.state.getCurrentAccount((currentAccountInfo) => {
+    this.state.getCurrentAccount((currentAccount) => {
       if (!this.state.isReady) return;
-      if (!currentAccountInfo?.address) return;
+      if (!currentAccount?.address) return;
 
       if (
         Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
@@ -94,8 +94,8 @@ export class FWCron {
     this.logger.log('Starting cron jobs');
     this.addCron('refreshJsons', () => this.state.init(), CRON_UPDATE_JSON_INTERVAL, false);
 
-    this.state.getCurrentAccount((currentAccountInfo) => {
-      if (!currentAccountInfo?.address) return;
+    this.state.getCurrentAccount((currentAccount) => {
+      if (!currentAccount?.address) return;
 
       if (
         Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
@@ -125,28 +125,8 @@ export class FWCron {
       },
     });
 
-    navigator.connection.removeEventListener('change', () => {
-      this.onConnectionChange();
-    });
-
-    navigator.connection.addEventListener('change', () => {
-      this.onConnectionChange();
-    });
-
     this.status = 'running';
   };
-
-  onConnectionChange() {
-    if (navigator.onLine) {
-      this.logger.log('Extension is back online');
-
-      this.start();
-    } else {
-      this.logger.log('Extension is offline');
-
-      this.stop();
-    }
-  }
 
   stop = () => {
     if (this.status === 'stopped') return;
@@ -163,6 +143,8 @@ export class FWCron {
   };
 
   recoverApiMap = () => {
+    if (!navigator.onLine) return;
+
     const apiMap = this.state.getApiMap;
 
     for (const [key] of Object.entries(apiMap.evm)) {
@@ -170,15 +152,18 @@ export class FWCron {
     }
 
     for (const [key, substrate] of Object.entries(apiMap.substrate)) {
-      substrate.api?.isReadyOrError.catch(() => {
+      if (substrate.api === undefined) {
         this.state.refreshDotSamaApi(key);
-      });
+        continue;
+      }
+
+      substrate.api?.isReadyOrError.catch(() => this.state.refreshDotSamaApi(key));
     }
 
-    this.state.getCurrentAccount((account) => {
-      if (!account) return;
+    this.state.getCurrentAccount((currentAccount) => {
+      if (!currentAccount) return;
 
-      const { address, ethereumAddress } = account;
+      const { address, ethereumAddress } = currentAccount;
 
       this.subscriptions.subscribeBalances(address, ethereumAddress);
     });
@@ -190,6 +175,12 @@ export class FWCron {
 
     for (const [key, apiProp] of Object.entries(apiMap.substrate)) {
       if (apiProp.isEthereumOnly) continue;
+
+      if (!navigator.onLine) {
+        this.state.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
+
+        continue;
+      }
 
       let status: NETWORK_STATUS = NETWORK_STATUS.CONNECTING;
 
@@ -204,7 +195,12 @@ export class FWCron {
     for (const [key, evm] of Object.entries(apiMap.evm)) {
       const apiStatus = networkMap[key].apiStatus;
 
-      evm
+      if (!navigator.onLine) {
+        this.state.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
+        continue;
+      }
+
+      evm.provider
         ._waitUntilReady()
         .then(() => {
           if (!apiStatus) this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);

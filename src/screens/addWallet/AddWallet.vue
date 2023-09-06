@@ -78,7 +78,7 @@
         <FinishForm v-if="showFinishForm" />
       </div>
       <div class="controls">
-        <Button
+        <FButton
           v-if="confirmMnemonicStep"
           size="big"
           fontSize="big"
@@ -89,7 +89,7 @@
           @click="resetAll"
         />
 
-        <Button
+        <FButton
           v-if="confirmMnemonicStep"
           size="big"
           fontSize="big"
@@ -100,7 +100,7 @@
           @click="skipStep"
         />
 
-        <Button
+        <FButton
           v-if="!showAdvancedForm"
           size="big"
           fontSize="big"
@@ -136,6 +136,7 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Action, Getter } from 'vuex-class';
+import type { AccountJson } from '@extension-base/background/types/types';
 import type { DerivationPaths, ImportType, ValidateJsonResult, MnemonicConfirmation, AsyncFn } from '@/interfaces';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { SelectedWallet } from '@/store';
@@ -152,15 +153,7 @@ import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
-import {
-  createAccountSuri,
-  forgetAccount,
-  updatePairMeta,
-  validatePassword,
-  windowOpen,
-  updateCurrentAccountAddress,
-} from '@/extension/messaging';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
+import { createAccountSuri, forgetAccount, updatePairMeta, validatePassword, windowOpen } from '@/extension/messaging';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
@@ -407,13 +400,11 @@ export default class AddWallet extends Vue {
     if (step === 5) {
       this.isLoading = true;
 
-      const address = await this.saveKeypair();
-
-      updateCurrentAccountAddress(address);
+      await this.saveKeypair();
 
       this.isLoading = false;
 
-      if (this.isOnlyEthereumAccountFlow) this.$router.push({ name: Components.Wallet });
+      if (this.isOnlyEthereumAccountFlow) this.$router.push({ name: Components.Wallet }).catch(() => {});
 
       return;
     }
@@ -608,9 +599,9 @@ export default class AddWallet extends Vue {
     }
 
     //raw seed & mnemonic validation
-    const {
-      substrate: { keypairType: substrateKeypairType },
-    } = this.derivationPaths;
+    // const {
+    //   substrate: { keypairType: substrateKeypairType },
+    // } = this.derivationPaths;
 
     // const { address } = await createAccountSuri(this.suriSubstrate, substrateKeypairType);
 

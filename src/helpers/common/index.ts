@@ -1,7 +1,7 @@
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { addNumbers } from '@/helpers/numbers';
 import { ALL_NETWORKS, NETWORK_GROUP } from '@/consts/networks';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { AssetsPrice, ChangeWalletBalance, NetworkName } from '@/interfaces';
 
 export function isNetworkGroup(network: string) {
@@ -31,7 +31,7 @@ export function getSummaryTransferableWalletBalance(
 }
 
 export function getTransferableBalanceInNetwork(token: TokenBalance, network: string) {
-  return token.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
+  return token.balances?.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
 }
 
 export function getSummaryTransferableBalance(token: TokenBalance, network = ALL_NETWORKS) {
@@ -45,7 +45,7 @@ export function getSummaryTransferableBalance(token: TokenBalance, network = ALL
 }
 
 export function getSummaryLockedBalance(token: TokenBalance) {
-  return token.balances.reduce((result, { state, locked }) => {
+  return token.balances?.reduce((result, { state, locked }) => {
     if (state === APIItemState.READY && locked) result += +locked;
 
     return result;

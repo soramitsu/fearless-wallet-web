@@ -6,6 +6,8 @@ const ETHEREUM_NETWORKS = [
   ...SUBSTRATE_ETHEREUM_NETWORKS,
   'ethereum',
   'ethereum goerli',
+  'polygon mainnet',
+  'polygon mumbai',
   'binance smart chain',
   'binance smart chain testnet',
 ];
@@ -43,10 +45,22 @@ const MAIN_NETWORKS: Record<string, string> = {
   dot: 'Polkadot',
   ksm: 'Kusama',
   ethereum: 'Ethereum',
-  ethereum_goerli: 'Ethereum_goerli',
+  'ethereum goerli': 'Ethereum Goerli',
   wnd: 'Westend',
   roc: 'Rococo',
 };
+
+const EVM_EXPLORERS_BASE_URLS: Record<string, string> = {
+  ethereum: 'etherscan.io',
+  'ethereum goerli': 'goerli.etherscan.io',
+  'binance smart chain': 'bscscan.com',
+  'binance smart chain testnet': 'testnet.bscscan.com',
+} as const;
+
+const EXPLORERS_BASE_URLS: Record<string, string> = {
+  'polkadot assethub': 'assethub-polkadot',
+  'kusama assethub': 'assethub-kusama',
+} as const;
 
 const ETHEREUM_ADDRESS_LENGTH = 42;
 const ETHEREUM_ADDRESS_PREFIX = '0x';
@@ -83,4 +97,6 @@ export {
   CHAIN_IDS,
   NETWORKS_ALIASES,
   SUBSTRATE_ETHEREUM_NETWORKS,
+  EXPLORERS_BASE_URLS,
+  EVM_EXPLORERS_BASE_URLS,
 };

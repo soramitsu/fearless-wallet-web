@@ -12,7 +12,7 @@ import { APP_HEIGHT } from '@/consts/global';
 
 type BackgroundType = 'black' | 'light-black';
 
-@Component
+@Component({})
 export default class ContentForm extends Vue {
   @Prop(Number) height!: number;
   @Prop({ default: false }) isStaticHeight!: boolean;

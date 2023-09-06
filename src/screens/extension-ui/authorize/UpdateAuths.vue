@@ -2,14 +2,14 @@
   <div class="update-accounts">
     <SelectAuthAccount :selectAll="selectAll" :accounts="state" @onSelectAll="onSelectAll" @onSelect="onSelect" />
 
-    <Button class="connect-button" width="100%" size="big" fontSize="big" :text="buttonText" @click="updateAuths" />
+    <FButton class="connect-button" width="100%" size="big" fontSize="big" :text="buttonText" @click="updateAuths" />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { AuthUrlInfo } from '@/extension/background/extension-base/src/background/types/types';
+import { AuthUrlInfo } from '@extension-base/background/types/types';
 import { updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';

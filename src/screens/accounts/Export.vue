@@ -16,7 +16,7 @@
         :readonly="noEthereumAccount"
       />
 
-      <Button
+      <FButton
         class="want-export"
         size="big"
         fontSize="big"
@@ -35,7 +35,6 @@ import { Getter } from 'vuex-class';
 import type { SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { validatePassword } from '@/extension/messaging';
 
 @Component
@@ -50,7 +49,7 @@ export default class Export extends Vue {
   }
 
   get noEthereumAccount() {
-    return this.selectedWallet.ethereumAddress === '' && ETHEREUM_NETWORKS.includes(this.network);
+    return this.selectedWallet.ethereumAddress === '' && BaseApi.isEthereumNetwork(this.network);
   }
 
   get warningText() {

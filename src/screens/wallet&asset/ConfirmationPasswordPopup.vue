@@ -24,7 +24,7 @@
           <Checkbox v-model="isSavePass" size="medium" :label="$t(min15Label)" />
         </div>
 
-        <Button
+        <FButton
           text="common.continue"
           width="100%"
           size="medium"
@@ -62,9 +62,18 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch, Ref } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { NetworkJson } from '@extension-base/types';
+import {
+  AccountJson,
+  RequestCheckTransfer,
+  RequestCheckCrossChain,
+  RequestTransfer,
+  RequestCrossChain,
+  TokenBalance,
+  RequestStaking,
+} from '@extension-base/background/types/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
-import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
+import type { GetNetwork, GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
 import {
   isSignLocked,
@@ -80,15 +89,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import {
-  AccountJson,
-  RequestCheckTransfer,
-  RequestCheckCrossChain,
-  RequestTransfer,
-  RequestCrossChain,
-  RequestStaking,
-  TokenBalance,
-} from '@/extension/background/extension-base/src/background/types/types';
 import { IS_EXTENSION } from '@/consts/global';
 
 @Component({
@@ -124,6 +124,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get classesInput() {
     return [
@@ -224,7 +225,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transferAmountString() {
-    return `-${this.amount} ${this.currency?.symbol.toUpperCase()}`;
+    return `-${this.$n(+this.amount, 'decimal')} ${this.currency?.symbol.toUpperCase()}`;
   }
 
   get transferValueString() {
@@ -421,7 +422,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     padding: 12px;
 
     .s-icon-arrows-arrow-right-24 {
-      color: rgba(255, 255, 255, 0.3);
+      color: $gray-2-color;
       font-size: 30px !important;
       margin: 0 10px;
     }

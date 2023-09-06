@@ -7,8 +7,9 @@ import { Subscription } from 'rxjs';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 import MetadataStore from '@extension-base/stores/Metadata';
-import { NetworkJson } from '@extension-base/types';
 import { JsonRpcProvider } from 'ethers';
+import { UserType } from '../../services/onboarding-service/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type { SubmittableExtrinsicFunction } from '@polkadot/api/promise/types';
@@ -30,6 +31,7 @@ import type {
   ChangeWalletBalance,
   NetworkName,
   AssetName,
+  BuyProvider,
 } from '@/interfaces';
 
 export interface PrepareExternalRequest {
@@ -56,6 +58,7 @@ type NullKeys<T> = { [K in keyof T]: IsNull<T, K> }[keyof T];
 
 export type SeedLengths = 12 | 24;
 export type Port = chrome.runtime.Port;
+
 export interface AccountJson extends KeyringPair$Meta {
   address: string;
   ethereumAddress: string;
@@ -250,7 +253,6 @@ export interface BalanceJson {
 }
 
 export enum TransferErrorCode {
-  NOT_ENOUGH_VALUE = 'notEnoughValue',
   NOT_ENOUGH_FEE = 'notEnoughValue',
   INVALID_VALUE = 'invalidValue',
   INVALID_TOKEN = 'invalidToken',
@@ -822,7 +824,7 @@ export interface MobileSignRequest extends Resolver<ResponseSigning> {
   request: SignerPayloadRaw;
 }
 
-const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
+export const NOTIFICATION_URL = chrome.runtime.getURL('popup.html#/');
 
 export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
   focused: true,
@@ -870,6 +872,12 @@ export interface IState {
   connectedTabsUrl: string[];
   transaction: Record<string, TransactionHistoryItem[]>;
   addressBook: AddressBook;
+  userType: UserType;
+  onboarding: {
+    user: UserType;
+    isRequired: boolean;
+    seen: boolean;
+  };
 }
 
 export interface GoogleFileId {
@@ -970,7 +978,7 @@ export interface TokenBalance {
   precision: number;
   relayChain: RelayChainName;
   icon: string;
-  providers: string[];
+  providers: BuyProvider[];
   balances: BalanceItem[];
   color?: string;
 }

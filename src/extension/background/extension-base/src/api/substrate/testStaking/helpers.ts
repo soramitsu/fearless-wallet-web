@@ -1,6 +1,4 @@
 import { Option, u32 } from '@polkadot/types';
-import { FPNumber } from '@sora-substrate/math';
-import type { CodecString } from '@sora-substrate/math';
 import type { Exposure } from '@polkadot/types/interfaces/staking';
 import type {
   ValidatorExposure,
@@ -16,13 +14,11 @@ const formatEra = (data: Option<u32>): number => {
   return era.toNumber();
 };
 
-const toCodecString = (value: any): CodecString => new FPNumber(value).toCodecString();
-
 const formatValidatorExposure = (codec: Exposure): ValidatorExposure => {
   return {
-    total: toCodecString(codec.total),
-    own: toCodecString(codec.own),
-    others: codec.others.map((item) => ({ who: item.who.toString(), value: toCodecString(item.value) })),
+    total: codec.total.toString(),
+    own: codec.own.toString(),
+    others: codec.others.map((item) => ({ who: item.who.toString(), value: item.value.toString() })),
   };
 };
 
@@ -47,4 +43,4 @@ const formatIndividualRewardPoints = (data: PalletStakingEraRewardPoints): Rewar
   return result;
 };
 
-export { formatEra, toCodecString, formatValidatorExposure, formatNominations, formatIndividualRewardPoints };
+export { formatEra, formatValidatorExposure, formatNominations, formatIndividualRewardPoints };

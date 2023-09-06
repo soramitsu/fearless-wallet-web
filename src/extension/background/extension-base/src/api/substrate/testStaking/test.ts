@@ -3,7 +3,7 @@ import { CodecString, FPNumber } from '@sora-substrate/math';
 import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
 import { api as apiSora } from '@sora-substrate/util';
-import { formatEra, toCodecString, formatValidatorExposure, formatIndividualRewardPoints } from './helpers';
+import { formatEra, formatValidatorExposure, formatIndividualRewardPoints } from './helpers';
 import type {
   ElectedValidator,
   NominatorReward,
@@ -56,7 +56,7 @@ async function getEraRewardPoints(eraIndex: number, api: ApiPromise): Promise<Re
 async function getEraTotalStake(eraIndex: number, api: ApiPromise): Promise<CodecString> {
   const erasTotalStake = await api.query.staking.erasTotalStake(eraIndex);
 
-  return toCodecString(erasTotalStake);
+  return erasTotalStake.toString();
 }
 
 async function getCurrentEra(api: ApiPromise): Promise<number> {
@@ -131,8 +131,8 @@ async function calculatingStakeReturn(
   // console.info(' ');
 
   return {
-    stakeReturnReward: stakeReturnReward.toString(),
-    stakeReturn: stakeReturn.toString(),
+    stakeReturnReward: stakeReturnReward.toCodecString(),
+    stakeReturn: stakeReturn.toCodecString(),
     apy: apy.toFixed(2),
   };
 }
@@ -261,7 +261,7 @@ export async function getValidatorsInfo(api: ApiPromise): Promise<ValidatorInfoF
     return isKnownGood1 ? -1 : 1;
   });
 
-  console.info('sortedValidators', sortedValidators);
+  console.info('sortedValidatorssss', sortedValidators);
 
   return sortedValidators;
 }

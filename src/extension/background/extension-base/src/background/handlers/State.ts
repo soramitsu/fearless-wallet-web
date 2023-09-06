@@ -80,6 +80,8 @@ import {
   SORA_XOR_ASSET_ID,
 } from '@/consts/networks';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
+import { isSora } from '@/helpers';
+import { ONLY_SORA } from '@/consts/global';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -1141,7 +1143,7 @@ export default class State {
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
-    this.networksJson = networks.filter((el) => !el.disabled);
+    this.networksJson = networks.filter((el) => (ONLY_SORA ? isSora(el.name) : !el.disabled));
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
     const networksFromStorage = await new Promise<Record<string, NetworkJson>>((res) => {

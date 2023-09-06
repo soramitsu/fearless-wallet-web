@@ -11,7 +11,7 @@ import type {
   ValidatorInfo,
   ValidatorInfoFull,
   RewardPointsIndividual,
-  PalletIdentityRegistration,
+  Identity,
 } from './types';
 
 const countErasInDaily = 4;
@@ -39,8 +39,12 @@ async function getAverageRewards(api: ApiPromise, eraIndex?: number): Promise<FP
   return averageRewards;
 }
 
-async function getIdentity(address: string, api: ApiPromise): Promise<PalletIdentityRegistration> {
-  return (await api.query.identity.identityOf(address)).unwrap();
+async function getIdentity(address: string, api: ApiPromise): Promise<Identity | null> {
+  const identity = await api.query.identity.identityOf(address);
+
+  if (identity.isNone) return null;
+
+  return identity.toHuman() as unknown as Identity;
 }
 
 async function getEraRewardPoints(eraIndex: number, api: ApiPromise): Promise<RewardPointsIndividual> {
@@ -124,7 +128,7 @@ async function calculatingStakeReturn(
   // console.info('stakeReturn', stakeReturn.toString());
   // console.info('nominatorShare', nominatorShare.toString());
   // console.info('apy', apy.toString());
-  // console.log(' ');
+  // console.info(' ');
 
   return {
     stakeReturnReward: stakeReturnReward.toString(),
@@ -134,9 +138,7 @@ async function calculatingStakeReturn(
 }
 
 export async function getNominatorsReward(api: ApiPromise, address: string): Promise<NominatorReward | null> {
-  if (!api?.query?.staking) {
-    return null;
-  }
+  if (!api?.query?.staking) return null;
 
   const currentEra = await getCurrentEra(api);
   const eraTotalStake = await getEraTotalStake(currentEra, api);
@@ -173,8 +175,8 @@ export async function getNominatorsReward(api: ApiPromise, address: string): Pro
   };
 }
 
-export async function getValidatorsInfo(api: ApiPromise) {
-  if (!api?.query?.staking) return;
+export async function getValidatorsInfo(api: ApiPromise): Promise<ValidatorInfoFull[]> {
+  if (!api?.query?.staking) return [];
 
   const currentEra = await getCurrentEra(api);
   const electedValidators = await getElectedValidators(currentEra, api);
@@ -198,7 +200,7 @@ export async function getValidatorsInfo(api: ApiPromise) {
     const rewardPoints = eraRewardPoints[address];
 
     const identity = await getIdentity(address, api);
-    const { apy, stakeReturn } = await calculatingStakeReturn(
+    const { apy, stakeReturn, stakeReturnReward } = await calculatingStakeReturn(
       total,
       rewardToStakeRatio,
       eraTotalStake,
@@ -211,10 +213,25 @@ export async function getValidatorsInfo(api: ApiPromise) {
       rewardPoints,
       commission: commission ?? '',
       nominators: electedValidator?.others ?? [],
-      identity,
+      identity:
+        identity !== null
+          ? {
+              ...identity,
+              info: Object.fromEntries(
+                Object.entries(identity.info).map(([key, value]) => {
+                  if (value === 'None') return [key, ''];
+
+                  if (!Array.isArray(value) && value?.Raw !== undefined) return [key, value?.Raw];
+
+                  return [key, value];
+                })
+              ),
+            }
+          : null,
       apy,
       stake: {
         stakeReturn,
+        stakeReturnReward,
         total,
         own: electedValidator?.own ?? '0',
       },
@@ -227,20 +244,24 @@ export async function getValidatorsInfo(api: ApiPromise) {
     const { apy: apy1, commission: commission1, identity: identity1 } = validator1;
     const { apy: apy2, commission: commission2 } = validator2;
 
-    const subtractionApy = new FPNumber(apy2).div(new FPNumber(apy1));
+    const subtractionApy = new FPNumber(apy2).sub(new FPNumber(apy1));
 
     if (!subtractionApy.isZero()) return subtractionApy.toNumber();
 
-    const subtractionCommission = new FPNumber(commission1).div(new FPNumber(commission2));
+    const subtractionCommission = new FPNumber(commission1).sub(new FPNumber(commission2));
 
     if (!subtractionCommission.isZero()) return subtractionCommission.toNumber();
 
+    if (identity1 === null) return 1;
+
     const { judgements: judgements1 } = identity1;
-    const knownGoodValue1 = judgements1.find(([, { type }]) => type === 'KnownGood');
-    const isKnownGood1 = knownGoodValue1?.[1]?.isKnownGood ?? false;
+    const knownGoodValue1 = judgements1.find(([, type]) => type === 'KnownGood');
+    const isKnownGood1 = knownGoodValue1?.[0] === 1;
 
     return isKnownGood1 ? -1 : 1;
   });
+
+  console.info('sortedValidators', sortedValidators);
 
   return sortedValidators;
 }

@@ -1,7 +1,5 @@
-import type { Vec, Struct, u32, bool, BTreeMap, u128, Enum, Option, U8aFixed } from '@polkadot/types-codec';
+import type { Vec, Struct, u32, bool, BTreeMap } from '@polkadot/types-codec';
 import type { AccountId32 } from '@polkadot/types/interfaces/runtime';
-import type { ITuple } from '@polkadot/types-codec/types';
-import type { Data } from '@polkadot/types';
 
 export enum StakingRewardsDestination {
   /** not used in sora */
@@ -18,10 +16,36 @@ export interface ValidatorInfo {
   blocked?: boolean;
 }
 
+type JudgementsType = 'Unknown' | 'FeePaid' | 'Reasonable' | 'KnownGood' | 'OutOfDate' | 'LowQuality' | 'Erroneous';
+
+type InfoItem =
+  | 'None'
+  | {
+      Raw: string;
+    };
+
+export type Info = {
+  legal: InfoItem;
+  web: InfoItem;
+  riot: InfoItem;
+  additional: [];
+  pgpFingerprint: null;
+  image: InfoItem;
+  display: InfoItem;
+  email: InfoItem;
+  twitter: InfoItem;
+};
+
+export interface Identity {
+  deposit: string;
+  judgements: [1 | 0, JudgementsType][];
+  info: Info;
+}
+
 export interface ValidatorInfoFull extends ValidatorInfo {
   rewardPoints: number;
   nominators: Others;
-  identity: PalletIdentityRegistration;
+  identity: Identity | null;
   apy: string;
   stake: Omit<ValidatorExposure, 'others'>;
 }
@@ -98,33 +122,3 @@ export type NominatorReward = {
   rewardPerDay: string;
   rewardPerYear: string;
 };
-
-export interface PalletIdentityRegistration extends Struct {
-  readonly judgements: Vec<ITuple<[u32, PalletIdentityJudgement]>>;
-  readonly deposit: u128;
-  readonly info: PalletIdentityIdentityInfo;
-}
-
-export interface PalletIdentityJudgement extends Enum {
-  readonly isUnknown: boolean;
-  readonly isFeePaid: boolean;
-  readonly asFeePaid: u128;
-  readonly isReasonable: boolean;
-  readonly isKnownGood: boolean;
-  readonly isOutOfDate: boolean;
-  readonly isLowQuality: boolean;
-  readonly isErroneous: boolean;
-  readonly type: 'Unknown' | 'FeePaid' | 'Reasonable' | 'KnownGood' | 'OutOfDate' | 'LowQuality' | 'Erroneous';
-}
-
-interface PalletIdentityIdentityInfo extends Struct {
-  readonly additional: Vec<ITuple<[Data, Data]>>;
-  readonly display: Data;
-  readonly legal: Data;
-  readonly web: Data;
-  readonly riot: Data;
-  readonly email: Data;
-  readonly pgpFingerprint: Option<U8aFixed>;
-  readonly image: Data;
-  readonly twitter: Data;
-}

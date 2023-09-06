@@ -27,9 +27,9 @@ async function subscribeTokensBalance(
   const relayChain = CHAIN_IDS[parentId!] ?? (networkName as RelayChainName);
 
   if (isSora(networkName)) {
-    // getNominatorsReward(api, 'cnRuNZdDB156ohr7DrVDq5Dkn6QUBWLm4sxqhXunRc1jJKnua');
+    getValidatorsInfo(api);
 
-    console.log('ValidatorsInfo', await getValidatorsInfo(api));
+    // getNominatorsReward(api, 'cnRuNZdDB156ohr7DrVDq5Dkn6QUBWLm4sxqhXunRc1jJKnua');
   }
 
   if (networkName === 'Equilibrium') {

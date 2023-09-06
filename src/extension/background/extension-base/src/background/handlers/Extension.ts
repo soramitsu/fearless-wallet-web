@@ -100,6 +100,7 @@ import type {
   ResponseType,
   SigningRequest,
 } from '@extension-base/background/types/types';
+
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   Asset,
@@ -1105,7 +1106,6 @@ export default class Extension extends FWExtensionBase {
     const networkKey = this.state.getNetworkByKey(givenNetwork)?.name ?? '';
 
     const txState: BasicTxResponse = {};
-
     const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
 
     if (errors.length) {
@@ -1130,7 +1130,7 @@ export default class Extension extends FWExtensionBase {
 
     const ethereumAddress = fromKeyPair ? (fromKeyPair.meta.ethereumAddress as string | undefined) : '';
     const isEthereum = isEthereumAddress(from);
-    const address = getSubstrateAddress(from);
+    const address = isEthereum ? getSubstrateAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet to save pass
     const remainTime = fromKeyPair ? this.getRemainingTime(fromKeyPair) : 0;
 
     const savePass = () => {

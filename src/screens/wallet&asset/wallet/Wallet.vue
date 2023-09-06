@@ -146,7 +146,6 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
-  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
@@ -160,8 +159,7 @@ export default class Wallet extends Vue {
   get contentFormHeight() {
     const subtractionNumber = this.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
 
-    // IMPORTANT: if <Menu /> showed use 397
-    return 457 - subtractionNumber;
+    return 452 - subtractionNumber;
   }
 
   get showNetworkUnavailablePopup() {
@@ -226,7 +224,7 @@ export default class Wallet extends Vue {
 
     const isPendingExists = this.networks.some(({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING);
 
-    return !this.isOnline || isPendingExists;
+    return !navigator.onLine || isPendingExists;
   }
   get filteredCurrencies() {
     const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;

@@ -1,6 +1,5 @@
 <template>
   <div class="layout">
-    <!-- IMPORTANT: if <Menu /> showed use 453 -->
     <ContentForm :height="513">
       <div class="accounts-layout">
         <div class="navigation">

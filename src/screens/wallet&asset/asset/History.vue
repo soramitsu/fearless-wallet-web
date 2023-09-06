@@ -1,6 +1,5 @@
 <template>
-  <!-- IMPORTANT: if <Menu /> showed use 306 -->
-  <ContentForm :height="273">
+  <ContentForm :height="284">
     <div class="history">
       <div class="history-settings">
         <div class="history-label">{{ $t('assets.history') }}:</div>

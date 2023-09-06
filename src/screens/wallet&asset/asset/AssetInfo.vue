@@ -76,7 +76,6 @@ export default class AssetInfo extends Vue {
   @Prop(Object) currency!: TokenBalance;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
-  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get selectedAssetNetwork() {
@@ -92,7 +91,7 @@ export default class AssetInfo extends Vue {
   }
 
   get showShimmers() {
-    return !this.isOnline || !this.balances.length || this.currentNetwork?.state === 'pending';
+    return !navigator.onLine || !this.balances.length || this.currentNetwork?.state === 'pending';
   }
 
   get icon() {

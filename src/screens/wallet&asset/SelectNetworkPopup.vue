@@ -36,7 +36,7 @@ interface Options {
 }
 
 @Component
-export default class SelectNetworkButton extends Vue {
+export default class SelectNetworkPopup extends Vue {
   filterValue = '';
 
   @Prop(String) selectedNetwork!: string;

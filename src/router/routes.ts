@@ -17,14 +17,15 @@ const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue')
 const AuthManagment = () => import('@/screens/extension-ui/AuthManagment.vue');
 const ManageAuths = () => import('@/screens/extension-ui/ManageAuths.vue');
 const UpdateAuths = () => import('@/screens/extension-ui/authorize/UpdateAuths.vue');
-const WalletConnectAuthDetails = () => import('@/screens/walletConnect/WalletConnectAuthDetails.vue');
 
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 const Export = () => import('@/screens/accounts/Export.vue');
-const WalletConnectInit = () => import('@/screens/walletConnect/WalletConnectInit.vue');
-const WalletConnectAuth = () => import('@/screens/walletConnect/WalletConnectAuth.vue');
-const WalletConnectSignRequest = () => import('@/screens/walletConnect/WalletConnectSignRequest.vue');
+const WalletConnectAuthDetails = () => import('@/screens/walletConnect/WalletConnectAuthDetails.vue');
+const WalletConnectInitAuth = () => import('@/screens/walletConnect/WalletConnectInitAuth.vue');
+const WalletConnectAuthConfirmation = () => import('@/screens/walletConnect/WalletConnectAuthConfirmation.vue');
+const WalletConnectSignConfirmation = () => import('@/screens/walletConnect/WalletConnectSignConfirmation.vue');
+const WalletConnectNotSupportedRequest = () => import('@/screens/walletConnect/WalletConnectNotSupportedRequest.vue');
 const Onboarding = () => import('@/screens/onboarding/Onboarding.vue');
 
 const AssetNetworks = () =>
@@ -67,12 +68,13 @@ export enum Components {
   NoFound = 'NoFound',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
-  WalletConnectInit = 'WalletConnectInit',
-  WalletConnectSessionAuth = 'WalletConnectSessionAuth',
+  WalletConnectInitAuth = 'WalletConnectInitAuth',
+  WalletConnectAuthConfirmation = 'WalletConnectAuthConfirmation',
   WalletConnectAuthDetails = 'WalletConnectAuthDetails',
   WalletConnectSessionDetails = 'WalletConnectSessionDetails',
   WalletConnectSessionRequest = 'WalletConnectSessionRequest',
-  WalletConnectSignRequest = 'WalletConnectSignRequest',
+  WalletConnectSignConfirmation = 'WalletConnectSignConfirmation',
+  WalletConnectNotSupportedRequest = 'WalletConnectNotSupportedRequest',
   Onboarding = 'Onboarding',
 }
 
@@ -133,8 +135,13 @@ const routes: Array<RouteConfig> = [
   },
   {
     path: '/wc-transaction',
-    name: Components.WalletConnectSignRequest,
-    component: WalletConnectSignRequest,
+    name: Components.WalletConnectSignConfirmation,
+    component: WalletConnectSignConfirmation,
+  },
+  {
+    path: '/wc-not-supported',
+    name: Components.WalletConnectNotSupportedRequest,
+    component: WalletConnectNotSupportedRequest,
   },
   {
     path: '/auth-management',
@@ -198,18 +205,18 @@ const routes: Array<RouteConfig> = [
       },
       {
         path: 'wallet-connect',
-        name: Components.WalletConnectInit,
-        component: WalletConnectInit,
+        name: Components.WalletConnectInitAuth,
+        component: WalletConnectInitAuth,
       },
       {
         path: 'wc-authorize',
-        name: Components.WalletConnectSessionAuth,
-        component: WalletConnectAuth,
+        name: Components.WalletConnectAuthConfirmation,
+        component: WalletConnectAuthConfirmation,
       },
       {
         path: 'wc-sign',
         name: Components.WalletConnectSessionRequest,
-        component: WalletConnectInit,
+        component: WalletConnectInitAuth,
       },
       {
         path: 'accounts',

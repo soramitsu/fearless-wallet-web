@@ -2,6 +2,7 @@ import axios from 'axios';
 import type {
   RequestApproveConnectWalletSession,
   RequestRejectConnectWalletSession,
+  WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
   WalletConnectSessions,
   WalletConnectTransactionRequest,
@@ -33,6 +34,7 @@ import {
   walletConnectSessionsSubscribe,
   walletConnectRequestSubscribe,
   subscribeWalletConnectRequest,
+  subscribeWalletNotSupportedConnectRequest,
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
@@ -57,10 +59,12 @@ export enum ActionTypes {
   REJECT_META_REQUEST = 'REJECT_META_REQUEST',
 
   SUBSCRIBE_WC_CONNECT_REQUESTS = 'SUBSCRIBE_WC_CONNECT_REQUESTS',
+  SUBSCRIBE_WC_CONNECT_NO_SUPPORTED_REQUESTS = 'SUBSCRIBE_WC_CONNECT_NO_SUPPORTED_REQUESTS',
   SUBSCRIBE_WC_REQUESTS = 'SUBSCRIBE_WC_REQUESTS',
   SUBSCRIBE_WC_SESSIONS = 'SUBSCRIBE_WC_SESSIONS',
   APPROVE_WC_REQUEST = 'APPROVE_WC_REQUEST',
   REJECT_WC_REQUEST = 'REJECT_WC_REQUEST',
+  REJECT_WC_NOT_SUPPORTED_REQUEST = 'REJECT_WC_NOT_SUPPORTED_REQUEST',
 
   SUBSCRIBE_EXTENSION_REQUESTS = 'SUBSCRIBE_EXTENSION_REQUESTS',
   FETCH_TAB_STATUS = 'FETCH_TAB_STATUS',
@@ -274,10 +278,27 @@ const actions: ActionTree<State, State> & Actions = {
       commit(MutationTypes.SET_REQUEST, { type: 'wcConnectRequests', requests });
       console.info(requests, 'WC requests');
 
-      if (requests.length) router.push({ name: Components.WalletConnectSessionAuth });
+      if (requests.length) router.push({ name: Components.WalletConnectAuthConfirmation });
     };
 
     return walletConnectRequestSubscribe(callback);
+  },
+
+  async [ActionTypes.SUBSCRIBE_WC_CONNECT_NO_SUPPORTED_REQUESTS]({ commit }) {
+    const callback = (requests: WalletConnectNotSupportRequest[]) => {
+      commit(MutationTypes.SET_REQUEST, { type: 'wcConnectRequests', requests });
+      console.info(requests, 'WC not supported requests');
+
+      if (requests.length) router.push({ name: Components.WalletConnectNotSupportedRequest });
+    };
+
+    return subscribeWalletNotSupportedConnectRequest(callback);
+  },
+
+  async [ActionTypes.REJECT_WC_NOT_SUPPORTED_REQUEST]({ commit }, payload) {
+    await rejectWalletConnectSession(payload);
+
+    commit(MutationTypes.DELETE_REQUEST, 'wcConnectRequests');
   },
 
   async [ActionTypes.SUBSCRIBE_WC_REQUESTS]({ commit }) {
@@ -285,7 +306,7 @@ const actions: ActionTree<State, State> & Actions = {
       commit(MutationTypes.SET_REQUEST, { type: 'wcRequests', requests });
       console.info(requests, 'WC requests');
 
-      if (requests.length) router.push({ name: Components.WalletConnectSignRequest });
+      if (requests.length) router.push({ name: Components.WalletConnectSignConfirmation });
     };
 
     return subscribeWalletConnectRequest(callback);

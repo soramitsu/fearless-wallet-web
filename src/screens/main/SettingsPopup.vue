@@ -9,7 +9,7 @@
     horizontalPlacement="right"
   >
     <div class="settings">
-      <SettingMenuItem title="header.settings.wc" icon="wallet-connect" @onOpen="open('WalletConnectInit')" />
+      <SettingMenuItem title="header.settings.wc" icon="wallet-connect" @onOpen="open('WalletConnectInitAuth')" />
       <SettingMenuItem v-if="isExtension" title="common.manageDApp" icon="mechanic-tool" @onOpen="openManageAuths" />
       <SettingMenuItem title="header.settings.accounts" icon="account" @onOpen="open('Accounts')" />
 
@@ -41,7 +41,7 @@ import { SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
-type SettingsItemType = 'Accounts' | 'SoraCard' | 'PolkaswapDisclaimer' | 'WalletConnectInit';
+type SettingsItemType = 'Accounts' | 'SoraCard' | 'PolkaswapDisclaimer' | 'WalletConnectInitAuth';
 
 @Component({
   components: { SettingMenuItem },

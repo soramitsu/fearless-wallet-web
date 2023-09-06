@@ -17,6 +17,7 @@ export type State = {
   signRequests: SigningRequest[];
   metaRequests: MetadataRequest[];
   wcConnectRequests: WalletConnectSessionRequest[];
+  wcNotSupportedRequests: WalletConnectTransactionRequest[];
   wcRequests: WalletConnectTransactionRequest[];
   wcSessions: WalletConnectSessions;
   authList: Record<string, AuthUrlInfo>;
@@ -31,6 +32,7 @@ const state = (): State => {
     signRequests: [],
     metaRequests: [],
     wcConnectRequests: [],
+    wcNotSupportedRequests: [],
     wcRequests: [],
     wcSessions: [],
     authList: {},

@@ -8,6 +8,7 @@ import {
   RequestConnectWalletConnect,
   RequestRejectConnectWalletSession,
   RequestRejectWalletConnectNotSupport,
+  WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
   WalletConnectSessions,
   WalletConnectTransactionRequest,
@@ -596,6 +597,12 @@ export function rejectWalletConnectSession(request: RequestRejectConnectWalletSe
 
 export function disconnectWalletConnectConnection(topic: string): Promise<boolean> {
   return sendMessage('pri(walletConnect.session.disconnect)', { topic });
+}
+
+export function subscribeWalletNotSupportedConnectRequest(
+  cb: (data: WalletConnectNotSupportRequest[]) => void
+): Promise<WalletConnectNotSupportRequest[]> {
+  return sendMessage('pri(walletConnect.requests.notSupport.subscribe)', null, cb);
 }
 
 export function approveWalletConnectNotSupport(request: RequestApproveWalletConnectNotSupport): Promise<boolean> {

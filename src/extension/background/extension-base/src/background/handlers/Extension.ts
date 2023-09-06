@@ -1073,8 +1073,7 @@ export default class Extension extends FWExtensionBase {
 
       // Estimate with EVM API
       if (!isMainToken && tokenInfo.id) {
-        const prepContractAddress = `0x${tokenInfo.id}`;
-        const { fee: feeValue } = await getERC20TransactionObject(prepContractAddress, networkKey, from, to, txVal);
+        const { fee: feeValue } = await getERC20TransactionObject(tokenInfo.id, networkKey, from, to, txVal);
 
         fee = +ethers.formatEther(feeValue);
       } else {

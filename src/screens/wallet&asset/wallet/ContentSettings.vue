@@ -9,7 +9,7 @@
           :tooltipText="tooltipText"
           :target="target"
           :class="classes"
-          :text="label"
+          :label="label"
           :isActive="syncedActiveTabName === tabName"
           @click="openTab(tabName)"
         />
@@ -21,7 +21,7 @@
         class="hide-zero"
         target=".hide-zero"
         placementTooltip="right"
-        :text="toggleButtonText"
+        :label="toggleButtonText"
         @click="$emit('toggleCurrenciesVisible', allCurrenciesHidden)"
       />
     </div>

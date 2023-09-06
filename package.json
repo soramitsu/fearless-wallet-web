@@ -130,6 +130,7 @@
     "webpack-extension-manifest-plugin": "^0.8.0"
   },
   "gitHooks": {
+    "pre-commit": "lint-staged"
   },
   "resolutions": {
     "@polkadot/api": "^10.9.1",

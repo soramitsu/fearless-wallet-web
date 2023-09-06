@@ -1,81 +1,6 @@
 <template>
   <div class="asset">
-    <ContentForm :height="160" :isStaticHeight="true" :bottomRightCorner="true">
-      <div class="asset-info">
-        <div class="asset__icon">
-          <ExternalLogo :name="assetIcon" :width="82" :height="82" />
-        </div>
-
-        <div class="asset-info__content">
-          <div class="asset__price">
-            <div class="asset__price-item asset__price-item-change">
-              <span :class="changePriceClasses">{{ priceChangeString }}</span>
-              <span :class="changePriceClasses">{{ fiatPriceChangeString }}</span>
-            </div>
-            <span class="asset__price-item">{{ assetPriceString }}</span>
-          </div>
-          <div class="asset__balance">{{ countAssetsString }}</div>
-          <span class="asset__balance asset__balance--fiat">{{ transferableFiatBalanceInNetworkString }}</span>
-
-          <div class="asset__locked" @click="toggleBalanceDetailsPopup">
-            <div class="asset__locked-content">
-              <span class="asset__locked-title">{{ $t('assets.locked') }}</span>
-              <span>{{ lockedBalanceString }}</span>
-              <Icon icon="info" class="details-icon" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </ContentForm>
-
-    <div v-if="!isSelectedNetworkHistory" class="activity">
-      <BorderButton
-        v-for="(button, index) in basicButtons"
-        :class="button.class"
-        :text="button.text"
-        :iconName="button.icon"
-        @click="toggleVisible(button.formName)"
-        :key="index"
-      />
-
-      <BorderButton
-        v-if="showCrossChainButton"
-        class="activity-button"
-        text="assets.crossChain"
-        iconName="cross-chain"
-        @click="toggleVisible('showCrossChainForm')"
-      />
-
-      <BorderButton
-        v-if="showSwapButton"
-        class="activity-button"
-        text="assets.swap"
-        iconName="swap"
-        @click="openSoraSwap"
-      />
-
-      <BorderButton
-        v-if="showBuyButton && !isNeedPopupButton"
-        class="activity-button"
-        text="assets.buy"
-        iconName="plus-pink"
-        @click="toggleVisible('showBuyPopup')"
-      />
-
-      <BorderButton
-        v-if="isNeedPopupButton"
-        class="activity-button activity-button--settings"
-        iconName="three-dots-vertical"
-        @click="togglePopupButton"
-      />
-    </div>
-
-    <Networks
-      v-if="isSelectedNetworkHistory"
-      :currency="currentCurrency"
-      @openHistoryDetailsForm="openHistoryDetailsForm"
-      @selectNetworkHistory="selectNetworkHistory"
-    />
+    <AssetInfo :currency="currentCurrency" :price="assetPrice" />
 
     <router-view
       :currency="currentCurrency"
@@ -120,24 +45,6 @@
       :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
     />
 
-    <Blur v-if="showPopupButton" @click="togglePopupButton">
-      <div class="popup-button">
-        <BorderButton
-          class="activity-button activity-button--settings popup__button-width"
-          iconName="three-dots-vertical"
-          @click="togglePopupButton"
-        />
-
-        <BorderButton
-          v-if="showBuyButton"
-          class="activity-button"
-          text="assets.buy"
-          iconName="plus-pink"
-          @click="toggleVisible('showBuyPopup')"
-        />
-      </div>
-    </Blur>
-
     <NetworkManagement
       v-if="showSelectNetworkPopup"
       :type="selectedNetwork"
@@ -152,8 +59,8 @@ import { Getter } from 'vuex-class';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
-import type { GetAssetPrice, SelectedWallet, GetNetwork } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
+import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
@@ -168,7 +75,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NETWORK_GROUP } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common/index';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
-
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
 @Component({

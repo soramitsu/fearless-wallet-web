@@ -90,7 +90,7 @@ import MyStakeSettings from '@/screens/staking/myStake/MyStakeSettings.vue';
 import About from '@/screens/staking/myStake/About.vue';
 import Alerts from '@/screens/staking/myStake/Alerts.vue';
 import History from '@/screens/staking/myStake/History.vue';
-import StakingManagement from '@/screens/staking/myStake/stakingForms/StakingManagement.vue';
+import StakingManagement from '@/screens/staking/myStake/stakingForms/MainStakingForm.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { SORA_REWARD_ASSET } from '@/consts/sora';

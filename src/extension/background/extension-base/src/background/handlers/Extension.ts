@@ -1061,7 +1061,7 @@ export default class Extension extends FWExtensionBase {
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
     const address = getSubstrateAddress(from);
 
-    let fee = 0;
+    let fee = '0';
     let fromAccountFreeBalance = '0';
 
     const tokenBalance = this.state.balanceMap[address].find(
@@ -1324,10 +1324,23 @@ export default class Extension extends FWExtensionBase {
     port: Port,
     { from, originNet, amount, to, assetId }: RequestCheckStaking
   ): Promise<ResponseCheckStaking> {
+    id;
+    port;
+    from;
+    originNet;
+    amount;
+    to;
+    assetId;
+
     return { estimateFee: '0.1' };
   }
 
   private async makeStaking(id: string, port: Port, { from, originNet }: RequestStaking): Promise<void> {
+    id;
+    port;
+    from;
+    originNet;
+
     console.info(2);
   }
 

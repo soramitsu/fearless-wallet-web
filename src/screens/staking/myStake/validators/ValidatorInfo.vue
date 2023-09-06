@@ -1,7 +1,7 @@
 <template>
   <Scroll>
     <div class="validator-info">
-      <Input v-model="address" :placeholder="validatorName" size="big" :readonly="true" />
+      <FInput v-model="address" :placeholder="validatorName" size="big" :readonly="true" />
 
       <ContentForm :height="355" :isStaticHeight="true" :bottomRightCorner="true" class="about-staking">
         <div class="label">{{ $t('staking.staking') }}</div>

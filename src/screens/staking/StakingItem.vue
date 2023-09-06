@@ -25,7 +25,6 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { CustomEvent } from '@/interfaces';
 import type { NetworkJson } from '@extension-base/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
@@ -47,7 +46,7 @@ export default class StakingItem extends Vue {
     return { value: 28 };
   }
 
-  openStakingInfo(event: CustomEvent) {
+  openStakingInfo() {
     // this.$router.push({
     //   name: Components.Asset,
     //   params: {

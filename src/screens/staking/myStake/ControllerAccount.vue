@@ -4,18 +4,18 @@
       <div>
         <div class="controller-description row">{{ $t('staking.separateAccountController') }}</div>
 
-        <Input v-model="accountName" size="big" placeholder="staking.stashAccount" :readonly="true" />
+        <FInput v-model="accountName" size="big" placeholder="staking.stashAccount" :readonly="true" />
 
         <Hint text="staking.stashBond" iconName="notification" class="hint row" />
 
-        <Input v-model="controllerAccount" size="big" placeholder="staking.controllerAccount" />
+        <FInput v-model="controllerAccount" size="big" placeholder="staking.controllerAccount" />
 
         <Hint text="staking.controllerUnbond" iconName="notification" class="hint row" />
 
-        <Link text="staking.learnAboutControllers" class="about-controllers row" @click="openAboutControllers" />
+        <FLink text="staking.learnAboutControllers" class="about-controllers row" @click="openAboutControllers" />
       </div>
 
-      <Button
+      <FButton
         size="big"
         width="100%"
         text="common.confirm"

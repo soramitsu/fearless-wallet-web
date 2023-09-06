@@ -12,7 +12,7 @@
       <YourValidators v-else-if="step === 1" :validators="myValidators" @openValidatorInfo="openValidatorInfo" />
 
       <div v-else-if="step === 6">
-        <Input v-model="selectedAccountName" placeholder="accounts.account" size="big" :readonly="true" />
+        <FInput v-model="selectedAccountName" placeholder="accounts.account" size="big" :readonly="true" />
 
         <InfoRow
           text="staking.selectedValidators"
@@ -41,7 +41,7 @@
         @updateSelectedValidators="updateSelectedValidators"
       />
 
-      <Button
+      <FButton
         v-if="showConfirmButton"
         size="big"
         fontSize="big"

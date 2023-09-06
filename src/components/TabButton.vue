@@ -12,6 +12,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
+
 type Props = {
   label?: string;
   title?: string;
@@ -20,7 +21,9 @@ type Props = {
   tooltipText?: string;
   target?: string;
 };
+
 defineEmits(['click']);
+
 const props = withDefaults(defineProps<Props>(), {
   label: '',
   title: '',

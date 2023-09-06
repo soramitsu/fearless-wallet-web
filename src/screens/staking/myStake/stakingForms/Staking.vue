@@ -3,7 +3,7 @@
     <template v-if="step === 1">
       <Hint class="hint" iconName="notification" :text="text" />
 
-      <Input v-model="payoutAccount" placeholder="staking.payoutAccount" size="big" />
+      <FInput v-model="payoutAccount" placeholder="staking.payoutAccount" size="big" />
 
       <InfoRow
         text="staking.payout"
@@ -65,7 +65,7 @@
     </template>
 
     <template v-if="step === 1 || step === 6">
-      <Link text="staking.learnAboutRewards" class="about-rewards" @click="openAboutRewards" />
+      <FLink text="staking.learnAboutRewards" class="about-rewards" @click="openAboutRewards" />
 
       <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
     </template>

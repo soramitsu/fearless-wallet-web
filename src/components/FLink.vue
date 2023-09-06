@@ -8,7 +8,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component
-export default class Link extends Vue {
+export default class FLink extends Vue {
   @Prop({ default: 0 }) text!: number;
 }
 </script>

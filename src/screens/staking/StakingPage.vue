@@ -64,7 +64,7 @@ import WalletBalance from '@/screens/main/WalletBalance.vue';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import StakingSettings from '@/screens/staking/StakingSettings.vue';
 import StakingItem from '@/screens/staking/StakingItem.vue';
-import MyStakingItem from '@/screens/staking/myStake/MyStakingItem.vue';
+import MyStakingItem from '@/screens/staking/MyStakingItem.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({

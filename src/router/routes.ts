@@ -18,7 +18,8 @@ const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue')
 const Export = () => import('@/screens/accounts/Export.vue');
 const Onboarding = () => import('@/screens/onboarding/Onboarding.vue');
 
-const AssetNetworks = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetNetworks.vue');
+const AssetNetworks = () =>
+  import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetNetworks.vue');
 const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetHistory.vue');
 
 const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
@@ -31,7 +32,7 @@ const AddFromGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/scree
 const CreateGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/CreateGoogle.vue');
 
 const MyStake = () => import(/* webpackChunkName: "staking */ '@/screens/staking/myStake/MyStake.vue');
-const Staking = () => import(/* webpackChunkName: "staking */ '@/screens/staking/Staking.vue');
+const Staking = () => import(/* webpackChunkName: "staking */ '@/screens/staking/StakingPage.vue');
 
 export enum Components {
   Welcome = 'Welcome',

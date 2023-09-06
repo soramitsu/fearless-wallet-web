@@ -25,7 +25,7 @@
         </ContentForm>
 
         <div v-else-if="step === 2">
-          <Input v-model="selectedAccountName" placeholder="accounts.account" size="big" :readonly="true" />
+          <FInput v-model="selectedAccountName" placeholder="accounts.account" size="big" :readonly="true" />
 
           <SelectInput
             class="amount-input"
@@ -38,7 +38,7 @@
             :readonly="true"
           />
 
-          <Input v-model="destinationAccount" placeholder="staking.rewardsDestination" size="big" />
+          <FInput v-model="destinationAccount" placeholder="staking.rewardsDestination" size="big" />
         </div>
 
         <InfoRow
@@ -53,7 +53,7 @@
         <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
       </div>
 
-      <Button width="100%" size="big" fontSize="big" :text="btnText" @click="confirm" />
+      <FButton width="100%" size="big" fontSize="big" :text="btnText" @click="confirm" />
     </div>
 
     <WarningPopup v-if="showWarningPopup" :handlerAccept="handlerAccept" :handlerClose="closeWarningPopup" />
@@ -78,8 +78,6 @@ import type { GetAssetPrice, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import StakingForm from '@/screens/staking/myStake/stakingForms/StakingForm.vue';
-import RedeemForm from '@/screens/staking/myStake/stakingForms/RedeemForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
@@ -87,8 +85,6 @@ import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
 
 @Component({
   components: {
-    RedeemForm,
-    StakingForm,
     WarningPopup,
     ValidatorItem,
     ConfirmationPasswordPopup,

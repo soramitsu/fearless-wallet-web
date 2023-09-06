@@ -36,7 +36,7 @@
           {{ $t('staking.validatorsIdentity') }}
         </div>
 
-        <Button
+        <FButton
           width="100%"
           text="staking.suggested"
           :border="false"
@@ -53,7 +53,7 @@
 
         <div class="sub-label">{{ $t('staking.yourValidatorsDisclaimer') }}</div>
 
-        <Button
+        <FButton
           width="100%"
           text="staking.selectYourself"
           :border="false"

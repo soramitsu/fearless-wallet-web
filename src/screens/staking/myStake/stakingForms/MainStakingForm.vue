@@ -8,7 +8,7 @@
   >
     <div class="staking-management">
       <Scroll>
-        <Input
+        <FInput
           v-if="step === 1"
           v-model="selectedAccountName"
           placeholder="accounts.account"
@@ -30,7 +30,7 @@
           @setMax="setMax"
         />
 
-        <StakingForm
+        <Staking
           v-if="isStaking"
           :step="step"
           :stakingCurrency="stakingCurrency"
@@ -40,14 +40,14 @@
           @openValidatorList="openValidatorList"
         />
 
-        <UnbondForm v-else-if="isUnbond" :stakingCurrency="stakingCurrency" :fee="fee" />
+        <Unbond v-else-if="isUnbond" :stakingCurrency="stakingCurrency" :fee="fee" />
 
-        <RedeemForm v-else-if="isRedeeam" :stakingCurrency="stakingCurrency" :fee="fee" :rewards="rewards" />
+        <Redeem v-else-if="isRedeeam" :stakingCurrency="stakingCurrency" :fee="fee" :rewards="rewards" />
 
-        <RebondForm v-else-if="isRebond" :stakingCurrency="stakingCurrency" :fee="fee" :amount="amount" />
+        <Rebond v-else-if="isRebond" :stakingCurrency="stakingCurrency" :fee="fee" :amount="amount" />
       </Scroll>
 
-      <Button
+      <FButton
         v-if="showConfirmButton"
         width="100%"
         size="big"
@@ -77,10 +77,10 @@ import type { GetAssetPrice, SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import StakingForm from '@/screens/staking/myStake/stakingForms/StakingForm.vue';
-import RedeemForm from '@/screens/staking/myStake/stakingForms/RedeemForm.vue';
-import UnbondForm from '@/screens/staking/myStake/stakingForms/UnbondForm.vue';
-import RebondForm from '@/screens/staking/myStake/stakingForms/RebondForm.vue';
+import Staking from '@/screens/staking/myStake/stakingForms/Staking.vue';
+import Redeem from '@/screens/staking/myStake/stakingForms/Redeem.vue';
+import Unbond from '@/screens/staking/myStake/stakingForms/Unbond.vue';
+import Rebond from '@/screens/staking/myStake/stakingForms/Rebond.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { NetworkName } from '@/interfaces';
@@ -89,10 +89,10 @@ import { checkStaking } from '@/extension/messaging';
 
 @Component({
   components: {
-    RebondForm,
-    RedeemForm,
-    UnbondForm,
-    StakingForm,
+    Rebond,
+    Redeem,
+    Unbond,
+    Staking,
     ConfirmationPasswordPopup,
   },
 })

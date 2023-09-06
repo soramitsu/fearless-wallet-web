@@ -23,7 +23,7 @@ declare module '@vue/runtime-dom' {
     InfoRow: typeof import('@/components/InfoRow.vue')['InfoRow'];
     FInput: typeof import('@/components/FInput.vue')['Input'];
     Lazy: typeof import('@/components/Lazy.vue')['Lazy'];
-    Link: typeof import('@/components/Link.vue')['Link'];
+    Link: typeof import('@/components/FLink.vue')['Link'];
     Loader: typeof import('@/components/Loader.vue')['Loader'];
     Loading: typeof import('@/components/Loading.vue')['Loading'];
     Logo: typeof import('@/components/Logo.vue')['Logo'];

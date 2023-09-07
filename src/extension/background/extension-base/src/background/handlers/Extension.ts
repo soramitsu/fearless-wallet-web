@@ -1,13 +1,7 @@
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
-import {
-  keyExtractSuri,
-  mnemonicGenerate,
-  mnemonicValidate,
-  isEthereumAddress,
-  base64Decode,
-} from '@polkadot/util-crypto';
+import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
 import { keyring } from '@polkadot/ui-keyring';
 import {
@@ -37,7 +31,6 @@ import {
   getSubstrateAddress,
   isRequireSubstrateAPI,
 } from '@extension-base/background/utils/utils';
-
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import type {
@@ -67,26 +60,17 @@ import type {
   GoogleFileId,
   MessageTypes,
   MetadataRequest,
-  RequestAccountBatchExport,
-  RequestAccountCreateExternal,
   RequestAccountCreateSuri,
   RequestAccountExport,
   RequestAccountForget,
-  RequestAccountShow,
-  RequestAccountTie,
   RequestAccountName,
   RequestAccountValidate,
   RequestActiveTabsUrlUpdate,
   RequestAddressCreate,
   RequestAuthorizeApprove,
-  RequestBatchRestore,
-  RequestDeriveCreate,
-  RequestDeriveValidate,
   RequestJsonRestore,
   RequestMetadataApprove,
   RequestMetadataReject,
-  RequestSeedCreate,
-  RequestSeedValidate,
   RequestSigningApprovePassword,
   RequestSigningApproveSignature,
   RequestSigningCancel,
@@ -94,9 +78,6 @@ import type {
   RequestTypes,
   RequestUpdateAuthorizedAccounts,
   ResponseAuthorizeList,
-  ResponseDeriveValidate,
-  ResponseSeedCreate,
-  ResponseSeedValidate,
   ResponseType,
   SigningRequest,
   RequestStaking,
@@ -105,20 +86,14 @@ import type {
 } from '@extension-base/background/types/types';
 
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
-import type {
-  Asset,
-  RequestTransactionHistoryAdd,
-  NetworkJson,
-  TransactionHistoryItemType,
-} from '@extension-base/types';
+import type { Asset, NetworkJson } from '@extension-base/types';
 import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { MetadataDef } from '@polkadot/extension-inject/types';
+// import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+// import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
-
 import { googleManage } from '@/controllers/googleController';
 import {
   DerivationPath,
@@ -131,17 +106,10 @@ import {
   VerifyTokenResponse,
 } from '@/interfaces';
 import { IS_PRODUCTION } from '@/consts/global';
-const SEED_DEFAULT_LENGTH = 12;
-const SEED_LENGTHS = [12, 15, 18, 21, 24];
-const ETH_DERIVE_DEFAULT = "/m/44'/60'/0'/0/0";
 
-function getSuri(seed: string, type?: KeypairType): string {
-  return type === 'ethereum' ? `${seed}${ETH_DERIVE_DEFAULT}` : seed;
-}
-
-function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
-  return (value as SignerPayloadJSON).genesisHash !== undefined;
-}
+// function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
+//   return (value as SignerPayloadJSON).genesisHash !== undefined;
+// }
 
 async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
   const currentAccount = await state.currentAccount;
@@ -150,7 +118,7 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
     .filter((el) => !isEthereumAddress(el.json.address))
     .map(({ json: { address, meta }, type }): AccountJson => {
       const isDefault = address === currentAccount?.address;
-      const currentNetwork = state.selectedNetwork[address] ?? ALL_NETWORKS;
+      const currentNetwork = state.selectedNetworks[address] ?? ALL_NETWORKS;
 
       return {
         address,
@@ -176,8 +144,9 @@ export default class Extension extends FWExtensionBase {
   }
 
   public updateNetworkForNewWallet(address: string) {
-    const selectedNetwork = this.state.selectedNetwork[address] ?? ALL_NETWORKS;
-    this.state.setActiveNetworks(selectedNetwork);
+    const selectedNetworks = this.state.selectedNetworks[address] ?? ALL_NETWORKS;
+
+    this.state.setActiveNetworks(selectedNetworks);
   }
 
   accountsCreateSuri({ password, suri, type, meta }: RequestAccountCreateSuri): string {
@@ -187,7 +156,7 @@ export default class Extension extends FWExtensionBase {
 
     if (!isEthereumAddress(address)) {
       this.updateNetworkForNewWallet(address);
-      this.updateCurrentAccountAddress(address);
+      this.updateCurrentAccount(address);
     }
 
     return address;
@@ -247,7 +216,7 @@ export default class Extension extends FWExtensionBase {
         account = addresses[0];
       }
 
-      this.updateCurrentAccountAddress(account ? account.address : '');
+      this.updateCurrentAccount(account ? account.address : '');
     }
 
     return true;
@@ -428,14 +397,16 @@ export default class Extension extends FWExtensionBase {
 
   jsonRestore({ file, password }: RequestJsonRestore): Promise<string> {
     const isPasswordValidated = this.validatePassword(file, password);
-    const { address } = this.jsonGetAccountInfo(file);
 
     if (isPasswordValidated) {
       return new Promise((resolve, reject) => {
         try {
-          keyring.restoreAccount(file, password);
+          const { address } = keyring.restoreAccount(file, password);
+
           if (!isEthereumAddress(address)) this.updateNetworkForNewWallet(address);
-          this.updateCurrentAccountAddress(address);
+
+          this.updateCurrentAccount(address);
+
           resolve(address);
         } catch (error) {
           reject({ error: (error as Error).message });
@@ -462,15 +433,6 @@ export default class Extension extends FWExtensionBase {
 
       return false;
     }
-  }
-
-  seedCreate({ length = SEED_DEFAULT_LENGTH, seed: _seed, type }: RequestSeedCreate): ResponseSeedCreate {
-    const seed = _seed || mnemonicGenerate(length);
-
-    return {
-      address: keyring.createFromUri(getSuri(seed, type), {}, type).address,
-      seed,
-    };
   }
 
   private _saveCurrentAccountAddress(address: string, callback?: (account: CurrentAccountState) => void) {
@@ -506,7 +468,7 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  private updateCurrentAccountAddress(address: string): boolean {
+  private updateCurrentAccount(address: string): boolean {
     if (isEthereumAddress(address)) return false;
 
     this.state.generateDefaultBalance(address);
@@ -516,26 +478,6 @@ export default class Extension extends FWExtensionBase {
     });
 
     return true;
-  }
-
-  seedValidate({ suri, type }: RequestSeedValidate): ResponseSeedValidate {
-    const { phrase } = keyExtractSuri(suri);
-
-    if (isHex(phrase)) {
-      assert(isHex(phrase, 256), 'Hex seed needs to be 256-bits');
-    } else {
-      // sadly isHex detects as string, so we need a cast here
-      assert(
-        SEED_LENGTHS.includes(phrase.split(' ').length),
-        `Mnemonic needs to contain ${SEED_LENGTHS.join(', ')} words`
-      );
-      assert(mnemonicValidate(phrase), 'Not a valid mnemonic seed');
-    }
-
-    return {
-      address: keyring.createFromUri(getSuri(suri, type), {}, type).address,
-      suri,
-    };
   }
 
   signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): boolean {
@@ -567,19 +509,19 @@ export default class Extension extends FWExtensionBase {
       pair.decodePkcs8(password);
     }
 
-    const { payload } = request;
+    // const { payload } = request;
 
-    if (isJsonPayload(payload)) {
-      // Get the metadata for the genesisHash
-      const currentMetadata = this.state.knownMetadata.find(
-        (meta: MetadataDef) => meta.genesisHash === payload.genesisHash
-      );
+    // if (isJsonPayload(payload)) {
+    //   // Get the metadata for the genesisHash
+    //   const currentMetadata = this.state.knownMetadata.find(
+    //     (meta: MetadataDef) => meta.genesisHash === payload.genesisHash
+    //   );
 
-      // set the registry before calling the sign function
-      registry.setSignedExtensions(payload.signedExtensions, currentMetadata?.userExtensions);
+    //   // set the registry before calling the sign function
+    //   registry.setSignedExtensions(payload.signedExtensions, currentMetadata?.userExtensions);
 
-      if (currentMetadata) registry.register(currentMetadata?.types);
-    }
+    //   if (currentMetadata) registry.register(currentMetadata?.types);
+    // }
 
     const result = request.sign(registry, pair);
 
@@ -687,28 +629,6 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  derivationValidate({ parentAddress, parentPassword, suri }: RequestDeriveValidate): ResponseDeriveValidate {
-    const childPair = this.derive(parentAddress, suri, parentPassword, {});
-
-    return {
-      address: childPair.address,
-      suri,
-    };
-  }
-
-  derivationCreate({ genesisHash, name, parentAddress, parentPassword, password, suri }: RequestDeriveCreate): boolean {
-    const childPair = this.derive(parentAddress, suri, parentPassword, {
-      genesisHash,
-      name,
-      parentAddress,
-      suri,
-    });
-
-    keyring.addPair(childPair, password);
-
-    return true;
-  }
-
   async removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
     const list = await this.state.removeAuthorization(url);
 
@@ -725,14 +645,6 @@ export default class Extension extends FWExtensionBase {
 
   createAddress({ address, meta }: RequestAddressCreate) {
     keyring.saveAddress(address, meta, 'address');
-  }
-
-  removeAddress(address: string) {
-    keyring.forgetAddress(address);
-  }
-
-  getAddresses() {
-    return keyring.getAddresses();
   }
 
   initAuth({ type, wallet }: GoogleAuthTypes): void {
@@ -784,7 +696,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {
-    const cb = createSubscription<'pri(balance.get.subscription)'>(id, port);
+    const cb = createSubscription<'pri(balance.subscription)'>(id, port);
 
     const balanceSubscription = this.state.balanceSubject.subscribe({
       next: (rs) => {
@@ -801,42 +713,6 @@ export default class Extension extends FWExtensionBase {
     return this.getBalance(true);
   }
 
-  private subscribeHistory(id: string, port: Port): Record<string, TransactionHistoryItemType[]> {
-    const cb = createSubscription<'pri(transaction.history.get.subscription)'>(id, port);
-
-    const historySubscription = this.state.subscribeHistory().subscribe({
-      next: (rs) => {
-        cb(rs);
-      },
-    });
-
-    this.createUnsubscriptionHandle(id, historySubscription.unsubscribe);
-
-    port.onDisconnect.addListener((): void => {
-      this.cancelSubscription(id);
-    });
-
-    return this.state.getHistoryMap();
-  }
-
-  private updateTransactionHistory(
-    { address, item, networkKey }: RequestTransactionHistoryAdd,
-    id: string,
-    port: Port
-  ): boolean {
-    const cb = createSubscription<'pri(transaction.history.add)'>(id, port);
-
-    this.state.setHistory(address, networkKey, item, (items) => {
-      cb(items);
-    });
-
-    port.onDisconnect.addListener((): void => {
-      this.cancelSubscription(id);
-    });
-
-    return true;
-  }
-
   private updateCurrencySymbol(symbol: string) {
     this.state.setFiatSymbol(symbol);
     this.state.refreshPrice();
@@ -844,14 +720,12 @@ export default class Extension extends FWExtensionBase {
 
   private getPrice(): Promise<PriceJson> {
     return new Promise<PriceJson>((resolve) => {
-      this.state.getPrice((rs: PriceJson) => {
-        resolve(rs);
-      });
+      this.state.getPrice((rs: PriceJson) => resolve(rs));
     });
   }
 
   private subscribePrice(id: string, port: chrome.runtime.Port): Promise<PriceJson> {
-    const cb = createSubscription<'pri(price.get.subscription)'>(id, port);
+    const cb = createSubscription<'pri(price.subscription)'>(id, port);
 
     const priceSubscription = this.state.subscribePrice().subscribe({
       next: (rs) => {
@@ -1345,13 +1219,13 @@ export default class Extension extends FWExtensionBase {
   }
 
   private getNetworkMap(): Record<string, NetworkJson> {
-    return this.state.getNetworkMap;
+    return this.state.networkMap;
   }
 
   private createMobileWallet(wallet: RequestAddressCreate) {
     this.createAddress(wallet);
 
-    this.updateCurrentAccountAddress(wallet.address);
+    this.updateCurrentAccount(wallet.address);
   }
 
   private subscribeNetworkMap(id: string, port: Port): Record<string, NetworkJson> {
@@ -1402,6 +1276,9 @@ export default class Extension extends FWExtensionBase {
       case 'pri(app.port.ping)':
         return true;
 
+      case 'pri(soraCard.token)':
+        return this.soraCardTokenSubscribe(id, port);
+
       case 'pri(networkMap.upsert)':
         return this.upsertNetworkMap(request as NetworkJson);
 
@@ -1411,14 +1288,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(networkMap.getSubscription)':
         return this.subscribeNetworkMap(id, port);
 
-      case 'pri(networkMap.getNetworkMap)':
-        return this.getNetworkMap();
-
       case 'pri(authorize.approve)':
         return this.authorizeApprove(request as RequestAuthorizeApprove);
-
-      case 'pri(soraCard.token)':
-        return this.soraCardTokenSubscribe(id, port);
 
       case 'pri(authorize.list)':
         return this.getAuthList();
@@ -1438,20 +1309,14 @@ export default class Extension extends FWExtensionBase {
       case 'pri(authorize.requests)':
         return this.authorizeSubscribe(id, port);
 
-      case 'pri(accounts.create.mobile)':
-        return this.createMobileWallet(request as RequestAddressCreate);
-
-      case 'pri(addresses.remove)':
-        return this.removeAddress(request as string);
-
-      case 'pri(addresses.get)':
-        return this.getAddresses();
-
       case 'pri(authorize.update)':
         return this.authorizeUpdate(request as RequestUpdateAuthorizedAccounts);
 
-      case 'pri(accounts.create.external)':
-        return this.accountsCreateExternal(request as RequestAccountCreateExternal);
+      case 'pri(addresses.subscribe)':
+        return this.addressesSubscribe(id, port);
+
+      case 'pri(accounts.create.mobile)':
+        return this.createMobileWallet(request as RequestAddressCreate);
 
       case 'pri(accounts.validate.path)':
         return this.validateDerivationPath(request as DerivationPath);
@@ -1459,17 +1324,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.create.suri)':
         return this.accountsCreateSuri(request as RequestAccountCreateSuri);
 
-      case 'pri(price.update.currency)':
-        return this.updateCurrencySymbol(request as string);
-
-      case 'pri(price.get.price)':
-        return this.getPrice();
-
-      case 'pri(price.get.subscription)':
-        return this.subscribePrice(id, port);
-
       case 'pri(accounts.update.current)':
-        return this.updateCurrentAccountAddress(request as string);
+        return this.updateCurrentAccount(request as string);
 
       case 'pri(accounts.update.currentNetwork)':
         return this.enableNetworkType(request as string);
@@ -1480,41 +1336,57 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.export)':
         return this.accountsExport(request as RequestAccountExport);
 
-      case 'pri(accounts.batchExport)':
-        return this.accountsBatchExport(request as RequestAccountBatchExport);
-
       case 'pri(accounts.forget)':
         return this.accountsForget(request as RequestAccountForget);
-
-      case 'pri(accounts.show)':
-        return this.accountsShow(request as RequestAccountShow);
 
       case 'pri(accounts.subscribe)':
         return this.accountsSubscribe(id, port);
 
-      case 'pri(addresses.subscribe)':
-        return this.addressesSubscribe(id, port);
-
-      case 'pri(accounts.triggerSubscription)':
-        return this.triggerWalletsSubscription();
-
-      case 'pri(accounts.tie)':
-        return this.accountsTie(request as RequestAccountTie);
-
       case 'pri(accounts.name)':
         return this.accountUpdateName(request as RequestAccountName);
+
+      case 'pri(accounts.json.restore)':
+        return this.jsonRestore(request as RequestJsonRestore);
+
+      case 'pri(accounts.json.valid)':
+        return this.jsonValid(request as RequestJsonRestore);
 
       case 'pri(accounts.validate)':
         return this.accountsValidatePassword(request as RequestAccountValidate);
 
+      case 'pri(accounts.totalBalances)':
+        return this.getTotalBalances();
+
+      /// Transfer, CrossChain, Sora Swap
+      case 'pri(accounts.checkTransfer)':
+        return this.checkTransfer(request as RequestCheckTransfer);
+
+      case 'pri(accounts.transfer)':
+        return this.makeTransfer(id, port, request as RequestTransfer);
+
+      case 'pri(accounts.checkCrossChain)':
+        return this.checkCrossChain(request as RequestCheckCrossChain);
+
+      case 'pri(accounts.crossChain)':
+        return this.makeCrossChain(id, port, request as RequestCrossChain);
+
+      case 'pri(accounts.checkSwap)':
+        return this.validateSwap(request as RequestCheckSwap);
+
+      case 'pri(accounts.swap)':
+        return this.makeSwap(request as RequestSwap);
+
+      case 'pri(accounts.soraFees)':
+        return this.getSoraFees();
+
+      case 'pri(price.update.currency)':
+        return this.updateCurrencySymbol(request as string);
+
+      case 'pri(price.subscription)':
+        return this.subscribePrice(id, port);
+
       case 'pri(metadata.approve)':
         return this.metadataApprove(request as RequestMetadataApprove);
-
-      case 'pri(metadata.get)':
-        return this.metadataGet(request as string);
-
-      case 'pri(metadata.list)':
-        return this.metadataList();
 
       case 'pri(metadata.reject)':
         return this.metadataReject(request as RequestMetadataReject);
@@ -1522,32 +1394,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(metadata.requests)':
         return port && this.metadataSubscribe(id, port);
 
-      case 'pri(activeTabsUrl.update)':
+      case 'pri(tabs.update.activeTabsUrl)':
         return this.updateCurrentTabs(request as RequestActiveTabsUrlUpdate);
-
-      case 'pri(derivation.create)':
-        return this.derivationCreate(request as RequestDeriveCreate);
-
-      case 'pri(derivation.validate)':
-        return this.derivationValidate(request as RequestDeriveValidate);
-
-      case 'pri(json.restore)':
-        return this.jsonRestore(request as RequestJsonRestore);
-
-      case 'pri(json.valid)':
-        return this.jsonValid(request as RequestJsonRestore);
-
-      case 'pri(json.batchRestore)':
-        return this.batchRestore(request as RequestBatchRestore);
-
-      case 'pri(json.account.info)':
-        return this.jsonGetAccountInfo(request as KeyringPair$Json);
-
-      case 'pri(seed.create)':
-        return this.seedCreate(request as RequestSeedCreate);
-
-      case 'pri(seed.validate)':
-        return this.seedValidate(request as RequestSeedValidate);
 
       case 'pri(signing.approve.password)':
         return this.signingApprovePassword(request as RequestSigningApprovePassword);
@@ -1558,14 +1406,14 @@ export default class Extension extends FWExtensionBase {
       case 'pri(signing.cancel)':
         return this.signingCancel(request as RequestSigningCancel);
 
-      case 'pri(mobileSigning.cancel)':
-        return this.mobileSigningCancel(request as RequestSigningCancel);
-
       case 'pri(signing.isLocked)':
         return this.signingIsLocked(request as RequestSigningIsLocked);
 
       case 'pri(signing.requests)':
         return this.signingSubscribe(id, port);
+
+      case 'pri(mobileSigning.cancel)':
+        return this.mobileSigningCancel(request as RequestSigningCancel);
 
       case 'pri(mobileSigning.tx)':
         return this.mobileSigningSubscribe(id, port);
@@ -1597,48 +1445,17 @@ export default class Extension extends FWExtensionBase {
       case 'pri(tab.status)':
         return this.isTabAuthorize();
 
-      case 'pri(balance.get.balance)':
+      case 'pri(balance)':
         return this.getBalance();
 
-      case 'pri(accounts.get.totalBalances)':
-        return this.getTotalBalances();
-
-      case 'pri(balance.get.subscription)':
+      case 'pri(balance.subscription)':
         return this.subscribeBalance(id, port);
-
-      /// Transfer, CrossChain, Sora Swap
-      case 'pri(accounts.checkTransfer)':
-        return this.checkTransfer(request as RequestCheckTransfer);
-
-      case 'pri(accounts.transfer)':
-        return this.makeTransfer(id, port, request as RequestTransfer);
-
-      case 'pri(accounts.checkCrossChain)':
-        return this.checkCrossChain(request as RequestCheckCrossChain);
-
-      case 'pri(accounts.crossChain)':
-        return this.makeCrossChain(id, port, request as RequestCrossChain);
 
       case 'pri(staking.checkStaking)':
         return this.checkStaking(id, port, request as RequestCrossChain);
 
       case 'pri(staking.stake)':
         return this.makeStaking(id, port, request as RequestStaking);
-
-      case 'pri(accounts.checkSwap)':
-        return this.validateSwap(request as RequestCheckSwap);
-
-      case 'pri(accounts.swap)':
-        return this.makeSwap(request as RequestSwap);
-
-      case 'pri(accounts.get.soraFees)':
-        return this.getSoraFees();
-
-      case 'pri(transaction.history.add)':
-        return this.updateTransactionHistory(request as RequestTransactionHistoryAdd, id, port);
-
-      case 'pri(transaction.history.get.subscription)':
-        return this.subscribeHistory(id, port);
 
       //OnBoarding
       case 'pri(onboarding.get.stories)':

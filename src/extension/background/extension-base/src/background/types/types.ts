@@ -20,7 +20,6 @@ import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { ProviderInterface } from '@polkadot/rpc-provider/types';
-import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type {
@@ -56,7 +55,6 @@ type IsNull<T, K extends keyof T> = { [K1 in Exclude<keyof T, K>]: T[K1] } & T[K
 
 type NullKeys<T> = { [K in keyof T]: IsNull<T, K> }[keyof T];
 
-export type SeedLengths = 12 | 24;
 export type Port = chrome.runtime.Port;
 
 export interface AccountJson extends KeyringPair$Meta {
@@ -121,9 +119,6 @@ export interface RequestAddressCreate {
   meta: KeyringPair$Meta;
 }
 
-export interface RequestAddressRemove {
-  address: string;
-}
 export interface SubscribeBalanceRequest {
   id: string;
   port: Port;
@@ -148,32 +143,11 @@ export type NetWorkGroup =
   | 'TEST_NET'
   | 'UNKNOWN';
 
-export interface ValidateNetworkResponse {
-  success: boolean;
-  key: string;
-  genesisHash: string;
-  ss58Prefix: string;
-  // networkGroup: NetWorkGroup[];
-  chain: string;
-  evmChainId: number;
-  nativeToken?: string;
-  decimal?: number;
-  error?: NETWORK_ERROR;
-  conflictChain?: string;
-  conflictKey?: string;
-}
-
-export interface ValidateNetworkRequest {
-  provider: string;
-  isEthereum: boolean;
-  existedNetwork?: NetworkJson;
-}
 export interface DisableNetworkResponse {
   success: boolean;
   activeNetworkCount?: number;
 }
 
-export type RequestPrice = null;
 export type RequestSubscribePrice = null;
 export interface RequestCurrentAccountAddress {
   address: string;
@@ -224,12 +198,6 @@ export interface RequestMetadataReject {
 }
 
 export type RequestMetadataSubscribe = null;
-
-export interface RequestAccountCreateExternal {
-  address: string;
-  genesisHash?: HexString | null;
-  name: string;
-}
 
 export interface RequestAccountCreateSuri {
   suri: string;
@@ -506,16 +474,6 @@ export interface RequestUpdateMeta {
   meta: KeyringPair$Meta;
 }
 
-export interface RequestAccountShow {
-  address: string;
-  isShowing: boolean;
-}
-
-export interface RequestAccountTie {
-  address: string;
-  genesisHash: HexString | null;
-}
-
 export interface RequestAccountName {
   address: string;
   name: string;
@@ -524,21 +482,6 @@ export interface RequestAccountName {
 export interface RequestAccountValidate {
   address: string;
   password: string;
-}
-
-export interface RequestDeriveCreate {
-  name: string;
-  genesisHash?: HexString | null;
-  suri: string;
-  parentAddress: string;
-  parentPassword: string;
-  password: string;
-}
-
-export interface RequestDeriveValidate {
-  suri: string;
-  parentAddress: string;
-  parentPassword: string;
 }
 
 export interface RequestAccountExport {
@@ -560,11 +503,6 @@ export interface ServiceInfo {
   apiMap: ApiMap;
   isLock?: boolean;
   currentAccountInfo: CurrentAccountState;
-}
-
-export interface RequestAccountBatchExport {
-  addresses: string[];
-  password: string;
 }
 
 export interface RequestAccountList {
@@ -622,19 +560,6 @@ export interface ResponseSigningIsLocked {
 
 export type RequestSigningSubscribe = null;
 
-export type RequestSaveTimeoutCache = { address: string; isSavePass: boolean };
-
-export interface RequestSeedCreate {
-  length?: SeedLengths;
-  seed?: string;
-  type?: KeypairType;
-}
-
-export interface RequestSeedValidate {
-  suri: string;
-  type?: KeypairType;
-}
-
 // Responses
 
 export type ResponseTypes = {
@@ -668,27 +593,8 @@ export interface ResponseSigning {
   signature: HexString;
 }
 
-export interface ResponseDeriveValidate {
-  address: string;
-  suri: string;
-}
-
-export interface ResponseSeedCreate {
-  address: string;
-  seed: string;
-}
-
-export interface ResponseSeedValidate {
-  address: string;
-  suri: string;
-}
-
 export interface ResponseAccountExport {
   exportedJson: KeyringPair$Json;
-}
-
-export interface ResponseAccountsExport {
-  exportedJson: KeyringPairs$Json;
 }
 
 export type ResponseRpcListProviders = ProviderList;
@@ -724,24 +630,11 @@ export interface RequestJsonValidate {
   isSubstrate?: boolean;
 }
 
-export interface RequestBatchRestore {
-  file: KeyringPairs$Json;
-  password: string;
-}
-
 export interface ResponseJsonRestore {
   error: string | null;
 }
 type TAllowPath = typeof ALLOWED_PATH;
 export type AllowedPath = TAllowPath[number];
-
-export interface ResponseJsonGetAccountInfo {
-  address: string;
-  ethereumAddress: string;
-  name: string;
-  genesisHash: string;
-  type: KeypairType;
-}
 
 export interface ResponseAuthorizeList {
   list: AuthUrls;
@@ -858,7 +751,7 @@ export interface IState {
   metaStore: MetadataStore;
   authUrls: AuthUrls;
   addresses: Record<string, string>;
-  selectedNetwork: Record<string, string>;
+  selectedNetworks: Record<string, NetworkName>;
   defaultAuthAccountSelection: string[];
   injectedProviders: Map<Port, ProviderInterface>;
   notification: string;
@@ -954,14 +847,6 @@ interface ValidateJsonResultNegative {
 }
 
 export type ValidateJsonResult = ValidateJsonResultPositive | ValidateJsonResultNegative;
-
-export interface RequestAccountMeta {
-  address: string | Uint8Array;
-}
-
-export interface ResponseAccountMeta {
-  meta: KeyringPair$Meta;
-}
 
 export type ResponseTotalBalances = {
   address: string;

@@ -13,9 +13,9 @@ async function getActiveTabs() {
   // although an array is specified here
 
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const request: TransportRequestMessage<'pri(activeTabsUrl.update)'> = {
+    const request: TransportRequestMessage<'pri(tabs.update.activeTabsUrl)'> = {
       id: 'background',
-      message: 'pri(activeTabsUrl.update)',
+      message: 'pri(tabs.update.activeTabsUrl)',
       origin: 'background',
       request: { tabs },
     };

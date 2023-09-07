@@ -1,6 +1,3 @@
-// Copyright 2019-2022 @polkadot/extension authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
 import { TypeRegistry } from '@polkadot/types';
 import { Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '@extension-base/defaults';
@@ -9,7 +6,6 @@ import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extensio
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { ProviderInterface } from '@polkadot/rpc-provider/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 
@@ -25,8 +21,8 @@ type IsNull<T, K extends keyof T> = { [K1 in Exclude<keyof T, K>]: T[K1] } & T[K
 
 type NullKeys<T> = { [K in keyof T]: IsNull<T, K> }[keyof T];
 
-export type SeedLengths = 12 | 24;
 export type Port = chrome.runtime.Port;
+
 export interface AccountJson extends KeyringPair$Meta {
   address: string;
   genesisHash?: HexString | null;
@@ -83,10 +79,6 @@ export interface RequestAddressCreate {
   meta: KeyringPair$Meta;
 }
 
-export interface RequestAddressRemove {
-  address: string;
-}
-
 export type ConnectedTabsUrlResponse = string[];
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
@@ -133,12 +125,6 @@ export interface RequestMetadataReject {
 }
 
 export type RequestMetadataSubscribe = null;
-
-export interface RequestAccountCreateExternal {
-  address: string;
-  genesisHash?: string | null;
-  name: string;
-}
 
 export interface RequestAccountCreateSuri {
   password: string;
@@ -188,28 +174,8 @@ export interface RequestAccountValidate {
   password: string;
 }
 
-export interface RequestDeriveCreate {
-  name: string;
-  genesisHash?: string | null;
-  suri: string;
-  parentAddress: string;
-  parentPassword: string;
-  password: string;
-}
-
-export interface RequestDeriveValidate {
-  suri: string;
-  parentAddress: string;
-  parentPassword: string;
-}
-
 export interface RequestAccountExport {
   address: string;
-  password: string;
-}
-
-export interface RequestAccountBatchExport {
-  addresses: string[];
   password: string;
 }
 
@@ -268,19 +234,6 @@ export interface ResponseSigningIsLocked {
 
 export type RequestSigningSubscribe = null;
 
-export type RequestSaveTimeoutCache = { address: string; isSavePass: boolean };
-
-export interface RequestSeedCreate {
-  length?: SeedLengths;
-  seed?: string;
-  type?: KeypairType;
-}
-
-export interface RequestSeedValidate {
-  suri: string;
-  type?: KeypairType;
-}
-
 // Responses
 
 export type ResponseTypes = {
@@ -314,27 +267,8 @@ export interface ResponseSigning {
   signature: HexString;
 }
 
-export interface ResponseDeriveValidate {
-  address: string;
-  suri: string;
-}
-
-export interface ResponseSeedCreate {
-  address: string;
-  seed: string;
-}
-
-export interface ResponseSeedValidate {
-  address: string;
-  suri: string;
-}
-
 export interface ResponseAccountExport {
   exportedJson: KeyringPair$Json;
-}
-
-export interface ResponseAccountsExport {
-  exportedJson: KeyringPairs$Json;
 }
 
 export type ResponseRpcListProviders = ProviderList;
@@ -363,23 +297,11 @@ export interface RequestJsonRestore {
   password: string;
 }
 
-export interface RequestBatchRestore {
-  file: KeyringPairs$Json;
-  password: string;
-}
-
 export interface ResponseJsonRestore {
   error: string | null;
 }
 
 export type AllowedPath = (typeof ALLOWED_PATH)[number];
-
-export interface ResponseJsonGetAccountInfo {
-  address: string;
-  name: string;
-  genesisHash: string;
-  type: KeypairType;
-}
 
 export interface ResponseAuthorizeList {
   list: AuthUrls;

@@ -41,7 +41,7 @@ import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutatio
 import { isNetworkGroup } from '@/helpers/common';
 import { SetFavoriteNetwork, Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { updateCurrentAccountNetwork } from '@/extension/messaging';
+import { updateCurrentNetwork } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 
 type Tabs = {
@@ -148,7 +148,7 @@ export default class NetworkManagement extends Vue {
 
     this.setSelectedNetwork(network);
 
-    updateCurrentAccountNetwork(network);
+    updateCurrentNetwork(network);
 
     const prepNotification = this.$t(this.getLocale('groupSelected'), {
       group: this.$t(this.tabs[this.activeTab].label),
@@ -161,7 +161,9 @@ export default class NetworkManagement extends Vue {
     if (isSelected) return;
 
     this.setSelectedNetwork(network);
-    updateCurrentAccountNetwork(network);
+
+    updateCurrentNetwork(network);
+
     const prepNotification = this.$t(this.getLocale('networkSelected'), { network });
 
     this.$notify({ title: prepNotification as string, message: '', type: 'success' });

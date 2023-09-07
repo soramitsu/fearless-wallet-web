@@ -15,11 +15,9 @@ import store from '@/store';
 function getType(historyElement: HistoryElement): TransactionType {
   const { reward, transfer } = historyElement;
 
-  return transfer !== null
-    ? TransactionType.transfer
-    : reward !== null
-    ? TransactionType.reward
-    : TransactionType.extrinsic;
+  if (transfer) return TransactionType.transfer;
+
+  return reward ? TransactionType.reward : TransactionType.extrinsic;
 }
 
 function getSignTransfer(historyElement: HistoryElement) {
@@ -68,15 +66,15 @@ function getHistoryValue(historyElement: HistoryElement, assetId: string, networ
   const type = getType(historyElement);
   const signTransfer = getSignTransfer(historyElement);
 
-  if (type === TransactionType.transfer) {
-    const { amount } = transfer!;
+  if (type === TransactionType.transfer && transfer) {
+    const { amount } = transfer;
     const value = getHumanValue(amount, assetId, networkName);
 
     return { signTransfer, value };
   }
 
-  if (type === TransactionType.reward) {
-    const { amount } = reward!;
+  if (type === TransactionType.reward && reward) {
+    const { amount } = reward;
     const value = getHumanValue(amount, assetId, networkName);
 
     return { signTransfer: '+', value };

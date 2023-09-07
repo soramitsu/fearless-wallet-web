@@ -43,12 +43,6 @@ import { disconnectWalletConnectConnection } from '@/extension/messaging';
 
 const store = useStore();
 const router = useRouter();
-
-const substrateList = ref<Record<string, AuthUrlInfo>>({});
-
-const wcFilteredList = computed<WalletConnectSessions>(() => store.getters.wcSessions);
-
-const activeTab = ref<'substrate' | 'wc'>('substrate');
 const tabs = {
   substrate: {
     label: 'authorize.substrate',
@@ -59,8 +53,11 @@ const tabs = {
     name: 'wc',
   },
 };
+const substrateList = ref<Record<string, AuthUrlInfo>>({});
 
-const showWCAuths = computed(() => activeTab.value === 'wc' && wcFilteredList.value?.length);
+const activeTab = ref<'substrate' | 'wc'>('substrate');
+const wcFilteredList = computed<WalletConnectSessions>(() => store.getters.wcSessions);
+const showWCAuths = computed(() => activeTab.value === 'wc' && !!wcFilteredList.value?.length);
 
 onMounted(async () => {
   substrateList.value = await store.dispatch('GET_AUTHLIST');

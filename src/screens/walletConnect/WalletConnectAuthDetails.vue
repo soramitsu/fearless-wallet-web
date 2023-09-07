@@ -11,13 +11,21 @@
             <span>{{ el.name }}</span>
           </div>
           <div class="network__status">
-            <span>Connected</span>
+            <span>{{ $t('authorize.connected') }}</span>
             <div class="network__status-indicator" :class="getNetworkStatusClass(el.connected)"></div>
           </div>
         </div>
       </div>
     </Scroll>
-    <FButton class="connect-button" width="100%" size="big" fontSize="big" text="disconnect" @click="onDisconnect" />
+
+    <FButton
+      class="connect-button"
+      width="100%"
+      size="big"
+      fontSize="big"
+      text="authorize.disconnect"
+      @click="onDisconnect"
+    />
   </div>
 </template>
 
@@ -41,13 +49,20 @@ const networks = ref<NetworkJson[]>(store.getters.allNetworks);
 
 const emit = defineEmits(['onRemove']);
 const topic = computed(() => route.params.topic);
-
 const request = computed(() => {
   const list: SessionTypes.Struct[] | null = store.getters.wcSessions;
 
   const searchAuth = list?.find((request) => request.topic === topic.value);
 
   return searchAuth;
+});
+
+const checkAuth = () => {
+  if (!request.value) router.back();
+};
+
+onBeforeMount(async () => {
+  checkAuth();
 });
 
 const url = computed(() => request.value?.peer.metadata.url);
@@ -79,20 +94,13 @@ const namespaces = computed<ChainData[]>(() => {
 
   return names;
 });
+
 const getNetworkStatusClass = (status: boolean) => `network__status-indicator--${status ? 'active' : 'inactive'}`;
 
-const checkAuth = () => {
-  if (!request.value) router.back();
-};
-
-onBeforeMount(async () => {
-  checkAuth();
-});
-
-function onDisconnect() {
+const onDisconnect = () => {
   emit('onRemove');
   checkAuth();
-}
+};
 </script>
 
 <style lang="scss" scoped>

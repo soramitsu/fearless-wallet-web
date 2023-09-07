@@ -125,7 +125,9 @@
     "selfIdentifyTwo": "запрашивает доступ с",
     "accountsConnected": "Аккаунты, подключенны к {url}",
     "mobile": "мобильный",
-    "connectCountAccounts": "Подключить 1 аккаунт | Подключить {count} аккаунтов"
+    "connectCountAccounts": "Подключить 1 аккаунт | Подключить {count} аккаунтов",
+    "connected": "Подключено",
+    "disconnect": "Отключить"
   },
   "header": {
     "connected": "Подключено",

@@ -128,7 +128,9 @@
     "selfIdentifyTwo": "is requesting access from my",
     "accountsConnected": "Accounts connected to {url}",
     "mobile": "mobile",
-    "connectCountAccounts": "Connect 1 account | Connect {count} accounts"
+    "connectCountAccounts": "Connect 1 account | Connect {count} accounts",
+    "connected": "Connected",
+    "disconnect":"Disconnect"
   },
   "header": {
     "connected": "Connected",

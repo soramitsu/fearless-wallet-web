@@ -5,7 +5,7 @@
     sizeWidth="small"
     :showHeader="false"
     :showBorder="true"
-    :handlerClose="close"
+    @handlerClose="close"
     :top="55"
     :maxHeight="391"
     @click.native="walletPopupClick"

@@ -9,7 +9,7 @@ import { computed } from 'vue';
 
 type Props = {
   icon: string;
-  iconColor: string;
+  iconColor?: string;
   className?: string[] | string;
   width?: string;
   height?: string;

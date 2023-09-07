@@ -124,29 +124,9 @@ export class FWCron {
         }
       },
     });
-    //TODO add support for Firefox because it lack of support for the "navigator.connection"
-    navigator.connection.removeEventListener('change', () => {
-      this.onConnectionChange();
-    });
-
-    navigator.connection.addEventListener('change', () => {
-      this.onConnectionChange();
-    });
 
     this.status = 'running';
   };
-
-  onConnectionChange() {
-    if (navigator.onLine) {
-      this.logger.log('Extension is back online');
-
-      this.start();
-    } else {
-      this.logger.log('Extension is offline');
-
-      this.stop();
-    }
-  }
 
   stop = () => {
     if (this.status === 'stopped') return;
@@ -163,6 +143,8 @@ export class FWCron {
   };
 
   recoverApiMap = () => {
+    if (!navigator.onLine) return;
+
     const apiMap = this.state.getApiMap;
 
     for (const [key] of Object.entries(apiMap.evm)) {
@@ -170,9 +152,12 @@ export class FWCron {
     }
 
     for (const [key, substrate] of Object.entries(apiMap.substrate)) {
-      substrate.api?.isReadyOrError.catch(() => {
+      if (substrate.api === undefined) {
         this.state.refreshDotSamaApi(key);
-      });
+        continue;
+      }
+
+      substrate.api?.isReadyOrError.catch(() => this.state.refreshDotSamaApi(key));
     }
 
     this.state.getCurrentAccount((currentAccount) => {
@@ -191,6 +176,12 @@ export class FWCron {
     for (const [key, apiProp] of Object.entries(apiMap.substrate)) {
       if (apiProp.isEthereumOnly) continue;
 
+      if (!navigator.onLine) {
+        this.state.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
+
+        continue;
+      }
+
       let status: NETWORK_STATUS = NETWORK_STATUS.CONNECTING;
 
       if (apiProp.isApiConnected) status = NETWORK_STATUS.CONNECTED;
@@ -204,7 +195,12 @@ export class FWCron {
     for (const [key, evm] of Object.entries(apiMap.evm)) {
       const apiStatus = networkMap[key].apiStatus;
 
-      evm
+      if (!navigator.onLine) {
+        this.state.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
+        continue;
+      }
+
+      evm.provider
         ._waitUntilReady()
         .then(() => {
           if (!apiStatus) this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);

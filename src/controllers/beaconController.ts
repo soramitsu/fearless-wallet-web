@@ -11,7 +11,7 @@ import {
   AppMetadata,
   defaultEventCallbacks,
 } from '@airgap/beacon-sdk';
-import type { MobileSigningRequest } from '@/extension/background/extension-base/src/background/types';
+import { MobileSigningRequest } from '@extension-base/background/types';
 import type {
   PayloadJSON,
   PermissionSuccess,
@@ -25,6 +25,7 @@ import { MOONBEAM_GENESISHASH, WESTEND_GENESISHASH } from '@/consts/networks';
 import store from '@/store';
 import { MutationTypes as AccountMutationTypes } from '@/store/accounts/mutations';
 import { approveSignMobileSignature, subscribeMobileSigningRequests } from '@/extension/messaging';
+
 class BeaconController {
   private app: DAppClient;
   private serializer = new Serializer();
@@ -46,9 +47,6 @@ class BeaconController {
         },
         CHANNEL_CLOSED: {
           handler: defaultEventCallbacks.CHANNEL_CLOSED,
-        },
-        LOCAL_RATE_LIMIT_REACHED: {
-          handler: defaultEventCallbacks.LOCAL_RATE_LIMIT_REACHED,
         },
         UNKNOWN: {
           handler: defaultEventCallbacks.UNKNOWN,
@@ -117,6 +115,10 @@ class BeaconController {
 
   public async onPermissionRequest(callback: TCallback<RequestSentInfo>) {
     this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_SENT, callback);
+  }
+
+  public onRateReached(callback: TCallback<undefined>) {
+    this.app.subscribeToEvent(BeaconEvent.LOCAL_RATE_LIMIT_REACHED, callback);
   }
 
   public async onUnknownError(callback: TCallback<undefined>) {

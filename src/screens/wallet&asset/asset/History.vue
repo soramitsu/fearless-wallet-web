@@ -18,7 +18,7 @@
               :historyElement="historyElement"
               :token="currency"
               :network="selectedNetwork"
-              @click.native="$emit('openHistoryDetailsForm', historyElement)"
+              @click.native="openHistoryDetails(historyElement)"
             />
           </template>
 
@@ -33,7 +33,7 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import HistoryItem from './HistoryItem.vue';
-import type { FilterHistory, GetHistory } from '@/interfaces';
+import type { FilterHistory, GetHistory, HistoryElement } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -126,6 +126,10 @@ export default class History extends Vue {
 
   filterHistoryValueUpdate(name: FilterHistory) {
     this.filterHistoryValue = name;
+  }
+
+  openHistoryDetails(history: HistoryElement) {
+    this.$emit('openHistoryDetailsForm', history);
   }
 }
 </script>

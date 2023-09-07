@@ -106,7 +106,11 @@
     "requesting": "Requesting permissions...",
     "connected": "Mobile wallet connected to Fearless Wallet Extension",
     "noAnswer": "No answer from your wallet received yet. Please make sure the wallet is open",
-    "signMobile": "To sign using a mobile device, make sure your mobile client is open on the Beacon dApp screen and click Sign."
+    "signMobile": "To sign using a mobile device, make sure your mobile client is open on the Beacon dApp screen and click Sign.",
+    "rateLimitWarning": {
+      "title": "Too many transaction",
+      "message": "Matrix node is busy, please try again later"
+    }
   },
   "googleExport": {
     "prepData": "Preparing data...",

@@ -13,7 +13,6 @@ export enum GettersTypes {
   getSelectedFiat = 'getSelectedFiat',
   getSelectedNetwork = 'getSelectedNetwork',
   fiatSymbol = 'fiatSymbol',
-  isOnline = 'isOnline',
   getFiatId = 'getFiatId',
   getAccounts = 'getAccounts',
   getEthAccounts = 'getEthAccounts',
@@ -36,7 +35,6 @@ export type Getters = {
   [GettersTypes.getSelectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getSelectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.fiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
-  [GettersTypes.isOnline](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getFiatId](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.hiddenAssets](state: State, getters?: GetterTree<State, State> & Getters): string[];
   [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): AccountJson[];
@@ -80,10 +78,6 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.getSelectedNetwork]({ selectedNetworks, selectedWallet: { address } }): string {
     return selectedNetworks[address] ?? ALL_NETWORKS;
-  },
-
-  [GettersTypes.isOnline](state): boolean {
-    return state.isOnline;
   },
 
   [GettersTypes.showPolkaswapAlert]({ showPolkaswapAlert }): boolean {

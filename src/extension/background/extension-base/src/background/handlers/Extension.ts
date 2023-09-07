@@ -44,7 +44,6 @@ import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { ProposalTypes, SessionTypes } from '@walletconnect/types';
 import { HexString } from '@polkadot/util/types';
-import { SigningRequest } from '@extension-base/background/types/types';
 import {
   RequestApproveConnectWalletSession,
   RequestApproveWalletConnect,
@@ -64,6 +63,7 @@ import {
   isSupportWalletConnectNamespace,
   isSupportWalletConnectChain,
 } from '@extension-base/services/wallet-connect-service/utils';
+import type { SigningRequest } from '@extension-base/background/types/types';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -122,7 +122,8 @@ import type {
   ResponseSeedCreate,
   ResponseSeedValidate,
   ResponseType,
-} from '@/extension/background/extension-base/src/background/types';
+} from '@extension-base/background/types';
+
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   Asset,
@@ -156,6 +157,7 @@ import {
   VerifyTokenResponse,
 } from '@/interfaces';
 import { IS_PRODUCTION } from '@/consts/global';
+
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
 const ETH_DERIVE_DEFAULT = "/m/44'/60'/0'/0/0";
@@ -1149,7 +1151,6 @@ export default class Extension extends FWExtensionBase {
     const networkKey = this.state.getNetworkByKey(givenNetwork)?.name ?? '';
 
     const txState: BasicTxResponse = {};
-
     const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
 
     if (errors.length) {
@@ -1174,7 +1175,7 @@ export default class Extension extends FWExtensionBase {
 
     const ethereumAddress = fromKeyPair ? (fromKeyPair.meta.ethereumAddress as string | undefined) : '';
     const isEthereum = isEthereumAddress(from);
-    const address = getSubstrateAddress(from);
+    const address = isEthereum ? getSubstrateAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet to save pass
     const remainTime = fromKeyPair ? this.getRemainingTime(fromKeyPair) : 0;
 
     const savePass = () => {

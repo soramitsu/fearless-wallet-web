@@ -176,15 +176,17 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get validator() {
-    return this.historyElement.reward!.validator;
+    return this.historyElement.reward?.validator;
   }
 
   get displayValidator() {
+    if (!this.validator) return 'no validator info';
+
     return cut(this.validator, 10);
   }
 
   get era() {
-    return this.historyElement.reward!.era;
+    return this.historyElement.reward?.era;
   }
 
   get statusClasses() {
@@ -266,7 +268,9 @@ export default class HistoryDetailsForm extends Vue {
     return this.$route.params.selectedNetwork;
   }
 
-  copy(value: string) {
+  copy(value?: string) {
+    if (!value) return;
+
     navigator.clipboard.writeText(value);
   }
 

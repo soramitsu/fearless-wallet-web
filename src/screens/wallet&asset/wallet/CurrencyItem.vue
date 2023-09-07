@@ -103,13 +103,13 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
-import { ALL_NETWORKS } from '@/consts/networks';
 import { GetAssetPrice, GetNetwork } from '@/store/networks/types';
 import {
   filterBalanceItemsByNetwork,
   getSummaryTransferableBalanceFilteredByActiveNetworks,
 } from '@/helpers/currencies';
 import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
+import { isNetworkGroup } from '@/helpers/common';
 
 @Component
 export default class CurrencyItem extends Vue {
@@ -154,7 +154,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get mainNetwork() {
-    return this.assetData.mainNetwork;
+    return this.assetData.mainNetwork?.toLowerCase();
   }
 
   get assetId() {
@@ -243,17 +243,11 @@ export default class CurrencyItem extends Vue {
   }
 
   get isCurrentNetwork() {
-    return this.selectedNetwork !== ALL_NETWORKS;
+    return !isNetworkGroup(this.selectedNetwork);
   }
 
   get redirectNetwork(): string {
-    const network = this.assetData.balances[0];
-
-    return this.isCurrentNetwork
-      ? this.selectedNetwork
-      : this.mainNetwork !== undefined
-      ? this.mainNetwork
-      : network.name;
+    return this.isCurrentNetwork ? this.selectedNetwork : '';
   }
 
   openAssetPage(event: CustomEvent) {
@@ -269,11 +263,22 @@ export default class CurrencyItem extends Vue {
     )
       return;
 
+    if (this.isCurrentNetwork) {
+      this.$router.push({
+        name: Components.AssetHistory,
+        params: {
+          assetId: this.assetData.assetId,
+          selectedNetwork: this.redirectNetwork,
+        },
+      });
+
+      return;
+    }
+
     this.$router.push({
       name: Components.AssetNetworks,
       params: {
         assetId: this.assetData.assetId,
-        network: this.redirectNetwork,
       },
     });
   }

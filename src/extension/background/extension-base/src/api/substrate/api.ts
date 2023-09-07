@@ -84,12 +84,10 @@ async function onDisconnect(networkName: string) {
   api.isApiConnected = false;
   api.isApiReady = false;
 
-  const { apiRetry } = api;
-
-  if (apiRetry < MAX_CONTINUE_RETRY) return;
-
-  await api.provider?.disconnect();
+  if (api.apiRetry < MAX_CONTINUE_RETRY) return;
   const network = state.networkMap[networkName];
+
+  api.provider?.disconnect();
   api.nodeIndex += 1;
 
   if (api.nodeIndex <= network.nodes.length - 1) {
@@ -117,12 +115,17 @@ function onReady(networkName: string) {
   state.apis.substrate[networkName].isApiReady = true;
 }
 
-export async function initApi(network: NetworkJson): Promise<void> {
+export async function initApi(network: NetworkJson, retry = false): Promise<void> {
   const { name: networkName, nodes, isEthereum } = network;
 
   if (state.getSubstrateApiMap[networkName] === undefined) {
     // return EVM HTTP Placeholder
     state.getSubstrateApiMap[networkName] = isEthereum ? generateEvmHttpApi() : createApiObject();
+  }
+
+  if (retry) {
+    state.apis.substrate[networkName].nodeIndex = 0;
+    state.apis.substrate[networkName].apiRetry = 0;
   }
 
   const { nodeIndex } = state.getSubstrateApiMap[networkName];
@@ -139,7 +142,7 @@ export async function initApi(network: NetworkJson): Promise<void> {
   if (isSora(networkName)) soraConnection.open(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
   else {
     try {
-      const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS);
+      const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS, undefined, 10000);
 
       const api = new ApiPromise({ provider, noInitWarn: true });
 

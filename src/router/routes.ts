@@ -247,10 +247,6 @@ const routes: Array<RouteConfig> = [
             path: '/',
             name: Components.AssetNetworks,
             component: AssetNetworks,
-            beforeEnter: (to, from, next) => {
-              from.params.network = '';
-              next();
-            },
           },
           {
             path: ':selectedNetwork',

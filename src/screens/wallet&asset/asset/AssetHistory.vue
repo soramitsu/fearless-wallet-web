@@ -8,7 +8,7 @@
       @togglePopupButton="togglePopupButton"
     />
 
-    <History :currency="currency" @openHistoryDetailsForm="$emit('openHistoryDetailsForm')" />
+    <History :currency="currency" v-on="$listeners" />
 
     <Blur v-if="showPopupButton" @click="togglePopupButton">
       <div class="popup-button">

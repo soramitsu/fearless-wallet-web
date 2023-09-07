@@ -4,41 +4,31 @@
   </svg>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 
-@Component
-export default class Icon extends Vue {
-  @Prop(String) icon!: string;
-  @Prop(String) iconColor?: string;
-  @Prop({ type: String, default: '32px' }) width!: string;
-  @Prop({ type: String, default: '32px' }) height!: string;
-  @Prop({ default: '' }) className!: string[] | string;
+type Props = {
+  icon: string;
+  iconColor: string;
+  className?: string[] | string;
+  width?: string;
+  height?: string;
+};
 
-  get getIconColor() {
-    return `icon--${this.iconColor}`;
-  }
+const props = withDefaults(defineProps<Props>(), { width: '32px', height: '32px', className: '' });
 
-  get styles() {
-    return `width:${this.width}; height:${this.height};`;
-  }
+const getIconColor = computed(() => `icon--${props.iconColor}`);
+const getUseClasses = computed(() => ['icon__inner', props.icon]);
+const getIconName = computed(() => `#icon-${props.icon}`);
+const styles = computed(() => `width:${props.width}; height:${props.height};`);
 
-  get getSvgClasses() {
-    const classes = ['svg-icon', ...[this.className].flat()];
+const getSvgClasses = computed(() => {
+  const classes = ['svg-icon', ...[props.className].flat()];
 
-    if (this.iconColor) classes.push(this.getIconColor);
+  if (props.iconColor) classes.push(getIconColor.value);
 
-    return classes;
-  }
-
-  get getUseClasses() {
-    return ['icon__inner', this.icon];
-  }
-
-  get getIconName() {
-    return `#icon-${this.icon}`;
-  }
-}
+  return classes;
+});
 </script>
 
 <style lang="scss" scoped>

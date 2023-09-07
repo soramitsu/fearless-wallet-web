@@ -1,26 +1,19 @@
 <template>
-  <Icon icon="loading" :style="style" className="spinner" />
+  <Icon icon="loading" className="spinner" />
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+const props = withDefaults(defineProps<{ width: number }>(), { width: 21 });
 
-@Component
-export default class Loading extends Vue {
-  @Prop({ type: Number, default: 21 }) width!: number;
-
-  get style() {
-    return `width:${this.width}; height: ${this.width}`;
-  }
-}
+const prepSize = `${props.width}px`;
 </script>
 
 <style lang="scss" scoped>
 .spinner {
   animation: spin-animation 1.5s infinite;
   display: inline-block;
-  width: 24px;
-  height: 24px;
+  width: v-bind(prepSize);
+  height: v-bind(prepSize);
 }
 
 @keyframes spin-animation {

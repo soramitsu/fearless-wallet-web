@@ -18,27 +18,36 @@
   </Corners>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
 import type { ComponentText } from '@/interfaces';
 
 type Size = 'small' | 'medium' | 'big';
 type BorderRadius = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
+type Props = {
+  text: ComponentText;
+  width: string;
+  iconName: string;
+  iconColor: string;
+  size: Size;
+  borderRadius: BorderRadius;
+  fontSize: FontSize;
+  disabled: boolean;
+  hover: boolean;
+  topLeftCorner: boolean;
+  bottomRightCorner: boolean;
+  loading: boolean;
+};
 
-@Component
-export default class BorderButton extends Vue {
-  @Prop({ default: '' }) text!: ComponentText;
-  @Prop(String) width!: string;
-  @Prop(String) iconName!: string;
-  @Prop(String) iconColor!: string;
-  @Prop({ default: 'medium' }) size!: Size;
-  @Prop({ default: 'medium' }) fontSize!: FontSize;
-  @Prop({ default: 'medium' }) borderRadius!: BorderRadius;
-  @Prop({ default: false }) disabled!: boolean;
-  @Prop({ default: true }) hover!: boolean;
-  @Prop({ default: true }) topLeftCorner!: boolean;
-  @Prop({ default: true }) bottomRightCorner!: boolean;
-  @Prop({ default: false }) loading!: boolean;
-}
+withDefaults(defineProps<Props>(), {
+  text: '',
+  size: 'medium',
+  fontSize: 'medium',
+  borderRadius: 'medium',
+  disabled: false,
+  hover: true,
+  topLeftCorner: true,
+  bottomRightCorner: true,
+  loading: false,
+});
 </script>

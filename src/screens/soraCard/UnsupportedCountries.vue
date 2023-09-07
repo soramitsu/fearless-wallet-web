@@ -16,18 +16,14 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
 import { countryCodeEmoji } from 'country-code-emoji';
 import { UNSUPPORTED_COUNTRIES } from '@/consts/soraCard';
 
-@Component
-export default class UnsupportedCountries extends Vue {
-  readonly unsupportedCountries = Object.entries(UNSUPPORTED_COUNTRIES).map(([key, name]) => ({
-    name,
-    icon: countryCodeEmoji(key),
-  }));
-}
+const unsupportedCountries = Object.entries(UNSUPPORTED_COUNTRIES).map(([key, name]) => ({
+  name,
+  icon: countryCodeEmoji(key),
+}));
 </script>
 
 <style scoped lang="scss">

@@ -52,7 +52,6 @@ export default class EvmRequestHandler {
       this.requestService.updateIcon();
       const values = this.signSubject.getValue();
       this.signSubject.next([...values, request]);
-      // this.requestService.popupOpen();
     });
   }
 

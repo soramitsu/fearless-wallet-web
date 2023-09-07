@@ -29,7 +29,9 @@ export const findChainInfoByChainId = (chainMap: Record<string, NetworkJson>, ch
   if (!chainId) return null;
 
   for (const chainInfo of Object.values(chainMap)) {
-    if (+chainInfo.chainId === chainId) return chainInfo;
+    const parsedChainId = parseInt(`0x${chainInfo.chainId}`);
+
+    if (parsedChainId === chainId) return chainInfo;
   }
 
   return null;

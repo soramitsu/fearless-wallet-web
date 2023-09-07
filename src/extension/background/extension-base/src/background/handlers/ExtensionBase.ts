@@ -1,29 +1,20 @@
 import assert from 'assert';
 import { keyring } from '@polkadot/ui-keyring';
-import type { MetadataDef } from '@polkadot/extension-inject/types';
-
 import type {
   CachedUnlocks,
-  RequestAccountBatchExport,
-  RequestAccountCreateExternal,
   RequestAccountExport,
   RequestAccountExportPrivateKey,
-  RequestAccountShow,
-  RequestAccountTie,
   RequestAccountName,
-  RequestBatchRestore,
   RequestJsonValidate,
   RequestSigningIsLocked,
   ResponseAccountExport,
   ResponseAccountExportPrivateKey,
-  ResponseAccountsExport,
-  ResponseJsonGetAccountInfo,
   ResponseSigningIsLocked,
   ValidateJsonResult,
   RequestUpdateMeta,
 } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
-import type { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
+import type { KeyringPair } from '@polkadot/keyring/types';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { DerivationPath } from '@/interfaces';
 
@@ -40,18 +31,6 @@ export default class FWExtensionBase {
 
   accountsExport({ address, password }: RequestAccountExport): ResponseAccountExport {
     return { exportedJson: keyring.backupAccount(keyring.getPair(address), password) };
-  }
-
-  async accountsBatchExport({ addresses, password }: RequestAccountBatchExport): Promise<ResponseAccountsExport> {
-    return {
-      exportedJson: await keyring.backupAccounts(addresses, password),
-    };
-  }
-
-  accountsCreateExternal({ address, genesisHash, name }: RequestAccountCreateExternal): boolean {
-    keyring.addExternal(address, { genesisHash, name });
-
-    return true;
   }
 
   validateDerivationPath({ value, keypairType }: DerivationPath): boolean {
@@ -82,26 +61,6 @@ export default class FWExtensionBase {
     return true;
   }
 
-  accountsShow({ address, isShowing }: RequestAccountShow): boolean {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    keyring.saveAccountMeta(pair, { ...pair.meta, isHidden: !isShowing });
-
-    return true;
-  }
-
-  accountsTie({ address, genesisHash }: RequestAccountTie): boolean {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    keyring.saveAccountMeta(pair, { ...pair.meta, genesisHash });
-
-    return true;
-  }
-
   accountUpdateName({ address, name }: RequestAccountName): boolean {
     const pair = keyring.getPair(address);
 
@@ -110,14 +69,6 @@ export default class FWExtensionBase {
     keyring.saveAccountMeta(pair, { ...pair.meta, name });
 
     return true;
-  }
-
-  metadataGet(genesisHash: string | null): MetadataDef | null {
-    return this.state.knownMetadata.find((result) => result.genesisHash === genesisHash) || null;
-  }
-
-  metadataList(): MetadataDef[] {
-    return this.state.knownMetadata;
   }
 
   getRemainingTime(pair: KeyringPair): number {
@@ -165,35 +116,6 @@ export default class FWExtensionBase {
       isLocked: pair.isLocked,
       remainingTime,
     };
-  }
-
-  jsonGetAccountInfo(json: KeyringPair$Json): ResponseJsonGetAccountInfo {
-    try {
-      const {
-        address,
-        meta: { genesisHash, name, ethereumAddress },
-        type,
-      } = keyring.createFromJson(json);
-
-      return {
-        address,
-        ethereumAddress,
-        genesisHash,
-        name,
-        type,
-      } as ResponseJsonGetAccountInfo;
-    } catch (e) {
-      console.error(e);
-      throw new Error((e as Error).message);
-    }
-  }
-
-  batchRestore({ file, password }: RequestBatchRestore): void {
-    try {
-      keyring.restoreAccounts(file, password);
-    } catch (error) {
-      throw new Error((error as Error).message);
-    }
   }
 
   jsonValid({ file, password, isSubstrate }: RequestJsonValidate): ValidateJsonResult {

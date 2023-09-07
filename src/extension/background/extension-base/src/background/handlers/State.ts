@@ -66,7 +66,7 @@ import type {
   ResponseTotalBalances,
 } from '@extension-base/background/types/types';
 import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
-import type { ChainRegistry, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
+import type { ChainRegistry, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
@@ -169,7 +169,7 @@ export default class State {
   public networksJson: NetworkJson[] = []; // from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJson>>();
-  public selectedNetwork: Record<string, string> = {};
+  public selectedNetworks: Record<string, string> = {};
   public serviceInfoSubject = new Subject<ServiceInfo>();
   public balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
@@ -180,8 +180,6 @@ export default class State {
   public metaRequests: Record<string, MetaRequest> = {};
   public signRequests: Record<string, SignRequest> = {};
   public mobileSignRequests: Record<string, MobileSignRequest> = {};
-  private historyMap: Record<string, TransactionHistoryItemType[]> = {};
-  private historySubject = new Subject<Record<string, TransactionHistoryItemType[]>>();
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
   public readonly metaSubject = new BehaviorSubject<MetadataRequest[]>([]);
   public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
@@ -334,11 +332,11 @@ export default class State {
       injectedProviders,
       providers,
       windows,
-      selectedNetwork,
+      selectedNetworks,
     } = await this.getFromStorage([
       'fiatSymbol',
       'authUrls',
-      'selectedNetwork',
+      'selectedNetworks',
       'defaultAuthAccountSelection',
       'injectedProviders',
       'providers',
@@ -347,7 +345,7 @@ export default class State {
     if (authUrls && Object.keys(authUrls).length) this.authUrls = authUrls;
     if (windows && windows.length) this.windows = windows;
     if (fiatSymbol) this.setFiatSymbol(fiatSymbol);
-    if (selectedNetwork) this.selectedNetwork = selectedNetwork;
+    if (selectedNetworks) this.selectedNetworks = selectedNetworks;
     if (injectedProviders) this.injectedProviders = new Map(injectedProviders);
     if (providers) this.providers = providers;
     if (defaultAuthAccountSelection && defaultAuthAccountSelection.length)
@@ -571,8 +569,9 @@ export default class State {
     const currentAccount = await this.currentAccount;
 
     if (currentAccount) {
-      this.selectedNetwork[currentAccount.address] = type;
-      storage.set({ selectedNetwork: this.selectedNetwork });
+      this.selectedNetworks[currentAccount.address] = type;
+
+      storage.set({ selectedNetworks: this.selectedNetworks });
     }
 
     return this.setActiveNetworks(type);
@@ -629,8 +628,8 @@ export default class State {
 
   public selectedNetworksExceptAddress(address: string): string[] {
     const result: string[] = [];
-    Object.keys(this.selectedNetwork).forEach((el) => {
-      if (el !== address) result.push(this.selectedNetwork[el]);
+    Object.keys(this.selectedNetworks).forEach((el) => {
+      if (el !== address) result.push(this.selectedNetworks[el]);
     });
 
     return result;
@@ -643,7 +642,7 @@ export default class State {
   }
 
   public isNetworkSelectedInAnotherWallet(network: NetworkJson, selectedType: string, address: string) {
-    if (Object.values(this.selectedNetwork).some((el) => el === ALL_NETWORKS)) return true;
+    if (Object.values(this.selectedNetworks).some((el) => el === ALL_NETWORKS)) return true;
     if (this.isPopularNetworksSelected(network, address)) return true;
     if (this.isFavoriteNetworkSelected(network, address)) return true;
     if (this.isSingleNetworkSelected(selectedType, address)) return true;
@@ -663,7 +662,7 @@ export default class State {
   public isFavoriteNetworkSelected(network: NetworkJson, address: string) {
     const favorites = network.favorite.filter((el) => el !== address);
 
-    return favorites.some((el) => this.selectedNetwork[el] === FAVORITE_NETWORKS);
+    return favorites.some((el) => this.selectedNetworks[el] === FAVORITE_NETWORKS);
   }
 
   public async setActiveNetworks(type: string) {
@@ -688,6 +687,7 @@ export default class State {
         case FAVORITE_NETWORKS:
           if (isFavorite) {
             network.active = true;
+
             break;
           }
 
@@ -1357,6 +1357,7 @@ export default class State {
 
     return [...accounts, ...addresses];
   }
+
   public generateDefaultBalance(address: string) {
     if (address === '') return;
 
@@ -1438,92 +1439,7 @@ export default class State {
     this.ready = true;
   }
 
-  public getHistoryMap(): Record<string, TransactionHistoryItemType[]> {
-    return this.historyMap;
-  }
-
   public subscribeNetworkMap() {
     return this.networkMapStore.getSubject();
-  }
-
-  public get getNetworkMap() {
-    return this.networkMap;
-  }
-
-  public setHistory(
-    address: string,
-    network: string,
-    item: TransactionHistoryItemType | TransactionHistoryItemType[],
-    callback?: (items: TransactionHistoryItemType[]) => void
-  ): void {
-    let items: TransactionHistoryItemType[];
-    const networkInfo = this.getNetworkMap[network];
-
-    if (!networkInfo) {
-      return;
-    }
-
-    if (item && !Array.isArray(item)) {
-      item.origin = 'app';
-      items = [item];
-    } else {
-      items = item;
-    }
-
-    items.forEach((item) => {
-      item.feeSymbol = networkInfo.nativeToken;
-
-      if (!item.changeSymbol) {
-        item.changeSymbol = networkInfo.nativeToken;
-      }
-    });
-
-    if (items.length) {
-      this.getAccountAddress().then((currentAddress) => {
-        if (currentAddress === address) {
-          const oldItems = this.historyMap[network] || [];
-
-          this.historyMap[network] = this.combineHistories(oldItems, items);
-          // this.saveHistoryToStorage(address, network, this.historyMap[network]);
-          callback && callback(this.historyMap[network]);
-
-          this.lazyNext('setHistory', () => {
-            this.publishHistory();
-          });
-        } else {
-          // this.saveHistoryToStorage(address, network, items);
-          callback && callback(this.historyMap[network]);
-        }
-      });
-    }
-  }
-
-  public subscribeHistory() {
-    return this.historySubject;
-  }
-
-  private publishHistory() {
-    this.historySubject.next(this.getHistoryMap());
-  }
-
-  private combineHistories(
-    oldItems: TransactionHistoryItemType[],
-    newItems: TransactionHistoryItemType[]
-  ): TransactionHistoryItemType[] {
-    const newHistories = newItems.filter((item) => !oldItems.some((old) => this.isSameHistory(old, item)));
-
-    return [...oldItems, ...newHistories].filter((his) => his.origin === 'app' || his.eventIdx);
-  }
-
-  public isSameHistory(oldItem: TransactionHistoryItemType, newItem: TransactionHistoryItemType): boolean {
-    if (oldItem.extrinsicHash === newItem.extrinsicHash && oldItem.action === newItem.action) {
-      if (oldItem.origin === 'app') {
-        return true;
-      } else {
-        return !oldItem.eventIdx || !newItem.eventIdx || oldItem.eventIdx === newItem.eventIdx;
-      }
-    }
-
-    return false;
   }
 }

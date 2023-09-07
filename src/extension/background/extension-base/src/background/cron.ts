@@ -171,7 +171,7 @@ export class FWCron {
 
   updateApiMapStatus = () => {
     const apiMap = this.state.getApiMap;
-    const networkMap = this.state.getNetworkMap;
+    const networkMap = this.state.networkMap;
 
     for (const [key, apiProp] of Object.entries(apiMap.substrate)) {
       if (apiProp.isEthereumOnly) continue;

@@ -126,6 +126,7 @@
     "accountsConnected": "Аккаунты, подключенны к {url}",
     "mobile": "мобильный",
     "connectCountAccounts": "Подключить 1 аккаунт | Подключить {count} аккаунтов",
+    "noconnections": "Соединения отсутствуют",
     "connected": "Подключено",
     "disconnect": "Отключить"
   },

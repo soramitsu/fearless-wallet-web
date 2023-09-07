@@ -26,7 +26,7 @@
         />
       </Scroll>
     </div>
-    <div v-else>NO AUTHS</div>
+    <div v-else class="no-auths">{{ $t('authorize.noconnections') }}</div>
   </Fragment>
 </template>
 
@@ -110,5 +110,7 @@ const onWCRemoveuth = async (id: string) => {
 .auth-items {
   height: calc(100% - 60px);
 }
+.no-auths {
+  padding: 20px;
+}
 </style>
-@/extension/background/extension-base/src/background/types

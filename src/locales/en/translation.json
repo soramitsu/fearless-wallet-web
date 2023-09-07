@@ -129,8 +129,9 @@
     "accountsConnected": "Accounts connected to {url}",
     "mobile": "mobile",
     "connectCountAccounts": "Connect 1 account | Connect {count} accounts",
+    "noconnections": "There are no connections",
     "connected": "Connected",
-    "disconnect":"Disconnect"
+    "disconnect": "Disconnect"
   },
   "header": {
     "connected": "Connected",

@@ -5,9 +5,7 @@ class Storage {
     return chrome.storage.local.set(value);
   }
 
-  // eslint-disable-next-line prettier/prettier
   get(key: (keyof IState)[]): Promise<Pick<IState, (typeof key)[number]>> {
-    // eslint-disable-next-line prettier/prettier
     return chrome.storage.local.get(key) as Promise<Pick<IState, (typeof key)[number]>>;
   }
 }
@@ -17,7 +15,7 @@ export const storage = new Storage();
 export async function initStorage() {
   const { authUrls, addressBook, selectedNetwork } = await storage.get(['authUrls', 'addressBook', 'selectedNetwork']);
 
-  const obj: Record<string, any> = {
+  const obj: Record<string, unknown> = {
     defaultAuthAccountSelection: [],
     accountSubs: {},
     addresses: {},

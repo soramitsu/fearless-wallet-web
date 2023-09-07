@@ -67,10 +67,7 @@ export default class Header extends Vue {
   height: 9px;
   width: 9px;
 }
-.icon--network {
-  height: 16px;
-  width: 16px;
-}
+
 .network__title {
   max-width: 80px;
   text-overflow: ellipsis;

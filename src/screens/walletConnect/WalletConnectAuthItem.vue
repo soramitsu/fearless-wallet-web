@@ -4,16 +4,11 @@
       <router-link :to="to" v-slot="{ navigate }" @onRemove="onRemoveAuth">
         <div class="row-content" @click="navigate">
           <div class="col">
-            <ExternalLogo :name="faviconURl" alt="favicon" />
-
+            <Favicon :url="dAppUrl" />
             <span class="auth-item-name">{{ stripedUrl }}</span>
           </div>
-
-          <span class="authorized-account__count">{{ authorizedAccounts }}</span>
         </div>
       </router-link>
-
-      <Icon className="trash row-controls" icon="trash" @click="onRemoveAuth" />
     </div>
   </div>
 </template>
@@ -21,32 +16,24 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
-import { SessionTypes } from '@walletconnect/types';
+import type { SessionTypes } from '@walletconnect/types';
 import { Components } from '@/router/routes';
+import Favicon from '@/components/Favicon.vue';
 
-const emit = defineEmits(['onRemove']);
-const { request } = defineProps<{
+type Props = {
   request: SessionTypes.Struct;
   to?: {
     name: typeof Components;
     params: Record<string, string>;
   };
   url?: string;
-}>();
+};
+
+const emit = defineEmits(['onRemove']);
+const { request } = defineProps<Props>();
 const to = { name: Components.WalletConnectAuthDetails, params: { topic: request.topic } };
 const stripedUrl = computed(() => stripUrl(request.peer.metadata.url));
-
-const faviconURl = computed(() => {
-  const host = new URL(request.peer.metadata.url).host;
-
-  return `https://icons.duckduckgo.com/ip3/${host}.ico`;
-});
-
-const authorizedAccounts = computed(() => {
-  const authListLength = 1;
-
-  return `${authListLength} account${authListLength !== 1 ? 's' : ''}`;
-});
+const dAppUrl = computed(() => request.peer.metadata.url);
 
 const onRemoveAuth = () => emit('onRemove', request.topic);
 </script>

@@ -7,6 +7,7 @@
             <Favicon :url="dAppUrl" />
             <span class="auth-item-name">{{ stripedUrl }}</span>
           </div>
+          <Icon icon="chevron-right" className="chevron-right" />
         </div>
       </router-link>
     </div>
@@ -46,6 +47,7 @@ const onRemoveAuth = () => emit('onRemove', request.topic);
 .row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
 
   &-content {
@@ -64,7 +66,11 @@ const onRemoveAuth = () => emit('onRemove', request.topic);
   padding: 16px 0;
   border-bottom: 1px solid $default-background-color;
 }
-
+.chevron-right {
+  width: 20px;
+  height: 20px;
+  color: $gray-color;
+}
 .authorized-account__count {
   white-space: nowrap;
   color: rgba(0, 238, 119, 1);

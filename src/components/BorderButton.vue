@@ -25,18 +25,18 @@ type Size = 'small' | 'medium' | 'big';
 type BorderRadius = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
 type Props = {
-  text: ComponentText;
-  width: string;
-  iconName: string;
-  iconColor: string;
-  size: Size;
-  borderRadius: BorderRadius;
-  fontSize: FontSize;
-  disabled: boolean;
-  hover: boolean;
-  topLeftCorner: boolean;
-  bottomRightCorner: boolean;
-  loading: boolean;
+  text?: ComponentText;
+  width?: string;
+  iconName?: string;
+  iconColor?: string;
+  size?: Size;
+  borderRadius?: BorderRadius;
+  fontSize?: FontSize;
+  disabled?: boolean;
+  hover?: boolean;
+  topLeftCorner?: boolean;
+  bottomRightCorner?: boolean;
+  loading?: boolean;
 };
 
 withDefaults(defineProps<Props>(), {

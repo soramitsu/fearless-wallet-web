@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts" setup>
-const props = withDefaults(defineProps<{ width: number }>(), { width: 21 });
+const props = withDefaults(defineProps<{ width?: number }>(), { width: 21 });
 
 const prepSize = `${props.width}px`;
 </script>

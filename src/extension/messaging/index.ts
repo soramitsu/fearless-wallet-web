@@ -84,7 +84,7 @@ export { sendMessage, connect };
 export * from '@/extension/messaging/staking';
 export * from '@/extension/messaging/accounts';
 export * from '@/extension/messaging/transfers';
-export * from '@/extension/messaging/requests';
+export * from '@/extension/messaging/substrate-requests';
 export * from '@/extension/messaging/onboarding';
 export * from '@/extension/messaging/google';
 export * from '@/extension/messaging/networks';

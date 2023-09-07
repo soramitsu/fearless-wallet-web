@@ -10,15 +10,10 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Prop, Component } from 'vue-property-decorator';
-@Component
-export default class SettingsMenuItem extends Vue {
-  readonly iconClass = ['icon', 'icon--width'];
+<script lang="ts" setup>
+const iconClass = ['icon', 'icon--width'];
 
-  @Prop(String) icon!: string;
-  @Prop(String) title!: string;
-}
+defineProps<{ icon: string; title: string }>();
 </script>
 
 <style lang="scss" scoped>

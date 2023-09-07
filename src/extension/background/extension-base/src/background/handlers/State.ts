@@ -35,6 +35,16 @@ import {
   RequestService,
 } from '@extension-base/services';
 import CurrentAccountStore, { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import {
+  MobileSigningRequest,
+  ApiProps,
+  PriceJson,
+  BalanceJson,
+  MobileSignRequest,
+  RequestAccountExportPrivateKey,
+  ResponseAccountExportPrivateKey,
+} from '../types';
+import type { AuthorizeRequest, MetadataRequest } from '@extension-base/background/types';
 import type { SignerPayloadRaw } from '@polkadot/types/types';
 import type {
   AuthUrls,
@@ -48,26 +58,19 @@ import type {
   Port,
   IState,
   ActiveTabAuthorizeStatus,
-  ApiProps,
-  BalanceJson,
-  PriceJson,
-  RequestAccountExportPrivateKey,
-  ResponseAccountExportPrivateKey,
   ServiceInfo,
   BalanceMap,
   Providers,
   ResponseTotalBalances,
   RequestAuthorizeCancel,
-  AccountJson,
-  EvmSignatureRequest,
-} from '@/extension/background/extension-base/src/background/types';
+  SigningRequest,
+} from '@extension-base/background/types/types';
 import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
-import type { ChainRegistry, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
+import type { ChainRegistry, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
-import { MobileSigningRequest, MobileSignRequest } from '@/extension/background/extension-base/src/background/types';
 import { URLS } from '@/consts/urls';
 import {
   ALL_NETWORKS,
@@ -125,7 +128,7 @@ export default class State {
   public networksJson: NetworkJson[] = []; // from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJson>>();
-  public selectedNetwork: Record<string, string> = {};
+  public selectedNetworks: Record<string, string> = {};
   public serviceInfoSubject = new Subject<ServiceInfo>();
   public balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
@@ -133,8 +136,9 @@ export default class State {
   public customTokenSubject = new Subject<CustomTokenJson>();
   public customTokenStore = new CustomTokenStore();
   public mobileSignRequests: Record<string, MobileSignRequest> = {};
-  private historyMap: Record<string, TransactionHistoryItemType[]> = {};
-  private historySubject = new Subject<Record<string, TransactionHistoryItemType[]>>();
+  public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
+  public readonly metaSubject = new BehaviorSubject<MetadataRequest[]>([]);
+  public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
   public readonly mobileSignSubject = new BehaviorSubject<MobileSigningRequest[]>([]);
   public balanceService = new BalanceService();
   public lazyMap: Record<string, unknown> = {};
@@ -221,17 +225,19 @@ export default class State {
   }
 
   async injectFromStorage() {
-    const { defaultAuthAccountSelection, fiatSymbol, injectedProviders, providers, selectedNetwork } =
+    const { defaultAuthAccountSelection, fiatSymbol, injectedProviders, providers, selectedNetworks } =
       await this.getFromStorage([
         'fiatSymbol',
-        'selectedNetwork',
+        'authUrls',
+        'selectedNetworks',
         'defaultAuthAccountSelection',
         'injectedProviders',
         'providers',
         'windows',
       ]);
+
     if (fiatSymbol) this.setFiatSymbol(fiatSymbol);
-    if (selectedNetwork) this.selectedNetwork = selectedNetwork;
+    if (selectedNetworks) this.selectedNetworks = selectedNetworks;
     if (injectedProviders) this.injectedProviders = new Map(injectedProviders);
     if (providers) this.providers = providers;
     if (defaultAuthAccountSelection && defaultAuthAccountSelection.length)
@@ -391,8 +397,9 @@ export default class State {
     const currentAccount = await this.currentAccount;
 
     if (currentAccount) {
-      this.selectedNetwork[currentAccount.address] = type;
-      storage.set({ selectedNetwork: this.selectedNetwork });
+      this.selectedNetworks[currentAccount.address] = type;
+
+      storage.set({ selectedNetworks: this.selectedNetworks });
     }
 
     return this.setActiveNetworks(type);
@@ -449,8 +456,8 @@ export default class State {
 
   public selectedNetworksExceptAddress(address: string): string[] {
     const result: string[] = [];
-    Object.keys(this.selectedNetwork).forEach((el) => {
-      if (el !== address) result.push(this.selectedNetwork[el]);
+    Object.keys(this.selectedNetworks).forEach((el) => {
+      if (el !== address) result.push(this.selectedNetworks[el]);
     });
 
     return result;
@@ -463,7 +470,7 @@ export default class State {
   }
 
   public isNetworkSelectedInAnotherWallet(network: NetworkJson, selectedType: string, address: string) {
-    if (Object.values(this.selectedNetwork).some((el) => el === ALL_NETWORKS)) return true;
+    if (Object.values(this.selectedNetworks).some((el) => el === ALL_NETWORKS)) return true;
     if (this.isPopularNetworksSelected(network, address)) return true;
     if (this.isFavoriteNetworkSelected(network, address)) return true;
     if (this.isSingleNetworkSelected(selectedType, address)) return true;
@@ -483,7 +490,7 @@ export default class State {
   public isFavoriteNetworkSelected(network: NetworkJson, address: string) {
     const favorites = network.favorite.filter((el) => el !== address);
 
-    return favorites.some((el) => this.selectedNetwork[el] === FAVORITE_NETWORKS);
+    return favorites.some((el) => this.selectedNetworks[el] === FAVORITE_NETWORKS);
   }
 
   public async setActiveNetworks(type: string) {
@@ -508,6 +515,7 @@ export default class State {
         case FAVORITE_NETWORKS:
           if (isFavorite) {
             network.active = true;
+
             break;
           }
 
@@ -716,7 +724,7 @@ export default class State {
   findNetworkKeyByChainId(_chainId?: string | null): [string | undefined, NetworkJson | undefined] {
     if (!_chainId) return [undefined, undefined];
 
-    const rs = Object.entries(this.getNetworkMap).find(([, chainInfo]) => chainInfo.chainId === _chainId);
+    const rs = Object.entries(this.networkMap).find(([, chainInfo]) => chainInfo.chainId === _chainId);
 
     if (rs) return rs;
     else return [undefined, undefined];
@@ -1084,200 +1092,7 @@ export default class State {
     this.ready = true;
   }
 
-  public getHistoryMap(): Record<string, TransactionHistoryItemType[]> {
-    return this.historyMap;
-  }
-
   public subscribeNetworkMap() {
     return this.networkMapStore.getSubject();
-  }
-
-  public get getNetworkMap() {
-    return this.networkMap;
-  }
-
-  public setHistory(
-    address: string,
-    network: string,
-    item: TransactionHistoryItemType | TransactionHistoryItemType[],
-    callback?: (items: TransactionHistoryItemType[]) => void
-  ): void {
-    let items: TransactionHistoryItemType[];
-    const networkInfo = this.getNetworkMap[network];
-
-    if (!networkInfo) {
-      return;
-    }
-
-    if (item && !Array.isArray(item)) {
-      item.origin = 'app';
-      items = [item];
-    } else {
-      items = item;
-    }
-
-    items.forEach((item) => {
-      item.feeSymbol = networkInfo.nativeToken;
-
-      if (!item.changeSymbol) {
-        item.changeSymbol = networkInfo.nativeToken;
-      }
-    });
-
-    if (items.length) {
-      this.getAccountAddress().then((currentAddress) => {
-        if (currentAddress === address) {
-          const oldItems = this.historyMap[network] || [];
-
-          this.historyMap[network] = this.combineHistories(oldItems, items);
-          // this.saveHistoryToStorage(address, network, this.historyMap[network]);
-          callback && callback(this.historyMap[network]);
-
-          this.lazyNext('setHistory', () => {
-            this.publishHistory();
-          });
-        } else {
-          // this.saveHistoryToStorage(address, network, items);
-          callback && callback(this.historyMap[network]);
-        }
-      });
-    }
-  }
-
-  public subscribeHistory() {
-    return this.historySubject;
-  }
-
-  private publishHistory() {
-    this.historySubject.next(this.getHistoryMap());
-  }
-
-  private combineHistories(
-    oldItems: TransactionHistoryItemType[],
-    newItems: TransactionHistoryItemType[]
-  ): TransactionHistoryItemType[] {
-    const newHistories = newItems.filter((item) => !oldItems.some((old) => this.isSameHistory(old, item)));
-
-    return [...oldItems, ...newHistories].filter((his) => his.origin === 'app' || his.eventIdx);
-  }
-
-  public isSameHistory(oldItem: TransactionHistoryItemType, newItem: TransactionHistoryItemType): boolean {
-    if (oldItem.extrinsicHash === newItem.extrinsicHash && oldItem.action === newItem.action) {
-      if (oldItem.origin === 'app') {
-        return true;
-      } else {
-        return !oldItem.eventIdx || !newItem.eventIdx || oldItem.eventIdx === newItem.eventIdx;
-      }
-    }
-
-    return false;
-  }
-
-  public async evmSign(
-    id: string,
-    url: string,
-    method: string,
-    params: any,
-    allowedAccounts: string[]
-  ): Promise<string | undefined> {
-    let address = '';
-    let payload: any;
-    const [p1, p2] = params as [string, string];
-
-    if (typeof p1 === 'string' && isEthereumAddress(p1)) {
-      address = p1;
-      payload = p2;
-    } else if (typeof p2 === 'string' && isEthereumAddress(p2)) {
-      address = p2;
-      payload = p1;
-    }
-
-    if (address === '' || !payload) {
-      throw new Error('Not found address or payload to sign');
-    }
-
-    if (
-      [
-        'eth_sign',
-        'personal_sign',
-        'eth_signTypedData',
-        'eth_signTypedData_v1',
-        'eth_signTypedData_v3',
-        'eth_signTypedData_v4',
-      ].indexOf(method) < 0
-    ) {
-      throw new Error('Not found sign method');
-    }
-
-    if (['eth_signTypedData_v3', 'eth_signTypedData_v4'].indexOf(method) > -1) {
-      payload = JSON.parse(payload);
-    }
-
-    // Check sign abiblity
-    if (!allowedAccounts.find((acc) => acc.toLowerCase() === address.toLowerCase())) {
-      throw new Error('Account ' + address + ' not in allowed list');
-    }
-
-    const pair = keyring.getPair(address);
-
-    if (!pair) {
-      throw new Error('Cannot find pair with address: ' + address);
-    }
-
-    const account: AccountJson = {
-      address: pair.address,
-      ethereumAddress: pair.meta.ethereumAddress as string,
-      name: pair.meta.name as string,
-    };
-
-    let hashPayload = '';
-    let canSign = false;
-
-    switch (method) {
-      case 'personal_sign':
-        canSign = true;
-        hashPayload = payload as string;
-        break;
-      case 'eth_sign':
-      case 'eth_signTypedData':
-      case 'eth_signTypedData_v1':
-      case 'eth_signTypedData_v3':
-      case 'eth_signTypedData_v4':
-        if (!account.isExternal) {
-          canSign = true;
-        }
-
-        break;
-      default:
-        throw new Error('Not found sign method');
-    }
-
-    const signPayload: EvmSignatureRequest = {
-      account: account,
-      type: method,
-      payload: payload as unknown,
-      hashPayload: hashPayload,
-      canSign: canSign,
-      id,
-    };
-    console.info(signPayload);
-
-    return '';
-    // return this.requestService
-    //   .addConfirmation(id, url, 'evmSignatureRequest', signPayload, {
-    //     requiredPassword: false,
-    //     address,
-    //   })
-    //   .then(({ isApproved, payload }) => {
-    //     if (isApproved) {
-    //       if (payload) {
-    //         return payload;
-    //       } else {
-    //         throw new Error('Not found signature');
-    //       }
-    //     } else {
-    //       throw new Error('User rejected request');
-    //     }
-    //   });
   }
 }

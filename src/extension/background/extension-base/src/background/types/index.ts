@@ -6,9 +6,7 @@ import { BN } from '@polkadot/util';
 import { Subscription } from 'rxjs';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '@extension-base/defaults';
-import MetadataStore from '@extension-base/stores/Metadata';
 import { JsonRpcProvider } from 'ethers';
-import { UserType } from '../../services/onboarding-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
@@ -30,7 +28,6 @@ import type {
   WalletAddress,
   ChangeWalletBalance,
   NetworkName,
-  AssetName,
   BuyProvider,
 } from '@/interfaces';
 
@@ -811,38 +808,6 @@ export interface AccountSub {
   url: string;
 }
 export type Subscriptions = Record<string, Port>;
-
-export interface IState {
-  registry: TypeRegistry;
-  metaStore: MetadataStore;
-  authUrls: AuthUrls;
-  addresses: Record<string, string>;
-  selectedNetwork: Record<string, string>;
-  defaultAuthAccountSelection: string[];
-  injectedProviders: Map<Port, ProviderInterface>;
-  notification: string;
-  subscriptions: Subscriptions;
-  providers: Providers;
-  accountSubs: Record<string, AccountSub>;
-  windows: number[];
-  fiatSymbol: string;
-  cachedUnlocks: CachedUnlocks;
-  balances: Record<WalletAddress, Record<AssetName, Record<NetworkName, BalanceItem>>>;
-  connectedTabsUrl: string[];
-  transaction: Record<string, TransactionHistoryItem[]>;
-  addressBook: AddressBook;
-  userType: UserType;
-  onboarding: {
-    user: UserType;
-    isRequired: boolean;
-    seen: boolean;
-  };
-  'wc@2:client:0.3//session': Array<unknown>;
-  'wc@2:core:0.3//pairing': Array<unknown>;
-  'wc@2:core:0.3//subscription': Array<unknown>;
-  'wc@2:client:0.3//request': Array<unknown>;
-  'wc@2:core:0.3//history': Array<unknown>;
-}
 
 export interface GoogleFileId {
   id: string;

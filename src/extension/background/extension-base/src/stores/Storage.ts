@@ -1,4 +1,4 @@
-import type { IState } from '@/extension/background/extension-base/src/background/types';
+import type { IState } from '@extension-base/background/types/types';
 
 class Storage {
   set(value: Partial<IState>) {
@@ -13,7 +13,11 @@ class Storage {
 export const storage = new Storage();
 
 export async function initStorage() {
-  const { authUrls, addressBook, selectedNetwork } = await storage.get(['authUrls', 'addressBook', 'selectedNetwork']);
+  const { authUrls, addressBook, selectedNetworks } = await storage.get([
+    'authUrls',
+    'addressBook',
+    'selectedNetworks',
+  ]);
 
   const obj: Record<string, unknown> = {
     defaultAuthAccountSelection: [],
@@ -23,7 +27,7 @@ export async function initStorage() {
   };
 
   if (authUrls === undefined) obj.authUrls = {};
-  if (selectedNetwork === undefined) obj.selectedNetwork = {};
+  if (selectedNetworks === undefined) obj.selectedNetworks = {};
   if (addressBook === undefined) obj.addressBook = {};
 
   await storage.set(obj);

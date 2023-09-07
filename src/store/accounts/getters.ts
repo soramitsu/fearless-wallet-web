@@ -17,7 +17,6 @@ export enum GettersTypes {
   getAccounts = 'getAccounts',
   getEthAccounts = 'getEthAccounts',
   hiddenAssets = 'hiddenAssets',
-  getAddresses = 'getAddresses',
   getBalances = 'getBalances',
   getWallets = 'getWallets',
   getAutoSelectNodesValueByNetwork = 'getAutoSelectNodesValueByNetwork',

@@ -7,14 +7,28 @@ import { TypeRegistry } from '@polkadot/types';
 import { Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 import { RequestSignatures } from '@extension-base/background/types/messages';
-import type { AccountAuthType, AccountJson, AuthUrlInfo } from '@extension-base/background/types';
-import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
-import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
-import type { ProviderInterface } from '@polkadot/rpc-provider/types';
-import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
-import type { HexString } from '@polkadot/util/types';
+import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import { BN } from '@polkadot/util';
+import { JsonRpcProvider } from 'ethers';
+import { BalanceItem } from '../../api/evm/types/ether';
+import { UserType } from '../../services/onboarding-service/types';
+import { CurrentAccountState } from '../../stores/CurrentAccountStore';
+import MetadataStore from '../../stores/Metadata';
+import { NetworkJson } from '../../types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
+import type { HexString } from '@polkadot/util/types';
+import type { ProviderInterface } from '@polkadot/rpc-provider/types';
+import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
+import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
+import type {
+  AccountAuthType,
+  AccountJson,
+  AddressBook,
+  ApiProps,
+  AuthUrlInfo,
+  TransactionHistoryItem,
+} from '@extension-base/background/types';
+import { NetworkName, WalletAddress, AssetName, ChangeWalletBalance, RelayChainName, BuyProvider } from '@/interfaces';
 
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
@@ -28,7 +42,6 @@ type IsNull<T, K extends keyof T> = { [K1 in Exclude<keyof T, K>]: T[K1] } & T[K
 
 type NullKeys<T> = { [K in keyof T]: IsNull<T, K> }[keyof T];
 
-export type SeedLengths = 12 | 24;
 export type Port = chrome.runtime.Port;
 
 export type AccountWithChildren = AccountJson & {
@@ -55,14 +68,30 @@ export interface RequestAddressCreate {
   meta: KeyringPair$Meta;
 }
 
-export interface RequestAddressRemove {
-  address: string;
+export interface SubscribeBalanceRequest {
+  id: string;
+  port: Port;
 }
 
 export type ConnectedTabsUrlResponse = string[];
 
-// [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
+export type NetWorkGroup =
+  | 'RELAY_CHAIN'
+  | 'POLKADOT_PARACHAIN'
+  | 'KUSAMA_PARACHAIN'
+  | 'MAIN_NET'
+  | 'TEST_NET'
+  | 'UNKNOWN';
 
+export interface DisableNetworkResponse {
+  success: boolean;
+  activeNetworkCount?: number;
+}
+
+export type RequestSubscribePrice = null;
+export interface RequestCurrentAccountAddress {
+  address: string;
+}
 export type MessageTypes = keyof RequestSignatures;
 
 // Requests
@@ -109,12 +138,6 @@ export interface RequestMetadataReject {
 
 export type RequestMetadataSubscribe = null;
 
-export interface RequestAccountCreateExternal {
-  address: string;
-  genesisHash?: string | null;
-  name: string;
-}
-
 export interface RequestAccountCreateSuri {
   password: string;
   suri: string;
@@ -148,14 +171,14 @@ export interface RequestAccountForget {
   type: 'native' | 'mobile';
 }
 
-export interface RequestAccountShow {
+export interface RequestUpdateMeta {
   address: string;
-  isShowing: boolean;
+  meta: KeyringPair$Meta;
 }
 
-export interface RequestAccountTie {
+export interface RequestAccountName {
   address: string;
-  genesisHash: string | null;
+  name: string;
 }
 
 export interface RequestAccountValidate {
@@ -163,29 +186,25 @@ export interface RequestAccountValidate {
   password: string;
 }
 
-export interface RequestDeriveCreate {
-  name: string;
-  genesisHash?: string | null;
-  suri: string;
-  parentAddress: string;
-  parentPassword: string;
-  password: string;
-}
-
-export interface RequestDeriveValidate {
-  suri: string;
-  parentAddress: string;
-  parentPassword: string;
-}
-
 export interface RequestAccountExport {
   address: string;
   password: string;
 }
+export interface TokenBalanceRaw {
+  reserved: BN;
+  frozen: BN;
+  free: BN;
+}
+export interface ApiMap {
+  substrate: Record<string, ApiProps>;
+  evm: Record<string, JsonRpcProvider>;
+}
 
-export interface RequestAccountBatchExport {
-  addresses: string[];
-  password: string;
+export interface ServiceInfo {
+  networkMap: Record<string, NetworkJson>;
+  apiMap: ApiMap;
+  isLock?: boolean;
+  currentAccountInfo: CurrentAccountState;
 }
 
 export interface RequestAccountList {
@@ -243,19 +262,6 @@ export interface ResponseSigningIsLocked {
 
 export type RequestSigningSubscribe = null;
 
-export type RequestSaveTimeoutCache = { address: string; isSavePass: boolean };
-
-export interface RequestSeedCreate {
-  length?: SeedLengths;
-  seed?: string;
-  type?: KeypairType;
-}
-
-export interface RequestSeedValidate {
-  suri: string;
-  type?: KeypairType;
-}
-
 // Responses
 
 export type ResponseTypes = {
@@ -289,27 +295,8 @@ export interface ResponseSigning {
   signature: HexString;
 }
 
-export interface ResponseDeriveValidate {
-  address: string;
-  suri: string;
-}
-
-export interface ResponseSeedCreate {
-  address: string;
-  seed: string;
-}
-
-export interface ResponseSeedValidate {
-  address: string;
-  suri: string;
-}
-
 export interface ResponseAccountExport {
   exportedJson: KeyringPair$Json;
-}
-
-export interface ResponseAccountsExport {
-  exportedJson: KeyringPairs$Json;
 }
 
 export type ResponseRpcListProviders = ProviderList;
@@ -338,23 +325,17 @@ export interface RequestJsonRestore {
   password: string;
 }
 
-export interface RequestBatchRestore {
-  file: KeyringPairs$Json;
+export interface RequestJsonValidate {
+  file: KeyringPair$Json;
   password: string;
+  isSubstrate?: boolean;
 }
 
 export interface ResponseJsonRestore {
   error: string | null;
 }
-
-export type AllowedPath = (typeof ALLOWED_PATH)[number];
-
-export interface ResponseJsonGetAccountInfo {
-  address: string;
-  name: string;
-  genesisHash: string;
-  type: KeypairType;
-}
+type TAllowPath = typeof ALLOWED_PATH;
+export type AllowedPath = TAllowPath[number];
 
 export interface ResponseAuthorizeList {
   list: AuthUrls;
@@ -441,6 +422,38 @@ export interface AccountSub {
 }
 export type Subscriptions = Record<string, Port>;
 
+export interface IState {
+  registry: TypeRegistry;
+  metaStore: MetadataStore;
+  authUrls: AuthUrls;
+  addresses: Record<string, string>;
+  selectedNetworks: Record<string, string>;
+  defaultAuthAccountSelection: string[];
+  injectedProviders: Map<Port, ProviderInterface>;
+  notification: string;
+  subscriptions: Subscriptions;
+  providers: Providers;
+  accountSubs: Record<string, AccountSub>;
+  windows: number[];
+  fiatSymbol: string;
+  cachedUnlocks: CachedUnlocks;
+  balances: Record<WalletAddress, Record<AssetName, Record<NetworkName, BalanceItem>>>;
+  connectedTabsUrl: string[];
+  transaction: Record<string, TransactionHistoryItem[]>;
+  addressBook: AddressBook;
+  userType: UserType;
+  onboarding: {
+    user: UserType;
+    isRequired: boolean;
+    seen: boolean;
+  };
+  'wc@2:client:0.3//session': Array<unknown>;
+  'wc@2:core:0.3//pairing': Array<unknown>;
+  'wc@2:core:0.3//subscription': Array<unknown>;
+  'wc@2:client:0.3//request': Array<unknown>;
+  'wc@2:core:0.3//history': Array<unknown>;
+}
+
 export interface GoogleFileId {
   id: string;
   token: string;
@@ -453,3 +466,74 @@ export interface RequestGoogleCreateFile {
 export interface RequestAuthorizeCancel {
   id: string;
 }
+export interface FormattedMethod {
+  args?: ArgInfo[];
+  methodName: string;
+}
+
+export interface ArgInfo {
+  argName: string;
+  argValue: string | string[];
+}
+
+export interface EraInfo {
+  period: number;
+  phase: number;
+}
+
+export interface ResponseParseTransactionSubstrate {
+  era: EraInfo | string;
+  nonce: number;
+  method: string | FormattedMethod[];
+  tip: number;
+  specVersion: number;
+  message: string;
+}
+
+type WarningValueName =
+  | 'mnemonicSequence'
+  | 'mnemonic'
+  | 'substrateDP'
+  | 'ethereumDP'
+  | 'rawSeed'
+  | 'jsonPassword'
+  | 'jsonInvalid'
+  | 'isNotSamePassword'
+  | 'duplicateMobileWallet'
+  | '';
+
+interface ValidateJsonResultPositive {
+  value: true;
+}
+
+interface ValidateJsonResultNegative {
+  value: false;
+  errorType: WarningValueName;
+}
+
+export type ValidateJsonResult = ValidateJsonResultPositive | ValidateJsonResultNegative;
+
+export type ResponseTotalBalances = {
+  address: string;
+  total: number;
+  change: ChangeWalletBalance;
+};
+
+export interface TokenBalance {
+  mainNetwork: string;
+  assetId: string;
+  priceId?: string;
+  tokenName: string;
+  symbol: string;
+  precision: number;
+  relayChain: RelayChainName;
+  icon: string;
+  providers: BuyProvider[];
+  balances: BalanceItem[];
+  color?: string;
+}
+
+export type BeaconRawSignCallBack = (tx: SignerPayloadRaw) => string;
+
+export type BalanceMap = Record<WalletAddress, TokenBalance[]>;
+export type NetworkMap = Record<string, NetworkJson>;

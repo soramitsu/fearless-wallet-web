@@ -777,7 +777,7 @@ export default class TransferForm extends Vue {
       const { errors, estimateFee, destEstimateFee } = await this.verifyTx();
 
       if (errors?.length) {
-        this.showExistentialPopup = errors.some(({ code }) => code === 'notEnoughExistentialDeposit');
+        this.showExistentialPopup = errors.some((el: any) => el.code === 'notEnoughExistentialDeposit');
         this.syncedFee = estimateFee || '0';
         this.syncedDestNetFee = destEstimateFee || '0';
       }

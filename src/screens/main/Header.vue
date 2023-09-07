@@ -80,7 +80,6 @@
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
 import { ActiveTabAuthorizeStatus } from '@extension-base/background/types';
-import type { HexString } from '@polkadot/util/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import type { NetworkJson } from '@extension-base/types';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
@@ -92,10 +91,9 @@ import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
-import { tieAccount, windowOpen } from '@/extension/messaging';
+import { windowOpen } from '@/extension/messaging';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 import { AsyncFn, Fn } from '@/interfaces';
-import { ALL_NETWORKS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common';
 import { cut } from '@/helpers';
 
@@ -192,12 +190,7 @@ export default class Header extends Vue {
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
 
-    const prepNetwork: HexString | null = network === ALL_NETWORKS ? null : `0x${this.getNetwork(network).chainId}`;
-
     this.setSelectedNetwork(network);
-
-    tieAccount(this.selectedWallet.address, prepNetwork);
-
     this.toggleSelectNetworkPopupVisible();
   }
 

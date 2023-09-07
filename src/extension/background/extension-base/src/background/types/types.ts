@@ -412,7 +412,7 @@ export interface SignRequest extends Resolver<ResponseSigning> {
   url: string;
 }
 
-export const NOTIFICATION_URL = chrome.runtime.getURL('popup.html#/');
+export const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
 
 export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
   focused: true,

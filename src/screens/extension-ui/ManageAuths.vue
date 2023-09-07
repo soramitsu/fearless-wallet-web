@@ -1,6 +1,6 @@
 <template>
   <Fragment>
-    <Tabs v-model="activeTab" :tabs="tabs" />
+    <Tabs :activeTab="activeTab" :tabs="tabs" @update:activeTab="onActiveTabUpdate" />
 
     <div v-if="showSubstrateAuths" class="auth-items">
       <Scroll>
@@ -42,8 +42,9 @@ import { Components } from '@/router/routes';
 import { disconnectWalletConnectConnection } from '@/extension/messaging';
 
 const store = useStore();
-const substrateList = ref<Record<string, AuthUrlInfo>>({});
 const router = useRouter();
+
+const substrateList = ref<Record<string, AuthUrlInfo>>({});
 
 const wcFilteredList = computed<WalletConnectSessions>(() => store.getters.wcSessions);
 
@@ -75,6 +76,10 @@ const openDotSamaAuthDetails = (index: string) => {
       index,
     },
   });
+};
+
+const onActiveTabUpdate = (value: 'substrate' | 'wc') => {
+  activeTab.value = value;
 };
 
 const openWCAuthDetails = (index: string) => {

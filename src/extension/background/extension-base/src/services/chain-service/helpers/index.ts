@@ -1,4 +1,4 @@
-import { NetworkJson } from '../../../types';
+import type { NetworkJson } from '@extension-base/types';
 
 export function _getSubstrateGenesisHash(chainInfo: NetworkJson) {
   return chainInfo.genesisHash || '';

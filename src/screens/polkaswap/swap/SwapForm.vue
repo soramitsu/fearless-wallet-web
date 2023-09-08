@@ -181,9 +181,9 @@
       :left="160"
       :height="285"
       :options="optionsCurrency"
-      :handlerFilter="handlerFilter"
-      :toggleValue="toggleSelectedAsset"
-      :handlerClose="toggleSelectAssetPopupVisibility.bind(null, '')"
+      @handlerFilter="handlerFilter"
+      @toggleValue="toggleSelectedAsset"
+      @handlerClose="toggleSelectAssetPopupVisibility.bind(null, '')"
     />
 
     <ConfirmationPasswordPopup

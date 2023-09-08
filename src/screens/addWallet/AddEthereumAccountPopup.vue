@@ -1,5 +1,5 @@
 <template>
-  <ConfirmationPopup text="accounts.addEthereumAccounts" :handlerClose="handlerClose" :handlerAgree="handlerAgree">
+  <ConfirmationPopup text="accounts.addEthereumAccounts" @handlerClose="handlerClose" @handlerAgree="handlerAgree">
     <div class="ethereum-account-popup">
       <Icon icon="moonbeam-moonriver" class="moonbeam-moonriver" />
 

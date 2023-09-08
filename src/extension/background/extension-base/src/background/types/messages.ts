@@ -1,3 +1,4 @@
+import { ValidatorsRequest } from '../../services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -64,7 +65,6 @@ import type {
   RequestStaking,
   RequestCheckStaking,
   ResponseCheckStaking,
-  ValidatorsRequest,
 } from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {

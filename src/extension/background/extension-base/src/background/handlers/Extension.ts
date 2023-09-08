@@ -33,6 +33,13 @@ import {
 } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
+import {
+  BondRequest,
+  RebondRequest,
+  RedeemRequest,
+  UnbondRequest,
+  ValidatorsRequest,
+} from '../../services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type {
   MobileSigningRequest,
@@ -83,7 +90,6 @@ import type {
   RequestStaking,
   RequestCheckStaking,
   ResponseCheckStaking,
-  ValidatorsRequest,
 } from '@extension-base/background/types/types';
 
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
@@ -807,13 +813,12 @@ export default class Extension extends FWExtensionBase {
         code: BasicTxErrorCode.KEYRING_ERROR,
         message: String(e.message),
       });
-    }
 
-    if (errors.length)
       return {
         status,
         errors,
       };
+    }
 
     apiSora.shouldPairBeLocked = !isSavePass;
 
@@ -1218,8 +1223,24 @@ export default class Extension extends FWExtensionBase {
     return this.state.onboardingService.getStories(lang);
   }
 
-  getValidators({ networkName }: ValidatorsRequest): Promise<FWValidatorInfoFull[]> {
-    return state.stakingService.getValidators(networkName);
+  getValidators(request: ValidatorsRequest): Promise<FWValidatorInfoFull[]> {
+    return state.stakingService.getValidators(request);
+  }
+
+  bond(request: BondRequest): Promise<boolean> {
+    return state.stakingService.bond(request);
+  }
+
+  unbond(request: UnbondRequest): Promise<boolean> {
+    return state.stakingService.unbond(request);
+  }
+
+  rebond(request: RebondRequest): Promise<boolean> {
+    return state.stakingService.rebond(request);
+  }
+
+  redeem(request: RedeemRequest): Promise<boolean> {
+    return state.stakingService.redeem(request);
   }
 
   async handle<TMessageType extends MessageTypes>(
@@ -1342,6 +1363,25 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.soraFees)':
         return this.getSoraFees();
 
+      // staking
+      case 'pri(staking.validators)':
+        return this.getValidators(request as ValidatorsRequest);
+
+      case 'pri(staking.bond)':
+        return this.bond(request as BondRequest);
+
+      case 'pri(staking.unbond)':
+        return this.unbond(request as UnbondRequest);
+
+      case 'pri(staking.rebond)':
+        return this.rebond(request as RebondRequest);
+
+      case 'pri(staking.redeem)':
+        return this.redeem(request as RedeemRequest);
+
+      case 'pri(staking.checkStaking)':
+        return this.checkStaking(request as RequestStaking);
+
       // price
       case 'pri(price.update.currency)':
         return this.updateCurrencySymbol(request as string);
@@ -1418,25 +1458,6 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(balance.subscription)':
         return this.subscribeBalance(id, port);
-
-      // staking
-      case 'pri(staking.validators)':
-        return this.getValidators(request as ValidatorsRequest);
-
-      case 'pri(staking.bond)':
-        return this.getValidators(request as ValidatorsRequest);
-
-      case 'pri(staking.unbond)':
-        return this.getValidators(request as ValidatorsRequest);
-
-      case 'pri(staking.rebond)':
-        return this.getValidators(request as ValidatorsRequest);
-
-      case 'pri(staking.redeem)':
-        return this.getValidators(request as ValidatorsRequest);
-
-      case 'pri(staking.checkStaking)':
-        return this.checkStaking(request as RequestStaking);
 
       // OnBoarding
       case 'pri(onboarding.get.stories)':

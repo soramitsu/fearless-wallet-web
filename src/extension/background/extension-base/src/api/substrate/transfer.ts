@@ -1,10 +1,55 @@
 import { FPNumber } from '@sora-substrate/util';
 import { state } from '@extension-base/background/handlers';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
-import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
+import { getAssetOptions, getPrecisionValue } from '@extension-base/api/substrate/utils';
 import { getUtilityProps, getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { BasicTxResponse, TransferErrorCode, SignerType, TokenBalance } from '@extension-base/background/types/types';
+import { Extrinsic } from './crossChain';
 import { NetworkName } from '@/interfaces';
+
+type ExtrinsicTransferProps = {
+  to: string;
+  amount: string | undefined;
+  networkKey: NetworkName;
+  tokenBalance: TokenBalance;
+};
+
+export function createExtrinsicTransfer(props: ExtrinsicTransferProps): Extrinsic {
+  const { amount, tokenBalance, to, networkKey } = props;
+  const api = state.getSubstrateApiMap[networkKey].api;
+
+  if (!api) return null;
+
+  const { precision, type, id } = tokenBalance.balances.find(
+    ({ name }) => name.toLowerCase() === networkKey.toLowerCase()
+  )!;
+  const ormlOptions = getAssetOptions(id);
+  const precisionAmount = getPrecisionValue(amount, precision) as string;
+
+  try {
+    switch (type) {
+      case 'normal':
+        return api.tx.balances.transfer(to, precisionAmount);
+
+      case 'ormlChain':
+        return api.tx.tokens.transfer(to, ormlOptions, precisionAmount);
+
+      case 'equilibrium':
+        return api.tx.eqBalances.transfer(ormlOptions, to, precisionAmount);
+
+      case 'soraAsset':
+      case 'assets':
+        return api.tx.assets.transfer(ormlOptions, to, precisionAmount);
+
+      default:
+        return api.tx.currencies.transfer(to, ormlOptions, precisionAmount);
+    }
+  } catch (e) {
+    console.info('Unable to create extrinsic', e);
+
+    return null;
+  }
+}
 
 export async function estimateFee(
   networkKey: string,

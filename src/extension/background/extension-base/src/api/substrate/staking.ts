@@ -3,7 +3,9 @@ import { CodecString, FPNumber } from '@sora-substrate/math';
 import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
 import { api as apiSora } from '@sora-substrate/util';
+import { BondParams } from '../../services/staking-service/types';
 import { formatEra, formatValidatorExposure, formatIndividualRewardPoints } from './testStaking/helpers';
+import { Extrinsic } from './crossChain';
 import type {
   ElectedValidator,
   NominatorReward,
@@ -264,4 +266,10 @@ export async function getValidatorsInfo(api: ApiPromise): Promise<ValidatorInfoF
   });
 
   return sortedValidators;
+}
+
+export async function bond(api: ApiPromise, { controller, amount, stashAccount }: BondParams): Promise<Extrinsic> {
+  const tx = api.tx.staking.bond(controller, amount, { Account: stashAccount });
+
+  return tx;
 }

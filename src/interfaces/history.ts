@@ -19,7 +19,7 @@ type Transfer = {
   to: string;
 };
 
-type Extrinsic = {
+type HistoryExtrinsic = {
   call: string;
   fee: string;
   hash: string;
@@ -31,7 +31,7 @@ type HistoryElement = {
   id: string;
   address: string;
   timestamp: string;
-  extrinsic?: Extrinsic;
+  extrinsic?: HistoryExtrinsic;
   reward?: Reward;
   transfer?: Transfer;
   isMock?: true;
@@ -89,7 +89,7 @@ export {
   GetHistory,
   History,
   HistoryForWalletAddress,
-  Extrinsic,
+  HistoryExtrinsic,
   SubqueryHistory,
   GiantsquidHistoryItem,
   Reward,

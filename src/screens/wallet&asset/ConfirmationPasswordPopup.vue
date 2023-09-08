@@ -342,7 +342,18 @@ export default class ConfirmationPasswordPopup extends Vue {
       this.extrinsicType === 'rebond' ||
       this.extrinsicType === 'redeem'
     )
-      return await makeStaking(this.extrinsicType, callback);
+      return await makeStaking(
+        this.extrinsicType,
+        {
+          address: '',
+          amount: '',
+          controller: '',
+          networkName: '',
+          password: '',
+          stashAccount: '',
+        },
+        callback
+      );
   }
 
   async keypress({ key }: KeyboardEvent) {

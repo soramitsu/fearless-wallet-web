@@ -742,7 +742,3 @@ export interface TokenBalance {
 export type BalanceMap = Record<WalletAddress, TokenBalance[]>;
 
 export type NetworkMap = Record<string, NetworkJson>;
-
-export interface ValidatorsRequest {
-  networkName: NetworkName;
-}

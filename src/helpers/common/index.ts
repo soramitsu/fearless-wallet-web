@@ -1,4 +1,4 @@
-import type { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { addNumbers } from '@/helpers/numbers';
 import { ALL_NETWORKS, NETWORK_GROUP } from '@/consts/networks';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';

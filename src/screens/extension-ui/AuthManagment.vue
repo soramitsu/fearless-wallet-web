@@ -4,7 +4,7 @@
     :fullScreen="true"
     :showBackIcon="!showAuthDetails"
     @closeHandler="onClose"
-    @backHandler="onBack"
+    @handlerBack="onBack"
   >
     <router-view></router-view>
   </AboveForm>

@@ -5,7 +5,7 @@
 
       <div v-else class="header-content">
         <div class="activity align-left">
-          <div v-if="showBackIcon" class="icon icon-back" @click="emit('backHandler')">
+          <div v-if="showBackIcon" class="icon icon-back" @click="emit('handlerBack')">
             <Icon icon="chevron-left" />
           </div>
 
@@ -41,7 +41,7 @@ import type { ComponentText } from '@/interfaces';
 
 const { t } = useI18n();
 
-const emit = defineEmits(['backHandler', 'closeHandler', 'saveChanges']);
+const emit = defineEmits(['handlerBack', 'closeHandler', 'saveChanges']);
 const { blur, fullScreen, header, showAcceptIcon, showAnimation, showBackIcon, showCloseIcon } = withDefaults(
   defineProps<{
     header?: ComponentText;

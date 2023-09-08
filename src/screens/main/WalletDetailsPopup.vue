@@ -5,7 +5,7 @@
     :showHeader="false"
     :showBlur="false"
     :showBackground="false"
-    :handlerClose="close"
+    @handlerClose="close"
     :top="top"
     :left="300"
   >

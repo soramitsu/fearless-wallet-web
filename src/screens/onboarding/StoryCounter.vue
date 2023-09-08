@@ -3,17 +3,11 @@
     <div v-for="index in count" :key="index" class="counter" :class="activeClass(index)"></div>
   </div>
 </template>
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+const props = defineProps<{ activeIndex: number; count: number }>();
 
-@Component({})
-export default class StoryCounter extends Vue {
-  @Prop(Number) activeIndex!: number;
-  @Prop(Number) count!: number;
-
-  activeClass(index: number) {
-    return this.activeIndex === index ? 'counter--active' : '';
-  }
+function activeClass(index: number) {
+  return props.activeIndex === index ? 'counter--active' : '';
 }
 </script>
 

@@ -7,7 +7,7 @@
     :left="-17"
     :showBorder="true"
     :showHeader="false"
-    :handlerClose="handlerClose"
+    @handlerClose="handlerClose"
   >
     <div class="account-settings">
       <div v-if="showExport" class="row" @click="openNotificationPopup">

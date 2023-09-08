@@ -133,10 +133,6 @@ import {
 } from '@/interfaces';
 import { IS_PRODUCTION } from '@/consts/global';
 
-// function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
-//   return (value as SignerPayloadJSON).genesisHash !== undefined;
-// }
-
 async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
   const currentAccount = await state.currentAccount;
 
@@ -991,8 +987,7 @@ export default class Extension extends FWExtensionBase {
 
       // Estimate with EVM API
       if (!isMainToken && tokenInfo.id) {
-        const prepContractAddress = `0x${tokenInfo.id}`;
-        const { fee: feeValue } = await getERC20TransactionObject(prepContractAddress, networkKey, from, to, txVal);
+        const { fee: feeValue } = await getERC20TransactionObject(tokenInfo.id, networkKey, from, to, txVal);
 
         fee = +ethers.formatEther(feeValue);
       } else {
@@ -1565,6 +1560,12 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.create.suri)':
         return this.accountsCreateSuri(request as RequestAccountCreateSuri);
 
+      case 'pri(price.update.currency)':
+        return this.updateCurrencySymbol(request as string);
+
+      case 'pri(price.subscription)':
+        return this.subscribePrice(id, port);
+
       case 'pri(accounts.update.current)':
         return this.updateCurrentAccount(request as string);
 
@@ -1619,12 +1620,6 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.soraFees)':
         return this.getSoraFees();
-
-      case 'pri(price.update.currency)':
-        return this.updateCurrencySymbol(request as string);
-
-      case 'pri(price.subscription)':
-        return this.subscribePrice(id, port);
 
       case 'pri(metadata.approve)':
         return this.metadataApprove(request as RequestMetadataApprove);

@@ -34,18 +34,10 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
 import { URLS } from '@/consts/urls';
 
-@Component
-export default class FinishForm extends Vue {
-  readonly URLS = URLS;
-
-  openPage(url: string) {
-    window.open(url);
-  }
-}
+const openPage = (url: string) => window.open(url);
 </script>
 
 <style lang="scss" scoped>

@@ -1,7 +1,7 @@
 <template>
   <Popup
     :showHeader="true"
-    :handlerClose="handlerClose"
+    @handlerClose="handlerClose"
     sizeWidth="big"
     :showBorder="true"
     :headerText="activeTabName"

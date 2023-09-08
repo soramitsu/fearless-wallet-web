@@ -1,5 +1,5 @@
 <template>
-  <Popup headerText="assets.lockedDetails" :showBorder="true" :handlerClose="closePopup" sizeWidth="big">
+  <Popup headerText="assets.lockedDetails" :showBorder="true" @handlerClose="closePopup" sizeWidth="big">
     <div class="content">
       <div v-for="{ name, value, fiat } in detailsBalance" :key="name" class="balance-row">
         <div class="label">{{ $t(`assets.${name}`) }}</div>

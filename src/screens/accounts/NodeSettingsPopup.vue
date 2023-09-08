@@ -3,7 +3,7 @@
     sizeWidth="mini"
     :showHeader="false"
     :showBorder="true"
-    :handlerClose="handlerClose"
+    @handlerClose="handlerClose"
     :top="top"
     :left="-35"
     verticalPlacement="top"

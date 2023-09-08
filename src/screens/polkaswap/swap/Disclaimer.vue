@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="common.disclaimer" :fullScreen="true" :closeHandler="closeForm">
+  <AboveForm header="common.disclaimer" :fullScreen="true" @closeHandler="closeForm">
     <div class="disclaimer">
       <Scroll>
         <div>

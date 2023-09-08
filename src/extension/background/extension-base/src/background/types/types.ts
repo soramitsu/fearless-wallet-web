@@ -1,8 +1,4 @@
-// Copyright 2019-2022 @polkadot/extension authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
 /* eslint-disable no-use-before-define */
-import { BN } from '@polkadot/util';
 import { Subscription } from 'rxjs';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '@extension-base/defaults';
@@ -12,7 +8,6 @@ import { UserType } from '../../services/onboarding-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
-import type { SubmittableExtrinsicFunction } from '@polkadot/api/promise/types';
 import type { TypeRegistry } from '@polkadot/types';
 import type { SignerResult } from '@polkadot/types/types/extrinsic';
 import type { Registry, SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
@@ -20,7 +15,6 @@ import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { ProviderInterface } from '@polkadot/rpc-provider/types';
-import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type {
@@ -56,7 +50,6 @@ type IsNull<T, K extends keyof T> = { [K1 in Exclude<keyof T, K>]: T[K1] } & T[K
 
 type NullKeys<T> = { [K in keyof T]: IsNull<T, K> }[keyof T];
 
-export type SeedLengths = 12 | 24;
 export type Port = chrome.runtime.Port;
 
 export interface AccountJson extends KeyringPair$Meta {
@@ -75,18 +68,6 @@ export interface AccountJson extends KeyringPair$Meta {
   type?: KeypairType;
   whenCreated?: number;
 }
-
-export type AccountWithChildren = AccountJson & {
-  children?: AccountWithChildren[];
-};
-
-export type AccountsContext = {
-  accounts: AccountJson[];
-  hierarchy: AccountWithChildren[];
-  master?: AccountJson;
-  selectedAccounts?: AccountJson['address'][];
-  setSelectedAccounts?: (address: AccountJson['address'][]) => void;
-};
 
 export interface ApproveAuthRequest {
   request: AuthorizeRequest;
@@ -121,9 +102,6 @@ export interface RequestAddressCreate {
   meta: KeyringPair$Meta;
 }
 
-export interface RequestAddressRemove {
-  address: string;
-}
 export interface SubscribeBalanceRequest {
   id: string;
   port: Port;
@@ -148,32 +126,11 @@ export type NetWorkGroup =
   | 'TEST_NET'
   | 'UNKNOWN';
 
-export interface ValidateNetworkResponse {
-  success: boolean;
-  key: string;
-  genesisHash: string;
-  ss58Prefix: string;
-  // networkGroup: NetWorkGroup[];
-  chain: string;
-  evmChainId: number;
-  nativeToken?: string;
-  decimal?: number;
-  error?: NETWORK_ERROR;
-  conflictChain?: string;
-  conflictKey?: string;
-}
-
-export interface ValidateNetworkRequest {
-  provider: string;
-  isEthereum: boolean;
-  existedNetwork?: NetworkJson;
-}
 export interface DisableNetworkResponse {
   success: boolean;
   activeNetworkCount?: number;
 }
 
-export type RequestPrice = null;
 export type RequestSubscribePrice = null;
 export interface RequestCurrentAccountAddress {
   address: string;
@@ -213,22 +170,12 @@ export interface RequestUpdateAuthorizedAccounts {
   authorizedAccounts: string[];
 }
 
-export type RequestAuthorizeSubscribe = null;
-
 export interface RequestMetadataApprove {
   id: string;
 }
 
 export interface RequestMetadataReject {
   id: string;
-}
-
-export type RequestMetadataSubscribe = null;
-
-export interface RequestAccountCreateExternal {
-  address: string;
-  genesisHash?: HexString | null;
-  name: string;
 }
 
 export interface RequestAccountCreateSuri {
@@ -311,41 +258,24 @@ export type BasicTxError = {
   data?: object;
   message: string;
 };
-export interface DefaultFormatBalance {
-  decimals?: number[] | number;
-  unit?: string[] | string;
-}
+
 export interface ApiState {
-  apiDefaultTx: SubmittableExtrinsicFunction;
-  apiDefaultTxSudo: SubmittableExtrinsicFunction;
-  isApiInitialized: boolean;
   isApiReady: boolean;
-  isDevelopment?: boolean;
   isEthereum?: boolean;
-  specName: string;
-  specVersion: string;
-  systemChain: string;
-  systemName: string;
-  systemVersion: string;
   registry: Registry;
-  defaultFormatBalance: DefaultFormatBalance;
 }
+
 export interface ApiProps extends ApiState {
   api?: ApiPromise;
   provider?: WsProvider;
-  apiError?: string;
-  apiUrl: string;
-  isNotSupport?: boolean;
   isApiConnected: boolean;
-  tryAnotherNode: boolean;
   isEthereum: boolean;
   isEthereumOnly: boolean;
-  isApiInitialized: boolean;
   isReady: Promise<ApiProps>;
   apiRetry: number;
   nodeIndex: number;
-  useEvmAddress?: boolean;
 }
+
 export type BasicTxWarning = {
   code: TxWarningCode;
   data?: object;
@@ -465,18 +395,6 @@ export interface ResponseAccountExportPrivateKey {
   publicKey: string;
 }
 
-export interface RequestAccountChangePassword {
-  address: string;
-  oldPass: string;
-  newPass: string;
-}
-
-export interface RequestAccountEdit {
-  address: string;
-  genesisHash?: string | null;
-  name: string;
-}
-
 export interface RequestAccountForget {
   address: string;
   type: 'native' | 'mobile';
@@ -485,16 +403,6 @@ export interface RequestAccountForget {
 export interface RequestUpdateMeta {
   address: string;
   meta: KeyringPair$Meta;
-}
-
-export interface RequestAccountShow {
-  address: string;
-  isShowing: boolean;
-}
-
-export interface RequestAccountTie {
-  address: string;
-  genesisHash: HexString | null;
 }
 
 export interface RequestAccountName {
@@ -507,30 +415,11 @@ export interface RequestAccountValidate {
   password: string;
 }
 
-export interface RequestDeriveCreate {
-  name: string;
-  genesisHash?: HexString | null;
-  suri: string;
-  parentAddress: string;
-  parentPassword: string;
-  password: string;
-}
-
-export interface RequestDeriveValidate {
-  suri: string;
-  parentAddress: string;
-  parentPassword: string;
-}
-
 export interface RequestAccountExport {
   address: string;
   password: string;
 }
-export interface TokenBalanceRaw {
-  reserved: BN;
-  frozen: BN;
-  free: BN;
-}
+
 export interface ApiMap {
   substrate: Record<string, ApiProps>;
   evm: Record<string, JsonRpcProvider>;
@@ -543,16 +432,9 @@ export interface ServiceInfo {
   currentAccountInfo: CurrentAccountState;
 }
 
-export interface RequestAccountBatchExport {
-  addresses: string[];
-  password: string;
-}
-
 export interface RequestAccountList {
   anyType?: boolean;
 }
-
-export type RequestAccountSubscribe = null;
 
 export interface RequestActiveTabsUrlUpdate {
   tabs: chrome.tabs.Tab[];
@@ -601,21 +483,6 @@ export interface ResponseSigningIsLocked {
   remainingTime: number;
 }
 
-export type RequestSigningSubscribe = null;
-
-export type RequestSaveTimeoutCache = { address: string; isSavePass: boolean };
-
-export interface RequestSeedCreate {
-  length?: SeedLengths;
-  seed?: string;
-  type?: KeypairType;
-}
-
-export interface RequestSeedValidate {
-  suri: string;
-  type?: KeypairType;
-}
-
 // Responses
 
 export type ResponseTypes = {
@@ -649,27 +516,8 @@ export interface ResponseSigning {
   signature: HexString;
 }
 
-export interface ResponseDeriveValidate {
-  address: string;
-  suri: string;
-}
-
-export interface ResponseSeedCreate {
-  address: string;
-  seed: string;
-}
-
-export interface ResponseSeedValidate {
-  address: string;
-  suri: string;
-}
-
 export interface ResponseAccountExport {
   exportedJson: KeyringPair$Json;
-}
-
-export interface ResponseAccountsExport {
-  exportedJson: KeyringPairs$Json;
 }
 
 export type ResponseRpcListProviders = ProviderList;
@@ -688,11 +536,6 @@ export interface RequestSign {
 
   sign(registry: TypeRegistry, pair: KeyringPair): { signature: HexString };
 }
-export interface RequestSignJSON {
-  readonly payload: SignerPayloadJSON | SignerPayloadRaw | undefined;
-
-  sign(): { signature: HexString };
-}
 
 export interface RequestJsonRestore {
   file: KeyringPair$Json;
@@ -705,24 +548,9 @@ export interface RequestJsonValidate {
   isSubstrate?: boolean;
 }
 
-export interface RequestBatchRestore {
-  file: KeyringPairs$Json;
-  password: string;
-}
-
-export interface ResponseJsonRestore {
-  error: string | null;
-}
 type TAllowPath = typeof ALLOWED_PATH;
-export type AllowedPath = TAllowPath[number];
 
-export interface ResponseJsonGetAccountInfo {
-  address: string;
-  ethereumAddress: string;
-  name: string;
-  genesisHash: string;
-  type: KeypairType;
-}
+export type AllowedPath = TAllowPath[number];
 
 export interface ResponseAuthorizeList {
   list: AuthUrls;
@@ -805,7 +633,7 @@ export interface MobileSignRequest extends Resolver<ResponseSigning> {
   request: SignerPayloadRaw;
 }
 
-const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
+export const NOTIFICATION_URL = chrome.runtime.getURL('popup.html#/');
 
 export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
   focused: true,
@@ -839,7 +667,7 @@ export interface IState {
   metaStore: MetadataStore;
   authUrls: AuthUrls;
   addresses: Record<string, string>;
-  selectedNetwork: Record<string, string>;
+  selectedNetworks: Record<string, NetworkName>;
   defaultAuthAccountSelection: string[];
   injectedProviders: Map<Port, ProviderInterface>;
   notification: string;
@@ -866,10 +694,6 @@ export interface GoogleFileId {
   token: string;
 }
 
-export interface RequestGoogleCreateFile {
-  data: Record<string, string>;
-}
-
 export interface TransactionHistoryItem {
   time: number | string;
   networkKey: string;
@@ -888,29 +712,6 @@ export interface TransactionHistoryItem {
 
 export interface RequestAuthorizeCancel {
   id: string;
-}
-export interface FormattedMethod {
-  args?: ArgInfo[];
-  methodName: string;
-}
-
-export interface ArgInfo {
-  argName: string;
-  argValue: string | string[];
-}
-
-export interface EraInfo {
-  period: number;
-  phase: number;
-}
-
-export interface ResponseParseTransactionSubstrate {
-  era: EraInfo | string;
-  nonce: number;
-  method: string | FormattedMethod[];
-  tip: number;
-  specVersion: number;
-  message: string;
 }
 
 type WarningValueName =
@@ -936,14 +737,6 @@ interface ValidateJsonResultNegative {
 
 export type ValidateJsonResult = ValidateJsonResultPositive | ValidateJsonResultNegative;
 
-export interface RequestAccountMeta {
-  address: string | Uint8Array;
-}
-
-export interface ResponseAccountMeta {
-  meta: KeyringPair$Meta;
-}
-
 export type ResponseTotalBalances = {
   address: string;
   total: number;
@@ -964,7 +757,6 @@ export interface TokenBalance {
   color?: string;
 }
 
-export type BeaconRawSignCallBack = (tx: SignerPayloadRaw) => string;
-
 export type BalanceMap = Record<WalletAddress, TokenBalance[]>;
+
 export type NetworkMap = Record<string, NetworkJson>;

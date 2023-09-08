@@ -10,7 +10,7 @@
             :tooltipText="tooltipText"
             :target="target"
             :class="classes"
-            :text="label"
+            :label="label"
             :isActive="activeTabName === tabName"
             @click="openTab(tabName)"
           />

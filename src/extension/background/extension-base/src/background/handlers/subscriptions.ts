@@ -11,10 +11,10 @@ import type {
   MessageTypesWithSubscriptions,
   Port,
   SubscriptionMessageTypes,
+  Subscriptions,
 } from '@extension-base/background/types/types';
 
 type SubscriptionName = 'balance' | 'xorTotalBalance';
-type Subscriptions = Record<string, Port>;
 
 const subscriptions: Subscriptions = {};
 
@@ -141,9 +141,11 @@ export class FWSubscription {
       this.state.setBalanceItem(networkKey, rs, address);
     };
 
+    this.state.generateDefaultBalance(address);
+
     const unsub = subscribeBalance(address, ethereumAddress, setBalance);
 
-    const unsubEvm = subscribeEvmBalance(address, ethereumAddress, setBalance);
+    const unsubEvm = ethereumAddress ? subscribeEvmBalance(address, ethereumAddress, setBalance) : null;
 
     if (onlyRunOnFirstTime) {
       unsub && unsub();

@@ -19,10 +19,9 @@ async function fetchSubqueryHistory(
   pageSize = 100,
   cursor: string | null = null
 ): Promise<SubqueryHistory> {
-  const {
-    data: { data },
-  } = await axios.post(url, {
-    query: `{
+  const res = await axios
+    .post(url, {
+      query: `{
       historyElements(
         after: ${cursor},
         first: ${pageSize},
@@ -47,9 +46,12 @@ async function fetchSubqueryHistory(
         }
       }
     }`,
-  });
+    })
+    .catch((e) => console.info(e));
 
-  return data?.historyElements;
+  if (res && res.data) return res.data?.historyElements;
+
+  return { nodes: [], pageInfo: { startCursor: '0', endCursor: '0' } };
 }
 
 async function fetchGiantsquidHistory(url: string, address: string): Promise<GiantsquidHistoryItem[]> {
@@ -147,10 +149,10 @@ async function fetchEthereumTokenHistory(
     params: {
       module: 'account',
       action: 'tokentx',
-      contractAddress,
+      contractAddress: `0x${contractAddress}`,
       page: 1,
       offset: 50,
-      sort: 'asc',
+      sort: 'desc',
       apikey,
     },
     signal,
@@ -167,7 +169,7 @@ async function fetchEthereumTokenHistory(
   return res.data.result.map(({ timeStamp, value, gasUsed, from, to, hash }, index) => ({
     address,
     id: String(index),
-    timestamp: timeStamp,
+    timestamp: (+timeStamp * 1000).toString(),
     transfer: {
       amount: ethers.formatUnits(value, decimal),
       hash,
@@ -191,7 +193,7 @@ async function fetchEthereumHistory(url: string, address: string): Promise<Histo
       address,
       page: 1,
       offset: 50,
-      sort: 'asc',
+      sort: 'desc',
       apikey,
     },
     signal,
@@ -206,7 +208,7 @@ async function fetchEthereumHistory(url: string, address: string): Promise<Histo
   return res.data.result.map(({ timeStamp, value, gasUsed, from, isError, to, hash }, index) => ({
     address,
     id: String(index),
-    timestamp: timeStamp,
+    timestamp: (+timeStamp * 1000).toString(),
     transfer: {
       amount: value,
       hash,
@@ -228,13 +230,17 @@ async function fetchHistory(
   isUtility: boolean
 ) {
   try {
-    if (type === 'etherscan' && isUtility) return fetchEthereumHistory(url, address);
+    if (type === 'etherscan') {
+      if (isUtility) return fetchEthereumHistory(url, address);
 
-    if (type === 'etherscan') return fetchEthereumTokenHistory(url, address, assetId);
+      return fetchEthereumTokenHistory(url, address, assetId);
+    }
 
     if (type === 'subquery') return fetchSubqueryHistory(url, address);
-    else if (type === 'subsquid') return fetchSubsquidHistory(url, address);
-    else if (type === 'giantsquid') {
+
+    if (type === 'subsquid') return fetchSubsquidHistory(url, address);
+
+    if (type === 'giantsquid') {
       const formattedAddress = BaseApi.isEthereumNetwork(networkName) ? address.toLowerCase() : address;
 
       return fetchGiantsquidHistory(url, formattedAddress);

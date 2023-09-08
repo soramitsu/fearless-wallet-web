@@ -3,12 +3,7 @@
     <slot></slot>
   </div>
 </template>
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-
-@Component
-export default class Blur extends Vue {}
-</script>
+<script lang="ts" setup></script>
 
 <style lang="scss" scoped>
 .blur {

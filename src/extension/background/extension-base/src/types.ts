@@ -18,28 +18,6 @@ export interface Message extends MessageEvent {
   };
 }
 
-export interface TransactionHistoryItemType {
-  time: number | string;
-  networkKey: string;
-  change: string;
-  changeSymbol?: string; // if undefined => main token
-  fee?: string;
-  feeSymbol?: string;
-  // if undefined => main token, sometime "fee" uses different token than "change"
-  // ex: sub token (DOT, AUSD, KSM, ...) of Acala, Karaura uses main token to pay fee
-  isSuccess: boolean;
-  action: 'send' | 'received';
-  extrinsicHash: string;
-  origin?: 'app' | 'network';
-  eventIdx?: number | null;
-}
-
-export interface RequestTransactionHistoryAdd {
-  address: string;
-  networkKey: string;
-  item: TransactionHistoryItemType;
-}
-
 export interface RequestTransactionHistoryGet {
   address: string;
   networkKey: string;

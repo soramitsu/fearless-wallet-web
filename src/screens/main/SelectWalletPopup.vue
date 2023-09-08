@@ -5,7 +5,7 @@
     sizeWidth="small"
     :showHeader="false"
     :showBorder="true"
-    :handlerClose="close"
+    @handlerClose="close"
     :top="55"
     :maxHeight="391"
     @click.native="walletPopupClick"
@@ -39,7 +39,7 @@ import type { CurrentAccountInfo } from '@/extension/background/extension-base/s
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { Components } from '@/router/routes';
-import { getTotalBalances, updateCurrentAccountAddress } from '@/extension/messaging';
+import { getTotalBalances, updateCurrentAccount } from '@/extension/messaging';
 
 @Component({
   components: { WalletInfo },
@@ -72,7 +72,7 @@ export default class SelectWalletPopup extends Vue {
   }
 
   updateSelectedWallet(address: string) {
-    updateCurrentAccountAddress(address);
+    updateCurrentAccount(address);
 
     this.close();
   }

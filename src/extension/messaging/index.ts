@@ -90,4 +90,4 @@ export * from '@/extension/messaging/google';
 export * from '@/extension/messaging/networks';
 export * from '@/extension/messaging/balance';
 export * from '@/extension/messaging/common';
-export * from '@/extension/messaging/walletConnect';
+export * from '@/extension/messaging/wallet-connect-requests';

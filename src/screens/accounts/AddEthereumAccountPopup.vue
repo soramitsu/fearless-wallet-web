@@ -4,7 +4,7 @@
     sizeWidth="big"
     :showBorder="true"
     :showAnimation="false"
-    :handlerClose="handlerClose"
+    @handlerClose="handlerClose"
   >
     <div class="add-ethereum-account">
       <BorderButton

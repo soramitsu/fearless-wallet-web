@@ -1,7 +1,7 @@
 <template>
   <Popup
     :showHeader="showHeader"
-    @handlerClose="handlerClose"
+    @handlerClose="$emit('handlerClose')"
     :sizeWidth="sizeWidth"
     :showBorder="true"
     :closeBuBackground="closeBuBackground"
@@ -15,14 +15,20 @@
 
       <slot></slot>
 
-      <FButton v-if="showAcceptButton" class="button" size="medium" :text="acceptButtonText" @click="handlerAccept" />
+      <FButton
+        v-if="showAcceptButton"
+        class="button"
+        size="medium"
+        :text="acceptButtonText"
+        @click="$emit('handlerAccept')"
+      />
 
       <BorderButton
         v-if="showRejectButton"
         class="button reject-button"
         size="medium"
         :text="rejectButtonText"
-        @click="handlerClose"
+        @click="$emit('handlerClose')"
       />
     </div>
   </Popup>
@@ -50,8 +56,6 @@ export default class NotificationPopup extends Vue {
   @Prop({ default: 'common.cancel' }) rejectButtonText!: string;
   @Prop({ default: 'common.proceed' }) acceptButtonText!: string;
   @Prop({ default: 299 }) zIndex!: number;
-  @Prop(Function) handlerClose!: VoidFunction;
-  @Prop(Function) handlerAccept!: VoidFunction;
 
   get text() {
     return this.headers.text;

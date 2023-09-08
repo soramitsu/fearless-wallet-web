@@ -7,9 +7,9 @@
     :top="50"
     :showAnimation="showAnimation"
     :options="filteredOptionsFiats"
-    :toggleValue="toggleSelectedFiat"
-    :handlerClose="handlerClose"
-    :handlerFilter="handlerFilter"
+    @toggleValue="toggleSelectedFiat"
+    @handlerClose="handlerClose"
+    @handlerFilter="handlerFilter"
   />
 </template>
 

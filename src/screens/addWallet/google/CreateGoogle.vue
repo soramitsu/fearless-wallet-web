@@ -76,8 +76,8 @@
       v-if="showNotificationPopup"
       :headers="invalidMessages"
       acceptButtonText="common.accept"
-      :handlerClose="handlerCloseNotificationPopup"
-      :handlerAccept="handlerAcceptAddWallet"
+      @handlerClose="handlerCloseNotificationPopup"
+      @handlerAccept="handlerAcceptAddWallet"
     />
   </FlowStepLayout>
 </template>

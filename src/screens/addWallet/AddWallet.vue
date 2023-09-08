@@ -120,8 +120,8 @@
       acceptButtonText="common.accept"
       :showAcceptButton="isMobileWalletExists"
       :showRejectButton="isMobileWalletExists"
-      :handlerClose="handlerCloseNotificationPopup"
-      :handlerAccept="handlerAcceptAddWallet"
+      @handlerClose="handlerCloseNotificationPopup"
+      @handlerAccept="handlerAcceptAddWallet"
     />
 
     <AddEthereumAccountPopup

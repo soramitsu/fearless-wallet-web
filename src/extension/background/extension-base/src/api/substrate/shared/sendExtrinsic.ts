@@ -22,12 +22,10 @@ export const sendExtrinsic = async ({ callback, extrinsic, txState }: SendExtrin
     if (!result || !result.status) return;
 
     if (result.status.isBroadcast) {
-      txState.isFinalized = true;
       txState.status = true;
 
       callback(txState);
     } else if (result.isError) {
-      txState.txError = true;
       txState.status = false;
 
       callback(txState);

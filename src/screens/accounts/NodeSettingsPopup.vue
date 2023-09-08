@@ -3,7 +3,7 @@
     sizeWidth="mini"
     :showHeader="false"
     :showBorder="true"
-    @handlerClose="handlerClose"
+    @handlerClose="$emit('handlerClose')"
     :top="top"
     :left="-35"
     verticalPlacement="top"
@@ -30,7 +30,6 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 @Component
 export default class NodeSettingsPopup extends Vue {
   @Prop(Number) buttonTopClick!: number;
-  @Prop(Function) handlerClose!: VoidFunction;
 
   get top() {
     if (this.buttonTopClick < 300) {

@@ -4,8 +4,8 @@
     :headers="headers"
     :showAcceptButton="true"
     :showRejectButton="true"
-    :handlerClose="handlerClose"
-    :handlerAccept="handlerAccept"
+    @handlerClose="handlerClose"
+    @handlerAccept="handlerAccept"
   />
 </template>
 

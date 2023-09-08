@@ -52,8 +52,8 @@
       :showSearch="false"
       :showIcon="false"
       :options="filterDropdownOption"
-      :toggleValue="filterValueUpdate"
-      :handlerClose="toggleSelectFilterPopupVisibility"
+      @toggleValue="filterValueUpdate"
+      @handlerClose="toggleSelectFilterPopupVisibility"
     />
   </Fragment>
 </template>

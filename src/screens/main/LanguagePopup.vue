@@ -9,8 +9,8 @@
     :showIcon="false"
     :showSearch="false"
     :options="options"
-    :toggleValue="toggleLanguage"
-    :handlerClose="handlerClose"
+    @toggleValue="toggleLanguage"
+    @handlerClose="handlerClose"
   />
 </template>
 

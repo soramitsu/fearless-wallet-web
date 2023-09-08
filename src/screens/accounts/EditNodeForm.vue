@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :fullScreen="true" header="accounts.newNode" @closeHandler="closeForm">
+  <AboveForm :fullScreen="true" header="accounts.newNode" @closeHandler="$emit('closeForm')">
     <div class="add-node-form">
       <div>
         <FInput v-model="networkCharUp" placeholder="accounts.network" size="big" class="row" :readonly="true" />
@@ -35,7 +35,6 @@ export default class EditNodeForm extends Vue {
   name = '';
   url = '';
 
-  @Prop(Function) closeForm!: (nodesUpdated?: boolean) => void;
   @Prop(String) network!: string;
   @Prop(String) _name!: string;
   @Prop(String) _url!: string;
@@ -112,7 +111,7 @@ export default class EditNodeForm extends Vue {
       isManual: false,
     });
 
-    this.closeForm(true);
+    this.$emit('closeForm', true);
   }
 }
 </script>

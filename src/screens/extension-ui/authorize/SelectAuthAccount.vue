@@ -40,7 +40,7 @@ import { computed } from 'vue';
 import type { WalletInfo } from '@/store';
 import { cut } from '@/helpers';
 
-type Props = { selectAll?: boolean; accounts: Record<string, WalletInfo>; showSelectAll?: boolean };
+type Props = { selectAll?: boolean; accounts: Record<string, WalletInfo>; showSelectAll?: boolean; height?: string };
 
 const props = withDefaults(defineProps<Props>(), { showSelectAll: true });
 const emit = defineEmits(['onSelectAll', 'onSelect']);
@@ -49,7 +49,7 @@ const showAllCheckbox = computed(() => Object.keys(props.accounts).length && pro
 const showCheckboxes = computed(() => Object.keys(props.accounts).length);
 
 const cutAddress = (address: string) => cut(address);
-
+const prepHeight = computed(() => (props.height ? `${props.height}px` : 'fit-content'));
 const saveToClipboard = (value: string) => navigator.clipboard.writeText(value);
 </script>
 
@@ -59,7 +59,7 @@ const saveToClipboard = (value: string) => navigator.clipboard.writeText(value);
   flex-flow: column;
   align-items: flex-start;
   overflow-y: hidden;
-  height: 100%;
+  height: v-bind(prepHeight);
 }
 
 .auth-account {

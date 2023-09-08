@@ -1,8 +1,7 @@
 <template>
   <div class="update-accounts">
-    <Favicon v-if="url" :url="url" width="80" class="auth-favicon" />
+    <WalletConnectHeader v-if="url" :name="title" :url="url" />
 
-    <div class="header">{{ title }}</div>
     <Scroll>
       <div v-for="(el, index) in namespaces" class="network" :key="index">
         <div class="network__content">
@@ -30,22 +29,22 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
-import { WALLET_CONNECT_EIP155_NAMESPACE } from '@extension-base/services/wallet-connect-service/consts';
+import WalletConnectHeader from './WalletConnectHeader.vue';
 import type { SessionTypes } from '@walletconnect/types';
-import type { NetworkJson } from '@extension-base/types';
+import { transformNamespaces } from '@/util/walletConnect';
 import { useStore } from '@/store';
-import Favicon from '@/components/Favicon.vue';
+
 type ChainData = {
   name: string;
   icon: string;
   connected: boolean;
 };
+
 const route = useRoute();
 const router = useRouter();
 const store = useStore();
-const networks = ref<NetworkJson[]>(store.getters.allNetworks);
 
 const emit = defineEmits(['onRemove']);
 const topic = computed(() => route.params.topic);
@@ -68,37 +67,19 @@ onBeforeMount(async () => {
 const url = computed(() => request.value?.peer.metadata.url);
 const title = computed(() => `Connected to ${request.value?.peer.metadata.name}`);
 
-const chainNamesFromRequest = (namespaces: SessionTypes.Namespaces, key: string): ChainData[] => {
-  const chains = namespaces[key].chains;
-  const names: ChainData[] = [];
-
-  if (key === WALLET_CONNECT_EIP155_NAMESPACE && chains) {
-    chains.forEach((chain) => {
-      const [, chainId] = chain.split(':');
-      const net = networks.value.find((el) => parseInt(`0x${el.chainId}`) === +chainId);
-
-      if (net) names.push({ icon: net.icon, name: net.name, connected: net.active });
-    });
-  }
-
-  return names;
-};
-
 const namespaces = computed<ChainData[]>(() => {
   if (!request.value) return [];
 
   const namespaces = request.value.namespaces;
-  const names: ChainData[] = [];
 
-  Object.keys(namespaces).forEach((namespace) => names.push(...chainNamesFromRequest(namespaces, namespace)));
-
-  return names;
+  return transformNamespaces(namespaces);
 });
 
 const getNetworkStatusClass = (status: boolean) => `network__status-indicator--${status ? 'active' : 'inactive'}`;
 
 const onDisconnect = () => {
   emit('onRemove');
+
   checkAuth();
 };
 </script>
@@ -111,13 +92,7 @@ const onDisconnect = () => {
   align-items: center;
   height: 100%;
 }
-.header {
-  font-size: 22px;
-  font-weight: 800px;
-}
-.auth-favicon {
-  margin: 30px;
-}
+
 .connect-button {
   margin-top: 16px;
 }

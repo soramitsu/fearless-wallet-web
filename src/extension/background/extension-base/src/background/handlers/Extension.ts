@@ -1306,7 +1306,12 @@ export default class Extension extends FWExtensionBase {
   }: RequestApproveConnectWalletSession): Promise<boolean> {
     const request = this.state.requestService.getConnectWCRequest(id);
 
-    if (isProposalExpired(request.request.params)) throw new Error('The proposal has been expired');
+    if (isProposalExpired(request.request.params)) {
+      request.reject(new Error('The proposal has been expired'));
+
+      return false;
+    }
+
     const { id: wcId, params } = request.request;
     const { requiredNamespaces, optionalNamespaces } = params;
 

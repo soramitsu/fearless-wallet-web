@@ -63,6 +63,12 @@ export default class Header extends Vue {
     cursor: not-allowed;
   }
 }
+
+.icon--network {
+  width: 16px;
+  height: 16px;
+}
+
 .icon--down {
   height: 9px;
   width: 9px;

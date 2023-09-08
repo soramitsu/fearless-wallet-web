@@ -328,7 +328,14 @@
   "walletConnect": {
     "approve": "Подтвердить",
     "reject": "Отменить",
-    "newConnection": "Новое соединение"
+    "newConnection": "Новое соединение",
+    "networks": "Сети",
+    "notifications": {
+      "sessionExpired": {
+        "title": "Срок сессии истек",
+        "message": "Срок сессии истек, пожалуйста, попробуйте снова!"
+      }
+    }
   },
   "soraCard": {
     "getCard": "Получить карту СОРА",

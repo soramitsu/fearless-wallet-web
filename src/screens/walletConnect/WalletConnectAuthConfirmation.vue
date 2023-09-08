@@ -1,68 +1,101 @@
 <template>
-  <Fragment>
-    <SelectAuthAccount :selectAll="selectAll" :showSelectAll="false" :accounts="state" @onSelect="onSelect" />
+  <div class="auth-confirmation">
+    <div>
+      <WalletConnectHeader :name="title" :url="url" />
+    </div>
+    <div class="namespaces">
+      <span>{{ $t('walletConnect.networks') }}</span>
+      <div class="namespaces__icons">
+        <ExternalLogo v-for="(namespace, index) in namespaces" :name="namespace.icon" :width="28" :key="index" />
+      </div>
+    </div>
+    <SelectAuthAccount :showSelectAll="false" :accounts="state" @onSelect="onSelect" height="200" />
 
     <div class="controls">
       <FButton text="walletConnect.reject" type="secondary" :border="false" width="100%" @click="onReject" />
       <FButton text="walletConnect.approve" width="100%" @click="onApprove" />
     </div>
-  </Fragment>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref, set } from 'vue';
 import { useRouter } from 'vue-router/composables';
+import { useI18n } from 'vue-i18n-composable';
+import WalletConnectHeader from './WalletConnectHeader.vue';
+import type { ChainData } from './types';
+import type { WalletConnectSessionRequest } from '@extension-base/services/wallet-connect-service/types';
 import type { AccountJson } from '@extension-base/background/types';
+import { useStore, type WalletInfo } from '@/store';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
-import { WalletInfo, useStore } from '@/store';
-import {
-  approveWalletConnectSession,
-  approveWalletConnectNotSupport,
-  rejectWalletConnectSession,
-  rejectWalletConnectNotSupport,
-} from '@/extension/messaging';
+import { approveWalletConnectSession, rejectWalletConnectSession } from '@/extension/messaging';
+import { useNotify } from '@/plugins/soramitsuUI';
+import { transformNamespaces } from '@/util/walletConnect';
 
 const router = useRouter();
 const store = useStore();
+const notify = useNotify();
+
 const state = ref<Record<string, WalletInfo>>({});
-const selectAll = ref(true);
-const id = computed(() => (store.getters.wcConnectRequests.length ? store.getters.wcConnectRequests[0].id : ''));
-const isSupported = true;
+
+const request = computed<WalletConnectSessionRequest>(() => store.getters.wcConnectRequests[0]);
+const id = computed(() => request.value.id);
+const url = computed(() => request.value.url);
+const title = computed(() => request.value.request.params.proposer.metadata.name);
 
 onMounted(() => {
   const accounts = store.getters.getAccounts as AccountJson[];
   accounts
-    .filter(({ ethereumAddress }) => ethereumAddress !== '')
-    .forEach(({ name, ethereumAddress, isMobile }) => {
+    .filter(({ ethereumAddress, isMobile }) => ethereumAddress !== '' && !isMobile)
+    .forEach(({ name, ethereumAddress }, index) => {
       set(state.value, name, {
         name,
         address: ethereumAddress,
-        isMobile: !!isMobile,
-        active: true,
+        active: index === 0,
       });
     });
 });
 
-const selectedAccounts = computed(() => Object.values(state.value).map((el) => el.address));
+const namespaces = computed<ChainData[]>(() => {
+  if (!request.value) return [];
 
-function isAllSelected() {
-  return Object.values(state.value).every((value) => value.active === true);
-}
+  const requiredNamespaces = request.value.request.params.requiredNamespaces;
+  const optionalNamespaces = request.value.request.params.optionalNamespaces;
+
+  const transformedRequiredNamespaces = transformNamespaces(requiredNamespaces);
+  const transformedOptionalNamespaces = transformNamespaces(optionalNamespaces);
+
+  return [...transformedRequiredNamespaces, ...transformedOptionalNamespaces];
+});
+
+const selectedAccounts = computed(() => Object.values(state.value).map((el) => el.address));
 
 const onSelect = (value: boolean, name: string) => {
   state.value[name].active = value;
-  selectAll.value = isAllSelected();
+
+  Object.keys(state.value).forEach((key) => {
+    if (key !== name) state.value[key].active = false;
+  });
 };
 
-const onApprove = () => {
-  isSupported
-    ? approveWalletConnectSession({ accounts: selectedAccounts.value, id: id.value })
-    : approveWalletConnectNotSupport({ id: id.value });
+const { t } = useI18n();
+
+const onApprove = async () => {
+  const result = await approveWalletConnectSession({ accounts: selectedAccounts.value, id: id.value });
+
+  if (!result)
+    notify({
+      message: t('walletConnect.notifications.sessionExpired.message').toString(),
+      title: t('walletConnect.notifications.sessionExpired.title').toString(),
+      type: 'warn',
+    });
+
   router.back();
 };
 
 const onReject = () => {
-  isSupported ? rejectWalletConnectSession({ id: id.value }) : rejectWalletConnectNotSupport({ id: id.value });
+  rejectWalletConnectSession({ id: id.value });
+
   router.back();
 };
 </script>
@@ -72,6 +105,29 @@ const onReject = () => {
   display: flex;
   flex-direction: row;
   gap: 10px;
+  width: 100%;
+}
+
+.auth-confirmation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: column;
+  gap: 5px;
+}
+.namespaces {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 16px;
+  font-weight: 400;
+  color: $default-white;
+
+  &__icons {
+    display: flex;
+    flex-flow: row nowrap;
+    gap: 7px;
+  }
 }
 </style>
-@/extension/background/extension-base/src/background/types

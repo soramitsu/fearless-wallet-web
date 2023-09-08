@@ -332,7 +332,14 @@
   "walletConnect": {
     "approve": "Approve",
     "reject": "Reject",
-    "newConnection": "New Connection"
+    "newConnection": "New Connection",
+    "networks":"Networks",
+    "notifications":{
+      "sessionExpired":{
+        "title":"Session is expired",
+        "message":"Session proposal is expired, please, try again!"
+      }
+    }
   },
   "soraCard": {
     "getCard": "Get SORA Card",

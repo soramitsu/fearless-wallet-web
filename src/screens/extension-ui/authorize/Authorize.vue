@@ -36,100 +36,76 @@
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Watch } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
-import { AuthorizeRequest, ApproveAuthRequest, AccountJson } from '@extension-base/background/types';
-import { AsyncFn } from '@/interfaces';
-import Hint from '@/components/Hint.vue';
+<script lang="ts" setup>
+import { AuthorizeRequest, AccountJson } from '@extension-base/background/types';
+import { computed, ref, set, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router/composables';
 import { Components } from '@/router/routes';
-import { WalletInfo } from '@/store';
-import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
-import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { WalletInfo, useStore } from '@/store';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import BaseApi from '@/util/BaseApi';
-import { cancelAuthRequest } from '@/extension/messaging';
 
-@Component({
-  components: {
-    Hint,
-    SelectAuthAccount,
-  },
-})
-export default class Authorize extends Vue {
-  readonly noAccountsMessage = 'auth.noAccounts';
-  state: Record<string, WalletInfo> = {};
-  selectAll = true;
+const noAccountsMessage = 'auth.noAccounts';
+const state = ref<Record<string, WalletInfo>>({});
+const selectAll = ref(true);
 
-  @Getter(ExtensionGettersTypes.authRequests) requests!: AuthorizeRequest[];
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
-  @Action(ExtensionActionTypes.APPROVE_AUTH_REQUEST) onApproveAuthRequest!: AsyncFn<ApproveAuthRequest>;
-  @Action(ExtensionActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: AsyncFn<AuthorizeRequest>;
+const store = useStore();
+const router = useRouter();
 
-  get isAccountsExists() {
-    return this.accounts.length > 0;
-  }
+const accounts = computed<AccountJson[]>(() => store.getters.getAccounts);
+const requests = computed<AuthorizeRequest[]>(() => store.getters.authRequests);
+const request = computed<AuthorizeRequest>(() => requests.value[0]);
 
-  get request(): AuthorizeRequest {
-    return this.requests[0];
-  }
+watch(requests, (value: AuthorizeRequest[]) => {
+  if (value.length === 0) router.push({ name: Components.Wallet });
+});
 
-  get prepAccounts() {
-    return Object.values(this.state)
-      .filter(({ active }) => active)
-      .map(({ address }) => address);
-  }
+const isAccountsExists = computed(() => accounts.value.length > 0);
 
-  @Watch('requests')
-  updateRoute(value: AuthorizeRequest[]) {
-    if (value.length === 0) this.$router.push({ name: Components.Wallet });
-  }
+const prepAccounts = computed(() =>
+  Object.values(state.value)
+    .filter(({ active }) => active)
+    .map(({ address }) => address)
+);
 
-  mounted() {
-    this.accounts.forEach(({ name, address, isMobile }) =>
-      Vue.set(this.state, name, {
-        name: name,
-        address: address,
-        isMobile: isMobile,
-        active: true,
-      })
-    );
-  }
+onMounted(() => {
+  accounts.value.forEach(({ name, address, isMobile }) =>
+    set(state.value, name, {
+      name: name,
+      address: address,
+      isMobile: isMobile,
+      active: true,
+    })
+  );
+});
 
-  onSelect(value: boolean, name: string) {
-    this.state[name].active = value;
-    this.selectAll = Object.values(this.state).every(({ active }) => active);
-  }
+const onSelect = (value: boolean, name: string) => {
+  state.value[name].active = value;
+  selectAll.value = Object.values(state.value).every(({ active }) => active);
+};
 
-  onSelectAll(value: boolean) {
-    Object.keys(this.state).forEach((key) => {
-      Vue.set(this.state, key, {
-        ...this.state[key],
-        active: value,
-      });
+const onSelectAll = (value: boolean) => {
+  Object.keys(state.value).forEach((key) => {
+    set(state.value, key, {
+      ...state.value[key],
+      active: value,
     });
+  });
 
-    this.selectAll = value;
-  }
+  selectAll.value = value;
+};
 
-  onApprove() {
-    this.onApproveAuthRequest({
-      request: this.request,
-      accounts: this.prepAccounts,
-    });
+const redirect = () => {
+  if (BaseApi.useIsPopup()) setTimeout(() => router.push({ name: Components.Wallet }), 100); // don`t removed setTimeout
+};
 
-    this.redirect();
-  }
+const onApprove = () => {
+  store.dispatch('APPROVE_AUTH_REQUEST', { id: request.value.id, accounts: prepAccounts.value });
 
-  async onReject() {
-    cancelAuthRequest(this.request.id);
-  }
+  redirect();
+};
 
-  redirect() {
-    if (BaseApi.useIsPopup()) setTimeout(() => this.$router.push({ name: Components.Wallet }), 100); // don`t removed setTimeout
-  }
-}
+const onReject = () => store.dispatch('REJECT_AUTH_REQUEST', request.value.id);
 </script>
 
 <style lang="scss" scoped>

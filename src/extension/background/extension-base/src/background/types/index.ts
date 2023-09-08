@@ -86,7 +86,7 @@ export type AccountsContext = {
 };
 
 export interface ApproveAuthRequest {
-  request: AuthorizeRequest;
+  id: string;
   accounts: string[];
 }
 

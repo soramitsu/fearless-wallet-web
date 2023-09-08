@@ -23,12 +23,8 @@
 
             <div v-if="account.isMobile" class="account__checkbox--mobile-icon">{{ $t('mobile') }}</div>
           </div>
-          <div :ref="index" class="account__address">
-            <span>{{ cutAddress(account.address) }}</span>
 
-            <Icon className="clipboard" icon="clipboard" @click="saveToClipboard(account.address)" />
-            <Tooltip text="Сopied" target=".clipboard" placement="bottom" trigger="click" />
-          </div>
+          <span :ref="index" class="account__address">{{ cutAddress(account.address) }}</span>
         </li>
       </ul>
     </Scroll>
@@ -50,7 +46,6 @@ const showCheckboxes = computed(() => Object.keys(props.accounts).length);
 
 const cutAddress = (address: string) => cut(address);
 const prepHeight = computed(() => (props.height ? `${props.height}px` : 'fit-content'));
-const saveToClipboard = (value: string) => navigator.clipboard.writeText(value);
 </script>
 
 <style lang="scss" scoped>
@@ -95,12 +90,9 @@ const saveToClipboard = (value: string) => navigator.clipboard.writeText(value);
 }
 
 .account__address {
-  position: relative;
-  width: 230px;
   overflow-x: hidden;
   text-overflow: ellipsis;
-  margin-right: 10px;
-  height: 24px;
+  line-height: 25.2px;
 }
 
 .clipboard {

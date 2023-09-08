@@ -132,8 +132,8 @@ const actions: ActionTree<State, State> & Actions = {
     return subscribeAuthorizeRequests(callback);
   },
 
-  async [ActionTypes.APPROVE_AUTH_REQUEST]({ commit, dispatch }, { request, accounts }) {
-    await approveAuthRequest(request.id, accounts);
+  async [ActionTypes.APPROVE_AUTH_REQUEST]({ commit, dispatch }, { id, accounts }) {
+    await approveAuthRequest(id, accounts);
 
     commit(MutationTypes.DELETE_REQUEST, 'authRequests');
 

@@ -12,14 +12,17 @@ import { useRoute } from 'vue-router/composables';
 import type { AuthUrls } from '@extension-base/background/types';
 import { updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
-import { WalletInfo, useStore } from '@/store';
+import { type WalletInfo, useStore } from '@/store';
 
 const route = useRoute();
 const store = useStore();
+
 const list = ref<AuthUrls>({});
 const selectAll = ref(false);
 const state = ref<Record<string, WalletInfo>>({});
+
 const emit = defineEmits(['onUpdate']);
+
 const url = computed(() => route.params.id);
 const buttonText = computed(() => {
   const count = Object.values(state.value).filter((el) => el.active).length;
@@ -60,12 +63,12 @@ onMounted(async () => {
   selectAll.value = isAllSelected();
 });
 
-function onSelect(value: boolean, name: string) {
+const onSelect = (value: boolean, name: string) => {
   state.value[name].active = value;
   selectAll.value = isAllSelected();
-}
+};
 
-function onSelectAll(value: boolean) {
+const onSelectAll = (value: boolean) => {
   Object.keys(state.value).forEach((key) => {
     set(state.value, key, {
       ...state.value[key],
@@ -74,14 +77,14 @@ function onSelectAll(value: boolean) {
   });
 
   selectAll.value = value;
-}
+};
 
-async function updateAuths() {
+const updateAuths = async () => {
   await updateAuthorization(prepAccounts.value, url.value);
   list.value = await store.dispatch('GET_AUTHLIST');
 
   emit('onUpdate');
-}
+};
 </script>
 
 <style lang="scss" scoped>

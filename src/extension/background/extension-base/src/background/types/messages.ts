@@ -80,7 +80,7 @@ export interface RequestSignatures {
   // private/internal requests, i.e. from a popup
   //Account Managment
   'pri(accounts.validate.path)': [DerivationPath, boolean];
-  'pri(accounts.create.suri)': [RequestAccountCreateSuri, string];
+  'pri(accounts.create)': [RequestAccountCreateSuri, string];
   'pri(accounts.create.mobile)': [RequestAddressCreate, boolean];
   'pri(addresses.create)': [RequestAddressCreate, boolean];
   'pri(accounts.update.meta)': [RequestUpdateMeta, boolean];

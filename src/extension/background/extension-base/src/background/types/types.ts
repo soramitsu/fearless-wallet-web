@@ -221,29 +221,11 @@ export enum BasicTxErrorCode {
   UNKNOWN_ERROR = 'unknownError',
 }
 
-export interface ExternalState {
-  externalId: string;
-}
-
 export interface BasicTxResponse {
   passwordError?: string | null;
-  callHash?: string;
   status?: boolean;
-  extrinsicHash?: string;
-  txError?: boolean;
   errors?: BasicTxError[];
-  externalState?: ExternalState;
-  isBusy?: boolean;
-  txResult?: TxResultType;
-  isFinalized?: boolean;
 }
-
-export type TxResultType = {
-  change: string;
-  changeSymbol?: string;
-  fee?: string;
-  feeSymbol?: string;
-};
 
 export enum BasicTxWarningCode {
   NOT_ENOUGH_EXISTENTIAL_DEPOSIT = 'notEnoughExistentialDeposit',
@@ -254,7 +236,7 @@ export type TxErrorCode = TransferErrorCode | BasicTxErrorCode;
 export type TxWarningCode = BasicTxWarningCode;
 
 export type BasicTxError = {
-  code: TxErrorCode | TxWarningCode;
+  code?: TxErrorCode | TxWarningCode;
   data?: object;
   message: string;
 };
@@ -292,7 +274,6 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   assetId: string;
   relayChain?: RelayChainName;
   amount?: string;
-  password?: string;
   isMobile?: boolean;
 }
 
@@ -304,21 +285,17 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
   assetId: string;
   relayChain?: RelayChainName;
   amount?: string;
-  password?: string;
   isMobile?: boolean;
 }
 
 export interface ResponseCheckTransfer {
   errors?: Array<BasicTxError>;
-  warnings?: Array<BasicTxWarning>;
-  fromAccountFree: string;
   estimateFee?: string;
-  destEstimateFee: undefined;
+  destEstimateFee: '0';
 }
 
 export interface ResponseCheckCrossChain {
   errors?: Array<BasicTxError>;
-  warnings?: Array<BasicTxWarning>;
   estimateFee?: string;
   destEstimateFee?: string;
 }
@@ -338,7 +315,6 @@ export interface RequestCheckSwap extends BaseRequestSign {
 
 export interface ResponseCheckSwap {
   errors?: Array<BasicTxError>;
-  warnings?: Array<BasicTxWarning>;
   swapOptions?: SwapOptions;
   amountA: string;
   amountB: string;
@@ -352,7 +328,6 @@ export interface ResponseCheckSwap {
 
 export interface ResponseMakeSwap {
   errors?: Array<BasicTxError>;
-  warnings?: Array<BasicTxWarning>;
   status: boolean;
 }
 

@@ -22,7 +22,7 @@ interface AbstractSignAndSendExtrinsicProps extends Partial<PrepareExternalReque
   errorMessage: string;
   apiProps: ApiProps;
   isSavePass?: boolean;
-  password?: string;
+  password: string;
   updateResponseTxResult?: (response: BasicTxResponse, records: EventRecord[]) => void;
 }
 
@@ -47,7 +47,6 @@ export const signAndSendExtrinsic = async ({
   type,
 }: SignAndSendExtrinsicProps) => {
   if (!extrinsic) {
-    txState.txError = true;
     txState.status = false;
 
     callback(txState);
@@ -76,7 +75,6 @@ export const signAndSendExtrinsic = async ({
     if (e) {
       console.error(errorMessage, e);
       txState.errors = [{ code: BasicTxErrorCode.KEYRING_ERROR, message: (e as Error).message }];
-      txState.txError = true;
       txState.status = false;
       callback(txState);
     }
@@ -98,7 +96,6 @@ export const signAndSendExtrinsic = async ({
       txState.errors = [{ code: BasicTxErrorCode.BALANCE_TO_LOW, message: (e as Error).message }];
     else txState.errors = [{ code: BasicTxErrorCode.INVALID_PARAM, message: (e as Error).message }];
 
-    txState.txError = true;
     txState.status = false;
 
     callback(txState);

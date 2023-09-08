@@ -2,21 +2,16 @@
   <div class="coming-soon">
     <Icon :icon="getImg" className="img" />
 
-    <div class="name">{{ $t(`menu.${name.toLowerCase()}`) }} {{ $t('common.comingSoon') }}</div>
+    <div class="name">{{ $t(`menu.${prepName}`) }} {{ $t('common.comingSoon') }}</div>
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 
-@Component
-export default class ComingSoon extends Vue {
-  @Prop(String) name!: string;
-
-  get getImg() {
-    return this.name.toLowerCase();
-  }
-}
+const props = defineProps<{ name: string }>();
+const prepName = props.name.toLowerCase();
+const getImg = computed(() => props.name.toLowerCase());
 </script>
 
 <style lang="scss" scoped>

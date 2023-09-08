@@ -76,14 +76,14 @@ export async function makeEVMTransfer(
 }
 
 export async function getERC20TransactionObject(
-  assetAddress: string,
+  assetId: string,
   networkKey: string,
   from: string,
   to: string,
   value: string
 ): Promise<{ tx: ethers.TransactionRequest; value: string; fee: bigint }> {
   const web3Api = state.getEvmApiMap[networkKey];
-  const erc20Contract = getERC20Contract(networkKey, assetAddress);
+  const erc20Contract = getERC20Contract(networkKey, assetId);
 
   function generateTransferData(to: string, transferValue: string): string {
     const value = ethers.parseUnits(transferValue, 6);

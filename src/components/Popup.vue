@@ -41,8 +41,6 @@ type HeaderType = 'default' | 'success' | 'failed' | 'pending';
 export default class Popup extends Vue {
   filterValue = '';
 
-  @Prop({ default: () => () => null }) handlerClose!: VoidFunction;
-  @Prop({ default: () => () => null }) handlerFilter!: (value: string) => void;
   @Prop(Number) top!: number;
   @Prop(Number) left!: number;
   @Prop({ type: Number, required: false }) height?: number;
@@ -147,7 +145,7 @@ export default class Popup extends Vue {
 
   @Watch('filterValue')
   filter(value: string) {
-    this.handlerFilter(value);
+    this.$emit('handlerFilter', value);
   }
 
   backgroundClick(event: Event) {
@@ -156,8 +154,8 @@ export default class Popup extends Vue {
   }
 
   close() {
-    this.handlerFilter('');
-    this.handlerClose();
+    this.$emit('handlerFilter', '');
+    this.$emit('handlerClose');
   }
 }
 </script>

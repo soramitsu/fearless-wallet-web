@@ -6,7 +6,7 @@
       :showHeader="false"
       :width="410"
       :top="50"
-      :handlerClose="handlerClose"
+      @handlerClose="handlerClose"
       sizeWidth="big"
       verticalPlacement="top"
       horizontalPlacement="right"

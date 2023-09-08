@@ -291,9 +291,6 @@ export default class Tabs {
       case 'pub(rpc.subscribeConnected)':
         return this.rpcSubscribeConnected(request as null, id, port);
 
-      case 'pub(rpc.unsubscribe)':
-        return this.rpcUnsubscribe(request as RequestRpcUnsubscribe, port);
-
       default:
         throw new Error(`Unable to handle message of type ${type}`);
     }

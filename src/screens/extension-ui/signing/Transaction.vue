@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :fullScreen="true" header="assets.transaction" :closeHandler="onReject">
+  <AboveForm :fullScreen="true" header="assets.transaction" @closeHandler="onReject">
     <div v-if="isMobileSignRequired" class="transaction-mobile">
       <Loader />
 

@@ -4,8 +4,8 @@
     :showAnimation="false"
     :fullScreen="true"
     :showBackIcon="showBackIcon"
-    :handlerBack="handlerBack"
-    :closeHandler="closeForm"
+    @handlerBack="handlerBack"
+    @closeHandler="closeForm"
   >
     <div class="container">
       <X1Form v-if="showX1Form" :handlerClose="closeX1Form" />

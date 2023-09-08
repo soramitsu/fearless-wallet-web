@@ -1,5 +1,5 @@
 <template>
-  <Popup headerText="soraCard.getXOR" sizeWidth="big" :showBorder="true" :handlerClose="handlerClose">
+  <Popup headerText="soraCard.getXOR" sizeWidth="big" :showBorder="true" @handlerClose="handlerClose">
     <div class="content">
       <div>{{ $t('soraCard.getXORLabel') }}</div>
 

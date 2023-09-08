@@ -5,8 +5,7 @@ import '@polkadot/extension-inject/crossenv';
 import AccountsStore from '@extension-base/stores/Accounts';
 import { initStorage } from '@extension-base/stores/Storage';
 import { RequestSignatures } from '@extension-base/background/types/messages';
-
-import type { Port, TransportRequestMessage } from '@extension-base/background/types';
+import { TransportRequestMessage, Port } from '@extension-base/background/types/types';
 
 async function getActiveTabs() {
   // quering the current active tab in the current window should only ever return 1 tab

@@ -3,8 +3,8 @@
     :header="header"
     :fullScreen="true"
     :showBackIcon="showUpdateAuths"
-    :closeHandler="handlerClose"
-    :handlerBack="updateUrl.bind(null, '')"
+    @closeHandler="handlerClose"
+    @handlerBack="updateUrl.bind(null, '')"
   >
     <template v-if="!showUpdateAuths">
       <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />

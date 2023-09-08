@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="accounts.exportJson" :blur="true" :closeHandler="closeForm">
+  <AboveForm header="accounts.exportJson" :blur="true" @closeHandler="closeForm">
     <div class="export-form">
       <Loader v-if="isLoading" />
       <template v-else>

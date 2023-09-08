@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :fullScreen="true" header="metadata.text" :closeHandler="onReject">
+  <AboveForm :fullScreen="true" header="metadata.text" @closeHandler="onReject">
     <div class="meta-content">
       <div>
         <InfoList>

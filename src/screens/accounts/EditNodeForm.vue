@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :fullScreen="true" header="accounts.newNode" :closeHandler="closeForm">
+  <AboveForm :fullScreen="true" header="accounts.newNode" @closeHandler="closeForm">
     <div class="add-node-form">
       <div>
         <FInput v-model="networkCharUp" placeholder="accounts.network" size="big" class="row" :readonly="true" />

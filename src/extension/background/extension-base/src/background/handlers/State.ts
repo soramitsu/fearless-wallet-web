@@ -44,7 +44,7 @@ import {
   RequestAccountExportPrivateKey,
   ResponseAccountExportPrivateKey,
 } from '../types';
-import type { AuthorizeRequest, MetadataRequest } from '@extension-base/background/types';
+import type { AuthorizeRequest, MetadataRequest, ServiceInfo } from '@extension-base/background/types';
 import type { SignerPayloadRaw } from '@polkadot/types/types';
 import type {
   AuthUrls,
@@ -58,7 +58,6 @@ import type {
   Port,
   IState,
   ActiveTabAuthorizeStatus,
-  ServiceInfo,
   BalanceMap,
   Providers,
   ResponseTotalBalances,
@@ -1027,8 +1026,8 @@ export default class State {
     address,
     password,
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    const exportedJson = keyring.getPair(address).toJson(password);
-    const decoded = decodePair(password, base64Decode(exportedJson.encoded), exportedJson.encoding.type);
+    const json = keyring.getPair(address).toJson(password);
+    const decoded = decodePair(password, base64Decode(json.encoded), json.encoding.type);
 
     return {
       privateKey: u8aToHex(decoded.secretKey),

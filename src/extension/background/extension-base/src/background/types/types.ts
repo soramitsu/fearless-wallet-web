@@ -1,34 +1,34 @@
-// Copyright 2019-2022 @polkadot/extension authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
 /* eslint-disable no-use-before-define */
-
-import { TypeRegistry } from '@polkadot/types';
 import { Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '@extension-base/defaults';
-import { RequestSignatures } from '@extension-base/background/types/messages';
-import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import { BN } from '@polkadot/util';
+
 import { JsonRpcProvider } from 'ethers';
-import { BalanceItem } from '../../api/evm/types/ether';
+import { ApiPromise } from '@polkadot/api';
+import { WsProvider } from '@polkadot/rpc-provider';
+import { ProviderInterface } from '@polkadot/rpc-provider/types';
+import { HexString } from '@polkadot/util/types';
 import { UserType } from '../../services/onboarding-service/types';
-import { CurrentAccountState } from '../../stores/CurrentAccountStore';
 import MetadataStore from '../../stores/Metadata';
-import { NetworkJson } from '../../types';
+import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { HexString } from '@polkadot/util/types';
-import type { ProviderInterface } from '@polkadot/rpc-provider/types';
-import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
+import type { NetworkJson } from '@extension-base/types';
+import type { RequestSignatures } from '@extension-base/background/types/messages';
+import type { TypeRegistry } from '@polkadot/types';
+import type { SignerResult } from '@polkadot/types/types/extrinsic';
+import type { Registry, SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
-import type {
-  AccountAuthType,
-  AccountJson,
-  AddressBook,
-  ApiProps,
-  AuthUrlInfo,
-  TransactionHistoryItem,
-} from '@extension-base/background/types';
-import { NetworkName, WalletAddress, AssetName, ChangeWalletBalance, RelayChainName, BuyProvider } from '@/interfaces';
+import type { AccountAuthType, AddressBook, AuthUrlInfo } from '@extension-base/background/types';
+import {
+  NetworkName,
+  WalletAddress,
+  AssetName,
+  ChangeWalletBalance,
+  RelayChainName,
+  BuyProvider,
+  MarketType,
+  SwapOptions,
+} from '@/interfaces';
 
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
@@ -44,17 +44,39 @@ type NullKeys<T> = { [K in keyof T]: IsNull<T, K> }[keyof T];
 
 export type Port = chrome.runtime.Port;
 
-export type AccountWithChildren = AccountJson & {
-  children?: AccountWithChildren[];
-};
+export interface AccountJson extends KeyringPair$Meta {
+  address: string;
+  ethereumAddress: string;
+  genesisHash?: HexString | null;
+  network?: string;
+  isExternal?: boolean;
+  isHardware?: boolean;
+  isMobile?: boolean;
+  isHidden?: boolean;
+  active?: boolean;
+  name: string;
+  parentAddress?: string;
+  suri?: string;
+  type?: KeypairType;
+  whenCreated?: number;
+}
 
-export type AccountsContext = {
-  accounts: AccountJson[];
-  hierarchy: AccountWithChildren[];
-  master?: AccountJson;
-  selectedAccounts?: AccountJson['address'][];
-  setSelectedAccounts?: (address: AccountJson['address'][]) => void;
-};
+export interface ApproveAuthRequest {
+  request: AuthorizeRequest;
+  accounts: string[];
+}
+
+export interface AuthorizeRequest {
+  id: string;
+  request: RequestAuthorizeTab;
+  url: string;
+}
+
+export interface MetadataRequest {
+  id: string;
+  request: MetadataDef;
+  url: string;
+}
 
 export interface SigningRequest {
   account: AccountJson;
@@ -126,8 +148,6 @@ export interface RequestUpdateAuthorizedAccounts {
   authorizedAccounts: string[];
 }
 
-export type RequestAuthorizeSubscribe = null;
-
 export interface RequestMetadataApprove {
   id: string;
 }
@@ -136,8 +156,6 @@ export interface RequestMetadataReject {
   id: string;
 }
 
-export type RequestMetadataSubscribe = null;
-
 export interface RequestAccountCreateSuri {
   password: string;
   suri: string;
@@ -145,25 +163,206 @@ export interface RequestAccountCreateSuri {
   meta: KeyringPair$Meta;
 }
 
-export interface RequestAccountCreateHardware {
-  accountIndex: number;
-  address: string;
-  addressOffset: number;
-  genesisHash: string;
-  hardwareType: string;
-  name: string;
+export interface BalanceJson {
+  reset?: boolean;
+  details: TokenBalance[];
+  saveSequence?: boolean;
 }
 
-export interface RequestAccountChangePassword {
-  address: string;
-  oldPass: string;
-  newPass: string;
+export enum TransferErrorCode {
+  NOT_ENOUGH_FEE = 'notEnoughValue',
+  INVALID_VALUE = 'invalidValue',
+  INVALID_TOKEN = 'invalidToken',
+  TRANSFER_ERROR = 'transferError',
+  UNSUPPORTED = 'unsupported',
 }
 
-export interface RequestAccountEdit {
+export enum BasicTxErrorCode {
+  INVALID_PARAM = 'invalidParam',
+  KEYRING_ERROR = 'keyringError',
+  STAKING_ERROR = 'stakingError',
+  UN_STAKING_ERROR = 'unStakingError',
+  WITHDRAW_STAKING_ERROR = 'withdrawStakingError',
+  CLAIM_REWARD_ERROR = 'claimRewardError',
+  CREATE_COMPOUND_ERROR = 'createCompoundError',
+  CANCEL_COMPOUND_ERROR = 'cancelCompoundError',
+  TIMEOUT = 'timeout',
+  BALANCE_TO_LOW = 'balanceTooLow',
+  UNKNOWN_ERROR = 'unknownError',
+}
+
+export interface ExternalState {
+  externalId: string;
+}
+
+export interface BasicTxResponse {
+  passwordError?: string | null;
+  callHash?: string;
+  status?: boolean;
+  extrinsicHash?: string;
+  txError?: boolean;
+  errors?: BasicTxError[];
+  externalState?: ExternalState;
+  isBusy?: boolean;
+  txResult?: TxResultType;
+  isFinalized?: boolean;
+}
+
+export type TxResultType = {
+  change: string;
+  changeSymbol?: string;
+  fee?: string;
+  feeSymbol?: string;
+};
+
+export enum BasicTxWarningCode {
+  NOT_ENOUGH_EXISTENTIAL_DEPOSIT = 'notEnoughExistentialDeposit',
+}
+
+export type TxErrorCode = TransferErrorCode | BasicTxErrorCode;
+
+export type TxWarningCode = BasicTxWarningCode;
+
+export type BasicTxError = {
+  code: TxErrorCode | TxWarningCode;
+  data?: object;
+  message: string;
+};
+
+export interface ApiState {
+  isApiReady: boolean;
+  isEthereum?: boolean;
+  registry: Registry;
+}
+
+export interface ApiProps extends ApiState {
+  api?: ApiPromise;
+  provider?: WsProvider;
+  isApiConnected: boolean;
+  isEthereum: boolean;
+  isEthereumOnly: boolean;
+  isReady: Promise<ApiProps>;
+  apiRetry: number;
+  nodeIndex: number;
+}
+
+export type BasicTxWarning = {
+  code: TxWarningCode;
+  data?: object;
+  message: string;
+};
+
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type BaseRequestSign = {};
+
+export interface RequestCheckTransfer extends BaseRequestSign {
+  networkKey: NetworkName;
+  from: string;
+  to: string;
+  assetId: string;
+  relayChain?: RelayChainName;
+  amount?: string;
+  password?: string;
+  isMobile?: boolean;
+}
+
+export interface RequestCheckCrossChain extends BaseRequestSign {
+  originNet: NetworkName;
+  destinationNet: NetworkName;
+  from: string;
+  to: string;
+  assetId: string;
+  relayChain?: RelayChainName;
+  amount?: string;
+  password?: string;
+  isMobile?: boolean;
+}
+
+export interface ResponseCheckTransfer {
+  errors?: Array<BasicTxError>;
+  warnings?: Array<BasicTxWarning>;
+  fromAccountFree: string;
+  estimateFee?: string;
+  destEstimateFee: undefined;
+}
+
+export interface ResponseCheckCrossChain {
+  errors?: Array<BasicTxError>;
+  warnings?: Array<BasicTxWarning>;
+  estimateFee?: string;
+  destEstimateFee?: string;
+}
+
+export interface RequestCheckSwap extends BaseRequestSign {
+  network: string;
+  amountA: string;
+  amountB: string;
+  assetAId: string;
+  assetBId: string;
+  slippage: number;
+  symbolA: string;
+  symbolB: string;
+  isExchangeB: boolean;
+  marketType: MarketType;
+}
+
+export interface ResponseCheckSwap {
+  errors?: Array<BasicTxError>;
+  warnings?: Array<BasicTxWarning>;
+  swapOptions?: SwapOptions;
+  amountA: string;
+  amountB: string;
+  AToB: string;
+  BToA: string;
+  fee: string;
+  networkFee?: string;
+  minMaxValue: string;
+  route: string;
+}
+
+export interface ResponseMakeSwap {
+  errors?: Array<BasicTxError>;
+  warnings?: Array<BasicTxWarning>;
+  status: boolean;
+}
+
+export type PasswordRequestSign<T extends BaseRequestSign> = T & { password: string; isSavePass?: boolean };
+
+export type ExternalRequestSign<T extends BaseRequestSign> = Omit<T, 'password'>;
+export interface RequestSwap extends PasswordRequestSign<RequestCheckSwap> {
+  feeSymbol?: string;
+}
+export interface BasicSwapResponse {
+  feeSymbol?: string;
+}
+
+export type RequestTransfer = PasswordRequestSign<RequestCheckTransfer>;
+
+export type RequestCrossChain = PasswordRequestSign<RequestCheckCrossChain>;
+
+export interface RequestAccountExportPrivateKey {
   address: string;
-  genesisHash?: string | null;
-  name: string;
+  password?: string;
+}
+
+export interface ExternalRequestPromise {
+  resolve?: (result: SignerResult | PromiseLike<SignerResult>) => void;
+  reject?: (error?: Error) => void;
+  status: ExternalRequestPromiseStatus;
+  message?: string;
+  createdAt: number;
+}
+
+export enum ExternalRequestPromiseStatus {
+  PENDING,
+  REJECTED,
+  FAILED,
+  COMPLETED,
+}
+
+export interface ResponseAccountExportPrivateKey {
+  privateKey: string;
+  publicKey: string;
 }
 
 export interface RequestAccountForget {
@@ -190,28 +389,15 @@ export interface RequestAccountExport {
   address: string;
   password: string;
 }
-export interface TokenBalanceRaw {
-  reserved: BN;
-  frozen: BN;
-  free: BN;
-}
+
 export interface ApiMap {
   substrate: Record<string, ApiProps>;
   evm: Record<string, JsonRpcProvider>;
 }
 
-export interface ServiceInfo {
-  networkMap: Record<string, NetworkJson>;
-  apiMap: ApiMap;
-  isLock?: boolean;
-  currentAccountInfo: CurrentAccountState;
-}
-
 export interface RequestAccountList {
   anyType?: boolean;
 }
-
-export type RequestAccountSubscribe = null;
 
 export interface RequestActiveTabsUrlUpdate {
   tabs: chrome.tabs.Tab[];
@@ -259,8 +445,6 @@ export interface ResponseSigningIsLocked {
   isLocked: boolean;
   remainingTime: number;
 }
-
-export type RequestSigningSubscribe = null;
 
 // Responses
 
@@ -315,11 +499,7 @@ export interface RequestSign {
 
   sign(registry: TypeRegistry, pair: KeyringPair): { signature: HexString };
 }
-export interface RequestSignJSON {
-  readonly payload: SignerPayloadJSON | SignerPayloadRaw | undefined;
 
-  sign(): { signature: HexString };
-}
 export interface RequestJsonRestore {
   file: KeyringPair$Json;
   password: string;
@@ -331,10 +511,8 @@ export interface RequestJsonValidate {
   isSubstrate?: boolean;
 }
 
-export interface ResponseJsonRestore {
-  error: string | null;
-}
 type TAllowPath = typeof ALLOWED_PATH;
+
 export type AllowedPath = TAllowPath[number];
 
 export interface ResponseAuthorizeList {
@@ -459,35 +637,24 @@ export interface GoogleFileId {
   token: string;
 }
 
-export interface RequestGoogleCreateFile {
-  data: Record<string, string>;
+export interface TransactionHistoryItem {
+  time: number | string;
+  networkKey: string;
+  change: string;
+  changeSymbol?: string; // if undefined => main token
+  fee?: string;
+  feeSymbol?: string;
+  // if undefined => main token, sometime "fee" uses different token than "change"
+  // ex: sub token (DOT, AUSD, KSM, ...) of Acala, Karaura uses main token to pay fee
+  isSuccess: boolean;
+  action: 'send' | 'received';
+  extrinsicHash: string;
+  origin?: 'app' | 'network';
+  eventIdx?: number | null;
 }
 
 export interface RequestAuthorizeCancel {
   id: string;
-}
-export interface FormattedMethod {
-  args?: ArgInfo[];
-  methodName: string;
-}
-
-export interface ArgInfo {
-  argName: string;
-  argValue: string | string[];
-}
-
-export interface EraInfo {
-  period: number;
-  phase: number;
-}
-
-export interface ResponseParseTransactionSubstrate {
-  era: EraInfo | string;
-  nonce: number;
-  method: string | FormattedMethod[];
-  tip: number;
-  specVersion: number;
-  message: string;
 }
 
 type WarningValueName =
@@ -533,7 +700,6 @@ export interface TokenBalance {
   color?: string;
 }
 
-export type BeaconRawSignCallBack = (tx: SignerPayloadRaw) => string;
-
 export type BalanceMap = Record<WalletAddress, TokenBalance[]>;
+
 export type NetworkMap = Record<string, NetworkJson>;

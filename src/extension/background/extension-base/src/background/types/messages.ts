@@ -1,4 +1,4 @@
-import { SessionTypes } from '@walletconnect/types/dist/types/sign-client/session';
+import type { SessionTypes } from '@walletconnect/types';
 import type { SigningRequest } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -16,13 +16,10 @@ import type {
   RequestAccountForget,
   RequestAccountList,
   RequestAccountName,
-  RequestAccountSubscribe,
   AccountJson,
   RequestAccountValidate,
-  RequestAccountChangePassword,
   RequestAuthorizeApprove,
   ResponseAuthorizeList,
-  RequestAuthorizeSubscribe,
   AuthorizeRequest,
   RequestUpdateAuthorizedAccounts,
   RequestActiveTabsUrlUpdate,
@@ -31,14 +28,12 @@ import type {
   ValidateJsonResult,
   RequestMetadataApprove,
   RequestMetadataReject,
-  RequestMetadataSubscribe,
   MetadataRequest,
   RequestSigningApprovePassword,
   RequestSigningApproveSignature,
   RequestSigningCancel,
   RequestSigningIsLocked,
   ResponseSigningIsLocked,
-  RequestSigningSubscribe,
   AllowedPath,
   GoogleFileId,
   ActiveTabAuthorizeStatus,
@@ -59,7 +54,6 @@ import type {
   ResponseRpcListProviders,
   RequestRpcSend,
   RequestRpcSubscribe,
-  RequestRpcUnsubscribe,
   RequestCheckSwap,
   ResponseCheckSwap,
   RequestSwap,
@@ -67,6 +61,7 @@ import type {
   RequestUpdateMeta,
   ResponseTotalBalances,
   MobileSigningRequest,
+  RequestSigningSubscribe,
 } from '@/extension/background/extension-base/src/background/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
@@ -107,10 +102,9 @@ export interface RequestSignatures {
   'pri(accounts.forget)': [RequestAccountForget, boolean];
   'pri(accounts.list)': [RequestAccountList, InjectedAccount[]];
   'pri(accounts.name)': [RequestAccountName, boolean];
-  'pri(accounts.subscribe)': [RequestAccountSubscribe, AccountJson[], AccountJson[]];
-  'pri(addresses.subscribe)': [RequestAccountSubscribe, AccountJson[], AccountJson[]];
+  'pri(accounts.subscribe)': [null, AccountJson[], AccountJson[]];
+  'pri(addresses.subscribe)': [null, AccountJson[], AccountJson[]];
   'pri(accounts.validate)': [RequestAccountValidate, boolean];
-  'pri(accounts.changePassword)': [RequestAccountChangePassword, boolean];
   'pri(accounts.update.current)': [string, boolean];
   'pri(accounts.update.currentNetwork)': [string, boolean];
   'pri(accounts.totalBalances)': [null, ResponseTotalBalances[]];
@@ -126,7 +120,7 @@ export interface RequestSignatures {
   'pri(authorize.approve.polkaswap)': [string[], null];
   'pri(authorize.approve)': [RequestAuthorizeApprove, boolean];
   'pri(authorize.list)': [null, ResponseAuthorizeList];
-  'pri(authorize.requests)': [RequestAuthorizeSubscribe, boolean, AuthorizeRequest[]];
+  'pri(authorize.requests)': [null, boolean, AuthorizeRequest[]];
   'pri(authorize.remove)': [string, ResponseAuthorizeList];
   'pri(authorize.delete.request)': [string, void];
   'pri(authorize.cancel)': [string, boolean];
@@ -136,14 +130,14 @@ export interface RequestSignatures {
   'pri(accounts.json.valid)': [RequestJsonValidate, ValidateJsonResult];
   'pri(metadata.approve)': [RequestMetadataApprove, boolean];
   'pri(metadata.reject)': [RequestMetadataReject, boolean];
-  'pri(metadata.requests)': [RequestMetadataSubscribe, boolean, MetadataRequest[]];
+  'pri(metadata.requests)': [null, boolean, MetadataRequest[]];
   'pri(settings.notification)': [string, boolean];
   'pri(signing.approve.password)': [RequestSigningApprovePassword, boolean];
   'pri(signing.approve.signature)': [RequestSigningApproveSignature, boolean];
   'pri(signing.cancel)': [RequestSigningCancel, boolean];
   'pri(signing.isLocked)': [RequestSigningIsLocked, ResponseSigningIsLocked];
-  'pri(signing.requests)': [RequestSigningSubscribe, boolean, SigningRequest[]];
-  'pri(mobileSigning.tx)': [RequestSigningSubscribe, boolean, MobileSigningRequest[]];
+  'pri(signing.requests)': [null, boolean, SigningRequest[]];
+  'pri(mobileSigning.tx)': [null, boolean, MobileSigningRequest[]];
   'pri(mobileSigning.approve.signature)': [RequestSigningApproveSignature, boolean];
   'pri(mobileSigning.cancel)': [RequestSigningCancel, boolean];
 
@@ -171,7 +165,7 @@ export interface RequestSignatures {
 
   'pri(price.update.currency)': [string, void];
   'pri(price.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];
-  'pri(soraCard.token)': [RequestAuthorizeSubscribe, boolean, string];
+  'pri(soraCard.token)': [null, boolean, string];
 
   //OnBoarding
   'pri(onboarding.isRequired)': [null, boolean];
@@ -181,7 +175,7 @@ export interface RequestSignatures {
   // public/external requests, i.e. from a page
   'pub(soraCard.token)': [string, null];
   'pub(accounts.list)': [RequestAccountList, InjectedAccount[]];
-  'pub(accounts.subscribe)': [RequestAccountSubscribe, string, InjectedAccount[]];
+  'pub(accounts.subscribe)': [null, string, InjectedAccount[]];
   'pub(accounts.unsubscribe)': [RequestAccountUnsubscribe, boolean];
   'pub(authorize.tab)': [RequestAuthorizeTab, Promise<AuthResponse>];
   'pub(bytes.sign)': [SignerPayloadRaw, ResponseSigning];
@@ -194,7 +188,6 @@ export interface RequestSignatures {
   'pub(rpc.startProvider)': [string, ProviderMeta];
   'pub(rpc.subscribe)': [RequestRpcSubscribe, number, JsonRpcResponse<unknown>];
   'pub(rpc.subscribeConnected)': [null, boolean, boolean];
-  'pub(rpc.unsubscribe)': [RequestRpcUnsubscribe, boolean];
 
   //Wallet Connect
   'pri(walletConnect.connect)': [RequestConnectWalletConnect, boolean];

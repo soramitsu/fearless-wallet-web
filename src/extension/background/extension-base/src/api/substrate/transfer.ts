@@ -3,8 +3,8 @@ import { state } from '@extension-base/background/handlers';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
 import { getUtilityProps, getSubstrateAddress } from '@extension-base/background/utils/utils';
+import type { BasicTxResponse } from '@extension-base/background/types/types';
 import {
-  BasicTxResponse,
   TransferErrorCode,
   SignerType,
   TokenBalance,
@@ -63,7 +63,7 @@ export interface MakeTransferProps {
   to: string;
   from: string;
   amount: string;
-  password: string | undefined;
+  password: string;
   assetId: string;
   isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;

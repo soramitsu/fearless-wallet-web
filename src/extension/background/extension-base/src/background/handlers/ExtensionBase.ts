@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { keyring } from '@polkadot/ui-keyring';
+import { keyringService } from '@extension-base/services';
 import type {
   CachedUnlocks,
   RequestAccountExport,
@@ -30,12 +30,12 @@ export default class FWExtensionBase {
   }
 
   accountsExport({ address, password }: RequestAccountExport): ResponseAccountExport {
-    return { exportedJson: keyring.backupAccount(keyring.getPair(address), password) };
+    return { exportedJson: keyringService.backupAccount(address, password)! };
   }
 
   validateDerivationPath({ value, keypairType }: DerivationPath): boolean {
     try {
-      keyring.createFromUri(`${VALID_MNEMONIC}${value}`, {}, keypairType);
+      keyringService.createFromUri(`${VALID_MNEMONIC}${value}`, keypairType);
 
       return true;
     } catch {
@@ -44,34 +44,28 @@ export default class FWExtensionBase {
   }
 
   public encodeAddress = (key: string | Uint8Array, ss58Format = 42): string => {
-    return keyring.encodeAddress(key, ss58Format);
+    return keyringService.encodeAddress(key, ss58Format);
   };
 
   public decodeAddress = (key: string | Uint8Array, ignoreChecksum?: boolean, ss58Format?: number): Uint8Array => {
-    return keyring.decodeAddress(key, ignoreChecksum, ss58Format);
+    return keyringService.decodeAddress(key, ignoreChecksum, ss58Format);
   };
 
   updatePairMeta({ address, meta }: RequestUpdateMeta) {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    keyring.saveAccountMeta(pair, { ...pair.meta, ...meta });
+    keyringService.saveAccountMeta(address, meta);
 
     return true;
   }
 
   accountUpdateName({ address, name }: RequestAccountName): boolean {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    keyring.saveAccountMeta(pair, { ...pair.meta, name });
+    keyringService.saveAccountMeta(address, { name });
 
     return true;
   }
 
-  getRemainingTime(pair: KeyringPair): number {
+  getRemainingTime(pair: KeyringPair | null): number {
+    if (!pair) return -1;
+
     const { address } = pair;
 
     const savedExpiry = this.cachedUnlocks[address] || 0;
@@ -90,13 +84,12 @@ export default class FWExtensionBase {
     if (remainingTime < 0) {
       this.cachedUnlocks[address] = 0;
 
-      pair.lock();
+      keyringService.lockPair(pair);
 
       if (ethereumAddress) {
         this.cachedUnlocks[ethereumAddress] = 0;
-        const ethereumPair = keyring.getPair(ethereumAddress);
 
-        ethereumPair.lock();
+        keyringService.lockPair(ethereumAddress);
       }
 
       return 0;
@@ -106,7 +99,7 @@ export default class FWExtensionBase {
   }
 
   signingIsLocked({ address }: RequestSigningIsLocked): ResponseSigningIsLocked {
-    const pair = keyring.getPair(address);
+    const pair = keyringService.getPair(address);
 
     assert(pair, 'Unable to find pair');
 
@@ -120,11 +113,11 @@ export default class FWExtensionBase {
 
   jsonValid({ file, password, isSubstrate }: RequestJsonValidate): ValidateJsonResult {
     try {
-      const pair = keyring.restoreAccount(file, password);
+      const pair = keyringService.restoreAccount(file, password);
 
       pair.decodePkcs8(password);
 
-      if (isSubstrate) keyring.encodeAddress(pair.address);
+      if (isSubstrate) keyringService.encodeAddress(pair.address);
 
       return { value: true };
     } catch (error: any) {

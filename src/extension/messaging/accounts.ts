@@ -5,13 +5,13 @@ import type { ValidateJsonResult, ResponseTotalBalances } from '@extension-base/
 import type { DerivationPath } from '@/interfaces';
 import { sendMessage } from '@/extension/messaging/index';
 
-export function createAccountSuri(
+export function addAccount(
   password: string,
   suri: string,
   type?: KeypairType,
   meta?: Record<string, unknown>
 ): Promise<string> {
-  return sendMessage('pri(accounts.create.suri)', { password, suri, type, meta });
+  return sendMessage('pri(accounts.create)', { password, suri, type, meta });
 }
 
 export function createMobileWallet(address: string, meta: KeyringPair$Meta): Promise<boolean> {

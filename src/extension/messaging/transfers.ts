@@ -1,10 +1,9 @@
+import type { ResponseCheckTransfer, BasicTxResponse } from '@extension-base/background/types/types';
 import type {
-  BasicTxResponse,
   RequestTransfer,
   RequestCrossChain,
   RequestCheckTransfer,
   RequestCheckCrossChain,
-  ResponseCheckTransfer,
   ResponseCheckCrossChain,
   RequestCheckSwap,
   ResponseCheckSwap,

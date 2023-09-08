@@ -9,11 +9,11 @@ import {
   getSubstrateAddress,
 } from '@extension-base/background/utils/utils';
 import { getAssetInfo } from '@extension-base/api/substrate/registry';
+import { SignerType, TokenBalance } from '@extension-base/background/types';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
-import type { TokenBalance, BasicTxResponse } from '@/extension/background/extension-base/src/background/types';
+import type { BasicTxResponse } from '@extension-base/background/types/types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
-import type { Interior } from '@/interfaces';
-import { SignerType } from '@/extension/background/extension-base/src/background/types';
+import type { Interior, NetworkName, RelayChainName } from '@/interfaces';
 import {
   NATIVE_NETWORKS,
   RELAY_CHAINS,
@@ -22,7 +22,6 @@ import {
   VALID_ETHEREUM_ADDRESS,
   VALID_SUBSTRATE_ADDRESS,
 } from '@/consts/networks';
-import { NetworkName, RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers';
 
 type Extrinsic = Nullable<SubmittableExtrinsic<'promise'>>;
@@ -359,7 +358,7 @@ export interface MakeCrossChainProps {
   to: string;
   from: string;
   amount: string;
-  password: string | undefined;
+  password: string;
   isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;
   relayChain?: RelayChainName;

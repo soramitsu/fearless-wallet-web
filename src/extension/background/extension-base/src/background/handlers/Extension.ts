@@ -3,7 +3,6 @@ import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
-import { keyring } from '@polkadot/ui-keyring';
 import { getSdkError } from '@walletconnect/utils';
 import {
   getERC20TransactionObject,
@@ -36,35 +35,34 @@ import {
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { ProposalTypes, SessionTypes } from '@walletconnect/types';
+import { keyringService } from '@extension-base/services';
 import { HexString } from '@polkadot/util/types';
+import { WALLET_CONNECT_EIP155_NAMESPACE } from '../../services/wallet-connect-service/consts';
 import {
-  RequestApproveConnectWalletSession,
-  RequestApproveWalletConnect,
-  RequestApproveWalletConnectNotSupport,
   RequestConnectWalletConnect,
-  RequestDisconnectWalletConnectSession,
-  RequestRejectConnectWalletSession,
-  RequestRejectWalletConnectNotSupport,
-  ResultApproveWalletConnectSession,
-  WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
+  RequestApproveConnectWalletSession,
+  ResultApproveWalletConnectSession,
+  RequestRejectConnectWalletSession,
+  RequestDisconnectWalletConnectSession,
   WalletConnectTransactionRequest,
-} from '@extension-base/services/wallet-connect-service/types';
-import { WALLET_CONNECT_EIP155_NAMESPACE } from '@extension-base/services/wallet-connect-service/consts';
+  RequestApproveWalletConnect,
+  WalletConnectNotSupportRequest,
+  RequestApproveWalletConnectNotSupport,
+  RequestRejectWalletConnectNotSupport,
+} from '../../services/wallet-connect-service/types';
 import {
   isProposalExpired,
   isSupportWalletConnectNamespace,
   isSupportWalletConnectChain,
-} from '@extension-base/services/wallet-connect-service/utils';
-import type { SigningRequest } from '@extension-base/background/types/types';
+} from '../../services/wallet-connect-service/utils';
+import type { BasicTxResponse, ResponseCheckTransfer, SigningRequest } from '@extension-base/background/types/types';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
   ActiveTabAuthorizeStatus,
   BalanceJson,
   BasicTxError,
-  BasicTxResponse,
-  BasicTxWarning,
   Port,
   PriceJson,
   RequestCheckSwap,
@@ -74,7 +72,6 @@ import type {
   RequestTransfer,
   RequestCrossChain,
   ResponseCheckSwap,
-  ResponseCheckTransfer,
   ResponseCheckCrossChain,
   ResponseMakeSwap,
   AccountJson,
@@ -106,9 +103,8 @@ import type {
 } from '@extension-base/background/types';
 
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
-import type { Asset, NetworkJson } from '@extension-base/types';
-
-import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
+import type { NetworkJson } from '@extension-base/types';
+import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 // import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
@@ -171,10 +167,8 @@ export default class Extension extends FWExtensionBase {
     this.state.setActiveNetworks(selectedNetworks);
   }
 
-  accountsCreateSuri({ password, suri, type, meta }: RequestAccountCreateSuri): string {
-    const {
-      pair: { address },
-    } = keyring.addUri(suri, password, { ...meta, isMobile: false }, type);
+  accountsCreate({ password, suri, type, meta }: RequestAccountCreateSuri): string {
+    const address = keyringService.addAccount(suri, password, { ...meta, isMobile: false }, type);
 
     if (!isEthereumAddress(address)) {
       this.updateNetworkForNewWallet(address);
@@ -213,16 +207,16 @@ export default class Extension extends FWExtensionBase {
     }
 
     if (type === 'native') {
-      const pair = keyring.getAccount(address);
+      const pair = keyringService.getAccount(address);
       const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
 
-      if (ethereumAddress) keyring.forgetAccount(ethereumAddress);
+      if (ethereumAddress) keyringService.forgetAccount(ethereumAddress);
 
-      keyring.forgetAccount(address);
-    } else keyring.forgetAddress(address);
+      keyringService.forgetAccount(address);
+    } else keyringService.forgetAddress(address);
 
-    const accounts = keyring.getAccounts();
-    const addresses = keyring.getAddresses();
+    const accounts = keyringService.getAccounts();
+    const addresses = keyringService.getAddresses();
 
     const currentAcc = await this.state.currentAccount;
 
@@ -248,7 +242,7 @@ export default class Extension extends FWExtensionBase {
 
   accountsValidatePassword({ address, password }: RequestAccountValidate): boolean {
     try {
-      keyring.backupAccount(keyring.getPair(address), password);
+      keyringService.backupAccount(address, password);
 
       return true;
     } catch (e) {
@@ -433,7 +427,7 @@ export default class Extension extends FWExtensionBase {
     if (isPasswordValidated) {
       return new Promise((resolve, reject) => {
         try {
-          const { address } = keyring.restoreAccount(file, password);
+          const { address } = keyringService.restoreAccount(file, password);
 
           if (!isEthereumAddress(address)) this.updateNetworkForNewWallet(address);
 
@@ -476,7 +470,7 @@ export default class Extension extends FWExtensionBase {
 
     const {
       meta: { isMobile, name, ethereumAddress },
-    } = keyring.getAccount(address) ?? keyring.getAddress(address)!;
+    } = keyringService.getAccount(address) ?? keyringService.getAddress(address)!;
 
     const accountInfo: CurrentAccountInfo = {
       address,
@@ -518,7 +512,7 @@ export default class Extension extends FWExtensionBase {
     assert(queued, 'Unable to find request');
 
     const { reject, request, resolve } = queued;
-    const pair = keyring.getPair(queued.account.address);
+    const pair = keyringService.getPair(queued.account.address);
 
     if (!pair) {
       reject(new Error('Unable to find pair'));
@@ -647,22 +641,6 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  derive(parentAddress: string, suri: string, password: string, metadata: KeyringPair$Meta): KeyringPair {
-    const parentPair = keyring.getPair(parentAddress);
-
-    try {
-      parentPair.decodePkcs8(password);
-    } catch (e) {
-      throw new Error('invalid password');
-    }
-
-    try {
-      return parentPair.derive(suri, metadata);
-    } catch (err) {
-      throw new Error(`"${suri}" is not a valid derivation path`);
-    }
-  }
-
   async removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
     const auths = await this.state.requestService.getAuthList();
     delete auths[url];
@@ -681,7 +659,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   createAddress({ address, meta }: RequestAddressCreate) {
-    keyring.saveAddress(address, meta, 'address');
+    keyringService.saveAddress(address, meta, 'address');
   }
 
   initAuth({ type, wallet }: GoogleAuthTypes): void {
@@ -819,7 +797,6 @@ export default class Extension extends FWExtensionBase {
     const { extrinsicOptions } = await createSwap(options, apiSora);
     const { password, isSavePass } = options;
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = extrinsicOptions;
-    let status = false;
     const errors: Array<BasicTxError> = [];
     const address = await this.state.getAccountAddress();
     const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
@@ -827,55 +804,29 @@ export default class Extension extends FWExtensionBase {
     if (!address) {
       errors.push({
         code: BasicTxErrorCode.KEYRING_ERROR,
-        message: 'Something went wrong',
+        message: 'Failed to get address',
       });
 
       return {
         errors,
-        status,
+        status: false,
       };
     }
 
-    const pair = keyring.getPair(address);
-
+    const pair = keyringService.getPair(address)!;
     const remainTime = this.refreshAccountPasswordCache(pair);
 
-    // if the keyring pair is locked, the password is needed
-    if (pair.isLocked && !password) {
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        message: 'Password needed to unlock the account',
-      });
+    if (pair?.isLocked) {
+      const isUnlock = keyringService.unlockPair(pair, password);
 
-      return {
-        errors,
-        status,
-      };
+      if (!isUnlock)
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.KEYRING_ERROR }] };
     }
-
-    try {
-      if (pair.isLocked && password) pair.unlock(password);
-    } catch (e: any) {
-      pair.lock();
-
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        message: String(e.message),
-      });
-    }
-
-    if (errors.length)
-      return {
-        status,
-        errors,
-      };
 
     apiSora.shouldPairBeLocked = !isSavePass;
 
     try {
       await apiSora.swap.execute(assetA, assetB, amountA, amountB, slippage, isExchangeB, liquiditySource, swapDexId);
-
-      status = true;
     } catch (ex) {
       errors.push({
         code: TransferErrorCode.TRANSFER_ERROR,
@@ -885,7 +836,7 @@ export default class Extension extends FWExtensionBase {
       console.info(`Swap transaction failed ${ex}`);
     }
 
-    const ethereumAddress = keyring.getAccount(address)?.meta.ethereumAddress as string | undefined;
+    const ethereumAddress = keyringService.getAccount(address)?.meta.ethereumAddress as string | undefined;
 
     if (isSavePass) {
       this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
@@ -894,62 +845,25 @@ export default class Extension extends FWExtensionBase {
     } else if (remainTime) {
       this.cachedUnlocks[address] = 0;
 
-      pair.lock();
+      keyringService.lockPair(pair);
 
       if (ethereumAddress) {
         this.cachedUnlocks[ethereumAddress] = 0;
 
-        keyring.getPair(ethereumAddress).lock();
+        keyringService.lockPair(ethereumAddress);
       }
     }
 
     return {
-      status,
+      status: true,
       errors,
     };
-  }
-
-  private validateTransfer(
-    tokenId: string,
-    from: string,
-    password: string | undefined
-  ): [Array<BasicTxError>, KeyringPair | undefined, Asset] {
-    const errors = [] as Array<BasicTxError>;
-    const substrateAddress = getSubstrateAddress(from);
-    const substratePair = keyring.getAccount(substrateAddress) ? keyring.getPair(substrateAddress) : undefined;
-
-    if (password) {
-      try {
-        if (substratePair) {
-          substratePair.unlock(password);
-
-          const { meta } = substratePair;
-          const ethereumAddress = meta.ethereumAddress as string | undefined;
-
-          if (ethereumAddress) {
-            const pair = keyring.getPair(ethereumAddress);
-
-            pair.unlock(password);
-          }
-        }
-      } catch (e: any) {
-        errors.push({
-          code: BasicTxErrorCode.KEYRING_ERROR,
-          message: String(e.message),
-        });
-      }
-    }
-
-    const tokenInfo = getAssetInfo(tokenId);
-    const resultPair = isEthereumAddress(from) ? keyring.getPair(from) : substratePair;
-
-    return [errors, resultPair, tokenInfo];
   }
 
   validatePairPassword(address: string, password: string | undefined) {
     const substrateAddress = getSubstrateAddress(address);
     const errors = [] as Array<BasicTxError>;
-    const substratePair = keyring.getAccount(substrateAddress) ? keyring.getPair(substrateAddress) : undefined;
+    const substratePair = keyringService.getPair(substrateAddress);
 
     if (password) {
       try {
@@ -960,9 +874,9 @@ export default class Extension extends FWExtensionBase {
           const ethereumAddress = meta.ethereumAddress as string | undefined;
 
           if (ethereumAddress) {
-            const pair = keyring.getPair(ethereumAddress);
+            const pair = keyringService.getPair(ethereumAddress);
 
-            pair.unlock(password);
+            if (pair) pair.unlock(password);
           }
         }
       } catch (e: any) {
@@ -983,27 +897,20 @@ export default class Extension extends FWExtensionBase {
     assetId,
     relayChain,
     amount,
-    password,
   }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
     const networkKey = this.state.getNetworkByKey(givenNetwork)?.name ?? '';
 
-    const [errors, , tokenInfo] = this.validateTransfer(assetId, from, password);
-    const warnings: BasicTxWarning[] = [];
-
     if (networkKey === '')
       return {
-        errors,
-        warnings,
-        destEstimateFee: undefined,
-        fromAccountFree: '0',
+        destEstimateFee: '0',
         estimateFee: '0',
       };
 
+    const tokenInfo = getAssetInfo(assetId);
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
 
     const address = getSubstrateAddress(from);
     let fee = 0;
-    let fromAccountFreeBalance = '0';
 
     const tokenBalance = this.state.balanceMap[address].find(
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
@@ -1013,6 +920,7 @@ export default class Extension extends FWExtensionBase {
       const fromAccountFreeBalance = tokenBalance
         ? balanceItemByNetwork(tokenBalance.balances, networkKey)?.transferable ?? '0'
         : '0';
+
       const txVal = fromAccountFreeBalance || '0';
 
       // Estimate with EVM API
@@ -1028,15 +936,11 @@ export default class Extension extends FWExtensionBase {
     } else {
       // Estimate with DotSama API
 
-      const feeNumber = await estimateFee(networkKey, to, amount, tokenBalance);
-      fee = feeNumber;
-      fromAccountFreeBalance = balanceItemByNetwork(tokenBalance.balances, networkKey)?.transferable ?? '0';
+      fee = await estimateFee(networkKey, to, amount, tokenBalance);
     }
 
     return {
-      errors,
-      warnings,
-      fromAccountFree: fromAccountFreeBalance,
+      destEstimateFee: '0',
       estimateFee: fee.toString(),
     } as unknown as ResponseCheckTransfer;
   }
@@ -1047,37 +951,28 @@ export default class Extension extends FWExtensionBase {
     { from, networkKey: givenNetwork, password, to, assetId, amount, isSavePass, isMobile }: RequestTransfer
   ): Promise<BasicTxResponse | undefined> {
     const networkKey = this.state.getNetworkByKey(givenNetwork)?.name ?? '';
+    const tokenInfo = getAssetInfo(assetId);
 
-    const txState: BasicTxResponse = {};
-    const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
+    const pair = keyringService.getPair(from);
 
-    if (errors.length) {
-      txState.txError = true;
-      txState.errors = errors;
+    if (pair?.isLocked) {
+      const isUnlock = keyringService.unlockPair(pair, password);
 
-      setTimeout(() => this.cancelSubscription(id), 500);
+      if (!isUnlock) {
+        setTimeout(() => this.cancelSubscription(id), 500);
 
-      // todo: add condition to lock KeyPair (for example: not remember password)
-
-      return txState;
-    }
-
-    if (!fromKeyPair && !isMobile) {
-      txState.status = false;
-      txState.txError = true;
-
-      return txState;
+        return { status: false, errors: [{ message: 'Invalid password' }] };
+      }
     }
 
     const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
 
-    const ethereumAddress = fromKeyPair ? (fromKeyPair.meta.ethereumAddress as string | undefined) : '';
+    const ethereumAddress = pair ? (pair.meta.ethereumAddress as string | undefined) : '';
     const isEthereum = isEthereumAddress(from);
-    const address = isEthereum ? getSubstrateAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet to save pass
-    const remainTime = fromKeyPair ? this.getRemainingTime(fromKeyPair) : 0;
+    const address = getSubstrateAddress(from);
 
     const savePass = () => {
-      this.savePass(address, isEthereum ? from : ethereumAddress, remainTime, !!isSavePass, !!isMobile);
+      this.savePass(address, isEthereum ? from : ethereumAddress, !!isSavePass, !!isMobile);
     };
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
@@ -1118,45 +1013,34 @@ export default class Extension extends FWExtensionBase {
         console.error('Transfer error', e);
 
         cb({
-          txError: true,
           status: false,
           errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
         });
 
         setTimeout(() => this.cancelSubscription(id), 500);
-
-        // todo: add condition to lock KeyPair
       });
 
     port.onDisconnect.addListener(() => this.cancelSubscription(id));
 
-    return txState;
+    return { status: true };
   }
 
-  savePass(
-    address: string,
-    ethereumAddress: string | undefined,
-    remainTime: number,
-    isSavePass: boolean,
-    isMobile: boolean
-  ) {
+  savePass(address: string, ethereumAddress: string | undefined, isSavePass: boolean, isMobile: boolean) {
     if (isMobile) return;
 
     if (isSavePass) {
       this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
       if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
-    } else if (remainTime) {
+    } else {
       this.cachedUnlocks[address] = 0;
-      const pair = keyring.getPair(address);
 
-      pair.lock();
+      keyringService.lockPair(address);
 
       if (ethereumAddress) {
         this.cachedUnlocks[ethereumAddress] = 0;
-        const ethereumPair = keyring.getPair(ethereumAddress);
 
-        ethereumPair.lock();
+        keyringService.lockPair(ethereumAddress);
       }
     }
   }
@@ -1202,20 +1086,29 @@ export default class Extension extends FWExtensionBase {
       isSavePass,
       isMobile,
     }: RequestCrossChain
-  ): Promise<void> {
+  ): Promise<BasicTxResponse> {
     const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';
-    const [, fromKeyPair] = this.validateTransfer(assetId, from, password);
+
+    const pair = keyringService.getPair(from);
+
+    if (pair?.isLocked) {
+      const isUnlock = keyringService.unlockPair(pair, password);
+
+      if (!isUnlock) {
+        setTimeout(() => this.cancelSubscription(id), 500);
+
+        return { status: false, errors: [{ message: 'Invalid password' }] };
+      }
+    }
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
 
     const address = getSubstrateAddress(from);
-    const substratePair = keyring.getPair(address);
+    const substratePair = keyringService.getPair(address)!;
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 
-    const remainTime = this.getRemainingTime(substratePair);
-
     const savePass = () => {
-      this.savePass(address, ethereumAddress, remainTime, !!isSavePass, !!isMobile);
+      this.savePass(address, ethereumAddress, !!isSavePass, !!isMobile);
     };
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
@@ -1225,14 +1118,14 @@ export default class Extension extends FWExtensionBase {
       originNet,
       destinationNet,
       amount: amount ?? '0',
-      from: fromKeyPair!.address,
+      from,
       to,
       password,
       isSavePass,
       callback,
     });
 
-    transferProm
+    await transferProm
       .then(() =>
         console.info(`
           Start crossChain amount: ${amount}
@@ -1243,7 +1136,6 @@ export default class Extension extends FWExtensionBase {
       )
       .catch((e) => {
         cb({
-          txError: true,
           status: false,
           errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
         });
@@ -1251,11 +1143,11 @@ export default class Extension extends FWExtensionBase {
         console.error('CrossChain error', e);
 
         setTimeout(() => this.cancelSubscription(id), 500);
-
-        // todo: add condition to lock KeyPair
       });
 
     port.onDisconnect.addListener(() => this.cancelSubscription(id));
+
+    return { status: true };
   }
 
   private getNetworkMap(): Record<string, NetworkJson> {
@@ -1594,8 +1486,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.validate.path)':
         return this.validateDerivationPath(request as DerivationPath);
 
-      case 'pri(accounts.create.suri)':
-        return this.accountsCreateSuri(request as RequestAccountCreateSuri);
+      case 'pri(accounts.create)':
+        return this.accountsCreate(request as RequestAccountCreateSuri);
 
       case 'pri(price.update.currency)':
         return this.updateCurrencySymbol(request as string);

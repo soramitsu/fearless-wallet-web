@@ -3,16 +3,12 @@
 
 import { sendExtrinsic } from '@extension-base/api/substrate/shared/sendExtrinsic';
 import { signExtrinsic } from '@extension-base/api/substrate/shared/signExtrinsic';
+import { BasicTxErrorCode } from '@extension-base/background/types';
+import { BasicTxResponse, ApiProps } from '@extension-base/background/types/types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { EventRecord } from '@polkadot/types/interfaces';
 import type { HandleBasicTx } from '@extension-base/api/evm/transfer';
-import type {
-  ApiProps,
-  BasicTxResponse,
-  PrepareExternalRequest,
-  SignerType,
-} from '@/extension/background/extension-base/src/background/types';
-import { BasicTxErrorCode } from '@/extension/background/extension-base/src/background/types';
+import type { PrepareExternalRequest, SignerType } from '@extension-base/background/types';
 interface AbstractSignAndSendExtrinsicProps extends Partial<PrepareExternalRequest> {
   extrinsic: Nullable<SubmittableExtrinsic<'promise'>>;
   callback: HandleBasicTx;
@@ -47,7 +43,6 @@ export const signAndSendExtrinsic = async ({
   type,
 }: SignAndSendExtrinsicProps) => {
   if (!extrinsic) {
-    txState.txError = true;
     txState.status = false;
 
     callback(txState);
@@ -76,7 +71,6 @@ export const signAndSendExtrinsic = async ({
     if (e) {
       console.error(errorMessage, e);
       txState.errors = [{ code: BasicTxErrorCode.KEYRING_ERROR, message: (e as Error).message }];
-      txState.txError = true;
       txState.status = false;
       callback(txState);
     }
@@ -98,7 +92,6 @@ export const signAndSendExtrinsic = async ({
       txState.errors = [{ code: BasicTxErrorCode.BALANCE_TO_LOW, message: (e as Error).message }];
     else txState.errors = [{ code: BasicTxErrorCode.INVALID_PARAM, message: (e as Error).message }];
 
-    txState.txError = true;
     txState.status = false;
 
     callback(txState);

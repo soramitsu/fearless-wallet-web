@@ -1,13 +1,9 @@
 // Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { BasicTxResponse, ApiProps } from '@extension-base/background/types/types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
-
-import type {
-  BasicTxResponse,
-  ExternalRequestPromise,
-  ApiProps,
-} from '@/extension/background/extension-base/src/background/types';
+import type { ExternalRequestPromise } from '@extension-base/background/types';
 import type { HandleBasicTx } from '@extension-base/api/evm/transfer';
 import type { EventRecord } from '@polkadot/types/interfaces';
 
@@ -26,12 +22,10 @@ export const sendExtrinsic = async ({ callback, extrinsic, txState }: SendExtrin
     if (!result || !result.status) return;
 
     if (result.status.isBroadcast) {
-      txState.isFinalized = true;
       txState.status = true;
 
       callback(txState);
     } else if (result.isError) {
-      txState.txError = true;
       txState.status = false;
 
       callback(txState);

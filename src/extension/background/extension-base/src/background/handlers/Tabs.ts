@@ -1,13 +1,8 @@
-// Copyright 2019-2022 @polkadot/extension authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
 import { PHISHING_PAGE_REDIRECT } from '@extension-base/defaults';
 import { checkIfDenied } from '@polkadot/phishing';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
-import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 
 import { assert, isNumber } from '@polkadot/util';
-import { keyring } from '@polkadot/ui-keyring';
 import {
   stripUrl,
   transformAccounts,
@@ -19,6 +14,7 @@ import { createSubscription, unsubscribe } from '@extension-base/background/hand
 import BeaconSignerJSON from '@extension-base/signers/BeaconSignerJSON';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
+import { keyringService } from '../../services';
 import type {
   AccountSub,
   AuthUrlInfo,
@@ -78,7 +74,7 @@ export default class Tabs {
 
   async accountsListAuthorized(url: string, { anyType }: RequestAccountList): Promise<InjectedAccount[]> {
     const transformedAccounts = transformAccounts(accountsObservable.subject.getValue(), anyType);
-    const transformedAddresses = transformAddresses(addressesObservable.subject.getValue());
+    const transformedAddresses = transformAddresses(keyringService.addressesSubjectValue);
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
 
     const filteredAuths = await this.filterForAuthorizedAccounts(totalAccounts, url);
@@ -99,7 +95,7 @@ export default class Tabs {
     this.accountSubs[id] = {
       subscription: accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
         const transformedAccounts = transformAccounts(accounts);
-        const transformedMobileAccount = transformAddresses(addressesObservable.subject.getValue());
+        const transformedMobileAccount = transformAddresses(keyringService.addressesSubjectValue);
         const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
 
         chrome.storage.local.set({ transformAccounts: allAccounts });
@@ -132,7 +128,7 @@ export default class Tabs {
   }
 
   getSigningPair(address: string): KeyringPair {
-    const pair = keyring.getPair(address);
+    const pair = keyringService.getPair(address);
 
     assert(pair, 'Unable to find keypair');
 
@@ -152,12 +148,12 @@ export default class Tabs {
   }
 
   extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
-    const address = keyring.encodeAddress(request.address);
-    const isMobile = !!keyring.getAddress(address, 'address')?.meta.isMobile;
+    const address = keyringService.encodeAddress(request.address);
+    const isMobile = !!keyringService.getAddress(address, 'address')?.meta.isMobile;
     let meta;
 
-    if (keyring.getAccount(address)) meta = this.getSigningPair(address).meta;
-    else if (isMobile) meta = keyring.getAddress(address, 'address')?.meta;
+    if (keyringService.getAccount(address)) meta = this.getSigningPair(address).meta;
+    else if (isMobile) meta = keyringService.getAddress(address, 'address')?.meta;
 
     const signer = isMobile ? new BeaconSignerJSON(request) : new RequestExtrinsicSign(request);
 

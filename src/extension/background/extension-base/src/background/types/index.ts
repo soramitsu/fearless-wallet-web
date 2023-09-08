@@ -4,9 +4,9 @@
 /* eslint-disable no-use-before-define */
 import { BN } from '@polkadot/util';
 import { Subscription } from 'rxjs';
-import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 import { JsonRpcProvider } from 'ethers';
+import { ApiProps } from './types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
@@ -269,19 +269,6 @@ export interface ExternalState {
   externalId: string;
 }
 
-export interface BasicTxResponse {
-  passwordError?: string | null;
-  callHash?: string;
-  status?: boolean;
-  extrinsicHash?: string;
-  txError?: boolean;
-  errors?: BasicTxError[];
-  externalState?: ExternalState;
-  isBusy?: boolean;
-  txResult?: TxResultType;
-  isFinalized?: boolean;
-}
-
 export type TxResultType = {
   change: string;
   changeSymbol?: string;
@@ -321,22 +308,7 @@ export interface ApiState {
   registry: Registry;
   defaultFormatBalance: DefaultFormatBalance;
 }
-export interface ApiProps extends ApiState {
-  api?: ApiPromise;
-  provider?: WsProvider;
-  apiError?: string;
-  apiUrl: string;
-  isNotSupport?: boolean;
-  isApiConnected: boolean;
-  tryAnotherNode: boolean;
-  isEthereum: boolean;
-  isEthereumOnly: boolean;
-  isApiInitialized: boolean;
-  isReady: Promise<ApiProps>;
-  apiRetry: number;
-  nodeIndex: number;
-  useEvmAddress?: boolean;
-}
+
 export type BasicTxWarning = {
   code: TxWarningCode;
   data?: object;
@@ -367,14 +339,6 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
   amount?: string;
   password?: string;
   isMobile?: boolean;
-}
-
-export interface ResponseCheckTransfer {
-  errors?: Array<BasicTxError>;
-  warnings?: Array<BasicTxWarning>;
-  fromAccountFree: string;
-  estimateFee?: string;
-  destEstimateFee: undefined;
 }
 
 export interface ResponseCheckCrossChain {

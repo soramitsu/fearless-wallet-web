@@ -7,7 +7,7 @@
       placement="bottom-end"
       class="dropdown"
       size="mini"
-      @select="handler"
+      @select="$emit('handler')"
     >
       {{ $t(label) }}
 
@@ -28,7 +28,6 @@ export default class Dropdown extends Vue {
   @Prop(String) value!: string;
   @Prop({ default: 'button' }) type!: string;
   @Prop(Array) options!: Record<string, string>[];
-  @Prop(Function) handler!: VoidFunction;
 
   get label() {
     return this.options.find(({ value }) => value === this.value)?.label ?? '';

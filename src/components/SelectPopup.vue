@@ -8,8 +8,8 @@
     :showBorder="showBorder"
     :height="height"
     :maxHeight="maxHeight"
-    @handlerFilter="handlerFilter"
-    @handlerClose="handlerClose"
+    @handlerFilter="$emit('handlerFilter')"
+    @handlerClose="$emit('handlerClose')"
     :horizontalPlacement="horizontalPlacement"
     :verticalPlacement="verticalPlacement"
     :showBlur="showBlur"
@@ -82,9 +82,6 @@ export default class SelectPopup extends Vue {
   @Prop({ default: true }) showAnimation!: boolean;
   @Prop({ default: true }) showBackground!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: boolean;
-  @Prop(Function) toggleValue!: (value: string) => void;
-  @Prop(Function) handlerClose!: VoidFunction;
-  @Prop({ default: () => () => null }) handlerFilter!: (value: string) => void;
 
   get showWarning() {
     return this.options.length === 0;
@@ -117,7 +114,7 @@ export default class SelectPopup extends Vue {
   }
 
   toggle(value: string) {
-    this.toggleValue(value);
+    this.$emit('toggleValue', value);
   }
 
   isAddressIconType(iconType: string) {

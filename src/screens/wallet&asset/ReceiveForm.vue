@@ -64,9 +64,9 @@
       :left="-160"
       :height="360"
       :options="assetNetworks"
-      :handlerFilter="handlerFilter"
-      :toggleValue="toggleSelectedNetwork"
-      :handlerClose="toggleSelectNetworkPopupVisible"
+      @handlerFilter="handlerFilter"
+      @toggleValue="toggleSelectedNetwork"
+      @handlerClose="toggleSelectNetworkPopupVisible"
     />
   </AboveForm>
 </template>

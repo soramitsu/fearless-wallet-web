@@ -1,7 +1,7 @@
 <template>
   <Popup :headerType="headerType" sizeWidth="big" :headerText="popupHeader" @handlerClose="close" :zIndex="399">
     <div class="popup-content">
-      <template v-if="!txStatus && !isSignMobile">
+      <template v-if="!transactionState && !isSignMobile">
         <Icon icon="lock-green" className="icon__lock-green" iconColor="success" />
 
         <div class="text row">{{ $t('assets.passwordTransaction') }}</div>
@@ -36,7 +36,7 @@
         />
       </template>
 
-      <SignMobile v-else-if="!txStatus" @onSign="onSignMobile" @onCancel="close" />
+      <SignMobile v-else-if="!transactionState" @onSign="onSignMobile" @onCancel="close" />
 
       <Loader v-if="isTransactionPending" />
 
@@ -211,14 +211,10 @@ export default class ConfirmationPasswordPopup extends Vue {
     return 'pending';
   }
 
-  get txStatus() {
-    return this.transactionState;
-  }
-
   get popupHeader() {
-    if (this.txStatus === 'success') return 'assets.transactionDone';
+    if (this.transactionState === 'success') return 'assets.transactionDone';
 
-    if (this.txStatus === 'failed') return 'assets.transactionError';
+    if (this.transactionState === 'failed') return 'assets.transactionError';
 
     if (this.isTransactionPending) return 'assets.transactionPending';
 
@@ -234,15 +230,15 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get isTransactionNotInit() {
-    return this.txStatus === undefined;
+    return this.transactionState === undefined;
   }
 
   get isTransactionPending() {
-    return this.txStatus === 'pending';
+    return this.transactionState === 'pending';
   }
 
   get isTransactionFinished() {
-    return this.txStatus === 'success' || this.txStatus === 'failed';
+    return this.transactionState === 'success' || this.transactionState === 'failed';
   }
 
   @Watch('password')
@@ -366,9 +362,10 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.extrinsicType === 'swap' && this.swapOptions) {
       const res = await makeSwap({ ...this.swapOptions, password: this.password, isSavePass: this.isSavePass });
 
-      if (res.errors?.length) {
-        this.resetTxStatus();
+      if (!res?.status) {
         this.isErrorPassword = true;
+
+        this.resetTxStatus();
 
         return;
       }
@@ -390,7 +387,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     const results = await this.makeExtrinsic();
 
-    if (results?.errors?.length) {
+    if (!results?.status) {
       this.isErrorPassword = true;
 
       this.resetTxStatus();

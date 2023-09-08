@@ -151,9 +151,9 @@
       :left="left"
       :height="285"
       :options="options"
-      :handlerFilter="handlerFilter"
-      :toggleValue="toggleSelectedNetwork"
-      :handlerClose="handlerCloseSelectPopup"
+      @handlerFilter="handlerFilter"
+      @toggleValue="toggleSelectedNetwork"
+      @handlerClose="handlerCloseSelectPopup"
     />
 
     <ConfirmationPasswordPopup

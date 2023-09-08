@@ -8,8 +8,8 @@
     :showRejectButton="true"
     :closeByBackground="false"
     :headers="headers"
-    :handlerClose="handlerClose"
-    :handlerAccept="handlerAccept"
+    @handlerClose="handlerClose"
+    @handlerAccept="handlerAccept"
   />
 </template>
 

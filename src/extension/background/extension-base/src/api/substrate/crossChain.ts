@@ -351,7 +351,7 @@ export interface MakeCrossChainProps {
   to: string;
   from: string;
   amount: string;
-  password: string | undefined;
+  password: string;
   isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;
   relayChain?: RelayChainName;

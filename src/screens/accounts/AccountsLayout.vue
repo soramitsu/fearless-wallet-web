@@ -52,7 +52,7 @@
       :_url="selectedNodeUrl"
       :network="selectedNetwork"
       :isActive="selectedNodeIsActive"
-      :closeForm="closeEditNodeForm"
+      @closeForm="closeEditNodeForm"
     />
 
     <NodeSettingsPopup
@@ -72,8 +72,8 @@
       :showRejectButton="true"
       :showWarningIcon="showWarningIcon"
       :headers="headers"
-      :handlerClose="closeNotificationPopup"
-      :handlerAccept="handlerAccept"
+      @handlerClose="closeNotificationPopup"
+      @handlerAccept="handlerAccept"
     />
 
     <AddEthereumAccountPopup v-if="showAddEthereumAccountPopup" :handlerClose="closeAddEthereumAccountPopup" />

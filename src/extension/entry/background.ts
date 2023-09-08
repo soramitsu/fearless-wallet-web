@@ -1,4 +1,3 @@
-import { keyring } from '@polkadot/ui-keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import handlers, { state } from '@extension-base/background/handlers';
 import '@polkadot/extension-inject/crossenv';
@@ -6,6 +5,7 @@ import AccountsStore from '@extension-base/stores/Accounts';
 import { initStorage } from '@extension-base/stores/Storage';
 import { RequestSignatures } from '@extension-base/background/types/messages';
 import { TransportRequestMessage, Port } from '@extension-base/background/types/types';
+import { keyringService } from '@extension-base/services';
 
 async function getActiveTabs() {
   // quering the current active tab in the current window should only ever return 1 tab
@@ -82,10 +82,7 @@ chrome.tabs.onRemoved.addListener(() => {
 
 cryptoWaitReady()
   .then((): void => {
-    keyring.loadAll({
-      store: new AccountsStore(),
-      type: 'sr25519',
-    });
+    keyringService.loadAll(new AccountsStore());
     state.eventService.emit('crypto.ready', true);
   })
   .catch((error): void => {

@@ -235,7 +235,7 @@ export type TxErrorCode = TransferErrorCode | BasicTxErrorCode;
 export type TxWarningCode = BasicTxWarningCode;
 
 export type BasicTxError = {
-  code: TxErrorCode | TxWarningCode;
+  code?: TxErrorCode | TxWarningCode;
   data?: object;
   message: string;
 };
@@ -336,15 +336,15 @@ export type PasswordRequestSign<T extends BaseRequestSign> = T & {
   isMobile?: boolean;
 };
 
+export interface ResponseMakeSwap {
+  errors?: Array<BasicTxError>;
+  status: boolean;
+}
+
 export type ExternalRequestSign<T extends BaseRequestSign> = Omit<T, 'password'>;
 
 export interface RequestSwap extends PasswordRequestSign<RequestCheckSwap> {
   feeSymbol?: string;
-}
-
-export interface ResponseMakeSwap {
-  errors?: Array<BasicTxError>;
-  status: boolean;
 }
 
 export type RequestTransfer = PasswordRequestSign<RequestCheckTransfer>;

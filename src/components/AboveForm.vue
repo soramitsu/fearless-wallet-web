@@ -5,7 +5,7 @@
 
       <div v-else class="header-content">
         <div class="activity align-left">
-          <div v-if="showBackIcon" class="icon icon-back" @click="handlerBack">
+          <div v-if="showBackIcon" class="icon icon-back" @click="$emit('handlerBack')">
             <Icon icon="chevron-left" />
           </div>
 
@@ -17,11 +17,11 @@
         <div class="header">{{ tHeader }}</div>
 
         <div class="activity align-right">
-          <div v-if="showCloseIcon" class="icon" @click="closeHandler">
+          <div v-if="showCloseIcon" class="icon" @click="$emit('closeHandler')">
             <SIcon name="basic-close-24" />
           </div>
 
-          <div v-show="showAcceptIcon" class="icon" @click="saveChanges">
+          <div v-show="showAcceptIcon" class="icon" @click="$emit('saveChanges')">
             <SIcon name="basic-check-mark-24" />
           </div>
         </div>
@@ -47,9 +47,6 @@ export default class AboveForm extends Vue {
   @Prop({ default: false }) fullScreen!: boolean;
   @Prop({ default: true }) showCloseIcon!: boolean;
   @Prop({ default: true }) showAnimation!: boolean;
-  @Prop({ default: () => () => null }) saveChanges!: VoidFunction;
-  @Prop({ default: () => () => null }) handlerBack!: VoidFunction;
-  @Prop(Function) closeHandler!: VoidFunction;
 
   get tHeader() {
     if (typeof this.header === 'string') return this.$t(this.header);

@@ -1,5 +1,5 @@
 <template>
-  <Popup :showBorder="true" :handlerClose="handlerClose">
+  <Popup :showBorder="true" @handlerClose="handlerClose">
     <div class="confirmation-popup">
       <slot></slot>
 

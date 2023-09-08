@@ -1,5 +1,5 @@
 <template>
-  <Popup headerText="soraCard.completeKYC" sizeWidth="big" :showBorder="true" :handlerClose="handlerClose">
+  <Popup headerText="soraCard.completeKYC" sizeWidth="big" :showBorder="true" @handlerClose="handlerClose">
     <div class="steps">
       <div class="row">
         <Icon icon="email" class="icon" />

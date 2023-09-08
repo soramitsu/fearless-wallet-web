@@ -1,5 +1,5 @@
 <template>
-  <Popup :headerText="headerText" :showBorder="true" :handlerClose="closePopup" sizeWidth="big">
+  <Popup :headerText="headerText" :showBorder="true" @handlerClose="closePopup" sizeWidth="big">
     <div class="buy-content">
       <FButton
         v-for="provider in providersFiltered"

@@ -4,8 +4,8 @@
       :header="formHeader"
       :fullScreen="true"
       :showBackIcon="showBackIcon"
-      :handlerBack="handlerBack"
-      :closeHandler="closeForm"
+      @handlerBack="handlerBack"
+      @closeHandler="closeForm"
     >
       <Scroll>
         <EditAddressBook

@@ -120,8 +120,8 @@
       acceptButtonText="common.accept"
       :showAcceptButton="isMobileWalletExists"
       :showRejectButton="isMobileWalletExists"
-      :handlerClose="handlerCloseNotificationPopup"
-      :handlerAccept="handlerAcceptAddWallet"
+      @handlerClose="handlerCloseNotificationPopup"
+      @handlerAccept="handlerAcceptAddWallet"
     />
 
     <AddEthereumAccountPopup
@@ -153,7 +153,7 @@ import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
-import { createAccountSuri, forgetAccount, updatePairMeta, validatePassword, windowOpen } from '@/extension/messaging';
+import { addAccount, forgetAccount, updatePairMeta, validatePassword, windowOpen } from '@/extension/messaging';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
@@ -603,7 +603,7 @@ export default class AddWallet extends Vue {
     //   substrate: { keypairType: substrateKeypairType },
     // } = this.derivationPaths;
 
-    // const { address } = await createAccountSuri(this.suriSubstrate, substrateKeypairType);
+    // const { address } = await addAccount(this.suriSubstrate, substrateKeypairType);
 
     // this.validateAddressForDubMobileWallet(address);
     return true;
@@ -670,12 +670,7 @@ export default class AddWallet extends Vue {
     }
 
     if (this.suriEthereum !== '') {
-      const ethereumAddress = await createAccountSuri(
-        this.walletPassword,
-        this.suriEthereum,
-        ethereumKeypairType,
-        meta
-      );
+      const ethereumAddress = await addAccount(this.walletPassword, this.suriEthereum, ethereumKeypairType, meta);
 
       if (this.isOnlyEthereumAccountFlow) {
         updatePairMeta(this.selectedWallet.address, { ethereumAddress });
@@ -686,7 +681,7 @@ export default class AddWallet extends Vue {
       meta.ethereumAddress = ethereumAddress;
     }
 
-    const address = await createAccountSuri(this.walletPassword, this.suriSubstrate, substrateKeypairType, meta);
+    const address = await addAccount(this.walletPassword, this.suriSubstrate, substrateKeypairType, meta);
 
     return address;
   }

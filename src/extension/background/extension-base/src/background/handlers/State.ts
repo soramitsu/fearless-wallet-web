@@ -6,7 +6,7 @@ import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
-import { keyring } from '@polkadot/ui-keyring';
+import { keyringService, EventService, SoraCardService, OnboardingService } from '@extension-base/services';
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import MetadataStore from '@extension-base/stores/Metadata';
@@ -30,7 +30,7 @@ import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-b
 import { SignerPayloadRaw } from '@polkadot/types/types';
 import { JsonRpcProvider } from 'ethers';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
-import { EventService, SoraCardService, OnboardingService } from '@extension-base/services';
+
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
 import type {
   AuthorizeRequest,
@@ -1216,7 +1216,7 @@ export default class State {
   }
 
   public getWallets(): KeyringAddress[] {
-    return [...keyring.getAccounts(), ...keyring.getAddresses()];
+    return [...keyringService.getAccounts(), ...keyringService.getAddresses()];
   }
 
   public setPrice(priceData: PriceJson, callback?: (priceData: PriceJson) => void): void {
@@ -1317,7 +1317,7 @@ export default class State {
 
       // logic for Sora library
       if (data?.address && !data.isMobile) {
-        const pair = keyring.getPair(data?.address);
+        const pair = keyringService.getPair(data?.address)!;
 
         apiSora.account = { json: null as any, pair };
 
@@ -1352,8 +1352,8 @@ export default class State {
   }
 
   public getSubstrateAccounts() {
-    const accounts = keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
-    const addresses = keyring.getAddresses();
+    const accounts = keyringService.getAccounts().filter((el) => !isEthereumAddress(el.address));
+    const addresses = keyringService.getAddresses();
 
     return [...accounts, ...addresses];
   }
@@ -1374,7 +1374,7 @@ export default class State {
     address,
     password,
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    const json = keyring.getPair(address).toJson(password);
+    const json = keyringService.getPair(address)!.toJson(password);
     const decoded = decodePair(password, base64Decode(json.encoded), json.encoding.type);
 
     return {

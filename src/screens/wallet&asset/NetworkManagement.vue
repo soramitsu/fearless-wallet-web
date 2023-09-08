@@ -41,8 +41,8 @@ import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutatio
 import { isNetworkGroup } from '@/helpers/common';
 import { SetFavoriteNetwork, Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { updateCurrentNetwork } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
+import { updateCurrentNetwork } from '@/extension/messaging';
 
 type Tabs = {
   [ALL_NETWORKS]: Tab;

@@ -1,6 +1,6 @@
 <template>
   <Fragment>
-    <SelectAuthAccount :selectAll="selectAll" :accounts="state" @onSelectAll="onSelectAll" @onSelect="onSelect" />
+    <SelectAuthAccount :selectAll="selectAll" :showSelectAll="false" :accounts="state" @onSelect="onSelect" />
 
     <div class="controls">
       <FButton text="walletConnect.reject" type="secondary" :border="false" width="100%" @click="onReject" />
@@ -52,17 +52,6 @@ function isAllSelected() {
 const onSelect = (value: boolean, name: string) => {
   state.value[name].active = value;
   selectAll.value = isAllSelected();
-};
-
-const onSelectAll = (value: boolean) => {
-  Object.keys(state.value).forEach((key) => {
-    set(state.value, key, {
-      ...state.value[key],
-      active: value,
-    });
-  });
-
-  selectAll.value = value;
 };
 
 const onApprove = () => {

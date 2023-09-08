@@ -9,7 +9,7 @@
     />
 
     <Scroll>
-      <ul v-if="showAllCheckbox" class="account__list">
+      <ul v-if="showCheckboxes" class="account__list">
         <li v-for="(account, index) in props.accounts" class="auth-account" :key="index">
           <div class="checkbox">
             <Checkbox
@@ -40,12 +40,13 @@ import { computed } from 'vue';
 import type { WalletInfo } from '@/store';
 import { cut } from '@/helpers';
 
-type Props = { selectAll: boolean; accounts: Record<string, WalletInfo> };
+type Props = { selectAll?: boolean; accounts: Record<string, WalletInfo>; showSelectAll?: boolean };
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), { showSelectAll: true });
 const emit = defineEmits(['onSelectAll', 'onSelect']);
 
-const showAllCheckbox = computed(() => Object.keys(props.accounts).length);
+const showAllCheckbox = computed(() => Object.keys(props.accounts).length && props.showSelectAll);
+const showCheckboxes = computed(() => Object.keys(props.accounts).length);
 
 const cutAddress = (address: string) => cut(address);
 

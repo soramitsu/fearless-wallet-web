@@ -1687,6 +1687,44 @@ export default class Extension extends FWExtensionBase {
       case 'pri(balance.subscription)':
         return this.subscribeBalance(id, port);
 
+      //Wallet Connect
+      case 'pri(walletConnect.connect)':
+        return this.connectWalletConnect(request as RequestConnectWalletConnect);
+
+      case 'pri(walletConnect.requests.connect.subscribe)':
+        return this.connectWCSubscribe(id, port);
+
+      case 'pri(walletConnect.session.approve)':
+        return this.approveWalletConnectSession(request as RequestApproveConnectWalletSession);
+
+      case 'pri(walletConnect.session.reject)':
+        return this.rejectWalletConnectSession(request as RequestRejectConnectWalletSession);
+
+      case 'pri(walletConnect.session.subscribe)':
+        return this.subscribeWalletConnectSessions(id, port);
+
+      case 'pri(walletConnect.session.disconnect)':
+        return this.disconnectWalletConnectSession(request as RequestDisconnectWalletConnectSession);
+
+      case 'pri(walletConnect.request.approve)':
+        return this.wcRequestApprove(request as RequestApproveWalletConnect);
+
+      case 'pri(walletConnect.request.reject)':
+        return this.wcRequestReject(request as RequestDisconnectWalletConnectSession);
+
+      case 'pri(walletConnect.signing.requests.subscribe)':
+        return this.wcSigningSubscribe(id, port);
+
+      // Not support
+      case 'pri(walletConnect.requests.notSupport.subscribe)':
+        return this.WCNotSupportSubscribe(id, port);
+
+      case 'pri(walletConnect.notSupport.approve)':
+        return this.approveWalletConnectNotSupport(request as RequestApproveWalletConnectNotSupport);
+
+      case 'pri(walletConnect.notSupport.reject)':
+        return this.rejectWalletConnectNotSupport(request as RequestRejectWalletConnectNotSupport);
+
       //OnBoarding
       case 'pri(onboarding.get.stories)':
         return this.getOnboardingStories(request as string);

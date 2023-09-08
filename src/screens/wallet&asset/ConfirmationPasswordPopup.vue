@@ -1,5 +1,5 @@
 <template>
-  <Popup :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close" :zIndex="399">
+  <Popup :headerType="headerType" sizeWidth="big" :headerText="popupHeader" @handlerClose="close" :zIndex="399">
     <div class="popup-content">
       <template v-if="!txStatus && !isSignMobile">
         <Icon icon="lock-green" className="icon__lock-green" iconColor="success" />

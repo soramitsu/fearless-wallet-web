@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :header="getLocale('header')" :fullScreen="true" :closeHandler="handlerClose">
+  <AboveForm :header="getLocale('header')" :fullScreen="true" @closeHandler="handlerClose">
     <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
 
     <Tabs :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
@@ -41,8 +41,8 @@ import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutatio
 import { isNetworkGroup } from '@/helpers/common';
 import { SetFavoriteNetwork, Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { updateCurrentNetwork } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
+import { updateCurrentNetwork } from '@/extension/messaging';
 
 type Tabs = {
   [ALL_NETWORKS]: Tab;

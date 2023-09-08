@@ -2,8 +2,8 @@
   <AboveForm
     header="addWallet.advanced"
     :showAcceptIcon="showAcceptIcon"
-    :closeHandler="closeAdvancedForm"
-    :saveChanges="saveChanges"
+    @closeHandler="closeAdvancedForm"
+    @saveChanges="saveChanges"
   >
     <FSelect
       v-model="substrateKeypairType"

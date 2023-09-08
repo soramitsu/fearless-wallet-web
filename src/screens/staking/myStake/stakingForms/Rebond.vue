@@ -25,8 +25,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class RebondForm extends Vue {
-  readonly selectAccountInputRef = 'selectAccountInput';
-
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: String }) fee!: string;
   @Prop({ type: String }) amount!: string;

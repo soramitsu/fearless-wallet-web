@@ -41,6 +41,8 @@ export class OnboardingService {
   }
 
   getStories(lang: string): OnboardingStories {
+    if (!IS_PRODUCTION) return [];
+
     const localizeStories = this.stories[lang] ?? this.stories[FALLBACK_LANG];
 
     return localizeStories[this.userType];

@@ -182,14 +182,9 @@ export class FWCron {
         continue;
       }
 
-      let status: NETWORK_STATUS = NETWORK_STATUS.CONNECTING;
+      const status: NETWORK_STATUS = apiProp.isApiConnected ? NETWORK_STATUS.CONNECTED : NETWORK_STATUS.CONNECTING;
 
-      if (apiProp.isApiConnected) status = NETWORK_STATUS.CONNECTED;
-
-      if (!networkMap[key].apiStatus) this.state.updateNetworkStatus(key, status);
-      else if (networkMap[key].apiStatus && networkMap[key].apiStatus !== status) {
-        this.state.updateNetworkStatus(key, status);
-      }
+      this.state.updateNetworkStatus(key, status);
     }
 
     for (const [key, evm] of Object.entries(apiMap.evm)) {

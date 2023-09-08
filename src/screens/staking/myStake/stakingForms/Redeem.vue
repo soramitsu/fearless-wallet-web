@@ -26,8 +26,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class RedeemForm extends Vue {
-  readonly selectAccountInputRef = 'selectAccountInput';
-
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
   @Prop({ type: String }) fee!: string;
@@ -64,42 +62,3 @@ export default class RedeemForm extends Vue {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-// .redeem-form {
-//   padding: 0 16px;
-
-//   .row2 {
-//     font-size: 14px;
-//     border-bottom: $default-border;
-//     display: flex;
-//     justify-content: space-between;
-//     align-items: center;
-//     padding: 10px 0;
-
-//     &:first-child {
-//       margin-top: 10px;
-//     }
-
-//     .column {
-//       display: flex;
-//       flex-direction: column;
-//       align-items: flex-end;
-//       color: $default-white;
-
-//       .amount {
-//         font-weight: 600;
-//         text-align: right;
-//         text-transform: uppercase;
-//         margin-bottom: 5px;
-//       }
-
-//       .value {
-//         font-size: 12px;
-//         text-align: right;
-//         color: $grayish-white-2;
-//       }
-//     }
-//   }
-// }
-</style>

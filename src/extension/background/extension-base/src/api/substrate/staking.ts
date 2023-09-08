@@ -3,7 +3,7 @@ import { CodecString, FPNumber } from '@sora-substrate/math';
 import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
 import { api as apiSora } from '@sora-substrate/util';
-import { formatEra, formatValidatorExposure, formatIndividualRewardPoints } from './helpers';
+import { formatEra, formatValidatorExposure, formatIndividualRewardPoints } from './testStaking/helpers';
 import type {
   ElectedValidator,
   NominatorReward,
@@ -11,12 +11,14 @@ import type {
   ValidatorInfo,
   ValidatorInfoFull,
   RewardPointsIndividual,
-  Identity,
-} from './types';
+  OriginalIdentity,
+} from './testStaking/types';
 
 const countErasInDaily = 4;
 const COUNT_DAYS_IN_YEAR = 365;
 const COMMISSION_DECIMALS = 9;
+
+// getNominatorsReward(api, 'cnRuNZdDB156ohr7DrVDq5Dkn6QUBWLm4sxqhXunRc1jJKnua');
 
 async function getAverageRewards(api: ApiPromise, eraIndex?: number): Promise<FPNumber> {
   const erasValidatorRewardPallet = api.query.staking.erasValidatorReward;
@@ -39,12 +41,12 @@ async function getAverageRewards(api: ApiPromise, eraIndex?: number): Promise<FP
   return averageRewards;
 }
 
-async function getIdentity(address: string, api: ApiPromise): Promise<Identity | null> {
+async function getIdentity(address: string, api: ApiPromise): Promise<OriginalIdentity | null> {
   const identity = await api.query.identity.identityOf(address);
 
   if (identity.isNone) return null;
 
-  return identity.toHuman() as unknown as Identity;
+  return identity.toHuman() as unknown as OriginalIdentity;
 }
 
 async function getEraRewardPoints(eraIndex: number, api: ApiPromise): Promise<RewardPointsIndividual> {
@@ -260,8 +262,6 @@ export async function getValidatorsInfo(api: ApiPromise): Promise<ValidatorInfoF
 
     return isKnownGood1 ? -1 : 1;
   });
-
-  console.info('sortedValidatorssss', sortedValidators);
 
   return sortedValidators;
 }

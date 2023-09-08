@@ -1,47 +1,10 @@
 import { ethers, TransactionRequest } from 'ethers';
-import {
-  BasicTxResponse,
-  ExternalRequestPromise,
-  ExternalRequestPromiseStatus,
-  TransferErrorCode,
-} from '@extension-base/background/types/types';
+import { BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
 import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
 import { state } from '@extension-base/background/handlers';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
 export type HandleTxResponse<T extends BasicTxResponse> = (data: T) => void;
-
-interface HandleTransferBalanceResultProps {
-  callback: HandleBasicTx;
-  changeValue: string;
-  networkKey: string;
-  receipt: ethers.TransactionReceipt;
-  response: BasicTxResponse;
-  updateState?: (promise: Partial<ExternalRequestPromise>) => void;
-}
-
-export const handleTransferBalanceResult = ({
-  callback,
-  changeValue,
-  receipt,
-  response,
-  updateState,
-}: HandleTransferBalanceResultProps) => {
-  response.status = true;
-
-  const fee = (receipt.gasUsed * receipt.gasPrice).toString();
-
-  response.txResult = {
-    change: changeValue || '0',
-    fee,
-  };
-
-  updateState &&
-    updateState({
-      status: receipt.status ? ExternalRequestPromiseStatus.COMPLETED : ExternalRequestPromiseStatus.FAILED,
-    });
-  callback(response);
-};
 
 export async function handleTransfer(
   transactionObject: ethers.TransactionRequest,
@@ -57,15 +20,14 @@ export async function handleTransfer(
   };
 
   try {
-    const tx = await signer.sendTransaction(transactionObject);
-    response.callHash = tx.hash;
+    await signer.sendTransaction(transactionObject);
+
     response.status = true;
-    response.txError = false;
     callback(response);
   } catch (error) {
     console.warn(error);
+
     response.status = false;
-    response.txError = true;
     response.errors?.push({
       code: TransferErrorCode.TRANSFER_ERROR,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/ban-ts-comment

@@ -12,6 +12,7 @@ import { soraCardController } from '@/controllers';
 import { VerificationStatus, KycStatus } from '@/consts/soraCard';
 import { subscribeSoraCardToken } from '@/extension/messaging';
 import { SORA_NETWORK_NAME } from '@/consts/sora';
+import { SEC1 } from '@/consts/time';
 
 type XorRestPrice = {
   euroToPay: string;
@@ -81,7 +82,7 @@ const isAccessTokenExpired = (accessToken: string): boolean => {
     const decoded: JwtPayload = jwtDecode(accessToken);
 
     if (decoded.exp) {
-      if (Date.now() <= decoded.exp * 1000) {
+      if (Date.now() <= decoded.exp * SEC1) {
         return false;
       }
     }

@@ -8,7 +8,7 @@
 
         {{ $t('staking.outOf') }}
 
-        <span class="highlight">{{ maxValidators }}&nbsp;</span>
+        <span class="highlight">{{ countValidators }}&nbsp;</span>
 
         <span class="validators">{{ $t('staking.validators') }}</span>
       </div>
@@ -47,10 +47,15 @@ export default class SelectValidator extends Vue {
   @Prop({ type: Boolean }) limitValidatorsIdentity!: boolean;
   @Prop({ type: Boolean }) sortByApy!: boolean;
   @Prop({ type: Array }) validators!: SelectionValidator[];
-  @Prop({ type: Number }) maxValidators!: number;
+  @Prop({ type: Number }) countValidators!: number;
 
   get filteredValidatorsBySettings() {
-    return this.validators.filter(({ isSlashed, limitValidatorsIdentity, onchainIdentity, isOversubscribed }) => {
+    return this.validators.filter(() => {
+      const isSlashed = false;
+      const limitValidatorsIdentity = false;
+      const onchainIdentity = false;
+      const isOversubscribed = false;
+
       if (this.onchainIdentity && !onchainIdentity) return false;
 
       if (this.notSlashed && isSlashed) return false;
@@ -64,13 +69,15 @@ export default class SelectValidator extends Vue {
   }
 
   get sortedValidators() {
-    if (this.sortByApy) return this.filteredValidatorsBySettings.sort(({ apy: apy1 }, { apy: apy2 }) => apy2 - apy1);
+    if (this.step === 4) return this.validators;
+
+    if (this.sortByApy) return this.filteredValidatorsBySettings.sort(({ apy: apy1 }, { apy: apy2 }) => +apy2 - +apy1);
 
     return this.filteredValidatorsBySettings;
   }
 
   get filteredValidators() {
-    if (this.step === 4) return this.sortedValidators.filter(({ isRecommended }) => isRecommended);
+    if (this.step === 4) return this.sortedValidators;
 
     const filter = this.filterValue.trim().toLowerCase();
 

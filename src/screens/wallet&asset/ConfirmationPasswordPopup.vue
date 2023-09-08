@@ -70,6 +70,7 @@ import {
   RequestCrossChain,
   TokenBalance,
   RequestStaking,
+  RequestCheckStaking,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
@@ -111,10 +112,10 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) secondIcon!: string;
   @Prop(String) transactionId?: string;
   @Prop(Object) currency?: TokenBalance;
-  @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain;
+  @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain | RequestCheckStaking;
   @Prop(Object) payload?: SignerPayloadJSON;
   @Prop(Object) swapOptions?: SwapOptions;
-  @Prop(String) extrinsicType!: 'transfer' | 'crossChain' | 'swap' | 'staking';
+  @Prop(String) extrinsicType!: 'transfer' | 'crossChain' | 'swap' | 'bond' | 'unbond' | 'rebond' | 'redeem';
 
   @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: AsyncFn<ApprovePayload>;
   @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: AsyncFn<string>;
@@ -170,7 +171,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   get requestStaking(): RequestStaking {
     return {
-      ...(this.tx as RequestCheckCrossChain),
+      ...(this.tx as RequestCheckStaking),
       isSavePass: this.isSavePass,
       isMobile: !!this.isSignMobile,
       password: this.password,
@@ -335,7 +336,13 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     if (this.extrinsicType === 'crossChain') return await makeCrossChain(this.requestCrossChain, callback);
 
-    if (this.extrinsicType === 'staking') return await makeStaking(this.requestStaking, callback);
+    if (
+      this.extrinsicType === 'bond' ||
+      this.extrinsicType === 'unbond' ||
+      this.extrinsicType === 'rebond' ||
+      this.extrinsicType === 'redeem'
+    )
+      return await makeStaking(this.extrinsicType, callback);
   }
 
   async keypress({ key }: KeyboardEvent) {

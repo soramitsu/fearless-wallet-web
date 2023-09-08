@@ -12,6 +12,7 @@ import type {
 } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { getEthereumApiKey } from '@/helpers/history';
+import { SEC1 } from '@/consts/time';
 
 async function fetchSubqueryHistory(
   url: string,
@@ -169,7 +170,7 @@ async function fetchEthereumTokenHistory(
   return res.data.result.map(({ timeStamp, value, gasUsed, from, to, hash }, index) => ({
     address,
     id: String(index),
-    timestamp: (+timeStamp * 1000).toString(),
+    timestamp: (+timeStamp * SEC1).toString(),
     transfer: {
       amount: ethers.formatUnits(value, decimal),
       hash,
@@ -208,7 +209,7 @@ async function fetchEthereumHistory(url: string, address: string): Promise<Histo
   return res.data.result.map(({ timeStamp, value, gasUsed, from, isError, to, hash }, index) => ({
     address,
     id: String(index),
-    timestamp: (+timeStamp * 1000).toString(),
+    timestamp: (+timeStamp * SEC1).toString(),
     transfer: {
       amount: value,
       hash,

@@ -64,7 +64,6 @@ export interface AccountJson extends KeyringPair$Meta {
   network?: string;
   isExternal?: boolean;
   isHardware?: boolean;
-  isMobile?: boolean;
   isHidden?: boolean;
   active?: boolean;
   name: string;
@@ -242,29 +241,11 @@ export enum BasicTxErrorCode {
   UNKNOWN_ERROR = 'unknownError',
 }
 
-export interface ExternalState {
-  externalId: string;
-}
-
 export interface BasicTxResponse {
   passwordError?: string | null;
-  callHash?: string;
   status?: boolean;
-  extrinsicHash?: string;
-  txError?: boolean;
   errors?: BasicTxError[];
-  externalState?: ExternalState;
-  isBusy?: boolean;
-  txResult?: TxResultType;
-  isFinalized?: boolean;
 }
-
-export type TxResultType = {
-  change: string;
-  changeSymbol?: string;
-  fee?: string;
-  feeSymbol?: string;
-};
 
 export enum BasicTxWarningCode {
   NOT_ENOUGH_EXISTENTIAL_DEPOSIT = 'notEnoughExistentialDeposit',
@@ -279,10 +260,12 @@ export type BasicTxError = {
   data?: object;
   message: string;
 };
+
 export interface DefaultFormatBalance {
   decimals?: number[] | number;
   unit?: string[] | string;
 }
+
 export interface ApiState {
   apiDefaultTx: SubmittableExtrinsicFunction;
   apiDefaultTxSudo: SubmittableExtrinsicFunction;
@@ -298,6 +281,7 @@ export interface ApiState {
   registry: Registry;
   defaultFormatBalance: DefaultFormatBalance;
 }
+
 export interface ApiProps extends ApiState {
   api?: ApiPromise;
   provider?: WsProvider;
@@ -314,11 +298,6 @@ export interface ApiProps extends ApiState {
   nodeIndex: number;
   useEvmAddress?: boolean;
 }
-export type BasicTxWarning = {
-  code: TxWarningCode;
-  data?: object;
-  message: string;
-};
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type BaseRequestSign = {};
@@ -330,8 +309,6 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   assetId: string;
   relayChain?: RelayChainName;
   amount?: string;
-  password?: string;
-  isMobile?: boolean;
 }
 
 export interface RequestCheckCrossChain extends BaseRequestSign {
@@ -342,39 +319,30 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
   assetId: string;
   relayChain?: RelayChainName;
   amount?: string;
-  password?: string;
-  isMobile?: boolean;
 }
 
 export interface RequestCheckStaking extends BaseRequestSign {
-  originNet: NetworkName;
+  network: NetworkName;
   from: string;
-  to: string;
+  stashAccount: string;
   assetId: string;
-  relayChain?: RelayChainName;
   amount?: string;
-  password?: string;
-  isMobile?: boolean;
 }
 
 export interface ResponseCheckTransfer {
   errors?: Array<BasicTxError>;
-  warnings?: Array<BasicTxWarning>;
-  fromAccountFree: string;
   estimateFee?: string;
-  destEstimateFee: undefined;
+  destEstimateFee: '0';
 }
 
 export interface ResponseCheckCrossChain {
   errors?: Array<BasicTxError>;
-  warnings?: Array<BasicTxWarning>;
   estimateFee?: string;
   destEstimateFee?: string;
 }
 
 export interface ResponseCheckStaking {
   errors?: Array<BasicTxError>;
-  warnings?: Array<BasicTxWarning>;
   estimateFee?: string;
 }
 
@@ -393,7 +361,6 @@ export interface RequestCheckSwap extends BaseRequestSign {
 
 export interface ResponseCheckSwap {
   errors?: Array<BasicTxError>;
-  warnings?: Array<BasicTxWarning>;
   swapOptions?: SwapOptions;
   amountA: string;
   amountB: string;
@@ -405,20 +372,21 @@ export interface ResponseCheckSwap {
   route: string;
 }
 
-export interface ResponseMakeSwap {
-  errors?: Array<BasicTxError>;
-  warnings?: Array<BasicTxWarning>;
-  status: boolean;
-}
-
-export type PasswordRequestSign<T extends BaseRequestSign> = T & { password: string; isSavePass?: boolean };
+export type PasswordRequestSign<T extends BaseRequestSign> = T & {
+  password: string;
+  isSavePass?: boolean;
+  isMobile?: boolean;
+};
 
 export type ExternalRequestSign<T extends BaseRequestSign> = Omit<T, 'password'>;
+
 export interface RequestSwap extends PasswordRequestSign<RequestCheckSwap> {
   feeSymbol?: string;
 }
-export interface BasicSwapResponse {
-  feeSymbol?: string;
+
+export interface ResponseMakeSwap {
+  errors?: Array<BasicTxError>;
+  status: boolean;
 }
 
 export type RequestTransfer = PasswordRequestSign<RequestCheckTransfer>;
@@ -793,7 +761,6 @@ export interface TransactionHistoryItem {
   // ex: sub token (DOT, AUSD, KSM, ...) of Acala, Karaura uses main token to pay fee
   isSuccess: boolean;
   action: 'send' | 'received';
-  extrinsicHash: string;
   origin?: 'app' | 'network';
   eventIdx?: number | null;
 }
@@ -872,3 +839,7 @@ export type BeaconRawSignCallBack = (tx: SignerPayloadRaw) => string;
 
 export type BalanceMap = Record<WalletAddress, TokenBalance[]>;
 export type NetworkMap = Record<string, NetworkJson>;
+
+export interface ValidatorsRequest {
+  networkName: NetworkName;
+}

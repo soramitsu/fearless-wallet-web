@@ -1,7 +1,7 @@
 import EmailValidator from 'email-validator';
 import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 // import { SORA_NETWORK_NAME, SORA_MAINNET, SORA_TEST } from '@/consts/sora';
-import { SORA_MAINNET, SORA_TEST } from '@/consts/sora';
+import { SORA_NETWORK_NAME } from '@/consts/sora';
 
 const MIN_PHONE_LENGTH_WITH_CODE = 8;
 
@@ -14,9 +14,9 @@ function firstCharToUp(string: string, onlyFirstChat = true) {
 }
 
 function isSora(network: string) {
-  return network.toLowerCase() === SORA_MAINNET || network.toLowerCase() === SORA_TEST; // временный костыль для стейкинга
+  // return network.toLowerCase() === SORA_MAINNET || network.toLowerCase() === SORA_TEST; // временный костыль для стейкинга
 
-  // return network.toLowerCase() === SORA_NETWORK_NAME;
+  return network.toLowerCase() === SORA_NETWORK_NAME;
 }
 
 function validatePhoneNumber(countryCode: string, phoneNumber: string) {

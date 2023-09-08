@@ -20,7 +20,7 @@ import { getTokenPrice } from '@extension-base/utils/coingecko';
 import { getCurrentProvider, getId } from '@extension-base/utils/utils';
 import { initApi } from '@extension-base/api/substrate/api';
 import { axios } from '@extension-base/utils/axios';
-import { prepNetworkNames } from '@extension-base/const/networks';
+import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
 import { getMockCurrencies, isEthereumNetwork, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
@@ -32,6 +32,7 @@ import { JsonRpcProvider } from 'ethers';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import { EventService, SoraCardService, OnboardingService } from '@extension-base/services';
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
+import { StakingService } from '../../services/staking-service';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -192,6 +193,7 @@ export default class State {
   public eventService = new EventService();
   public soraCardService = new SoraCardService();
   public onboardingService = new OnboardingService();
+  public stakingService = new StakingService(this.getSubstrateApiMap);
 
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
@@ -602,7 +604,7 @@ export default class State {
   }
 
   public getNetworkByKey(key: string): NetworkJson | undefined {
-    return Object.values(this.networkMap).find((network) => network.name.toLowerCase() === key.toLowerCase());
+    return Object.values(this.networkMap).find(({ name }) => name.toLowerCase() === key.toLowerCase());
   }
 
   public getNetworkGroupType() {
@@ -763,7 +765,9 @@ export default class State {
     return Object.keys(accounts.subject.value);
   }
 
-  public updateNetworkStatus(networkKey: string, status: NETWORK_STATUS) {
+  public updateNetworkStatus(key: string, status: NETWORK_STATUS) {
+    const networkKey = this.getNetworkByKey(key)?.name ?? '';
+
     if (this.networkMap[networkKey].apiStatus === status) return;
 
     this.networkMap[networkKey].apiStatus = status;
@@ -1280,7 +1284,7 @@ export default class State {
 
     const asset = balancesByAddress[currencyIndex];
     const assetIndex = asset.balances.findIndex(({ name }) => {
-      const key = prepNetworkNames[name] ?? name;
+      const key = PREP_NETWORKS_NAME[name] ?? name;
 
       return key === networkKey;
     });

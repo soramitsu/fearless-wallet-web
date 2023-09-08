@@ -1,3 +1,4 @@
+import type { FWValidatorInfoFull, ValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
   InjectedAccount,
@@ -69,6 +70,7 @@ import type {
   RequestStaking,
   RequestCheckStaking,
   ResponseCheckStaking,
+  ValidatorsRequest,
 } from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
@@ -156,6 +158,12 @@ export interface RequestSignatures {
   'pri(accounts.soraFees)': [null, SoraFees];
 
   // staking
+  'pri(staking.validators)': [ValidatorsRequest, FWValidatorInfoFull[]];
+  'pri(staking.bond)': [null, BasicTxResponse, BasicTxResponse];
+  'pri(staking.unbond)': [null, BasicTxResponse, BasicTxResponse];
+  'pri(staking.rebond)': [null, BasicTxResponse, BasicTxResponse];
+  'pri(staking.redeem)': [null, BasicTxResponse, BasicTxResponse];
+
   'pri(staking.checkStaking)': [RequestCheckStaking, ResponseCheckStaking];
   'pri(staking.stake)': [RequestStaking, BasicTxResponse, BasicTxResponse];
 

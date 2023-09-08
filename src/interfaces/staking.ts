@@ -1,3 +1,5 @@
+import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
+
 interface Validator {
   name: string;
   address: string;
@@ -10,7 +12,7 @@ interface Validator {
   onchainIdentity: boolean;
 }
 
-interface SelectionValidator extends Validator {
+interface SelectionValidator extends FWValidatorInfoFull {
   isSelect: boolean;
 }
 

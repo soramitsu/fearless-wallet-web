@@ -68,7 +68,7 @@ export function getMockCurrencies(networks: NetworkJson[]) {
           ...result[index].balances,
           {
             state: APIItemState.PENDING,
-            name: mainNet,
+            name: mainNet.toLowerCase(),
             existentialDeposit,
             type,
             precision,

@@ -33,6 +33,7 @@ import {
 } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
+import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -40,7 +41,6 @@ import type {
   BalanceJson,
   BasicTxError,
   BasicTxResponse,
-  BasicTxWarning,
   Port,
   PriceJson,
   RequestCheckSwap,
@@ -83,6 +83,7 @@ import type {
   RequestStaking,
   RequestCheckStaking,
   ResponseCheckStaking,
+  ValidatorsRequest,
 } from '@extension-base/background/types/types';
 
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
@@ -760,7 +761,7 @@ export default class Extension extends FWExtensionBase {
     return this.state.soraFees;
   }
 
-  private async validateSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
+  private async checkSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
     const { AToB, BToA, amountA, amountB, minMaxValue, extrinsicOptions, providerFee, route } = await createSwap(
       options,
       apiSora
@@ -801,21 +802,6 @@ export default class Extension extends FWExtensionBase {
 
     const pair = keyring.getPair(address);
 
-    const remainTime = this.refreshAccountPasswordCache(pair);
-
-    // if the keyring pair is locked, the password is needed
-    if (pair.isLocked && !password) {
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        message: 'Password needed to unlock the account',
-      });
-
-      return {
-        errors,
-        status,
-      };
-    }
-
     try {
       if (pair.isLocked && password) pair.unlock(password);
     } catch (e: any) {
@@ -849,6 +835,7 @@ export default class Extension extends FWExtensionBase {
     }
 
     const ethereumAddress = keyring.getAccount(address)?.meta.ethereumAddress as string | undefined;
+    const remainTime = this.refreshAccountPasswordCache(pair);
 
     if (isSavePass) {
       this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
@@ -909,165 +896,6 @@ export default class Extension extends FWExtensionBase {
     return [errors, resultPair, tokenInfo];
   }
 
-  private async checkTransfer({
-    from,
-    networkKey: givenNetwork,
-    to,
-    assetId,
-    relayChain,
-    amount,
-    password,
-  }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
-    const networkKey = this.state.getNetworkByKey(givenNetwork)?.name ?? '';
-
-    const [errors, , tokenInfo] = this.validateTransfer(assetId, from, password);
-    const warnings: BasicTxWarning[] = [];
-
-    if (networkKey === '')
-      return {
-        errors,
-        warnings,
-        destEstimateFee: undefined,
-        fromAccountFree: '0',
-        estimateFee: '0',
-      };
-
-    const isMainToken = checkMainToken(networkKey, tokenInfo.id);
-    const address = getSubstrateAddress(from);
-
-    let fee = '0';
-    let fromAccountFreeBalance = '0';
-
-    const tokenBalance = this.state.balanceMap[address].find(
-      (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
-    )!;
-
-    if (isEthereumAddress(from) && isEthereumAddress(to) && !isRequireSubstrateAPI(networkKey)) {
-      const fromAccountFreeBalance = tokenBalance
-        ? balanceItemByNetwork(tokenBalance.balances, networkKey)?.transferable ?? '0'
-        : '0';
-      const txVal = fromAccountFreeBalance || '0';
-
-      // Estimate with EVM API
-      if (!isMainToken && tokenInfo.id) {
-        const prepContractAddress = `0x${tokenInfo.id}`;
-        const { fee: feeValue } = await getERC20TransactionObject(prepContractAddress, networkKey, from, to, txVal);
-
-        fee = ethers.formatEther(feeValue);
-      } else {
-        const { fee: feeValue } = await getEVMTransactionObject(networkKey, to, txVal);
-
-        fee = ethers.formatEther(feeValue);
-      }
-    } else {
-      // Estimate with DotSama API
-
-      const feeNumber = await estimateFee(networkKey, to, amount, tokenBalance);
-
-      fee = feeNumber;
-      fromAccountFreeBalance = balanceItemByNetwork(tokenBalance.balances, networkKey)?.transferable ?? '0';
-    }
-
-    return {
-      errors,
-      warnings,
-      fromAccountFree: fromAccountFreeBalance,
-      estimateFee: fee.toString(),
-    } as unknown as ResponseCheckTransfer;
-  }
-
-  private async makeTransfer(
-    id: string,
-    port: Port,
-    { from, networkKey: givenNetwork, password, to, assetId, amount, isSavePass, isMobile }: RequestTransfer
-  ): Promise<BasicTxResponse | undefined> {
-    const networkKey = this.state.getNetworkByKey(givenNetwork)?.name ?? '';
-
-    const txState: BasicTxResponse = {};
-    const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
-
-    if (errors.length) {
-      txState.txError = true;
-      txState.errors = errors;
-
-      setTimeout(() => this.cancelSubscription(id), 500);
-
-      // todo: add condition to lock KeyPair (for example: not remember password)
-
-      return txState;
-    }
-
-    if (!fromKeyPair && !isMobile) {
-      txState.status = false;
-      txState.txError = true;
-
-      return txState;
-    }
-
-    const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
-
-    const ethereumAddress = fromKeyPair ? (fromKeyPair.meta.ethereumAddress as string | undefined) : '';
-    const isEthereum = isEthereumAddress(from);
-    const address = isEthereum ? getSubstrateAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet to save pass
-    const remainTime = fromKeyPair ? this.getRemainingTime(fromKeyPair) : 0;
-
-    const savePass = () => {
-      this.savePass(address, isEthereum ? from : ethereumAddress, remainTime, !!isSavePass, !!isMobile);
-    };
-
-    const callback = this.makeExtrinsicCallback(cb, savePass);
-
-    let transferProm: Promise<void> | undefined;
-
-    if (isEthereumAddress(from) && isEthereumAddress(to) && !isRequireSubstrateAPI(networkKey)) {
-      // Make transfer with EVM API
-      const { privateKey } = this.accountExportPrivateKey({ address: from, password });
-      const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
-
-      if (tokenInfo && !isMainToken && tokenInfo.id) {
-        transferProm = makeERC20Transfer(tokenInfo.id, networkKey, from, to, privateKey, amount || '0', callback);
-      } else {
-        transferProm = makeEVMTransfer(networkKey, to, privateKey, amount || '0', callback);
-      }
-    } else {
-      // Make transfer with Dotsama API
-      transferProm = makeTransfer({
-        networkKey,
-        assetId,
-        amount: amount ?? '0',
-        from,
-        to,
-        password,
-        isSavePass,
-        callback,
-        isMobile: !!isMobile,
-      });
-    }
-
-    await transferProm
-      .then(() => {
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-        console.info(`Start transfer ${amount} from ${from} to ${to}`);
-      })
-      .catch((e) => {
-        console.error('Transfer error', e);
-
-        cb({
-          txError: true,
-          status: false,
-          errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
-        });
-
-        setTimeout(() => this.cancelSubscription(id), 500);
-
-        // todo: add condition to lock KeyPair
-      });
-
-    port.onDisconnect.addListener(() => this.cancelSubscription(id));
-
-    return txState;
-  }
-
   savePass(
     address: string,
     ethereumAddress: string | undefined,
@@ -1096,16 +924,157 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
+  private async checkTransfer({
+    from,
+    networkKey,
+    to,
+    assetId,
+    relayChain,
+    amount,
+  }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
+    const tokenInfo = getAssetInfo(assetId);
+
+    if (networkKey === '')
+      return {
+        destEstimateFee: '0',
+        estimateFee: '0',
+      };
+
+    const isMainToken = checkMainToken(networkKey, tokenInfo.id);
+    const address = getSubstrateAddress(from);
+
+    let fee = '0';
+
+    const tokenBalance = this.state.balanceMap[address].find(
+      (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
+    )!;
+
+    if (isEthereumAddress(from) && isEthereumAddress(to) && !isRequireSubstrateAPI(networkKey)) {
+      const fromAccountFreeBalance = tokenBalance
+        ? balanceItemByNetwork(tokenBalance.balances, networkKey)?.transferable ?? '0'
+        : '0';
+
+      const txVal = fromAccountFreeBalance || '0';
+
+      // Estimate with EVM API
+      if (!isMainToken && tokenInfo.id) {
+        const prepContractAddress = `0x${tokenInfo.id}`;
+        const { fee: feeValue } = await getERC20TransactionObject(prepContractAddress, networkKey, from, to, txVal);
+
+        fee = ethers.formatEther(feeValue);
+      } else {
+        const { fee: feeValue } = await getEVMTransactionObject(networkKey, to, txVal);
+
+        fee = ethers.formatEther(feeValue);
+      }
+    } else {
+      // Estimate with DotSama API
+
+      const feeNumber = await estimateFee(networkKey, to, amount, tokenBalance);
+
+      fee = feeNumber;
+    }
+
+    return {
+      destEstimateFee: '0',
+      estimateFee: fee.toString(),
+    } as unknown as ResponseCheckTransfer;
+  }
+
+  private async makeTransfer(
+    id: string,
+    port: Port,
+    { from, networkKey, password, to, assetId, amount, isSavePass, isMobile }: RequestTransfer
+  ): Promise<BasicTxResponse | undefined> {
+    const txState: BasicTxResponse = {};
+    const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
+
+    if (errors.length) {
+      txState.errors = errors;
+
+      setTimeout(() => this.cancelSubscription(id), 500);
+
+      // todo: add condition to lock KeyPair (for example: not remember password)
+
+      return txState;
+    }
+
+    if (!fromKeyPair && !isMobile) {
+      txState.status = false;
+
+      return txState;
+    }
+
+    const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
+
+    const ethereumAddress = fromKeyPair ? (fromKeyPair.meta.ethereumAddress as string | undefined) : '';
+    const isEthereum = isEthereumAddress(from);
+    const address = isEthereum ? getSubstrateAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet to save pass
+    const remainTime = fromKeyPair ? this.getRemainingTime(fromKeyPair) : 0;
+
+    const savePass = () => {
+      this.savePass(address, isEthereum ? from : ethereumAddress, remainTime, !!isSavePass, !!isMobile);
+    };
+
+    const callback = this.makeExtrinsicCallback(cb, savePass);
+
+    let transferProm: Promise<void> | undefined;
+
+    if (isEthereumAddress(from) && isEthereumAddress(to) && !isRequireSubstrateAPI(networkKey)) {
+      // Make transfer with EVM API
+      const { privateKey } = this.accountExportPrivateKey({ address: from, password });
+      const isMainToken = checkMainToken(networkKey, tokenInfo?.id);
+
+      if (tokenInfo && !isMainToken && tokenInfo.id)
+        transferProm = makeERC20Transfer(tokenInfo.id, networkKey, from, to, privateKey, amount || '0', callback);
+      else transferProm = makeEVMTransfer(networkKey, to, privateKey, amount || '0', callback);
+    } else {
+      // Make transfer with Dotsama API
+      transferProm = makeTransfer({
+        networkKey,
+        assetId,
+        amount: amount ?? '0',
+        from,
+        to,
+        password,
+        isSavePass,
+        callback,
+        isMobile: !!isMobile,
+      });
+    }
+
+    await transferProm
+      .then(() => {
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+        console.info(`Start transfer ${amount} from ${from} to ${to}`);
+      })
+      .catch((e) => {
+        console.error('Transfer error', e);
+
+        cb({
+          status: false,
+          errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
+        });
+
+        setTimeout(() => this.cancelSubscription(id), 500);
+
+        // todo: add condition to lock KeyPair
+      });
+
+    port.onDisconnect.addListener(() => this.cancelSubscription(id));
+
+    return txState;
+  }
+
   private async checkCrossChain({
     from,
-    originNet: originNetKey,
+    originNet,
     destinationNet,
     to,
     assetId,
     relayChain,
     amount,
   }: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
-    const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';
     const address = getSubstrateAddress(from);
     const tokenBalance = this.state.balanceMap[address].find(
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
@@ -1126,20 +1095,19 @@ export default class Extension extends FWExtensionBase {
   private async makeCrossChain(
     id: string,
     port: Port,
-    {
-      from,
-      originNet: originNetKey,
-      destinationNet,
-      amount,
-      password,
-      to,
-      assetId,
-      isSavePass,
-      isMobile,
-    }: RequestCrossChain
-  ): Promise<void> {
-    const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';
-    const [, fromKeyPair] = this.validateTransfer(assetId, from, password);
+    { from, originNet, destinationNet, amount, password, to, assetId, isSavePass, isMobile }: RequestCrossChain
+  ): Promise<BasicTxResponse | undefined> {
+    const [errors, fromKeyPair] = this.validateTransfer(assetId, from, password);
+
+    if (errors.length) {
+      const txState = { errors };
+
+      setTimeout(() => this.cancelSubscription(id), 500);
+
+      // todo: add condition to lock KeyPair (for example: not remember password)
+
+      return txState;
+    }
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
 
@@ -1178,7 +1146,6 @@ export default class Extension extends FWExtensionBase {
       )
       .catch((e) => {
         cb({
-          txError: true,
           status: false,
           errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
         });
@@ -1193,29 +1160,20 @@ export default class Extension extends FWExtensionBase {
     port.onDisconnect.addListener(() => this.cancelSubscription(id));
   }
 
-  private async checkStaking(
-    id: string,
-    port: Port,
-    { from, originNet, amount, to, assetId }: RequestCheckStaking
-  ): Promise<ResponseCheckStaking> {
-    id;
-    port;
-    from;
-    originNet;
+  private async checkStaking({
+    network,
+    stashAccount,
+    amount,
+    assetId,
+    from,
+  }: RequestCheckStaking): Promise<ResponseCheckStaking> {
+    network;
+    stashAccount;
     amount;
-    to;
     assetId;
+    from;
 
     return { estimateFee: '0.1' };
-  }
-
-  private async makeStaking(id: string, port: Port, { from, originNet }: RequestStaking): Promise<void> {
-    id;
-    port;
-    from;
-    originNet;
-
-    console.info(2);
   }
 
   private getNetworkMap(): Record<string, NetworkJson> {
@@ -1253,16 +1211,20 @@ export default class Extension extends FWExtensionBase {
     return this.state.approvePolkaswap(authorizedAccounts);
   }
 
-  isOnboardingRequired() {
+  isOnboardingRequired(): boolean {
     return this.state.onboardingService.isRequired;
   }
 
-  setOnboardingSeen() {
+  setOnboardingSeen(): void {
     this.state.onboardingService.setSeen();
   }
 
   getOnboardingStories(lang: string): OnboardingStories {
     return this.state.onboardingService.getStories(lang);
+  }
+
+  getValidators({ networkName }: ValidatorsRequest): Promise<FWValidatorInfoFull[]> {
+    return state.stakingService.getValidators(networkName);
   }
 
   async handle<TMessageType extends MessageTypes>(
@@ -1272,7 +1234,7 @@ export default class Extension extends FWExtensionBase {
     port: Port
   ): Promise<ResponseType<TMessageType>> {
     switch (type) {
-      //App Managment, networks
+      // App Management, networks
       case 'pri(app.port.ping)':
         return true;
 
@@ -1285,6 +1247,10 @@ export default class Extension extends FWExtensionBase {
       case 'pri(networkMap.toggle.favorite)':
         return this.toggleNetworkFavorite(request as string);
 
+      case 'pri(window.open)':
+        return this.windowOpen(request as AllowedPath);
+
+      // authorize
       case 'pri(networkMap.getSubscription)':
         return this.subscribeNetworkMap(id, port);
 
@@ -1312,9 +1278,11 @@ export default class Extension extends FWExtensionBase {
       case 'pri(authorize.update)':
         return this.authorizeUpdate(request as RequestUpdateAuthorizedAccounts);
 
+      // addresses
       case 'pri(addresses.subscribe)':
         return this.addressesSubscribe(id, port);
 
+      // accounts
       case 'pri(accounts.create.mobile)':
         return this.createMobileWallet(request as RequestAddressCreate);
 
@@ -1371,7 +1339,7 @@ export default class Extension extends FWExtensionBase {
         return this.makeCrossChain(id, port, request as RequestCrossChain);
 
       case 'pri(accounts.checkSwap)':
-        return this.validateSwap(request as RequestCheckSwap);
+        return this.checkSwap(request as RequestCheckSwap);
 
       case 'pri(accounts.swap)':
         return this.makeSwap(request as RequestSwap);
@@ -1379,12 +1347,14 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.soraFees)':
         return this.getSoraFees();
 
+      // price
       case 'pri(price.update.currency)':
         return this.updateCurrencySymbol(request as string);
 
       case 'pri(price.subscription)':
         return this.subscribePrice(id, port);
 
+      // metadata
       case 'pri(metadata.approve)':
         return this.metadataApprove(request as RequestMetadataApprove);
 
@@ -1394,9 +1364,11 @@ export default class Extension extends FWExtensionBase {
       case 'pri(metadata.requests)':
         return port && this.metadataSubscribe(id, port);
 
+      // tabs
       case 'pri(tabs.update.activeTabsUrl)':
         return this.updateCurrentTabs(request as RequestActiveTabsUrlUpdate);
 
+      // signing
       case 'pri(signing.approve.password)':
         return this.signingApprovePassword(request as RequestSigningApprovePassword);
 
@@ -1415,15 +1387,14 @@ export default class Extension extends FWExtensionBase {
       case 'pri(mobileSigning.cancel)':
         return this.mobileSigningCancel(request as RequestSigningCancel);
 
+      // mobileSigning
       case 'pri(mobileSigning.tx)':
         return this.mobileSigningSubscribe(id, port);
 
       case 'pri(mobileSigning.approve.signature)':
         return this.mobileSignApprove(request as RequestMobileSign);
 
-      case 'pri(window.open)':
-        return this.windowOpen(request as AllowedPath);
-
+      // google
       case 'pri(google.get.files)':
         return this.getFiles(request as { token: string });
 
@@ -1442,22 +1413,37 @@ export default class Extension extends FWExtensionBase {
       case 'pri(google.delete.file)':
         return this.deleteFile(request as GoogleFileId);
 
+      // tab
       case 'pri(tab.status)':
         return this.isTabAuthorize();
 
+      // balance
       case 'pri(balance)':
         return this.getBalance();
 
       case 'pri(balance.subscription)':
         return this.subscribeBalance(id, port);
 
+      // staking
+      case 'pri(staking.validators)':
+        return this.getValidators(request as ValidatorsRequest);
+
+      case 'pri(staking.bond)':
+        return this.getValidators(request as ValidatorsRequest);
+
+      case 'pri(staking.unbond)':
+        return this.getValidators(request as ValidatorsRequest);
+
+      case 'pri(staking.rebond)':
+        return this.getValidators(request as ValidatorsRequest);
+
+      case 'pri(staking.redeem)':
+        return this.getValidators(request as ValidatorsRequest);
+
       case 'pri(staking.checkStaking)':
-        return this.checkStaking(id, port, request as RequestCrossChain);
+        return this.checkStaking(request as RequestStaking);
 
-      case 'pri(staking.stake)':
-        return this.makeStaking(id, port, request as RequestStaking);
-
-      //OnBoarding
+      // OnBoarding
       case 'pri(onboarding.get.stories)':
         return this.getOnboardingStories(request as string);
 

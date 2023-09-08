@@ -85,6 +85,7 @@ async function onDisconnect(networkName: string) {
   api.isApiReady = false;
 
   if (api.apiRetry < MAX_CONTINUE_RETRY) return;
+
   const network = state.networkMap[networkName];
 
   api.provider?.disconnect();
@@ -104,9 +105,12 @@ async function onDisconnect(networkName: string) {
   state.disableNetworkMap(networkName);
 }
 
-function onReady(networkName: string) {
+async function onReady(networkName: string) {
   if (isSora(networkName)) {
     apiSora.initialize(false);
+
+    await apiSora.api.isReadyOrError;
+
     apiSora.calcStaticNetworkFees();
 
     state.subscribeTotalXorBalance();
@@ -116,7 +120,8 @@ function onReady(networkName: string) {
 }
 
 export async function initApi(network: NetworkJson, retry = false): Promise<void> {
-  const { name: networkName, nodes, isEthereum } = network;
+  const { name, nodes, isEthereum } = network;
+  const networkName = name.toLowerCase();
 
   if (state.getSubstrateApiMap[networkName] === undefined) {
     // return EVM HTTP Placeholder

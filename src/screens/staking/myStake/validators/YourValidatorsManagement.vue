@@ -7,7 +7,12 @@
     :handlerBack="handlerBack"
   >
     <div class="your-validators">
-      <ValidatorInfo v-if="showValidatorInfo" :address="selectedValidator" :stakingCurrency="stakingCurrency" />
+      <ValidatorInfo
+        v-if="showValidatorInfo"
+        :address="selectedValidator"
+        :stakingCurrency="stakingCurrency"
+        :validators="validators"
+      />
 
       <YourValidators v-else-if="step === 1" :validators="myValidators" @openValidatorInfo="openValidatorInfo" />
 
@@ -16,7 +21,7 @@
 
         <InfoRow
           text="staking.selectedValidators"
-          :value="`${selectedQuantity} (${$t('common.max')} ${maxValidators})`"
+          :value="`${selectedQuantity} (${$t('common.max')} ${countValidators})`"
           borderType="default"
         />
 
@@ -36,7 +41,7 @@
         v-else
         :step="step"
         :validators="validators"
-        :maxValidators="maxValidators"
+        :countValidators="countValidators"
         @openValidatorList="openValidatorList"
         @updateSelectedValidators="updateSelectedValidators"
       />
@@ -67,16 +72,19 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { validators, myValidators } from './mock';
-import type { SelectionValidator } from '@/interfaces';
+import { myValidators } from './mock';
+import type { NetworkName, SelectionValidator } from '@/interfaces';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
+import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
 import YourValidators from '@/screens/staking/myStake/validators/YourValidators.vue';
 import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
+import { getValidators } from '@/extension/messaging';
+import { COUNT_VALIDATORS } from '@/consts/staking';
 
 @Component({
   components: {
@@ -89,13 +97,14 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 export default class YourValidatorsManagement extends Vue {
   state: Record<string, SelectionValidator> = {};
   showConfirmationPasswordPopup = false;
-  validators = validators;
+  validators: FWValidatorInfoFull[] = [];
   myValidators = myValidators;
   step = 1;
   isSuggested = false;
   selectedValidator = '';
   fee = '0';
 
+  @Prop({ type: String }) network!: NetworkName;
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -161,24 +170,28 @@ export default class YourValidatorsManagement extends Vue {
     return '';
   }
 
-  get maxValidators() {
-    return 24;
+  get countValidators() {
+    if (this.validators.length < COUNT_VALIDATORS[this.network]) return this.validators.length;
+
+    return COUNT_VALIDATORS[this.network];
   }
 
   get showValidatorInfo() {
     return this.selectedValidator !== '';
   }
 
-  mounted() {
-    this.validators.forEach(({ name, address, apy, description, isSelect }) =>
+  async mounted() {
+    this.validators = await getValidators({ networkName: this.network });
+
+    this.validators.forEach(({ address, apy, name, description }) => {
       Vue.set(this.state, address, {
         name,
         address,
         apy,
         description,
-        isSelect,
-      })
-    );
+        isSelect: false,
+      });
+    });
   }
 
   closeForm() {
@@ -192,11 +205,12 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   openValidatorList(isSuggested: boolean) {
-    this.validators = this.validators.map((validator) => {
-      const isSelect = isSuggested ? !!validator.isRecommended : false;
+    if (isSuggested)
+      this.validators = this.validators.map((validator, index) => {
+        const isSelect = index < COUNT_VALIDATORS[this.network]; // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
 
-      return { ...validator, isSelect };
-    });
+        return { ...validator, isSelect };
+      });
 
     this.isSuggested = isSuggested;
     this.step = isSuggested ? 3 : 5;

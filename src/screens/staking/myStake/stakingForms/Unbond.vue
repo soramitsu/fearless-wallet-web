@@ -36,8 +36,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class UnstakingForm extends Vue {
-  readonly selectAccountInputRef = 'selectAccountInput';
-
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: String }) fee!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -63,38 +61,6 @@ export default class UnstakingForm extends Vue {
 
 <style lang="scss" scoped>
 .unstaking-form {
-  // padding: 0 16px;
-
-  // .fee {
-  //   font-size: 14px;
-  //   border-bottom: $default-border;
-  //   display: flex;
-  //   justify-content: space-between;
-  //   align-items: center;
-  //   margin: 10px 0 20px;
-  //   padding: 10px 0;
-
-  //   .column {
-  //     display: flex;
-  //     flex-direction: column;
-  //     align-items: flex-end;
-  //     color: $default-white;
-
-  //     .amount {
-  //       font-weight: 600;
-  //       text-align: right;
-  //       text-transform: uppercase;
-  //       margin-bottom: 5px;
-  //     }
-
-  //     .value {
-  //       font-size: 12px;
-  //       text-align: right;
-  //       color: $grayish-white-2;
-  //     }
-  //   }
-  // }
-
   .info-fee {
     margin-bottom: 20px;
   }

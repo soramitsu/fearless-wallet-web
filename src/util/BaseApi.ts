@@ -10,10 +10,8 @@ import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import type { AccountJson } from '@extension-base/background/types/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import { isDerivationPathValid, isJsonValid, jsonRestore } from '@/extension/messaging';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { NetworksController } from '@/controllers';
 import store from '@/store';
@@ -54,10 +52,6 @@ export default class BaseApi {
     return mnemonicValidate(value);
   }
 
-  public static async isValidSubstrateDerivationPath({ value, keypairType }: DerivationPath): Promise<boolean> {
-    return await isDerivationPathValid({ value, keypairType });
-  }
-
   public static isValidEthereumDerivationPath(value: string): boolean {
     return hdValidatePath(value);
   }
@@ -71,23 +65,6 @@ export default class BaseApi {
 
   public static isKeyringPairs$Json(json: KeyringPair$Json | KeyringPairs$Json): json is KeyringPairs$Json {
     return json.encoding.content.includes('batch-pkcs8');
-  }
-
-  public static async addKeypairFromJson(json: KeyringPair$Json, password: string): Promise<string> {
-    return jsonRestore(json, password); // for proper work of extension
-  }
-
-  public static isDuplicateKeypair(address: string): boolean {
-    const accounts = BaseApi.getAccounts();
-
-    return accounts.map(({ address }) => address).includes(address);
-  }
-
-  //TEMP FOR TESTING
-  public static getAccounts(): { address: string }[] {
-    return (store.getters.getAccounts as AccountJson[]).map(({ address }) => {
-      return { address };
-    });
   }
 
   public static isMobileWallet(address: string) {
@@ -106,14 +83,6 @@ export default class BaseApi {
     } catch {
       return {} as KeyringPair$Json;
     }
-  }
-
-  public static async isValidJson(
-    json: KeyringPair$Json,
-    passwordJson: string,
-    isSubstrate = true
-  ): Promise<ValidateJsonResult> {
-    return await isJsonValid(json, passwordJson, isSubstrate);
   }
 
   public static decodeAddress(address: string): Uint8Array {

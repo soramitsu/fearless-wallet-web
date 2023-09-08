@@ -31,12 +31,13 @@
         />
 
         <Staking
-          v-if="isStaking"
+          v-if="isBond"
           :step="step"
           :stakingCurrency="stakingCurrency"
           :rewardedCurrency="rewardedCurrency"
           :fee="fee"
           :amount="amount"
+          :network="network"
           @openValidatorList="openValidatorList"
         />
 
@@ -64,7 +65,7 @@
       :amount="amount"
       :value="amountPriceValue"
       :firstIcon="stakingAssetId"
-      extrinsicType="staking"
+      :extrinsicType="type"
       @close="confirmationPasswordPopupClose"
     />
   </AboveForm>
@@ -107,14 +108,14 @@ export default class StakingManagement extends Vue {
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
   @Prop({ type: String }) network!: NetworkName;
-  @Prop({ type: String }) type!: 'staking' | 'unbond' | 'redeem' | 'rebond';
+  @Prop({ type: String }) type!: 'bond' | 'unbond' | 'rebond' | 'redeem';
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get btnText() {
-    if (this.isStaking) {
+    if (this.isBond) {
       if (this.step === 1) return 'common.next';
 
       if (this.step === 3) return 'common.iAgree';
@@ -134,7 +135,7 @@ export default class StakingManagement extends Vue {
   }
 
   get header() {
-    if (this.isStaking) {
+    if (this.isBond) {
       if (this.step === 2) return 'staking.validators';
 
       if (this.step === 3) return 'common.warning';
@@ -155,8 +156,8 @@ export default class StakingManagement extends Vue {
     return this.step !== 1;
   }
 
-  get isStaking() {
-    return this.type === 'staking';
+  get isBond() {
+    return this.type === 'bond';
   }
 
   get isUnbond() {
@@ -222,19 +223,18 @@ export default class StakingManagement extends Vue {
     const amount = _amount ?? (this.amount !== '' && this.amount !== '0') ? this.amount : '1';
 
     const ex = await checkStaking({
-      originNet: this.network,
+      network: this.network,
       from: '',
-      to: '',
-      relayChain: this.stakingCurrency?.relayChain,
-      amount,
+      stashAccount: '',
       assetId: this.stakingAssetId,
+      amount,
     });
 
     return ex;
   }
 
   get lastUnstake() {
-    return '1.1';
+    return '1.1'; // текущее количество в анбонде
   }
 
   mounted() {
@@ -252,7 +252,7 @@ export default class StakingManagement extends Vue {
   }
 
   confirm() {
-    if (this.isStaking) {
+    if (this.isBond) {
       if (this.step === 4) this.step += 1;
 
       if (this.step === 6) this.showConfirmationPasswordPopup = true;

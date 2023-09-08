@@ -50,8 +50,8 @@
         </Scroll>
       </ContentForm>
 
-      <StakingManagement
-        v-if="showStakingManagement"
+      <MainStakingForm
+        v-if="showMainStakingForm"
         :stakingCurrency="stakingCurrency"
         :rewardedCurrency="rewardedCurrency"
         :type="type"
@@ -62,6 +62,7 @@
       <YourValidatorsManagement
         v-if="showYourValidatorsForm"
         :stakingCurrency="stakingCurrency"
+        :network="network"
         @closeForm="toggleVisible('showYourValidatorsForm', false)"
       />
 
@@ -90,7 +91,7 @@ import MyStakeSettings from '@/screens/staking/myStake/MyStakeSettings.vue';
 import About from '@/screens/staking/myStake/About.vue';
 import Alerts from '@/screens/staking/myStake/Alerts.vue';
 import History from '@/screens/staking/myStake/History.vue';
-import StakingManagement from '@/screens/staking/myStake/stakingForms/MainStakingForm.vue';
+import MainStakingForm from '@/screens/staking/myStake/stakingForms/MainStakingForm.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { SORA_REWARD_ASSET } from '@/consts/sora';
@@ -107,8 +108,8 @@ type ShowField = 'showStakingForm' | 'showUnbondForm' | 'showRedeemForm' | 'show
     Alerts,
     History,
     MyStakeSettings,
+    MainStakingForm,
     PendingRewardForm,
-    StakingManagement,
     ControllerAccount,
     YourValidatorsManagement,
   },
@@ -132,7 +133,7 @@ export default class MyStake extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
-  get showStakingManagement() {
+  get showMainStakingForm() {
     return this.showStakingForm || this.showUnbondForm || this.showRedeemForm || this.showRebondForm;
   }
 

@@ -4,7 +4,7 @@
       <div class="history-settings">
         <div class="history-label">{{ $t('assets.history') }}:</div>
 
-        <Dropdown :value="filterHistoryValue" :options="historyDropdownOption" :handler="filterHistoryValueUpdate" />
+        <Dropdown :value="filterHistoryValue" :options="historyDropdownOption" @handler="filterHistoryValueUpdate" />
       </div>
 
       <Scroll>

@@ -946,6 +946,36 @@ export default class Extension extends FWExtensionBase {
     return [errors, resultPair, tokenInfo];
   }
 
+  validatePairPassword(address: string, password: string | undefined) {
+    const substrateAddress = getSubstrateAddress(address);
+    const errors = [] as Array<BasicTxError>;
+    const substratePair = keyring.getAccount(substrateAddress) ? keyring.getPair(substrateAddress) : undefined;
+
+    if (password) {
+      try {
+        if (substratePair) {
+          substratePair.unlock(password);
+
+          const { meta } = substratePair;
+          const ethereumAddress = meta.ethereumAddress as string | undefined;
+
+          if (ethereumAddress) {
+            const pair = keyring.getPair(ethereumAddress);
+
+            pair.unlock(password);
+          }
+        }
+      } catch (e: any) {
+        errors.push({
+          code: BasicTxErrorCode.KEYRING_ERROR,
+          message: String(e.message),
+        });
+      }
+    }
+
+    return errors;
+  }
+
   private async checkTransfer({
     from,
     networkKey: givenNetwork,
@@ -1449,10 +1479,15 @@ export default class Extension extends FWExtensionBase {
   }
 
   async wcRequestApprove({ address, password, topic }: RequestApproveWalletConnect) {
+    const errors = this.validatePairPassword(address, password);
+
+    if (errors.length) throw new Error(BasicTxErrorCode.KEYRING_ERROR);
+
     const request = this.state.requestService.signWcRequest(topic);
     const [, chainId] = request.request.params.chainId.split(':');
     const network = Object.values(this.state.networkMap).find((el) => el.chainId === chainId);
-    if (!network) return;
+
+    if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
 
     const privateKey = this.state.accountExportPrivateKey({ address, password });
     const signer = new Wallet(privateKey.privateKey, this.state.getEvmApiMap[network.name]);
@@ -1461,6 +1496,8 @@ export default class Extension extends FWExtensionBase {
 
     const hash = await signer.sendTransaction(txData);
     request.resolve({ id: request.request.topic, signature: hash.hash as HexString });
+
+    return true;
   }
 
   wcRequestReject({ topic }: RequestDisconnectWalletConnectSession) {

@@ -321,7 +321,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.extrinsicType === 'crossChain') return await makeCrossChain(this.requestCrossChain, callback);
   }
 
-  async keypress({ key }: KeyboardEvent) {
+  keypress({ key }: KeyboardEvent) {
     if (key === 'Enter') this.sendExtrinsic();
   }
 

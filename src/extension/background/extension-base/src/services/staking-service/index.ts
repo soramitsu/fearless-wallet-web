@@ -61,14 +61,14 @@ export class StakingService {
   }
 
   public async unbond() {
-    console.log(1);
+    console.info(1);
   }
 
   public async rebond() {
-    console.log(1);
+    console.info(1);
   }
 
   public async redeem() {
-    console.log(1);
+    console.info(1);
   }
 }

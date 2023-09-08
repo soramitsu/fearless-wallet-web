@@ -1,4 +1,4 @@
-import type { FWValidatorInfoFull, ValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
+import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
   InjectedAccount,

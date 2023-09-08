@@ -214,7 +214,7 @@ export default class StakingForm extends Vue {
   async mounted() {
     this.validators = await getValidators({ networkName: this.network });
 
-    console.log('validators', this.validators);
+    console.info('validators', this.validators);
 
     this.validators.forEach(({ address, apy, name, description }) => {
       Vue.set(this.state, address, {

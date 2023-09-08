@@ -30,7 +30,7 @@
           @setMax="setMax"
         />
 
-        <Staking
+        <Bond
           v-if="isBond"
           :step="step"
           :stakingCurrency="stakingCurrency"
@@ -78,7 +78,7 @@ import type { GetAssetPrice, SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import Staking from '@/screens/staking/myStake/stakingForms/Staking.vue';
+import Bond from '@/screens/staking/myStake/stakingForms/Bond.vue';
 import Redeem from '@/screens/staking/myStake/stakingForms/Redeem.vue';
 import Unbond from '@/screens/staking/myStake/stakingForms/Unbond.vue';
 import Rebond from '@/screens/staking/myStake/stakingForms/Rebond.vue';
@@ -90,10 +90,10 @@ import { checkStaking } from '@/extension/messaging';
 
 @Component({
   components: {
+    Bond,
     Rebond,
     Redeem,
     Unbond,
-    Staking,
     ConfirmationPasswordPopup,
   },
 })

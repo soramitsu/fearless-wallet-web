@@ -13,9 +13,9 @@
     :showBlur="showBlur"
     :showBackground="showBackground"
     :options="filteredOptionsNetworks"
-    :toggleValue="toggleSelectedNetwork"
-    :handlerClose="handlerClose"
-    :handlerFilter="handlerFilter"
+    @toggleValue="toggleSelectedNetwork"
+    @handlerClose="handlerClose"
+    @handlerFilter="handlerFilter"
   />
 </template>
 

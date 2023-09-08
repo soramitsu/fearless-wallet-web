@@ -7,8 +7,8 @@
     :showWarningIcon="showWarningIcon"
     :showAcceptButton="haveMoreOneNodes"
     :showRejectButton="true"
-    :handlerAccept="openSwitchNode"
-    :handlerClose="close"
+    @handlerAccept="openSwitchNode"
+    @handlerClose="close"
     :zIndex="500"
   >
     <Checkbox v-model="isDontShowAgain" size="big" :label="$t('common.dontShowAgain')" class="dont-show-again" />

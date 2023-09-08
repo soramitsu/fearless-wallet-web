@@ -22,7 +22,7 @@ interface AbstractSignAndSendExtrinsicProps extends Partial<PrepareExternalReque
   errorMessage: string;
   apiProps: ApiProps;
   isSavePass?: boolean;
-  password: string;
+  password?: string;
   updateResponseTxResult?: (response: BasicTxResponse, records: EventRecord[]) => void;
 }
 

@@ -13,7 +13,7 @@ interface AbstractSignExtrinsicProps {
   callback: HandleBasicTx;
   extrinsic: SubmittableExtrinsic<'promise'>;
   id?: string;
-  password: string;
+  password?: string;
   setState?: (promise: ExternalRequestPromise) => void;
   type: SignerType;
 }
@@ -41,7 +41,7 @@ export const signExtrinsic = async ({
   if (!isMobile) assert(pair, 'Unable to find pair');
 
   if (pair?.isLocked) {
-    const isUnlock = keyringService.unlockPair(pair, password);
+    const isUnlock = keyringService.unlockPair(pair, password!);
 
     if (!isUnlock) return 'Invalid password';
   }

@@ -1,5 +1,10 @@
 <template>
-  <AboveForm header="assets.networkIssues" class="network-management" :fullScreen="true" @closeHandler="closeForm">
+  <AboveForm
+    header="assets.networkIssues"
+    class="network-management"
+    :fullScreen="true"
+    @closeHandler="$emit('closeForm')"
+  >
     <div class="management-content">
       <Scroll>
         <Corners v-for="{ name, icon } in networks" :key="name" size="big" class="network-corners">
@@ -35,7 +40,6 @@ import { SelectedWallet } from '@/store';
 @Component
 export default class NetworkManagement extends Vue {
   @Prop(Array) networks!: NetworkJson[];
-  @Prop(Function) closeForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 }
 </script>

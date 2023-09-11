@@ -21,14 +21,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
-import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import { firstCharToUp } from '@/helpers/';
 
-@Component({
-  components: {
-    SelectNetworkPopup,
-  },
-})
+@Component({})
 export default class InputWithIcon extends Vue {
   showSelectNetworkPopup = false;
 

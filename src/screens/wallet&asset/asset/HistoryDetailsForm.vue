@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="Details" :blur="true" @closeHandler="handlerClose">
+  <AboveForm header="Details" :blur="true" @closeHandler="$emit('handlerClose')">
     <div class="details">
       <div class="descriptions">
         <div v-if="isExtrinsic" class="item">
@@ -123,7 +123,6 @@ export default class HistoryDetailsForm extends Vue {
   @Prop(String) assetId!: string;
   @Prop(String) historyType!: string;
   @Prop(Object) historyElement!: HistoryElement;
-  @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
 

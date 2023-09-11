@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :header="getLocale('header')" :fullScreen="true" @closeHandler="handlerClose">
+  <AboveForm :header="getLocale('header')" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
 
     <Tabs :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
@@ -74,7 +74,6 @@ export default class NetworkManagement extends Vue {
       name: FAVORITE_NETWORKS,
     },
   };
-  @Prop(Function) handlerClose!: VoidFunction;
   @Prop(String) type!: keyof Tabs | string;
   @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
   @Getter(AccountGettersTypes.getSelectedNetwork) selectedNetwork!: string;

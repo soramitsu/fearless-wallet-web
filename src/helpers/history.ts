@@ -73,7 +73,7 @@ function getHumanValue(value: string, assetId: string, networkName: NetworkName)
 
   const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
 
-  return +FPNumber.fromCodecValue(value, precision);
+  return FPNumber.fromCodecValue(value, precision).toNumber();
 }
 
 function getHistoryValue(historyElement: HistoryElement, assetId: string, networkName: NetworkName) {
@@ -82,10 +82,11 @@ function getHistoryValue(historyElement: HistoryElement, assetId: string, networ
   const signTransfer = getSignTransfer(historyElement);
 
   if (type === TransactionType.transfer && transfer) {
-    const { amount } = transfer;
+    const { amount, fee } = transfer;
     const value = getHumanValue(amount, assetId, networkName);
+    const fees = getHumanValue(fee, assetId, networkName);
 
-    return { signTransfer, value };
+    return { signTransfer, value, fee: fees };
   }
 
   if (type === TransactionType.reward && reward) {
@@ -97,6 +98,7 @@ function getHistoryValue(historyElement: HistoryElement, assetId: string, networ
 
   // extrinsic
   const { fee } = extrinsic!;
+
   const value = getHumanValue(fee, assetId, networkName);
 
   return { signTransfer: '-', value };
@@ -109,7 +111,7 @@ function getHumanTransferFee(historyElement: HistoryElement, assetId: string, ne
   if (type === TransactionType.transfer) {
     const { fee } = transfer!;
     const value = getHumanValue(fee, assetId, networkName);
-    const formattedValue = formattedNumber(value, { decimalsValue: 4 });
+    const formattedValue = formattedNumber(value, { decimalsValue: 6 });
 
     return `${formattedValue !== '0' ? '-' : ''}${formattedValue}`;
   }
@@ -117,7 +119,7 @@ function getHumanTransferFee(historyElement: HistoryElement, assetId: string, ne
   if (type === TransactionType.extrinsic) {
     const { fee } = extrinsic!;
     const value = getHumanValue(fee, assetId, networkName);
-    const formattedValue = formattedNumber(value, { decimalsValue: 4 });
+    const formattedValue = formattedNumber(value, { decimalsValue: 6 });
 
     return `${formattedValue !== '0' ? '-' : ''}${formattedValue}`;
   }

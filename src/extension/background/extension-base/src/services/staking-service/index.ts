@@ -1,8 +1,10 @@
-import { keyring } from '@polkadot/ui-keyring';
-import { ApiProps, BasicTxError, BasicTxErrorCode, BasicTxResponse, SignerType } from '../../background/types/types';
+import { FPNumber } from '@sora-substrate/math';
+import { ApiProps, BasicTxResponse, SignerType } from '../../background/types/types';
 import { getValidatorsInfo, bond } from '../../api/substrate/staking';
 import { signAndSendExtrinsic } from '../../api/substrate/shared/signAndSendExtrinsic';
-import { BondRequest, RebondRequest, RedeemRequest, UnbondRequest, ValidatorsRequest } from './types';
+import { keyringService } from '../keyring-service';
+import { getUtilityProps } from '../../background/utils/utils';
+import { RequestCheckBond, ValidatorsRequest, RequestBond, RequestUnbond, RequestRebond, RequestRedeem } from './types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import { NetworkName } from '@/interfaces';
 import { DAY1 } from '@/consts/time';
@@ -28,16 +30,15 @@ export class StakingService {
     }
 
     const apiProps = this.getSubstrateApiMap[networkName];
-    const api = apiProps.api;
 
-    if (!api) return [];
+    if (!apiProps.api) return [];
 
-    const isReady = await api?.isReady;
+    const isReady = await apiProps.api?.isReady;
 
     if (!isReady) return [];
 
     // TODO STAKING: использовать функцию из библиотеки
-    const validators: FWValidatorInfoFull[] = (await getValidatorsInfo(api)).map((validator) => {
+    const validators: FWValidatorInfoFull[] = (await getValidatorsInfo(apiProps.api)).map((validator) => {
       const name = validator.identity?.info.display ?? 'no validator info';
       const description = validator.identity?.info.twitter ?? validator.identity?.info.web ?? 'no validator info';
 
@@ -52,136 +53,193 @@ export class StakingService {
     return validators;
   }
 
-  public async bond({
-    networkName,
-    address,
-    password,
-    isSavePass,
-    controller,
-    amount,
-    stashAccount,
-    from,
-    callback,
-  }: BondRequest): Promise<boolean> {
-    const txState: BasicTxResponse = {};
+  public async createBondExtrinsic({ networkName, controller, amount, stashAccount, from }: RequestCheckBond) {
     const apiProps = this.getSubstrateApiMap[networkName];
-    const errors: Array<BasicTxError> = [];
 
-    if (!apiProps.api) return false;
+    if (!apiProps.api) return { extrinsic: null, fee: '0' };
 
     const isReady = await apiProps.api?.isReady;
 
-    if (!isReady) return false;
-
-    const pair = keyring.getPair(address);
-
-    try {
-      if (pair.isLocked && password) pair.unlock(password);
-    } catch (e: any) {
-      pair.lock();
-
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        message: String(e.message),
-      });
-    }
+    if (!isReady) return { extrinsic: null, fee: '0' };
 
     // TODO STAKING: использовать функцию из библиотеки
-    const extrinsic = await bond(apiProps.api, { controller, amount, stashAccount });
+    const extrinsic = bond(apiProps.api, { controller, amount, stashAccount });
+
+    const { precision: utilityPrecision } = getUtilityProps(networkName); // стекается всегда утилити токен, ВАЖНО!!! уточнить этот момент
+
+    const paymentInfo = await extrinsic?.paymentInfo(from);
+    const partialFee = paymentInfo ? +paymentInfo.partialFee : '0';
+    const fee = FPNumber.fromCodecValue(partialFee, utilityPrecision).toString();
+
+    return { extrinsic, fee };
+  }
+
+  public async makeBond(params: RequestBond & { callback: (res: BasicTxResponse) => void }): Promise<BasicTxResponse> {
+    const { networkName, password, isSavePass, from, callback } = params;
+
+    const isUnlock = keyringService.unlockPair(from, password);
+
+    if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
+
+    const apiProps = this.getSubstrateApiMap[networkName];
+
+    const { extrinsic } = await this.createBondExtrinsic(params);
 
     await signAndSendExtrinsic({
       type: SignerType.PASSWORD,
       apiProps,
       callback,
       extrinsic,
-      txState,
       password,
       isSavePass,
       address: from,
       errorMessage: 'bond error',
     });
 
-    return true;
+    return { status: true };
   }
 
-  public async unbond({ networkName, address, password }: UnbondRequest): Promise<boolean> {
+  public async createUnbondExtrinsic({ networkName, controller, amount, stashAccount, from }: RequestCheckBond) {
     const apiProps = this.getSubstrateApiMap[networkName];
-    const api = apiProps.api;
-    const errors: Array<BasicTxError> = [];
 
-    if (!api) return false;
+    if (!apiProps.api) return { extrinsic: null, fee: '0' };
 
-    const isReady = await api?.isReady;
+    const isReady = await apiProps.api?.isReady;
 
-    if (!isReady) return false;
+    if (!isReady) return { extrinsic: null, fee: '0' };
 
-    const pair = keyring.getPair(address);
+    // TODO STAKING: использовать функцию из библиотеки
+    const extrinsic = bond(apiProps.api, { controller, amount, stashAccount });
 
-    try {
-      if (pair.isLocked && password) pair.unlock(password);
-    } catch (e: any) {
-      pair.lock();
+    const { precision: utilityPrecision } = getUtilityProps(networkName); // стекается всегда утилити токен, ВАЖНО!!! уточнить этот момент
 
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        message: String(e.message),
-      });
-    }
+    const paymentInfo = await extrinsic?.paymentInfo(from);
+    const partialFee = paymentInfo ? +paymentInfo.partialFee : '0';
+    const fee = FPNumber.fromCodecValue(partialFee, utilityPrecision).toString();
 
-    return true;
+    return { extrinsic, fee };
   }
 
-  public async rebond({ networkName, address, password }: RebondRequest): Promise<boolean> {
+  public async makeUnbond(
+    params: RequestUnbond & { callback: (res: BasicTxResponse) => void }
+  ): Promise<BasicTxResponse> {
+    const { networkName, password, isSavePass, from, callback } = params;
+
+    const isUnlock = keyringService.unlockPair(from, password);
+
+    if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
+
     const apiProps = this.getSubstrateApiMap[networkName];
-    const api = apiProps.api;
-    const errors: Array<BasicTxError> = [];
 
-    if (!api) return false;
+    const { extrinsic } = await this.createBondExtrinsic(params);
 
-    const isReady = await api?.isReady;
+    await signAndSendExtrinsic({
+      type: SignerType.PASSWORD,
+      apiProps,
+      callback,
+      extrinsic,
+      password,
+      isSavePass,
+      address: from,
+      errorMessage: 'bond error',
+    });
 
-    if (!isReady) return false;
-
-    const pair = keyring.getPair(address);
-
-    try {
-      if (pair.isLocked && password) pair.unlock(password);
-    } catch (e: any) {
-      pair.lock();
-
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        message: String(e.message),
-      });
-    }
-
-    return true;
+    return { status: true };
   }
 
-  public async redeem({ networkName, address, password }: RedeemRequest): Promise<boolean> {
+  public async createRebondExtrinsic({ networkName, controller, amount, stashAccount, from }: RequestCheckBond) {
     const apiProps = this.getSubstrateApiMap[networkName];
-    const api = apiProps.api;
-    const errors: Array<BasicTxError> = [];
 
-    if (!api) return false;
+    if (!apiProps.api) return { extrinsic: null, fee: '0' };
 
-    const isReady = await api?.isReady;
+    const isReady = await apiProps.api?.isReady;
 
-    if (!isReady) return false;
+    if (!isReady) return { extrinsic: null, fee: '0' };
 
-    const pair = keyring.getPair(address);
+    // TODO STAKING: использовать функцию из библиотеки
+    const extrinsic = bond(apiProps.api, { controller, amount, stashAccount });
 
-    try {
-      if (pair.isLocked && password) pair.unlock(password);
-    } catch (e: any) {
-      pair.lock();
+    const { precision: utilityPrecision } = getUtilityProps(networkName); // стекается всегда утилити токен, ВАЖНО!!! уточнить этот момент
 
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        message: String(e.message),
-      });
-    }
+    const paymentInfo = await extrinsic?.paymentInfo(from);
+    const partialFee = paymentInfo ? +paymentInfo.partialFee : '0';
+    const fee = FPNumber.fromCodecValue(partialFee, utilityPrecision).toString();
 
-    return true;
+    return { extrinsic, fee };
+  }
+
+  public async makeRebond(
+    params: RequestRebond & { callback: (res: BasicTxResponse) => void }
+  ): Promise<BasicTxResponse> {
+    const { networkName, password, isSavePass, from, callback } = params;
+
+    const isUnlock = keyringService.unlockPair(from, password);
+
+    if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
+
+    const apiProps = this.getSubstrateApiMap[networkName];
+
+    const { extrinsic } = await this.createBondExtrinsic(params);
+
+    await signAndSendExtrinsic({
+      type: SignerType.PASSWORD,
+      apiProps,
+      callback,
+      extrinsic,
+      password,
+      isSavePass,
+      address: from,
+      errorMessage: 'bond error',
+    });
+
+    return { status: true };
+  }
+
+  public async createRedeemExtrinsic({ networkName, controller, amount, stashAccount, from }: RequestCheckBond) {
+    const apiProps = this.getSubstrateApiMap[networkName];
+
+    if (!apiProps.api) return { extrinsic: null, fee: '0' };
+
+    const isReady = await apiProps.api?.isReady;
+
+    if (!isReady) return { extrinsic: null, fee: '0' };
+
+    // TODO STAKING: использовать функцию из библиотеки
+    const extrinsic = bond(apiProps.api, { controller, amount, stashAccount });
+
+    const { precision: utilityPrecision } = getUtilityProps(networkName); // стекается всегда утилити токен, ВАЖНО!!! уточнить этот момент
+
+    const paymentInfo = await extrinsic?.paymentInfo(from);
+    const partialFee = paymentInfo ? +paymentInfo.partialFee : '0';
+    const fee = FPNumber.fromCodecValue(partialFee, utilityPrecision).toString();
+
+    return { extrinsic, fee };
+  }
+
+  public async makeRedeem(
+    params: RequestRedeem & { callback: (res: BasicTxResponse) => void }
+  ): Promise<BasicTxResponse> {
+    const { networkName, password, isSavePass, from, callback } = params;
+
+    const isUnlock = keyringService.unlockPair(from, password);
+
+    if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
+
+    const apiProps = this.getSubstrateApiMap[networkName];
+
+    const { extrinsic } = await this.createBondExtrinsic(params);
+
+    await signAndSendExtrinsic({
+      type: SignerType.PASSWORD,
+      apiProps,
+      callback,
+      extrinsic,
+      password,
+      isSavePass,
+      address: from,
+      errorMessage: 'bond error',
+    });
+
+    return { status: true };
   }
 }

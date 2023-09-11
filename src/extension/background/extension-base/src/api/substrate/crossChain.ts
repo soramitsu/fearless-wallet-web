@@ -368,7 +368,6 @@ async function makeCrossChain({
   amount,
   callback,
 }: MakeCrossChainProps): Promise<void> {
-  const txState: BasicTxResponse = {};
   const apiProps = state.getSubstrateApiMap[originNet];
 
   await apiProps.api?.isReady;
@@ -393,7 +392,6 @@ async function makeCrossChain({
     apiProps,
     callback,
     extrinsic,
-    txState,
     password,
     isSavePass,
     address: from,

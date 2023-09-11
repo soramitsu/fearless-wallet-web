@@ -69,8 +69,6 @@ import {
   RequestTransfer,
   RequestCrossChain,
   TokenBalance,
-  RequestStaking,
-  RequestCheckStaking,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
@@ -91,6 +89,7 @@ import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/ext
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { IS_EXTENSION } from '@/consts/global';
+import { RequestStaking } from '@/extension/background/extension-base/src/services/staking-service/types';
 
 @Component({
   components: { SignMobile },
@@ -112,10 +111,18 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) secondIcon!: string;
   @Prop(String) transactionId?: string;
   @Prop(Object) currency?: TokenBalance;
-  @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain | RequestCheckStaking;
+  @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain | RequestStaking;
   @Prop(Object) payload?: SignerPayloadJSON;
   @Prop(Object) swapOptions?: SwapOptions;
-  @Prop(String) extrinsicType!: 'transfer' | 'crossChain' | 'swap' | 'bond' | 'unbond' | 'rebond' | 'redeem';
+  @Prop(String) extrinsicType!:
+    | 'transfer'
+    | 'crossChain'
+    | 'swap'
+    | 'bond'
+    | 'bondExtra'
+    | 'unbond'
+    | 'rebond'
+    | 'redeem';
 
   @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: AsyncFn<ApprovePayload>;
   @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: AsyncFn<string>;
@@ -151,27 +158,9 @@ export default class ConfirmationPasswordPopup extends Vue {
     return this.balances.find(({ assetId }) => assetId === this.secondIcon)?.icon;
   }
 
-  get requestTransfer() {
+  get request() {
     return {
-      ...(this.tx as RequestCheckTransfer),
-      isSavePass: this.isSavePass,
-      isMobile: !!this.isSignMobile,
-      password: this.password,
-    } as RequestTransfer;
-  }
-
-  get requestCrossChain(): RequestCrossChain {
-    return {
-      ...(this.tx as RequestCheckCrossChain),
-      isSavePass: this.isSavePass,
-      isMobile: !!this.isSignMobile,
-      password: this.password,
-    };
-  }
-
-  get requestStaking(): RequestStaking {
-    return {
-      ...(this.tx as RequestCheckStaking),
+      ...this.tx,
       isSavePass: this.isSavePass,
       isMobile: !!this.isSignMobile,
       password: this.password,
@@ -325,31 +314,21 @@ export default class ConfirmationPasswordPopup extends Vue {
 
       await beaconController.subscribeRawRequests(mobileCb, onMobileCancel);
 
-      return await makeTransfer(this.requestTransfer, callback);
+      return await makeTransfer(this.request as RequestTransfer, callback);
     }
 
-    if (this.extrinsicType === 'transfer') return await makeTransfer(this.requestTransfer, callback);
+    if (this.extrinsicType === 'transfer') return await makeTransfer(this.request as RequestTransfer, callback);
 
-    if (this.extrinsicType === 'crossChain') return await makeCrossChain(this.requestCrossChain, callback);
+    if (this.extrinsicType === 'crossChain') return await makeCrossChain(this.request as RequestCrossChain, callback);
 
     if (
       this.extrinsicType === 'bond' ||
+      this.extrinsicType === 'bondExtra' ||
       this.extrinsicType === 'unbond' ||
       this.extrinsicType === 'rebond' ||
       this.extrinsicType === 'redeem'
     )
-      return await makeStaking(
-        this.extrinsicType,
-        {
-          address: '',
-          amount: '',
-          controller: '',
-          networkName: '',
-          password: '',
-          stashAccount: '',
-        },
-        callback
-      );
+      return await makeStaking(this.extrinsicType, this.request as RequestStaking, callback);
   }
 
   async keypress({ key }: KeyboardEvent) {

@@ -121,7 +121,6 @@ export async function makeTransfer({
   callback,
   isMobile,
 }: MakeTransferProps): Promise<void> {
-  const txState: BasicTxResponse = {};
   const apiProps = state.getSubstrateApiMap[networkKey];
 
   await apiProps.api?.isReady;
@@ -141,7 +140,6 @@ export async function makeTransfer({
     apiProps,
     callback,
     extrinsic,
-    txState,
     password,
     isSavePass,
     address: from,

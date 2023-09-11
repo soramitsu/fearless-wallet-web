@@ -10,7 +10,7 @@
           </div>
 
           <div v-else class="icon">
-            <Icon icon="fw-logo" className="logo" />
+            <Icon icon="fw-logo" :hover="false" className="logo" />
           </div>
         </div>
 

@@ -1,18 +1,18 @@
 <template>
-  <AboveForm :fullScreen="true" :header="network" :closeHandler="closeStake" :handlerBack="closeStake">
+  <AboveForm :fullScreen="true" :header="network" @closeHandler="closeStake">
     <div class="my-stake">
       <div class="action-buttons">
         <BorderButton
           class="action-button"
           text="staking.stakeMore"
           iconName="stake"
-          @click="toggleVisible('showStakingForm', true)"
+          @click="toggleVisible('showBondExtraForm', true)"
         />
 
         <BorderButton
           class="action-button"
           text="staking.unstake"
-          iconName="unstake"
+          iconName="unbond"
           @click="toggleVisible('showUnbondForm', true)"
         />
 
@@ -99,8 +99,9 @@ import YourValidatorsManagement from '@/screens/staking/myStake/validators/YourV
 import ControllerAccount from '@/screens/staking/myStake/ControllerAccount.vue';
 import PendingRewardForm from '@/screens/staking/myStake/rewards/PendingRewardForm.vue';
 import { isSora } from '@/helpers';
+import { Components } from '@/router/routes';
 
-type ShowField = 'showStakingForm' | 'showUnbondForm' | 'showRedeemForm' | 'showYourValidatorsForm';
+type ShowField = 'showBondForm' | 'showBondExtraForm' | 'showUnbondForm' | 'showRedeemForm' | 'showYourValidatorsForm';
 
 @Component({
   components: {
@@ -121,8 +122,10 @@ export default class MyStake extends Vue {
     { label: 'staking.controllerAccount', value: 'showControllerAccountForm' },
     { label: 'staking.pendingRewards', value: 'showPendingRewardForm' },
   ];
+
   activeTabName: MyStakingTab = 'about';
-  showStakingForm = false;
+  showBondForm = false; // TODO удалить бонд из моего стейка
+  showBondExtraForm = false;
   showUnbondForm = false;
   showRedeemForm = false;
   showRebondForm = false;
@@ -134,11 +137,15 @@ export default class MyStake extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get showMainStakingForm() {
-    return this.showStakingForm || this.showUnbondForm || this.showRedeemForm || this.showRebondForm;
+    return (
+      this.showBondForm || this.showBondExtraForm || this.showUnbondForm || this.showRedeemForm || this.showRebondForm
+    );
   }
 
   get type() {
-    if (this.showStakingForm) return 'staking';
+    if (this.showBondForm) return 'bond';
+
+    if (this.showBondExtraForm) return 'bondExtra';
 
     if (this.showUnbondForm) return 'unbond';
 
@@ -261,7 +268,8 @@ export default class MyStake extends Vue {
   }
 
   closeStakingManagement() {
-    this.showStakingForm = false;
+    this.showBondForm = false;
+    this.showBondExtraForm = false;
     this.showUnbondForm = false;
     this.showRedeemForm = false;
     this.showRebondForm = false;
@@ -276,7 +284,7 @@ export default class MyStake extends Vue {
   }
 
   closeStake() {
-    return this.$router.back();
+    this.$router.push({ name: Components.Staking });
   }
 }
 </script>

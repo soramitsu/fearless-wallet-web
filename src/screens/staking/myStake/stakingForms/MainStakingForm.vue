@@ -3,8 +3,8 @@
     :fullScreen="true"
     :showBackIcon="showBackIcon"
     :header="header"
-    :closeHandler="closeForm"
-    :handlerBack="handlerBack"
+    @handlerBack="handlerBack"
+    @closeHandler="closeForm"
   >
     <div class="staking-management">
       <Scroll>
@@ -66,6 +66,7 @@
       :value="amountPriceValue"
       :firstIcon="stakingAssetId"
       :extrinsicType="type"
+      :tx="tx"
       @close="confirmationPasswordPopupClose"
     />
   </AboveForm>
@@ -87,6 +88,7 @@ import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { NetworkName } from '@/interfaces';
 import { calcTransferableSendMinusFee, isValidAmountAsset } from '@/helpers/currencies';
 import { checkStaking } from '@/extension/messaging';
+import { RequestCheckStaking } from '@/extension/background/extension-base/src/services/staking-service/types';
 
 @Component({
   components: {
@@ -97,7 +99,7 @@ import { checkStaking } from '@/extension/messaging';
     ConfirmationPasswordPopup,
   },
 })
-export default class StakingManagement extends Vue {
+export default class MainStakingForm extends Vue {
   showConfirmationPasswordPopup = false;
   isSuggested = false;
   amount = '';
@@ -108,7 +110,7 @@ export default class StakingManagement extends Vue {
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
   @Prop({ type: String }) network!: NetworkName;
-  @Prop({ type: String }) type!: 'bond' | 'unbond' | 'rebond' | 'redeem';
+  @Prop({ type: String }) type!: 'bond' | 'bondExtra' | 'unbond' | 'rebond' | 'redeem';
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -158,6 +160,10 @@ export default class StakingManagement extends Vue {
 
   get isBond() {
     return this.type === 'bond';
+  }
+
+  get isBondExtra() {
+    return this.type === 'bondExtra';
   }
 
   get isUnbond() {
@@ -212,22 +218,32 @@ export default class StakingManagement extends Vue {
     return this.selectedWallet.name;
   }
 
+  get tx() {
+    return {
+      amount: this.amount,
+      from: this.selectedWallet.address,
+      networkName: this.network,
+      stashAccount: '',
+      controller: '',
+    } as RequestCheckStaking;
+  }
+
   @Watch('amount')
   async calculateEstimates() {
-    const { estimateFee } = await this.verifyTx();
+    const { fee } = await this.verifyTx();
 
-    this.fee = estimateFee ?? '0';
+    this.fee = fee ?? '0';
   }
 
   async verifyTx(_amount?: string) {
     const amount = _amount ?? (this.amount !== '' && this.amount !== '0') ? this.amount : '1';
 
-    const ex = await checkStaking({
-      network: this.network,
-      from: '',
-      stashAccount: '',
-      assetId: this.stakingAssetId,
+    const ex = await checkStaking(this.type, {
+      networkName: this.network,
+      from: this.selectedWallet.address,
       amount,
+      controller: '',
+      stashAccount: '',
     });
 
     return ex;
@@ -239,6 +255,19 @@ export default class StakingManagement extends Vue {
 
   mounted() {
     if (this.isRebond) this.amount = this.lastUnstake;
+  }
+
+  async getSoraFees() {
+    // const { StakingBond, StakingBondExtra, StakingRebond, StakingUnbond } = await getSoraFees();
+    // if (this.isBond) {
+    //   this.fee = StakingBond;
+    // } else if (this.isBondExtra) {
+    //   this.fee = StakingBondExtra;
+    // } else if (this.isRebond) {
+    //   this.fee = StakingRebond;
+    // } else if (this.isUnbond) {
+    //   this.fee = StakingUnbond;
+    // }
   }
 
   closeForm() {
@@ -279,9 +308,9 @@ export default class StakingManagement extends Vue {
   async setMax() {
     if (!this.stakingCurrency) return;
 
-    const { estimateFee } = await this.verifyTx(this.transferableAmount.toString());
+    const { fee } = await this.verifyTx(this.transferableAmount.toString());
 
-    this.amount = this.calcTransferableSendMinusFee(estimateFee ?? '0');
+    this.amount = this.calcTransferableSendMinusFee(fee ?? '0');
   }
 
   handlerBack() {

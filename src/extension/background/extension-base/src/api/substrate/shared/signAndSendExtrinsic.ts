@@ -16,7 +16,7 @@ import type {
 interface AbstractSignAndSendExtrinsicProps extends Partial<PrepareExternalRequest> {
   extrinsic: Nullable<SubmittableExtrinsic<'promise'>>;
   callback: HandleBasicTx;
-  txState: BasicTxResponse;
+  txState?: BasicTxResponse;
   address: string;
   type: SignerType;
   errorMessage: string;
@@ -43,7 +43,7 @@ export const signAndSendExtrinsic = async ({
   errorMessage,
   extrinsic,
   password,
-  txState,
+  txState = {},
   type,
 }: SignAndSendExtrinsicProps) => {
   if (!extrinsic) {

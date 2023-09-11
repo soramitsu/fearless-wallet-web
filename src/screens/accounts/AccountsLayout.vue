@@ -78,7 +78,7 @@
 
     <AddEthereumAccountPopup v-if="showAddEthereumAccountPopup" :handlerClose="closeAddEthereumAccountPopup" />
 
-    <ExportForm v-if="showExportForm" :password="password" :closeHandler="setPassword" />
+    <ExportForm v-if="showExportForm" :password="password" @closeHandler="setPassword" />
   </div>
 </template>
 

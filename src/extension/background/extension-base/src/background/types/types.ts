@@ -279,14 +279,6 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
   amount?: string;
 }
 
-export interface RequestCheckStaking extends BaseRequestSign {
-  network: NetworkName;
-  from: string;
-  stashAccount: string;
-  assetId: string;
-  amount?: string;
-}
-
 export interface ResponseCheckTransfer {
   errors?: Array<BasicTxError>;
   estimateFee?: string;
@@ -297,11 +289,6 @@ export interface ResponseCheckCrossChain {
   errors?: Array<BasicTxError>;
   estimateFee?: string;
   destEstimateFee?: string;
-}
-
-export interface ResponseCheckStaking {
-  errors?: Array<BasicTxError>;
-  estimateFee?: string;
 }
 
 export interface RequestCheckSwap extends BaseRequestSign {
@@ -350,8 +337,6 @@ export interface RequestSwap extends PasswordRequestSign<RequestCheckSwap> {
 export type RequestTransfer = PasswordRequestSign<RequestCheckTransfer>;
 
 export type RequestCrossChain = PasswordRequestSign<RequestCheckCrossChain>;
-
-export type RequestStaking = PasswordRequestSign<RequestCheckStaking>;
 
 export interface RequestAccountExportPrivateKey {
   address: string;

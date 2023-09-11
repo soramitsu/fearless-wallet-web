@@ -1,7 +1,7 @@
-import { BasicTxResponse } from '../../background/types/types';
+import { PasswordRequestSign } from '../../background/types/types';
 import { NetworkName } from '@/interfaces';
 
-export interface BondParams {
+export interface DefaultBondParams {
   controller: string;
   stashAccount: string;
   amount: string;
@@ -11,29 +11,62 @@ export interface ValidatorsRequest {
   networkName: NetworkName;
 }
 
-export interface BondRequest extends BondParams {
+export interface ResponseCheckStaking {
+  fee: string;
+}
+
+///////////////////////////////////////////////////////
+
+export interface RequestCheckBond extends DefaultBondParams {
   networkName: NetworkName;
-  address: string;
-  password: string;
   from: string;
-  callback: (data: BasicTxResponse) => void;
-  isSavePass?: boolean;
+  amount: string;
 }
 
-export interface UnbondRequest extends BondParams {
+export type RequestBond = PasswordRequestSign<RequestCheckBond>;
+
+///////////////////////////////////////////////////////
+
+export interface RequestCheckBondExtra extends DefaultBondParams {
   networkName: NetworkName;
-  address: string;
-  password: string;
+  from: string;
+  amount: string;
 }
 
-export interface RebondRequest extends BondParams {
+export type RequestBondExtra = PasswordRequestSign<RequestCheckBond>;
+
+///////////////////////////////////////////////////////
+
+export interface RequestCheckUnbond extends DefaultBondParams {
   networkName: NetworkName;
-  address: string;
-  password: string;
+  from: string;
+  amount: string;
 }
 
-export interface RedeemRequest extends BondParams {
+export type RequestUnbond = PasswordRequestSign<RequestCheckBond>;
+
+///////////////////////////////////////////////////////
+
+export interface RequestCheckRebond extends DefaultBondParams {
   networkName: NetworkName;
-  address: string;
-  password: string;
+  from: string;
+  amount: string;
 }
+
+export type RequestRebond = PasswordRequestSign<RequestCheckBond>;
+
+///////////////////////////////////////////////////////
+
+export interface RequestCheckRedeem extends DefaultBondParams {
+  networkName: NetworkName;
+  from: string;
+  amount: string;
+}
+
+export type RequestRedeem = PasswordRequestSign<RequestCheckBond>;
+
+//////////////////////////////////////////////////////////
+
+export type RequestCheckStaking = RequestCheckBond | RequestCheckUnbond | RequestCheckRebond | RequestCheckRedeem;
+
+export type RequestStaking = RequestBond | RequestUnbond | RequestRebond | RequestRedeem;

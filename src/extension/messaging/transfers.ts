@@ -36,14 +36,14 @@ export function makeCrossChain(
   return sendMessage('pri(accounts.crossChain)', request, callback);
 }
 
-export function getSoraFees(): Promise<SoraFees> {
-  return sendMessage('pri(accounts.soraFees)');
-}
-
 export function makeSwap(request: RequestSwap): Promise<ResponseMakeSwap> {
   return sendMessage('pri(accounts.swap)', request);
 }
 
 export function checkSwap(request: RequestCheckSwap): Promise<ResponseCheckSwap> {
   return sendMessage('pri(accounts.checkSwap)', request);
+}
+
+export function getSoraFees(): Promise<SoraFees> {
+  return sendMessage('pri(accounts.soraFees)');
 }

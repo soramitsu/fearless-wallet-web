@@ -3,8 +3,8 @@
     :fullScreen="true"
     :showBackIcon="showBackIcon"
     :header="header"
-    :closeHandler="closeForm"
-    :handlerBack="handlerBack"
+    @handlerBack="handlerBack"
+    @closeHandler="closeForm"
   >
     <div class="your-validators">
       <ValidatorInfo

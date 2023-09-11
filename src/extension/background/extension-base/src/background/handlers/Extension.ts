@@ -34,11 +34,14 @@ import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { keyringService } from '@extension-base/services';
 import {
-  BondRequest,
-  RebondRequest,
-  RedeemRequest,
-  UnbondRequest,
+  RequestCheckBond,
+  ResponseCheckStaking,
   ValidatorsRequest,
+  RequestBond,
+  RequestUnbond,
+  RequestRebond,
+  RequestRedeem,
+  RequestCheckBondExtra,
 } from '../../services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type {
@@ -87,11 +90,7 @@ import type {
   ResponseAuthorizeList,
   ResponseType,
   SigningRequest,
-  RequestStaking,
-  RequestCheckStaking,
-  ResponseCheckStaking,
 } from '@extension-base/background/types/types';
-
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type { NetworkJson } from '@extension-base/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
@@ -347,6 +346,7 @@ export default class Extension extends FWExtensionBase {
 
     return true;
   }
+
   metadataReject({ id }: RequestMetadataReject): boolean {
     const queued = this.state.getMetaRequest(id);
 
@@ -739,7 +739,10 @@ export default class Extension extends FWExtensionBase {
 
   public async getSoraFees() {
     this.state.soraFees = Object.fromEntries(
-      Object.entries(apiSora.NetworkFee).map(([nameFee, value]) => [nameFee, FPNumber.fromCodecValue(value).toString()])
+      Object.entries(apiSora.NetworkFee).map(([operation, value]) => [
+        operation,
+        FPNumber.fromCodecValue(value).toString(),
+      ])
     ) as SoraFees;
 
     return this.state.soraFees;
@@ -877,7 +880,7 @@ export default class Extension extends FWExtensionBase {
 
     return {
       destEstimateFee: '0',
-      estimateFee: fee.toString(),
+      estimateFee: fee,
     } as unknown as ResponseCheckTransfer;
   }
 
@@ -901,12 +904,12 @@ export default class Extension extends FWExtensionBase {
 
     const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
 
-    const ethereumAddress = pair ? (pair.meta.ethereumAddress as string | undefined) : '';
-    const isEthereum = isEthereumAddress(from);
     const address = getSubstrateAddress(from);
+    const substratePair = keyringService.getPair(address)!;
+    const ethereumAddress = substratePair.meta.ethereumAddress as string;
 
     const savePass = () => {
-      this.savePass(address, isEthereum ? from : ethereumAddress, !!isSavePass, !!isMobile);
+      this.savePass(address, ethereumAddress, !!isSavePass, !!isMobile);
     };
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
@@ -1081,22 +1084,6 @@ export default class Extension extends FWExtensionBase {
     return { status: true };
   }
 
-  private async checkStaking({
-    network,
-    stashAccount,
-    amount,
-    assetId,
-    from,
-  }: RequestCheckStaking): Promise<ResponseCheckStaking> {
-    network;
-    stashAccount;
-    amount;
-    assetId;
-    from;
-
-    return { estimateFee: '0.1' };
-  }
-
   private getNetworkMap(): Record<string, NetworkJson> {
     return this.state.networkMap;
   }
@@ -1148,20 +1135,186 @@ export default class Extension extends FWExtensionBase {
     return state.stakingService.getValidators(request);
   }
 
-  bond(request: BondRequest): Promise<boolean> {
-    return state.stakingService.bond(request);
+  async checkBond(request: RequestCheckBond): Promise<ResponseCheckStaking> {
+    const { fee } = await state.stakingService.createBondExtrinsic({ ...request })!;
+
+    return { fee };
   }
 
-  unbond(request: UnbondRequest): Promise<boolean> {
-    return state.stakingService.unbond(request);
+  async makeBond(id: string, port: Port, request: RequestBond): Promise<BasicTxResponse> {
+    const { from, isSavePass, isMobile, password } = request;
+
+    const pair = keyringService.getPair(from);
+
+    if (pair?.isLocked) {
+      const isUnlock = keyringService.unlockPair(pair, password);
+
+      if (!isUnlock) {
+        setTimeout(() => this.cancelSubscription(id), 500);
+
+        return { status: false, errors: [{ message: 'Invalid password' }] };
+      }
+    }
+
+    const cb = createSubscription<'pri(staking.makeBond)'>(id, port);
+
+    const address = getSubstrateAddress(from);
+    const substratePair = keyringService.getPair(address)!;
+    const ethereumAddress = substratePair.meta.ethereumAddress as string;
+
+    const savePass = () => {
+      this.savePass(address, ethereumAddress, !!isSavePass, !!isMobile);
+    };
+
+    const callback = this.makeExtrinsicCallback(cb, savePass);
+
+    return state.stakingService.makeBond({ ...request, callback });
   }
 
-  rebond(request: RebondRequest): Promise<boolean> {
-    return state.stakingService.rebond(request);
+  async checkBondExtra(request: RequestCheckBondExtra): Promise<ResponseCheckStaking> {
+    const { fee } = await state.stakingService.createBondExtrinsic({ ...request })!;
+
+    return { fee };
   }
 
-  redeem(request: RedeemRequest): Promise<boolean> {
-    return state.stakingService.redeem(request);
+  async makeBondExtra(id: string, port: Port, request: RequestBond): Promise<BasicTxResponse> {
+    const { from, isSavePass, isMobile, password } = request;
+
+    const pair = keyringService.getPair(from);
+
+    if (pair?.isLocked) {
+      const isUnlock = keyringService.unlockPair(pair, password);
+
+      if (!isUnlock) {
+        setTimeout(() => this.cancelSubscription(id), 500);
+
+        return { status: false, errors: [{ message: 'Invalid password' }] };
+      }
+    }
+
+    const cb = createSubscription<'pri(staking.makeBond)'>(id, port);
+
+    const address = getSubstrateAddress(from);
+    const substratePair = keyringService.getPair(address)!;
+    const ethereumAddress = substratePair.meta.ethereumAddress as string;
+
+    const savePass = () => {
+      this.savePass(address, ethereumAddress, !!isSavePass, !!isMobile);
+    };
+
+    const callback = this.makeExtrinsicCallback(cb, savePass);
+
+    return state.stakingService.makeBond({ ...request, callback });
+  }
+
+  async checkUnbond(request: RequestCheckBond): Promise<ResponseCheckStaking> {
+    const { fee } = await state.stakingService.createUnbondExtrinsic({ ...request })!;
+
+    return { fee };
+  }
+
+  async makeUnbond(id: string, port: Port, request: RequestUnbond): Promise<BasicTxResponse> {
+    const { from, isSavePass, isMobile, password } = request;
+
+    const pair = keyringService.getPair(from);
+
+    if (pair?.isLocked) {
+      const isUnlock = keyringService.unlockPair(pair, password);
+
+      if (!isUnlock) {
+        setTimeout(() => this.cancelSubscription(id), 500);
+
+        return { status: false, errors: [{ message: 'Invalid password' }] };
+      }
+    }
+
+    const cb = createSubscription<'pri(staking.makeUnbond)'>(id, port);
+
+    const address = getSubstrateAddress(from);
+    const substratePair = keyringService.getPair(address)!;
+    const ethereumAddress = substratePair.meta.ethereumAddress as string;
+
+    const savePass = () => {
+      this.savePass(address, ethereumAddress, !!isSavePass, !!isMobile);
+    };
+
+    const callback = this.makeExtrinsicCallback(cb, savePass);
+
+    return state.stakingService.makeUnbond({ ...request, callback });
+  }
+
+  async checkRebond(request: RequestCheckBond): Promise<ResponseCheckStaking> {
+    const { fee } = await state.stakingService.createRebondExtrinsic({ ...request })!;
+
+    return { fee };
+  }
+
+  async makeRebond(id: string, port: Port, request: RequestRebond): Promise<BasicTxResponse> {
+    const { from, isSavePass, isMobile, password } = request;
+
+    const pair = keyringService.getPair(from);
+
+    if (pair?.isLocked) {
+      const isUnlock = keyringService.unlockPair(pair, password);
+
+      if (!isUnlock) {
+        setTimeout(() => this.cancelSubscription(id), 500);
+
+        return { status: false, errors: [{ message: 'Invalid password' }] };
+      }
+    }
+
+    const cb = createSubscription<'pri(staking.makeRebond)'>(id, port);
+
+    const address = getSubstrateAddress(from);
+    const substratePair = keyringService.getPair(address)!;
+    const ethereumAddress = substratePair.meta.ethereumAddress as string;
+
+    const savePass = () => {
+      this.savePass(address, ethereumAddress, !!isSavePass, !!isMobile);
+    };
+
+    const callback = this.makeExtrinsicCallback(cb, savePass);
+
+    return state.stakingService.makeRebond({ ...request, callback });
+  }
+
+  async checkRedeem(request: RequestCheckBond): Promise<ResponseCheckStaking> {
+    const { fee } = await state.stakingService.createRedeemExtrinsic({ ...request })!;
+
+    return {
+      fee,
+    };
+  }
+
+  async makeRedeem(id: string, port: Port, request: RequestRebond): Promise<BasicTxResponse> {
+    const { from, isSavePass, isMobile, password } = request;
+
+    const pair = keyringService.getPair(from);
+
+    if (pair?.isLocked) {
+      const isUnlock = keyringService.unlockPair(pair, password);
+
+      if (!isUnlock) {
+        setTimeout(() => this.cancelSubscription(id), 500);
+
+        return { status: false, errors: [{ message: 'Invalid password' }] };
+      }
+    }
+
+    const cb = createSubscription<'pri(staking.makeRedeem)'>(id, port);
+
+    const address = getSubstrateAddress(from);
+    const substratePair = keyringService.getPair(address)!;
+    const ethereumAddress = substratePair.meta.ethereumAddress as string;
+
+    const savePass = () => {
+      this.savePass(address, ethereumAddress, !!isSavePass, !!isMobile);
+    };
+
+    const callback = this.makeExtrinsicCallback(cb, savePass);
+
+    return state.stakingService.makeRedeem({ ...request, callback });
   }
 
   async handle<TMessageType extends MessageTypes>(
@@ -1288,20 +1441,35 @@ export default class Extension extends FWExtensionBase {
       case 'pri(staking.validators)':
         return this.getValidators(request as ValidatorsRequest);
 
-      case 'pri(staking.bond)':
-        return this.bond(request as BondRequest);
+      case 'pri(staking.checkBond)':
+        return this.checkBond(request as RequestCheckBond);
 
-      case 'pri(staking.unbond)':
-        return this.unbond(request as UnbondRequest);
+      case 'pri(staking.makeBond)':
+        return this.makeBond(id, port, request as RequestBond);
 
-      case 'pri(staking.rebond)':
-        return this.rebond(request as RebondRequest);
+      case 'pri(staking.checkBondExtra)':
+        return this.checkBondExtra(request as RequestCheckBond);
 
-      case 'pri(staking.redeem)':
-        return this.redeem(request as RedeemRequest);
+      case 'pri(staking.makeBondExtra)':
+        return this.makeBondExtra(id, port, request as RequestBond);
 
-      case 'pri(staking.checkStaking)':
-        return this.checkStaking(request as RequestStaking);
+      case 'pri(staking.checkUnbond)':
+        return this.checkUnbond(request as RequestUnbond);
+
+      case 'pri(staking.makeUnbond)':
+        return this.makeUnbond(id, port, request as RequestUnbond);
+
+      case 'pri(staking.checkRebond)':
+        return this.checkRebond(request as RequestRebond);
+
+      case 'pri(staking.makeRebond)':
+        return this.makeRebond(id, port, request as RequestRebond);
+
+      case 'pri(staking.checkRedeem)':
+        return this.checkRedeem(request as RequestRedeem);
+
+      case 'pri(staking.makeRedeem)':
+        return this.makeRedeem(id, port, request as RequestRedeem);
 
       // price
       case 'pri(price.update.currency)':

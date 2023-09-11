@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :fullScreen="true" header="staking.controllerAccount" :closeHandler="closeForm">
+  <AboveForm :fullScreen="true" header="staking.controllerAccount" @closeHandler="closeForm">
     <div class="controller-account">
       <div>
         <div class="controller-description row">{{ $t('staking.separateAccountController') }}</div>

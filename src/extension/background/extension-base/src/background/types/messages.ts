@@ -1,4 +1,15 @@
-import { ValidatorsRequest } from '../../services/staking-service/types';
+import {
+  RequestCheckBond,
+  RequestCheckRebond,
+  RequestCheckRedeem,
+  ResponseCheckStaking,
+  RequestCheckUnbond,
+  ValidatorsRequest,
+  RequestCheckBondExtra,
+  RequestBond,
+  RequestBondExtra,
+} from '../../services/staking-service/types';
+import { RequestRebond, RequestRedeem, RequestUnbond } from './../../services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -62,9 +73,6 @@ import type {
   RequestUpdateMeta,
   ResponseTotalBalances,
   MobileSigningRequest,
-  RequestStaking,
-  RequestCheckStaking,
-  ResponseCheckStaking,
 } from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
@@ -144,21 +152,32 @@ export interface RequestSignatures {
   //Transfer, CrossChain, Sora Swap
   'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
   'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
+
   'pri(accounts.checkCrossChain)': [RequestCheckCrossChain, ResponseCheckCrossChain];
   'pri(accounts.crossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse];
+
   'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
   'pri(accounts.swap)': [RequestSwap, ResponseMakeSwap];
+
   'pri(accounts.soraFees)': [null, SoraFees];
 
   // staking
   'pri(staking.validators)': [ValidatorsRequest, FWValidatorInfoFull[]];
-  'pri(staking.bond)': [null, BasicTxResponse, BasicTxResponse];
-  'pri(staking.unbond)': [null, BasicTxResponse, BasicTxResponse];
-  'pri(staking.rebond)': [null, BasicTxResponse, BasicTxResponse];
-  'pri(staking.redeem)': [null, BasicTxResponse, BasicTxResponse];
 
-  'pri(staking.checkStaking)': [RequestCheckStaking, ResponseCheckStaking];
-  'pri(staking.stake)': [RequestStaking, BasicTxResponse, BasicTxResponse];
+  'pri(staking.checkBond)': [RequestCheckBond, ResponseCheckStaking];
+  'pri(staking.makeBond)': [RequestBond, BasicTxResponse, BasicTxResponse];
+
+  'pri(staking.checkBondExtra)': [RequestCheckBondExtra, ResponseCheckStaking];
+  'pri(staking.makeBondExtra)': [RequestBondExtra, BasicTxResponse, BasicTxResponse];
+
+  'pri(staking.checkUnbond)': [RequestCheckUnbond, ResponseCheckStaking];
+  'pri(staking.makeUnbond)': [RequestUnbond, BasicTxResponse, BasicTxResponse];
+
+  'pri(staking.checkRebond)': [RequestCheckRebond, ResponseCheckStaking];
+  'pri(staking.makeRebond)': [RequestRebond, BasicTxResponse, BasicTxResponse];
+
+  'pri(staking.checkRedeem)': [RequestCheckRedeem, ResponseCheckStaking];
+  'pri(staking.makeRedeem)': [RequestRedeem, BasicTxResponse, BasicTxResponse];
 
   //ether
   'pri(balance)': [null, BalanceJson];

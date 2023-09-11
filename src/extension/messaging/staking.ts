@@ -1,52 +1,94 @@
 import {
-  BondRequest,
-  RebondRequest,
-  RedeemRequest,
-  UnbondRequest,
+  RequestCheckBond,
+  RequestCheckRedeem,
+  ResponseCheckStaking,
+  RequestCheckUnbond,
   ValidatorsRequest,
+  RequestCheckRebond,
+  RequestStaking,
+  RequestCheckStaking,
+  RequestCheckBondExtra,
+  RequestRedeem,
+  RequestRebond,
+  RequestUnbond,
+  RequestBond,
+  RequestBondExtra,
 } from '../background/extension-base/src/services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
-import type {
-  BasicTxResponse,
-  RequestCheckStaking,
-  ResponseCheckStaking,
-} from '@extension-base/background/types/types';
+import type { BasicTxResponse } from '@extension-base/background/types/types';
 import { sendMessage } from '@/extension/messaging/index';
 
 export function getValidators(request: ValidatorsRequest): Promise<FWValidatorInfoFull[]> {
   return sendMessage('pri(staking.validators)', request);
 }
 
-export function bond(request: BondRequest, callback: (data: BasicTxResponse) => void): Promise<BasicTxResponse> {
-  return sendMessage('pri(staking.bond)', null, callback);
+export function checkBond(request: RequestCheckBond): Promise<ResponseCheckStaking> {
+  return sendMessage('pri(staking.checkBond)', request);
 }
 
-export function unbond(request: UnbondRequest, callback: (data: BasicTxResponse) => void): Promise<BasicTxResponse> {
-  return sendMessage('pri(staking.unbond)', null, callback);
+export function checkBondExtra(request: RequestCheckBondExtra): Promise<ResponseCheckStaking> {
+  return sendMessage('pri(staking.checkBondExtra)', request);
 }
 
-export function rebond(request: RebondRequest, callback: (data: BasicTxResponse) => void): Promise<BasicTxResponse> {
-  return sendMessage('pri(staking.rebond)', null, callback);
+function checkUnbond(request: RequestCheckUnbond): Promise<ResponseCheckStaking> {
+  return sendMessage('pri(staking.checkUnbond)', request);
 }
 
-export function redeem(request: RedeemRequest, callback: (data: BasicTxResponse) => void): Promise<BasicTxResponse> {
-  return sendMessage('pri(staking.redeem)', null, callback);
+function checkRebond(request: RequestCheckRebond): Promise<ResponseCheckStaking> {
+  return sendMessage('pri(staking.checkRebond)', request);
+}
+
+function checkRedeem(request: RequestCheckRedeem): Promise<ResponseCheckStaking> {
+  return sendMessage('pri(staking.checkRedeem)', request);
+}
+
+function makeBond(request: RequestBond, callback: (data: BasicTxResponse) => void): Promise<BasicTxResponse> {
+  return sendMessage('pri(staking.makeBond)', request, callback);
+}
+
+function makeBondExtra(request: RequestBondExtra, callback: (data: BasicTxResponse) => void): Promise<BasicTxResponse> {
+  return sendMessage('pri(staking.makeBondExtra)', request, callback);
+}
+
+function makeUnbond(request: RequestUnbond, callback: (data: BasicTxResponse) => void): Promise<BasicTxResponse> {
+  return sendMessage('pri(staking.makeUnbond)', request, callback);
+}
+
+function makeRebond(request: RequestRebond, callback: (data: BasicTxResponse) => void): Promise<BasicTxResponse> {
+  return sendMessage('pri(staking.makeRebond)', request, callback);
+}
+
+function makeRedeem(request: RequestRedeem, callback: (data: BasicTxResponse) => void): Promise<BasicTxResponse> {
+  return sendMessage('pri(staking.makeRedeem)', request, callback);
 }
 
 export function makeStaking(
-  type: 'bond' | 'unbond' | 'rebond' | 'redeem',
-  request: BondRequest | UnbondRequest | RebondRequest | RedeemRequest,
+  type: 'bond' | 'bondExtra' | 'unbond' | 'rebond' | 'redeem',
+  request: RequestStaking,
   callback: (data: BasicTxResponse) => void
 ): Promise<BasicTxResponse> {
-  if (type === 'bond') return bond(request as BondRequest, callback);
+  if (type === 'bond') return makeBond(request as RequestBond, callback);
 
-  if (type === 'unbond') return unbond(request as UnbondRequest, callback);
+  if (type === 'bondExtra') return makeBondExtra(request as RequestBond, callback);
 
-  if (type === 'rebond') return rebond(request as RebondRequest, callback);
+  if (type === 'unbond') return makeUnbond(request as RequestUnbond, callback);
 
-  return redeem(request as RedeemRequest, callback);
+  if (type === 'rebond') return makeRebond(request as RequestRebond, callback);
+
+  return makeRedeem(request as RequestRedeem, callback);
 }
 
-export function checkStaking(request: RequestCheckStaking): Promise<ResponseCheckStaking> {
-  return sendMessage('pri(staking.checkStaking)', request);
+export function checkStaking(
+  type: 'bond' | 'bondExtra' | 'unbond' | 'rebond' | 'redeem',
+  request: RequestCheckStaking
+): Promise<ResponseCheckStaking> {
+  if (type === 'bond') return checkBond(request as RequestCheckBond);
+
+  if (type === 'bondExtra') return checkBondExtra(request as RequestCheckBond);
+
+  if (type === 'unbond') return checkUnbond(request as RequestCheckUnbond);
+
+  if (type === 'rebond') return checkRebond(request as RequestCheckRebond);
+
+  return checkRedeem(request as RequestCheckRedeem);
 }

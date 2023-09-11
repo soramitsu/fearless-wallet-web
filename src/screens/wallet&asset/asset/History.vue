@@ -39,6 +39,7 @@ import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { NetworksController } from '@/controllers';
+import { EVM_NETWORKS } from '@/consts/networks';
 
 @Component({
   components: { HistoryItem },
@@ -110,8 +111,12 @@ export default class History extends Vue {
     setTimeout(() => this.fetchHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
   }
 
+  get isEvmNetworks() {
+    return EVM_NETWORKS.includes(this.selectedNetwork.toLowerCase());
+  }
+
   async fetchHistory() {
-    if (this.history.length !== 0 || !this.isMainNetwork) return;
+    if ((this.history.length !== 0 || !this.isMainNetwork) && !this.isEvmNetworks) return;
 
     this.showLoader = true;
 

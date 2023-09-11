@@ -46,8 +46,6 @@ const actions: ActionTree<State, State> & Actions = {
     // сейчас эндпоинт истории парсит только историю утилити токена
     // TODO: когда появится история других токенов отрефаткорить данную логику
 
-    if (utilityAssetId !== assetId) return;
-
     const history = await fetchHistory(url, formattedAddress, type, networkName, assetId, isUtility);
 
     if (history)

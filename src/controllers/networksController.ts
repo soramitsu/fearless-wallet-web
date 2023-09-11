@@ -64,10 +64,6 @@ export class NetworksController {
     return store.getters[NetworksGettersTypes.getAssetPrice](assetId);
   }
 
-  public static async connectToNodes(): Promise<void> {
-    // await store.dispatch(NetworksActionTypes.CONNECT_TO_NODES);
-  }
-
   public static async fetchHistory(
     networkName: string,
     wallet: Wallet,

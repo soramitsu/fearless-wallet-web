@@ -111,11 +111,7 @@ export default class History extends Vue {
   }
 
   async fetchHistory() {
-    if (
-      this.history.length !== 0 ||
-      (!this.isMainNetwork && this.selectedNetwork !== 'Ethereum' && this.selectedNetwork !== 'Ethereum Goerli')
-    )
-      return;
+    if (this.history.length !== 0 || !this.isMainNetwork) return;
 
     this.showLoader = true;
 

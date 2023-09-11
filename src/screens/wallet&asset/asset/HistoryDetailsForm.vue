@@ -247,9 +247,9 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get value() {
-    const { signTransfer, value } = getHistoryValue(this.historyElement, this.assetId, this.selectedNetwork);
+    const { value } = getHistoryValue(this.historyElement, this.assetId, this.selectedNetwork);
 
-    return `${signTransfer}${this.$n(value, 'decimalPrecise')}`;
+    return this.$n(value, 'decimalPrecise');
   }
 
   get type() {

@@ -75,6 +75,7 @@ import { URLS } from '@/consts/urls';
 import {
   ALL_NETWORKS,
   FAVORITE_NETWORKS,
+  NETWORK_GROUP,
   POPULAR_NETWORKS,
   SORA_NETWORK_NAME,
   SORA_XOR_ASSET_ID,
@@ -572,6 +573,7 @@ export default class State {
 
     if (currentAccount) {
       this.selectedNetwork[currentAccount.address] = type;
+
       storage.set({ selectedNetwork: this.selectedNetwork });
     }
 
@@ -642,20 +644,21 @@ export default class State {
     return network.rank !== undefined && networks.some((el) => el === POPULAR_NETWORKS);
   }
 
-  public isNetworkSelectedInAnotherWallet(network: NetworkJson, selectedType: string, address: string) {
+  public isNetworkSelectedInAnotherWallet(network: NetworkJson, address: string) {
     if (Object.values(this.selectedNetwork).some((el) => el === ALL_NETWORKS)) return true;
-    if (this.isPopularNetworksSelected(network, address)) return true;
-    if (this.isFavoriteNetworkSelected(network, address)) return true;
-    if (this.isSingleNetworkSelected(selectedType, address)) return true;
 
-    return false;
+    const isSelected =
+      this.isPopularNetworksSelected(network, address) ||
+      this.isFavoriteNetworkSelected(network, address) ||
+      this.isSingleNetworkSelected(network.name, address);
+
+    return isSelected;
   }
 
   public isSingleNetworkSelected(selectedType: string, address: string) {
     const networks = this.selectedNetworksExceptAddress(address);
-    const isTypeAlreadySelected = networks.some((network) => network === selectedType);
-    const isNotGroup =
-      selectedType !== ALL_NETWORKS && selectedType !== POPULAR_NETWORKS && selectedType !== FAVORITE_NETWORKS;
+    const isTypeAlreadySelected = networks.some((network) => network.toLowerCase() === selectedType.toLowerCase());
+    const isNotGroup = NETWORK_GROUP.every((el) => el.toLowerCase() !== selectedType.toLowerCase());
 
     return isNotGroup && isTypeAlreadySelected;
   }
@@ -676,9 +679,10 @@ export default class State {
 
     Object.keys(this.networkMap).forEach((key) => {
       const network = this.networkMap[key];
+
       const { name } = network;
       const isFavorite = network.favorite.some((address) => address === currentAccount.address);
-      const isAlreadySelectedType = this.isNetworkSelectedInAnotherWallet(network, type, currentAccount.address);
+      const isAlreadySelectedType = this.isNetworkSelectedInAnotherWallet(network, currentAccount.address);
 
       switch (type) {
         case ALL_NETWORKS:
@@ -716,7 +720,11 @@ export default class State {
         if (this.apis.substrate[name]) {
           this.apis.substrate[name].provider?.disconnect();
           delete this.apis.substrate[name];
-        } else if (this.apis.evm[name]) {
+
+          return;
+        }
+
+        if (this.apis.evm[name]) {
           this.apis.evm[name].provider.destroy();
           delete this.apis.evm[name];
         }

@@ -32,7 +32,6 @@ import {
 } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
-import { keyringService } from '@extension-base/services';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -146,7 +145,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   accountsCreate({ password, suri, type, meta }: RequestAccountCreateSuri): string {
-    const address = keyringService.addAccount(suri, password, { ...meta, isMobile: false }, type);
+    const address = this.state.keyringService.addAccount(suri, password, { ...meta, isMobile: false }, type);
 
     if (!isEthereumAddress(address)) {
       this.updateNetworkForNewWallet(address);
@@ -183,16 +182,16 @@ export default class Extension extends FWExtensionBase {
     }
 
     if (type === 'native') {
-      const pair = keyringService.getAccount(address);
+      const pair = this.state.keyringService.getAccount(address);
       const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
 
-      if (ethereumAddress) keyringService.forgetAccount(ethereumAddress);
+      if (ethereumAddress) this.state.keyringService.forgetAccount(ethereumAddress);
 
-      keyringService.forgetAccount(address);
-    } else keyringService.forgetAddress(address);
+      this.state.keyringService.forgetAccount(address);
+    } else this.state.keyringService.forgetAddress(address);
 
-    const accounts = keyringService.getAccounts();
-    const addresses = keyringService.getAddresses();
+    const accounts = this.state.keyringService.getAccounts();
+    const addresses = this.state.keyringService.getAddresses();
 
     const currentAcc = await this.state.currentAccount;
 
@@ -218,7 +217,7 @@ export default class Extension extends FWExtensionBase {
 
   accountsValidatePassword({ address, password }: RequestAccountValidate): boolean {
     try {
-      keyringService.backupAccount(address, password);
+      this.state.keyringService.backupAccount(address, password);
 
       return true;
     } catch (e) {
@@ -395,7 +394,7 @@ export default class Extension extends FWExtensionBase {
     if (isPasswordValidated) {
       return new Promise((resolve, reject) => {
         try {
-          const { address } = keyringService.restoreAccount(file, password);
+          const { address } = this.state.keyringService.restoreAccount(file, password);
 
           if (!isEthereumAddress(address)) this.updateNetworkForNewWallet(address);
 
@@ -438,7 +437,7 @@ export default class Extension extends FWExtensionBase {
 
     const {
       meta: { isMobile, name, ethereumAddress },
-    } = keyringService.getAccount(address) ?? keyringService.getAddress(address)!;
+    } = this.state.keyringService.getAccount(address) ?? this.state.keyringService.getAddress(address)!;
 
     const accountInfo: CurrentAccountInfo = {
       address,
@@ -480,7 +479,7 @@ export default class Extension extends FWExtensionBase {
     assert(queued, 'Unable to find request');
 
     const { reject, request, resolve } = queued;
-    const pair = keyringService.getPair(queued.account.address);
+    const pair = this.state.keyringService.getPair(queued.account.address);
 
     if (!pair) {
       reject(new Error('Unable to find pair'));
@@ -622,7 +621,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   createAddress({ address, meta }: RequestAddressCreate) {
-    keyringService.saveAddress(address, meta, 'address');
+    this.state.keyringService.saveAddress(address, meta, 'address');
   }
 
   initAuth({ type, wallet }: GoogleAuthTypes): void {
@@ -776,11 +775,11 @@ export default class Extension extends FWExtensionBase {
       };
     }
 
-    const pair = keyringService.getPair(address)!;
+    const pair = this.state.keyringService.getPair(address)!;
     const remainTime = this.refreshAccountPasswordCache(pair);
 
     if (pair?.isLocked) {
-      const isUnlock = keyringService.unlockPair(pair, password);
+      const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
     }
@@ -798,7 +797,7 @@ export default class Extension extends FWExtensionBase {
       console.info(`Swap transaction failed ${ex}`);
     }
 
-    const ethereumAddress = keyringService.getAccount(address)?.meta.ethereumAddress as string | undefined;
+    const ethereumAddress = this.state.keyringService.getAccount(address)?.meta.ethereumAddress as string | undefined;
 
     if (isSavePass) {
       this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
@@ -807,12 +806,12 @@ export default class Extension extends FWExtensionBase {
     } else if (remainTime) {
       this.cachedUnlocks[address] = 0;
 
-      keyringService.lockPair(pair);
+      this.state.keyringService.lockPair(pair);
 
       if (ethereumAddress) {
         this.cachedUnlocks[ethereumAddress] = 0;
 
-        keyringService.lockPair(ethereumAddress);
+        this.state.keyringService.lockPair(ethereumAddress);
       }
     }
 
@@ -885,10 +884,10 @@ export default class Extension extends FWExtensionBase {
     const networkKey = this.state.getNetworkByKey(givenNetwork)?.name ?? '';
     const tokenInfo = getAssetInfo(assetId);
 
-    const pair = keyringService.getPair(from);
+    const pair = this.state.keyringService.getPair(from);
 
     if (pair?.isLocked) {
-      const isUnlock = keyringService.unlockPair(pair, password);
+      const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
@@ -967,12 +966,12 @@ export default class Extension extends FWExtensionBase {
     } else {
       this.cachedUnlocks[address] = 0;
 
-      keyringService.lockPair(address);
+      this.state.keyringService.lockPair(address);
 
       if (ethereumAddress) {
         this.cachedUnlocks[ethereumAddress] = 0;
 
-        keyringService.lockPair(ethereumAddress);
+        this.state.keyringService.lockPair(ethereumAddress);
       }
     }
   }
@@ -1021,10 +1020,10 @@ export default class Extension extends FWExtensionBase {
   ): Promise<BasicTxResponse> {
     const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';
 
-    const pair = keyringService.getPair(from);
+    const pair = this.state.keyringService.getPair(from);
 
     if (pair?.isLocked) {
-      const isUnlock = keyringService.unlockPair(pair, password);
+      const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
@@ -1036,7 +1035,7 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
 
     const address = getSubstrateAddress(from);
-    const substratePair = keyringService.getPair(address)!;
+    const substratePair = this.state.keyringService.getPair(address)!;
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 
     const savePass = () => {

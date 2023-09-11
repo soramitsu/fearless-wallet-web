@@ -114,13 +114,8 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { URLS } from '@/consts/urls';
-import IdentIcon from '@/components/IdentIcon.vue';
 
-@Component({
-  components: {
-    IdentIcon,
-  },
-})
+@Component({})
 export default class HistoryDetailsForm extends Vue {
   @Prop(String) assetId!: string;
   @Prop(String) historyType!: string;

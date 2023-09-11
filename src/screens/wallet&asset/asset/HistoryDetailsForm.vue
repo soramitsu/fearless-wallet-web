@@ -17,7 +17,7 @@
             From
 
             <div class="item-value item-icon">
-              <Identicon class="identicon" :size="24" theme="polkadot" :value="fromAddress" />
+              <Identicon :address="fromAddress" />
 
               {{ displayFromAddress }}
 
@@ -28,7 +28,7 @@
             To
 
             <div class="item-value item-icon">
-              <Identicon class="identicon" :size="24" theme="polkadot" :value="toAddress" />
+              <Identicon :address="toAddress" />
 
               {{ displayToAddress }}
 
@@ -41,7 +41,7 @@
           Validator
 
           <div class="item-value item-icon">
-            <Identicon class="identicon" :size="24" theme="polkadot" :value="validator" />
+            <Identicon :address="toAddress" />
 
             {{ displayValidator }}
 
@@ -103,7 +103,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Identicon } from '@polkadot/vue-identicon';
+
 import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
@@ -114,6 +114,8 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { URLS } from '@/consts/urls';
+import Identicon from '@/components/Identicon.vue';
+
 @Component({
   components: {
     Identicon,
@@ -315,6 +317,7 @@ export default class HistoryDetailsForm extends Vue {
         display: flex;
         flex-direction: column;
         align-items: center;
+        gap: 4px;
       }
 
       .item-icon {

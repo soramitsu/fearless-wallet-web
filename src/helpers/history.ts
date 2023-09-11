@@ -10,7 +10,6 @@ import type {
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { TransactionType, TransferType } from '@/interfaces';
 import { firstCharToUp } from '@/helpers';
-import { formattedNumber } from '@/helpers/numbers';
 import store from '@/store';
 
 function getType(historyElement: HistoryElement): TransactionType {
@@ -110,18 +109,14 @@ function getHumanTransferFee(historyElement: HistoryElement, assetId: string, ne
 
   if (type === TransactionType.transfer) {
     const { fee } = transfer!;
-    const value = getHumanValue(fee, assetId, networkName);
-    const formattedValue = formattedNumber(value, { decimalsValue: 6 });
 
-    return `${formattedValue !== '0' ? '-' : ''}${formattedValue}`;
+    return getHumanValue(fee, assetId, networkName);
   }
 
   if (type === TransactionType.extrinsic) {
     const { fee } = extrinsic!;
-    const value = getHumanValue(fee, assetId, networkName);
-    const formattedValue = formattedNumber(value, { decimalsValue: 6 });
 
-    return `${formattedValue !== '0' ? '-' : ''}${formattedValue}`;
+    return getHumanValue(fee, assetId, networkName);
   }
 
   return '';

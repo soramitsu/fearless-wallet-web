@@ -166,7 +166,7 @@ async function fetchEthereumTokenHistory(
 
   const decimal = +res.data.result[0].tokenDecimal;
 
-  return res.data.result.map(({ timeStamp, value, gasUsed, from, to, hash }, index) => ({
+  return res.data.result.map(({ timeStamp, value, gasPrice, gasUsed, from, to, hash }, index) => ({
     address,
     id: String(index),
     timestamp: (+timeStamp * 1000).toString(),
@@ -174,7 +174,7 @@ async function fetchEthereumTokenHistory(
       amount: ethers.formatUnits(value, decimal),
       hash,
       eventIdx: 0,
-      fee: gasUsed,
+      fee: (+gasPrice * +gasUsed).toString(),
       from: from,
       success: true,
       to,

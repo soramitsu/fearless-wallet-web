@@ -6,24 +6,13 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Identicon as Ident } from '@polkadot/vue-identicon';
+<script lang="ts" setup>
 import { toSvg } from 'jdenticon';
+import { Identicon as Ident } from '@polkadot/vue-identicon';
 import BaseApi from '@/util/BaseApi';
 
-@Component({
-  components: { Ident },
-})
-export default class Identicon extends Vue {
-  @Prop(String) address!: string;
+defineProps<{ address: string }>();
 
-  getJdenticon(address: string) {
-    return toSvg(address, 24);
-  }
-
-  isEthereumAddress(address: string) {
-    return BaseApi.isEthereumAddress(address);
-  }
-}
+const getJdenticon = (address: string) => toSvg(address, 24);
+const isEthereumAddress = (address: string) => BaseApi.isEthereumAddress(address);
 </script>

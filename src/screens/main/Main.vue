@@ -23,18 +23,18 @@
 
     <SettingsPopup
       v-if="showSettings"
-      :handlerClose="toggleSettingsVisible"
+      @handlerClose="toggleSettingsVisible"
       @openFiatsPopup="toggleFiatsPopupVisible"
       @openLanguagePopup="toggleLanguagePopupVisible"
       @openAboutPopup="toggleAboutPopupVisible"
       @openManageAuths="toggleManageAuthsVisible"
     />
 
-    <FiatsPopup v-if="showFiatsPopup" :showAnimation="showFiatPopupAnimation" :handlerClose="toggleFiatsPopupVisible" />
+    <FiatsPopup v-if="showFiatsPopup" :showAnimation="showFiatPopupAnimation" @handlerClose="toggleFiatsPopupVisible" />
 
-    <LanguagePopup v-if="showLanguagePopup" :handlerClose="toggleLanguagePopupVisible" />
+    <LanguagePopup v-if="showLanguagePopup" @handlerClose="toggleLanguagePopupVisible" />
 
-    <AboutPopup v-if="showAboutPopup" :handlerClose="toggleAboutPopupVisible" />
+    <AboutPopup v-if="showAboutPopup" @handlerClose="toggleAboutPopupVisible" />
 
     <ManageAuths v-if="showManageAuthsVisible" :handlerClose="toggleManageAuthsVisible" />
 

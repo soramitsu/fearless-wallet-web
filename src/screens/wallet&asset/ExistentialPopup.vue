@@ -4,22 +4,14 @@
     :headers="headers"
     :showAcceptButton="true"
     :showRejectButton="true"
-    @handlerClose="handlerClose"
-    @handlerAccept="handlerAccept"
+    @handlerClose="$emit('handlerClose')"
+    @handlerAccept="$emit('handlerAccept')"
   />
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-
-@Component
-export default class ExistentialPopup extends Vue {
-  readonly headers = {
-    text: 'assets.existentialDepositText',
-    subtext: 'assets.existentialDepositSubtext',
-  };
-
-  @Prop(Function) handlerClose!: VoidFunction;
-  @Prop(Function) handlerAccept!: VoidFunction;
-}
+<script lang="ts" setup>
+const headers = {
+  text: 'assets.existentialDepositText',
+  subtext: 'assets.existentialDepositSubtext',
+};
 </script>

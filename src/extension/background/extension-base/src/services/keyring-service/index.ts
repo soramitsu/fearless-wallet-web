@@ -125,5 +125,3 @@ export class KeyringService {
     keyring.createFromUri(suri, meta, keypairType);
   }
 }
-
-export const keyringService = new KeyringService();

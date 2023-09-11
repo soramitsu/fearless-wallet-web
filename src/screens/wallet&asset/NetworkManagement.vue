@@ -149,9 +149,9 @@ export default class NetworkManagement extends Vue {
 
     const prepNotification = this.$t(this.getLocale('groupSelected'), {
       group: this.$t(this.tabs[this.activeTab].label),
-    });
+    }).toString();
 
-    this.$notify({ title: prepNotification as string, message: '', type: 'success' });
+    this.$notify({ title: prepNotification, message: '', type: 'success' });
   }
 
   enableSingleNetwork(network: string, isSelected: boolean) {
@@ -159,9 +159,9 @@ export default class NetworkManagement extends Vue {
 
     this.setSelectedNetwork(network);
     updateCurrentAccountNetwork(network);
-    const prepNotification = this.$t(this.getLocale('networkSelected'), { network });
+    const prepNotification = this.$t(this.getLocale('networkSelected'), { network }).toString();
 
-    this.$notify({ title: prepNotification as string, message: '', type: 'success' });
+    this.$notify({ title: prepNotification, message: '', type: 'success' });
   }
 
   async toggleFavorite(network: string) {

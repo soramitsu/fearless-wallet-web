@@ -274,7 +274,6 @@ export default class Header extends Vue {
 
   .header-part {
     display: flex;
-    align-items: center;
 
     &:hover {
       cursor: pointer;

@@ -17,7 +17,7 @@
             From
 
             <div class="item-value item-icon">
-              <Identicon :address="fromAddress" />
+              <IdentIcon :address="fromAddress" />
 
               {{ displayFromAddress }}
 
@@ -28,7 +28,7 @@
             To
 
             <div class="item-value item-icon">
-              <Identicon :address="toAddress" />
+              <IdentIcon :address="toAddress" />
 
               {{ displayToAddress }}
 
@@ -41,7 +41,7 @@
           Validator
 
           <div class="item-value item-icon">
-            <Identicon :address="toAddress" />
+            <IdentIcon :address="validator" />
 
             {{ displayValidator }}
 

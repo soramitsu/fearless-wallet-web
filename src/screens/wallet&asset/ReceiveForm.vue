@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="assets.receiveFunds" :fullScreen="true" @closeHandler="closeForm">
+  <AboveForm header="assets.receiveFunds" :fullScreen="true" @closeHandler="$emit('closeForm')">
     <div class="receive-form">
       <div>
         <InputWithIcon
@@ -95,7 +95,6 @@ export default class ReceiveForm extends Vue {
   showSelectNetworkPopup = false;
 
   @Prop(String) _selectedNetwork!: string;
-  @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];

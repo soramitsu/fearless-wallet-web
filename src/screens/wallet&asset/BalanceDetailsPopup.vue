@@ -1,5 +1,5 @@
 <template>
-  <Popup headerText="assets.lockedDetails" :showBorder="true" @handlerClose="closePopup" sizeWidth="big">
+  <Popup headerText="assets.lockedDetails" :showBorder="true" @handlerClose="$emit('closePopup')" sizeWidth="big">
     <div class="content">
       <div v-for="{ name, value, fiat } in detailsBalance" :key="name" class="balance-row">
         <div class="label">{{ $t(`assets.${name}`) }}</div>
@@ -31,7 +31,6 @@ export default class LockedDetailsPopup extends Vue {
   @Prop(String) network!: string;
   @Prop(Object) currency!: TokenBalance;
   @Prop(Object) assetPrice!: AssetPrice;
-  @Prop(Function) closePopup!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;

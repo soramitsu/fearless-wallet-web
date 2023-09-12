@@ -32,6 +32,7 @@ import {
 } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
+import { storage } from '../../stores/Storage';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -142,6 +143,8 @@ export default class Extension extends FWExtensionBase {
     const selectedNetworks = this.state.selectedNetworks[address] ?? ALL_NETWORKS;
 
     this.state.setActiveNetworks(selectedNetworks);
+
+    storage.set({ selectedNetworks: { ...this.state.selectedNetworks, [address]: selectedNetworks } });
   }
 
   accountsCreate({ password, suri, type, meta }: RequestAccountCreateSuri): string {

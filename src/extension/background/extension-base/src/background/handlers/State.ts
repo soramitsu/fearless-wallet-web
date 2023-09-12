@@ -643,8 +643,6 @@ export default class State {
   }
 
   public isNetworkSelectedInAnotherWallet(network: NetworkJson, address: string) {
-    if (Object.values(this.selectedNetworks).some((el) => el === ALL_NETWORKS)) return true;
-
     const isSelected =
       this.isPopularNetworksSelected(network, address) ||
       this.isFavoriteNetworkSelected(network, address) ||
@@ -680,7 +678,10 @@ export default class State {
 
       const { name } = network;
       const isFavorite = network.favorite.some((address) => address === currentAccount.address);
-      const isAlreadySelectedType = this.isNetworkSelectedInAnotherWallet(network, currentAccount.address);
+
+      const isAllNetworkSelected = Object.values(this.selectedNetworks).some((el) => el === ALL_NETWORKS);
+      const isAlreadySelectedType =
+        isAllNetworkSelected ?? this.isNetworkSelectedInAnotherWallet(network, currentAccount.address);
 
       switch (type) {
         case ALL_NETWORKS:

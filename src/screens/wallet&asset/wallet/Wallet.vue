@@ -36,8 +36,8 @@
           :balances="filteredCurrencies"
           :selectedNetwork="selectedNetwork"
           :showAssetsManagementForm="showAssetsManagementForm"
-          :toggleVisibleActivityForm="toggleVisibleActivityForm"
           :filterValue="filterValue"
+          @toggleVisibleActivityForm="toggleVisibleActivityForm"
           @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
         />
       </div>
@@ -60,7 +60,7 @@
     <NetworkManagement
       v-if="showNetworkManagement"
       :networks="networksWithWarning"
-      :closeForm="toggleNetworkManagementVisible"
+      @closeForm="toggleNetworkManagementVisible"
       @setNetworkUnavailable="setNetworkUnavailable"
     />
 
@@ -68,7 +68,7 @@
       v-if="showNetworkUnavailablePopup"
       :networks="networksWithWarning"
       :network="networkUnavailable"
-      :closePopup="setNetworkUnavailable"
+      @closePopup="setNetworkUnavailable"
     />
 
     <GoogleExportPopup v-if="showGoogleExportPopup" :closePopup="closeGoogleExportPopup" />
@@ -88,7 +88,6 @@ import type { AsyncFn, Fn, TabWallet } from '@/interfaces';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
-import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
@@ -122,7 +121,6 @@ import { BalanceItem } from '@/extension/background/extension-base/src/api/evm/t
     SoraCardBanner,
     WalletSettings,
     NetworkManagement,
-    SelectNetworkPopup,
     SelectNetworkButton,
     NetworkUnavailablePopup,
     GoogleExportPopup,

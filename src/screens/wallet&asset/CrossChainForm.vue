@@ -10,7 +10,7 @@
     :destNetFee="destNetFee"
     :destinationNetwork="destinationNetwork"
     :recipient="recipient"
-    :closeForm="closeForm"
+    @closeForm="$emit('closeForm')"
     @update:assetId="updateAssetId"
     @update:selectedNetwork="updateOriginalNetwork"
     @update:amount="updateAmount"

@@ -5,7 +5,7 @@
       :fullScreen="true"
       :showBackIcon="showBackIcon"
       @handlerBack="handlerBack"
-      @closeHandler="closeForm"
+      @closeHandler="$emit('closeForm')"
     >
       <Scroll>
         <EditAddressBook
@@ -170,14 +170,14 @@
 
     <ExistentialPopup
       v-if="showExistentialPopup"
-      :handlerClose="handlerCloseExistentialPopup"
-      :handlerAccept="handlerAcceptExistentialPopup"
+      @handlerClose="handlerCloseExistentialPopup"
+      @handlerAccept="handlerAcceptExistentialPopup"
     />
 
     <WarningAddressPopup
       v-if="showWarningAddressPopup"
-      :handlerAccept="formatAddress"
-      :handlerClose="handlerCloseWarningAddressPopup"
+      @handlerAccept="formatAddress"
+      @handlerClose="handlerCloseWarningAddressPopup"
     />
   </div>
 </template>
@@ -240,7 +240,6 @@ export default class TransferForm extends Vue {
   isFetchingFees = false;
   step = 1;
 
-  @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) header!: string;
   @Prop(String) extrinsicType!: 'transfer' | 'crossChain';
   @PropSync('recipient', { default: '' }) syncedRecipient!: string;
@@ -652,7 +651,7 @@ export default class TransferForm extends Vue {
   confirmationPasswordPopupClose(closeForm: boolean) {
     this.showConfirmationPasswordPopup = false;
 
-    if (closeForm) this.closeForm();
+    if (closeForm) this.$emit('closeForm');
   }
 
   getStatusWallet(address: string, ethereumAddress: string) {

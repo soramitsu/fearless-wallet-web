@@ -3,7 +3,7 @@
     :showHeader="false"
     :showBorder="true"
     :top="50"
-    @handlerClose="handlerClose"
+    @handlerClose="$emit('handlerClose')"
     sizeWidth="big"
     verticalPlacement="top"
     horizontalPlacement="right"
@@ -36,7 +36,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Features } from '@/store/extension/types';
 import { Components } from '@/router/routes';
@@ -46,7 +46,7 @@ import { SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
-type SettingsItemType = 'Accounts';
+type SettingsItemType = 'Accounts' | 'SoraCard' | 'PolkaswapDisclaimer';
 
 @Component({
   components: { SettingMenuItem },
@@ -54,7 +54,6 @@ type SettingsItemType = 'Accounts';
 export default class SettingsPopup extends Vue {
   readonly isExtension = IS_EXTENSION;
 
-  @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(ExtensionGettersTypes.features) features!: Nullable<Features>;
 
@@ -73,7 +72,7 @@ export default class SettingsPopup extends Vue {
   open(name: SettingsItemType) {
     if (this.routeName !== name) this.$router.push({ name: Components[name] });
 
-    this.handlerClose();
+    this.$emit('handlerClose');
   }
 }
 </script>

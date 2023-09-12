@@ -8,7 +8,7 @@
     :showAnimation="showAnimation"
     :options="filteredOptionsFiats"
     @toggleValue="toggleSelectedFiat"
-    @handlerClose="handlerClose"
+    @handlerClose="$emit('handlerClose')"
     @handlerFilter="handlerFilter"
   />
 </template>
@@ -28,7 +28,6 @@ export default class FiatsPopup extends Vue {
   filterValue = '';
 
   @Prop(Boolean) showAnimation!: boolean;
-  @Prop(Function) handlerClose!: VoidFunction;
   @Getter(NetworksGettersTypes.getFiats) fiats!: FiatJson[];
   @Getter(AccountsGettersTypes.getSelectedFiat) selectedFiat!: string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: Fn<string>;
@@ -50,7 +49,7 @@ export default class FiatsPopup extends Vue {
   toggleSelectedFiat(id: string) {
     updateFiatSymbol(id).then(() => {
       this.setSelectedFiat(id);
-      this.handlerClose();
+      this.$emit('handlerClose');
     });
   }
 }

@@ -8,7 +8,7 @@
     :value="value"
     :partialFee="partialFee"
     :recipient="recipient"
-    :closeForm="closeForm"
+    @closeForm="$emit('closeForm')"
     @update:assetId="updateAssetId"
     @update:selectedNetwork="updateSelectedNetwork"
     @update:amount="updateAmount"

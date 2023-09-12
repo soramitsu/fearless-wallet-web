@@ -1,11 +1,11 @@
 import { assert } from '@polkadot/util';
-import { SubmittableExtrinsic } from '@polkadot/api/types';
 import KeyringSigner from '@extension-base/signers/KeyringSigner';
 import { SignerType } from '@extension-base/background/types/types';
-import { keyringService } from '@extension-base/services';
+import { state } from '@extension-base/background/handlers';
+import { BeaconSigner } from '@extension-base/signers/BeaconSigner';
+import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { ApiProps, ExternalRequestPromise } from '@extension-base/background/types/types';
 import type { HandleBasicTx } from '@extension-base/api/evm/transfer';
-import { BeaconSigner } from '@/extension/background/extension-base/src/signers/BeaconSigner';
 
 interface AbstractSignExtrinsicProps {
   address: string;
@@ -36,12 +36,12 @@ export const signExtrinsic = async ({
   type,
 }: SignExtrinsicProps): Promise<string | null> => {
   const isMobile = type === SignerType.MOBILE;
-  const pair = keyringService.getPair(address);
+  const pair = state.keyringService.getPair(address);
 
   if (!isMobile) assert(pair, 'Unable to find pair');
 
   if (pair?.isLocked) {
-    const isUnlock = keyringService.unlockPair(pair, password!);
+    const isUnlock = state.keyringService.unlockPair(pair, password!);
 
     if (!isUnlock) return 'Invalid password';
   }

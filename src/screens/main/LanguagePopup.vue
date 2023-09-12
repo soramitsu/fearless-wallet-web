@@ -10,12 +10,12 @@
     :showSearch="false"
     :options="options"
     @toggleValue="toggleLanguage"
-    @handlerClose="handlerClose"
+    @handlerClose="$emit('handlerClose')"
   />
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import type { Lang } from '@/locales';
 import { accountController } from '@/controllers';
 
@@ -25,8 +25,6 @@ export default class LanguagePopup extends Vue {
     { name: 'English', value: 'en-EN' },
     { name: 'Русский', value: 'ru-RU' },
   ];
-
-  @Prop(Function) handlerClose!: VoidFunction;
 
   get language() {
     return this.$root.$i18n.locale as Lang;
@@ -41,7 +39,7 @@ export default class LanguagePopup extends Vue {
   toggleLanguage(language: Lang) {
     this.language = language;
 
-    this.handlerClose();
+    this.$emit('handlerClose');
   }
 }
 </script>

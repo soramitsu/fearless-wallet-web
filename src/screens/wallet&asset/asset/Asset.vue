@@ -32,9 +32,9 @@
 
     <HistoryDetailsForm
       v-if="showHistoryDetailsForm"
-      :handlerClose="closeHistoryDetailsForm"
       :historyElement="historyElement"
       :assetId="selectedAssetId"
+      @handlerClose="closeHistoryDetailsForm"
     />
 
     <BuyPopup
@@ -42,13 +42,13 @@
       :asset="selectedAssetUpper"
       :address="displayAddressByNetwork"
       :providers="providers"
-      :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
+      @closePopup="toggleVisible('showBuyPopup', false)"
     />
 
     <NetworkManagement
       v-if="showSelectNetworkPopup"
       :type="selectedNetwork"
-      :handlerClose="toggleSelectNetworkPopupVisible"
+      @handlerClose="toggleSelectNetworkPopupVisible"
     />
   </div>
 </template>
@@ -69,7 +69,6 @@ import AssetInfo from '@/screens/wallet&asset/asset/AssetInfo.vue';
 import CrossChainForm from '@/screens/wallet&asset/CrossChainForm.vue';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
-import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -84,7 +83,6 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'sh
     BuyPopup,
     ReceiveForm,
     CrossChainForm,
-    SelectNetworkPopup,
     HistoryDetailsForm,
     SelectNetworkButton,
     NetworkManagementButton,

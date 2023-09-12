@@ -37,12 +37,12 @@
     <AccountSettingsPopup
       v-if="showAccountSettingsPopup"
       :selectedNetwork="selectedNetwork"
-      :handlerClose="closeAccountSettings"
       :showNodeSwitch="!isNodesRoute"
       :showCopyAddress="!isNodesRoute"
       :showExport="!isExportRoute"
       :showReplaceAccount="showReplaceAccount"
       :buttonTopClick="buttonTopClick"
+      @handlerClose="closeAccountSettings"
       @openNotificationPopup="openNotificationPopup"
     />
 
@@ -57,8 +57,8 @@
 
     <NodeSettingsPopup
       v-if="showNodeSettingsPopup"
-      :handlerClose="closeNodeSettings"
       :buttonTopClick="buttonTopClick"
+      @handlerClose="closeNodeSettings"
       @openEditNodeForm="openEditNodeForm"
       @openNotificationPopup="openNotificationPopup"
     />
@@ -76,7 +76,7 @@
       @handlerAccept="handlerAccept"
     />
 
-    <AddEthereumAccountPopup v-if="showAddEthereumAccountPopup" :handlerClose="closeAddEthereumAccountPopup" />
+    <AddEthereumAccountPopup v-if="showAddEthereumAccountPopup" @handlerClose="closeAddEthereumAccountPopup" />
 
     <ExportForm v-if="showExportForm" :password="password" @closeHandler="setPassword" />
   </div>

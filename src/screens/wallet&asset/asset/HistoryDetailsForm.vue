@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="Details" :blur="true" @closeHandler="handlerClose">
+  <AboveForm header="Details" :blur="true" @closeHandler="$emit('handlerClose')">
     <div class="details">
       <div class="descriptions">
         <div v-if="isExtrinsic" class="item">
@@ -114,12 +114,11 @@ import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { URLS } from '@/consts/urls';
 
-@Component
+@Component({})
 export default class HistoryDetailsForm extends Vue {
   @Prop(String) assetId!: string;
   @Prop(String) historyType!: string;
   @Prop(Object) historyElement!: HistoryElement;
-  @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
 
@@ -311,6 +310,7 @@ export default class HistoryDetailsForm extends Vue {
         display: flex;
         flex-direction: column;
         align-items: center;
+        gap: 4px;
       }
 
       .item-icon {

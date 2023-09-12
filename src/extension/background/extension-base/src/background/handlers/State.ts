@@ -6,7 +6,7 @@ import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
-import { keyringService, EventService, SoraCardService, OnboardingService } from '@extension-base/services';
+import { EventService, SoraCardService, OnboardingService, KeyringService } from '@extension-base/services';
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import MetadataStore from '@extension-base/stores/Metadata';
@@ -190,6 +190,7 @@ export default class State {
     authorizeAccountsCount: 0,
     dAppName: '',
   };
+  public keyringService = new KeyringService();
   public eventService = new EventService();
   public soraCardService = new SoraCardService();
   public onboardingService = new OnboardingService();
@@ -1217,7 +1218,7 @@ export default class State {
   }
 
   public getWallets(): KeyringAddress[] {
-    return [...keyringService.getAccounts(), ...keyringService.getAddresses()];
+    return [...this.keyringService.getAccounts(), ...this.keyringService.getAddresses()];
   }
 
   public setPrice(priceData: PriceJson, callback?: (priceData: PriceJson) => void): void {
@@ -1319,7 +1320,7 @@ export default class State {
 
       // logic for Sora library
       if (data?.address && !data.isMobile) {
-        const pair = keyringService.getPair(data?.address)!;
+        const pair = this.keyringService.getPair(data?.address)!;
 
         apiSora.account = { json: null as any, pair };
 
@@ -1354,8 +1355,8 @@ export default class State {
   }
 
   public getSubstrateAccounts() {
-    const accounts = keyringService.getAccounts().filter((el) => !isEthereumAddress(el.address));
-    const addresses = keyringService.getAddresses();
+    const accounts = this.keyringService.getAccounts().filter((el) => !isEthereumAddress(el.address));
+    const addresses = this.keyringService.getAddresses();
 
     return [...accounts, ...addresses];
   }
@@ -1376,7 +1377,7 @@ export default class State {
     address,
     password,
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    const json = keyringService.getPair(address)!.toJson(password);
+    const json = this.keyringService.getPair(address)!.toJson(password);
     const decoded = decodePair(password, base64Decode(json.encoded), json.encoding.type);
 
     return {

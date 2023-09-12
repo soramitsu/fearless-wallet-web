@@ -7,7 +7,7 @@
     :left="-17"
     :showBorder="true"
     :showHeader="false"
-    @handlerClose="handlerClose"
+    @handlerClose="$emit('handlerClose')"
   >
     <div class="account-settings">
       <div v-if="showExport" class="row" @click="openNotificationPopup">
@@ -53,7 +53,6 @@ export default class AccountSettingsPopup extends Vue {
   @Prop(Boolean) showCopyAddress!: boolean;
   @Prop(Boolean) showExport!: boolean;
   @Prop(Number) buttonTopClick!: number;
-  @Prop(Function) handlerClose!: VoidFunction;
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
@@ -128,7 +127,7 @@ export default class AccountSettingsPopup extends Vue {
   }
 
   close() {
-    this.handlerClose();
+    this.$emit('handlerClose');
   }
 }
 </script>

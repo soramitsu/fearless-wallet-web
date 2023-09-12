@@ -38,7 +38,7 @@
       :network="pickedNetwork"
       :currency="currency"
       :assetPrice="price"
-      :closePopup="toggleBalanceDetailsPopup"
+      @closePopup="toggleBalanceDetailsPopup"
     />
 
     <AccountSettingsPopup
@@ -46,9 +46,9 @@
       :selectedNetwork="selectedAssetNetwork"
       :showNodeSwitch="true"
       :showCopyAddress="false"
-      :handlerClose="toggleDetailsPopup"
       :showExport="false"
       :showReplaceAccount="false"
+      @handlerClose="toggleDetailsPopup"
     />
   </Fragment>
 </template>

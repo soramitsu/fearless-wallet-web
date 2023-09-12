@@ -52,7 +52,7 @@
         </template>
       </div>
 
-      <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" :handlerClose="toggleConnectionPopup" />
+      <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" @handlerClose="toggleConnectionPopup" />
 
       <Tooltip text="header.connectionStatus" target=".background-ellipse" placement="top" />
 
@@ -70,7 +70,7 @@
       <NetworkManagement
         v-if="showSelectNetworkPopup"
         :type="selectedNetwork"
-        :handlerClose="toggleSelectNetworkPopupVisible"
+        @handlerClose="toggleSelectNetworkPopupVisible"
       />
     </div>
   </header>
@@ -276,7 +276,6 @@ export default class Header extends Vue {
 
   .header-part {
     display: flex;
-    align-items: center;
 
     &:hover {
       cursor: pointer;

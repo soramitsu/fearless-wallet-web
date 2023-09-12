@@ -70,7 +70,7 @@ export default class ExportForm extends Vue {
   }
 
   closeForm() {
-    this.$emit('closeHandler');
+    this.$emit('closeHandler', '');
   }
 
   proceed() {

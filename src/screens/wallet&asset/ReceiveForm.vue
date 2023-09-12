@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="assets.receiveFunds" :fullScreen="true" @closeHandler="closeForm">
+  <AboveForm header="assets.receiveFunds" :fullScreen="true" @closeHandler="$emit('closeForm')">
     <div class="receive-form">
       <div>
         <InputWithIcon

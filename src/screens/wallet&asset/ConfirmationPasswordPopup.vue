@@ -111,9 +111,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) secondIcon!: string;
   @Prop(String) transactionId?: string;
   @Prop(Object) currency?: TokenBalance;
-  @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain | RequestStaking;
+  @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain | RequestStaking | SwapOptions;
   @Prop(Object) payload?: SignerPayloadJSON;
-  @Prop(Object) swapOptions?: SwapOptions;
   @Prop(String) extrinsicType!:
     | 'transfer'
     | 'crossChain'
@@ -162,7 +161,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     return {
       ...this.tx,
       isSavePass: this.isSavePass,
-      isMobile: !!this.isSignMobile,
+      isMobile: this.isSignMobile,
       password: this.password,
     };
   }
@@ -218,8 +217,8 @@ export default class ConfirmationPasswordPopup extends Vue {
     return `${this.fiatSymbol}${this.$n(+this.value, 'price')}`;
   }
 
-  get isTransactionNotInit() {
-    return this.transactionState === undefined;
+  get isTransactionInit() {
+    return this.transactionState !== null;
   }
 
   get isTransactionPending() {
@@ -254,7 +253,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   close() {
-    this.$emit('close', !this.isTransactionNotInit);
+    this.$emit('close', this.isTransactionInit);
 
     if (this.isTransactionPending || this.isTransactionFinished) {
       this.resetTxStatus();
@@ -263,8 +262,13 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   async onSignMobile() {
     if (!this.transactionId) this.makeExtrinsic();
-    else if (this.extrinsicType === 'swap' && this.swapOptions)
-      await makeSwap({ ...this.swapOptions, password: this.password });
+    else if (this.extrinsicType === 'swap')
+      await makeSwap({
+        ...(this.tx as SwapOptions),
+        password: this.password,
+        isMobile: true,
+        isSavePass: this.isSavePass,
+      });
     else if (this.payload) await this.signTransactionJSON(this.transactionId);
   }
 
@@ -338,8 +342,13 @@ export default class ConfirmationPasswordPopup extends Vue {
   async sendExtrinsic() {
     this.transactionState = 'pending';
 
-    if (this.extrinsicType === 'swap' && this.swapOptions) {
-      const res = await makeSwap({ ...this.swapOptions, password: this.password, isSavePass: this.isSavePass });
+    if (this.extrinsicType === 'swap') {
+      const res = await makeSwap({
+        ...(this.tx as SwapOptions),
+        password: this.password,
+        isSavePass: this.isSavePass,
+        isMobile: false,
+      });
 
       if (!res?.status) {
         this.isErrorPassword = true;

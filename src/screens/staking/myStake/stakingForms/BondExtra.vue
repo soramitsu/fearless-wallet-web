@@ -1,22 +1,26 @@
 <template>
-  <div class="redeem-form">
+  <div class="bond-extra-form">
     <InfoRow
       class="info-fee"
-      text="staking.rewards"
-      :value="`${rewards} ${asset}`"
-      :price="rewardsValueString"
-      borderType="default"
-    />
-
-    <InfoRow
       text="assets.networkFee"
       borderType="default"
       icon="info"
       :value="`${fee} ${asset}`"
-      :price="feeValueString"
-      :hideLastBorder="false"
+      :price="valueString"
       :iconClasses="['network-fee']"
     />
+
+    <div class="disclaimer">
+      <Icon icon="wallet-2" class="img" />
+
+      {{ $t('staking.unstakingDisclaimers1') }}
+    </div>
+
+    <div class="disclaimer">
+      <Icon icon="logout" class="img" />
+
+      {{ $t('staking.unstakingDisclaimers2') }}
+    </div>
 
     <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
   </div>
@@ -31,11 +35,9 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
-export default class Redeem extends Vue {
+export default class BondExtra extends Vue {
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
-  @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
   @Prop({ type: String }) fee!: string;
-  @Prop({ type: String }) rewards!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
@@ -49,19 +51,7 @@ export default class Redeem extends Vue {
     return this.getAssetPrice(priceId).price;
   }
 
-  get rewardedAssetPrice() {
-    const priceId = this.rewardedCurrency?.priceId ?? '';
-
-    return this.getAssetPrice(priceId).price;
-  }
-
-  get rewardsValueString() {
-    const value = +this.rewards * this.rewardedAssetPrice;
-
-    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
-  }
-
-  get feeValueString() {
+  get valueString() {
     const value = +this.fee * this.stakingAssetPrice;
 
     return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
@@ -70,10 +60,28 @@ export default class Redeem extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.redeem-form {
+.bond-extra-form {
   .info-fee {
     margin-top: 10px;
     margin-bottom: 20px;
+  }
+
+  .disclaimer {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: $default-white;
+    margin-bottom: 10px;
+
+    &:last-child {
+      margin-bottom: none;
+    }
+  }
+
+  .img {
+    margin-right: 10px;
+    height: 30px;
+    width: 30px;
   }
 }
 </style>

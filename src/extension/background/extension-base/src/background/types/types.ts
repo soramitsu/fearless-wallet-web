@@ -199,25 +199,15 @@ export interface BalanceJson {
 }
 
 export enum TransferErrorCode {
-  NOT_ENOUGH_FEE = 'notEnoughValue',
-  INVALID_VALUE = 'invalidValue',
-  INVALID_TOKEN = 'invalidToken',
   TRANSFER_ERROR = 'transferError',
-  UNSUPPORTED = 'unsupported',
+  CROSSCHAIN_ERROR = 'crossChainError',
+  SWAP_ERROR = 'swapError',
 }
 
 export enum BasicTxErrorCode {
   INVALID_PARAM = 'invalidParam',
   KEYRING_ERROR = 'keyringError',
-  STAKING_ERROR = 'stakingError',
-  UN_STAKING_ERROR = 'unStakingError',
-  WITHDRAW_STAKING_ERROR = 'withdrawStakingError',
-  CLAIM_REWARD_ERROR = 'claimRewardError',
-  CREATE_COMPOUND_ERROR = 'createCompoundError',
-  CANCEL_COMPOUND_ERROR = 'cancelCompoundError',
-  TIMEOUT = 'timeout',
   BALANCE_TO_LOW = 'balanceTooLow',
-  UNKNOWN_ERROR = 'unknownError',
 }
 
 export interface BasicTxResponse {
@@ -319,8 +309,8 @@ export interface ResponseCheckSwap {
 
 export type PasswordRequestSign<T extends BaseRequestSign> = T & {
   password: string;
-  isSavePass?: boolean;
-  isMobile?: boolean;
+  isSavePass: boolean;
+  isMobile: boolean;
 };
 
 export interface ResponseMakeSwap {

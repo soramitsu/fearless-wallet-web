@@ -1,5 +1,5 @@
 <template>
-  <div class="unstaking-form">
+  <div class="unbond-form">
     <InfoRow
       class="info-fee"
       text="assets.networkFee"
@@ -35,7 +35,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
-export default class UnstakingForm extends Vue {
+export default class Unbond extends Vue {
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: String }) fee!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -60,8 +60,9 @@ export default class UnstakingForm extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.unstaking-form {
+.unbond-form {
   .info-fee {
+    margin-top: 10px;
     margin-bottom: 20px;
   }
 

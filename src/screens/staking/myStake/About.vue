@@ -83,19 +83,27 @@ export default class About extends Vue {
   }
 
   get stakingValue() {
-    return +this.stakingAmount * this.stakingAssetPrice;
+    const value = +this.stakingAmount * this.stakingAssetPrice;
+
+    return this.$n(value, 'price');
   }
 
   get rewardedValue() {
-    return +this.rewardedAmount * this.rewardedAssetPrice;
+    const value = +this.rewardedAmount * this.rewardedAssetPrice;
+
+    return this.$n(value, 'price');
   }
 
   get unstakingValue() {
-    return +this.unstakingAmount * this.stakingAssetPrice;
+    const value = +this.unstakingAmount * this.stakingAssetPrice;
+
+    return this.$n(value, 'price');
   }
 
   get redeemableValue() {
-    return +this.redeemableAmount * this.stakingAssetPrice;
+    const value = +this.redeemableAmount * this.stakingAssetPrice;
+
+    return this.$n(value, 'price');
   }
 }
 </script>

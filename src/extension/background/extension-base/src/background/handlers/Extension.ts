@@ -23,7 +23,7 @@ import {
   makeCrossChain,
   estimateCrossChainFee,
 } from '@extension-base/api/substrate/crossChain';
-import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
+import { RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
 import { ethers } from 'ethers';
 import {
   balanceItemByNetwork,
@@ -34,14 +34,11 @@ import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { keyringService } from '@extension-base/services';
 import {
-  RequestCheckBond,
-  ResponseCheckStaking,
   ValidatorsRequest,
   RequestBond,
   RequestUnbond,
   RequestRebond,
   RequestRedeem,
-  RequestCheckBondExtra,
 } from '../../services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type {
@@ -749,13 +746,13 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async checkSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
-    const { AToB, BToA, amountA, amountB, minMaxValue, extrinsicOptions, providerFee, route } = await createSwap(
+    const { AToB, BToA, amountA, amountB, minMaxValue, swapOptions, providerFee, route } = await createSwap(
       options,
       apiSora
     );
 
     return {
-      swapOptions: extrinsicOptions.swapOptions,
+      swapOptions,
       fee: providerFee,
       AToB,
       BToA,
@@ -767,24 +764,12 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async makeSwap(options: RequestSwap): Promise<ResponseMakeSwap> {
-    const { extrinsicOptions } = await createSwap(options, apiSora);
+    const { swapOptions } = await createSwap(options, apiSora);
     const { password, isSavePass } = options;
-    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = extrinsicOptions;
+    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = swapOptions;
     const errors: Array<BasicTxError> = [];
     const address = await this.state.getAccountAddress();
     const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
-
-    if (!address) {
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        message: 'Failed to get address',
-      });
-
-      return {
-        errors,
-        status: false,
-      };
-    }
 
     const pair = keyringService.getPair(address)!;
 
@@ -800,7 +785,7 @@ export default class Extension extends FWExtensionBase {
       await apiSora.swap.execute(assetA, assetB, amountA, amountB, slippage, isExchangeB, liquiditySource, swapDexId);
     } catch (ex) {
       errors.push({
-        code: TransferErrorCode.TRANSFER_ERROR,
+        code: TransferErrorCode.SWAP_ERROR,
         message: '',
       });
 
@@ -808,23 +793,8 @@ export default class Extension extends FWExtensionBase {
     }
 
     const ethereumAddress = keyringService.getAccount(address)?.meta.ethereumAddress as string | undefined;
-    const remainTime = this.refreshAccountPasswordCache(pair);
 
-    if (isSavePass) {
-      this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
-
-      if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
-    } else if (remainTime) {
-      this.cachedUnlocks[address] = 0;
-
-      keyringService.lockPair(pair);
-
-      if (ethereumAddress) {
-        this.cachedUnlocks[ethereumAddress] = 0;
-
-        keyringService.lockPair(ethereumAddress);
-      }
-    }
+    this.savePass(address, ethereumAddress, isSavePass, false);
 
     return {
       status: true,
@@ -1071,7 +1041,7 @@ export default class Extension extends FWExtensionBase {
       .catch((e) => {
         cb({
           status: false,
-          errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
+          errors: [{ code: TransferErrorCode.CROSSCHAIN_ERROR, message: (e as Error).message }],
         });
 
         console.error('CrossChain error', e);
@@ -1135,12 +1105,6 @@ export default class Extension extends FWExtensionBase {
     return state.stakingService.getValidators(request);
   }
 
-  async checkBond(request: RequestCheckBond): Promise<ResponseCheckStaking> {
-    const { fee } = await state.stakingService.createBondExtrinsic({ ...request })!;
-
-    return { fee };
-  }
-
   async makeBond(id: string, port: Port, request: RequestBond): Promise<BasicTxResponse> {
     const { from, isSavePass, isMobile, password } = request;
 
@@ -1169,12 +1133,6 @@ export default class Extension extends FWExtensionBase {
     const callback = this.makeExtrinsicCallback(cb, savePass);
 
     return state.stakingService.makeBond({ ...request, callback });
-  }
-
-  async checkBondExtra(request: RequestCheckBondExtra): Promise<ResponseCheckStaking> {
-    const { fee } = await state.stakingService.createBondExtrinsic({ ...request })!;
-
-    return { fee };
   }
 
   async makeBondExtra(id: string, port: Port, request: RequestBond): Promise<BasicTxResponse> {
@@ -1207,12 +1165,6 @@ export default class Extension extends FWExtensionBase {
     return state.stakingService.makeBond({ ...request, callback });
   }
 
-  async checkUnbond(request: RequestCheckBond): Promise<ResponseCheckStaking> {
-    const { fee } = await state.stakingService.createUnbondExtrinsic({ ...request })!;
-
-    return { fee };
-  }
-
   async makeUnbond(id: string, port: Port, request: RequestUnbond): Promise<BasicTxResponse> {
     const { from, isSavePass, isMobile, password } = request;
 
@@ -1243,12 +1195,6 @@ export default class Extension extends FWExtensionBase {
     return state.stakingService.makeUnbond({ ...request, callback });
   }
 
-  async checkRebond(request: RequestCheckBond): Promise<ResponseCheckStaking> {
-    const { fee } = await state.stakingService.createRebondExtrinsic({ ...request })!;
-
-    return { fee };
-  }
-
   async makeRebond(id: string, port: Port, request: RequestRebond): Promise<BasicTxResponse> {
     const { from, isSavePass, isMobile, password } = request;
 
@@ -1277,14 +1223,6 @@ export default class Extension extends FWExtensionBase {
     const callback = this.makeExtrinsicCallback(cb, savePass);
 
     return state.stakingService.makeRebond({ ...request, callback });
-  }
-
-  async checkRedeem(request: RequestCheckBond): Promise<ResponseCheckStaking> {
-    const { fee } = await state.stakingService.createRedeemExtrinsic({ ...request })!;
-
-    return {
-      fee,
-    };
   }
 
   async makeRedeem(id: string, port: Port, request: RequestRebond): Promise<BasicTxResponse> {
@@ -1441,32 +1379,17 @@ export default class Extension extends FWExtensionBase {
       case 'pri(staking.validators)':
         return this.getValidators(request as ValidatorsRequest);
 
-      case 'pri(staking.checkBond)':
-        return this.checkBond(request as RequestCheckBond);
-
       case 'pri(staking.makeBond)':
         return this.makeBond(id, port, request as RequestBond);
-
-      case 'pri(staking.checkBondExtra)':
-        return this.checkBondExtra(request as RequestCheckBond);
 
       case 'pri(staking.makeBondExtra)':
         return this.makeBondExtra(id, port, request as RequestBond);
 
-      case 'pri(staking.checkUnbond)':
-        return this.checkUnbond(request as RequestUnbond);
-
       case 'pri(staking.makeUnbond)':
         return this.makeUnbond(id, port, request as RequestUnbond);
 
-      case 'pri(staking.checkRebond)':
-        return this.checkRebond(request as RequestRebond);
-
       case 'pri(staking.makeRebond)':
         return this.makeRebond(id, port, request as RequestRebond);
-
-      case 'pri(staking.checkRedeem)':
-        return this.checkRedeem(request as RequestRedeem);
 
       case 'pri(staking.makeRedeem)':
         return this.makeRedeem(id, port, request as RequestRedeem);

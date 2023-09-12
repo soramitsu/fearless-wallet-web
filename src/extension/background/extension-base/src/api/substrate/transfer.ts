@@ -3,7 +3,7 @@ import { state } from '@extension-base/background/handlers';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { getAssetOptions, getPrecisionValue } from '@extension-base/api/substrate/utils';
 import { getUtilityProps, getSubstrateAddress } from '@extension-base/background/utils/utils';
-import { BasicTxResponse, TransferErrorCode, SignerType, TokenBalance } from '@extension-base/background/types/types';
+import { BasicTxResponse, SignerType, TokenBalance } from '@extension-base/background/types/types';
 import { Extrinsic } from './crossChain';
 import { NetworkName } from '@/interfaces';
 
@@ -84,18 +84,6 @@ export async function estimateFee(
   } catch {
     return '0';
   }
-}
-
-export function getUnsupportedResponse(): BasicTxResponse {
-  return {
-    status: false,
-    errors: [
-      {
-        code: TransferErrorCode.UNSUPPORTED,
-        message: 'The transaction of current network is unsupported',
-      },
-    ],
-  };
 }
 
 export interface MakeTransferProps {

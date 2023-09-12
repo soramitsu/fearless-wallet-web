@@ -24,7 +24,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
-export default class RebondForm extends Vue {
+export default class Rebond extends Vue {
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: String }) fee!: string;
   @Prop({ type: String }) amount!: string;
@@ -54,6 +54,7 @@ export default class RebondForm extends Vue {
   margin-top: 15px;
 
   .info-fee {
+    margin-top: 10px;
     margin-bottom: 20px;
   }
 

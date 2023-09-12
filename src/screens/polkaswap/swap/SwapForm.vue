@@ -193,7 +193,7 @@
       :value="sendValue"
       :firstIcon="sendAssetId"
       :secondIcon="receiveAssetId"
-      :swapOptions="swapOptions"
+      :tx="tx"
       extrinsicType="swap"
       @close="confirmationPasswordPopupClose"
     />
@@ -259,7 +259,7 @@ export default class SwapForm extends Vue {
   showConfirmationPasswordPopup = false;
   isExchangeB = false;
   fee = '';
-  swapOptions: SwapOptions = {} as SwapOptions;
+  tx: SwapOptions = {} as SwapOptions;
   swapInterval!: NodeJS.Timer;
 
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
@@ -597,7 +597,7 @@ export default class SwapForm extends Vue {
       if (this.isExchangeB) this.sendAmount = amountA;
       else this.receiveAmount = amountB;
 
-      this.swapOptions = swapOptions!;
+      this.tx = swapOptions!;
       this.minMaxAmount = minMaxValue;
       this.providerFee = fee;
       this.AToB = AToB;

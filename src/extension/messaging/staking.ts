@@ -1,13 +1,6 @@
 import {
-  RequestCheckBond,
-  RequestCheckRedeem,
-  ResponseCheckStaking,
-  RequestCheckUnbond,
   ValidatorsRequest,
-  RequestCheckRebond,
   RequestStaking,
-  RequestCheckStaking,
-  RequestCheckBondExtra,
   RequestRedeem,
   RequestRebond,
   RequestUnbond,
@@ -20,26 +13,6 @@ import { sendMessage } from '@/extension/messaging/index';
 
 export function getValidators(request: ValidatorsRequest): Promise<FWValidatorInfoFull[]> {
   return sendMessage('pri(staking.validators)', request);
-}
-
-export function checkBond(request: RequestCheckBond): Promise<ResponseCheckStaking> {
-  return sendMessage('pri(staking.checkBond)', request);
-}
-
-export function checkBondExtra(request: RequestCheckBondExtra): Promise<ResponseCheckStaking> {
-  return sendMessage('pri(staking.checkBondExtra)', request);
-}
-
-function checkUnbond(request: RequestCheckUnbond): Promise<ResponseCheckStaking> {
-  return sendMessage('pri(staking.checkUnbond)', request);
-}
-
-function checkRebond(request: RequestCheckRebond): Promise<ResponseCheckStaking> {
-  return sendMessage('pri(staking.checkRebond)', request);
-}
-
-function checkRedeem(request: RequestCheckRedeem): Promise<ResponseCheckStaking> {
-  return sendMessage('pri(staking.checkRedeem)', request);
 }
 
 function makeBond(request: RequestBond, callback: (data: BasicTxResponse) => void): Promise<BasicTxResponse> {
@@ -76,19 +49,4 @@ export function makeStaking(
   if (type === 'rebond') return makeRebond(request as RequestRebond, callback);
 
   return makeRedeem(request as RequestRedeem, callback);
-}
-
-export function checkStaking(
-  type: 'bond' | 'bondExtra' | 'unbond' | 'rebond' | 'redeem',
-  request: RequestCheckStaking
-): Promise<ResponseCheckStaking> {
-  if (type === 'bond') return checkBond(request as RequestCheckBond);
-
-  if (type === 'bondExtra') return checkBondExtra(request as RequestCheckBond);
-
-  if (type === 'unbond') return checkUnbond(request as RequestCheckUnbond);
-
-  if (type === 'rebond') return checkRebond(request as RequestCheckRebond);
-
-  return checkRedeem(request as RequestCheckRedeem);
 }

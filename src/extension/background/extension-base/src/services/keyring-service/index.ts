@@ -43,7 +43,9 @@ export class KeyringService {
     return keyring.backupAccount(pair, password);
   }
 
-  getPair(address: string) {
+  getPair(address: Nullable<string>) {
+    if (!address) return null;
+
     try {
       return keyring.getPair(address);
     } catch {

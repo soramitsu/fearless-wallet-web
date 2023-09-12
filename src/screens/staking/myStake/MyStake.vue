@@ -4,7 +4,7 @@
       <div class="action-buttons">
         <BorderButton
           class="action-button"
-          text="staking.stakeMore"
+          text="staking.bondExtra"
           iconName="stake"
           @click="toggleVisible('showBondExtraForm', true)"
         />
@@ -24,7 +24,7 @@
         />
 
         <div class="menu">
-          <Dropdown :options="actionOptions" :handler="openForm" type="dots" />
+          <Dropdown :options="actionOptions" @handler="openForm" type="dots" />
         </div>
       </div>
 

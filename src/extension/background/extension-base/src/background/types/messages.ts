@@ -1,14 +1,4 @@
-import {
-  RequestCheckBond,
-  RequestCheckRebond,
-  RequestCheckRedeem,
-  ResponseCheckStaking,
-  RequestCheckUnbond,
-  ValidatorsRequest,
-  RequestCheckBondExtra,
-  RequestBond,
-  RequestBondExtra,
-} from '../../services/staking-service/types';
+import { ValidatorsRequest, RequestBond, RequestBondExtra } from '../../services/staking-service/types';
 import { RequestRebond, RequestRedeem, RequestUnbond } from './../../services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -163,20 +153,10 @@ export interface RequestSignatures {
 
   // staking
   'pri(staking.validators)': [ValidatorsRequest, FWValidatorInfoFull[]];
-
-  'pri(staking.checkBond)': [RequestCheckBond, ResponseCheckStaking];
   'pri(staking.makeBond)': [RequestBond, BasicTxResponse, BasicTxResponse];
-
-  'pri(staking.checkBondExtra)': [RequestCheckBondExtra, ResponseCheckStaking];
   'pri(staking.makeBondExtra)': [RequestBondExtra, BasicTxResponse, BasicTxResponse];
-
-  'pri(staking.checkUnbond)': [RequestCheckUnbond, ResponseCheckStaking];
   'pri(staking.makeUnbond)': [RequestUnbond, BasicTxResponse, BasicTxResponse];
-
-  'pri(staking.checkRebond)': [RequestCheckRebond, ResponseCheckStaking];
   'pri(staking.makeRebond)': [RequestRebond, BasicTxResponse, BasicTxResponse];
-
-  'pri(staking.checkRedeem)': [RequestCheckRedeem, ResponseCheckStaking];
   'pri(staking.makeRedeem)': [RequestRedeem, BasicTxResponse, BasicTxResponse];
 
   //ether

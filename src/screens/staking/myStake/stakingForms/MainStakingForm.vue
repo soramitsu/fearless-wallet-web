@@ -41,6 +41,8 @@
           @openValidatorList="openValidatorList"
         />
 
+        <BondExtra v-else-if="isBondExtra" :stakingCurrency="stakingCurrency" :fee="fee" />
+
         <Unbond v-else-if="isUnbond" :stakingCurrency="stakingCurrency" :fee="fee" />
 
         <Redeem v-else-if="isRedeeam" :stakingCurrency="stakingCurrency" :fee="fee" :rewards="rewards" />
@@ -73,13 +75,14 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
+import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import Bond from '@/screens/staking/myStake/stakingForms/Bond.vue';
+import BondExtra from '@/screens/staking/myStake/stakingForms/BondExtra.vue';
 import Redeem from '@/screens/staking/myStake/stakingForms/Redeem.vue';
 import Unbond from '@/screens/staking/myStake/stakingForms/Unbond.vue';
 import Rebond from '@/screens/staking/myStake/stakingForms/Rebond.vue';
@@ -87,7 +90,6 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { NetworkName } from '@/interfaces';
 import { calcTransferableSendMinusFee, isValidAmountAsset } from '@/helpers/currencies';
-import { checkStaking } from '@/extension/messaging';
 import { RequestCheckStaking } from '@/extension/background/extension-base/src/services/staking-service/types';
 
 @Component({
@@ -96,6 +98,7 @@ import { RequestCheckStaking } from '@/extension/background/extension-base/src/s
     Rebond,
     Redeem,
     Unbond,
+    BondExtra,
     ConfirmationPasswordPopup,
   },
 })
@@ -228,37 +231,19 @@ export default class MainStakingForm extends Vue {
     } as RequestCheckStaking;
   }
 
-  @Watch('amount')
-  async calculateEstimates() {
-    const { fee } = await this.verifyTx();
-
-    this.fee = fee ?? '0';
-  }
-
-  async verifyTx(_amount?: string) {
-    const amount = _amount ?? (this.amount !== '' && this.amount !== '0') ? this.amount : '1';
-
-    const ex = await checkStaking(this.type, {
-      networkName: this.network,
-      from: this.selectedWallet.address,
-      amount,
-      controller: '',
-      stashAccount: '',
-    });
-
-    return ex;
-  }
-
   get lastUnstake() {
     return '1.1'; // текущее количество в анбонде
   }
 
   mounted() {
     if (this.isRebond) this.amount = this.lastUnstake;
+
+    this.getSoraFees();
   }
 
   async getSoraFees() {
     // const { StakingBond, StakingBondExtra, StakingRebond, StakingUnbond } = await getSoraFees();
+    //
     // if (this.isBond) {
     //   this.fee = StakingBond;
     // } else if (this.isBondExtra) {
@@ -301,16 +286,14 @@ export default class MainStakingForm extends Vue {
     this.amount = amount;
   }
 
-  calcTransferableSendMinusFee(fee: string) {
-    return calcTransferableSendMinusFee(this.stakingCurrency, this.network, fee);
+  calcTransferableSendMinusFee() {
+    return calcTransferableSendMinusFee(this.stakingCurrency, this.network, this.fee);
   }
 
   async setMax() {
     if (!this.stakingCurrency) return;
 
-    const { fee } = await this.verifyTx(this.transferableAmount.toString());
-
-    this.amount = this.calcTransferableSendMinusFee(fee ?? '0');
+    this.amount = this.calcTransferableSendMinusFee();
   }
 
   handlerBack() {

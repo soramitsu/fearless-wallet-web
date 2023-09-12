@@ -1,5 +1,5 @@
 <template>
-  <div class="staking-form">
+  <div class="bond-form">
     <template v-if="step === 1">
       <Hint class="hint" iconName="notification" :text="text" />
 
@@ -128,7 +128,7 @@ import { COUNT_VALIDATORS } from '@/consts/staking';
     SelectionValidatorsForm,
   },
 })
-export default class StakingForm extends Vue {
+export default class Bond extends Vue {
   state: Record<string, SelectionValidator> = {};
   payoutAccount = '';
   payout = '1';
@@ -249,7 +249,7 @@ export default class StakingForm extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.staking-form {
+.bond-form {
   .hint {
     padding: $default-padding;
   }

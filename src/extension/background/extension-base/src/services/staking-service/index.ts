@@ -4,7 +4,7 @@ import { getValidatorsInfo, bond } from '../../api/substrate/staking';
 import { signAndSendExtrinsic } from '../../api/substrate/shared/signAndSendExtrinsic';
 import { keyringService } from '../keyring-service';
 import { getUtilityProps } from '../../background/utils/utils';
-import { RequestCheckBond, ValidatorsRequest, RequestBond, RequestUnbond, RequestRebond, RequestRedeem } from './types';
+import { ValidatorsRequest, RequestBond, RequestUnbond, RequestRebond, RequestRedeem } from './types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import { NetworkName } from '@/interfaces';
 import { DAY1 } from '@/consts/time';
@@ -53,7 +53,7 @@ export class StakingService {
     return validators;
   }
 
-  public async createBondExtrinsic({ networkName, controller, amount, stashAccount, from }: RequestCheckBond) {
+  public async createBondExtrinsic({ networkName, controller, amount, stashAccount, from }: RequestBond) {
     const apiProps = this.getSubstrateApiMap[networkName];
 
     if (!apiProps.api) return { extrinsic: null, fee: '0' };
@@ -99,27 +99,6 @@ export class StakingService {
     return { status: true };
   }
 
-  public async createUnbondExtrinsic({ networkName, controller, amount, stashAccount, from }: RequestCheckBond) {
-    const apiProps = this.getSubstrateApiMap[networkName];
-
-    if (!apiProps.api) return { extrinsic: null, fee: '0' };
-
-    const isReady = await apiProps.api?.isReady;
-
-    if (!isReady) return { extrinsic: null, fee: '0' };
-
-    // TODO STAKING: использовать функцию из библиотеки
-    const extrinsic = bond(apiProps.api, { controller, amount, stashAccount });
-
-    const { precision: utilityPrecision } = getUtilityProps(networkName); // стекается всегда утилити токен, ВАЖНО!!! уточнить этот момент
-
-    const paymentInfo = await extrinsic?.paymentInfo(from);
-    const partialFee = paymentInfo ? +paymentInfo.partialFee : '0';
-    const fee = FPNumber.fromCodecValue(partialFee, utilityPrecision).toString();
-
-    return { extrinsic, fee };
-  }
-
   public async makeUnbond(
     params: RequestUnbond & { callback: (res: BasicTxResponse) => void }
   ): Promise<BasicTxResponse> {
@@ -147,27 +126,6 @@ export class StakingService {
     return { status: true };
   }
 
-  public async createRebondExtrinsic({ networkName, controller, amount, stashAccount, from }: RequestCheckBond) {
-    const apiProps = this.getSubstrateApiMap[networkName];
-
-    if (!apiProps.api) return { extrinsic: null, fee: '0' };
-
-    const isReady = await apiProps.api?.isReady;
-
-    if (!isReady) return { extrinsic: null, fee: '0' };
-
-    // TODO STAKING: использовать функцию из библиотеки
-    const extrinsic = bond(apiProps.api, { controller, amount, stashAccount });
-
-    const { precision: utilityPrecision } = getUtilityProps(networkName); // стекается всегда утилити токен, ВАЖНО!!! уточнить этот момент
-
-    const paymentInfo = await extrinsic?.paymentInfo(from);
-    const partialFee = paymentInfo ? +paymentInfo.partialFee : '0';
-    const fee = FPNumber.fromCodecValue(partialFee, utilityPrecision).toString();
-
-    return { extrinsic, fee };
-  }
-
   public async makeRebond(
     params: RequestRebond & { callback: (res: BasicTxResponse) => void }
   ): Promise<BasicTxResponse> {
@@ -193,27 +151,6 @@ export class StakingService {
     });
 
     return { status: true };
-  }
-
-  public async createRedeemExtrinsic({ networkName, controller, amount, stashAccount, from }: RequestCheckBond) {
-    const apiProps = this.getSubstrateApiMap[networkName];
-
-    if (!apiProps.api) return { extrinsic: null, fee: '0' };
-
-    const isReady = await apiProps.api?.isReady;
-
-    if (!isReady) return { extrinsic: null, fee: '0' };
-
-    // TODO STAKING: использовать функцию из библиотеки
-    const extrinsic = bond(apiProps.api, { controller, amount, stashAccount });
-
-    const { precision: utilityPrecision } = getUtilityProps(networkName); // стекается всегда утилити токен, ВАЖНО!!! уточнить этот момент
-
-    const paymentInfo = await extrinsic?.paymentInfo(from);
-    const partialFee = paymentInfo ? +paymentInfo.partialFee : '0';
-    const fee = FPNumber.fromCodecValue(partialFee, utilityPrecision).toString();
-
-    return { extrinsic, fee };
   }
 
   public async makeRedeem(

@@ -144,7 +144,7 @@ export default class BaseApi {
     try {
       return encodeAddress(publicKey, prefix);
     } catch {
-      // dot ETH addresses
+      // for ETH addresses
       return publicKey as string;
     }
   }

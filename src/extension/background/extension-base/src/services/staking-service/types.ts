@@ -17,56 +17,56 @@ export interface ResponseCheckStaking {
 
 ///////////////////////////////////////////////////////
 
-export interface RequestCheckBond extends DefaultBondParams {
+export interface Bond extends DefaultBondParams {
   networkName: NetworkName;
   from: string;
   amount: string;
 }
 
-export type RequestBond = PasswordRequestSign<RequestCheckBond>;
+export type RequestBond = PasswordRequestSign<Bond>;
 
 ///////////////////////////////////////////////////////
 
-export interface RequestCheckBondExtra extends DefaultBondParams {
+export interface BondExtra extends DefaultBondParams {
   networkName: NetworkName;
   from: string;
   amount: string;
 }
 
-export type RequestBondExtra = PasswordRequestSign<RequestCheckBond>;
+export type RequestBondExtra = PasswordRequestSign<BondExtra>;
 
 ///////////////////////////////////////////////////////
 
-export interface RequestCheckUnbond extends DefaultBondParams {
+export interface Unbond extends DefaultBondParams {
   networkName: NetworkName;
   from: string;
   amount: string;
 }
 
-export type RequestUnbond = PasswordRequestSign<RequestCheckBond>;
+export type RequestUnbond = PasswordRequestSign<Unbond>;
 
 ///////////////////////////////////////////////////////
 
-export interface RequestCheckRebond extends DefaultBondParams {
+export interface Rebond extends DefaultBondParams {
   networkName: NetworkName;
   from: string;
   amount: string;
 }
 
-export type RequestRebond = PasswordRequestSign<RequestCheckBond>;
+export type RequestRebond = PasswordRequestSign<Rebond>;
 
 ///////////////////////////////////////////////////////
 
-export interface RequestCheckRedeem extends DefaultBondParams {
+export interface Redeem extends DefaultBondParams {
   networkName: NetworkName;
   from: string;
   amount: string;
 }
 
-export type RequestRedeem = PasswordRequestSign<RequestCheckBond>;
+export type RequestRedeem = PasswordRequestSign<Redeem>;
 
 //////////////////////////////////////////////////////////
 
-export type RequestCheckStaking = RequestCheckBond | RequestCheckUnbond | RequestCheckRebond | RequestCheckRedeem;
+export type RequestCheckStaking = Bond | BondExtra | Unbond | Rebond | Redeem;
 
-export type RequestStaking = RequestBond | RequestUnbond | RequestRebond | RequestRedeem;
+export type RequestStaking = RequestBond | RequestBondExtra | RequestUnbond | RequestRebond | RequestRedeem;

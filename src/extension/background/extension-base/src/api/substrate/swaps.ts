@@ -82,6 +82,7 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
     amountWithDirection,
     isExchangeB,
     liquiditySource,
+    true,
     DexId.XOR
   );
 
@@ -95,6 +96,7 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
     amountWithDirection,
     isExchangeB,
     liquiditySource,
+    true,
     DexId.XSTUSD
   );
 

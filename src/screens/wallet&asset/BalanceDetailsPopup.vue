@@ -42,6 +42,8 @@ export default class LockedDetailsPopup extends Vue {
   }
 
   get detailsBalance() {
+    if (this.currency.balances === undefined) return [];
+
     const balances =
       this.network === ALL_NETWORKS
         ? this.currency.balances

@@ -19,7 +19,7 @@ import { firstCharToUp } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 
-type MenuItemType = 'wallet' | 'crowdloans' | 'staking' | 'polkaswap' | 'history';
+type MenuItemType = 'wallet' | 'crowdloans' | 'staking' | 'polkaswap';
 
 @Component({
   components: { MenuItem },
@@ -27,7 +27,7 @@ type MenuItemType = 'wallet' | 'crowdloans' | 'staking' | 'polkaswap' | 'history
 export default class Menu extends Vue {
   walletItems: string[] = [Components.Accounts, Components.Export, Components.Nodes];
   stakingItems: string[] = [Components.MyStake];
-  menuItems: MenuItemType[] = ['wallet', 'crowdloans', 'staking', 'polkaswap', 'history'];
+  menuItems: MenuItemType[] = ['wallet', 'staking', 'crowdloans', 'polkaswap'];
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 

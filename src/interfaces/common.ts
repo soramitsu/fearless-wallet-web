@@ -54,10 +54,9 @@ enum MenuItems {
   crowdloans = 'Crowdloans',
   staking = 'Staking',
   polkaswap = 'Polkaswap',
-  history = 'History',
 }
 
-type MenuItem = 'Wallet' | 'Crowdloans' | 'Staking' | 'Polkaswap' | 'History';
+type MenuItem = keyof typeof MenuItems;
 
 type FiatJson = {
   id: string;

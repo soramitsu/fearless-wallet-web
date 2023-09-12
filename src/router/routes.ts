@@ -8,7 +8,6 @@ import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import { isOnboardingRequired } from '@/extension/messaging';
 
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
-const History = () => import('@/screens/history/History.vue');
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
 const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
@@ -43,7 +42,6 @@ export enum Components {
   Crowdloans = 'Crowdloans',
   Polkaswap = 'Polkaswap',
   Staking = 'Staking',
-  History = 'History',
   Asset = 'Asset',
   AccountsLayout = 'AccountsLayout',
   Accounts = 'Accounts',
@@ -214,11 +212,6 @@ const routes: Array<RouteConfig> = [
         path: 'polkaswap',
         name: Components.Polkaswap,
         component: Polkaswap,
-      },
-      {
-        path: 'history',
-        name: Components.History,
-        component: History,
       },
     ],
     beforeEnter: (to, from, next) => {

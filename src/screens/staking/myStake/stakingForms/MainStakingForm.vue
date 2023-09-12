@@ -8,16 +8,14 @@
   >
     <div class="staking-management">
       <Scroll>
-        <FInput
-          v-if="step === 1"
-          v-model="selectedAccountName"
-          placeholder="accounts.account"
-          size="big"
-          :readonly="true"
-        />
+        <div v-if="isControllerAccount" class="controller-description row">
+          {{ $t('staking.separateAccountController') }}
+        </div>
+
+        <FInput v-if="step === 1" v-model="accountName" placeholder="accounts.account" size="big" :readonly="true" />
 
         <SelectInput
-          v-if="step === 1"
+          v-if="showAmountInput"
           class="amount-input"
           text="assets.amount"
           :transferableAmount="transferableAmount"
@@ -30,6 +28,7 @@
           @setMax="setMax"
         />
 
+        <!-- Удалить бонд из моего стейка -->
         <Bond
           v-if="isBond"
           :step="step"
@@ -48,6 +47,13 @@
         <Redeem v-else-if="isRedeeam" :stakingCurrency="stakingCurrency" :fee="fee" :rewards="rewards" />
 
         <Rebond v-else-if="isRebond" :stakingCurrency="stakingCurrency" :fee="fee" :amount="amount" />
+
+        <ControllerAccount
+          v-else-if="isControllerAccount"
+          :network="network"
+          :controllerAccount="controllerAccount"
+          @update:controllerAccount="updateControllerAccount"
+        />
       </Scroll>
 
       <FButton
@@ -82,15 +88,17 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import Bond from '@/screens/staking/myStake/stakingForms/Bond.vue';
-import BondExtra from '@/screens/staking/myStake/stakingForms/BondExtra.vue';
 import Redeem from '@/screens/staking/myStake/stakingForms/Redeem.vue';
 import Unbond from '@/screens/staking/myStake/stakingForms/Unbond.vue';
 import Rebond from '@/screens/staking/myStake/stakingForms/Rebond.vue';
+import BondExtra from '@/screens/staking/myStake/stakingForms/BondExtra.vue';
+import ControllerAccount from '@/screens/staking/myStake/stakingForms/ControllerAccount.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { NetworkName } from '@/interfaces';
 import { calcTransferableSendMinusFee, isValidAmountAsset } from '@/helpers/currencies';
 import { RequestCheckStaking } from '@/extension/background/extension-base/src/services/staking-service/types';
+import BaseApi from '@/util/BaseApi';
 
 @Component({
   components: {
@@ -99,6 +107,7 @@ import { RequestCheckStaking } from '@/extension/background/extension-base/src/s
     Redeem,
     Unbond,
     BondExtra,
+    ControllerAccount,
     ConfirmationPasswordPopup,
   },
 })
@@ -109,11 +118,12 @@ export default class MainStakingForm extends Vue {
   fee = '0';
   rewards = '2';
   step = 1;
+  controllerAccount = '';
 
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
   @Prop({ type: String }) network!: NetworkName;
-  @Prop({ type: String }) type!: 'bond' | 'bondExtra' | 'unbond' | 'rebond' | 'redeem';
+  @Prop({ type: String }) type!: 'bond' | 'bondExtra' | 'unbond' | 'rebond' | 'redeem' | 'controllerAccount';
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -126,7 +136,18 @@ export default class MainStakingForm extends Vue {
       if (this.step === 3) return 'common.iAgree';
     }
 
+    if (this.isControllerAccount) {
+      if (this.controllerAccount !== '' && !this.isValidControllerAddress)
+        return this.$t('accounts.invalidAccountAddress');
+    }
+
     return 'common.confirm';
+  }
+
+  get showAmountInput() {
+    if (this.isControllerAccount) return false;
+
+    return this.step === 1;
   }
 
   get showConfirmButton() {
@@ -181,8 +202,20 @@ export default class MainStakingForm extends Vue {
     return this.type === 'rebond';
   }
 
+  get isControllerAccount() {
+    return this.type === 'controllerAccount';
+  }
+
+  get isValidControllerAddress() {
+    if (this.controllerAccount === '') return false;
+
+    return BaseApi.validateAddress(this.controllerAccount, this.network);
+  }
+
   get confirmBtnDisabled() {
     if (this.step === 1) return this.amount === '' || +this.amount === 0 || !this.isValidAmountAsset;
+
+    if (this.isControllerAccount) return !this.isValidControllerAddress;
 
     return false;
   }
@@ -217,7 +250,7 @@ export default class MainStakingForm extends Vue {
     return getCostOfAssets(this.amount, this.stakingAssetPrice).toString();
   }
 
-  get selectedAccountName() {
+  get accountName() {
     return this.selectedWallet.name;
   }
 
@@ -242,8 +275,7 @@ export default class MainStakingForm extends Vue {
   }
 
   async getSoraFees() {
-    // const { StakingBond, StakingBondExtra, StakingRebond, StakingUnbond } = await getSoraFees();
-    //
+    // const { StakingBond, StakingBondExtra, StakingRebond, StakingUnbond, StakingSetController } = await getSoraFees();
     // if (this.isBond) {
     //   this.fee = StakingBond;
     // } else if (this.isBondExtra) {
@@ -252,7 +284,13 @@ export default class MainStakingForm extends Vue {
     //   this.fee = StakingRebond;
     // } else if (this.isUnbond) {
     //   this.fee = StakingUnbond;
+    // } else if (this.isControllerAccount) {
+    //   this.fee = StakingSetController;
     // }
+  }
+
+  updateControllerAccount(value: string) {
+    this.controllerAccount = value;
   }
 
   closeForm() {
@@ -314,6 +352,14 @@ export default class MainStakingForm extends Vue {
 
   .amount-input {
     margin-top: 10px;
+  }
+
+  .controller-description {
+    font-size: 14px;
+    text-align: left;
+    color: $default-white;
+    margin-bottom: 15px;
+    margin-left: 15px;
   }
 }
 </style>

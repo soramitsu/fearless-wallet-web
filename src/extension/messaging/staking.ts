@@ -35,8 +35,15 @@ function makeRedeem(request: RequestRedeem, callback: (data: BasicTxResponse) =>
   return sendMessage('pri(staking.makeRedeem)', request, callback);
 }
 
+function setControllerAccount(
+  request: RequestRedeem,
+  callback: (data: BasicTxResponse) => void
+): Promise<BasicTxResponse> {
+  return sendMessage('pri(staking.setControllerAccount)', request, callback);
+}
+
 export function makeStaking(
-  type: 'bond' | 'bondExtra' | 'unbond' | 'rebond' | 'redeem',
+  type: 'bond' | 'bondExtra' | 'unbond' | 'rebond' | 'redeem' | 'controllerAccount',
   request: RequestStaking,
   callback: (data: BasicTxResponse) => void
 ): Promise<BasicTxResponse> {
@@ -47,6 +54,8 @@ export function makeStaking(
   if (type === 'unbond') return makeUnbond(request as RequestUnbond, callback);
 
   if (type === 'rebond') return makeRebond(request as RequestRebond, callback);
+
+  if (type === 'controllerAccount') return setControllerAccount(request as RequestRebond, callback);
 
   return makeRedeem(request as RequestRedeem, callback);
 }

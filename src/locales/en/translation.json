@@ -203,7 +203,6 @@
     "createContact": "Create contact",
     "feeDescription": "Every time you send cryptography to the blockchain, a network fee is charged. In fact, the network fee is a reward for miners and nodes that broadcast your transaction to the blockchain.",
     "saveAddressForAllNetwork": "Save address for all networks",
-    "invalidAccountAddress": "Invalid account address",
     "addContact": "Add contact",
     "recent": "Recent",
     "chooseFromHistory": "Choose from history",
@@ -289,6 +288,7 @@
     "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;"
   },
   "accounts": {
+    "invalidAccountAddress": "Invalid account address",
     "walletName": "Wallet name",
     "createNewAccount": "Create a new account",
     "dontNeedAccount": "I don’t need an account",
@@ -440,6 +440,8 @@
     "myStaked": "My staked",
     "staking": "Staking",
     "unstaking": "Unstaking",
+    "rewarded": "Rewarded",
+    "redeemable": "Redeemable",
     "unstakingDays": "Unstaking period {value} days",
     "days": "days",
     "unstakingPeriod": "Unstaking period",

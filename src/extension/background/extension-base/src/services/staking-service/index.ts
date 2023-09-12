@@ -4,7 +4,14 @@ import { getValidatorsInfo, bond } from '../../api/substrate/staking';
 import { signAndSendExtrinsic } from '../../api/substrate/shared/signAndSendExtrinsic';
 import { keyringService } from '../keyring-service';
 import { getUtilityProps } from '../../background/utils/utils';
-import { ValidatorsRequest, RequestBond, RequestUnbond, RequestRebond, RequestRedeem } from './types';
+import {
+  ValidatorsRequest,
+  RequestBond,
+  RequestUnbond,
+  RequestRebond,
+  RequestRedeem,
+  RequestSetControllerAccount,
+} from './types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import { NetworkName } from '@/interfaces';
 import { DAY1 } from '@/consts/time';
@@ -39,8 +46,9 @@ export class StakingService {
 
     // TODO STAKING: использовать функцию из библиотеки
     const validators: FWValidatorInfoFull[] = (await getValidatorsInfo(apiProps.api)).map((validator) => {
-      const name = validator.identity?.info.display ?? 'no validator info';
-      const description = validator.identity?.info.twitter ?? validator.identity?.info.web ?? 'no validator info';
+      const info = validator.identity?.info;
+      const name = info?.display || info?.legal || 'no validator info';
+      const description = info?.twitter || info?.web || 'no validator info';
 
       return { ...validator, name, description };
     });
@@ -155,6 +163,33 @@ export class StakingService {
 
   public async makeRedeem(
     params: RequestRedeem & { callback: (res: BasicTxResponse) => void }
+  ): Promise<BasicTxResponse> {
+    const { networkName, password, isSavePass, from, callback } = params;
+
+    const isUnlock = keyringService.unlockPair(from, password);
+
+    if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
+
+    const apiProps = this.getSubstrateApiMap[networkName];
+
+    const { extrinsic } = await this.createBondExtrinsic(params);
+
+    await signAndSendExtrinsic({
+      type: SignerType.PASSWORD,
+      apiProps,
+      callback,
+      extrinsic,
+      password,
+      isSavePass,
+      address: from,
+      errorMessage: 'bond error',
+    });
+
+    return { status: true };
+  }
+
+  public async setControllerAccount(
+    params: RequestSetControllerAccount & { callback: (res: BasicTxResponse) => void }
   ): Promise<BasicTxResponse> {
     const { networkName, password, isSavePass, from, callback } = params;
 

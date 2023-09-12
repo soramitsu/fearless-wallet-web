@@ -67,6 +67,16 @@ export type RequestRedeem = PasswordRequestSign<Redeem>;
 
 //////////////////////////////////////////////////////////
 
+export interface SetControllerAccount extends DefaultBondParams {
+  networkName: NetworkName;
+  from: string;
+  amount: string;
+}
+
+export type RequestSetControllerAccount = PasswordRequestSign<SetControllerAccount>;
+
+//////////////////////////////////////////////////////////
+
 export type RequestCheckStaking = Bond | BondExtra | Unbond | Rebond | Redeem;
 
 export type RequestStaking = RequestBond | RequestBondExtra | RequestUnbond | RequestRebond | RequestRedeem;

@@ -66,12 +66,6 @@
         @closeForm="toggleVisible('showYourValidatorsForm', false)"
       />
 
-      <ControllerAccount
-        v-if="showControllerAccountForm"
-        :network="network"
-        @closeForm="toggleVisible('showControllerAccountForm', false)"
-      />
-
       <PendingRewardForm
         v-if="showPendingRewardForm"
         :stakingCurrency="stakingCurrency"
@@ -96,7 +90,6 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { SORA_REWARD_ASSET } from '@/consts/sora';
 import YourValidatorsManagement from '@/screens/staking/myStake/validators/YourValidatorsManagement.vue';
-import ControllerAccount from '@/screens/staking/myStake/ControllerAccount.vue';
 import PendingRewardForm from '@/screens/staking/myStake/rewards/PendingRewardForm.vue';
 import { isSora } from '@/helpers';
 import { Components } from '@/router/routes';
@@ -111,7 +104,6 @@ type ShowField = 'showBondForm' | 'showBondExtraForm' | 'showUnbondForm' | 'show
     MyStakeSettings,
     MainStakingForm,
     PendingRewardForm,
-    ControllerAccount,
     YourValidatorsManagement,
   },
 })
@@ -129,8 +121,9 @@ export default class MyStake extends Vue {
   showUnbondForm = false;
   showRedeemForm = false;
   showRebondForm = false;
-  showYourValidatorsForm = false;
   showControllerAccountForm = false;
+
+  showYourValidatorsForm = false;
   showPendingRewardForm = false;
 
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -138,7 +131,12 @@ export default class MyStake extends Vue {
 
   get showMainStakingForm() {
     return (
-      this.showBondForm || this.showBondExtraForm || this.showUnbondForm || this.showRedeemForm || this.showRebondForm
+      this.showBondForm ||
+      this.showBondExtraForm ||
+      this.showUnbondForm ||
+      this.showRedeemForm ||
+      this.showRebondForm ||
+      this.showControllerAccountForm
     );
   }
 
@@ -151,7 +149,11 @@ export default class MyStake extends Vue {
 
     if (this.showRebondForm) return 'rebond';
 
-    return 'redeem';
+    if (this.showRedeemForm) return 'redeem';
+
+    if (this.showControllerAccountForm) return 'controllerAccount';
+
+    return '';
   }
 
   get isAbout() {
@@ -273,6 +275,7 @@ export default class MyStake extends Vue {
     this.showUnbondForm = false;
     this.showRedeemForm = false;
     this.showRebondForm = false;
+    this.showControllerAccountForm = false;
   }
 
   toggleVisible(field: ShowField, value: boolean) {

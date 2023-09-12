@@ -33,7 +33,7 @@
 
       <div class="row">
         <div>
-          {{ $t('staking.unstakingPeriod') }}
+          {{ $t('staking.unstaking') }}
         </div>
 
         <div class="value">{{ unstakingAmount }} {{ asset }}</div>

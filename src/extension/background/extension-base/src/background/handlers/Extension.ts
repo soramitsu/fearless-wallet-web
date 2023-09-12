@@ -1255,6 +1255,36 @@ export default class Extension extends FWExtensionBase {
     return state.stakingService.makeRedeem({ ...request, callback });
   }
 
+  async setControllerAccount(id: string, port: Port, request: RequestRebond): Promise<BasicTxResponse> {
+    const { from, isSavePass, isMobile, password } = request;
+
+    const pair = keyringService.getPair(from);
+
+    if (pair?.isLocked) {
+      const isUnlock = keyringService.unlockPair(pair, password);
+
+      if (!isUnlock) {
+        setTimeout(() => this.cancelSubscription(id), 500);
+
+        return { status: false, errors: [{ message: 'Invalid password' }] };
+      }
+    }
+
+    const cb = createSubscription<'pri(staking.setControllerAccount)'>(id, port);
+
+    const address = getSubstrateAddress(from);
+    const substratePair = keyringService.getPair(address)!;
+    const ethereumAddress = substratePair.meta.ethereumAddress as string;
+
+    const savePass = () => {
+      this.savePass(address, ethereumAddress, !!isSavePass, !!isMobile);
+    };
+
+    const callback = this.makeExtrinsicCallback(cb, savePass);
+
+    return state.stakingService.setControllerAccount({ ...request, callback });
+  }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -1393,6 +1423,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(staking.makeRedeem)':
         return this.makeRedeem(id, port, request as RequestRedeem);
+
+      case 'pri(staking.setControllerAccount)':
+        return this.setControllerAccount(id, port, request as RequestRedeem);
 
       // price
       case 'pri(price.update.currency)':

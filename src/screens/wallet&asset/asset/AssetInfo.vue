@@ -25,6 +25,7 @@
             <div class="asset__locked-content">
               <span class="asset__locked-title">{{ $t('assets.locked') }}</span>
               <span>{{ lockedBalanceString }}</span>
+
               <Icon icon="info" class="details-icon" />
             </div>
           </div>

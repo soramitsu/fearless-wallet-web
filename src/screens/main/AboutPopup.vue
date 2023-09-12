@@ -6,7 +6,7 @@
       :showHeader="false"
       :width="410"
       :top="50"
-      @handlerClose="handlerClose"
+      @handlerClose="$emit('handlerClose')"
       sizeWidth="big"
       verticalPlacement="top"
       horizontalPlacement="right"
@@ -100,7 +100,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 
 import { MAIN_ITEMS, COMMUNITY_ITEMS, SOCIAL_MEDIA_ITEMS, SUPPORT_ITEMS } from '@/consts/extensionInformation';
 
@@ -111,12 +111,10 @@ export default class AboutPopup extends Vue {
   socialMediaItems = SOCIAL_MEDIA_ITEMS;
   supportItems = SUPPORT_ITEMS;
 
-  @Prop(Function) handlerClose!: VoidFunction;
-
   open(url: string) {
     window.open(url);
 
-    this.handlerClose();
+    this.$emit('handlerClose');
   }
 
   t(value: string) {

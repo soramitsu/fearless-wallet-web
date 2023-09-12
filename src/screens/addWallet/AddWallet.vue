@@ -127,8 +127,8 @@
     <AddEthereumAccountPopup
       v-if="showAddEthereumAccountPopup"
       sizeWidth="medium"
-      :handlerClose="closeAddEthereumAccountPopup"
-      :handlerAgree="handlerAgree"
+      @handlerClose="closeAddEthereumAccountPopup"
+      @handlerAgree="handlerAgree"
     />
   </div>
 </template>

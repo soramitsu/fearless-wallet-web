@@ -1,5 +1,5 @@
 <template>
-  <Popup headerText="soraCard.getXOR" sizeWidth="big" :showBorder="true" :handlerClose="handlerClose">
+  <Popup headerText="soraCard.getXOR" sizeWidth="big" :showBorder="true" @handlerClose="$emit('handlerClose')">
     <div class="content">
       <div>{{ $t('soraCard.getXORLabel') }}</div>
 
@@ -7,13 +7,13 @@
 
       <FButton width="100%" text="soraCard.swapXOR" class="button" @click="openSoraSwap" />
 
-      <BorderButton width="100%" text="common.cancel" class="button" @click="handlerClose" />
+      <BorderButton width="100%" text="common.cancel" class="button" @click="$emit('handlerClose')" />
     </div>
   </Popup>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet } from '@/store';
@@ -31,7 +31,6 @@ export default class GetXORPopup extends Vue {
   readonly soraNetworkName = SORA_NETWORK_NAME;
   readonly isExtension = IS_EXTENSION;
 
-  @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;

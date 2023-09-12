@@ -76,8 +76,8 @@
       v-if="showNotificationPopup"
       :headers="invalidMessages"
       acceptButtonText="common.accept"
-      :handlerClose="handlerCloseNotificationPopup"
-      :handlerAccept="handlerAcceptAddWallet"
+      @handlerClose="handlerCloseNotificationPopup"
+      @handlerAccept="handlerAcceptAddWallet"
     />
   </FlowStepLayout>
 </template>
@@ -96,7 +96,7 @@ import { DerivationPaths, MnemonicConfirmation, AsyncFn } from '@/interfaces';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import BaseApi from '@/util/BaseApi';
-import { createAccountSuri, createGoogleFile, exportAccount, updateCurrentAccountAddress } from '@/extension/messaging';
+import { addAccount, createGoogleFile, exportAccount, updateCurrentAccount } from '@/extension/messaging';
 import { SelectedWallet } from '@/store/accounts/types';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -226,7 +226,8 @@ export default class CreateGoogle extends Vue {
       const address = await this.saveKeypairFromSeed();
 
       await this.backupWallet(address);
-      updateCurrentAccountAddress(address);
+
+      updateCurrentAccount(address);
 
       this.isLoading = false;
     }
@@ -345,17 +346,12 @@ export default class CreateGoogle extends Vue {
     } = this.derivationPaths;
 
     if (this.suriEthereum !== '') {
-      const ethereumAddress = await createAccountSuri(
-        this.walletPassword,
-        this.suriEthereum,
-        ethereumKeypairType,
-        meta
-      );
+      const ethereumAddress = await addAccount(this.walletPassword, this.suriEthereum, ethereumKeypairType, meta);
 
       meta.ethereumAddress = ethereumAddress;
     }
 
-    const address = await createAccountSuri(this.walletPassword, this.suriSubstrate, substrateKeypairType, meta);
+    const address = await addAccount(this.walletPassword, this.suriSubstrate, substrateKeypairType, meta);
 
     return address;
   }

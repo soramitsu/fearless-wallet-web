@@ -1,11 +1,7 @@
-// Copyright 2019-2022 @polkadot/extension authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
 import { PHISHING_PAGE_REDIRECT } from '@extension-base/defaults';
 import { checkIfDenied } from '@polkadot/phishing';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isNumber } from '@polkadot/util';
-import { keyring } from '@polkadot/ui-keyring';
 import {
   stripUrl,
   transformAccounts,
@@ -73,7 +69,7 @@ export default class Tabs {
 
   accountsListAuthorized(url: string, { anyType }: RequestAccountList): InjectedAccount[] {
     const transformedAccounts = transformAccounts(accountsObservable.subject.getValue(), anyType);
-    const transformedAddresses = transformAddresses(keyring.addresses.subject.getValue());
+    const transformedAddresses = transformAddresses(this.state.keyringService.addressesSubjectValue);
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
 
     return this.filterForAuthorizedAccounts(totalAccounts, url);
@@ -84,7 +80,7 @@ export default class Tabs {
     this.accountSubs[id] = {
       subscription: accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
         const transformedAccounts = transformAccounts(accounts);
-        const transformedMobileAccount = transformAddresses(keyring.addresses.subject.value);
+        const transformedMobileAccount = transformAddresses(this.state.keyringService.addressesSubjectValue);
         const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
 
         chrome.storage.local.set({ transformAccounts: allAccounts });
@@ -117,7 +113,7 @@ export default class Tabs {
   }
 
   getSigningPair(address: string): KeyringPair {
-    const pair = keyring.getPair(address);
+    const pair = this.state.keyringService.getPair(address);
 
     assert(pair, 'Unable to find keypair');
 
@@ -137,12 +133,12 @@ export default class Tabs {
   }
 
   extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
-    const address = keyring.encodeAddress(request.address);
-    const isMobile = !!keyring.getAddress(address, 'address')?.meta.isMobile;
+    const address = this.state.keyringService.encodeAddress(request.address);
+    const isMobile = !!this.state.keyringService.getAddress(address, 'address')?.meta.isMobile;
     let meta;
 
-    if (keyring.getAccount(address)) meta = this.getSigningPair(address).meta;
-    else if (isMobile) meta = keyring.getAddress(address, 'address')?.meta;
+    if (this.state.keyringService.getAccount(address)) meta = this.getSigningPair(address).meta;
+    else if (isMobile) meta = this.state.keyringService.getAddress(address, 'address')?.meta;
 
     const signer = isMobile ? new BeaconSignerJSON(request) : new RequestExtrinsicSign(request);
 
@@ -290,9 +286,6 @@ export default class Tabs {
 
       case 'pub(rpc.subscribeConnected)':
         return this.rpcSubscribeConnected(request as null, id, port);
-
-      case 'pub(rpc.unsubscribe)':
-        return this.rpcUnsubscribe(request as RequestRpcUnsubscribe, port);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

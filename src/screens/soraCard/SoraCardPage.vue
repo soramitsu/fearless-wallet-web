@@ -4,11 +4,11 @@
     :showAnimation="false"
     :fullScreen="true"
     :showBackIcon="showBackIcon"
-    :handlerBack="handlerBack"
-    :closeHandler="closeForm"
+    @handlerBack="handlerBack"
+    @closeHandler="closeForm"
   >
     <div class="container">
-      <X1Form v-if="showX1Form" :handlerClose="closeX1Form" />
+      <X1Form v-if="showX1Form" />
 
       <UnsupportedCountries v-else-if="showCountriesForm" />
 
@@ -41,11 +41,11 @@
       <StepsKYCPopup
         v-if="showStepsKYCPopup"
         :fillSteps="fillSteps"
-        :handlerClose="closeStepsKYCPopup"
-        :proceed="proceedStepsPopup"
+        @handlerClose="closeStepsKYCPopup"
+        @proceed="proceedStepsPopup"
       />
 
-      <GetXORPopup v-if="showGetXORPopup" :handlerClose="closeGetXORPopup" @openX1Form="openX1Form" />
+      <GetXORPopup v-if="showGetXORPopup" @handlerClose="closeGetXORPopup" @openX1Form="openX1Form" />
     </div>
   </AboveForm>
 </template>

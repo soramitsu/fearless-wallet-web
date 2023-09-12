@@ -58,7 +58,7 @@ export interface MakeTransferProps {
   to: string;
   from: string;
   amount: string;
-  password: string | undefined;
+  password: string;
   assetId: string;
   isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;

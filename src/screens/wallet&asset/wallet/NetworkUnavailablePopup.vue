@@ -7,8 +7,8 @@
     :showWarningIcon="showWarningIcon"
     :showAcceptButton="haveMoreOneNodes"
     :showRejectButton="true"
-    :handlerAccept="openSwitchNode"
-    :handlerClose="close"
+    @handlerAccept="openSwitchNode"
+    @handlerClose="close"
     :zIndex="500"
   >
     <Checkbox v-model="isDontShowAgain" size="big" :label="$t('common.dontShowAgain')" class="dont-show-again" />
@@ -27,7 +27,6 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 export default class NetworkUnavailablePopup extends Vue {
   isDontShowAgain = false;
 
-  @Prop(Function) closePopup!: VoidFunction;
   @Prop(Array) networks!: NetworkJson[];
   @Prop(String) network!: string;
   @Mutation(AccountsMutationTypes.HIDE_NETWORK_WARNING) hideNetworkWarning!: Fn<string>;
@@ -58,7 +57,7 @@ export default class NetworkUnavailablePopup extends Vue {
   close() {
     if (this.isDontShowAgain) this.hideNetworkWarning(this.network);
 
-    this.closePopup();
+    this.$emit('closePopup');
   }
 }
 </script>

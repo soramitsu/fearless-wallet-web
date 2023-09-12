@@ -11,10 +11,10 @@ import type {
   MessageTypesWithSubscriptions,
   Port,
   SubscriptionMessageTypes,
+  Subscriptions,
 } from '@extension-base/background/types/types';
 
 type SubscriptionName = 'balance' | 'xorTotalBalance';
-type Subscriptions = Record<string, Port>;
 
 const subscriptions: Subscriptions = {};
 

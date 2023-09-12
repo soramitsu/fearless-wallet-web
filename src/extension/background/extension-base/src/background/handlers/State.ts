@@ -6,7 +6,7 @@ import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
-import { keyring } from '@polkadot/ui-keyring';
+import { EventService, SoraCardService, OnboardingService, KeyringService } from '@extension-base/services';
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import MetadataStore from '@extension-base/stores/Metadata';
@@ -30,7 +30,7 @@ import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-b
 import { SignerPayloadRaw } from '@polkadot/types/types';
 import { JsonRpcProvider } from 'ethers';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
-import { EventService, SoraCardService, OnboardingService } from '@extension-base/services';
+
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
 import type {
   AuthorizeRequest,
@@ -66,7 +66,7 @@ import type {
   ResponseTotalBalances,
 } from '@extension-base/background/types/types';
 import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
-import type { ChainRegistry, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
+import type { ChainRegistry, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
@@ -170,7 +170,7 @@ export default class State {
   public networksJson: NetworkJson[] = []; // from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJson>>();
-  public selectedNetwork: Record<string, string> = {};
+  public selectedNetworks: Record<string, string> = {};
   public serviceInfoSubject = new Subject<ServiceInfo>();
   public balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
@@ -181,8 +181,6 @@ export default class State {
   public metaRequests: Record<string, MetaRequest> = {};
   public signRequests: Record<string, SignRequest> = {};
   public mobileSignRequests: Record<string, MobileSignRequest> = {};
-  private historyMap: Record<string, TransactionHistoryItemType[]> = {};
-  private historySubject = new Subject<Record<string, TransactionHistoryItemType[]>>();
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
   public readonly metaSubject = new BehaviorSubject<MetadataRequest[]>([]);
   public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
@@ -196,10 +194,10 @@ export default class State {
     authorizeAccountsCount: 0,
     dAppName: '',
   };
+  public keyringService = new KeyringService();
   public eventService = new EventService();
   public soraCardService = new SoraCardService();
   public onboardingService = new OnboardingService();
-
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }
@@ -335,11 +333,11 @@ export default class State {
       injectedProviders,
       providers,
       windows,
-      selectedNetwork,
+      selectedNetworks,
     } = await this.getFromStorage([
       'fiatSymbol',
       'authUrls',
-      'selectedNetwork',
+      'selectedNetworks',
       'defaultAuthAccountSelection',
       'injectedProviders',
       'providers',
@@ -348,7 +346,7 @@ export default class State {
     if (authUrls && Object.keys(authUrls).length) this.authUrls = authUrls;
     if (windows && windows.length) this.windows = windows;
     if (fiatSymbol) this.setFiatSymbol(fiatSymbol);
-    if (selectedNetwork) this.selectedNetwork = selectedNetwork;
+    if (selectedNetworks) this.selectedNetworks = selectedNetworks;
     if (injectedProviders) this.injectedProviders = new Map(injectedProviders);
     if (providers) this.providers = providers;
     if (defaultAuthAccountSelection && defaultAuthAccountSelection.length)
@@ -572,9 +570,9 @@ export default class State {
     const currentAccount = await this.currentAccount;
 
     if (currentAccount) {
-      this.selectedNetwork[currentAccount.address] = type;
+      this.selectedNetworks[currentAccount.address] = type;
 
-      storage.set({ selectedNetwork: this.selectedNetwork });
+      storage.set({ selectedNetworks: this.selectedNetworks });
     }
 
     return this.setActiveNetworks(type);
@@ -631,8 +629,8 @@ export default class State {
 
   public selectedNetworksExceptAddress(address: string): string[] {
     const result: string[] = [];
-    Object.keys(this.selectedNetwork).forEach((el) => {
-      if (el !== address) result.push(this.selectedNetwork[el]);
+    Object.keys(this.selectedNetworks).forEach((el) => {
+      if (el !== address) result.push(this.selectedNetworks[el]);
     });
 
     return result;
@@ -645,7 +643,7 @@ export default class State {
   }
 
   public isNetworkSelectedInAnotherWallet(network: NetworkJson, address: string) {
-    if (Object.values(this.selectedNetwork).some((el) => el === ALL_NETWORKS)) return true;
+    if (Object.values(this.selectedNetworks).some((el) => el === ALL_NETWORKS)) return true;
 
     const isSelected =
       this.isPopularNetworksSelected(network, address) ||
@@ -666,7 +664,7 @@ export default class State {
   public isFavoriteNetworkSelected(network: NetworkJson, address: string) {
     const favorites = network.favorite.filter((el) => el !== address);
 
-    return favorites.some((el) => this.selectedNetwork[el] === FAVORITE_NETWORKS);
+    return favorites.some((el) => this.selectedNetworks[el] === FAVORITE_NETWORKS);
   }
 
   public async setActiveNetworks(type: string) {
@@ -692,6 +690,7 @@ export default class State {
         case FAVORITE_NETWORKS:
           if (isFavorite) {
             network.active = true;
+
             break;
           }
 
@@ -1224,7 +1223,7 @@ export default class State {
   }
 
   public getWallets(): KeyringAddress[] {
-    return [...keyring.getAccounts(), ...keyring.getAddresses()];
+    return [...this.keyringService.getAccounts(), ...this.keyringService.getAddresses()];
   }
 
   public setPrice(priceData: PriceJson, callback?: (priceData: PriceJson) => void): void {
@@ -1325,7 +1324,7 @@ export default class State {
 
       // logic for Sora library
       if (data?.address && !data.isMobile) {
-        const pair = keyring.getPair(data?.address);
+        const pair = this.keyringService.getPair(data?.address)!;
 
         apiSora.account = { json: null as any, pair };
 
@@ -1360,11 +1359,12 @@ export default class State {
   }
 
   public getSubstrateAccounts() {
-    const accounts = keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
-    const addresses = keyring.getAddresses();
+    const accounts = this.keyringService.getAccounts().filter((el) => !isEthereumAddress(el.address));
+    const addresses = this.keyringService.getAddresses();
 
     return [...accounts, ...addresses];
   }
+
   public generateDefaultBalance(address: string) {
     if (address === '') return;
 
@@ -1381,8 +1381,8 @@ export default class State {
     address,
     password,
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    const exportedJson = keyring.getPair(address).toJson(password);
-    const decoded = decodePair(password, base64Decode(exportedJson.encoded), exportedJson.encoding.type);
+    const json = this.keyringService.getPair(address)!.toJson(password);
+    const decoded = decodePair(password, base64Decode(json.encoded), json.encoding.type);
 
     return {
       privateKey: u8aToHex(decoded.secretKey),
@@ -1446,92 +1446,7 @@ export default class State {
     this.ready = true;
   }
 
-  public getHistoryMap(): Record<string, TransactionHistoryItemType[]> {
-    return this.historyMap;
-  }
-
   public subscribeNetworkMap() {
     return this.networkMapStore.getSubject();
-  }
-
-  public get getNetworkMap() {
-    return this.networkMap;
-  }
-
-  public setHistory(
-    address: string,
-    network: string,
-    item: TransactionHistoryItemType | TransactionHistoryItemType[],
-    callback?: (items: TransactionHistoryItemType[]) => void
-  ): void {
-    let items: TransactionHistoryItemType[];
-    const networkInfo = this.getNetworkMap[network];
-
-    if (!networkInfo) {
-      return;
-    }
-
-    if (item && !Array.isArray(item)) {
-      item.origin = 'app';
-      items = [item];
-    } else {
-      items = item;
-    }
-
-    items.forEach((item) => {
-      item.feeSymbol = networkInfo.nativeToken;
-
-      if (!item.changeSymbol) {
-        item.changeSymbol = networkInfo.nativeToken;
-      }
-    });
-
-    if (items.length) {
-      this.getAccountAddress().then((currentAddress) => {
-        if (currentAddress === address) {
-          const oldItems = this.historyMap[network] || [];
-
-          this.historyMap[network] = this.combineHistories(oldItems, items);
-          // this.saveHistoryToStorage(address, network, this.historyMap[network]);
-          callback && callback(this.historyMap[network]);
-
-          this.lazyNext('setHistory', () => {
-            this.publishHistory();
-          });
-        } else {
-          // this.saveHistoryToStorage(address, network, items);
-          callback && callback(this.historyMap[network]);
-        }
-      });
-    }
-  }
-
-  public subscribeHistory() {
-    return this.historySubject;
-  }
-
-  private publishHistory() {
-    this.historySubject.next(this.getHistoryMap());
-  }
-
-  private combineHistories(
-    oldItems: TransactionHistoryItemType[],
-    newItems: TransactionHistoryItemType[]
-  ): TransactionHistoryItemType[] {
-    const newHistories = newItems.filter((item) => !oldItems.some((old) => this.isSameHistory(old, item)));
-
-    return [...oldItems, ...newHistories].filter((his) => his.origin === 'app' || his.eventIdx);
-  }
-
-  public isSameHistory(oldItem: TransactionHistoryItemType, newItem: TransactionHistoryItemType): boolean {
-    if (oldItem.extrinsicHash === newItem.extrinsicHash && oldItem.action === newItem.action) {
-      if (oldItem.origin === 'app') {
-        return true;
-      } else {
-        return !oldItem.eventIdx || !newItem.eventIdx || oldItem.eventIdx === newItem.eventIdx;
-      }
-    }
-
-    return false;
   }
 }

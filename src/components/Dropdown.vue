@@ -1,6 +1,13 @@
 <template>
   <Corners>
-    <SDropdown type="button" buttonType="secondary" trigger="click" class="dropdown" size="mini" @select="handler">
+    <SDropdown
+      type="button"
+      buttonType="secondary"
+      trigger="click"
+      class="dropdown"
+      size="mini"
+      @select="$emit('handler')"
+    >
       {{ $t(label) }}
 
       <template slot="menu">
@@ -19,7 +26,6 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 export default class Dropdown extends Vue {
   @Prop(String) value!: string;
   @Prop(Array) options!: Record<string, string>[];
-  @Prop(Function) handler!: VoidFunction;
 
   get label() {
     return this.options.find(({ value }) => value === this.value)?.label ?? '';

@@ -230,13 +230,17 @@ async function fetchHistory(
   isUtility: boolean
 ) {
   try {
-    if (type === 'etherscan' && isUtility) return fetchEthereumHistory(url, address);
+    if (type === 'etherscan') {
+      if (isUtility) return fetchEthereumHistory(url, address);
 
-    if (type === 'etherscan') return fetchEthereumTokenHistory(url, address, assetId);
+      return fetchEthereumTokenHistory(url, address, assetId);
+    }
 
     if (type === 'subquery') return fetchSubqueryHistory(url, address);
-    else if (type === 'subsquid') return fetchSubsquidHistory(url, address);
-    else if (type === 'giantsquid') {
+
+    if (type === 'subsquid') return fetchSubsquidHistory(url, address);
+
+    if (type === 'giantsquid') {
       const formattedAddress = BaseApi.isEthereumNetwork(networkName) ? address.toLowerCase() : address;
 
       return fetchGiantsquidHistory(url, formattedAddress);

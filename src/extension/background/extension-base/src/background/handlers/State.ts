@@ -340,6 +340,7 @@ export default class State {
       'selectedNetworks',
       'defaultAuthAccountSelection',
       'injectedProviders',
+      'selectedNetworks',
       'providers',
       'windows',
     ]);
@@ -643,8 +644,6 @@ export default class State {
   }
 
   public isNetworkSelectedInAnotherWallet(network: NetworkJson, address: string) {
-    if (Object.values(this.selectedNetworks).some((el) => el === ALL_NETWORKS)) return true;
-
     const isSelected =
       this.isPopularNetworksSelected(network, address) ||
       this.isFavoriteNetworkSelected(network, address) ||
@@ -680,7 +679,10 @@ export default class State {
 
       const { name } = network;
       const isFavorite = network.favorite.some((address) => address === currentAccount.address);
-      const isAlreadySelectedType = this.isNetworkSelectedInAnotherWallet(network, currentAccount.address);
+
+      const isAllNetworkSelected = Object.values(this.selectedNetworks).some((el) => el === ALL_NETWORKS);
+      const isAlreadySelectedType =
+        isAllNetworkSelected ?? this.isNetworkSelectedInAnotherWallet(network, currentAccount.address);
 
       switch (type) {
         case ALL_NETWORKS:
@@ -718,20 +720,22 @@ export default class State {
       if (!network.active) {
         if (this.apis.substrate[name]) {
           this.apis.substrate[name].provider?.disconnect();
-          delete this.apis.substrate[name];
 
           return;
         }
 
         if (this.apis.evm[name]) {
           this.apis.evm[name].provider.destroy();
-          delete this.apis.evm[name];
         }
       }
     });
 
     this.networkMapSubject.next(this.networkMap);
     this.networkMapStore.set('NetworkMap', this.networkMap);
+
+    this.selectedNetworks[currentAccount.address] = type;
+    storage.set({ selectedNetworks: this.selectedNetworks });
+
     this.updateServiceInfo();
 
     this.initNetworkStates(true);
@@ -1343,7 +1347,7 @@ export default class State {
         .getTotalXorBalanceObservable()
         .subscribe((xorTotalBalance: FPNumber) => this.updateXorTotalBalance(xorTotalBalance));
 
-      this.subscription.updateSubscription('xorTotalBalance', subscription.unsubscribe);
+      this.subscription.updateSubscription({ name: 'xorTotalBalance', func: subscription.unsubscribe });
     } catch (ex) {
       console.error('failed subscribe or unsubscribe to XOR balance');
     }

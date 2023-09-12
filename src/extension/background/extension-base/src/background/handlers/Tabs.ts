@@ -13,7 +13,6 @@ import { createSubscription, unsubscribe } from '@extension-base/background/hand
 import BeaconSignerJSON from '@extension-base/signers/BeaconSignerJSON';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
-import { keyringService } from '../../services';
 import type {
   AccountSub,
   AuthResponse,
@@ -70,7 +69,7 @@ export default class Tabs {
 
   accountsListAuthorized(url: string, { anyType }: RequestAccountList): InjectedAccount[] {
     const transformedAccounts = transformAccounts(accountsObservable.subject.getValue(), anyType);
-    const transformedAddresses = transformAddresses(keyringService.addressesSubjectValue);
+    const transformedAddresses = transformAddresses(this.state.keyringService.addressesSubjectValue);
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
 
     return this.filterForAuthorizedAccounts(totalAccounts, url);
@@ -81,7 +80,7 @@ export default class Tabs {
     this.accountSubs[id] = {
       subscription: accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
         const transformedAccounts = transformAccounts(accounts);
-        const transformedMobileAccount = transformAddresses(keyringService.addressesSubjectValue);
+        const transformedMobileAccount = transformAddresses(this.state.keyringService.addressesSubjectValue);
         const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
 
         chrome.storage.local.set({ transformAccounts: allAccounts });
@@ -114,7 +113,7 @@ export default class Tabs {
   }
 
   getSigningPair(address: string): KeyringPair {
-    const pair = keyringService.getPair(address);
+    const pair = this.state.keyringService.getPair(address);
 
     assert(pair, 'Unable to find keypair');
 
@@ -134,12 +133,12 @@ export default class Tabs {
   }
 
   extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
-    const address = keyringService.encodeAddress(request.address);
-    const isMobile = !!keyringService.getAddress(address, 'address')?.meta.isMobile;
+    const address = this.state.keyringService.encodeAddress(request.address);
+    const isMobile = !!this.state.keyringService.getAddress(address, 'address')?.meta.isMobile;
     let meta;
 
-    if (keyringService.getAccount(address)) meta = this.getSigningPair(address).meta;
-    else if (isMobile) meta = keyringService.getAddress(address, 'address')?.meta;
+    if (this.state.keyringService.getAccount(address)) meta = this.getSigningPair(address).meta;
+    else if (isMobile) meta = this.state.keyringService.getAddress(address, 'address')?.meta;
 
     const signer = isMobile ? new BeaconSignerJSON(request) : new RequestExtrinsicSign(request);
 

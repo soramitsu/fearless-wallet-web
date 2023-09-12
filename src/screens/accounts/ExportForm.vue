@@ -39,7 +39,6 @@ export default class ExportForm extends Vue {
   json: KeyringPair$Json = {} as KeyringPair$Json;
   isLoading = true;
   @Prop(String) password!: string;
-  @Prop(Function) closeHandler!: (password: string) => void;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) networks!: Networks;
 
@@ -71,7 +70,7 @@ export default class ExportForm extends Vue {
   }
 
   closeForm() {
-    this.closeHandler('');
+    this.$emit('closeHandler', '');
   }
 
   proceed() {

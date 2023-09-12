@@ -1,12 +1,12 @@
 <template>
   <Popup
     :showHeader="true"
-    @handlerClose="handlerClose"
     sizeWidth="big"
     :showBorder="true"
     :headerText="activeTabName"
     :closeBuBackground="true"
     zIndex="299"
+    @handlerClose="$emit('handlerClose')"
   >
     <div class="notification-popup-content">
       <div class="message">{{ message }}</div>
@@ -21,7 +21,6 @@ import { ActiveTabAuthorizeStatus } from '@extension-base/background/types/types
 @Component
 export default class ConnectionPopup extends Vue {
   @Prop(Object) tabStatus!: ActiveTabAuthorizeStatus;
-  @Prop(Function) handlerClose!: VoidFunction;
 
   get message() {
     if (this.tabStatus.isAuthorize) {

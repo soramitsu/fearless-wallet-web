@@ -1,5 +1,4 @@
 import assert from 'assert';
-import { keyringService } from '@extension-base/services';
 import type {
   CachedUnlocks,
   RequestAccountExport,
@@ -30,12 +29,12 @@ export default class FWExtensionBase {
   }
 
   accountsExport({ address, password }: RequestAccountExport): ResponseAccountExport {
-    return { exportedJson: keyringService.backupAccount(address, password)! };
+    return { exportedJson: this.state.keyringService.backupAccount(address, password)! };
   }
 
   validateDerivationPath({ value, keypairType }: DerivationPath): boolean {
     try {
-      keyringService.createFromUri(`${VALID_MNEMONIC}${value}`, keypairType);
+      this.state.keyringService.createFromUri(`${VALID_MNEMONIC}${value}`, keypairType);
 
       return true;
     } catch {
@@ -44,21 +43,21 @@ export default class FWExtensionBase {
   }
 
   public encodeAddress = (key: string | Uint8Array, ss58Format = 42): string => {
-    return keyringService.encodeAddress(key, ss58Format);
+    return this.state.keyringService.encodeAddress(key, ss58Format);
   };
 
   public decodeAddress = (key: string | Uint8Array, ignoreChecksum?: boolean, ss58Format?: number): Uint8Array => {
-    return keyringService.decodeAddress(key, ignoreChecksum, ss58Format);
+    return this.state.keyringService.decodeAddress(key, ignoreChecksum, ss58Format);
   };
 
   updatePairMeta({ address, meta }: RequestUpdateMeta) {
-    keyringService.saveAccountMeta(address, meta);
+    this.state.keyringService.saveAccountMeta(address, meta);
 
     return true;
   }
 
   accountUpdateName({ address, name }: RequestAccountName): boolean {
-    keyringService.saveAccountMeta(address, { name });
+    this.state.keyringService.saveAccountMeta(address, { name });
 
     return true;
   }
@@ -84,12 +83,12 @@ export default class FWExtensionBase {
     if (remainingTime < 0) {
       this.cachedUnlocks[address] = 0;
 
-      keyringService.lockPair(pair);
+      this.state.keyringService.lockPair(pair);
 
       if (ethereumAddress) {
         this.cachedUnlocks[ethereumAddress] = 0;
 
-        keyringService.lockPair(ethereumAddress);
+        this.state.keyringService.lockPair(ethereumAddress);
       }
 
       return 0;
@@ -99,7 +98,7 @@ export default class FWExtensionBase {
   }
 
   signingIsLocked({ address }: RequestSigningIsLocked): ResponseSigningIsLocked {
-    const pair = keyringService.getPair(address);
+    const pair = this.state.keyringService.getPair(address);
 
     assert(pair, 'Unable to find pair');
 
@@ -113,11 +112,11 @@ export default class FWExtensionBase {
 
   jsonValid({ file, password, isSubstrate }: RequestJsonValidate): ValidateJsonResult {
     try {
-      const pair = keyringService.restoreAccount(file, password);
+      const pair = this.state.keyringService.restoreAccount(file, password);
 
       pair.decodePkcs8(password);
 
-      if (isSubstrate) keyringService.encodeAddress(pair.address);
+      if (isSubstrate) this.state.keyringService.encodeAddress(pair.address);
 
       return { value: true };
     } catch (error: any) {

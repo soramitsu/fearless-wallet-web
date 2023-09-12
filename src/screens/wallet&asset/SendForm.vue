@@ -8,7 +8,7 @@
     :value="value"
     :partialFee="partialFee"
     :recipient="recipient"
-    :closeForm="closeForm"
+    @closeForm="$emit('closeForm')"
     @update:assetId="updateAssetId"
     @update:selectedNetwork="updateSelectedNetwork"
     @update:amount="updateAmount"
@@ -81,7 +81,6 @@ export default class SendForm extends Vue {
   amount = '';
   value = '';
 
-  @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) _selectedNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;

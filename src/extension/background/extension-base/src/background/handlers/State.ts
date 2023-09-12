@@ -340,6 +340,7 @@ export default class State {
       'selectedNetworks',
       'defaultAuthAccountSelection',
       'injectedProviders',
+      'selectedNetworks',
       'providers',
       'windows',
     ]);
@@ -719,20 +720,22 @@ export default class State {
       if (!network.active) {
         if (this.apis.substrate[name]) {
           this.apis.substrate[name].provider?.disconnect();
-          delete this.apis.substrate[name];
 
           return;
         }
 
         if (this.apis.evm[name]) {
           this.apis.evm[name].provider.destroy();
-          delete this.apis.evm[name];
         }
       }
     });
 
     this.networkMapSubject.next(this.networkMap);
     this.networkMapStore.set('NetworkMap', this.networkMap);
+
+    this.selectedNetworks[currentAccount.address] = type;
+    storage.set({ selectedNetworks: this.selectedNetworks });
+
     this.updateServiceInfo();
 
     this.initNetworkStates(true);
@@ -1344,7 +1347,7 @@ export default class State {
         .getTotalXorBalanceObservable()
         .subscribe((xorTotalBalance: FPNumber) => this.updateXorTotalBalance(xorTotalBalance));
 
-      this.subscription.updateSubscription('xorTotalBalance', subscription.unsubscribe);
+      this.subscription.updateSubscription({ name: 'xorTotalBalance', func: subscription.unsubscribe });
     } catch (ex) {
       console.error('failed subscribe or unsubscribe to XOR balance');
     }

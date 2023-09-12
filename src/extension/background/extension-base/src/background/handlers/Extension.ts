@@ -32,7 +32,7 @@ import {
 } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
-import { storage } from '../../stores/Storage';
+import { storage } from '@extension-base/stores/Storage';
 import type {
   MobileSigningRequest,
   RequestMobileSign,

@@ -977,8 +977,6 @@ export default class Extension extends FWExtensionBase {
     relayChain,
     amount,
   }: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
-    console.info('destinationNet', destinationNet);
-
     if (destinationNet === '') return { estimateFee: '0', destEstimateFee: '0' };
 
     const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';

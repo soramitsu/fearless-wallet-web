@@ -528,7 +528,9 @@ export default class State {
         initApi(data);
 
         if (data.isEthereum && isRequireEvmAPI(data.name)) {
-          this.apis.evm[data.name] = initWeb3Api(currentProvider);
+          initWeb3Api(currentProvider);
+
+          // this.apis.evm[data.name] = initWeb3Api(currentProvider);
         }
       }
     }
@@ -592,7 +594,9 @@ export default class State {
   public refreshWeb3Api(key: string) {
     const currentProvider = getCurrentProvider(this.networkMap[key]);
 
-    if (currentProvider) this.apis.evm[key] = initWeb3Api(currentProvider);
+    // if (currentProvider) this.apis.evm[key] = initWeb3Api(currentProvider);
+
+    if (currentProvider) initWeb3Api(currentProvider);
   }
 
   public refreshDotSamaApi(key: string) {
@@ -1146,6 +1150,7 @@ export default class State {
     this.networksJson = networks.filter((el) => !el.disabled);
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
+
     const networksFromStorage = await new Promise<Record<string, NetworkJson>>((res) => {
       this.networkMapStore.get('NetworkMap', (accountsFromStorage) => {
         res(accountsFromStorage);
@@ -1205,7 +1210,8 @@ export default class State {
       for (const [key, network] of Object.entries(storedNetworkMap)) {
         if (network.active) {
           if (network.isEthereum && isRequireEvmAPI(key)) {
-            this.apis.evm[key] = initWeb3Api(network.currentProvider);
+            // this.apis.evm[key] = initWeb3Api(network.currentProvider);
+            initWeb3Api(network.currentProvider);
           } else {
             if (reset) this.resetApiRetries();
 

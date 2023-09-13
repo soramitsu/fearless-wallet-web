@@ -1,8 +1,8 @@
 <template>
   <Fragment>
     <ContentForm :height="341">
-      <div class="history">
-        <div class="history-settings">
+      <div class="networks">
+        <div class="networks-settings">
           <TabButton
             v-for="{ label, tabName, tooltipText, target, classes } in tabsOptions"
             class="tab"
@@ -212,20 +212,16 @@ export default class AssetNetworks extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.history {
+.networks {
   height: 100%;
   display: flex;
   flex-direction: column;
 
-  .history-settings {
+  .networks-settings {
     display: flex;
     align-items: center;
     margin: 11px $default-padding 5px 18px;
     gap: 12px;
-
-    .history-label {
-      font-weight: 600;
-    }
 
     .filter__icon {
       margin-right: 0;

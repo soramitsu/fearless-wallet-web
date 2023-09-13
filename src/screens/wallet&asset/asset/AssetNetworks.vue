@@ -71,6 +71,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
 import { Components } from '@/router/routes';
 import { NetworksController } from '@/controllers';
+import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 
 interface TabsOptions {
   label: string;
@@ -114,6 +115,7 @@ export default class AssetNetworks extends Vue {
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
@@ -121,7 +123,15 @@ export default class AssetNetworks extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
   get filteredNetworks() {
-    const baseFilter = this.currency.balances?.filter((el) => this.getNetwork(el.name).active);
+    const baseFilter = this.currency.balances?.filter(({ name }) => {
+      const network = this.getNetwork(name);
+
+      if (this.selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
+      if (this.selectedNetwork === FAVORITE_NETWORKS)
+        return network.favorite.some((address) => address === this.selectedWallet.address);
+
+      return this.getNetwork(name).active;
+    });
 
     if (this.activeTabName === 'MyAssets') {
       return baseFilter.filter(({ transferable }) => {

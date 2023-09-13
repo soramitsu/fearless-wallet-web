@@ -28,7 +28,6 @@ import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@ext
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { SignerPayloadRaw } from '@polkadot/types/types';
-import { JsonRpcProvider } from 'ethers';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
@@ -64,6 +63,7 @@ import type {
   BalanceMap,
   Providers,
   ResponseTotalBalances,
+  EvmApiMap,
 } from '@extension-base/background/types/types';
 import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import type { ChainRegistry, NetworkJson } from '@extension-base/types';
@@ -120,7 +120,7 @@ function extractMetadata(store: MetadataStore): void {
 
 export const registry = new TypeRegistry();
 type APIs = {
-  evm: Record<NetworkName, JsonRpcProvider>;
+  evm: EvmApiMap;
   substrate: Record<NetworkName, ApiProps>;
 };
 const metaStore = new MetadataStore();
@@ -339,6 +339,7 @@ export default class State {
       'selectedNetworks',
       'defaultAuthAccountSelection',
       'injectedProviders',
+      'selectedNetworks',
       'providers',
       'windows',
     ]);
@@ -590,7 +591,9 @@ export default class State {
   public refreshWeb3Api(key: string) {
     const currentProvider = getCurrentProvider(this.networkMap[key]);
 
-    if (currentProvider) this.apis.evm[key] = initWeb3Api(currentProvider);
+    if (currentProvider) {
+      this.apis.evm[key] = initWeb3Api(currentProvider);
+    }
   }
 
   public refreshDotSamaApi(key: string) {
@@ -641,13 +644,13 @@ export default class State {
     return network.rank !== undefined && networks.some((el) => el === POPULAR_NETWORKS);
   }
 
-  public isNetworkSelectedInAnotherWallet(network: NetworkJson, selectedType: string, address: string) {
-    if (Object.values(this.selectedNetworks).some((el) => el === ALL_NETWORKS)) return true;
-    if (this.isPopularNetworksSelected(network, address)) return true;
-    if (this.isFavoriteNetworkSelected(network, address)) return true;
-    if (this.isSingleNetworkSelected(selectedType, address)) return true;
+  public isNetworkSelectedInAnotherWallet(network: NetworkJson, address: string) {
+    const isSelected =
+      this.isPopularNetworksSelected(network, address) ||
+      this.isFavoriteNetworkSelected(network, address) ||
+      this.isSingleNetworkSelected(network.name, address);
 
-    return false;
+    return isSelected;
   }
 
   public isSingleNetworkSelected(selectedType: string, address: string) {
@@ -677,7 +680,10 @@ export default class State {
       const network = this.networkMap[key];
       const { name } = network;
       const isFavorite = network.favorite.some((address) => address === currentAccount.address);
-      const isAlreadySelectedType = this.isNetworkSelectedInAnotherWallet(network, type, currentAccount.address);
+
+      const isAllNetworkSelected = Object.values(this.selectedNetworks).some((el) => el === ALL_NETWORKS);
+      const isAlreadySelectedType =
+        isAllNetworkSelected ?? this.isNetworkSelectedInAnotherWallet(network, currentAccount.address);
 
       switch (type) {
         case ALL_NETWORKS:
@@ -715,16 +721,22 @@ export default class State {
       if (!network.active) {
         if (this.apis.substrate[name]) {
           this.apis.substrate[name].provider?.disconnect();
-          delete this.apis.substrate[name];
-        } else if (this.apis.evm[name]) {
+
+          return;
+        }
+
+        if (this.apis.evm[name]) {
           this.apis.evm[name].provider.destroy();
-          delete this.apis.evm[name];
         }
       }
     });
 
     this.networkMapSubject.next(this.networkMap);
     this.networkMapStore.set('NetworkMap', this.networkMap);
+
+    this.selectedNetworks[currentAccount.address] = type;
+    storage.set({ selectedNetworks: this.selectedNetworks });
+
     this.updateServiceInfo();
 
     this.initNetworkStates(true);
@@ -1336,7 +1348,7 @@ export default class State {
         .getTotalXorBalanceObservable()
         .subscribe((xorTotalBalance: FPNumber) => this.updateXorTotalBalance(xorTotalBalance));
 
-      this.subscription.updateSubscription('xorTotalBalance', subscription.unsubscribe);
+      this.subscription.updateSubscription({ name: 'xorTotalBalance', func: subscription.unsubscribe });
     } catch (ex) {
       console.error('failed subscribe or unsubscribe to XOR balance');
     }

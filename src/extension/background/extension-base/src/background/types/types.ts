@@ -394,7 +394,9 @@ export interface RequestAccountExport {
   address: string;
   password: string;
 }
-export type EvmApiMap = Record<string, JsonRpcProvider | WebSocketProvider>;
+export type EvmProvider = JsonRpcProvider | WebSocketProvider;
+
+export type EvmApiMap = Record<string, EvmProvider>;
 export interface ApiMap {
   substrate: Record<string, ApiProps>;
   evm: EvmApiMap;

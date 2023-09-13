@@ -186,6 +186,7 @@ async function fetchEthereumHistory(url: string, address: string): Promise<Histo
   const abort = new AbortController();
   const signal = abort.signal;
   const apikey = getEthereumApiKey(url);
+
   const res = await axios.get<EthereumHistoryResponse<EthereumHistoryData>>(url, {
     params: {
       module: 'account',

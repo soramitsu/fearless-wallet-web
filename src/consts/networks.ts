@@ -6,8 +6,9 @@ const SUBSTRATE_ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 
 const EVM_NETWORKS = [
   'ethereum',
   'ethereum goerli',
-  'polygon mainnet',
+  'polygon',
   'polygon mumbai',
+  'sepolia',
   'binance smart chain',
   'binance smart chain testnet',
 ];

@@ -113,7 +113,6 @@ import { cut } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { URLS } from '@/consts/urls';
 
 @Component({})
 export default class HistoryDetailsForm extends Vue {
@@ -136,7 +135,9 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get explorerUrl() {
-    return this.getNetworkByAsset?.externalApi?.history?.url;
+    if (this.getNetworkByAsset?.externalApi?.explorers) return this.getNetworkByAsset?.externalApi?.explorers[0].url;
+
+    return '';
   }
 
   get buttonText() {
@@ -278,7 +279,13 @@ export default class HistoryDetailsForm extends Vue {
     const addressByNetwork = BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
 
     if (this.explorerType === 'etherscan') {
-      window.open(`${URLS.EXPLORERS[this.selectedNetwork]}/tx/${this.historyElement?.transfer?.hash}`);
+      if (this.explorerUrl) {
+        const url = this.explorerUrl
+          .replace('{type}', 'tx')
+          .replace('{value}', this.historyElement?.transfer?.hash ?? '');
+
+        window.open(url);
+      }
 
       return;
     }

@@ -330,6 +330,12 @@
     "reject": "Отменить",
     "newConnection": "Новое соединение",
     "networks": "Сети",
+    "permissions": {
+      "title":"Доступы приложения",
+      "viewAddress":"Просматривать адрес вашего кошелька",
+      "viewBalances":"Просматривать баланс ваших токенов",
+      "transferAssets":"Отправлять токены без вашего разрешения"
+    },
     "notifications": {
       "sessionExpired": {
         "title": "Срок сессии истек",

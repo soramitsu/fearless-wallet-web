@@ -1,21 +1,30 @@
 <template>
-  <div class="auth-confirmation">
-    <div>
+  <AboveForm :fullScreen="true">
+    <div class="auth-confirmation">
       <WalletConnectHeader :name="title" :url="url" />
-    </div>
-    <div class="namespaces">
-      <span>{{ $t('walletConnect.networks') }}</span>
-      <div class="namespaces__icons">
-        <ExternalLogo v-for="(namespace, index) in namespaces" :name="namespace.icon" :width="28" :key="index" />
+      <AppPermissions />
+      <ContentForm class="namespaces-form">
+        <div class="namespaces">
+          <span>{{ $t('walletConnect.networks') }}</span>
+          <div class="namespaces__icons">
+            <ExternalLogo v-for="(namespace, index) in namespaces" :name="namespace.icon" :width="28" :key="index" />
+          </div>
+        </div>
+      </ContentForm>
+      <ContentForm class="namespaces-form">
+        <div class="namespaces">
+          <span>{{ $t('walletConnect.networks') }}</span>
+          <div class="namespaces__icons">
+            <ExternalLogo v-for="(namespace, index) in namespaces" :name="namespace.icon" :width="28" :key="index" />
+          </div>
+        </div>
+      </ContentForm>
+      <div class="controls">
+        <FButton text="walletConnect.reject" type="secondary" :border="false" width="100%" @click="onReject" />
+        <FButton text="walletConnect.approve" width="100%" @click="onApprove" />
       </div>
     </div>
-    <SelectAuthAccount :showSelectAll="false" :accounts="state" @onSelect="onSelect" height="200" />
-
-    <div class="controls">
-      <FButton text="walletConnect.reject" type="secondary" :border="false" width="100%" @click="onReject" />
-      <FButton text="walletConnect.approve" width="100%" @click="onApprove" />
-    </div>
-  </div>
+  </AboveForm>
 </template>
 
 <script setup lang="ts">
@@ -23,11 +32,11 @@ import { computed, onMounted, ref, set } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
 import WalletConnectHeader from './WalletConnectHeader.vue';
+import AppPermissions from './AppPermissions.vue';
 import type { ChainData } from './types';
 import type { WalletConnectSessionRequest } from '@extension-base/services/wallet-connect-service/types';
 import type { AccountJson } from '@extension-base/background/types';
 import { useStore, type WalletInfo } from '@/store';
-import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import { approveWalletConnectSession, rejectWalletConnectSession } from '@/extension/messaging';
 import { useNotify } from '@/plugins/soramitsuUI';
 import { transformNamespaces } from '@/util/walletConnect';
@@ -70,13 +79,13 @@ const namespaces = computed<ChainData[]>(() => {
 
 const selectedAccounts = computed(() => Object.values(state.value).map((el) => el.address));
 
-const onSelect = (value: boolean, name: string) => {
-  state.value[name].active = value;
+// const onSelect = (value: boolean, name: string) => {
+//   state.value[name].active = value;
 
-  Object.keys(state.value).forEach((key) => {
-    if (key !== name) state.value[key].active = false;
-  });
-};
+//   Object.keys(state.value).forEach((key) => {
+//     if (key !== name) state.value[key].active = false;
+//   });
+// };
 
 const { t } = useI18n();
 
@@ -115,10 +124,14 @@ const onReject = () => {
   flex-direction: column;
   gap: 5px;
 }
+.namespaces-form {
+  width: 100%;
+}
 .namespaces {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 16px;
   width: 100%;
   font-size: 16px;
   font-weight: 400;

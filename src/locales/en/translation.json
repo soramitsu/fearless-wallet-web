@@ -334,6 +334,12 @@
     "reject": "Reject",
     "newConnection": "New Connection",
     "networks":"Networks",
+    "permissions": {
+      "title":"App permissions",
+      "viewAddress":"View your wallet address",
+      "viewBalances":"View your token balances",
+      "transferAssets":"Transfer your tokens without approval"
+    },
     "notifications":{
       "sessionExpired":{
         "title":"Session is expired",

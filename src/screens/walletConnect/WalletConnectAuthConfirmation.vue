@@ -1,28 +1,30 @@
 <template>
   <AboveForm :fullScreen="true">
-    <div class="auth-confirmation">
-      <WalletConnectHeader :name="title" :url="url" />
-      <AppPermissions />
-      <ContentForm class="namespaces-form">
-        <div class="namespaces">
-          <span>{{ $t('walletConnect.networks') }}</span>
-          <div class="namespaces__icons">
-            <ExternalLogo v-for="(namespace, index) in namespaces" :name="namespace.icon" :width="28" :key="index" />
+    <Scroll>
+      <div class="auth-confirmation">
+        <WalletConnectHeader :name="title" :url="url" />
+        <AppPermissions />
+        <ContentForm class="namespaces-form">
+          <div class="namespaces">
+            <span>{{ $t('walletConnect.networks') }}</span>
+            <div class="namespaces__icons">
+              <ExternalLogo v-for="(namespace, index) in namespaces" :name="namespace.icon" :width="28" :key="index" />
+            </div>
           </div>
-        </div>
-      </ContentForm>
-      <ContentForm class="namespaces-form">
-        <div class="namespaces">
-          <span>{{ $t('walletConnect.networks') }}</span>
-          <div class="namespaces__icons">
-            <ExternalLogo v-for="(namespace, index) in namespaces" :name="namespace.icon" :width="28" :key="index" />
+        </ContentForm>
+        <ContentForm class="namespaces-form">
+          <div class="namespaces">
+            <span>{{ $t('walletConnect.networks') }}</span>
+            <div class="namespaces__icons">
+              <ExternalLogo v-for="(namespace, index) in namespaces" :name="namespace.icon" :width="28" :key="index" />
+            </div>
           </div>
-        </div>
-      </ContentForm>
-      <div class="controls">
-        <FButton text="walletConnect.reject" type="secondary" :border="false" width="100%" @click="onReject" />
-        <FButton text="walletConnect.approve" width="100%" @click="onApprove" />
+        </ContentForm>
       </div>
+    </Scroll>
+    <div class="controls">
+      <FButton text="walletConnect.reject" type="secondary" :border="false" width="100%" @click="onReject" />
+      <FButton text="walletConnect.approve" width="100%" @click="onApprove" />
     </div>
   </AboveForm>
 </template>
@@ -120,6 +122,7 @@ const onReject = () => {
 .auth-confirmation {
   display: flex;
   align-items: center;
+  height: 400px;
   justify-content: space-between;
   flex-direction: column;
   gap: 5px;

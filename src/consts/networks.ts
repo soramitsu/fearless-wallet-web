@@ -1,10 +1,8 @@
 import { IS_PRODUCTION } from '@/consts/global';
 import { NetworkName } from '@/interfaces';
 
-const NOT_SUPPORTED_ALL_TRANSFER_NETWORKS = ['karura', 'acala', 'acala_testnet'];
 const SUBSTRATE_ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
-const ETHEREUM_NETWORKS = [
-  ...SUBSTRATE_ETHEREUM_NETWORKS,
+const NATIVE_ETHEREUM_NETWORKS = [
   'ethereum',
   'ethereum goerli',
   'polygon mainnet',
@@ -12,6 +10,8 @@ const ETHEREUM_NETWORKS = [
   'binance smart chain',
   'binance smart chain testnet',
 ];
+const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, ...NATIVE_ETHEREUM_NETWORKS];
+
 const RELAY_CHAINS = ['polkadot', 'kusama', 'westend', 'rococo'];
 const NATIVE_PARACHAINS = [
   'statemint',
@@ -96,7 +96,6 @@ export {
   ETHEREUM_ADDRESS_PREFIX,
   ETHEREUM_ADDRESS_LENGTH,
   MAX_CONTINUE_RETRY,
-  NOT_SUPPORTED_ALL_TRANSFER_NETWORKS,
   WESTEND_GENESISHASH,
   MOONBEAM_GENESISHASH,
   SORA_NETWORK_NAME,
@@ -104,6 +103,7 @@ export {
   SORA_XOR_ASSET_ID,
   VALID_SUBSTRATE_ADDRESS,
   VALID_ETHEREUM_ADDRESS,
+  NATIVE_ETHEREUM_NETWORKS,
   POLKADOT_ID,
   KUSAMA_ID,
   CHAIN_IDS,

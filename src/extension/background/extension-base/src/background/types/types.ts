@@ -3,14 +3,14 @@ import { Subscription } from 'rxjs';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 import MetadataStore from '@extension-base/stores/Metadata';
-import { JsonRpcProvider } from 'ethers';
+import { JsonRpcProvider, WebSocketProvider } from 'ethers';
 import { UserType } from '../../services/onboarding-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type { TypeRegistry } from '@polkadot/types';
 import type { SignerResult } from '@polkadot/types/types/extrinsic';
-import type { Registry, SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
@@ -395,9 +395,11 @@ export interface RequestAccountExport {
   password: string;
 }
 
+export type EvmApiMap = Record<string, JsonRpcProvider | WebSocketProvider>;
+
 export interface ApiMap {
   substrate: Record<string, ApiProps>;
-  evm: Record<string, JsonRpcProvider>;
+  evm: EvmApiMap;
 }
 
 export interface ServiceInfo {

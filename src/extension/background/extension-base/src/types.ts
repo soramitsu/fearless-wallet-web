@@ -84,6 +84,11 @@ export type Asset = {
   existentialDeposit?: string;
 };
 
+type XcmAssets = {
+  id: string;
+  symbol: string;
+};
+
 export interface NetworkJson {
   // General Information
   key: string; // Key of network in NetworkMap
@@ -137,10 +142,10 @@ export interface NetworkJson {
   favorite: string[];
   xcm?: {
     xcmVersion: 'v1' | 'v2' | 'v3';
-    availableAssets: string[];
+    availableAssets: XcmAssets[];
     availableDestinations: {
       chainId: string;
-      assets: string[];
+      assets: XcmAssets[];
     }[];
   };
 }
@@ -149,8 +154,4 @@ export interface ChainRegistry {
   chainDecimals: number[];
   chainTokens: string[];
   assetsMap: Asset[];
-}
-
-export interface KeyringState {
-  isReady: boolean;
 }

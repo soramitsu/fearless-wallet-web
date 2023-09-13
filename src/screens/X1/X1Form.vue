@@ -37,7 +37,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { loadScript, unloadScript } from 'vue-plugin-load-script';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
@@ -56,7 +56,6 @@ export default class X1Form extends Vue {
   X1Widget = X1Api.getWidget();
   loadingX1 = true;
 
-  @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;

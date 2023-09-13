@@ -10,7 +10,7 @@
     :destNetFee="destNetFee"
     :destinationNetwork="destinationNetwork"
     :recipient="recipient"
-    :closeForm="closeForm"
+    @closeForm="$emit('closeForm')"
     @update:assetId="updateAssetId"
     @update:selectedNetwork="updateOriginalNetwork"
     @update:amount="updateAmount"
@@ -94,7 +94,6 @@ export default class CrossChainForm extends Vue {
   value = '';
   step = 1;
 
-  @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) _originalNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;

@@ -1,7 +1,6 @@
 import { BalanceItem } from '@extension-base/api/evm/types/ether';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { state } from '@extension-base/background/handlers';
-import { keyringService } from '@extension-base/services';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import type { NetworkJson } from '@extension-base/types';
 import type { AssetName, NetworkName } from '@/interfaces';
@@ -119,7 +118,7 @@ export function getEthereumAssetName(asset: AssetName, network: NetworkName) {
 }
 
 export function getSubstrateAddress(address: string) {
-  const accounts = keyringService.getAccounts();
+  const accounts = state.keyringService.getAccounts();
 
   return isEthereumAddress(address)
     ? accounts.find(({ meta: { ethereumAddress } }) => ethereumAddress === address)?.address ?? address

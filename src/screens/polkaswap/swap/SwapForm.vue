@@ -183,7 +183,7 @@
       :options="optionsCurrency"
       @handlerFilter="handlerFilter"
       @toggleValue="toggleSelectedAsset"
-      @handlerClose="toggleSelectAssetPopupVisibility.bind(null, '')"
+      @handlerClose="toggleSelectAssetPopupVisibility('')"
     />
 
     <ConfirmationPasswordPopup

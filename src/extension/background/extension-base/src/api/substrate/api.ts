@@ -21,7 +21,7 @@ function createApiObject(): ApiProps {
   } as unknown as ApiProps;
 }
 
-function createEvmApiObject(): ApiProps {
+export function createEvmApiObject(): ApiProps {
   return {
     api: undefined,
     provider: undefined,
@@ -59,6 +59,7 @@ async function onDisconnect(networkName: string) {
   api.isApiReady = false;
 
   if (api.apiRetry < MAX_CONTINUE_RETRY) return;
+
   const network = state.networkMap[networkName];
 
   api.provider?.disconnect();
@@ -89,11 +90,11 @@ function onReady(networkName: string) {
 }
 
 export async function initApi(network: NetworkJson, retry = false): Promise<void> {
-  const { name: networkName, nodes, isEthereum } = network;
+  const { name: networkName, nodes } = network;
 
   if (state.getSubstrateApiMap[networkName] === undefined) {
     // return EVM HTTP Placeholder
-    state.getSubstrateApiMap[networkName] = isEthereum ? createEvmApiObject() : createApiObject();
+    state.getSubstrateApiMap[networkName] = createApiObject();
   }
 
   if (retry) {

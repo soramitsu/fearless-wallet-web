@@ -591,7 +591,9 @@ export default class State {
   public refreshWeb3Api(key: string) {
     const currentProvider = getCurrentProvider(this.networkMap[key]);
 
-    if (currentProvider) this.apis.evm[key] = initWeb3Api(currentProvider);
+    if (currentProvider) {
+      this.apis.evm[key] = initWeb3Api(currentProvider);
+    }
   }
 
   public refreshDotSamaApi(key: string) {

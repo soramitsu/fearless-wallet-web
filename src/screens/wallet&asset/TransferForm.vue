@@ -187,7 +187,7 @@
 import { Component, Vue, Prop, Watch, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
-import { getEthereumAssetName, getNativeAssetName } from '@extension-base/background/utils/utils';
+import { getMoonbeamMoonriverAssetName, getNativeAssetName } from '@extension-base/background/utils/utils';
 import { RequestCheckTransfer, RequestCheckCrossChain, TokenBalance } from '@extension-base/background/types/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import HistoryBook from './HistoryBook.vue';
@@ -475,7 +475,7 @@ export default class TransferForm extends Vue {
       : this.balances.filter(
           ({ symbol, relayChain }) =>
             xcm?.availableAssets.some((asset) => {
-              const assetName = getEthereumAssetName(asset, this.syncedNetwork);
+              const assetName = getMoonbeamMoonriverAssetName(asset, this.syncedNetwork);
 
               return assetName === symbol.toLowerCase();
             }) && relayChain.toLowerCase() === relay

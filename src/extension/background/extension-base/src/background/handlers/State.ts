@@ -28,7 +28,6 @@ import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@ext
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { SignerPayloadRaw } from '@polkadot/types/types';
-import { JsonRpcProvider } from 'ethers';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
@@ -64,6 +63,7 @@ import type {
   BalanceMap,
   Providers,
   ResponseTotalBalances,
+  EvmApiMap,
 } from '@extension-base/background/types/types';
 import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import type { ChainRegistry, NetworkJson } from '@extension-base/types';
@@ -121,7 +121,7 @@ function extractMetadata(store: MetadataStore): void {
 
 export const registry = new TypeRegistry();
 type APIs = {
-  evm: Record<NetworkName, JsonRpcProvider>;
+  evm: EvmApiMap;
   substrate: Record<NetworkName, ApiProps>;
 };
 const metaStore = new MetadataStore();

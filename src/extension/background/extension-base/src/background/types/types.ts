@@ -10,7 +10,7 @@ import type { RequestSignatures } from '@extension-base/background/types/message
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type { TypeRegistry } from '@polkadot/types';
 import type { SignerResult } from '@polkadot/types/types/extrinsic';
-import type { Registry, SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
@@ -227,42 +227,22 @@ export interface BasicTxResponse {
   errors?: BasicTxError[];
 }
 
-export enum BasicTxWarningCode {
-  NOT_ENOUGH_EXISTENTIAL_DEPOSIT = 'notEnoughExistentialDeposit',
-}
-
 export type TxErrorCode = TransferErrorCode | BasicTxErrorCode;
 
-export type TxWarningCode = BasicTxWarningCode;
-
 export type BasicTxError = {
-  code?: TxErrorCode | TxWarningCode;
+  code?: TxErrorCode;
   data?: object;
   message: string;
 };
 
-export interface ApiState {
-  isApiReady: boolean;
-  isEthereum?: boolean;
-  registry: Registry;
-}
-
-export interface ApiProps extends ApiState {
+export interface ApiProps {
   api?: ApiPromise;
   provider?: WsProvider;
   isApiConnected: boolean;
-  isEthereum: boolean;
-  isEthereumOnly: boolean;
-  isReady: Promise<ApiProps>;
   apiRetry: number;
   nodeIndex: number;
+  isEthereum: boolean;
 }
-
-export type BasicTxWarning = {
-  code: TxWarningCode;
-  data?: object;
-  message: string;
-};
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type BaseRequestSign = {};
@@ -394,9 +374,11 @@ export interface RequestAccountExport {
   address: string;
   password: string;
 }
+
 export type EvmProvider = JsonRpcProvider | WebSocketProvider;
 
 export type EvmApiMap = Record<string, EvmProvider>;
+
 export interface ApiMap {
   substrate: Record<string, ApiProps>;
   evm: EvmApiMap;

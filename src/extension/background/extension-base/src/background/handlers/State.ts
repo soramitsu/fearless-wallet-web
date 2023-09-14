@@ -76,7 +76,7 @@ import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
-// import { isSora } from '@/helpers';
+import { isSora } from '@/helpers';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -1140,9 +1140,9 @@ export default class State {
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
-    this.networksJson = networks.filter((el) => !el.disabled);
+    // this.networksJson = networks.filter((el) => !el.disabled);
 
-    // this.networksJson = networks.filter((el) => isSora(el.name));
+    this.networksJson = networks.filter((el) => isSora(el.name));
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
 

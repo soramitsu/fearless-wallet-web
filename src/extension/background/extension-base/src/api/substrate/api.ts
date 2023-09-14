@@ -1,5 +1,6 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { api as apiSora, connection as soraConnection } from '@sora-substrate/util';
+import { api as apiSora } from '@sora-substrate/util';
+import { connection as soraConnection } from '@sora-substrate/connection';
 import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
 import { state } from '@extension-base/background/handlers';
 import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';

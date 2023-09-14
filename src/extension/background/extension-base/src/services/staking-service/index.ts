@@ -1,8 +1,8 @@
 import { FPNumber } from '@sora-substrate/math';
+import { state } from '@extension-base/background/handlers';
 import { ApiProps, BasicTxResponse, SignerType } from '../../background/types/types';
 import { getValidatorsInfo, bond } from '../../api/substrate/staking';
 import { signAndSendExtrinsic } from '../../api/substrate/shared/signAndSendExtrinsic';
-import { keyringService } from '../keyring-service';
 import { getUtilityProps } from '../../background/utils/utils';
 import {
   ValidatorsRequest,
@@ -85,7 +85,7 @@ export class StakingService {
   public async makeBond(params: RequestBond & { callback: (res: BasicTxResponse) => void }): Promise<BasicTxResponse> {
     const { networkName, password, isSavePass, from, callback } = params;
 
-    const isUnlock = keyringService.unlockPair(from, password);
+    const isUnlock = state.keyringService.unlockPair(from, password);
 
     if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
 
@@ -112,7 +112,7 @@ export class StakingService {
   ): Promise<BasicTxResponse> {
     const { networkName, password, isSavePass, from, callback } = params;
 
-    const isUnlock = keyringService.unlockPair(from, password);
+    const isUnlock = state.keyringService.unlockPair(from, password);
 
     if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
 
@@ -139,7 +139,7 @@ export class StakingService {
   ): Promise<BasicTxResponse> {
     const { networkName, password, isSavePass, from, callback } = params;
 
-    const isUnlock = keyringService.unlockPair(from, password);
+    const isUnlock = state.keyringService.unlockPair(from, password);
 
     if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
 
@@ -166,7 +166,7 @@ export class StakingService {
   ): Promise<BasicTxResponse> {
     const { networkName, password, isSavePass, from, callback } = params;
 
-    const isUnlock = keyringService.unlockPair(from, password);
+    const isUnlock = state.keyringService.unlockPair(from, password);
 
     if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
 
@@ -193,7 +193,7 @@ export class StakingService {
   ): Promise<BasicTxResponse> {
     const { networkName, password, isSavePass, from, callback } = params;
 
-    const isUnlock = keyringService.unlockPair(from, password);
+    const isUnlock = state.keyringService.unlockPair(from, password);
 
     if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
 

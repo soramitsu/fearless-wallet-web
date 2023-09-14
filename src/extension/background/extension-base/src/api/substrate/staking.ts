@@ -2,7 +2,7 @@ import { ApiPromise } from '@polkadot/api';
 import { CodecString, FPNumber } from '@sora-substrate/math';
 import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
-import { api as apiSora } from '@sora-substrate/util';
+import { OnChainIdentity, api as apiSora } from '@sora-substrate/util';
 import { DefaultBondParams } from '../../services/staking-service/types';
 import { formatEra, formatValidatorExposure, formatIndividualRewardPoints } from './testStaking/helpers';
 import { Extrinsic } from './crossChain';
@@ -43,12 +43,18 @@ async function getAverageRewards(api: ApiPromise, eraIndex?: number): Promise<FP
   return averageRewards;
 }
 
-async function getIdentity(address: string, api: ApiPromise): Promise<OriginalIdentity | null> {
-  const identity = await api.query.identity.identityOf(address);
+async function getAccountOnChainIdentity(address: string, api: ApiPromise): Promise<OnChainIdentity | null> {
+  const data = await api.query.identity.identityOf(address);
 
-  if (identity.isNone) return null;
+  if (data.isEmpty || data.isNone) return null;
 
-  return identity.toHuman() as unknown as OriginalIdentity;
+  const result = data.unwrap();
+
+  return {
+    legalName: result.info.legal.value.toHuman() as string,
+    approved: Boolean(result.judgements.length),
+    identity: result.toHuman() as unknown as OriginalIdentity,
+  };
 }
 
 async function getEraRewardPoints(eraIndex: number, api: ApiPromise): Promise<RewardPointsIndividual> {
@@ -124,16 +130,6 @@ async function calculatingStakeReturn(
   const nominatorShare = FPNumber.ONE.sub(FPNumber.fromCodecValue(commission, COMMISSION_DECIMALS));
   const apy = ratioReturnStakeToTotalStake.sub(FPNumber.ONE).mul(FPNumber.HUNDRED).mul(nominatorShare);
 
-  // console.info(' ');
-  // console.info('validatorTotalStake', validatorTotalStake.toString());
-  // console.info('validatorShareStake', validatorShareStake.toString());
-  // console.info('rewardToStakeRatio', FPNumber.fromCodecValue(rewardToStakeRatio).toString());
-  // console.info('stakeReturnReward', stakeReturnReward.toString());
-  // console.info('stakeReturn', stakeReturn.toString());
-  // console.info('nominatorShare', nominatorShare.toString());
-  // console.info('apy', apy.toString());
-  // console.info(' ');
-
   return {
     stakeReturnReward: stakeReturnReward.toCodecString(),
     stakeReturn: stakeReturn.toCodecString(),
@@ -189,12 +185,13 @@ export async function getValidatorsInfo(api: ApiPromise): Promise<ValidatorInfoF
   const eraAverageRewards = await getAverageRewards(api);
   const eraRewardPoints = await getEraRewardPoints(currentEra, api);
 
-  const { amount: rewardToStakeRatio } = await apiSora.swap.getResultFromBackend(
+  const { amount: rewardToStakeRatio } = await apiSora.swap.getResultFromDexRpc(
     '0x0200040000000000000000000000000000000000000000000000000000000000',
     '0x0200000000000000000000000000000000000000000000000000000000000000',
     1,
     false,
     LiquiditySourceTypes.Default,
+    true,
     DexId.XOR
   );
 
@@ -203,7 +200,7 @@ export async function getValidatorsInfo(api: ApiPromise): Promise<ValidatorInfoF
     const total = electedValidator?.total ?? '0';
     const rewardPoints = eraRewardPoints[address];
 
-    const identity = await getIdentity(address, api);
+    const identity = (await getAccountOnChainIdentity(address, api))?.identity;
     const { apy, stakeReturn, stakeReturnReward } = await calculatingStakeReturn(
       total,
       rewardToStakeRatio,
@@ -222,7 +219,7 @@ export async function getValidatorsInfo(api: ApiPromise): Promise<ValidatorInfoF
           ? {
               ...identity,
               info: Object.fromEntries(
-                Object.entries(identity.info).map(([key, value]) => {
+                Object.entries(identity?.info ?? {}).map(([key, value]) => {
                   if (value === 'None') return [key, ''];
 
                   if (!Array.isArray(value) && value?.Raw !== undefined) return [key, value?.Raw];
@@ -259,7 +256,8 @@ export async function getValidatorsInfo(api: ApiPromise): Promise<ValidatorInfoF
     if (identity1 === null) return 1;
 
     const { judgements: judgements1 } = identity1;
-    const knownGoodValue1 = judgements1.find(([, type]) => type === 'KnownGood');
+
+    const knownGoodValue1 = judgements1?.find(([, type]) => type === 'KnownGood');
     const isKnownGood1 = knownGoodValue1?.[0] === 1;
 
     return isKnownGood1 ? -1 : 1;

@@ -59,9 +59,15 @@ export interface OriginalIdentity extends CommonIdentity {
   info: OriginalInfo;
 }
 
+export interface OnChainIdentity {
+  legalName: string;
+  approved: boolean;
+  identity: OriginalIdentity;
+}
+
 interface Identity {
-  deposit: string;
-  judgements: [1 | 0, JudgementsType][];
+  deposit?: string;
+  judgements?: [1 | 0, JudgementsType][];
   info: Info;
 }
 

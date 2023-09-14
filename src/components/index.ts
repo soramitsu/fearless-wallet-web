@@ -42,7 +42,6 @@ import TabButton from '@/components/TabButton.vue';
 import Tooltip from '@/components/Tooltip.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import Tabs from '@/components/Tabs.vue';
-import Identicon from '@/components/Identicon.vue';
 
 //add component to component.d.ts as well
 Vue.component('AboveForm', AboveForm);
@@ -88,4 +87,3 @@ Vue.component('TabButton', TabButton);
 Vue.component('Tooltip', Tooltip);
 Vue.component('ValidatedInput', ValidatedInput);
 Vue.component('Tabs', Tabs);
-Vue.component('Identicon', Identicon);

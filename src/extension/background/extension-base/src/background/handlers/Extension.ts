@@ -874,7 +874,7 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
 
     const address = getSubstrateAddress(from);
-    const substratePair = keyringService.getPair(address)!;
+    const substratePair = this.state.keyringService.getPair(address)!;
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 
     const savePass = () => {
@@ -1107,10 +1107,10 @@ export default class Extension extends FWExtensionBase {
   async makeBond(id: string, port: Port, request: RequestBond): Promise<BasicTxResponse> {
     const { from, isSavePass, isMobile, password } = request;
 
-    const pair = keyringService.getPair(from);
+    const pair = this.state.keyringService.getPair(from);
 
     if (pair?.isLocked) {
-      const isUnlock = keyringService.unlockPair(pair, password);
+      const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
@@ -1122,7 +1122,7 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(staking.makeBond)'>(id, port);
 
     const address = getSubstrateAddress(from);
-    const substratePair = keyringService.getPair(address)!;
+    const substratePair = this.state.keyringService.getPair(address)!;
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 
     const savePass = () => {
@@ -1137,10 +1137,10 @@ export default class Extension extends FWExtensionBase {
   async makeBondExtra(id: string, port: Port, request: RequestBond): Promise<BasicTxResponse> {
     const { from, isSavePass, isMobile, password } = request;
 
-    const pair = keyringService.getPair(from);
+    const pair = this.state.keyringService.getPair(from);
 
     if (pair?.isLocked) {
-      const isUnlock = keyringService.unlockPair(pair, password);
+      const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
@@ -1152,7 +1152,7 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(staking.makeBond)'>(id, port);
 
     const address = getSubstrateAddress(from);
-    const substratePair = keyringService.getPair(address)!;
+    const substratePair = this.state.keyringService.getPair(address)!;
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 
     const savePass = () => {
@@ -1167,10 +1167,10 @@ export default class Extension extends FWExtensionBase {
   async makeUnbond(id: string, port: Port, request: RequestUnbond): Promise<BasicTxResponse> {
     const { from, isSavePass, isMobile, password } = request;
 
-    const pair = keyringService.getPair(from);
+    const pair = this.state.keyringService.getPair(from);
 
     if (pair?.isLocked) {
-      const isUnlock = keyringService.unlockPair(pair, password);
+      const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
@@ -1182,7 +1182,7 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(staking.makeUnbond)'>(id, port);
 
     const address = getSubstrateAddress(from);
-    const substratePair = keyringService.getPair(address)!;
+    const substratePair = this.state.keyringService.getPair(address)!;
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 
     const savePass = () => {
@@ -1197,10 +1197,10 @@ export default class Extension extends FWExtensionBase {
   async makeRebond(id: string, port: Port, request: RequestRebond): Promise<BasicTxResponse> {
     const { from, isSavePass, isMobile, password } = request;
 
-    const pair = keyringService.getPair(from);
+    const pair = this.state.keyringService.getPair(from);
 
     if (pair?.isLocked) {
-      const isUnlock = keyringService.unlockPair(pair, password);
+      const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
@@ -1212,7 +1212,7 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(staking.makeRebond)'>(id, port);
 
     const address = getSubstrateAddress(from);
-    const substratePair = keyringService.getPair(address)!;
+    const substratePair = this.state.keyringService.getPair(address)!;
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 
     const savePass = () => {
@@ -1227,10 +1227,10 @@ export default class Extension extends FWExtensionBase {
   async makeRedeem(id: string, port: Port, request: RequestRebond): Promise<BasicTxResponse> {
     const { from, isSavePass, isMobile, password } = request;
 
-    const pair = keyringService.getPair(from);
+    const pair = this.state.keyringService.getPair(from);
 
     if (pair?.isLocked) {
-      const isUnlock = keyringService.unlockPair(pair, password);
+      const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
@@ -1242,7 +1242,7 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(staking.makeRedeem)'>(id, port);
 
     const address = getSubstrateAddress(from);
-    const substratePair = keyringService.getPair(address)!;
+    const substratePair = this.state.keyringService.getPair(address)!;
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 
     const savePass = () => {
@@ -1257,10 +1257,10 @@ export default class Extension extends FWExtensionBase {
   async setControllerAccount(id: string, port: Port, request: RequestRebond): Promise<BasicTxResponse> {
     const { from, isSavePass, isMobile, password } = request;
 
-    const pair = keyringService.getPair(from);
+    const pair = this.state.keyringService.getPair(from);
 
     if (pair?.isLocked) {
-      const isUnlock = keyringService.unlockPair(pair, password);
+      const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
@@ -1272,7 +1272,7 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(staking.setControllerAccount)'>(id, port);
 
     const address = getSubstrateAddress(from);
-    const substratePair = keyringService.getPair(address)!;
+    const substratePair = this.state.keyringService.getPair(address)!;
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 
     const savePass = () => {

@@ -334,6 +334,14 @@
     "reject": "Reject",
     "newConnection": "New Connection",
     "networks":"Networks",
+    "requestFields":{
+      "networkError":"Trouble to recognize the network",
+      "amount": "Amount",
+      "network": "Network",
+      "gasFee": "Gas fee",
+      "method": "Sign Method",
+      "message": "Message"
+    },
     "permissions": {
       "title":"App permissions",
       "viewAddress":"View your wallet address",

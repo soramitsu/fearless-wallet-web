@@ -330,6 +330,14 @@
     "reject": "Отменить",
     "newConnection": "Новое соединение",
     "networks": "Сети",
+    "requestFields":{
+      "networkError":"Проблемы с распознаванием сети",
+      "amount": "Количество",
+      "network": "Сеть",
+      "gasFee": "Комиссия",
+      "method": "Метод подписания",
+      "message": "Сообщение"
+    },
     "permissions": {
       "title":"Доступы приложения",
       "viewAddress":"Просматривать адрес вашего кошелька",

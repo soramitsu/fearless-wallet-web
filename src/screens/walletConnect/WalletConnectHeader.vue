@@ -10,9 +10,15 @@ import { computed } from 'vue';
 import { Fragment } from 'vue-fragment';
 import Favicon from '@/components/Favicon.vue';
 
-const props = defineProps<{ url: string; name: string }>();
+const props = withDefaults(defineProps<{ url: string; name: string; isTx: boolean }>(), {
+  isTx: false,
+});
 
-const title = computed(() => `Connected to ${props.name}`);
+const title = computed(() => {
+  if (props.isTx) return props.name;
+
+  return `Connected to ${props.name}`;
+});
 </script>
 
 <style scoped lang="scss">

@@ -74,13 +74,17 @@ export default class Row extends Vue {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
+
     .icon-info {
-      margin-left: 13px;
       width: 18px;
       height: 18px;
       color: $grayish-white;
       cursor: pointer;
+
+      &--prepend {
+        margin-left: 13px;
+      }
 
       &:hover {
         color: $default-white;

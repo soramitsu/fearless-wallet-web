@@ -862,10 +862,11 @@ export default class Extension extends FWExtensionBase {
   validatePairPassword(address: string, password: string | undefined) {
     const substrateAddress = getSubstrateAddress(address);
     const errors = [] as Array<BasicTxError>;
-    const substratePair = this.state.keyringService.getPair(substrateAddress);
 
     if (password) {
       try {
+        const substratePair = this.state.keyringService.getPair(substrateAddress);
+
         if (substratePair) {
           substratePair.unlock(password);
 
@@ -884,6 +885,11 @@ export default class Extension extends FWExtensionBase {
           message: String(e.message),
         });
       }
+    } else {
+      errors.push({
+        code: BasicTxErrorCode.KEYRING_ERROR,
+        message: String('Password required to decode encrypted data'),
+      });
     }
 
     return errors;

@@ -27,7 +27,7 @@
       v-if="showCrossChainForm"
       :_originalNetwork="selectedAssetNetwork"
       :_selectedAssetId="selectedAssetId"
-      :closeForm="toggleVisible('showCrossChainForm', false)"
+      @closeForm="toggleVisible('showCrossChainForm', false)"
     />
 
     <HistoryDetailsForm

@@ -22,7 +22,7 @@ export interface BalanceItem {
   free?: string;
   isUtility?: boolean;
   isNative?: boolean;
-  icon?: string; // is network icon
+  icon: string; // is network icon
   reserved?: string;
   locked?: string;
   miscFrozen?: string;

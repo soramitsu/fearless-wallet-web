@@ -2,7 +2,7 @@
 import { Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 
-import { JsonRpcProvider } from 'ethers';
+import { JsonRpcProvider, WebSocketProvider } from 'ethers';
 import { ApiPromise } from '@polkadot/api';
 import { WsProvider } from '@polkadot/rpc-provider';
 import { ProviderInterface } from '@polkadot/rpc-provider/types';
@@ -364,10 +364,12 @@ export interface RequestAccountExport {
   address: string;
   password: string;
 }
+export type EvmProvider = JsonRpcProvider | WebSocketProvider;
 
+export type EvmApiMap = Record<string, EvmProvider>;
 export interface ApiMap {
   substrate: Record<string, ApiProps>;
-  evm: Record<string, JsonRpcProvider>;
+  evm: EvmApiMap;
 }
 
 export interface RequestAccountList {

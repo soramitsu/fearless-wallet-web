@@ -62,8 +62,6 @@ export default class App extends Vue {
   async created() {
     if (IS_EXTENSION) this.extensionSubscribe();
     this.setupWallet();
-
-    this.unregisterInactiveWorkers();
     this.setupNetworks();
     this.setupBalance();
     this.fetchFiats();
@@ -84,14 +82,6 @@ export default class App extends Vue {
         title: this.$t('mobileConnector.rateLimitWarning.title') as string,
         type: 'warning',
       });
-    });
-  }
-
-  unregisterInactiveWorkers() {
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-      for (const registration of registrations) {
-        if (registration.active?.state !== 'activated') registration.unregister();
-      }
     });
   }
 

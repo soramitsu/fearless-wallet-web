@@ -105,7 +105,6 @@ export default class Onboarding extends Vue {
   justify-content: space-between;
   align-items: center;
   height: 100%;
-  gap: 30px;
 
   &__logo {
     width: 100%;

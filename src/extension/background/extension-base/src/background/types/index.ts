@@ -1,12 +1,7 @@
-// Copyright 2019-2022 @polkadot/extension authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
-/* eslint-disable no-use-before-define */
 import { BN } from '@polkadot/util';
 import { Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '@extension-base/defaults';
-import { JsonRpcProvider } from 'ethers';
-import { ApiProps } from './types';
+import { ApiMap } from './types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
@@ -485,10 +480,6 @@ export interface TokenBalanceRaw {
   reserved: BN;
   frozen: BN;
   free: BN;
-}
-export interface ApiMap {
-  substrate: Record<string, ApiProps>;
-  evm: Record<string, JsonRpcProvider>;
 }
 
 export interface ServiceInfo {

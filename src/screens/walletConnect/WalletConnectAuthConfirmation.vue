@@ -48,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, set } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
 import { Fragment } from 'vue-fragment';
@@ -58,23 +58,23 @@ import WalletChooseForm from './WalletChooseForm.vue';
 import type { ChainData } from './types';
 import type { WalletConnectSessionRequest } from '@extension-base/services/wallet-connect-service/types';
 import type { AccountJson } from '@extension-base/background/types';
-import { useStore, type WalletInfo } from '@/store';
+import { useStore } from '@/store';
 import { approveWalletConnectSession, rejectWalletConnectSession } from '@/extension/messaging';
 import { useNotify } from '@/plugins/soramitsuUI';
 import { transformNamespaces } from '@/util/walletConnect';
 import { cut } from '@/helpers';
+
 const router = useRouter();
 const store = useStore();
 const notify = useNotify();
+const { t } = useI18n();
+
 const selectedAddress = ref<string>(store.getters.getSelectedWallet.ethereumAddress);
 const wallets = ref<AccountJson[]>(store.getters.getAccounts);
-const state = ref<Record<string, WalletInfo>>({});
-const cutAddress = computed(() => {
-  return cut(selectedAddress.value);
-});
-const selectedWalletName = computed(() => {
-  return wallets.value.find((el) => el.ethereumAddress === selectedAddress.value)?.name ?? '';
-});
+const cutAddress = computed(() => cut(selectedAddress.value));
+const selectedWalletName = computed(
+  () => wallets.value.find(({ ethereumAddress }) => ethereumAddress === selectedAddress.value)?.name ?? ''
+);
 const request = computed<WalletConnectSessionRequest>(() => store.getters.wcConnectRequests[0]);
 const id = computed(() => request.value.id);
 const url = computed(() => request.value.url);
@@ -82,26 +82,12 @@ const title = computed(() => request.value.request.params.proposer.metadata.name
 const showWalletSelect = ref(false);
 
 const toggleWalletSelectForm = () => {
-  const prepValue = !showWalletSelect.value;
-  showWalletSelect.value = prepValue;
+  showWalletSelect.value = !showWalletSelect.value;
 };
 
 const onSelectWallet = (value: string) => {
   selectedAddress.value = value;
 };
-
-onMounted(() => {
-  const accounts = store.getters.getAccounts as AccountJson[];
-  accounts
-    .filter(({ ethereumAddress, isMobile }) => ethereumAddress !== '' && !isMobile)
-    .forEach(({ name, ethereumAddress }, index) => {
-      set(state.value, name, {
-        name,
-        address: ethereumAddress,
-        active: index === 0,
-      });
-    });
-});
 
 const namespaces = computed<ChainData[]>(() => {
   if (!request.value) return [];
@@ -115,12 +101,8 @@ const namespaces = computed<ChainData[]>(() => {
   return [...transformedRequiredNamespaces, ...transformedOptionalNamespaces];
 });
 
-const selectedAccounts = computed(() => Object.values(state.value).map((el) => el.address));
-
-const { t } = useI18n();
-
 const onApprove = async () => {
-  const result = await approveWalletConnectSession({ accounts: selectedAccounts.value, id: id.value });
+  const result = await approveWalletConnectSession({ accounts: [selectedAddress.value], id: id.value });
 
   if (!result)
     notify({

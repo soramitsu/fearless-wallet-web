@@ -32,13 +32,14 @@ import {
 } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
+import { storage } from '@extension-base/stores/Storage';
 import {
   ValidatorsRequest,
   RequestBond,
   RequestUnbond,
   RequestRebond,
   RequestRedeem,
-} from '../../services/staking-service/types';
+} from '@extension-base/services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type {
   MobileSigningRequest,
@@ -142,17 +143,15 @@ export default class Extension extends FWExtensionBase {
   }
 
   public updateNetworkForNewWallet(address: string) {
-    const selectedNetworks = this.state.selectedNetworks[address] ?? ALL_NETWORKS;
-
-    this.state.setActiveNetworks(selectedNetworks);
+    this.state.setActiveNetworks(this.state.selectedNetworks[address] ?? ALL_NETWORKS);
   }
 
   accountsCreate({ password, suri, type, meta }: RequestAccountCreateSuri): string {
     const address = this.state.keyringService.addAccount(suri, password, { ...meta, isMobile: false }, type);
 
     if (!isEthereumAddress(address)) {
-      this.updateNetworkForNewWallet(address);
       this.updateCurrentAccount(address);
+      this.updateNetworkForNewWallet(address);
     }
 
     return address;
@@ -215,7 +214,25 @@ export default class Extension extends FWExtensionBase {
       this.updateCurrentAccount(account ? account.address : '');
     }
 
+    this.cleanupDeletedAccount(address);
+
     return true;
+  }
+
+  cleanupDeletedAccount(address: string) {
+    if (this.state.selectedNetworks[address]) {
+      delete this.state.selectedNetworks[address];
+
+      storage.set({ selectedNetworks: this.state.selectedNetworks });
+    }
+
+    if (this.state.balanceMap[address]) {
+      delete this.state.balanceMap[address];
+
+      const subs = this.state.subscription.getSubscription('balance', address);
+
+      if (subs) subs();
+    }
   }
 
   accountsValidatePassword({ address, password }: RequestAccountValidate): boolean {

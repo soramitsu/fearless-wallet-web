@@ -21,7 +21,7 @@ function createApiObject(): ApiProps {
   } as unknown as ApiProps;
 }
 
-function createEvmApiObject(): ApiProps {
+export function createEvmApiObject(): ApiProps {
   return {
     api: undefined,
     provider: undefined,
@@ -93,12 +93,12 @@ async function onReady(networkName: string) {
 }
 
 export async function initApi(network: NetworkJson, retry = false): Promise<void> {
-  const { name, nodes, isEthereum } = network;
+  const { name, nodes } = network;
   const networkName = name.toLowerCase();
 
   if (state.getSubstrateApiMap[networkName] === undefined) {
     // return EVM HTTP Placeholder
-    state.getSubstrateApiMap[networkName] = isEthereum ? createEvmApiObject() : createApiObject();
+    state.getSubstrateApiMap[networkName] = createApiObject();
   }
 
   if (retry) {

@@ -17,7 +17,7 @@ defineProps<{ story: OnboardingStory }>();
   display: flex;
   flex-flow: column;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
 
   &__image {
     max-width: 440px;

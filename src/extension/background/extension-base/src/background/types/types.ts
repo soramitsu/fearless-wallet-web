@@ -3,7 +3,7 @@ import { Subscription } from 'rxjs';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 import MetadataStore from '@extension-base/stores/Metadata';
-import { JsonRpcProvider } from 'ethers';
+import { JsonRpcProvider, WebSocketProvider } from 'ethers';
 import { UserType } from '../../services/onboarding-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
@@ -377,10 +377,12 @@ export interface RequestAccountExport {
   address: string;
   password: string;
 }
+export type EvmProvider = JsonRpcProvider | WebSocketProvider;
 
+export type EvmApiMap = Record<string, EvmProvider>;
 export interface ApiMap {
   substrate: Record<string, ApiProps>;
-  evm: Record<string, JsonRpcProvider>;
+  evm: EvmApiMap;
 }
 
 export interface ServiceInfo {

@@ -489,14 +489,24 @@ export default class TransferForm extends Vue {
   get optionsNetworks() {
     // used only for transfer
     const walletBalance = this.currency?.balances ?? [];
+    const networks: {
+      name: string;
+      value: string;
+      icon: string;
+    }[] = [];
+    walletBalance.forEach(({ name, icon }) => {
+      const network = this.getNetwork(name);
 
-    return walletBalance.map(({ name, icon }) => {
-      return {
-        name: firstCharToUp(name),
-        value: name,
-        icon,
-      };
+      if (network.active) {
+        networks.push({
+          name: firstCharToUp(name),
+          value: name,
+          icon,
+        });
+      }
     });
+
+    return networks;
   }
 
   get originNet() {

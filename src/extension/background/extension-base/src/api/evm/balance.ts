@@ -48,6 +48,16 @@ function subscribeERC20Interval(
           chain: networkKey,
         });
       } catch (err) {
+        subCallback({
+          state: APIItemState.ERROR,
+          key: networkKey,
+          symbol,
+          id,
+          free,
+          icon,
+          name,
+          chain: networkKey,
+        });
         console.info(`There is problem when fetching ${symbol} token balance on ${networkKey}`, err);
       }
     }
@@ -99,7 +109,10 @@ export function subscribeEVMBalance(
 
         callback(networkKey, balanceItem);
       })
-      .catch(console.warn);
+      .catch(() => {
+        balanceItem.state = APIItemState.ERROR;
+        callback(networkKey, balanceItem);
+      });
   }
 
   function subCallback(item: Partial<BalanceItem>) {

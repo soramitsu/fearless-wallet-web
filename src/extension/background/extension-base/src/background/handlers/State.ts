@@ -6,7 +6,13 @@ import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
-import { EventService, SoraCardService, OnboardingService, KeyringService } from '@extension-base/services';
+import {
+  EventService,
+  SoraCardService,
+  OnboardingService,
+  KeyringService,
+  StakingService,
+} from '@extension-base/services';
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import MetadataStore from '@extension-base/stores/Metadata';
@@ -29,9 +35,7 @@ import { stripUrl, withErrorLog } from '@extension-base/background/handlers/help
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { SignerPayloadRaw } from '@polkadot/types/types';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
-
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
-import { StakingService } from '../../services/staking-service';
 import type {
   AuthorizeRequest,
   AuthRequest,

@@ -3,7 +3,7 @@ import { CodecString, FPNumber } from '@sora-substrate/math';
 import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
 import { OnChainIdentity, api as apiSora } from '@sora-substrate/util';
-import { DefaultBondParams } from '../../services/staking-service/types';
+import { DefaultBondParams } from '@extension-base/services/staking-service/types';
 import { formatEra, formatValidatorExposure, formatIndividualRewardPoints } from './testStaking/helpers';
 import { Extrinsic } from './crossChain';
 import type {

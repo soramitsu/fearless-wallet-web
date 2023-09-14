@@ -4,7 +4,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 import MetadataStore from '@extension-base/stores/Metadata';
 import { JsonRpcProvider, WebSocketProvider } from 'ethers';
-import { UserType } from '../../services/onboarding-service/types';
+import { UserType } from '@extension-base/services/onboarding-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';

@@ -3,8 +3,10 @@ import {
   RequestBond,
   RequestBondExtra,
   RequestSetControllerAccount,
-} from '../../services/staking-service/types';
-import { RequestRebond, RequestRedeem, RequestUnbond } from './../../services/staking-service/types';
+  RequestRebond,
+  RequestRedeem,
+  RequestUnbond,
+} from '@extension-base/services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {

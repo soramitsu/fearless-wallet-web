@@ -71,7 +71,7 @@ export default class Unbond extends Vue {
     align-items: center;
     font-size: 14px;
     color: $default-white;
-    margin-bottom: 10px;
+    margin: 0 0 10px 16px;
 
     &:last-child {
       margin-bottom: none;

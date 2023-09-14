@@ -1,12 +1,4 @@
-import {
-  ValidatorsRequest,
-  RequestBond,
-  RequestBondExtra,
-  RequestSetControllerAccount,
-  RequestRebond,
-  RequestRedeem,
-  RequestUnbond,
-} from '@extension-base/services/staking-service/types';
+import { ValidatorsRequest, MakeStakingRequest } from '@extension-base/services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -160,12 +152,7 @@ export interface RequestSignatures {
 
   // staking
   'pri(staking.validators)': [ValidatorsRequest, FWValidatorInfoFull[]];
-  'pri(staking.makeBond)': [RequestBond, BasicTxResponse];
-  'pri(staking.makeBondExtra)': [RequestBondExtra, BasicTxResponse];
-  'pri(staking.makeUnbond)': [RequestUnbond, BasicTxResponse];
-  'pri(staking.makeRebond)': [RequestRebond, BasicTxResponse];
-  'pri(staking.makeRedeem)': [RequestRedeem, BasicTxResponse];
-  'pri(staking.setControllerAccount)': [RequestSetControllerAccount, BasicTxResponse];
+  'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];
 
   //ether
   'pri(balance)': [null, BalanceJson];

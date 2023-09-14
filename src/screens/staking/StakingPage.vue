@@ -91,11 +91,6 @@ export default class Staking extends Vue {
         type: 'regular',
         icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg',
       },
-      {
-        network: 'Sora mainnet 2',
-        type: 'nominationPool',
-        icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg',
-      },
     ];
   }
 

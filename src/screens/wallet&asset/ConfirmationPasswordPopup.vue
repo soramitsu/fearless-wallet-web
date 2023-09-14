@@ -69,6 +69,7 @@ import {
   RequestTransfer,
   RequestCrossChain,
   TokenBalance,
+  RequestSwap,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
@@ -89,7 +90,10 @@ import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/ext
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { IS_EXTENSION } from '@/consts/global';
-import { RequestStaking } from '@/extension/background/extension-base/src/services/staking-service/types';
+import {
+  RequestStaking,
+  StakingOperation,
+} from '@/extension/background/extension-base/src/services/staking-service/types';
 
 @Component({
   components: { SignMobile },
@@ -113,15 +117,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(Object) currency?: TokenBalance;
   @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain | RequestStaking | SwapOptions;
   @Prop(Object) payload?: SignerPayloadJSON;
-  @Prop(String) extrinsicType!:
-    | 'transfer'
-    | 'crossChain'
-    | 'swap'
-    | 'bond'
-    | 'bondExtra'
-    | 'unbond'
-    | 'rebond'
-    | 'redeem';
+  @Prop(String) extrinsicType!: 'transfer' | 'crossChain' | 'swap' | StakingOperation;
 
   @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: AsyncFn<ApprovePayload>;
   @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: AsyncFn<string>;
@@ -229,6 +225,16 @@ export default class ConfirmationPasswordPopup extends Vue {
     return this.transactionState === 'success' || this.transactionState === 'failed';
   }
 
+  get isStaking() {
+    return (
+      this.extrinsicType === 'bond' ||
+      this.extrinsicType === 'bondExtra' ||
+      this.extrinsicType === 'unbond' ||
+      this.extrinsicType === 'rebond' ||
+      this.extrinsicType === 'redeem'
+    );
+  }
+
   @Watch('password')
   async resetStatusError() {
     this.isErrorPassword = false;
@@ -292,16 +298,11 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   async makeExtrinsic() {
     const callback = (data: any) => {
-      if (data.passwordError) {
-        this.isErrorPassword = true;
-
-        return;
-      }
-
       // TODO Выводить юзеру ошибку ???
       // TODO ошибку balanceTooLow по хорошему нужно обработать и показать
-      console.info('errors:', data.errors);
+      console.info('errors:', data.errors ?? []);
 
+      // транзакция может не пройти даже после отправки в блокчейн
       this.transactionState = data.status ? 'success' : 'failed';
     };
 
@@ -325,14 +326,13 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     if (this.extrinsicType === 'crossChain') return await makeCrossChain(this.request as RequestCrossChain, callback);
 
-    if (
-      this.extrinsicType === 'bond' ||
-      this.extrinsicType === 'bondExtra' ||
-      this.extrinsicType === 'unbond' ||
-      this.extrinsicType === 'rebond' ||
-      this.extrinsicType === 'redeem'
-    )
-      return await makeStaking(this.extrinsicType, this.request as RequestStaking);
+    if (this.extrinsicType === 'swap') return await makeSwap(this.request as RequestSwap);
+
+    if (this.isStaking)
+      return await makeStaking({
+        type: this.extrinsicType,
+        params: this.request as RequestStaking,
+      });
   }
 
   async keypress({ key }: KeyboardEvent) {
@@ -341,27 +341,6 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   async sendExtrinsic() {
     this.transactionState = 'pending';
-
-    if (this.extrinsicType === 'swap') {
-      const res = await makeSwap({
-        ...(this.tx as SwapOptions),
-        password: this.password,
-        isSavePass: this.isSavePass,
-        isMobile: false,
-      });
-
-      if (!res?.status) {
-        this.isErrorPassword = true;
-
-        this.resetTxStatus();
-
-        return;
-      }
-
-      this.transactionState = res.status ? 'success' : 'failed';
-
-      return;
-    }
 
     if (this.transactionId) {
       this.onSignApprove({
@@ -380,6 +359,9 @@ export default class ConfirmationPasswordPopup extends Vue {
 
       this.resetTxStatus();
     }
+
+    // функции выполняются через "@sora-substrate/util
+    if (this.extrinsicType === 'swap' || this.isStaking) this.transactionState = results?.status ? 'success' : 'failed';
   }
 }
 </script>

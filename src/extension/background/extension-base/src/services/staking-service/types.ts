@@ -75,6 +75,8 @@ export type RequestSetControllerAccount = PasswordRequestSign<SetControllerAccou
 
 export type RequestCheckStaking = Bond | BondExtra | Unbond | Rebond | Redeem;
 
+export type StakingOperation = 'bond' | 'bondExtra' | 'unbond' | 'rebond' | 'redeem' | 'controllerAccount';
+
 export type RequestStaking =
   | RequestBond
   | RequestBondExtra
@@ -82,3 +84,8 @@ export type RequestStaking =
   | RequestRebond
   | RequestRedeem
   | RequestSetControllerAccount;
+
+export type MakeStakingRequest = {
+  params: RequestStaking;
+  type: StakingOperation;
+};

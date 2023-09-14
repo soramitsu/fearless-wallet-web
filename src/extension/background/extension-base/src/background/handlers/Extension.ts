@@ -33,15 +33,8 @@ import {
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { storage } from '@extension-base/stores/Storage';
-import {
-  ValidatorsRequest,
-  RequestBond,
-  RequestUnbond,
-  RequestRebond,
-  RequestRedeem,
-  RequestBondExtra,
-  RequestSetControllerAccount,
-} from '@extension-base/services/staking-service/types';
+import { ValidatorsRequest } from '@extension-base/services/staking-service/types';
+import { MakeStakingRequest } from './../../services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type {
   MobileSigningRequest,
@@ -744,10 +737,10 @@ export default class Extension extends FWExtensionBase {
 
   private makeExtrinsicCallback(
     portCallback: (res: BasicTxResponse) => void,
-    cb: () => void
+    savePass: () => void
   ): (res: BasicTxResponse) => void {
     return (res: BasicTxResponse) => {
-      cb();
+      savePass();
       portCallback(res);
     };
   }
@@ -922,8 +915,8 @@ export default class Extension extends FWExtensionBase {
         to,
         password,
         isSavePass,
-        callback,
         isMobile: !!isMobile,
+        callback,
       });
     }
 
@@ -1123,8 +1116,8 @@ export default class Extension extends FWExtensionBase {
     return state.stakingService.getValidators(request);
   }
 
-  async makeBond(request: RequestBond): Promise<BasicTxResponse> {
-    const { from, password } = request;
+  async makeStaking(request: MakeStakingRequest): Promise<BasicTxResponse> {
+    const { from, password } = request.params;
 
     const pair = this.state.keyringService.getPair(from);
 
@@ -1136,87 +1129,7 @@ export default class Extension extends FWExtensionBase {
       }
     }
 
-    return state.stakingService.makeBond(request);
-  }
-
-  async makeBondExtra(request: RequestBondExtra): Promise<BasicTxResponse> {
-    const { from, password } = request;
-
-    const pair = this.state.keyringService.getPair(from);
-
-    if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(pair, password);
-
-      if (!isUnlock) {
-        return { status: false, errors: [{ message: 'Invalid password' }] };
-      }
-    }
-
-    return state.stakingService.makeBondExtra(request);
-  }
-
-  async makeUnbond(request: RequestUnbond): Promise<BasicTxResponse> {
-    const { from, password } = request;
-
-    const pair = this.state.keyringService.getPair(from);
-
-    if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(pair, password);
-
-      if (!isUnlock) {
-        return { status: false, errors: [{ message: 'Invalid password' }] };
-      }
-    }
-
-    return state.stakingService.makeUnbond(request);
-  }
-
-  async makeRebond(request: RequestRebond): Promise<BasicTxResponse> {
-    const { from, password } = request;
-
-    const pair = this.state.keyringService.getPair(from);
-
-    if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(pair, password);
-
-      if (!isUnlock) {
-        return { status: false, errors: [{ message: 'Invalid password' }] };
-      }
-    }
-
-    return state.stakingService.makeRebond(request);
-  }
-
-  async makeRedeem(request: RequestRedeem): Promise<BasicTxResponse> {
-    const { from, password } = request;
-
-    const pair = this.state.keyringService.getPair(from);
-
-    if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(pair, password);
-
-      if (!isUnlock) {
-        return { status: false, errors: [{ message: 'Invalid password' }] };
-      }
-    }
-
-    return state.stakingService.makeRedeem(request);
-  }
-
-  async setControllerAccount(request: RequestSetControllerAccount): Promise<BasicTxResponse> {
-    const { from, password } = request;
-
-    const pair = this.state.keyringService.getPair(from);
-
-    if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(pair, password);
-
-      if (!isUnlock) {
-        return { status: false, errors: [{ message: 'Invalid password' }] };
-      }
-    }
-
-    return state.stakingService.setControllerAccount(request);
+    return state.stakingService.makeStaking(request);
   }
 
   async handle<TMessageType extends MessageTypes>(
@@ -1343,23 +1256,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(staking.validators)':
         return this.getValidators(request as ValidatorsRequest);
 
-      case 'pri(staking.makeBond)':
-        return this.makeBond(request as RequestBond);
-
-      case 'pri(staking.makeBondExtra)':
-        return this.makeBondExtra(request as RequestBond);
-
-      case 'pri(staking.makeUnbond)':
-        return this.makeUnbond(request as RequestUnbond);
-
-      case 'pri(staking.makeRebond)':
-        return this.makeRebond(request as RequestRebond);
-
-      case 'pri(staking.makeRedeem)':
-        return this.makeRedeem(request as RequestRedeem);
-
-      case 'pri(staking.setControllerAccount)':
-        return this.setControllerAccount(request as RequestSetControllerAccount);
+      case 'pri(staking.makeStaking)':
+        return this.makeStaking(request as MakeStakingRequest);
 
       // price
       case 'pri(price.update.currency)':

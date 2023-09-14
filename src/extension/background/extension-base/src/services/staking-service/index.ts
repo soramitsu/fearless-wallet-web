@@ -8,6 +8,7 @@ import {
   RequestRedeem,
   RequestSetControllerAccount,
   RequestBondExtra,
+  MakeStakingRequest,
 } from './types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import { NetworkName } from '@/interfaces';
@@ -57,8 +58,8 @@ export class StakingService {
     return validators;
   }
 
-  public async makeBond(params: RequestBond): Promise<BasicTxResponse> {
-    const { networkName, isSavePass, amount, controller } = params;
+  public async makeStaking({ params, type }: MakeStakingRequest): Promise<BasicTxResponse> {
+    const { networkName, isSavePass } = params;
 
     const apiProps = this.getSubstrateApiMap[networkName];
 
@@ -69,6 +70,22 @@ export class StakingService {
     if (!isReady) return { status: false };
 
     apiSora.shouldPairBeLocked = !isSavePass;
+
+    if (type === 'bond') return this.makeBond(params as RequestBond);
+
+    if (type === 'bondExtra') return this.makeBondExtra(params as RequestBondExtra);
+
+    if (type === 'unbond') return this.makeUnbond(params as RequestUnbond);
+
+    if (type === 'rebond') return this.makeRebond(params as RequestRebond);
+
+    if (type === 'redeem') return this.makeRedeem(params as RequestRedeem);
+
+    return this.setControllerAccount(params as RequestSetControllerAccount);
+  }
+
+  public async makeBond(params: RequestBond): Promise<BasicTxResponse> {
+    const { amount, controller } = params;
 
     try {
       // TODO дописать параметры
@@ -93,17 +110,7 @@ export class StakingService {
   }
 
   public async makeBondExtra(params: RequestBondExtra): Promise<BasicTxResponse> {
-    const { networkName, isSavePass, amount } = params;
-
-    const apiProps = this.getSubstrateApiMap[networkName];
-
-    if (!apiProps.api) return { status: false };
-
-    const isReady = await apiProps.api?.isReady;
-
-    if (!isReady) return { status: false };
-
-    apiSora.shouldPairBeLocked = !isSavePass;
+    const { amount } = params;
 
     try {
       apiSora.staking.bondExtra({ value: amount });
@@ -127,17 +134,7 @@ export class StakingService {
   }
 
   public async makeUnbond(params: RequestUnbond): Promise<BasicTxResponse> {
-    const { networkName, isSavePass, amount } = params;
-
-    const apiProps = this.getSubstrateApiMap[networkName];
-
-    if (!apiProps.api) return { status: false };
-
-    const isReady = await apiProps.api?.isReady;
-
-    if (!isReady) return { status: false };
-
-    apiSora.shouldPairBeLocked = !isSavePass;
+    const { amount } = params;
 
     try {
       apiSora.staking.unbond({ value: amount });
@@ -161,17 +158,7 @@ export class StakingService {
   }
 
   public async makeRebond(params: RequestRebond): Promise<BasicTxResponse> {
-    const { networkName, isSavePass, amount } = params;
-
-    const apiProps = this.getSubstrateApiMap[networkName];
-
-    if (!apiProps.api) return { status: false };
-
-    const isReady = await apiProps.api?.isReady;
-
-    if (!isReady) return { status: false };
-
-    apiSora.shouldPairBeLocked = !isSavePass;
+    const { amount } = params;
 
     try {
       apiSora.staking.rebond({ value: amount });
@@ -195,17 +182,7 @@ export class StakingService {
   }
 
   public async makeRedeem(params: RequestRedeem): Promise<BasicTxResponse> {
-    const { networkName, isSavePass, amount } = params;
-
-    const apiProps = this.getSubstrateApiMap[networkName];
-
-    if (!apiProps.api) return { status: false };
-
-    const isReady = await apiProps.api?.isReady;
-
-    if (!isReady) return { status: false };
-
-    apiSora.shouldPairBeLocked = !isSavePass;
+    const { amount } = params;
 
     try {
       //TODO use redeem call
@@ -230,17 +207,7 @@ export class StakingService {
   }
 
   public async setControllerAccount(params: RequestSetControllerAccount): Promise<BasicTxResponse> {
-    const { networkName, isSavePass, address } = params;
-
-    const apiProps = this.getSubstrateApiMap[networkName];
-
-    if (!apiProps.api) return { status: false };
-
-    const isReady = await apiProps.api?.isReady;
-
-    if (!isReady) return { status: false };
-
-    apiSora.shouldPairBeLocked = !isSavePass;
+    const { address } = params;
 
     try {
       apiSora.staking.setController({ address });

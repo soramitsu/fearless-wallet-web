@@ -73,7 +73,6 @@ export default class Redeem extends Vue {
 .redeem-form {
   .info-fee {
     margin-top: 10px;
-    margin-bottom: 20px;
   }
 }
 </style>

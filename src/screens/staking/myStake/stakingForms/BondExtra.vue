@@ -10,18 +10,6 @@
       :iconClasses="['network-fee']"
     />
 
-    <div class="disclaimer">
-      <Icon icon="wallet-2" class="img" />
-
-      {{ $t('staking.unstakingDisclaimers1') }}
-    </div>
-
-    <div class="disclaimer">
-      <Icon icon="logout" class="img" />
-
-      {{ $t('staking.unstakingDisclaimers2') }}
-    </div>
-
     <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
   </div>
 </template>
@@ -63,7 +51,6 @@ export default class BondExtra extends Vue {
 .bond-extra-form {
   .info-fee {
     margin-top: 10px;
-    margin-bottom: 20px;
   }
 
   .disclaimer {

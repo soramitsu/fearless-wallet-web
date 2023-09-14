@@ -10,15 +10,14 @@ import type { ApiInterfaceEvents } from '@polkadot/api/types';
 import { isSora } from '@/helpers';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 
-function createApiObject(isEthereum = false): ApiProps {
+function createApiObject(): ApiProps {
   return {
-    isEthereum,
+    isEthereum: false,
     isApiConnected: false,
-    api: undefined,
-    provider: undefined,
+    isApiReady: false,
     apiRetry: 0,
     nodeIndex: 0,
-  };
+  } as unknown as ApiProps;
 }
 
 function onConnected(networkName: string) {
@@ -41,6 +40,7 @@ async function onDisconnect(networkName: string) {
   api.isApiConnected = false;
 
   if (api.apiRetry < MAX_CONTINUE_RETRY) return;
+
   const network = state.networkMap[networkName];
 
   api.provider?.disconnect();
@@ -69,11 +69,10 @@ function onReady(networkName: string) {
 }
 
 export async function initApi(network: NetworkJson, retry = false): Promise<void> {
-  const { name: networkName, nodes, isEthereum } = network;
+  const { name: networkName, nodes } = network;
 
   if (state.getSubstrateApiMap[networkName] === undefined) {
-    // return EVM HTTP Placeholder
-    state.getSubstrateApiMap[networkName] = createApiObject(isEthereum);
+    state.getSubstrateApiMap[networkName] = createApiObject();
   }
 
   if (retry) {

@@ -49,6 +49,7 @@ import {
   WalletConnectNotSupportRequest,
   RequestApproveWalletConnectNotSupport,
   RequestRejectWalletConnectNotSupport,
+  EIP155_SIGNING_METHODS,
 } from '../../services/wallet-connect-service/types';
 import {
   isProposalExpired,
@@ -1381,6 +1382,7 @@ export default class Extension extends FWExtensionBase {
     if (errors.length) throw new Error(BasicTxErrorCode.KEYRING_ERROR);
 
     const request = this.state.requestService.signWcRequest(topic);
+    const method = request.request.params.request.method;
     const [, chainId] = request.request.params.chainId.split(':');
     const network = Object.values(this.state.networkMap).find((el) => el.chainId === chainId);
 
@@ -1388,11 +1390,18 @@ export default class Extension extends FWExtensionBase {
 
     const privateKey = this.state.accountExportPrivateKey({ address, password });
     const signer = new Wallet(privateKey.privateKey, this.state.getEvmApiMap[network.name]);
-    const txData = request.request.params.request.params[0] as { to: string; value: string };
-    // const tx = await getEVMTransactionObject(network.name, txData.to, txData.value);
 
-    const hash = await signer.sendTransaction(txData);
-    request.resolve({ id: request.request.topic, signature: hash.hash as HexString });
+    if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
+      const txData = request.request.params.request.params[0] as { to: string; value: string };
+
+      const hash = await signer.sendTransaction(txData);
+      request.resolve({ id: request.request.topic, signature: hash.hash as HexString });
+    } else {
+      const txData = request.request.params.request.params[0].data as string;
+      const signature = await signer.signMessage(txData);
+
+      request.resolve({ id: request.request.topic, signature: signature as `0x${string}` });
+    }
 
     return true;
   }

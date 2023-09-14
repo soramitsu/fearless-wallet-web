@@ -202,6 +202,12 @@ export enum TransferErrorCode {
   TRANSFER_ERROR = 'transferError',
   CROSSCHAIN_ERROR = 'crossChainError',
   SWAP_ERROR = 'swapError',
+  BOND_ERROR = 'bondError',
+  BONDEXTRA_ERROR = 'bondExtraError',
+  UNBOND_ERROR = 'unbondError',
+  REBOND_ERROR = 'rebondError',
+  REDEEM_ERROR = 'redeemError',
+  SET_CONTROLLER_ERROR = 'setControllerError',
 }
 
 export enum BasicTxErrorCode {

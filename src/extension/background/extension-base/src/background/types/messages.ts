@@ -160,12 +160,12 @@ export interface RequestSignatures {
 
   // staking
   'pri(staking.validators)': [ValidatorsRequest, FWValidatorInfoFull[]];
-  'pri(staking.makeBond)': [RequestBond, BasicTxResponse, BasicTxResponse];
-  'pri(staking.makeBondExtra)': [RequestBondExtra, BasicTxResponse, BasicTxResponse];
-  'pri(staking.makeUnbond)': [RequestUnbond, BasicTxResponse, BasicTxResponse];
-  'pri(staking.makeRebond)': [RequestRebond, BasicTxResponse, BasicTxResponse];
-  'pri(staking.makeRedeem)': [RequestRedeem, BasicTxResponse, BasicTxResponse];
-  'pri(staking.setControllerAccount)': [RequestSetControllerAccount, BasicTxResponse, BasicTxResponse];
+  'pri(staking.makeBond)': [RequestBond, BasicTxResponse];
+  'pri(staking.makeBondExtra)': [RequestBondExtra, BasicTxResponse];
+  'pri(staking.makeUnbond)': [RequestUnbond, BasicTxResponse];
+  'pri(staking.makeRebond)': [RequestRebond, BasicTxResponse];
+  'pri(staking.makeRedeem)': [RequestRedeem, BasicTxResponse];
+  'pri(staking.setControllerAccount)': [RequestSetControllerAccount, BasicTxResponse];
 
   //ether
   'pri(balance)': [null, BalanceJson];

@@ -1,9 +1,5 @@
-import { FPNumber } from '@sora-substrate/math';
-import { state } from '@extension-base/background/handlers';
-import { ApiProps, BasicTxResponse, SignerType } from '../../background/types/types';
-import { getValidatorsInfo, bond } from '../../api/substrate/staking';
-import { signAndSendExtrinsic } from '../../api/substrate/shared/signAndSendExtrinsic';
-import { getUtilityProps } from '../../background/utils/utils';
+import { api as apiSora } from '@sora-substrate/util';
+import { ApiProps, BasicTxResponse, TransferErrorCode } from '../../background/types/types';
 import {
   ValidatorsRequest,
   RequestBond,
@@ -11,6 +7,7 @@ import {
   RequestRebond,
   RequestRedeem,
   RequestSetControllerAccount,
+  RequestBondExtra,
 } from './types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import { NetworkName } from '@/interfaces';
@@ -44,8 +41,7 @@ export class StakingService {
 
     if (!isReady) return [];
 
-    // TODO STAKING: использовать функцию из библиотеки
-    const validators: FWValidatorInfoFull[] = (await getValidatorsInfo(apiProps.api)).map((validator) => {
+    const validators: FWValidatorInfoFull[] = (await apiSora.staking.getValidatorsInfo()).map((validator) => {
       const info = validator.identity?.info;
       const name = info?.display || info?.legal || 'no validator info';
       const description = info?.twitter || info?.web || 'no validator info';
@@ -61,156 +57,208 @@ export class StakingService {
     return validators;
   }
 
-  public async createBondExtrinsic({ networkName, controller, amount, stashAccount, from }: RequestBond) {
+  public async makeBond(params: RequestBond): Promise<BasicTxResponse> {
+    const { networkName, isSavePass, amount, controller } = params;
+
     const apiProps = this.getSubstrateApiMap[networkName];
 
-    if (!apiProps.api) return { extrinsic: null, fee: '0' };
+    if (!apiProps.api) return { status: false };
 
     const isReady = await apiProps.api?.isReady;
 
-    if (!isReady) return { extrinsic: null, fee: '0' };
+    if (!isReady) return { status: false };
 
-    // TODO STAKING: использовать функцию из библиотеки
-    const extrinsic = bond(apiProps.api, { controller, amount, stashAccount });
+    apiSora.shouldPairBeLocked = !isSavePass;
 
-    const { precision: utilityPrecision } = getUtilityProps(networkName); // стекается всегда утилити токен, ВАЖНО!!! уточнить этот момент
+    try {
+      // TODO дописать параметры
+      apiSora.staking.bond({ value: amount, controller, payee: '' });
+    } catch (ex) {
+      const message = `[STAKING] Bond failed: ${ex}`;
 
-    const paymentInfo = await extrinsic?.paymentInfo(from);
-    const partialFee = paymentInfo ? +paymentInfo.partialFee : '0';
-    const fee = FPNumber.fromCodecValue(partialFee, utilityPrecision).toString();
+      console.info(message);
 
-    return { extrinsic, fee };
-  }
-
-  public async makeBond(params: RequestBond & { callback: (res: BasicTxResponse) => void }): Promise<BasicTxResponse> {
-    const { networkName, password, isSavePass, from, callback } = params;
-
-    const isUnlock = state.keyringService.unlockPair(from, password);
-
-    if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
-
-    const apiProps = this.getSubstrateApiMap[networkName];
-
-    const { extrinsic } = await this.createBondExtrinsic(params);
-
-    await signAndSendExtrinsic({
-      type: SignerType.PASSWORD,
-      apiProps,
-      callback,
-      extrinsic,
-      password,
-      isSavePass,
-      address: from,
-      errorMessage: 'bond error',
-    });
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.BOND_ERROR,
+            message,
+          },
+        ],
+      };
+    }
 
     return { status: true };
   }
 
-  public async makeUnbond(
-    params: RequestUnbond & { callback: (res: BasicTxResponse) => void }
-  ): Promise<BasicTxResponse> {
-    const { networkName, password, isSavePass, from, callback } = params;
-
-    const isUnlock = state.keyringService.unlockPair(from, password);
-
-    if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
+  public async makeBondExtra(params: RequestBondExtra): Promise<BasicTxResponse> {
+    const { networkName, isSavePass, amount } = params;
 
     const apiProps = this.getSubstrateApiMap[networkName];
 
-    const { extrinsic } = await this.createBondExtrinsic(params);
+    if (!apiProps.api) return { status: false };
 
-    await signAndSendExtrinsic({
-      type: SignerType.PASSWORD,
-      apiProps,
-      callback,
-      extrinsic,
-      password,
-      isSavePass,
-      address: from,
-      errorMessage: 'bond error',
-    });
+    const isReady = await apiProps.api?.isReady;
+
+    if (!isReady) return { status: false };
+
+    apiSora.shouldPairBeLocked = !isSavePass;
+
+    try {
+      apiSora.staking.bondExtra({ value: amount });
+    } catch (ex) {
+      const message = `[STAKING] BondExtra failed: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.BONDEXTRA_ERROR,
+            message,
+          },
+        ],
+      };
+    }
 
     return { status: true };
   }
 
-  public async makeRebond(
-    params: RequestRebond & { callback: (res: BasicTxResponse) => void }
-  ): Promise<BasicTxResponse> {
-    const { networkName, password, isSavePass, from, callback } = params;
-
-    const isUnlock = state.keyringService.unlockPair(from, password);
-
-    if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
+  public async makeUnbond(params: RequestUnbond): Promise<BasicTxResponse> {
+    const { networkName, isSavePass, amount } = params;
 
     const apiProps = this.getSubstrateApiMap[networkName];
 
-    const { extrinsic } = await this.createBondExtrinsic(params);
+    if (!apiProps.api) return { status: false };
 
-    await signAndSendExtrinsic({
-      type: SignerType.PASSWORD,
-      apiProps,
-      callback,
-      extrinsic,
-      password,
-      isSavePass,
-      address: from,
-      errorMessage: 'bond error',
-    });
+    const isReady = await apiProps.api?.isReady;
+
+    if (!isReady) return { status: false };
+
+    apiSora.shouldPairBeLocked = !isSavePass;
+
+    try {
+      apiSora.staking.unbond({ value: amount });
+    } catch (ex) {
+      const message = `[STAKING] Unbond failed: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.UNBOND_ERROR,
+            message,
+          },
+        ],
+      };
+    }
 
     return { status: true };
   }
 
-  public async makeRedeem(
-    params: RequestRedeem & { callback: (res: BasicTxResponse) => void }
-  ): Promise<BasicTxResponse> {
-    const { networkName, password, isSavePass, from, callback } = params;
-
-    const isUnlock = state.keyringService.unlockPair(from, password);
-
-    if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
+  public async makeRebond(params: RequestRebond): Promise<BasicTxResponse> {
+    const { networkName, isSavePass, amount } = params;
 
     const apiProps = this.getSubstrateApiMap[networkName];
 
-    const { extrinsic } = await this.createBondExtrinsic(params);
+    if (!apiProps.api) return { status: false };
 
-    await signAndSendExtrinsic({
-      type: SignerType.PASSWORD,
-      apiProps,
-      callback,
-      extrinsic,
-      password,
-      isSavePass,
-      address: from,
-      errorMessage: 'bond error',
-    });
+    const isReady = await apiProps.api?.isReady;
+
+    if (!isReady) return { status: false };
+
+    apiSora.shouldPairBeLocked = !isSavePass;
+
+    try {
+      apiSora.staking.rebond({ value: amount });
+    } catch (ex) {
+      const message = `[STAKING] Rebond failed: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.REBOND_ERROR,
+            message,
+          },
+        ],
+      };
+    }
 
     return { status: true };
   }
 
-  public async setControllerAccount(
-    params: RequestSetControllerAccount & { callback: (res: BasicTxResponse) => void }
-  ): Promise<BasicTxResponse> {
-    const { networkName, password, isSavePass, from, callback } = params;
-
-    const isUnlock = state.keyringService.unlockPair(from, password);
-
-    if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
+  public async makeRedeem(params: RequestRedeem): Promise<BasicTxResponse> {
+    const { networkName, isSavePass, amount } = params;
 
     const apiProps = this.getSubstrateApiMap[networkName];
 
-    const { extrinsic } = await this.createBondExtrinsic(params);
+    if (!apiProps.api) return { status: false };
 
-    await signAndSendExtrinsic({
-      type: SignerType.PASSWORD,
-      apiProps,
-      callback,
-      extrinsic,
-      password,
-      isSavePass,
-      address: from,
-      errorMessage: 'bond error',
-    });
+    const isReady = await apiProps.api?.isReady;
+
+    if (!isReady) return { status: false };
+
+    apiSora.shouldPairBeLocked = !isSavePass;
+
+    try {
+      //TODO use redeem call
+      apiSora.staking.rebond({ value: amount });
+    } catch (ex) {
+      const message = `[STAKING] Redeem failed: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.REDEEM_ERROR,
+            message,
+          },
+        ],
+      };
+    }
+
+    return { status: true };
+  }
+
+  public async setControllerAccount(params: RequestSetControllerAccount): Promise<BasicTxResponse> {
+    const { networkName, isSavePass, address } = params;
+
+    const apiProps = this.getSubstrateApiMap[networkName];
+
+    if (!apiProps.api) return { status: false };
+
+    const isReady = await apiProps.api?.isReady;
+
+    if (!isReady) return { status: false };
+
+    apiSora.shouldPairBeLocked = !isSavePass;
+
+    try {
+      apiSora.staking.setController({ address });
+    } catch (ex) {
+      const message = `[STAKING] Set controller failed: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.SET_CONTROLLER_ERROR,
+            message,
+          },
+        ],
+      };
+    }
 
     return { status: true };
   }

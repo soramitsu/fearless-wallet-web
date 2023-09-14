@@ -21,22 +21,6 @@ function createApiObject(): ApiProps {
   } as unknown as ApiProps;
 }
 
-export function createEvmApiObject(): ApiProps {
-  return {
-    api: undefined,
-    provider: undefined,
-    nodeIndex: 0,
-    isApiConnected: true,
-    isApiReady: false,
-    isEthereum: true,
-    isEthereumOnly: true,
-    apiRetry: 0,
-    get isReady() {
-      return Promise.resolve(this);
-    },
-  } as unknown as ApiProps;
-}
-
 function onConnected(networkName: string) {
   if (isSora(networkName)) {
     state.apis.substrate[networkName].api = soraConnection.api!;
@@ -97,7 +81,6 @@ export async function initApi(network: NetworkJson, retry = false): Promise<void
   const networkName = name.toLowerCase();
 
   if (state.getSubstrateApiMap[networkName] === undefined) {
-    // return EVM HTTP Placeholder
     state.getSubstrateApiMap[networkName] = createApiObject();
   }
 

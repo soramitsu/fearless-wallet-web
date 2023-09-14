@@ -1,12 +1,6 @@
 import { PasswordRequestSign } from '../../background/types/types';
 import { NetworkName } from '@/interfaces';
 
-export interface DefaultBondParams {
-  controller: string;
-  stashAccount: string;
-  amount: string;
-}
-
 export interface ValidatorsRequest {
   networkName: NetworkName;
 }
@@ -17,7 +11,9 @@ export interface ResponseCheckStaking {
 
 ///////////////////////////////////////////////////////
 
-export interface Bond extends DefaultBondParams {
+export interface Bond {
+  stashAccount: string;
+  controller: string;
   networkName: NetworkName;
   from: string;
   amount: string;
@@ -27,7 +23,7 @@ export type RequestBond = PasswordRequestSign<Bond>;
 
 ///////////////////////////////////////////////////////
 
-export interface BondExtra extends DefaultBondParams {
+export interface BondExtra {
   networkName: NetworkName;
   from: string;
   amount: string;
@@ -37,7 +33,7 @@ export type RequestBondExtra = PasswordRequestSign<BondExtra>;
 
 ///////////////////////////////////////////////////////
 
-export interface Unbond extends DefaultBondParams {
+export interface Unbond {
   networkName: NetworkName;
   from: string;
   amount: string;
@@ -47,7 +43,7 @@ export type RequestUnbond = PasswordRequestSign<Unbond>;
 
 ///////////////////////////////////////////////////////
 
-export interface Rebond extends DefaultBondParams {
+export interface Rebond {
   networkName: NetworkName;
   from: string;
   amount: string;
@@ -57,7 +53,7 @@ export type RequestRebond = PasswordRequestSign<Rebond>;
 
 ///////////////////////////////////////////////////////
 
-export interface Redeem extends DefaultBondParams {
+export interface Redeem {
   networkName: NetworkName;
   from: string;
   amount: string;
@@ -67,10 +63,10 @@ export type RequestRedeem = PasswordRequestSign<Redeem>;
 
 //////////////////////////////////////////////////////////
 
-export interface SetControllerAccount extends DefaultBondParams {
+export interface SetControllerAccount {
   networkName: NetworkName;
   from: string;
-  amount: string;
+  address: string;
 }
 
 export type RequestSetControllerAccount = PasswordRequestSign<SetControllerAccount>;
@@ -79,4 +75,10 @@ export type RequestSetControllerAccount = PasswordRequestSign<SetControllerAccou
 
 export type RequestCheckStaking = Bond | BondExtra | Unbond | Rebond | Redeem;
 
-export type RequestStaking = RequestBond | RequestBondExtra | RequestUnbond | RequestRebond | RequestRedeem;
+export type RequestStaking =
+  | RequestBond
+  | RequestBondExtra
+  | RequestUnbond
+  | RequestRebond
+  | RequestRedeem
+  | RequestSetControllerAccount;

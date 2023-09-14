@@ -82,13 +82,6 @@ type Network = {
 
 type Networks = Network[];
 
-interface ApiOptions {
-  apiRetry: number;
-  nodeIndex: number;
-  api?: ApiPromise;
-  provider?: WsProvider;
-}
-
 type EthereumHistoryData = {
   blockHash: string;
   blockNumber: string;
@@ -146,7 +139,6 @@ export {
   AssetType,
   NetworkName,
   ExternalApi,
-  ApiOptions,
   NetworkStatus,
   HistoryServiceType,
   SoraFees,

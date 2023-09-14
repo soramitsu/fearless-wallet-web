@@ -23,7 +23,7 @@ import { axios } from '@extension-base/utils/axios';
 import { prepNetworkNames } from '@extension-base/const/networks';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
-import { getMockCurrencies, isEthereumNetwork, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
+import { getMockCurrencies, isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
@@ -120,10 +120,12 @@ function extractMetadata(store: MetadataStore): void {
 }
 
 export const registry = new TypeRegistry();
+
 type APIs = {
   evm: EvmApiMap;
   substrate: Record<NetworkName, ApiProps>;
 };
+
 const metaStore = new MetadataStore();
 
 export default class State {
@@ -527,7 +529,7 @@ export default class State {
       if (currentProvider) {
         initApi(data);
 
-        if (data.isEthereum && data.isEthereum && !isRequireSubstrateAPI(data.name)) {
+        if (data.isEthereum && isRequireEvmAPI(data.name)) {
           this.apis.evm[data.name] = initWeb3Api(currentProvider);
         }
       }
@@ -1220,7 +1222,7 @@ export default class State {
   public initNetworkStates(reset?: boolean) {
     for (const [key, network] of Object.entries(this.networkMap)) {
       if (network.active) {
-        if (network.isEthereum && !isRequireSubstrateAPI(key)) {
+        if (network.isEthereum && !isRequireEvmAPI(key)) {
           this.apis.evm[key] = initWeb3Api(network.currentProvider);
         } else {
           if (reset) this.resetApiRetries();

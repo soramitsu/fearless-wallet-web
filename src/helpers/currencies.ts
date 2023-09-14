@@ -107,30 +107,46 @@ const getXORCurrency = (balances: TokenBalance[]) => {
   return balances.find(({ symbol }) => symbol === SORA_UTILITY_ASSET && isSora(SORA_NETWORK_NAME))!;
 };
 
-function calcTransferableSendMinusFee(currency: TokenBalance | undefined, network: NetworkName, fee: string) {
+function calcTransferableSendMinusFee(
+  currency: TokenBalance | undefined,
+  network: NetworkName,
+  fee: string,
+  destNetFee?: string
+) {
   if (currency === undefined) return '0';
 
+  const isCrossChain = destNetFee !== undefined;
+  const destNetFeeFP = new FPNumber(destNetFee ?? 0);
+
   const currencyBalance = currency.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase())!;
-  const transferable = currencyBalance.transferable ? +currencyBalance.transferable : 0;
+  const transferable = +(currencyBalance.transferable ?? 0);
 
   // Для Utility ассета вычитаем комиссию, тк комиссия всегда списывается в Utility токене
   if (currencyBalance.isUtility) {
-    const result = new FPNumber(transferable).sub(new FPNumber(fee));
+    const amountSubFee = new FPNumber(transferable).sub(new FPNumber(fee));
+    const amountSubFeeSubDestFee = isCrossChain ? amountSubFee.sub(destNetFeeFP) : amountSubFee;
 
-    return FPNumber.lt(result, FPNumber.ZERO) ? '0' : result.toString();
+    return FPNumber.lt(amountSubFeeSubDestFee, FPNumber.ZERO) ? '0' : amountSubFeeSubDestFee.toNumber();
   }
 
-  return transferable.toString();
+  // вычитаем CrossChain комиссию
+  if (isCrossChain) {
+    const amountSubDestFee = new FPNumber(transferable).sub(destNetFeeFP);
+
+    return FPNumber.lt(amountSubDestFee, FPNumber.ZERO) ? 0 : amountSubDestFee.toNumber();
+  }
+
+  return transferable;
 }
 
 function isValidAmountAsset(currency: TokenBalance | undefined, network: NetworkName, fee: string, amount: string) {
   const maxSendFP = new FPNumber(calcTransferableSendMinusFee(currency, network, fee));
 
-  // asset !== Utility: если количество токенов равно нулю, то транзакция невалидна
-  // asset === Utility: если количество токенов за вычетом комиссии равно нулю, то транзакция невалидна
+  // если sendAsset !== Utility, то: если количество токенов равно нулю, то транзакция невалидна
+  // если  sendAsset === Utility, то: если количество токенов за вычетом комиссии равно нулю, то транзакция невалидна
   if (FPNumber.isEqualTo(maxSendFP, FPNumber.ZERO)) return false;
 
-  // если amount меньше или равен максимальному количеству токенов, то своп валиден
+  // если syncedAmount меньше или равен максимальному количеству токенов, то транзакция валидна
   return FPNumber.lte(new FPNumber(amount), maxSendFP);
 }
 

@@ -10,7 +10,6 @@
     :destNetFee="destNetFee"
     :destinationNetwork="destinationNetwork"
     :recipient="recipient"
-    @closeForm="$emit('closeForm')"
     @update:assetId="updateAssetId"
     @update:selectedNetwork="updateOriginalNetwork"
     @update:amount="updateAmount"
@@ -19,6 +18,7 @@
     @update:destNetFee="updateDestNetFee"
     @update:destinationNetwork="setDestinationNetwork"
     @update:recipient="updateRecipient"
+    @closeForm="$emit('closeForm')"
   >
     <div class="cross-chain">
       <div class="direction">
@@ -178,7 +178,7 @@ export default class CrossChainForm extends Vue {
       const asset = getNativeAssetName(this.assetName);
 
       const destChainId = originNet?.xcm?.availableDestinations.find(({ assets }) =>
-        assets.some((assetName) => assetName.toLowerCase() === asset)
+        assets.some(({ symbol }) => symbol.toLowerCase() === asset)
       )?.chainId;
 
       if (!destChainId) return;

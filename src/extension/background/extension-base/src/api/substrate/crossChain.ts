@@ -8,13 +8,13 @@ import {
   getNativeAssetName,
   getSubstrateAddress,
 } from '@extension-base/background/utils/utils';
-import { getAssetInfo } from '@extension-base/api/substrate/registry';
 import { SignerType } from '@extension-base/background/types/types';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
 import { Extrinsic } from './utils/types';
 import { getPrecisionValue } from './utils';
+import { getAssetInfo } from './registry';
 import type { TokenBalance, BasicTxResponse } from '@extension-base/background/types/types';
-import type { Interior } from '@/interfaces';
+import type { AssetId, Interiors } from '@/interfaces';
 import {
   NATIVE_NETWORKS,
   RELAY_CHAINS,
@@ -41,15 +41,8 @@ function isRelayChain(network: string) {
   return RELAY_CHAINS.includes(network.toLowerCase());
 }
 
-function interiorHelper(interiors: Interior, nativeParachainIds: number[], originNetParaId?: string) {
-  const originNetIsExistInNativeParachainIds = nativeParachainIds?.some(
-    (id) => id.toString() === originNetParaId?.toString()
-  );
-
+function interiorHelper(interiors: Interiors) {
   const array = interiors.reduce((result, interior) => {
-    // Убираем параметр parachain если для ассета оригин сеть содержится в nativeParachainIds
-    if (originNetIsExistInNativeParachainIds && interior.parachain !== undefined) return result;
-
     const formattedInterior = Object.fromEntries(
       Object.entries(interior).map(([key, value]) => {
         const newKey = key.startsWith('generalKey') ? 'generalKey' : key;
@@ -64,9 +57,8 @@ function interiorHelper(interiors: Interior, nativeParachainIds: number[], origi
   return array.length === 1 ? (array[0] as Record<string, string>) : (array as Record<string, string>[]);
 }
 
-function getConcreteAsset(originNet: NetworkName, isToRelayChain: boolean, assetId: string, isNative = false) {
-  const tokenInfo = getAssetInfo(assetId);
-  const { xcm, parentId, paraId: originNetParaId } = state.networkMap[originNet];
+function getConcreteAsset(originNet: NetworkName, isToRelayChain: boolean, xcmAssetId: AssetId, isNative = false) {
+  const { parentId } = state.networkMap[originNet];
 
   // This Polkadot or Kusama
   if (parentId === undefined)
@@ -76,16 +68,8 @@ function getConcreteAsset(originNet: NetworkName, isToRelayChain: boolean, asset
     };
 
   const { assets: xcmLocationsAssets } = state.xcmLocations.find(({ chainId }) => chainId === parentId)!;
-
-  const asset = getNativeAssetName(tokenInfo.symbol);
-
-  const { interiors, nativeParachainIds } = xcmLocationsAssets.find(
-    ({ symbol }) => symbol.toLowerCase() === asset.toLowerCase()
-  )!;
-
-  const interiorsByXcmVersion = interiors[xcm!.xcmVersion]!;
-
-  const interiorValue = interiorHelper(interiorsByXcmVersion, nativeParachainIds, originNetParaId);
+  const { interiors } = xcmLocationsAssets.find(({ id }) => id === xcmAssetId)!;
+  const interiorValue = interiorHelper(interiors);
   const interiorXcmLength = Array.isArray(interiorValue) ? interiorValue.length : 1;
 
   const interior =
@@ -113,7 +97,7 @@ function getNativeTeleportParams(
   destNet: NetworkName,
   toAddress: string,
   amount: string,
-  assetId: string
+  xcmAssetId: AssetId
 ) {
   const isFromRelayChain = isRelayChain(originNet);
   const isToRelayChain = isRelayChain(destNet);
@@ -158,7 +142,7 @@ function getNativeTeleportParams(
     [xcmVersion]: [
       {
         fun: { Fungible: value },
-        id: { Concrete: getConcreteAsset(originNet, isToRelayChain, assetId, true) },
+        id: { Concrete: getConcreteAsset(originNet, isToRelayChain, xcmAssetId, true) },
       },
     ],
   };
@@ -168,7 +152,13 @@ function getNativeTeleportParams(
   return [destinationChain, receiver, asset, 0, limit];
 }
 
-function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: string, amount: string, assetId: string) {
+function getOrmlTeleportParams(
+  originNet: string,
+  destNet: string,
+  toAddress: string,
+  amount: string,
+  xcmAssetId: AssetId
+) {
   const isToRelayChain = isRelayChain(destNet);
   const { xcm, parentId, name } = state.networkMap[originNet];
   const paraId = state.networkMap[destNet]?.paraId ?? 0;
@@ -197,7 +187,7 @@ function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: st
   const asset = {
     [xcmVersion]: {
       fun: { Fungible: value },
-      id: { Concrete: getConcreteAsset(originNet, isToRelayChain, assetId) },
+      id: { Concrete: getConcreteAsset(originNet, isToRelayChain, xcmAssetId) },
     },
   };
 
@@ -218,7 +208,7 @@ function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: st
 }
 
 async function createNativeTeleportExtrinsic(
-  assetId: NetworkName,
+  xcmAssetId: AssetId,
   originNet: NetworkName,
   destNet: NetworkName,
   toAddress: string,
@@ -237,13 +227,13 @@ async function createNativeTeleportExtrinsic(
   const module = isNativeNetwork(destNet) ? 'limitedTeleportAssets' : 'limitedReserveTransferAssets';
   const pallet = XCM_NATIVE_PALLETS.find((pallet) => api!.tx[pallet] && isFunction(api!.tx[pallet][module]))!;
   const tx = api!.tx[pallet][module];
-  const params = getNativeTeleportParams(originNet, destNet, toAddress, precisionAmount, assetId);
+  const params = getNativeTeleportParams(originNet, destNet, toAddress, precisionAmount, xcmAssetId);
 
   return tx(...params);
 }
 
 async function createOrmlTeleportExtrinsic(
-  assetId: string,
+  xcmAssetId: AssetId,
   originNet: NetworkName,
   destNet: NetworkName,
   toAddress: string,
@@ -262,13 +252,13 @@ async function createOrmlTeleportExtrinsic(
 
   // В большинстве случаев используется xTokens, но он есть не всегда
   if (api.tx?.xTokens?.transferMultiasset) {
-    const params = getOrmlTeleportParams(originNet, destNet, toAddress, precisionAmount, assetId);
+    const params = getOrmlTeleportParams(originNet, destNet, toAddress, precisionAmount, xcmAssetId);
 
     return api.tx?.xTokens?.transferMultiasset(...params);
   }
 
   const module = isRelayChain(destNet) ? 'limitedReserveWithdrawAssets' : 'limitedReserveTransferAssets';
-  const params = getNativeTeleportParams(originNet, destNet, toAddress, precisionAmount, assetId);
+  const params = getNativeTeleportParams(originNet, destNet, toAddress, precisionAmount, xcmAssetId);
 
   // Если нет xTokens используется polkadotXcm, с соответствующим модулем
   return api.tx?.polkadotXcm[module](...params);
@@ -330,17 +320,27 @@ async function createCrossChainExtrinsic(
   amount: string,
   tokenBalance: TokenBalance
 ): Promise<Extrinsic> {
+  const { symbol } = getAssetInfo(assetId);
+  const { xcm } = state.networkMap[originNet];
+
+  // Структура assets в availableDestinations всегда одинаковая
+  // id у конкретного токена(например DOT), для всех сетей внутри availableDestinations одинаковый
+  // Поэтому просто берем первый попавшийся элемент из массива availableDestinations, берем его assets и ищем нужный токен внутри assets
+  const { chainId: destChainId } = state.networkMap[destNet];
+  const { assets } = xcm!.availableDestinations.find(({ chainId }) => chainId === destChainId)!;
+  const { id: xcmAssetId } = assets.find(({ symbol: _symbol }) => _symbol.toLowerCase() === symbol.toLowerCase())!;
+
   if (isNativeNetwork(originNet)) {
     // Case RelayChain -> Nonnative ParaChain (polkadot -> acala, etc; kusama -> bifrost, etc) pallet = xcmPallet, module = limitedReserveTransferAssets
     // Case RelayChain -> Native ParaChain (polkadot -> statemint; kusama -> statemine, encointer) pallet = xcmPallet, module = limitedTeleportAssets
     // Case Native ParaChain -> RelayChain (statemint -> polkadot; statemine, encointer -> kusama) pallet = polkadotXcm, module = limitedTeleportAssets
     // TODO: add case: Native ParaChain -> Nonnative ParaChain
     // TODO: add case: Native ParaChain -> Native ParaChain
-    return createNativeTeleportExtrinsic(assetId, originNet, destNet, toAddress, amount, tokenBalance);
+    return createNativeTeleportExtrinsic(xcmAssetId, originNet, destNet, toAddress, amount, tokenBalance);
   } else {
     // Case Nonnative ParaChain -> Nonnative ParaChain (karura, etc -> bifrost, etc)
     // Case Nonnative ParaChain -> RelayChain (karura, etc -> kusama, etc; acala, etc -> polkadot)
-    return createOrmlTeleportExtrinsic(assetId, originNet, destNet, toAddress, amount, tokenBalance);
+    return createOrmlTeleportExtrinsic(xcmAssetId, originNet, destNet, toAddress, amount, tokenBalance);
   }
 }
 

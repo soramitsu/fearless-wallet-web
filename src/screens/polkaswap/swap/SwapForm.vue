@@ -732,7 +732,7 @@ export default class SwapForm extends Vue {
 
   setMax() {
     this.isExchangeB = false;
-    this.sendAmount = this.calcTransferableSendMinusFee();
+    this.sendAmount = this.calcTransferableSendMinusFee().toString();
 
     this.checkSwap();
   }

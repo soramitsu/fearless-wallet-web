@@ -25,11 +25,7 @@ import {
 } from '@extension-base/api/substrate/crossChain';
 import { RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
 import { ethers } from 'ethers';
-import {
-  balanceItemByNetwork,
-  getSubstrateAddress,
-  isRequireSubstrateAPI,
-} from '@extension-base/background/utils/utils';
+import { balanceItemByNetwork, getSubstrateAddress, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { storage } from '@extension-base/stores/Storage';
@@ -836,7 +832,7 @@ export default class Extension extends FWExtensionBase {
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
-    if (isEthereumAddress(from) && isEthereumAddress(to) && !isRequireSubstrateAPI(networkKey)) {
+    if (isEthereumAddress(from) && isEthereumAddress(to) && isRequireEvmAPI(networkKey)) {
       const fromAccountFreeBalance = tokenBalance
         ? balanceItemByNetwork(tokenBalance.balances, networkKey)?.transferable ?? '0'
         : '0';
@@ -897,7 +893,7 @@ export default class Extension extends FWExtensionBase {
 
     let transferProm: Promise<void> | undefined;
 
-    if (isEthereumAddress(from) && isEthereumAddress(to) && !isRequireSubstrateAPI(networkKey)) {
+    if (isEthereumAddress(from) && isEthereumAddress(to) && isRequireEvmAPI(networkKey)) {
       // Make transfer with EVM API
       const { privateKey } = this.accountExportPrivateKey({ address: from, password });
       const isMainToken = checkMainToken(networkKey, tokenInfo?.id);
@@ -970,6 +966,8 @@ export default class Extension extends FWExtensionBase {
     relayChain,
     amount,
   }: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
+    if (destinationNet === '') return { estimateFee: '0', destEstimateFee: '0' };
+
     const address = getSubstrateAddress(from);
     const tokenBalance = this.state.balanceMap[address].find(
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()

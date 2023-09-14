@@ -74,6 +74,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NETWORK_GROUP } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common/index';
+
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
 @Component({

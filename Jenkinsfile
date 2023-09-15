@@ -20,7 +20,8 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_BSC_KEY', variable: 'FL_BLAST_API_BSC_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_SEPOLIA_KEY', variable: 'FL_BLAST_API_SEPOLIA_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_GOERLI_KEY', variable: 'FL_BLAST_API_GOERLI_KEY'],
-    [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_POLYGON_KEY', variable: 'FL_BLAST_API_POLYGON_KEY']
+    [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_POLYGON_KEY', variable: 'FL_BLAST_API_POLYGON_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_ALCHEMY_API_ETHEREUM_KEY', variable: 'FL_ALCHEMY_API_ETHEREUM_KEY']
 ]
 
 def pipeline = new org.js.AppArtifactsPipeline(

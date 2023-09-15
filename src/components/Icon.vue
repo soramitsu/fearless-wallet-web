@@ -24,9 +24,12 @@ const getIconName = computed(() => `#icon-${props.icon}`);
 const styles = computed(() => `width:${props.width}; height:${props.height};`);
 
 const getSvgClasses = computed(() => {
-  const classes = [...[props.className].flat()];
+  const prepClasses = Array.isArray(props.className) ? props.className.flat() : [props.className];
+
+  const classes = [...prepClasses];
 
   if (props.isHoverable) classes.push('svg-icon--hover');
+
   if (props.iconColor) classes.push(getIconColor.value);
 
   return classes;

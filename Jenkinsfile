@@ -13,8 +13,14 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'RAMP_PROD_API_KEY', variable: 'RAMP_PROD_API_KEY'],
     [$class: 'StringBinding', credentialsId: 'MOONPAY_TEST_API_KEY', variable: 'MOONPAY_TEST_API_KEY'],
     [$class: 'StringBinding', credentialsId: 'MOONPAY_PROD_API_KEY', variable: 'MOONPAY_PROD_API_KEY'],
-    [$class: 'StringBinding', credentialsId: 'WEB_ETHERSCAN_API_KEY', variable: 'ETHERSCAN_API_KEY'],
-    [$class: 'StringBinding', credentialsId: 'WEB_BSCSCAN_API_KEY', variable: 'BSCSCAN_API_KEY']
+    [$class: 'StringBinding', credentialsId: 'FL_WEB_ETHERSCAN_API_KEY', variable: 'FL_WEB_ETHERSCAN_API_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_WEB_BSCSCAN_API_KEY', variable: 'FL_WEB_BSCSCAN_API_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_WEB_POLYGONSCAN_API_KEY', variable: 'FL_WEB_POLYGONSCAN_API_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_ETHEREUM_KEY', variable: 'FL_BLAST_API_ETHEREUM_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_BSC_KEY', variable: 'FL_BLAST_API_BSC_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_SEPOLIA_KEY', variable: 'FL_BLAST_API_SEPOLIA_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_GOERLI_KEY', variable: 'FL_BLAST_API_GOERLI_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_POLYGON_KEY', variable: 'FL_BLAST_API_POLYGON_KEY']
 ]
 
 def pipeline = new org.js.AppArtifactsPipeline(

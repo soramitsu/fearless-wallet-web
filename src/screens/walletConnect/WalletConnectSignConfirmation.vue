@@ -52,18 +52,24 @@ const password = ref('');
 const isPassValid = ref(false);
 const [request]: WalletConnectTransactionRequest[] = store.getters.wcSignList;
 
-const requestType = computed(() => request.params.request.method as EIP155_SIGNING_METHODS);
-const isSignatureRequest = computed(() => requestType.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN);
+const method = computed(() => request.params.request.method as EIP155_SIGNING_METHODS);
+const isSignatureRequest = computed(() => method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN);
 const origin = request.verifyContext.verified.origin;
 const title = computed(() => (isSignatureRequest.value ? 'Signature request' : `Request from ${origin}`));
 
 const url = computed(() => request.verifyContext.verified.origin);
 const header = computed(() => {
-  if (requestType.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN) return 'assets.signature';
+  if (method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN) return 'assets.signature';
 
   return 'assets.transaction';
 });
-const address = request.params.request.params[0].from as string;
+const address = computed(() => {
+  if (method.value === EIP155_SIGNING_METHODS.ETH_SIGN_TRANSACTION)
+    return request.params.request.params[0].from as string;
+
+  return request.params.request.params[1];
+});
+
 const onReject = () => walletConnectRequestReject(request.topic);
 
 const onError = (error: Error) => {
@@ -84,7 +90,7 @@ const onError = (error: Error) => {
 const onApprove = async () => {
   isPassValid.value = false;
 
-  const res = await walletConnectRequestApprove(address, password.value, request.topic).catch(onError);
+  const res = await walletConnectRequestApprove(address.value, password.value, request.topic).catch(onError);
 
   if (res) router.back();
 };

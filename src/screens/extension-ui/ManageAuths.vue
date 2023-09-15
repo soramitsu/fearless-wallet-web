@@ -22,7 +22,6 @@
           :request="el"
           :token="el.topic"
           @openUpdateAuths="openWCAuthDetails"
-          @remove="onWCRemoveuth"
         />
       </Scroll>
     </div>
@@ -39,10 +38,10 @@ import WalletConnectAuthItem from '@/screens/walletConnect/WalletConnectAuthItem
 import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { useStore } from '@/store';
 import { Components } from '@/router/routes';
-import { disconnectWalletConnectConnection } from '@/extension/messaging';
 
 const store = useStore();
 const router = useRouter();
+
 const tabs = {
   substrate: {
     label: 'authorize.substrate',
@@ -92,10 +91,6 @@ const onDotSamaRemoveAuth = async (id: string) => {
   store.dispatch('DELETE_AUTH_CONNECTION', id);
 
   substrateList.value = await store.dispatch('GET_AUTHLIST');
-};
-
-const onWCRemoveuth = async (id: string) => {
-  disconnectWalletConnectConnection(id);
 };
 </script>
 

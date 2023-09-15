@@ -1,7 +1,7 @@
 <template>
   <div class="auth-content" width="100%">
     <div class="row">
-      <router-link :to="to" v-slot="{ navigate }" @onRemove="onRemoveAuth">
+      <router-link :to="to" v-slot="{ navigate }">
         <div class="row-content" @click="navigate">
           <div class="col">
             <Favicon :url="dAppUrl" />
@@ -30,13 +30,10 @@ type Props = {
   url?: string;
 };
 
-const emit = defineEmits(['onRemove']);
 const { request } = defineProps<Props>();
 const to = { name: Components.WalletConnectAuthDetails, params: { topic: request.topic } };
 const stripedUrl = computed(() => stripUrl(request.peer.metadata.url));
 const dAppUrl = computed(() => request.peer.metadata.url);
-
-const onRemoveAuth = () => emit('onRemove', request.topic);
 </script>
 
 <style lang="scss" scoped>

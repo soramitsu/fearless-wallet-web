@@ -23,7 +23,7 @@
       size="big"
       fontSize="big"
       text="authorize.disconnect"
-      @click="onDisconnect"
+      @click="onWCRemoveuth"
     />
   </div>
 </template>
@@ -35,6 +35,7 @@ import WalletConnectHeader from './WalletConnectHeader.vue';
 import type { SessionTypes } from '@walletconnect/types';
 import { transformNamespaces } from '@/util/walletConnect';
 import { useStore } from '@/store';
+import { disconnectWalletConnectConnection } from '@/extension/messaging/wallet-connect-requests';
 
 type ChainData = {
   name: string;
@@ -46,7 +47,6 @@ const route = useRoute();
 const router = useRouter();
 const store = useStore();
 
-const emit = defineEmits(['onRemove']);
 const topic = computed(() => route.params.topic);
 const request = computed(() => {
   const list: SessionTypes.Struct[] | null = store.getters.wcSessions;
@@ -77,9 +77,8 @@ const namespaces = computed<ChainData[]>(() => {
 
 const getNetworkStatusClass = (status: boolean) => `network__status-indicator--${status ? 'active' : 'inactive'}`;
 
-const onDisconnect = () => {
-  emit('onRemove');
-
+const onWCRemoveuth = async () => {
+  await disconnectWalletConnectConnection(topic.value);
   checkAuth();
 };
 </script>

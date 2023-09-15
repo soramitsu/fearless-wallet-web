@@ -56,6 +56,7 @@ import {
   isProposalExpired,
   isSupportWalletConnectNamespace,
   isSupportWalletConnectChain,
+  // convertHexToUtf8,
 } from '../../services/wallet-connect-service/utils';
 import type { BasicTxResponse, ResponseCheckTransfer, SigningRequest } from '@extension-base/background/types/types';
 import type {
@@ -1397,8 +1398,8 @@ export default class Extension extends FWExtensionBase {
     const errors = this.validatePairPassword(address, password);
 
     if (errors.length) throw new Error(BasicTxErrorCode.KEYRING_ERROR);
-
     const request = this.state.requestService.signWcRequest(topic);
+
     const method = request.request.params.request.method;
     const [, chainId] = request.request.params.chainId.split(':');
     const network = Object.values(this.state.networkMap).find((el) => el.chainId === chainId);
@@ -1414,10 +1415,39 @@ export default class Extension extends FWExtensionBase {
       const hash = await signer.sendTransaction(txData);
       request.resolve({ id: request.request.topic, signature: hash.hash as HexString });
     } else {
-      const txData = request.request.params.request.params[0].data as string;
-      const signature = await signer.signMessage(txData);
+      const params = request.request.params.request.params;
+      // let payload: unknown;
+      // const [p1, p2] = params as [string, string];
 
-      request.resolve({ id: request.request.topic, signature: signature as `0x${string}` });
+      // if (address === '' || !payload) {
+      //   throw new Error('Not found address or payload to sign');
+      // }
+
+      if (
+        [
+          'eth_sign',
+          'personal_sign',
+          'eth_signTypedData',
+          'eth_signTypedData_v1',
+          'eth_signTypedData_v3',
+          'eth_signTypedData_v4',
+        ].indexOf(method) < 0
+      ) {
+        throw new Error('Not found sign method');
+      }
+
+      if (['eth_signTypedData_v3', 'eth_signTypedData_v4'].indexOf(method) > -1) {
+        // payload = JSON.parse(payload as string);
+      }
+
+      if (['personal_sign'].indexOf(method) > -1) {
+        // payload = convertHexToUtf8(params[0]);
+      }
+
+      const signature = (await signer.signMessage(params[0] as string)) as HexString;
+      const validateSign = ethers.verifyMessage(signature, params[0]);
+      console.info(validateSign);
+      request.resolve({ id: request.request.topic, signature });
     }
 
     return true;

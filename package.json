@@ -45,6 +45,7 @@
     "@sora-substrate/util": "1.21.12",
     "@soramitsu/soramitsu-js-ui": "^1.0.46",
     "@vespaiach/axios-fetch-adapter": "^0.3.1",
+    "@walletconnect/encoding": "^1.0.2",
     "@walletconnect/sign-client": "^2.9.2",
     "axios": "^0.27.2",
     "bignumber.js": "^9.0.2",

@@ -3,6 +3,7 @@ import { ProposalTypes } from '@walletconnect/types/dist/types/sign-client/propo
 
 import { isEthereumAddress } from '@polkadot/util-crypto';
 
+import * as encoding from '@walletconnect/encoding';
 import { findChainInfoByHalfGenesisHash, findChainInfoByChainId } from '../chain-service/helpers';
 import { NetworkJson } from '../../types';
 import {
@@ -107,3 +108,11 @@ export const isSupportWalletConnectChain = (chain: string, chainInfoMap: Record<
     return false;
   }
 };
+
+export function convertHexToUtf8(hex: string) {
+  try {
+    return encoding.hexToUtf8(hex);
+  } catch (e) {
+    return hex;
+  }
+}

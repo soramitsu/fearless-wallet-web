@@ -66,10 +66,11 @@ export default class Eip155RequestHandler {
       this.requestService.evmRequestHandler
         .sign(requestEvent)
         .then(async ({ signature }) => {
-          await this.walletConnectService.responseRequest({
+          const res = await this.walletConnectService.responseRequest({
             topic,
             response: formatJsonRpcResult(id, signature),
           });
+          console.info(res);
         })
 
         .catch((e: any) => {
@@ -95,10 +96,10 @@ export default class Eip155RequestHandler {
       const createRequest = () => {
         this.requestService.evmRequestHandler
           .sign(requestEvent)
-          .then(async (signature) => {
+          .then(async ({ signature }) => {
             await this.walletConnectService.responseRequest({
-              topic: topic,
-              response: formatJsonRpcResult(id, signature.signature),
+              topic,
+              response: formatJsonRpcResult(id, signature),
             });
           })
           .catch((e) => {

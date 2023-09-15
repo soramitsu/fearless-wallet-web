@@ -32,7 +32,7 @@ const store = useStore();
 const props = defineProps<{ request: WalletConnectTransactionRequest }>();
 
 const params = props.request.params.request.params[0] as Record<string, string>;
-const address = params.from as string;
+const address = (params.from as string) ?? params[1];
 
 const requestType = computed(() => props.request.params.request.method as EIP155_SIGNING_METHODS);
 const isSignatureRequest = computed(() => requestType.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN);

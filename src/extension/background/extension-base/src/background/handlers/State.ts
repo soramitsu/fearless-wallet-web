@@ -36,10 +36,9 @@ import { KeyringAddress } from '@polkadot/ui-keyring/types';
 
 import { SignerPayloadRaw } from '@polkadot/types/types';
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
-import { PriceJson, ServiceInfo, MobileSignRequest, MobileSigningRequest } from '../types';
+import { PriceJson, ServiceInfo, MobileSignRequest, MobileSigningRequest, ResponseSigning } from '../types';
 import type {
   AuthUrls,
-  ResponseSigning,
   Resolver,
   AuthorizedAccountsDiff,
   RequestRpcSend,

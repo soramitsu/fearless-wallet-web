@@ -18,7 +18,7 @@ import type { SignerResult } from '@polkadot/types/types/extrinsic';
 import type { Registry, SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
-import type { AccountAuthType, AddressBook, AuthUrlInfo } from '@extension-base/background/types';
+import type { AccountAuthType, AddressBook, AuthUrlInfo, ResponseSigning } from '@extension-base/background/types';
 import {
   NetworkName,
   WalletAddress,
@@ -450,11 +450,6 @@ export type TransportResponseMessage<TMessageType extends MessageTypes> =
     : TMessageType extends MessageTypesWithSubscriptions
     ? TransportResponseMessageSub<TMessageType>
     : never;
-
-export interface ResponseSigning {
-  id: string;
-  signature: HexString;
-}
 
 export interface ResponseAccountExport {
   exportedJson: KeyringPair$Json;

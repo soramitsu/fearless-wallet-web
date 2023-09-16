@@ -11,6 +11,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { ALL_NETWORKS } from './consts/networks';
 import { beaconController } from './controllers/beaconController';
+import { setTitle } from './helpers/common';
 import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
@@ -30,7 +31,7 @@ import {
   subscribePrice,
 } from '@/extension/messaging';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
-import { FEARLESS_TITLE, IS_EXTENSION } from '@/consts/global';
+import { IS_EXTENSION } from '@/consts/global';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 
 @Component({})
@@ -62,7 +63,7 @@ export default class App extends Vue {
   async created() {
     if (IS_EXTENSION) this.extensionSubscribe();
 
-    this.setTitle();
+    setTitle();
     this.setupWallet();
     this.setupNetworks();
     this.setupBalance();
@@ -146,10 +147,6 @@ export default class App extends Vue {
     subscribeAddresses((accounts) => {
       this.onAccountUpdate(accounts, true);
     });
-  }
-
-  setTitle() {
-    document.title = FEARLESS_TITLE;
   }
 
   unsubscribe() {

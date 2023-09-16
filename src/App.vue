@@ -30,7 +30,7 @@ import {
   subscribePrice,
 } from '@/extension/messaging';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
-import { IS_EXTENSION } from '@/consts/global';
+import { FEARLESS_TITLE, IS_EXTENSION } from '@/consts/global';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 
 @Component({})
@@ -61,6 +61,8 @@ export default class App extends Vue {
 
   async created() {
     if (IS_EXTENSION) this.extensionSubscribe();
+
+    this.setTitle();
     this.setupWallet();
     this.setupNetworks();
     this.setupBalance();
@@ -144,6 +146,10 @@ export default class App extends Vue {
     subscribeAddresses((accounts) => {
       this.onAccountUpdate(accounts, true);
     });
+  }
+
+  setTitle() {
+    document.title = FEARLESS_TITLE;
   }
 
   unsubscribe() {

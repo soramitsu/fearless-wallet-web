@@ -186,6 +186,9 @@ const routes: Array<RouteConfig> = [
           else if (haveMetaRequests()) next({ name: Components.MetaRequest });
           else next();
         },
+        meta: {
+          title: 'WALLET',
+        },
       },
       {
         path: 'accounts',

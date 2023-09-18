@@ -13,8 +13,15 @@ declare global {
       RAMP_TEST_API_KEY: string;
       MOONPAY_TEST_API_KEY: string;
       MOONPAY_PROD_API_KEY: string;
-      BSCSCAN_API_KEY: string;
-      ETHERSCAN_API_KEY: string;
+      FL_WEB_ETHERSCAN_API_KEY: string;
+      FL_WEB_BSCSCAN_API_KEY: string;
+      FL_WEB_POLYGONSCAN_API_KEY: string;
+      FL_BLAST_API_ETHEREUM_KEY: string;
+      FL_BLAST_API_BSC_KEY: string;
+      FL_BLAST_API_SEPOLIA_KEY: string;
+      FL_BLAST_API_GOERLI_KEY: string;
+      FL_BLAST_API_POLYGON_KEY: string;
+      FL_ALCHEMY_API_ETHEREUM_KEY: string;
     }
   }
 }

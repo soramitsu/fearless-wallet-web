@@ -57,6 +57,8 @@ const EVM_EXPLORERS_BASE_URLS: Record<string, string> = {
   'ethereum goerli': 'goerli.etherscan.io',
   'binance smart chain': 'bscscan.com',
   'binance smart chain testnet': 'testnet.bscscan.com',
+  polygon: 'polygon-mainnet.blastapi.io',
+  'polygon mumbai testnet': 'polygon-testnet.blastapi.io',
 } as const;
 
 const EXPLORERS_BASE_URLS: Record<string, string> = {

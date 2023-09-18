@@ -41,7 +41,7 @@
     "@polkadot/ui-keyring": "^3.5.1",
     "@polkadot/util": "^12.3.2",
     "@polkadot/vue-identicon": "^2.9.8",
-    "@sora-substrate/util": "1.21.15",
+    "@sora-substrate/util": "1.21.17",
     "@soramitsu/soramitsu-js-ui": "^1.0.46",
     "@vespaiach/axios-fetch-adapter": "^0.3.1",
     "axios": "^0.27.2",

@@ -53,13 +53,13 @@ export type RequestRebond = PasswordRequestSign<Rebond>;
 
 ///////////////////////////////////////////////////////
 
-export interface Redeem {
+export interface WithdrawUnbonded {
   networkName: NetworkName;
   from: string;
   amount: string;
 }
 
-export type RequestRedeem = PasswordRequestSign<Redeem>;
+export type RequestWithdrawUnbonded = PasswordRequestSign<WithdrawUnbonded>;
 
 //////////////////////////////////////////////////////////
 
@@ -73,19 +73,26 @@ export type RequestSetControllerAccount = PasswordRequestSign<SetControllerAccou
 
 //////////////////////////////////////////////////////////
 
-export type RequestCheckStaking = Bond | BondExtra | Unbond | Rebond | Redeem;
+export type RequestCheckStaking = Bond | BondExtra | Unbond | Rebond | WithdrawUnbonded;
 
-export type StakingOperation = 'bond' | 'bondExtra' | 'unbond' | 'rebond' | 'redeem' | 'controllerAccount';
+export type StakingOperation = 'bond' | 'bondExtra' | 'unbond' | 'rebond' | 'withdrawUnbonded' | 'controllerAccount';
 
 export type RequestStaking =
   | RequestBond
   | RequestBondExtra
   | RequestUnbond
   | RequestRebond
-  | RequestRedeem
+  | RequestWithdrawUnbonded
   | RequestSetControllerAccount;
 
 export type MakeStakingRequest = {
   params: RequestStaking;
   type: StakingOperation;
 };
+
+export type BondingDurationRequest = NetworkName[];
+
+export type BondingDurationResponse = {
+  network: NetworkName;
+  value: number;
+}[];

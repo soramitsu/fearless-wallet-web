@@ -4,7 +4,7 @@
       <div class="about-stake">
         <div class="one block">
           <div class="label">{{ $t('staking.stakingBalance') }}</div>
-          <div class="amount">{{ stakingAmount }} {{ stakingAsset }}</div>
+          <div class="amount">{{ stakingAmount }} {{ stakingAssetName }}</div>
           <div class="value">{{ fiatSymbol }}{{ stakingValue }}</div>
         </div>
 
@@ -16,13 +16,13 @@
 
         <div class="three block">
           <div class="label">{{ $t('staking.unstaking') }}</div>
-          <div class="amount">{{ unstakingAmount }} {{ stakingAsset }}</div>
+          <div class="amount">{{ unstakingAmount }} {{ stakingAssetName }}</div>
           <div class="value">{{ fiatSymbol }}{{ unstakingValue }}</div>
         </div>
 
         <div class="four block">
           <div class="label">{{ $t('staking.redeemable') }}</div>
-          <div class="amount">{{ redeemableAmount }} {{ stakingAsset }}</div>
+          <div class="amount">{{ redeemableAmount }} {{ stakingAssetName }}</div>
           <div class="value">{{ fiatSymbol }}{{ redeemableValue }}</div>
         </div>
       </div>
@@ -62,7 +62,7 @@ export default class About extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
-  get stakingAsset() {
+  get stakingAssetName() {
     return this.stakingCurrency?.symbol;
   }
 

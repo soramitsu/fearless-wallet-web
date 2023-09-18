@@ -5,10 +5,11 @@ import {
   RequestBond,
   RequestUnbond,
   RequestRebond,
-  RequestRedeem,
+  RequestWithdrawUnbonded,
   RequestSetControllerAccount,
   RequestBondExtra,
   MakeStakingRequest,
+  BondingDurationResponse,
 } from './types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import { NetworkName } from '@/interfaces';
@@ -26,6 +27,18 @@ export class StakingService {
   validators: Validators = {};
 
   constructor(private getSubstrateApiMap: Record<string, ApiProps>) {}
+
+  // TODO use network
+  public async getMaxNominations(network: NetworkName): Promise<number> {
+    console.info('mxNominations', network);
+
+    return apiSora.staking.getMaxNominations();
+  }
+
+  // TODO use networks for getBondingDuration
+  public async getBondingDuration(networks: NetworkName[]): Promise<BondingDurationResponse> {
+    return networks.map((network) => ({ network, value: apiSora.staking.getBondingDuration() }));
+  }
 
   public async getValidators({ networkName }: ValidatorsRequest): Promise<FWValidatorInfoFull[]> {
     if (!this.validators[networkName]) this.validators[networkName] = { value: [], timespan: 0 };
@@ -71,20 +84,20 @@ export class StakingService {
 
     apiSora.shouldPairBeLocked = !isSavePass;
 
-    if (type === 'bond') return this.makeBond(params as RequestBond);
+    if (type === 'bond') return this.bond(params as RequestBond);
 
-    if (type === 'bondExtra') return this.makeBondExtra(params as RequestBondExtra);
+    if (type === 'bondExtra') return this.bondExtra(params as RequestBondExtra);
 
-    if (type === 'unbond') return this.makeUnbond(params as RequestUnbond);
+    if (type === 'unbond') return this.unbond(params as RequestUnbond);
 
-    if (type === 'rebond') return this.makeRebond(params as RequestRebond);
+    if (type === 'rebond') return this.rebond(params as RequestRebond);
 
-    if (type === 'redeem') return this.makeRedeem(params as RequestRedeem);
+    if (type === 'withdrawUnbonded') return this.withdrawUnbonded(params as RequestWithdrawUnbonded);
 
     return this.setControllerAccount(params as RequestSetControllerAccount);
   }
 
-  public async makeBond(params: RequestBond): Promise<BasicTxResponse> {
+  public async bond(params: RequestBond): Promise<BasicTxResponse> {
     const { amount, controller } = params;
 
     try {
@@ -109,7 +122,7 @@ export class StakingService {
     return { status: true };
   }
 
-  public async makeBondExtra(params: RequestBondExtra): Promise<BasicTxResponse> {
+  public async bondExtra(params: RequestBondExtra): Promise<BasicTxResponse> {
     const { amount } = params;
 
     try {
@@ -133,7 +146,7 @@ export class StakingService {
     return { status: true };
   }
 
-  public async makeUnbond(params: RequestUnbond): Promise<BasicTxResponse> {
+  public async unbond(params: RequestUnbond): Promise<BasicTxResponse> {
     const { amount } = params;
 
     try {
@@ -157,7 +170,7 @@ export class StakingService {
     return { status: true };
   }
 
-  public async makeRebond(params: RequestRebond): Promise<BasicTxResponse> {
+  public async rebond(params: RequestRebond): Promise<BasicTxResponse> {
     const { amount } = params;
 
     try {
@@ -181,14 +194,13 @@ export class StakingService {
     return { status: true };
   }
 
-  public async makeRedeem(params: RequestRedeem): Promise<BasicTxResponse> {
+  public async withdrawUnbonded(params: RequestWithdrawUnbonded): Promise<BasicTxResponse> {
     const { amount } = params;
 
     try {
-      //TODO use redeem call
-      apiSora.staking.rebond({ value: amount });
+      apiSora.staking.withdrawUnbonded({ value: amount });
     } catch (ex) {
-      const message = `[STAKING] Redeem failed: ${ex}`;
+      const message = `[STAKING] WithdrawUnbonded failed: ${ex}`;
 
       console.info(message);
 

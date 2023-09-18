@@ -29,8 +29,8 @@ import { balanceItemByNetwork, getSubstrateAddress, isRequireEvmAPI } from '@ext
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { storage } from '@extension-base/stores/Storage';
-import { ValidatorsRequest } from '@extension-base/services/staking-service/types';
-import { MakeStakingRequest } from './../../services/staking-service/types';
+import { BondingDurationRequest, ValidatorsRequest } from '@extension-base/services/staking-service/types';
+import { MakeStakingRequest, BondingDurationResponse } from './../../services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type {
   MobileSigningRequest,
@@ -95,6 +95,7 @@ import {
   GoogleAuthTypes,
   ICreateFile,
   IGetFilesResponse,
+  NetworkName,
   OnboardingStories,
   SoraFees,
   VerifyTokenResponse,
@@ -1114,6 +1115,14 @@ export default class Extension extends FWExtensionBase {
     return state.stakingService.getValidators(request);
   }
 
+  getMaxNominations(network: NetworkName): Promise<number> {
+    return state.stakingService.getMaxNominations(network);
+  }
+
+  getBondingDuration(networks: NetworkName[]): Promise<BondingDurationResponse> {
+    return state.stakingService.getBondingDuration(networks);
+  }
+
   async makeStaking(request: MakeStakingRequest): Promise<BasicTxResponse> {
     const { from, password } = request.params;
 
@@ -1253,6 +1262,12 @@ export default class Extension extends FWExtensionBase {
       // staking
       case 'pri(staking.validators)':
         return this.getValidators(request as ValidatorsRequest);
+
+      case 'pri(staking.maxNominations)':
+        return this.getMaxNominations(request as NetworkName);
+
+      case 'pri(staking.bondingDuration)':
+        return this.getBondingDuration(request as BondingDurationRequest);
 
       case 'pri(staking.makeStaking)':
         return this.makeStaking(request as MakeStakingRequest);

@@ -12,7 +12,7 @@
       {{ $t(label) }}
 
       <template slot="menu">
-        <SDropdownItem v-for="{ label, value } in options" :key="label" :value="value">
+        <SDropdownItem v-for="{ label, value } in filteredOptions" :key="label" :value="value">
           {{ $t(label) }}
         </SDropdownItem>
       </template>
@@ -23,11 +23,17 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
+type Options = { value: string; label: string; visibility: boolean }[];
+
 @Component
 export default class Dropdown extends Vue {
   @Prop(String) value!: string;
   @Prop({ default: 'button' }) type!: string;
-  @Prop(Array) options!: Record<string, string>[];
+  @Prop(Array) options!: Options;
+
+  get filteredOptions() {
+    return this.options.filter(({ visibility }) => (visibility !== undefined ? visibility : true));
+  }
 
   get label() {
     return this.options.find(({ value }) => value === this.value)?.label ?? '';

@@ -10,17 +10,37 @@
         />
 
         <BorderButton
+          v-if="showUnbondBtn"
           class="action-button"
-          text="staking.unstake"
+          text="staking.unbond"
           iconName="unbond"
           @click="toggleVisible('showUnbondForm', true)"
         />
 
+        <!-- TODO: Заменить иконку на rebond -->
         <BorderButton
+          v-if="showRebondBtn"
           class="action-button"
-          text="staking.redeem"
+          text="staking.rebond"
+          iconName="send"
+          @click="toggleVisible('showRebondForm', true)"
+        />
+
+        <BorderButton
+          v-if="showRedeemBtn"
+          class="action-button"
+          text="staking.withdrawUnbonded"
           iconName="redeem"
           @click="toggleVisible('showRedeemForm', true)"
+        />
+
+        <!-- TODO: Заменить иконку на yourValidators -->
+        <BorderButton
+          v-if="showValidatorsBtn"
+          class="action-button"
+          text="staking.yourValidators"
+          iconName="send"
+          @click="toggleVisible('showYourValidatorsForm', true)"
         />
 
         <div class="menu">
@@ -108,13 +128,6 @@ type ShowField = 'showBondForm' | 'showBondExtraForm' | 'showUnbondForm' | 'show
   },
 })
 export default class MyStake extends Vue {
-  readonly actionOptions = [
-    { label: 'staking.rebond', value: 'showRebondForm' },
-    { label: 'staking.yourValidators', value: 'showYourValidatorsForm' },
-    { label: 'staking.controllerAccount', value: 'showControllerAccountForm' },
-    { label: 'staking.pendingRewards', value: 'showPendingRewardForm' },
-  ];
-
   activeTabName: MyStakingTab = 'about';
   showBondForm = false; // TODO удалить бонд из моего стейка
   showBondExtraForm = false;
@@ -122,12 +135,19 @@ export default class MyStake extends Vue {
   showRedeemForm = false;
   showRebondForm = false;
   showControllerAccountForm = false;
-
   showYourValidatorsForm = false;
   showPendingRewardForm = false;
 
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+
+  get actionOptions() {
+    return [
+      { label: 'staking.yourValidators', value: 'showYourValidatorsForm', visibility: this.showValidatorsBtn },
+      { label: 'staking.controllerAccount', value: 'showControllerAccountForm' },
+      { label: 'staking.pendingRewards', value: 'showPendingRewardForm' },
+    ];
+  }
 
   get showMainStakingForm() {
     return (
@@ -149,11 +169,30 @@ export default class MyStake extends Vue {
 
     if (this.showRebondForm) return 'rebond';
 
-    if (this.showRedeemForm) return 'redeem';
+    if (this.showRedeemForm) return 'withdrawUnbonded';
 
     if (this.showControllerAccountForm) return 'controllerAccount';
 
     return '';
+  }
+
+  get showValidatorsBtn() {
+    return !(this.showRebondBtn && this.showRedeemBtn);
+  }
+
+  get showUnbondBtn() {
+    // TODO: если не делали анбонд
+    return true;
+  }
+
+  get showRebondBtn() {
+    // TODO: если сделали анбонд и не делали ребонд
+    return true;
+  }
+
+  get showRedeemBtn() {
+    // TODO: если сделали анбонд и не делали ребонд и прошел срок для анбонда
+    return true;
   }
 
   get isAbout() {

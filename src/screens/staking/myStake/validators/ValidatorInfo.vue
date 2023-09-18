@@ -21,7 +21,7 @@
 
         <InfoRow
           text="staking.totalStake"
-          :value="`${totalStake} ${stakingAsset}`"
+          :value="`${totalStake} ${stakingAssetName}`"
           :price="`${fiatSymbol} ${totalStakeValue}`"
         />
 
@@ -131,7 +131,7 @@ export default class ValidatorInfo extends Vue {
     return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
   }
 
-  get stakingAsset() {
+  get stakingAssetName() {
     return this.stakingCurrency.symbol;
   }
 }

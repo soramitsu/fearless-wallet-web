@@ -73,7 +73,7 @@ export default class MyStakingItem extends Vue {
   @Prop(String) amount!: string;
   @Prop(String) asset!: string;
   @Prop(String) unstakingAmount!: string;
-  @Prop(String) unstakingPeriod!: string;
+  @Prop(Number) unbondPeriod!: number;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
@@ -105,7 +105,7 @@ export default class MyStakingItem extends Vue {
   }
 
   get period() {
-    return `${this.unstakingPeriod} ${this.$t('staking.days')}`;
+    return `${this.unbondPeriod} ${this.$t('staking.days')}`;
   }
 
   openStakingInfo() {

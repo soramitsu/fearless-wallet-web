@@ -26,17 +26,19 @@
         <Scroll>
           <template v-if="isAllTab">
             <StakingItem
-              v-for="{ network, icon, type } in stakingItems"
+              v-for="{ network, icon, type, unbondPeriod } in stakingItems"
               :key="network"
               :network="network"
               :type="type"
               :icon="icon"
+              :unbondPeriod="unbondPeriod"
+              @click="updateNetworkBond(network)"
             />
           </template>
 
           <template v-else>
             <MyStakingItem
-              v-for="{ network, icon, fiatValue, amount, asset, unstakingAmount, unstakingPeriod } in myStakingItems"
+              v-for="{ network, icon, fiatValue, amount, asset, unstakingAmount, unbondPeriod } in myStakingItems"
               :key="network"
               :network="network"
               :icon="icon"
@@ -44,12 +46,14 @@
               :amount="amount"
               :asset="asset"
               :unstakingAmount="unstakingAmount"
-              :unstakingPeriod="unstakingPeriod"
+              :unbondPeriod="unbondPeriod"
             />
           </template>
         </Scroll>
       </div>
     </ContentForm>
+
+    <Bond v-if="showBond" :network="network" @closeBond="updateNetworkBond" />
   </div>
 </template>
 
@@ -66,9 +70,13 @@ import StakingSettings from '@/screens/staking/StakingSettings.vue';
 import StakingItem from '@/screens/staking/StakingItem.vue';
 import MyStakingItem from '@/screens/staking/MyStakingItem.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { NetworkName } from '@/interfaces';
+import Bond from '@/screens/staking/Bond.vue';
+import { getBondingDuration } from '@/extension/messaging';
 
 @Component({
   components: {
+    Bond,
     StakingItem,
     MyStakingItem,
     WalletBalance,
@@ -81,31 +89,33 @@ export default class Staking extends Vue {
   showNetworkManagement = false;
   activeTabName: StakingTab = 'all';
   filterValue = '';
+  network = '';
+
+  stakingItems = [
+    {
+      network: 'Sora mainnet',
+      type: 'regular',
+      icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg',
+      unbondPeriod: 0,
+    },
+  ];
+
+  myStakingItems = [
+    {
+      network: 'Sora mainnet',
+      icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg',
+      fiatValue: '400',
+      asset: 'xor',
+      amount: '5',
+      unstakingAmount: '1.1',
+      unbondPeriod: 0,
+    },
+  ];
 
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
-  get stakingItems() {
-    return [
-      {
-        network: 'Sora mainnet',
-        type: 'regular',
-        icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg',
-      },
-    ];
-  }
-
-  get myStakingItems() {
-    return [
-      {
-        network: 'Sora mainnet',
-        icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg',
-        fiatValue: '400',
-        asset: 'xor',
-        amount: '5',
-        unstakingAmount: '1.1',
-        unstakingPeriod: '28',
-      },
-    ];
+  get showBond() {
+    return this.network !== '';
   }
 
   get showShimmers() {
@@ -124,12 +134,31 @@ export default class Staking extends Vue {
     return this.activeTabName === 'all';
   }
 
+  async mounted() {
+    const networks = this.stakingItems.map(({ network }) => network);
+    const bondingDurations = await getBondingDuration(networks);
+
+    bondingDurations.forEach(({ network, value }, index) => {
+      this.stakingItems[index].unbondPeriod = value;
+
+      const idx = this.myStakingItems.findIndex(
+        ({ network: _network }) => _network.toLowerCase() == network.toLowerCase()
+      );
+
+      this.myStakingItems[idx].unbondPeriod = value;
+    });
+  }
+
   updateFilterValue(value: string) {
     this.filterValue = value;
   }
 
   updateActiveTabName(name: StakingTab) {
     this.activeTabName = name;
+  }
+
+  updateNetworkBond(network: NetworkName = '') {
+    this.network = network.toLowerCase();
   }
 }
 </script>

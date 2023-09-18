@@ -27,7 +27,7 @@
 
         <InfoRow
           text="assets.networkFee"
-          :value="`${fee} ${stakingAsset}`"
+          :value="`${fee} ${stakingAssetName}`"
           :price="feeValueString"
           borderType="default"
           icon="info"
@@ -118,7 +118,7 @@ export default class YourValidatorsManagement extends Vue {
     return Object.values(this.state).filter(({ isSelect }) => isSelect).length;
   }
 
-  get stakingAsset() {
+  get stakingAssetName() {
     return this.stakingCurrency.symbol;
   }
 

@@ -231,7 +231,7 @@ export default class ConfirmationPasswordPopup extends Vue {
       this.extrinsicType === 'bondExtra' ||
       this.extrinsicType === 'unbond' ||
       this.extrinsicType === 'rebond' ||
-      this.extrinsicType === 'redeem'
+      this.extrinsicType === 'withdrawUnbonded'
     );
   }
 

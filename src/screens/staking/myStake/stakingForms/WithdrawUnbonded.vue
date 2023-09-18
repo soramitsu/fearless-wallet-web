@@ -1,5 +1,5 @@
 <template>
-  <div class="redeem-form">
+  <div class="withdraw-unbonded-form">
     <InfoRow
       class="info-fee"
       text="staking.rewards"
@@ -31,7 +31,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
-export default class Redeem extends Vue {
+export default class WithdrawUnbonded extends Vue {
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
   @Prop({ type: String }) fee!: string;
@@ -70,7 +70,7 @@ export default class Redeem extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.redeem-form {
+.withdraw-unbonded-form {
   .info-fee {
     margin-top: 10px;
   }

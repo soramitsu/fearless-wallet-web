@@ -1,11 +1,5 @@
 <template>
-  <AboveForm
-    :fullScreen="true"
-    :showBackIcon="showBackIcon"
-    :header="header"
-    @handlerBack="handlerBack"
-    @closeHandler="closeForm"
-  >
+  <AboveForm :fullScreen="true" :header="header" @closeHandler="closeForm">
     <div class="staking-management">
       <Scroll>
         <div v-if="isControllerAccount" class="controller-description row">
@@ -23,28 +17,20 @@
           :asset="stakingAssetName"
           :assetId="stakingAssetId"
           :amount="amount"
-          :readonly="assetInputReadonly"
           @update:amount="updateAmount"
           @setMax="setMax"
         />
 
-        <!-- Удалить бонд из моего стейка -->
-        <Bond
-          v-if="isBond"
-          :step="step"
-          :stakingCurrency="stakingCurrency"
-          :rewardedCurrency="rewardedCurrency"
-          :fee="fee"
-          :amount="amount"
-          :network="network"
-          @openValidatorList="openValidatorList"
-        />
-
-        <BondExtra v-else-if="isBondExtra" :stakingCurrency="stakingCurrency" :fee="fee" />
+        <BondExtra v-if="isBondExtra" :stakingCurrency="stakingCurrency" :fee="fee" />
 
         <Unbond v-else-if="isUnbond" :stakingCurrency="stakingCurrency" :fee="fee" />
 
-        <Redeem v-else-if="isRedeeam" :stakingCurrency="stakingCurrency" :fee="fee" :rewards="rewards" />
+        <WithdrawUnbonded
+          v-else-if="isWithdrawUnbonded"
+          :stakingCurrency="stakingCurrency"
+          :fee="fee"
+          :rewards="rewards"
+        />
 
         <Rebond v-else-if="isRebond" :stakingCurrency="stakingCurrency" :fee="fee" :amount="amount" />
 
@@ -56,15 +42,7 @@
         />
       </Scroll>
 
-      <FButton
-        v-if="showConfirmButton"
-        width="100%"
-        size="big"
-        fontSize="big"
-        :text="btnText"
-        :disabled="confirmBtnDisabled"
-        @click="confirm"
-      />
+      <FButton width="100%" size="big" fontSize="big" :text="btnText" :disabled="confirmBtnDisabled" @click="confirm" />
     </div>
 
     <ConfirmationPasswordPopup
@@ -87,8 +65,7 @@ import type { GetAssetPrice, SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import Bond from '@/screens/staking/myStake/stakingForms/Bond.vue';
-import Redeem from '@/screens/staking/myStake/stakingForms/Redeem.vue';
+import WithdrawUnbonded from '@/screens/staking/myStake/stakingForms/WithdrawUnbonded.vue';
 import Unbond from '@/screens/staking/myStake/stakingForms/Unbond.vue';
 import Rebond from '@/screens/staking/myStake/stakingForms/Rebond.vue';
 import BondExtra from '@/screens/staking/myStake/stakingForms/BondExtra.vue';
@@ -97,16 +74,19 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { NetworkName } from '@/interfaces';
 import { calcTransferableSendMinusFee, isValidAmountAsset } from '@/helpers/currencies';
-import { RequestCheckStaking } from '@/extension/background/extension-base/src/services/staking-service/types';
+import {
+  RequestCheckStaking,
+  StakingOperation,
+} from '@/extension/background/extension-base/src/services/staking-service/types';
 import BaseApi from '@/util/BaseApi';
+import { getSoraFees } from '@/extension/messaging';
 
 @Component({
   components: {
-    Bond,
     Rebond,
-    Redeem,
     Unbond,
     BondExtra,
+    WithdrawUnbonded,
     ControllerAccount,
     ConfirmationPasswordPopup,
   },
@@ -123,19 +103,13 @@ export default class MainStakingForm extends Vue {
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
   @Prop({ type: String }) network!: NetworkName;
-  @Prop({ type: String }) type!: 'bond' | 'bondExtra' | 'unbond' | 'rebond' | 'redeem' | 'controllerAccount';
+  @Prop({ type: String }) type!: StakingOperation;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get btnText() {
-    if (this.isBond) {
-      if (this.step === 1) return 'common.next';
-
-      if (this.step === 3) return 'common.iAgree';
-    }
-
     if (this.isControllerAccount) {
       if (this.controllerAccount !== '' && !this.isValidControllerAddress)
         return this.$t('accounts.invalidAccountAddress');
@@ -150,40 +124,8 @@ export default class MainStakingForm extends Vue {
     return this.step === 1;
   }
 
-  get showConfirmButton() {
-    return this.step !== 2;
-  }
-
-  get showBackIcon() {
-    if (this.isRedeeam || this.isUnbond) return false;
-
-    return this.step !== 1;
-  }
-
   get header() {
-    if (this.isBond) {
-      if (this.step === 2) return 'staking.validators';
-
-      if (this.step === 3) return 'common.warning';
-
-      if (this.step === 4) return 'staking.recommended';
-
-      if (this.step === 5) return 'staking.yourself';
-
-      if (this.step === 6) return 'common.confirmation';
-    }
-
     return `staking.${this.type}`;
-  }
-
-  get assetInputReadonly() {
-    if (this.isRebond) return true;
-
-    return this.step !== 1;
-  }
-
-  get isBond() {
-    return this.type === 'bond';
   }
 
   get isBondExtra() {
@@ -194,8 +136,8 @@ export default class MainStakingForm extends Vue {
     return this.type === 'unbond';
   }
 
-  get isRedeeam() {
-    return this.type === 'redeem';
+  get isWithdrawUnbonded() {
+    return this.type === 'withdrawUnbonded';
   }
 
   get isRebond() {
@@ -213,11 +155,9 @@ export default class MainStakingForm extends Vue {
   }
 
   get confirmBtnDisabled() {
-    if (this.step === 1) return this.amount === '' || +this.amount === 0 || !this.isValidAmountAsset;
-
     if (this.isControllerAccount) return !this.isValidControllerAddress;
 
-    return false;
+    return this.amount === '' || +this.amount === 0 || !this.isValidAmountAsset;
   }
 
   get isValidAmountAsset() {
@@ -237,6 +177,16 @@ export default class MainStakingForm extends Vue {
   }
 
   get transferableAmount() {
+    // TODO: количество токенов в находящихся стейкинге
+    if (this.isUnbond) return 1;
+
+    // TODO: общее количество токенов в находящихся в анбонде и не заклеймленных
+    if (this.isRebond) return 1;
+
+    // TODO: общее количество токенов в находящихся в анбонде, срок которых истек и их можно заклеймить
+    if (this.isWithdrawUnbonded) return 1;
+
+    // isBondExtra;
     return +(this.stakingCurrencyBalance?.transferable ?? 0);
   }
 
@@ -264,29 +214,25 @@ export default class MainStakingForm extends Vue {
     } as RequestCheckStaking;
   }
 
-  get lastUnstake() {
+  get lastUnbond() {
     return '1.1'; // текущее количество в анбонде
   }
 
   mounted() {
-    if (this.isRebond) this.amount = this.lastUnstake;
+    if (this.isRebond) this.amount = this.lastUnbond;
 
     this.getSoraFees();
   }
 
   async getSoraFees() {
-    // const { StakingBond, StakingBondExtra, StakingRebond, StakingUnbond, StakingSetController } = await getSoraFees();
-    // if (this.isBond) {
-    //   this.fee = StakingBond;
-    // } else if (this.isBondExtra) {
-    //   this.fee = StakingBondExtra;
-    // } else if (this.isRebond) {
-    //   this.fee = StakingRebond;
-    // } else if (this.isUnbond) {
-    //   this.fee = StakingUnbond;
-    // } else if (this.isControllerAccount) {
-    //   this.fee = StakingSetController;
-    // }
+    const { StakingBondExtra, StakingRebond, StakingUnbond, StakingSetController, StakingWithdrawUnbonded } =
+      await getSoraFees();
+
+    if (this.isBondExtra) this.fee = StakingBondExtra;
+    else if (this.isUnbond) this.fee = StakingUnbond;
+    else if (this.isRebond) this.fee = StakingRebond;
+    else if (this.isWithdrawUnbonded) this.fee = StakingWithdrawUnbonded;
+    else if (this.isControllerAccount) this.fee = StakingSetController;
   }
 
   updateControllerAccount(value: string) {
@@ -297,21 +243,8 @@ export default class MainStakingForm extends Vue {
     this.$emit('closeForm');
   }
 
-  openValidatorList(isSuggested: boolean) {
-    this.isSuggested = isSuggested;
-
-    this.step = isSuggested ? 3 : 5;
-  }
-
   confirm() {
-    if (this.isBond) {
-      if (this.step === 4) this.step += 1;
-
-      if (this.step === 6) this.showConfirmationPasswordPopup = true;
-      else this.step += 1;
-    } else {
-      this.showConfirmationPasswordPopup = true;
-    }
+    this.showConfirmationPasswordPopup = true;
   }
 
   confirmationPasswordPopupClose(closeForm: boolean) {
@@ -331,7 +264,7 @@ export default class MainStakingForm extends Vue {
   async setMax() {
     if (!this.stakingCurrency) return;
 
-    this.amount = this.calcTransferableSendMinusFee();
+    this.amount = this.calcTransferableSendMinusFee().toString();
   }
 
   handlerBack() {

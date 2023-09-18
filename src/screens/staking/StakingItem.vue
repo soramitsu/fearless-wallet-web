@@ -1,5 +1,5 @@
 <template>
-  <div class="staking-item" @click="openStakingInfo">
+  <div class="staking-item" @click="$emit('click')">
     <div class="description-part left-part">
       <ExternalLogo :name="icon" class="network-icon" />
 
@@ -33,6 +33,7 @@ export default class StakingItem extends Vue {
   @Prop(String) network!: string;
   @Prop(String) type!: 'Regular';
   @Prop(String) icon!: string;
+  @Prop(Number) unbondPeriod!: number;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
   get apy() {
@@ -43,17 +44,7 @@ export default class StakingItem extends Vue {
   }
 
   get days() {
-    return { value: 28 };
-  }
-
-  openStakingInfo() {
-    // this.$router.push({
-    //   name: Components.Asset,
-    //   params: {
-    //      assetId: this.assetData.assetId,
-    //      network: this.redirectNetwork,
-    //   },
-    // });
+    return { value: this.unbondPeriod };
   }
 }
 </script>

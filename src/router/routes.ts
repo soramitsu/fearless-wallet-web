@@ -173,6 +173,9 @@ const routes: Array<RouteConfig> = [
     path: '/my-stake/:network',
     name: Components.MyStake,
     component: MyStake,
+    meta: {
+      title: 'myStake',
+    },
   },
   {
     path: '/fearless',

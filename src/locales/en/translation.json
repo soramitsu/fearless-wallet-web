@@ -539,6 +539,7 @@
     "export": "Export",
     "crowdloans": "Crowdloans",
     "staking": "Staking",
+    "myStake": "My staking",
     "polkaswap": "Polkaswap"
   },
   "common": {

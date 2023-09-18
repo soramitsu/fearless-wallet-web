@@ -28,7 +28,6 @@ import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, getSignTr
 import { TransactionType } from '@/interfaces/history';
 import { cut } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
@@ -46,7 +45,7 @@ export default class HistoryItem extends Vue {
   }
 
   get address() {
-    if (ETHEREUM_NETWORKS.includes(this.network.toLowerCase())) return this.selectedWallet.ethereumAddress;
+    if (BaseApi.isEthereumNetwork(this.network.toLowerCase())) return this.selectedWallet.ethereumAddress;
     const network = this.getNetwork(this.network);
 
     return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);

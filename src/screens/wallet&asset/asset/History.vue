@@ -40,7 +40,7 @@ import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { NetworksController } from '@/controllers';
-import { ETHEREUM_NETWORKS, EVM_NETWORKS } from '@/consts/networks';
+import { EVM_NETWORKS } from '@/consts/networks';
 import BaseApi from '@/util/BaseApi';
 
 @Component({ components: { HistoryItem } })
@@ -79,7 +79,7 @@ export default class History extends Vue {
   }
 
   get address() {
-    if (ETHEREUM_NETWORKS.includes(this.selectedNetwork.toLowerCase())) return this.selectedWallet.ethereumAddress;
+    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
     const network = this.getNetwork(this.selectedNetwork);
 
     return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);

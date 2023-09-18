@@ -107,23 +107,33 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
-import type { SelectedWallet } from '@/store';
+import type { GetNetwork, SelectedWallet } from '@/store';
 import { getType, getSignTransfer, getHistoryValue, getFormattedDate, getHumanTransferFee } from '@/helpers/history';
 import { cut } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { ETHEREUM_NETWORKS } from '@/consts/networks';
 
 @Component({})
 export default class HistoryDetailsForm extends Vue {
   @Prop(String) assetId!: string;
+
   @Prop(String) historyType!: string;
   @Prop(Object) historyElement!: HistoryElement;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get isTransfer() {
     return this.type === 'transfer';
+  }
+
+  get address() {
+    if (ETHEREUM_NETWORKS.includes(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
+    const network = this.getNetwork(this.selectedNetwork);
+
+    return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
   }
 
   get getNetworkByAsset() {
@@ -244,7 +254,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get value() {
-    const { value } = getHistoryValue(this.historyElement, this.assetId, this.selectedNetwork);
+    const { value } = getHistoryValue(this.historyElement, this.assetId, this.selectedNetwork, this.address);
 
     return this.$n(value, 'decimalPrecise');
   }
@@ -254,7 +264,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get signTransfer() {
-    return getSignTransfer(this.historyElement);
+    return getSignTransfer(this.historyElement, this.address);
   }
 
   get hash() {

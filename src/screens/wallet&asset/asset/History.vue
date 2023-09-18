@@ -18,6 +18,7 @@
               :historyElement="historyElement"
               :token="currency"
               :network="selectedNetwork"
+              :address="selectedWallet.address"
               @click.native="openHistoryDetails(historyElement)"
             />
           </template>
@@ -34,16 +35,15 @@ import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import HistoryItem from './HistoryItem.vue';
 import type { FilterHistory, GetHistory, HistoryElement } from '@/interfaces';
-import type { SelectedWallet } from '@/store';
+import type { GetNetwork, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { NetworksController } from '@/controllers';
-import { EVM_NETWORKS } from '@/consts/networks';
+import { ETHEREUM_NETWORKS, EVM_NETWORKS } from '@/consts/networks';
+import BaseApi from '@/util/BaseApi';
 
-@Component({
-  components: { HistoryItem },
-})
+@Component({ components: { HistoryItem } })
 export default class History extends Vue {
   readonly historyDropdownOption = [
     { label: 'assets.all', value: 'all' },
@@ -57,6 +57,8 @@ export default class History extends Vue {
 
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get selectedNetwork() {
@@ -74,6 +76,13 @@ export default class History extends Vue {
         'empty-history': this.isEmptyHistory,
       },
     ];
+  }
+
+  get address() {
+    if (ETHEREUM_NETWORKS.includes(this.selectedNetwork.toLowerCase())) return this.selectedWallet.ethereumAddress;
+    const network = this.getNetwork(this.selectedNetwork);
+
+    return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
   }
 
   get history() {

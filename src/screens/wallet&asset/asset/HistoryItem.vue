@@ -20,11 +20,17 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
 import type { HistoryElement, NetworkName } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
+import type { GetNetwork, SelectedWallet } from '@/store';
 import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, getSignTransfer } from '@/helpers/history';
 import { TransactionType } from '@/interfaces/history';
 import { cut } from '@/helpers';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import BaseApi from '@/util/BaseApi';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class HistoryItem extends Vue {
@@ -32,8 +38,18 @@ export default class HistoryItem extends Vue {
   @Prop(Object) token!: TokenBalance;
   @Prop(String) network!: NetworkName;
 
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+
   get signTransfer() {
-    return getSignTransfer(this.historyElement);
+    return getSignTransfer(this.historyElement, this.address);
+  }
+
+  get address() {
+    if (ETHEREUM_NETWORKS.includes(this.network.toLowerCase())) return this.selectedWallet.ethereumAddress;
+    const network = this.getNetwork(this.network);
+
+    return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
   }
 
   get asset() {
@@ -53,7 +69,7 @@ export default class HistoryItem extends Vue {
   }
 
   get value() {
-    const values = getHistoryValue(this.historyElement, this.token.assetId, this.network);
+    const values = getHistoryValue(this.historyElement, this.token.assetId, this.network, this.address);
 
     if (!values) return 0;
 
@@ -78,7 +94,7 @@ export default class HistoryItem extends Vue {
   }
 
   get typeFormatted() {
-    return getTypeFormatted(this.historyElement);
+    return getTypeFormatted(this.historyElement, this.address);
   }
 }
 </script>

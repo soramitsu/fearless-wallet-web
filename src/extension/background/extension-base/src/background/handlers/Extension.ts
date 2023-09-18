@@ -901,10 +901,9 @@ export default class Extension extends FWExtensionBase {
 
     const pair = this.state.keyringService.getPair(from);
     const isEthereum = isEthereumAddress(from);
-    const address = getSubstrateAddress(from);
 
     if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(address, password);
+      const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
@@ -916,9 +915,10 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
 
     const ethereumAddress = pair ? (pair.meta.ethereumAddress as string | undefined) : '';
+    const substrateAddress = getSubstrateAddress(from);
 
     const savePass = () => {
-      this.savePass(address, isEthereum ? from : ethereumAddress, !!isSavePass, !!isMobile);
+      this.savePass(substrateAddress, isEthereum ? from : ethereumAddress, !!isSavePass, !!isMobile);
     };
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
@@ -1038,10 +1038,9 @@ export default class Extension extends FWExtensionBase {
     const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';
 
     const pair = this.state.keyringService.getPair(from);
-    const address = getSubstrateAddress(from);
 
     if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(address, password);
+      const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
@@ -1052,12 +1051,11 @@ export default class Extension extends FWExtensionBase {
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
 
+    const address = getSubstrateAddress(from);
     const substratePair = this.state.keyringService.getPair(address)!;
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 
-    const savePass = () => {
-      this.savePass(address, ethereumAddress, !!isSavePass, !!isMobile);
-    };
+    const savePass = () => this.savePass(address, ethereumAddress, !!isSavePass, !!isMobile);
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
 

@@ -390,8 +390,10 @@ export default class Extension extends FWExtensionBase {
 
     // unlock then lock (locking cleans secretKey, so needs to be last)
     try {
-      pair.decodePkcs8(password);
-      pair.lock();
+      if (password) {
+        pair.decodePkcs8(password);
+        pair.lock();
+      }
 
       return true;
     } catch (e) {
@@ -898,9 +900,11 @@ export default class Extension extends FWExtensionBase {
     const tokenInfo = getAssetInfo(assetId);
 
     const pair = this.state.keyringService.getPair(from);
+    const isEthereum = isEthereumAddress(from);
+    const address = getSubstrateAddress(from);
 
     if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(pair, password);
+      const isUnlock = this.state.keyringService.unlockPair(address, password);
 
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
@@ -912,8 +916,6 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
 
     const ethereumAddress = pair ? (pair.meta.ethereumAddress as string | undefined) : '';
-    const isEthereum = isEthereumAddress(from);
-    const address = getSubstrateAddress(from);
 
     const savePass = () => {
       this.savePass(address, isEthereum ? from : ethereumAddress, !!isSavePass, !!isMobile);
@@ -1036,9 +1038,10 @@ export default class Extension extends FWExtensionBase {
     const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';
 
     const pair = this.state.keyringService.getPair(from);
+    const address = getSubstrateAddress(from);
 
     if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(pair, password);
+      const isUnlock = this.state.keyringService.unlockPair(address, password);
 
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
@@ -1049,7 +1052,6 @@ export default class Extension extends FWExtensionBase {
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
 
-    const address = getSubstrateAddress(from);
     const substratePair = this.state.keyringService.getPair(address)!;
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 

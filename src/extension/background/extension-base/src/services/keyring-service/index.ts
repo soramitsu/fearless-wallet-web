@@ -77,11 +77,11 @@ export class KeyringService {
 
     if (!pair) return false;
 
+    const { meta } = pair;
+    const ethereumAddress = meta?.ethereumAddress as string | undefined;
+
     try {
       pair.unlock(password);
-
-      const { meta } = pair;
-      const ethereumAddress = meta?.ethereumAddress as string | undefined;
 
       if (ethereumAddress) {
         const ethereumPair = this.getPair(ethereumAddress)!;
@@ -92,6 +92,12 @@ export class KeyringService {
       return true;
     } catch (e: any) {
       pair.lock();
+
+      if (ethereumAddress) {
+        const ethereumPair = this.getPair(ethereumAddress)!;
+
+        ethereumPair.lock();
+      }
 
       return false;
     }

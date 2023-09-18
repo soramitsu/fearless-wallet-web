@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :fullScreen="true" :closeHandler="closeForm">
+  <AboveForm :fullScreen="true" @closeHandler="closeForm">
     <template v-slot:header>
       <div class="header-content">
         <div :class="classesBackIcon" @click="back">
@@ -181,9 +181,9 @@
       :left="160"
       :height="285"
       :options="optionsCurrency"
-      :handlerFilter="handlerFilter"
-      :toggleValue="toggleSelectedAsset"
-      :handlerClose="toggleSelectAssetPopupVisibility.bind(null, '')"
+      @handlerFilter="handlerFilter"
+      @toggleValue="toggleSelectedAsset"
+      @handlerClose="toggleSelectAssetPopupVisibility('')"
     />
 
     <ConfirmationPasswordPopup

@@ -11,18 +11,30 @@ import type {
   MessageTypesWithSubscriptions,
   Port,
   SubscriptionMessageTypes,
+  Subscriptions,
 } from '@extension-base/background/types/types';
 
 type SubscriptionName = 'balance' | 'xorTotalBalance';
-type Subscriptions = Record<string, Port>;
-
+type UpdateSub =
+  | {
+      name: 'balance';
+      func: () => void;
+      address: string;
+    }
+  | {
+      name: 'xorTotalBalance';
+      func: () => void;
+    };
 const subscriptions: Subscriptions = {};
-
+type SubscriptionMap = {
+  balance: Record<string, () => void>;
+  xorTotalBalance: (() => void) | undefined;
+};
 export class FWSubscription {
   private serviceSubscription: Subscription | undefined;
   private state: State;
-  private subscriptionMap: Record<SubscriptionName, (() => void) | undefined> = {
-    balance: undefined,
+  private subscriptionMap: SubscriptionMap = {
+    balance: {},
     xorTotalBalance: undefined,
   };
 
@@ -38,23 +50,46 @@ export class FWSubscription {
     return this.subscriptionMap;
   }
 
-  getSubscription(name: SubscriptionName): (() => void) | undefined {
-    return this.subscriptionMap[name];
+  getSubscription(name: SubscriptionName, address?: string): (() => void) | undefined {
+    if (name === 'balance' && address) return this.subscriptionMap[name][address];
+
+    if (name === 'xorTotalBalance') return this.subscriptionMap[name];
+
+    return undefined;
   }
 
-  updateSubscription(name: SubscriptionName, func: (() => void) | undefined) {
-    const oldFunc = this.subscriptionMap[name];
+  updateSubscription(payload: UpdateSub) {
+    if (payload.name === 'balance') {
+      const { name, address, func } = payload;
+      const oldSub = this.subscriptionMap[name][address];
 
-    if (oldFunc) oldFunc();
+      if (oldSub) oldSub();
+
+      this.subscriptionMap[name][address] = func;
+
+      return;
+    }
+
+    const { name, func } = payload;
+    const oldSub = this.subscriptionMap[name];
+
+    if (oldSub) oldSub();
 
     if (func) this.subscriptionMap[name] = func;
   }
 
   stopAllSubscription() {
     if (this.subscriptionMap.balance) {
-      this.subscriptionMap.balance();
+      Object.values(this.subscriptionMap.balance).forEach((el) => {
+        Object.values(el).forEach((sub) => sub());
+      });
 
-      delete this.subscriptionMap.balance;
+      if (this.subscriptionMap.xorTotalBalance) {
+        this.subscriptionMap.xorTotalBalance();
+        this.subscriptionMap.xorTotalBalance = undefined;
+      }
+
+      this.subscriptionMap.balance = {};
     }
   }
 
@@ -131,19 +166,25 @@ export class FWSubscription {
       .then(() => {
         const unsub = this.initBalanceSubscription(address, ethereumAddress, onlyRunOnFirstTime);
 
-        this.updateSubscription('balance', unsub);
+        if (unsub) this.updateSubscription({ name: 'balance', func: unsub, address });
       })
       .catch((err) => console.warn('Unable to subscribe', err));
   }
 
   initBalanceSubscription(address: string, ethereumAddress: string, onlyRunOnFirstTime?: boolean) {
+    this.state.generateDefaultBalance(address);
+
     const setBalance = (networkKey: string, rs: Partial<BalanceItem>) => {
+      const isAccountExists = this.state.keyringService.getAccounts().some((el) => el.address === address);
+
+      if (!isAccountExists) return;
+
       this.state.setBalanceItem(networkKey, rs, address);
     };
 
     const unsub = subscribeBalance(address, ethereumAddress, setBalance);
 
-    const unsubEvm = subscribeEvmBalance(address, ethereumAddress, setBalance);
+    const unsubEvm = ethereumAddress ? subscribeEvmBalance(address, ethereumAddress, setBalance) : () => {};
 
     if (onlyRunOnFirstTime) {
       unsub && unsub();

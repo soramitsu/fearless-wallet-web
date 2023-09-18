@@ -1,5 +1,5 @@
 <template>
-  <Popup headerText="assets.lockedDetails" :showBorder="true" :handlerClose="closePopup" sizeWidth="big">
+  <Popup headerText="assets.lockedDetails" :showBorder="true" @handlerClose="$emit('closePopup')" sizeWidth="big">
     <div class="content">
       <div v-for="{ name, value, fiat } in detailsBalance" :key="name" class="balance-row">
         <div class="label">{{ $t(`assets.${name}`) }}</div>
@@ -24,13 +24,13 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { AssetPrice } from '@/interfaces';
+import { ALL_NETWORKS } from '@/consts/networks';
 
 @Component
 export default class LockedDetailsPopup extends Vue {
   @Prop(String) network!: string;
   @Prop(Object) currency!: TokenBalance;
   @Prop(Object) assetPrice!: AssetPrice;
-  @Prop(Function) closePopup!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
@@ -41,9 +41,15 @@ export default class LockedDetailsPopup extends Vue {
   }
 
   get detailsBalance() {
-    const { frozen, locked, reserved, total, transferable } = this.currency.balances.reduce(
+    const balances =
+      this.network === ALL_NETWORKS
+        ? this.currency.balances
+        : [this.currency.balances.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!];
+
+    const { frozen, locked, reserved, total, transferable } = balances.reduce(
       (prev, curr) => {
         const network = this.getNetwork(curr.name);
+
         if (!network.active) return prev;
 
         const frozen = (prev.frozen += curr.frozen ? +curr.frozen : 0);

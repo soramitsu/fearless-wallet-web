@@ -5,21 +5,19 @@
     <p class="story__content">{{ story.description }}</p>
   </div>
 </template>
-<script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+
+<script lang="ts" setup>
 import type { OnboardingStory } from '@/interfaces';
 
-@Component({})
-export default class OnboardingStoryCard extends Vue {
-  @Prop(Object) story!: OnboardingStory;
-}
+defineProps<{ story: OnboardingStory }>();
 </script>
+
 <style lang="scss">
 .story {
   display: flex;
   flex-flow: column;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
 
   &__image {
     max-width: 440px;

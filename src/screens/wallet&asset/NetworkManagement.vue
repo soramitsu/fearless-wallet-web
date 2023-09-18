@@ -1,14 +1,16 @@
 <template>
-  <AboveForm :header="getLocale('header')" :fullScreen="true" :closeHandler="handlerClose">
+  <AboveForm :header="getLocale('header')" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
 
-    <Tabs v-model="activeTab" :tabs="tabs" />
+    <Tabs :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
+
     <NetworkItem
       :network="networkGroup"
       :isNetworkGroup="true"
       :isSelected="isGroupSelected"
       @onChangeNetwork="toggleNetworkType(isGroupSelected)"
     />
+
     <div class="container" :class="networkListClasses">
       <Scroll>
         <ul class="network__list">
@@ -39,7 +41,7 @@ import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutatio
 import { isNetworkGroup } from '@/helpers/common';
 import { SetFavoriteNetwork, Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { updateCurrentAccountNetwork } from '@/extension/messaging';
+import { updateCurrentNetwork } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 
 type Tabs = {
@@ -72,7 +74,6 @@ export default class NetworkManagement extends Vue {
       name: FAVORITE_NETWORKS,
     },
   };
-  @Prop(Function) handlerClose!: VoidFunction;
   @Prop(String) type!: keyof Tabs | string;
   @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
   @Getter(AccountGettersTypes.getSelectedNetwork) selectedNetwork!: string;
@@ -135,29 +136,36 @@ export default class NetworkManagement extends Vue {
     return this.selectedNetwork === name;
   }
 
+  updateActiveTab(value: keyof Tabs) {
+    this.activeTab = value;
+  }
+
   toggleNetworkType(isGroupSelected: boolean) {
     if (isGroupSelected) return;
 
     const network = this.tabs[this.activeTab].name;
+
     this.setSelectedNetwork(network);
 
-    updateCurrentAccountNetwork(network);
+    updateCurrentNetwork(network);
 
     const prepNotification = this.$t(this.getLocale('groupSelected'), {
       group: this.$t(this.tabs[this.activeTab].label),
-    });
+    }).toString();
 
-    this.$notify({ title: prepNotification as string, message: '', type: 'success' });
+    this.$notify({ title: prepNotification, message: '', type: 'success' });
   }
 
   enableSingleNetwork(network: string, isSelected: boolean) {
     if (isSelected) return;
 
     this.setSelectedNetwork(network);
-    updateCurrentAccountNetwork(network);
-    const prepNotification = this.$t(this.getLocale('networkSelected'), { network });
 
-    this.$notify({ title: prepNotification as string, message: '', type: 'success' });
+    updateCurrentNetwork(network);
+
+    const prepNotification = this.$t(this.getLocale('networkSelected'), { network }).toString();
+
+    this.$notify({ title: prepNotification, message: '', type: 'success' });
   }
 
   async toggleFavorite(network: string) {

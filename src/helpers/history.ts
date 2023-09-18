@@ -10,36 +10,32 @@ import type {
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { TransactionType, TransferType } from '@/interfaces';
 import { firstCharToUp } from '@/helpers';
-import { formattedNumber } from '@/helpers/numbers';
 import store from '@/store';
 
 function getType(historyElement: HistoryElement): TransactionType {
   const { reward, transfer } = historyElement;
 
-  return transfer !== null
-    ? TransactionType.transfer
-    : reward !== null
-    ? TransactionType.reward
-    : TransactionType.extrinsic;
+  if (transfer) return TransactionType.transfer;
+
+  return reward ? TransactionType.reward : TransactionType.extrinsic;
 }
 
-function getSignTransfer(historyElement: HistoryElement) {
-  const { id } = historyElement;
+function getSignTransfer(historyElement: HistoryElement, address: string) {
   const type = getType(historyElement);
 
   if (type === TransactionType.transfer) {
-    const splitId = id.split('-');
-    const typeTransaction = splitId[splitId.length - 1];
+    const { transfer } = historyElement;
+    const from = transfer?.from ?? '';
 
-    return typeTransaction === 'to' ? '+' : '-';
+    return from.toLowerCase() !== address.toLowerCase() ? '+' : '-';
   }
 
   return '';
 }
 
-function getTypeFormatted(historyElement: HistoryElement) {
+function getTypeFormatted(historyElement: HistoryElement, address: string) {
   const type = getType(historyElement);
-  const signTransfer = getSignTransfer(historyElement);
+  const signTransfer = getSignTransfer(historyElement, address);
 
   if (type === TransactionType.transfer) {
     return signTransfer === '+' ? TransferType.incoming : TransferType.outgoing;
@@ -75,23 +71,24 @@ function getHumanValue(value: string, assetId: string, networkName: NetworkName)
 
   const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
 
-  return +FPNumber.fromCodecValue(value, precision);
+  return FPNumber.fromCodecValue(value, precision).toNumber();
 }
 
-function getHistoryValue(historyElement: HistoryElement, assetId: string, networkName: NetworkName) {
+function getHistoryValue(historyElement: HistoryElement, assetId: string, networkName: NetworkName, address: string) {
   const { transfer, reward, extrinsic } = historyElement;
   const type = getType(historyElement);
-  const signTransfer = getSignTransfer(historyElement);
+  const signTransfer = getSignTransfer(historyElement, address);
 
-  if (type === TransactionType.transfer) {
-    const { amount } = transfer!;
+  if (type === TransactionType.transfer && transfer) {
+    const { amount, fee } = transfer;
     const value = getHumanValue(amount, assetId, networkName);
+    const fees = getHumanValue(fee, assetId, networkName);
 
-    return { signTransfer, value };
+    return { signTransfer, value, fee: fees };
   }
 
-  if (type === TransactionType.reward) {
-    const { amount } = reward!;
+  if (type === TransactionType.reward && reward) {
+    const { amount } = reward;
     const value = getHumanValue(amount, assetId, networkName);
 
     return { signTransfer: '+', value };
@@ -99,6 +96,7 @@ function getHistoryValue(historyElement: HistoryElement, assetId: string, networ
 
   // extrinsic
   const { fee } = extrinsic!;
+
   const value = getHumanValue(fee, assetId, networkName);
 
   return { signTransfer: '-', value };
@@ -110,18 +108,14 @@ function getHumanTransferFee(historyElement: HistoryElement, assetId: string, ne
 
   if (type === TransactionType.transfer) {
     const { fee } = transfer!;
-    const value = getHumanValue(fee, assetId, networkName);
-    const formattedValue = formattedNumber(value, { decimalsValue: 4 });
 
-    return `${formattedValue !== '0' ? '-' : ''}${formattedValue}`;
+    return getHumanValue(fee, assetId, networkName);
   }
 
   if (type === TransactionType.extrinsic) {
     const { fee } = extrinsic!;
-    const value = getHumanValue(fee, assetId, networkName);
-    const formattedValue = formattedNumber(value, { decimalsValue: 4 });
 
-    return `${formattedValue !== '0' ? '-' : ''}${formattedValue}`;
+    return getHumanValue(fee, assetId, networkName);
   }
 
   return '';

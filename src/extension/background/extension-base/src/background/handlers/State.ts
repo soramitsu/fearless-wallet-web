@@ -6,7 +6,7 @@ import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
-import { keyring } from '@polkadot/ui-keyring';
+import { EventService, SoraCardService, OnboardingService, KeyringService } from '@extension-base/services';
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import MetadataStore from '@extension-base/stores/Metadata';
@@ -28,9 +28,8 @@ import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@ext
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { SignerPayloadRaw } from '@polkadot/types/types';
-import { JsonRpcProvider } from 'ethers';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
-import { EventService, SoraCardService, OnboardingService } from '@extension-base/services';
+
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
 import type {
   AuthorizeRequest,
@@ -64,9 +63,10 @@ import type {
   BalanceMap,
   Providers,
   ResponseTotalBalances,
+  EvmApiMap,
 } from '@extension-base/background/types/types';
 import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
-import type { ChainRegistry, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
+import type { ChainRegistry, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
@@ -75,6 +75,7 @@ import { URLS } from '@/consts/urls';
 import {
   ALL_NETWORKS,
   FAVORITE_NETWORKS,
+  NETWORK_GROUP,
   POPULAR_NETWORKS,
   SORA_NETWORK_NAME,
   SORA_XOR_ASSET_ID,
@@ -120,7 +121,7 @@ function extractMetadata(store: MetadataStore): void {
 
 export const registry = new TypeRegistry();
 type APIs = {
-  evm: Record<NetworkName, JsonRpcProvider>;
+  evm: EvmApiMap;
   substrate: Record<NetworkName, ApiProps>;
 };
 const metaStore = new MetadataStore();
@@ -169,7 +170,7 @@ export default class State {
   public networksJson: NetworkJson[] = []; // from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJson>>();
-  public selectedNetwork: Record<string, string> = {};
+  public selectedNetworks: Record<string, string> = {};
   public serviceInfoSubject = new Subject<ServiceInfo>();
   public balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
@@ -180,8 +181,6 @@ export default class State {
   public metaRequests: Record<string, MetaRequest> = {};
   public signRequests: Record<string, SignRequest> = {};
   public mobileSignRequests: Record<string, MobileSignRequest> = {};
-  private historyMap: Record<string, TransactionHistoryItemType[]> = {};
-  private historySubject = new Subject<Record<string, TransactionHistoryItemType[]>>();
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
   public readonly metaSubject = new BehaviorSubject<MetadataRequest[]>([]);
   public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
@@ -195,10 +194,10 @@ export default class State {
     authorizeAccountsCount: 0,
     dAppName: '',
   };
+  public keyringService = new KeyringService();
   public eventService = new EventService();
   public soraCardService = new SoraCardService();
   public onboardingService = new OnboardingService();
-
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }
@@ -334,20 +333,21 @@ export default class State {
       injectedProviders,
       providers,
       windows,
-      selectedNetwork,
+      selectedNetworks,
     } = await this.getFromStorage([
       'fiatSymbol',
       'authUrls',
-      'selectedNetwork',
+      'selectedNetworks',
       'defaultAuthAccountSelection',
       'injectedProviders',
+      'selectedNetworks',
       'providers',
       'windows',
     ]);
     if (authUrls && Object.keys(authUrls).length) this.authUrls = authUrls;
     if (windows && windows.length) this.windows = windows;
     if (fiatSymbol) this.setFiatSymbol(fiatSymbol);
-    if (selectedNetwork) this.selectedNetwork = selectedNetwork;
+    if (selectedNetworks) this.selectedNetworks = selectedNetworks;
     if (injectedProviders) this.injectedProviders = new Map(injectedProviders);
     if (providers) this.providers = providers;
     if (defaultAuthAccountSelection && defaultAuthAccountSelection.length)
@@ -571,8 +571,9 @@ export default class State {
     const currentAccount = await this.currentAccount;
 
     if (currentAccount) {
-      this.selectedNetwork[currentAccount.address] = type;
-      storage.set({ selectedNetwork: this.selectedNetwork });
+      this.selectedNetworks[currentAccount.address] = type;
+
+      storage.set({ selectedNetworks: this.selectedNetworks });
     }
 
     return this.setActiveNetworks(type);
@@ -591,7 +592,9 @@ export default class State {
   public refreshWeb3Api(key: string) {
     const currentProvider = getCurrentProvider(this.networkMap[key]);
 
-    if (currentProvider) this.apis.evm[key] = initWeb3Api(currentProvider);
+    if (currentProvider) {
+      this.apis.evm[key] = initWeb3Api(currentProvider);
+    }
   }
 
   public refreshDotSamaApi(key: string) {
@@ -629,41 +632,90 @@ export default class State {
 
   public selectedNetworksExceptAddress(address: string): string[] {
     const result: string[] = [];
-    Object.keys(this.selectedNetwork).forEach((el) => {
-      if (el !== address) result.push(this.selectedNetwork[el]);
+    Object.keys(this.selectedNetworks).forEach((el) => {
+      if (el !== address) result.push(this.selectedNetworks[el]);
     });
 
     return result;
   }
 
-  public isPopularNetworksSelected(network: NetworkJson, address: string) {
-    const networks = this.selectedNetworksExceptAddress(address);
+  public isPopularNetworksSelected() {
+    const networks = Object.values(this.selectedNetworks);
 
-    return network.rank !== undefined && networks.some((el) => el === POPULAR_NETWORKS);
+    return networks.some((el) => el === POPULAR_NETWORKS);
   }
 
-  public isNetworkSelectedInAnotherWallet(network: NetworkJson, selectedType: string, address: string) {
-    if (Object.values(this.selectedNetwork).some((el) => el === ALL_NETWORKS)) return true;
-    if (this.isPopularNetworksSelected(network, address)) return true;
-    if (this.isFavoriteNetworkSelected(network, address)) return true;
-    if (this.isSingleNetworkSelected(selectedType, address)) return true;
+  public isNetworkAlreadySelected(type: string, network: NetworkJson, address: string) {
+    const isGroup = NETWORK_GROUP.some((group) => group === type);
 
-    return false;
+    if (isGroup) {
+      if (type === POPULAR_NETWORKS) {
+        const values = Object.values(this.selectedNetworks);
+        const isPrevioslySelected = values.some((el) => el === POPULAR_NETWORKS);
+
+        if (isPrevioslySelected) return true;
+
+        return this.isPopularNetworksSelected();
+      }
+
+      if (type === FAVORITE_NETWORKS) return this.isFavoriteNetworkSelected();
+    }
+
+    return this.isSingleNetworkSelected(network, address);
   }
 
-  public isSingleNetworkSelected(selectedType: string, address: string) {
+  public isSingleNetworkSelected(network: NetworkJson, address: string) {
     const networks = this.selectedNetworksExceptAddress(address);
-    const isTypeAlreadySelected = networks.some((network) => network === selectedType);
-    const isNotGroup =
-      selectedType !== ALL_NETWORKS && selectedType !== POPULAR_NETWORKS && selectedType !== FAVORITE_NETWORKS;
+    const networkName = network.name;
+    const isPartOfPopular = network.rank !== undefined;
+    const isPopularSelected = networks.some((network) => network.toLowerCase() === POPULAR_NETWORKS);
+
+    if (isPartOfPopular && isPopularSelected) return true;
+
+    const isPartOfFavorite = network.favorite.length !== 0;
+    const isFavoriteAlreadySelected = networks.some((el) => el === FAVORITE_NETWORKS);
+
+    if (isFavoriteAlreadySelected && isPartOfFavorite) return true;
+
+    const isTypeAlreadySelected = networks.some((network) => network.toLowerCase() === networkName.toLowerCase());
+    const isNotGroup = NETWORK_GROUP.every((el) => el.toLowerCase() !== networkName.toLowerCase());
 
     return isNotGroup && isTypeAlreadySelected;
   }
 
-  public isFavoriteNetworkSelected(network: NetworkJson, address: string) {
-    const favorites = network.favorite.filter((el) => el !== address);
+  public isFavoriteNetworkSelected() {
+    return Object.values(this.selectedNetworks).some((el) => el === FAVORITE_NETWORKS);
+  }
 
-    return favorites.some((el) => this.selectedNetwork[el] === FAVORITE_NETWORKS);
+  public getActiveNetworks() {
+    const networks = Object.values(this.networkMap);
+    const prepNetworks = new Set<NetworkJson>();
+    const selectedNetworks = Object.values(this.selectedNetworks);
+    const isAllNetworkPicked = selectedNetworks.some((el) => el === ALL_NETWORKS);
+
+    if (isAllNetworkPicked) return networks;
+
+    selectedNetworks.forEach((el) => {
+      if (el === POPULAR_NETWORKS) {
+        const popular = networks.filter((el) => el.rank !== undefined);
+        popular.forEach((el) => prepNetworks.add(el));
+
+        return;
+      }
+
+      if (el === FAVORITE_NETWORKS) {
+        const favorite = networks.filter((el) => el.favorite.length);
+        favorite.forEach((el) => prepNetworks.add(el));
+
+        return;
+      }
+
+      const singleNetwork = networks.find((network) => network.name === el);
+
+      if (singleNetwork) prepNetworks.add(singleNetwork);
+    });
+
+    return Array.from(prepNetworks);
   }
 
   public async setActiveNetworks(type: string) {
@@ -671,63 +723,24 @@ export default class State {
 
     if (!currentAccount) return;
 
-    this.subscription.stop();
-    this.cron.stop();
+    this.selectedNetworks[currentAccount.address] = type;
+
+    const unsub = this.subscription.getSubscription('balance', currentAccount.address);
+    unsub && unsub();
+
+    const networks = this.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((key) => {
-      const network = this.networkMap[key];
-      const { name } = network;
-      const isFavorite = network.favorite.some((address) => address === currentAccount.address);
-      const isAlreadySelectedType = this.isNetworkSelectedInAnotherWallet(network, type, currentAccount.address);
-
-      switch (type) {
-        case ALL_NETWORKS:
-          network.active = true;
-
-          break;
-        case FAVORITE_NETWORKS:
-          if (isFavorite) {
-            network.active = true;
-            break;
-          }
-
-          if (isAlreadySelectedType) break;
-
-          network.active = false;
-
-          break;
-        case POPULAR_NETWORKS:
-          if (network.rank !== undefined) {
-            network.active = true;
-            break;
-          }
-
-          if (isAlreadySelectedType) break;
-
-          network.active = false;
-          break;
-        default: //type = single network, like Moonriver etc
-          if (isAlreadySelectedType) break;
-
-          network.active = type === network.name;
-      }
-
-      if (!network.active) {
-        if (this.apis.substrate[name]) {
-          this.apis.substrate[name].provider?.disconnect();
-          delete this.apis.substrate[name];
-        } else if (this.apis.evm[name]) {
-          this.apis.evm[name].provider.destroy();
-          delete this.apis.evm[name];
-        }
-      }
+      const isExists = networks.some(({ name }) => name === key);
+      this.networkMap[key].active = isExists;
     });
 
-    this.networkMapSubject.next(this.networkMap);
-    this.networkMapStore.set('NetworkMap', this.networkMap);
     this.updateServiceInfo();
-
     this.initNetworkStates(true);
+
+    this.networkMapStore.set('NetworkMap', this.networkMap);
+    this.networkMapSubject.next(this.networkMap);
+    storage.set({ selectedNetworks: this.selectedNetworks });
   }
 
   getCurrentTabStatus() {
@@ -1144,6 +1157,7 @@ export default class State {
     this.networksJson = networks.filter((el) => !el.disabled);
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
+
     const networksFromStorage = await new Promise<Record<string, NetworkJson>>((res) => {
       this.networkMapStore.get('NetworkMap', (accountsFromStorage) => {
         res(accountsFromStorage);
@@ -1154,9 +1168,7 @@ export default class State {
       const prepCurrentProvider = network.nodes[0].url;
       const prepNodes: Record<string, string> = {};
 
-      network.nodes.forEach((node) => {
-        prepNodes[node.name] = node.url;
-      });
+      network.nodes.forEach(({ name, url }) => (prepNodes[name] = url));
 
       const isEthereum = isEthereumNetwork(network.name);
       const networkFromStorage = networksFromStorage ? networksFromStorage[network.name] : undefined;
@@ -1180,6 +1192,13 @@ export default class State {
     this.networkMapStore.set('NetworkMap', result);
     this.networkMap = result;
 
+    const activeNetworks = this.getActiveNetworks();
+
+    Object.keys(this.networkMap).forEach((key) => {
+      const isExists = activeNetworks.some(({ name }) => name === key);
+      this.networkMap[key].active = isExists;
+    });
+
     this.generateDefaultBalanceMap();
   }
 
@@ -1199,24 +1218,22 @@ export default class State {
   }
 
   public initNetworkStates(reset?: boolean) {
-    this.networkMapStore.get('NetworkMap', async (storedNetworkMap) => {
-      for (const [key, network] of Object.entries(storedNetworkMap)) {
-        if (network.active) {
-          if (network.isEthereum && !isRequireSubstrateAPI(key)) {
-            this.apis.evm[key] = initWeb3Api(network.currentProvider as string);
-          } else {
-            if (reset) this.resetApiRetries();
-            initApi(network);
-          }
+    for (const [key, network] of Object.entries(this.networkMap)) {
+      if (network.active) {
+        if (network.isEthereum && !isRequireSubstrateAPI(key)) {
+          this.apis.evm[key] = initWeb3Api(network.currentProvider);
+        } else {
+          if (reset) this.resetApiRetries();
+          initApi(network);
         }
       }
+    }
 
-      this.onReady();
-    });
+    this.onReady();
   }
 
   public getWallets(): KeyringAddress[] {
-    return [...keyring.getAccounts(), ...keyring.getAddresses()];
+    return [...this.keyringService.getAccounts(), ...this.keyringService.getAddresses()];
   }
 
   public setPrice(priceData: PriceJson, callback?: (priceData: PriceJson) => void): void {
@@ -1317,7 +1334,7 @@ export default class State {
 
       // logic for Sora library
       if (data?.address && !data.isMobile) {
-        const pair = keyring.getPair(data?.address);
+        const pair = this.keyringService.getPair(data?.address)!;
 
         apiSora.account = { json: null as any, pair };
 
@@ -1336,7 +1353,7 @@ export default class State {
         .getTotalXorBalanceObservable()
         .subscribe((xorTotalBalance: FPNumber) => this.updateXorTotalBalance(xorTotalBalance));
 
-      this.subscription.updateSubscription('xorTotalBalance', subscription.unsubscribe);
+      this.subscription.updateSubscription({ name: 'xorTotalBalance', func: subscription.unsubscribe });
     } catch (ex) {
       console.error('failed subscribe or unsubscribe to XOR balance');
     }
@@ -1352,11 +1369,12 @@ export default class State {
   }
 
   public getSubstrateAccounts() {
-    const accounts = keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
-    const addresses = keyring.getAddresses();
+    const accounts = this.keyringService.getAccounts().filter((el) => !isEthereumAddress(el.address));
+    const addresses = this.keyringService.getAddresses();
 
     return [...accounts, ...addresses];
   }
+
   public generateDefaultBalance(address: string) {
     if (address === '') return;
 
@@ -1373,8 +1391,8 @@ export default class State {
     address,
     password,
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    const exportedJson = keyring.getPair(address).toJson(password);
-    const decoded = decodePair(password, base64Decode(exportedJson.encoded), exportedJson.encoding.type);
+    const json = this.keyringService.getPair(address)!.toJson(password);
+    const decoded = decodePair(password, base64Decode(json.encoded), json.encoding.type);
 
     return {
       privateKey: u8aToHex(decoded.secretKey),
@@ -1438,92 +1456,7 @@ export default class State {
     this.ready = true;
   }
 
-  public getHistoryMap(): Record<string, TransactionHistoryItemType[]> {
-    return this.historyMap;
-  }
-
   public subscribeNetworkMap() {
     return this.networkMapStore.getSubject();
-  }
-
-  public get getNetworkMap() {
-    return this.networkMap;
-  }
-
-  public setHistory(
-    address: string,
-    network: string,
-    item: TransactionHistoryItemType | TransactionHistoryItemType[],
-    callback?: (items: TransactionHistoryItemType[]) => void
-  ): void {
-    let items: TransactionHistoryItemType[];
-    const networkInfo = this.getNetworkMap[network];
-
-    if (!networkInfo) {
-      return;
-    }
-
-    if (item && !Array.isArray(item)) {
-      item.origin = 'app';
-      items = [item];
-    } else {
-      items = item;
-    }
-
-    items.forEach((item) => {
-      item.feeSymbol = networkInfo.nativeToken;
-
-      if (!item.changeSymbol) {
-        item.changeSymbol = networkInfo.nativeToken;
-      }
-    });
-
-    if (items.length) {
-      this.getAccountAddress().then((currentAddress) => {
-        if (currentAddress === address) {
-          const oldItems = this.historyMap[network] || [];
-
-          this.historyMap[network] = this.combineHistories(oldItems, items);
-          // this.saveHistoryToStorage(address, network, this.historyMap[network]);
-          callback && callback(this.historyMap[network]);
-
-          this.lazyNext('setHistory', () => {
-            this.publishHistory();
-          });
-        } else {
-          // this.saveHistoryToStorage(address, network, items);
-          callback && callback(this.historyMap[network]);
-        }
-      });
-    }
-  }
-
-  public subscribeHistory() {
-    return this.historySubject;
-  }
-
-  private publishHistory() {
-    this.historySubject.next(this.getHistoryMap());
-  }
-
-  private combineHistories(
-    oldItems: TransactionHistoryItemType[],
-    newItems: TransactionHistoryItemType[]
-  ): TransactionHistoryItemType[] {
-    const newHistories = newItems.filter((item) => !oldItems.some((old) => this.isSameHistory(old, item)));
-
-    return [...oldItems, ...newHistories].filter((his) => his.origin === 'app' || his.eventIdx);
-  }
-
-  public isSameHistory(oldItem: TransactionHistoryItemType, newItem: TransactionHistoryItemType): boolean {
-    if (oldItem.extrinsicHash === newItem.extrinsicHash && oldItem.action === newItem.action) {
-      if (oldItem.origin === 'app') {
-        return true;
-      } else {
-        return !oldItem.eventIdx || !newItem.eventIdx || oldItem.eventIdx === newItem.eventIdx;
-      }
-    }
-
-    return false;
   }
 }

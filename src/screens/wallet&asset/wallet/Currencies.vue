@@ -1,6 +1,6 @@
 <template>
   <Scroll>
-    <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText) }}</div>
+    <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText()) }}</div>
 
     <Draggable v-else v-model="filteredBalances" handle=".handle" :key="selectedWallet.address">
       <CurrencyItem
@@ -11,9 +11,9 @@
         :key="assetKey"
         :selectedNetwork="selectedNetwork"
         :showAssetsManagementForm="showAssetsManagementForm"
-        :toggleVisibleActivityForm="toggleVisibleActivityForm"
         :timeoutCallback="timeoutCallback"
-        @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
+        @toggleVisibleActivityForm="$emit('toggleVisibleActivityForm', ...arguments)"
+        @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible', ...arguments)"
       />
     </Draggable>
   </Scroll>
@@ -49,25 +49,28 @@ export default class Currencies extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(String) filterValue!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
-  @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
   @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
 
-  get mainText() {
-    if (!this.isOnline) return 'common.offlineStatus';
+  mainText() {
+    if (!navigator.onLine) return 'common.offlineStatus';
 
     return this.filterValue !== '' ? 'wallet.nothingFound' : 'wallet.allAssetsHidden';
   }
 
+  get isOnline() {
+    return navigator.onLine;
+  }
+
   get showAllAssetsHiddenText() {
+    if (!this.isOnline) return true;
     if (this.showAssetsManagementForm) return false;
 
     const allHidden = this.balances.every(({ assetId }) => this.hiddenAssets.includes(assetId));
 
-    return this.balances.length === this.hiddenAssets.length || allHidden || !this.isOnline;
+    return this.balances.length === this.hiddenAssets.length || allHidden || !navigator.onLine;
   }
 
   get filteredBalances() {

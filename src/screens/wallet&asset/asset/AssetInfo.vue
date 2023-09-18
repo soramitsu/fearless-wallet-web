@@ -12,19 +12,23 @@
               <span :class="changePriceClasses">{{ priceChangeString }}</span>
               <span :class="changePriceClasses">{{ fiatPriceChangeString }}</span>
             </div>
+
             <span class="asset__price-item">{{ assetPriceString }}</span>
 
             <div v-if="showSettingsPopup" @click="toggleDetailsPopup">
               <Icon icon="three-dots-vertical" className="asset__price-details" />
             </div>
           </div>
-          <div class="asset__balance">{{ countAssetsString }}</div>
-          <span class="asset__balance asset__balance--fiat">{{ transferableFiatBalanceInNetworkString }}</span>
+          <Shimmer v-if="showShimmers" height="14px" width="120px" />
+          <div v-else class="asset__balance">{{ countAssetsString }}</div>
+          <Shimmer v-if="showShimmers" height="14px" width="120px" />
+          <span v-else class="asset__balance asset__balance--fiat">{{ transferableFiatBalanceInNetworkString }}</span>
 
           <div class="asset__locked" @click="toggleBalanceDetailsPopup">
             <div class="asset__locked-content">
               <span class="asset__locked-title">{{ $t('assets.locked') }}</span>
-              <span>{{ lockedBalanceString }}</span>
+              <Shimmer v-if="showShimmers" height="14px" width="60px" />
+              <span v-else>{{ lockedBalanceString }}</span>
               <Icon icon="info" class="details-icon" />
             </div>
           </div>
@@ -37,7 +41,7 @@
       :network="pickedNetwork"
       :currency="currency"
       :assetPrice="price"
-      :closePopup="toggleBalanceDetailsPopup"
+      @closePopup="toggleBalanceDetailsPopup"
     />
 
     <AccountSettingsPopup
@@ -45,9 +49,9 @@
       :selectedNetwork="selectedAssetNetwork"
       :showNodeSwitch="true"
       :showCopyAddress="false"
-      :handlerClose="toggleDetailsPopup"
       :showExport="false"
       :showReplaceAccount="false"
+      @handlerClose="toggleDetailsPopup"
     />
   </Fragment>
 </template>
@@ -76,7 +80,6 @@ export default class AssetInfo extends Vue {
   @Prop(Object) currency!: TokenBalance;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
-  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get selectedAssetNetwork() {
@@ -92,7 +95,7 @@ export default class AssetInfo extends Vue {
   }
 
   get showShimmers() {
-    return !this.isOnline || !this.balances.length || this.currentNetwork?.state === 'pending';
+    return !navigator.onLine || !this.balances.length || this.currentNetwork?.state !== 'ready';
   }
 
   get icon() {

@@ -1,6 +1,5 @@
 <template>
   <div class="layout">
-    <!-- IMPORTANT: if <Menu /> showed use 453 -->
     <ContentForm :height="513">
       <div class="accounts-layout">
         <div class="navigation">
@@ -38,12 +37,12 @@
     <AccountSettingsPopup
       v-if="showAccountSettingsPopup"
       :selectedNetwork="selectedNetwork"
-      :handlerClose="closeAccountSettings"
       :showNodeSwitch="!isNodesRoute"
       :showCopyAddress="!isNodesRoute"
       :showExport="!isExportRoute"
       :showReplaceAccount="showReplaceAccount"
       :buttonTopClick="buttonTopClick"
+      @handlerClose="closeAccountSettings"
       @openNotificationPopup="openNotificationPopup"
     />
 
@@ -53,13 +52,13 @@
       :_url="selectedNodeUrl"
       :network="selectedNetwork"
       :isActive="selectedNodeIsActive"
-      :closeForm="closeEditNodeForm"
+      @closeForm="closeEditNodeForm"
     />
 
     <NodeSettingsPopup
       v-if="showNodeSettingsPopup"
-      :handlerClose="closeNodeSettings"
       :buttonTopClick="buttonTopClick"
+      @handlerClose="closeNodeSettings"
       @openEditNodeForm="openEditNodeForm"
       @openNotificationPopup="openNotificationPopup"
     />
@@ -73,13 +72,13 @@
       :showRejectButton="true"
       :showWarningIcon="showWarningIcon"
       :headers="headers"
-      :handlerClose="closeNotificationPopup"
-      :handlerAccept="handlerAccept"
+      @handlerClose="closeNotificationPopup"
+      @handlerAccept="handlerAccept"
     />
 
-    <AddEthereumAccountPopup v-if="showAddEthereumAccountPopup" :handlerClose="closeAddEthereumAccountPopup" />
+    <AddEthereumAccountPopup v-if="showAddEthereumAccountPopup" @handlerClose="closeAddEthereumAccountPopup" />
 
-    <ExportForm v-if="showExportForm" :password="password" :closeHandler="setPassword" />
+    <ExportForm v-if="showExportForm" :password="password" @closeHandler="setPassword" />
   </div>
 </template>
 

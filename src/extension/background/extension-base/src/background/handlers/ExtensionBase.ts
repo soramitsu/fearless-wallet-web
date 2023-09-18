@@ -1,29 +1,19 @@
 import assert from 'assert';
-import { keyring } from '@polkadot/ui-keyring';
-import type { MetadataDef } from '@polkadot/extension-inject/types';
-
 import type {
   CachedUnlocks,
-  RequestAccountBatchExport,
-  RequestAccountCreateExternal,
   RequestAccountExport,
   RequestAccountExportPrivateKey,
-  RequestAccountShow,
-  RequestAccountTie,
   RequestAccountName,
-  RequestBatchRestore,
   RequestJsonValidate,
   RequestSigningIsLocked,
   ResponseAccountExport,
   ResponseAccountExportPrivateKey,
-  ResponseAccountsExport,
-  ResponseJsonGetAccountInfo,
   ResponseSigningIsLocked,
   ValidateJsonResult,
   RequestUpdateMeta,
 } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
-import type { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
+import type { KeyringPair } from '@polkadot/keyring/types';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { DerivationPath } from '@/interfaces';
 
@@ -39,24 +29,12 @@ export default class FWExtensionBase {
   }
 
   accountsExport({ address, password }: RequestAccountExport): ResponseAccountExport {
-    return { exportedJson: keyring.backupAccount(keyring.getPair(address), password) };
-  }
-
-  async accountsBatchExport({ addresses, password }: RequestAccountBatchExport): Promise<ResponseAccountsExport> {
-    return {
-      exportedJson: await keyring.backupAccounts(addresses, password),
-    };
-  }
-
-  accountsCreateExternal({ address, genesisHash, name }: RequestAccountCreateExternal): boolean {
-    keyring.addExternal(address, { genesisHash, name });
-
-    return true;
+    return { exportedJson: this.state.keyringService.backupAccount(address, password)! };
   }
 
   validateDerivationPath({ value, keypairType }: DerivationPath): boolean {
     try {
-      keyring.createFromUri(`${VALID_MNEMONIC}${value}`, {}, keypairType);
+      this.state.keyringService.createFromUri(`${VALID_MNEMONIC}${value}`, keypairType);
 
       return true;
     } catch {
@@ -65,62 +43,28 @@ export default class FWExtensionBase {
   }
 
   public encodeAddress = (key: string | Uint8Array, ss58Format = 42): string => {
-    return keyring.encodeAddress(key, ss58Format);
+    return this.state.keyringService.encodeAddress(key, ss58Format);
   };
 
   public decodeAddress = (key: string | Uint8Array, ignoreChecksum?: boolean, ss58Format?: number): Uint8Array => {
-    return keyring.decodeAddress(key, ignoreChecksum, ss58Format);
+    return this.state.keyringService.decodeAddress(key, ignoreChecksum, ss58Format);
   };
 
   updatePairMeta({ address, meta }: RequestUpdateMeta) {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    keyring.saveAccountMeta(pair, { ...pair.meta, ...meta });
-
-    return true;
-  }
-
-  accountsShow({ address, isShowing }: RequestAccountShow): boolean {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    keyring.saveAccountMeta(pair, { ...pair.meta, isHidden: !isShowing });
-
-    return true;
-  }
-
-  accountsTie({ address, genesisHash }: RequestAccountTie): boolean {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    keyring.saveAccountMeta(pair, { ...pair.meta, genesisHash });
+    this.state.keyringService.saveAccountMeta(address, meta);
 
     return true;
   }
 
   accountUpdateName({ address, name }: RequestAccountName): boolean {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    keyring.saveAccountMeta(pair, { ...pair.meta, name });
+    this.state.keyringService.saveAccountMeta(address, { name });
 
     return true;
   }
 
-  metadataGet(genesisHash: string | null): MetadataDef | null {
-    return this.state.knownMetadata.find((result) => result.genesisHash === genesisHash) || null;
-  }
+  getRemainingTime(pair: KeyringPair | null): number {
+    if (!pair) return -1;
 
-  metadataList(): MetadataDef[] {
-    return this.state.knownMetadata;
-  }
-
-  getRemainingTime(pair: KeyringPair): number {
     const { address } = pair;
 
     const savedExpiry = this.cachedUnlocks[address] || 0;
@@ -139,13 +83,12 @@ export default class FWExtensionBase {
     if (remainingTime < 0) {
       this.cachedUnlocks[address] = 0;
 
-      pair.lock();
+      this.state.keyringService.lockPair(pair);
 
       if (ethereumAddress) {
         this.cachedUnlocks[ethereumAddress] = 0;
-        const ethereumPair = keyring.getPair(ethereumAddress);
 
-        ethereumPair.lock();
+        this.state.keyringService.lockPair(ethereumAddress);
       }
 
       return 0;
@@ -155,7 +98,7 @@ export default class FWExtensionBase {
   }
 
   signingIsLocked({ address }: RequestSigningIsLocked): ResponseSigningIsLocked {
-    const pair = keyring.getPair(address);
+    const pair = this.state.keyringService.getPair(address);
 
     assert(pair, 'Unable to find pair');
 
@@ -167,42 +110,13 @@ export default class FWExtensionBase {
     };
   }
 
-  jsonGetAccountInfo(json: KeyringPair$Json): ResponseJsonGetAccountInfo {
-    try {
-      const {
-        address,
-        meta: { genesisHash, name, ethereumAddress },
-        type,
-      } = keyring.createFromJson(json);
-
-      return {
-        address,
-        ethereumAddress,
-        genesisHash,
-        name,
-        type,
-      } as ResponseJsonGetAccountInfo;
-    } catch (e) {
-      console.error(e);
-      throw new Error((e as Error).message);
-    }
-  }
-
-  batchRestore({ file, password }: RequestBatchRestore): void {
-    try {
-      keyring.restoreAccounts(file, password);
-    } catch (error) {
-      throw new Error((error as Error).message);
-    }
-  }
-
   jsonValid({ file, password, isSubstrate }: RequestJsonValidate): ValidateJsonResult {
     try {
-      const pair = keyring.restoreAccount(file, password);
+      const pair = this.state.keyringService.restoreAccount(file, password);
 
       pair.decodePkcs8(password);
 
-      if (isSubstrate) keyring.encodeAddress(pair.address);
+      if (isSubstrate) this.state.keyringService.encodeAddress(pair.address);
 
       return { value: true };
     } catch (error: any) {

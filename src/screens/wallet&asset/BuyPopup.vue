@@ -1,5 +1,5 @@
 <template>
-  <Popup :headerText="headerText" :showBorder="true" :handlerClose="closePopup" sizeWidth="big">
+  <Popup :headerText="headerText" :showBorder="true" @handlerClose="$emit('closePopup')" sizeWidth="big">
     <div class="buy-content">
       <FButton
         v-for="provider in providersFiltered"
@@ -26,7 +26,6 @@ export default class BuyPopup extends Vue {
   @Prop(String) asset!: string;
   @Prop(String) address!: string;
   @Prop(Array) providers!: ('ramp' | 'moonpay')[];
-  @Prop(Function) closePopup!: VoidFunction;
   @Getter(ExtensionGettersTypes.features) features!: Nullable<Features>;
 
   get headerText() {

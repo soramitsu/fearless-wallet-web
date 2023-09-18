@@ -1,6 +1,7 @@
 import { IS_PRODUCTION } from '@/consts/global';
 
 const BASE_URL = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils';
+
 const CHAINS = IS_PRODUCTION
   ? `${BASE_URL}/master/chains/v1/chains.json`
   : `${BASE_URL}/develop-free/chains/v1/chains_dev.json`;
@@ -13,9 +14,9 @@ const FEATURES = IS_PRODUCTION
 
 const XCM_LOCATIONS = IS_PRODUCTION
   ? `${BASE_URL}/master/xcm/v1/xcm_token_locations.json`
-  : `${BASE_URL}/develop-free/xcm/xcm_token_locations.json`;
+  : `${BASE_URL}/develop-free/xcm/v1/xcm_token_locations.json`;
 
-const XCM_FEES = `${BASE_URL}/develop-free/xcm/xcm_fees.json`;
+const XCM_FEES = IS_PRODUCTION ? `${BASE_URL}/master/xcm/xcm_fees.json` : `${BASE_URL}/develop-free/xcm/xcm_fees.json`;
 
 const BASE_URLS_PREFIX = {
   MOONPAY: 'https://buy.moonpay.com',
@@ -25,11 +26,6 @@ const BASE_URLS_PREFIX = {
 
 const BASE_URLS_SUFFIX = {
   SUBSCAN: 'subscan.io',
-};
-
-const EXPLORERS: Record<string, string> = {
-  Ethereum: 'https://etherscan.io/',
-  'Ethereum Goerli': 'https://goerli.etherscan.io/',
 };
 
 const FEARLESS_TERMS = 'https://fearlesswallet.io/terms/';
@@ -49,7 +45,7 @@ const FEARLESS_HAPPINESS = 'https://t.me/fearlesshappiness';
 const EMAIL = 'fearless@soramitsu.co.jp';
 const POLKASWAP_FAQ = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/polkaswap-faq';
 const POLKASWAP_MEMORANDUM = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/terms';
-const POLKASWAP_POLICY = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/privacy';
+const POLKASWAP_POLICY = 'https://wiki.sora.org/polkaswap/privacy';
 const POLKASWAP = IS_PRODUCTION ? 'https://polkaswap.io' : 'https://exchange.dev.sora2.tachi.soramitsu.co.jp/'; // https://test.polkaswap.io
 
 const URLS = {
@@ -57,7 +53,6 @@ const URLS = {
   FIATS,
   FEATURES,
   CHAINS,
-  EXPLORERS,
   FEARLESS_TERMS,
   FEARLESS_PRIVACY,
   FEARLESS_WALLET,

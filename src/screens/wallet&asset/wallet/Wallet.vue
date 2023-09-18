@@ -36,8 +36,8 @@
           :balances="filteredCurrencies"
           :selectedNetwork="selectedNetwork"
           :showAssetsManagementForm="showAssetsManagementForm"
-          :toggleVisibleActivityForm="toggleVisibleActivityForm"
           :filterValue="filterValue"
+          @toggleVisibleActivityForm="toggleVisibleActivityForm"
           @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
         />
       </div>
@@ -47,20 +47,20 @@
       v-if="showSendForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :_selectedAssetId="selectedCurrency.assetId"
-      :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', {}, false)"
+      @closeForm="toggleVisibleActivityForm('showSendForm', {}, false)"
     />
 
     <ReceiveForm
       v-if="showReceiveForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :selectedAssetId="selectedCurrency.assetId"
-      :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', {}, false)"
+      @closeForm="toggleVisibleActivityForm('showReceiveForm', {}, false)"
     />
 
     <NetworkManagement
       v-if="showNetworkManagement"
       :networks="networksWithWarning"
-      :closeForm="toggleNetworkManagementVisible"
+      @closeForm="toggleNetworkManagementVisible"
       @setNetworkUnavailable="setNetworkUnavailable"
     />
 
@@ -68,10 +68,10 @@
       v-if="showNetworkUnavailablePopup"
       :networks="networksWithWarning"
       :network="networkUnavailable"
-      :closePopup="setNetworkUnavailable"
+      @closePopup="setNetworkUnavailable"
     />
 
-    <GoogleExportPopup v-if="showGoogleExportPopup" :closePopup="closeGoogleExportPopup" />
+    <GoogleExportPopup v-if="showGoogleExportPopup" @closePopup="closeGoogleExportPopup" />
 
     <Tooltip text="wallet.walletBalance" target=".wallet-balance" placement="right" />
     <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
@@ -88,7 +88,6 @@ import type { AsyncFn, Fn, TabWallet } from '@/interfaces';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import ContentSettings from '@/screens/wallet&asset/wallet/ContentSettings.vue';
-import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
@@ -120,7 +119,6 @@ import { BalanceItem } from '@/extension/background/extension-base/src/api/evm/t
     SoraCardBanner,
     ContentSettings,
     NetworkManagement,
-    SelectNetworkPopup,
     SelectNetworkButton,
     NetworkUnavailablePopup,
     GoogleExportPopup,
@@ -146,7 +144,6 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
-  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
@@ -160,8 +157,7 @@ export default class Wallet extends Vue {
   get contentFormHeight() {
     const subtractionNumber = this.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
 
-    // IMPORTANT: if <Menu /> showed use 397
-    return 457 - subtractionNumber;
+    return 452 - subtractionNumber;
   }
 
   get showNetworkUnavailablePopup() {
@@ -226,7 +222,7 @@ export default class Wallet extends Vue {
 
     const isPendingExists = this.networks.some(({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING);
 
-    return !this.isOnline || isPendingExists;
+    return !navigator.onLine || isPendingExists;
   }
   get filteredCurrencies() {
     const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
@@ -290,7 +286,7 @@ export default class Wallet extends Vue {
       return;
     }
 
-    const nonZeroBalanceCb = ({ transferable }: BalanceItem) => transferable && transferable !== '0';
+    const nonZeroBalanceCb = ({ transferable }: BalanceItem) => transferable && +transferable > 0;
 
     this.balances.forEach(({ assetId, balances }) => {
       const index = balances.findIndex(nonZeroBalanceCb);

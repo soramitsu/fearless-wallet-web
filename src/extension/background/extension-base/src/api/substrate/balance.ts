@@ -124,6 +124,12 @@ async function subscribeTokensBalance(
 
         return pallet.subscribe(onBalanceFetch);
       } catch (err: any) {
+        setBalance(networkKey, {
+          state: APIItemState.ERROR,
+          relayChain,
+          symbol,
+          id,
+        });
         console.warn(err.message, networkKey, `type: ${type}`);
       }
 
@@ -144,13 +150,9 @@ export async function subscribeWithAccount(
   networkAPI: ApiProps,
   setBalance: (networkKey: string, rs: Partial<BalanceItem>) => void
 ) {
-  let unsub: () => void;
-
-  try {
-    unsub = await subscribeTokensBalance(address, networkKey, networkAPI.api!, setBalance);
-  } catch (err) {
-    console.warn(err);
-  }
+  const unsub = await subscribeTokensBalance(address, networkKey, networkAPI.api!, setBalance).catch((e) => {
+    console.info(`Failed to subscribe to ${networkKey}`, e);
+  });
 
   return () => {
     unsub && unsub();
@@ -162,10 +164,10 @@ export function subscribeBalance(
   ethereumAddress: string,
   setBalance: (networkKey: string, rs: Partial<BalanceItem>) => void
 ) {
-  state.generateDefaultBalance(address);
-
   const unsubList = Object.entries(state.getSubstrateApiMap).map(async ([networkKey, apiProps]) => {
-    await apiProps.api?.isReadyOrError;
+    const isReady = await apiProps.api?.isReadyOrError;
+
+    if (!isReady) return () => null;
 
     const addressForNetwork = isEthereumNetwork(networkKey) ? ethereumAddress : address;
 

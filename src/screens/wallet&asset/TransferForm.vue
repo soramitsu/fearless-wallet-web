@@ -4,8 +4,8 @@
       :header="formHeader"
       :fullScreen="true"
       :showBackIcon="showBackIcon"
-      :handlerBack="handlerBack"
-      :closeHandler="closeForm"
+      @handlerBack="handlerBack"
+      @closeHandler="$emit('closeForm')"
     >
       <Scroll>
         <EditAddressBook
@@ -151,9 +151,9 @@
       :left="left"
       :height="285"
       :options="options"
-      :handlerFilter="handlerFilter"
-      :toggleValue="toggleSelectedNetwork"
-      :handlerClose="handlerCloseSelectPopup"
+      @handlerFilter="handlerFilter"
+      @toggleValue="toggleSelectedNetwork"
+      @handlerClose="handlerCloseSelectPopup"
     />
 
     <ConfirmationPasswordPopup
@@ -171,14 +171,14 @@
 
     <ExistentialPopup
       v-if="showExistentialPopup"
-      :handlerClose="handlerCloseExistentialPopup"
-      :handlerAccept="handlerAcceptExistentialPopup"
+      @handlerClose="handlerCloseExistentialPopup"
+      @handlerAccept="handlerAcceptExistentialPopup"
     />
 
     <WarningAddressPopup
       v-if="showWarningAddressPopup"
-      :handlerAccept="formatAddress"
-      :handlerClose="handlerCloseWarningAddressPopup"
+      @handlerAccept="formatAddress"
+      @handlerClose="handlerCloseWarningAddressPopup"
     />
   </div>
 </template>
@@ -205,10 +205,17 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { cut, firstCharToUp, getClipboard } from '@/helpers/';
 import { getCurrencyOptions, getUtilityAsset } from '@/helpers/currencies';
-import { VALID_SUBSTRATE_ADDRESS, VALID_ETHEREUM_ADDRESS, CHAIN_IDS } from '@/consts/networks';
+import {
+  VALID_SUBSTRATE_ADDRESS,
+  VALID_ETHEREUM_ADDRESS,
+  CHAIN_IDS,
+  POPULAR_NETWORKS,
+  FAVORITE_NETWORKS,
+} from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
 import { checkTransfer, checkCrossChain } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
+import { isNetworkGroup } from '@/helpers/common';
 
 @Component({
   components: {
@@ -238,7 +245,6 @@ export default class TransferForm extends Vue {
   isFetchingFees = false;
   step = 1;
 
-  @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) header!: string;
   @Prop(String) extrinsicType!: 'transfer' | 'crossChain';
   @PropSync('recipient', { default: '' }) syncedRecipient!: string;
@@ -250,8 +256,8 @@ export default class TransferForm extends Vue {
   @PropSync('partialFee', { type: String }) syncedFee!: string;
   @PropSync('destNetFee', { type: String }) syncedDestNetFee!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetworkInManagment!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
@@ -372,7 +378,7 @@ export default class TransferForm extends Vue {
   }
 
   get buttonText() {
-    if (!this.isOnline) return 'common.offlineStatus';
+    if (!navigator.onLine) return 'common.offlineStatus';
 
     if (!this.currency) return '';
 
@@ -406,7 +412,7 @@ export default class TransferForm extends Vue {
   get buttonDisabled() {
     if (this.buttonLoading) return true;
 
-    if (!this.isOnline) return true;
+    if (!navigator.onLine) return true;
 
     if (this.step === 2) return false;
 
@@ -466,22 +472,52 @@ export default class TransferForm extends Vue {
     return options.filter(({ name }) => name.toLowerCase().includes(filter));
   }
 
+  get isSelectedNetworkGroup() {
+    return isNetworkGroup(this.selectedNetworkInManagment);
+  }
+
+  get assetWithActiveNetworks() {
+    const result = this.balances.filter(({ balances }) => {
+      return balances.some(({ name }) => {
+        const { active, rank, favorite } = this.getNetwork(name);
+
+        if (!active) return false;
+
+        if (this.isSelectedNetworkGroup) {
+          if (this.selectedNetworkInManagment === POPULAR_NETWORKS && rank) return true;
+
+          const isNetworkInFavorites = favorite.some((el) => el === this.selectedWallet.address);
+
+          if (this.selectedNetworkInManagment === FAVORITE_NETWORKS && isNetworkInFavorites) return true;
+        }
+
+        return this.selectedNetworkInManagment.toLowerCase() === name.toLowerCase();
+      });
+    });
+
+    return result;
+  }
+
   get optionsCurrency() {
     const { xcm, parentId } = this.networks.find(
       ({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase()
     )!;
 
     const relay = (CHAIN_IDS[parentId!] ?? this.syncedNetwork).toLowerCase();
-    const balances = this.isTransfer
-      ? this.balances
-      : this.balances.filter(
-          ({ symbol, relayChain }) =>
-            xcm?.availableAssets.some((asset) => {
-              const assetName = getEthereumAssetName(asset, this.syncedNetwork);
 
-              return assetName === symbol.toLowerCase();
-            }) && relayChain.toLowerCase() === relay
-        );
+    if (this.isTransfer) return getCurrencyOptions(this.assetWithActiveNetworks);
+
+    const balances = this.assetWithActiveNetworks.filter(({ symbol, relayChain }) => {
+      const isAssetMatch = xcm?.availableAssets.some((asset) => {
+        const assetName = getEthereumAssetName(asset, this.syncedNetwork);
+
+        return assetName === symbol.toLowerCase();
+      });
+
+      const isRelayMatch = relayChain.toLowerCase() === relay;
+
+      return isAssetMatch && isRelayMatch;
+    });
 
     return getCurrencyOptions(balances);
   }
@@ -489,14 +525,24 @@ export default class TransferForm extends Vue {
   get optionsNetworks() {
     // used only for transfer
     const walletBalance = this.currency?.balances ?? [];
+    const networks: {
+      name: string;
+      value: string;
+      icon: string;
+    }[] = [];
+    walletBalance.forEach(({ name, icon }) => {
+      const network = this.getNetwork(name);
 
-    return walletBalance.map(({ name, icon }) => {
-      return {
-        name: firstCharToUp(name),
-        value: name,
-        icon,
-      };
+      if (network.active) {
+        networks.push({
+          name: firstCharToUp(name),
+          value: name,
+          icon,
+        });
+      }
     });
+
+    return networks;
   }
 
   get originNet() {
@@ -658,7 +704,7 @@ export default class TransferForm extends Vue {
   confirmationPasswordPopupClose(closeForm: boolean) {
     this.showConfirmationPasswordPopup = false;
 
-    if (closeForm) this.closeForm();
+    if (closeForm) this.$emit('closeForm');
   }
 
   getStatusWallet(address: string, ethereumAddress: string) {

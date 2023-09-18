@@ -13,28 +13,28 @@
       v-if="showSendForm"
       :_selectedNetwork="selectedAssetNetwork"
       :_selectedAssetId="selectedAssetId"
-      :closeForm="toggleVisible.bind(null, 'showSendForm', false)"
+      @closeForm="toggleVisible('showSendForm', false)"
     />
 
     <ReceiveForm
       v-if="showReceiveForm"
       :_selectedNetwork="selectedAssetNetwork"
       :selectedAssetId="selectedAssetId"
-      :closeForm="toggleVisible.bind(null, 'showReceiveForm', false)"
+      @closeForm="toggleVisible('showReceiveForm', false)"
     />
 
     <CrossChainForm
       v-if="showCrossChainForm"
       :_originalNetwork="selectedAssetNetwork"
       :_selectedAssetId="selectedAssetId"
-      :closeForm="toggleVisible.bind(null, 'showCrossChainForm', false)"
+      @closeForm="toggleVisible('showCrossChainForm', false)"
     />
 
     <HistoryDetailsForm
       v-if="showHistoryDetailsForm"
-      :handlerClose="closeHistoryDetailsForm"
       :historyElement="historyElement"
       :assetId="selectedAssetId"
+      @handlerClose="closeHistoryDetailsForm"
     />
 
     <BuyPopup
@@ -42,13 +42,13 @@
       :asset="selectedAssetUpper"
       :address="displayAddressByNetwork"
       :providers="providers"
-      :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
+      @closePopup="toggleVisible('showBuyPopup', false)"
     />
 
     <NetworkManagement
       v-if="showSelectNetworkPopup"
       :type="selectedNetwork"
-      :handlerClose="toggleSelectNetworkPopupVisible"
+      @handlerClose="toggleSelectNetworkPopupVisible"
     />
   </div>
 </template>
@@ -56,25 +56,24 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
+import HistoryDetailsForm from '@/screens/wallet&asset/asset/HistoryDetailsForm.vue';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import AssetInfo from '@/screens/wallet&asset/asset/AssetInfo.vue';
 import CrossChainForm from '@/screens/wallet&asset/CrossChainForm.vue';
+import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
-import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NETWORK_GROUP } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common/index';
-import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
 @Component({
@@ -84,7 +83,6 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'sh
     BuyPopup,
     ReceiveForm,
     CrossChainForm,
-    SelectNetworkPopup,
     HistoryDetailsForm,
     SelectNetworkButton,
     NetworkManagementButton,
@@ -94,7 +92,7 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'sh
 export default class Asset extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
 
-  historyElement: HistoryElement | Record<string, string> | undefined;
+  historyElement: HistoryElement | Record<string, string> | null = null;
   showSendForm = false;
   showReceiveForm = false;
   showCrossChainForm = false;
@@ -113,7 +111,7 @@ export default class Asset extends Vue {
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get showHistoryDetailsForm() {
-    return this.historyElement !== undefined;
+    return this.historyElement !== null;
   }
 
   get isGroupIcon() {
@@ -191,7 +189,7 @@ export default class Asset extends Vue {
   }
 
   closeHistoryDetailsForm() {
-    this.historyElement = undefined;
+    this.historyElement = null;
   }
 
   toggleSelectNetworkPopupVisible() {

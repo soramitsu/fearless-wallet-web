@@ -75,7 +75,7 @@ const routes: Array<RouteConfig> = [
     name: Components.Welcome,
     component: Welcome,
     meta: {
-      title: 'WELCOME',
+      title: 'welcome',
     },
   },
   {
@@ -83,7 +83,7 @@ const routes: Array<RouteConfig> = [
     name: Components.Onboarding,
     component: Onboarding,
     meta: {
-      title: 'ONBOARDING',
+      title: 'onboarding',
     },
   },
   {
@@ -91,7 +91,7 @@ const routes: Array<RouteConfig> = [
     name: Components.AddFromGoogle,
     component: AddFromGoogle,
     meta: {
-      title: 'GOOGLE',
+      title: 'google',
     },
   },
   {
@@ -104,20 +104,23 @@ const routes: Array<RouteConfig> = [
     name: Components.AddWallet,
     component: AddWallet,
     meta: {
-      title: 'ADD WALLET',
+      title: 'addWallet',
     },
   },
   {
     path: '/add-mobile-wallet',
     name: Components.MobileConnect,
     component: MobileConnect,
+    meta: {
+      title: 'addMobileWallet',
+    },
   },
   {
     path: '/authorize',
     name: Components.Authorize,
     component: Authorize,
     meta: {
-      title: 'AUTHORIZE',
+      title: 'authorize',
     },
   },
   {
@@ -125,7 +128,7 @@ const routes: Array<RouteConfig> = [
     name: Components.MetaRequest,
     component: MetaRequest,
     meta: {
-      title: 'META',
+      title: 'meta',
     },
   },
   {
@@ -133,7 +136,7 @@ const routes: Array<RouteConfig> = [
     name: Components.Transaction,
     component: Transaction,
     meta: {
-      title: 'TRANSACTION',
+      title: 'transaction',
     },
   },
   {
@@ -145,7 +148,7 @@ const routes: Array<RouteConfig> = [
       else next({ name: Components.Wallet });
     },
     meta: {
-      title: 'SORA CARD',
+      title: 'soraCard',
     },
   },
   {
@@ -153,7 +156,7 @@ const routes: Array<RouteConfig> = [
     name: Components.SoraSwap,
     component: SoraSwap,
     meta: {
-      title: 'SORA SWAP',
+      title: 'soraSwap',
     },
   },
   {
@@ -161,7 +164,7 @@ const routes: Array<RouteConfig> = [
     name: Components.PolkaswapDisclaimer,
     component: PolkaswapDisclaimer,
     meta: {
-      title: 'DISCLAIMER',
+      title: 'polkaswapDisclaimer',
     },
   },
   {
@@ -172,7 +175,7 @@ const routes: Array<RouteConfig> = [
         path: '/',
         redirect: { name: Components.Wallet },
         meta: {
-          title: 'WALLET',
+          title: 'wallet',
         },
       },
       {
@@ -187,7 +190,7 @@ const routes: Array<RouteConfig> = [
           else next();
         },
         meta: {
-          title: 'WALLET',
+          title: 'wallet',
         },
       },
       {
@@ -199,7 +202,7 @@ const routes: Array<RouteConfig> = [
             name: Components.Accounts,
             component: Accounts,
             meta: {
-              title: 'ACCOUNTS',
+              title: 'accounts',
             },
           },
           {
@@ -207,7 +210,7 @@ const routes: Array<RouteConfig> = [
             name: Components.Nodes,
             component: Nodes,
             meta: {
-              title: 'NODES',
+              title: 'nodes',
             },
           },
           {
@@ -215,7 +218,7 @@ const routes: Array<RouteConfig> = [
             name: Components.Export,
             component: Export,
             meta: {
-              title: 'EXPORT',
+              title: 'export',
             },
           },
         ],
@@ -241,7 +244,7 @@ const routes: Array<RouteConfig> = [
         name: Components.Crowdloans,
         component: Crowdloans,
         meta: {
-          title: 'CROWDLOANS',
+          title: 'crowdloans',
         },
       },
       {
@@ -249,7 +252,7 @@ const routes: Array<RouteConfig> = [
         name: Components.Staking,
         component: Staking,
         meta: {
-          title: 'STAKING',
+          title: 'staking',
         },
       },
       {
@@ -257,16 +260,13 @@ const routes: Array<RouteConfig> = [
         name: Components.Polkaswap,
         component: Polkaswap,
         meta: {
-          title: 'POLKASWAP',
+          title: 'polkaswap',
         },
       },
       {
         path: 'history',
         name: Components.History,
         component: History,
-        meta: {
-          title: 'HISTORY',
-        },
       },
     ],
     beforeEnter: (to, from, next) => {

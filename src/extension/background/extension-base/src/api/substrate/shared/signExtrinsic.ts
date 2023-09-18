@@ -28,30 +28,15 @@ interface ExternalSignExtrinsicProps extends AbstractSignExtrinsicProps {
 
 type SignExtrinsicProps = PasswordSignExtrinsicProps | ExternalSignExtrinsicProps;
 
-export const signExtrinsic = async ({
-  address,
-  apiProps,
-  extrinsic,
-  password,
-  type,
-}: SignExtrinsicProps): Promise<string | null> => {
+export const signExtrinsic = async ({ address, apiProps, extrinsic, type }: SignExtrinsicProps): Promise<void> => {
   const isMobile = type === SignerType.MOBILE;
   const pair = state.keyringService.getPair(address);
 
   if (!isMobile) assert(pair, 'Unable to find pair');
 
-  if (pair?.isLocked) {
-    const isUnlock = state.keyringService.unlockPair(pair, password!);
-
-    if (!isUnlock) return 'Invalid password';
-  }
-
   const nonce = (await apiProps.api?.rpc.system.accountNextIndex(address)) as unknown as number;
-
   const registry = apiProps.api!.registry;
   const signer = pair ? new KeyringSigner({ registry, keyPair: pair }) : new BeaconSigner();
 
   await extrinsic.signAsync(address, { signer, nonce });
-
-  return null;
 };

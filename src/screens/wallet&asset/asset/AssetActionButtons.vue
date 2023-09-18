@@ -105,13 +105,15 @@ export default class AssetActionButtons extends Vue {
   }
 
   get showCrossChainButton() {
+    if (this.selectedNetwork === '') return false;
+
     const network = this.getNetwork(this.selectedNetwork);
 
     const asset = getNativeAssetName(this.selectedAsset);
 
     if (!network || network.xcm === undefined) return false;
 
-    return network.xcm.availableAssets.some((assetName) => assetName.toLowerCase() === asset);
+    return network.xcm.availableAssets?.some(({ symbol }) => symbol.toLowerCase() === asset);
   }
 
   onToggleVisible(name: string) {

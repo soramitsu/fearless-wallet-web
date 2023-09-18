@@ -5,7 +5,7 @@ import { state } from '@extension-base/background/handlers';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import type { NetworkJson } from '@extension-base/types';
 import type { AssetName, NetworkName } from '@/interfaces';
-import { MAIN_NETWORKS, ETHEREUM_NETWORKS, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
+import { MAIN_NETWORKS, ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import { RelayChainName } from '@/interfaces';
 import { ETHEREUM_UTILITY_ASSETS } from '@/consts/currencies';
 
@@ -93,8 +93,8 @@ export function isEthereumNetwork(network: string) {
   return ETHEREUM_NETWORKS.includes(network.toLowerCase());
 }
 
-export function isRequireSubstrateAPI(network: string) {
-  return SUBSTRATE_ETHEREUM_NETWORKS.includes(network.toLowerCase());
+export function isRequireEvmAPI(network: string) {
+  return NATIVE_ETHEREUM_NETWORKS.includes(network.toLowerCase());
 }
 
 export function getUtilityProps(_network: NetworkName) {
@@ -109,7 +109,7 @@ export function balanceItemByNetwork(balances: BalanceItem[], network: string) {
   return balances.find((balance) => balance.name.toLowerCase() === network.toLowerCase());
 }
 
-export function getEthereumAssetName(asset: AssetName, network: NetworkName) {
+export function getMoonbeamMoonriverAssetName(asset: AssetName, network: NetworkName) {
   const assetLower = asset.toLowerCase();
 
   return isEthereumNetwork(network) && !Object.values(ETHEREUM_UTILITY_ASSETS).includes(assetLower)

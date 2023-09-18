@@ -40,7 +40,6 @@ import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { NetworksController } from '@/controllers';
-import { EVM_NETWORKS } from '@/consts/networks';
 import BaseApi from '@/util/BaseApi';
 
 @Component({ components: { HistoryItem } })
@@ -121,7 +120,7 @@ export default class History extends Vue {
   }
 
   get isEvmNetworks() {
-    return EVM_NETWORKS.includes(this.selectedNetwork.toLowerCase());
+    return BaseApi.isEthereumNetwork(this.selectedNetwork);
   }
 
   async fetchHistory() {

@@ -12,7 +12,6 @@ const initListeners = (provider: EvmProvider) => {
 export const initWeb3Api = (url: string): EvmProvider => {
   const apiKey = getEvmApiKey(url);
   const providerUrl = `${url}${apiKey ?? ''}`;
-
   const provider = url.startsWith('http') ? new JsonRpcProvider(providerUrl) : new WebSocketProvider(providerUrl);
 
   initListeners(provider);

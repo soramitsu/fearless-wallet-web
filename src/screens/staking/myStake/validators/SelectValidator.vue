@@ -8,7 +8,7 @@
 
         {{ $t('staking.outOf') }}
 
-        <span class="highlight">{{ countValidators }}&nbsp;</span>
+        <span class="highlight">{{ maxNominations }}&nbsp;</span>
 
         <span class="validators">{{ $t('staking.validators') }}</span>
       </div>
@@ -47,7 +47,7 @@ export default class SelectValidator extends Vue {
   @Prop({ type: Boolean }) limitValidatorsIdentity!: boolean;
   @Prop({ type: Boolean }) sortByApy!: boolean;
   @Prop({ type: Array }) validators!: SelectionValidator[];
-  @Prop({ type: Number }) countValidators!: number;
+  @Prop({ type: Number }) maxNominations!: number;
 
   get filteredValidatorsBySettings() {
     return this.validators.filter(() => {

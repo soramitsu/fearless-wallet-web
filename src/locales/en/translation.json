@@ -515,7 +515,7 @@
     "bondExtra": "Stake more",
     "rebond": "Rebond",
     "stakedTokens": "Staked tokens generate rewards each era  (6 hours).",
-    "unstakeTokens": "If you want to unstake tokens, you will have to wait for the unstaking period (7 days).",
+    "unstakeTokens": "If you want to unstake tokens, you will have to wait for the unstaking period ({value} days).",
     "tokensUnstaking": "Tokens in unstaking period generate no rewards",
     "afterUnstaking": "After unstaking period you will need to redeem your tokens",
     "validatorsPayoutRewards": "Validators payout the rewards every 2-5 days. However, you can payout them by yourself, especially if rewards are close to expiring, but you will pay the fee."

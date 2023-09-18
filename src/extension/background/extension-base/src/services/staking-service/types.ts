@@ -90,9 +90,12 @@ export type MakeStakingRequest = {
   type: StakingOperation;
 };
 
-export type BondingDurationRequest = NetworkName[];
+export type StakingParamsRequest = NetworkName[];
 
-export type BondingDurationResponse = {
+export type StakingParams = {
   network: NetworkName;
-  value: number;
-}[];
+  unbondPeriod: number;
+  maxNominations: number;
+};
+
+export type StakingParamsResponse = StakingParams[];

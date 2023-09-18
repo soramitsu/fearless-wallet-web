@@ -26,26 +26,26 @@
         <Scroll>
           <template v-if="isAllTab">
             <StakingItem
-              v-for="{ network, icon, type, unbondPeriod } in stakingItems"
-              :key="network"
-              :network="network"
-              :type="type"
-              :icon="icon"
-              :unbondPeriod="unbondPeriod"
-              @click="updateNetworkBond(network)"
+              v-for="item in stakingItems"
+              :key="item.network"
+              :network="item.network"
+              :type="item.type"
+              :icon="item.icon"
+              :unbondPeriod="item.unbondPeriod"
+              @click="updateNetworkBond(item)"
             />
           </template>
 
           <template v-else>
             <MyStakingItem
-              v-for="{ network, icon, fiatValue, amount, asset, unstakingAmount, unbondPeriod } in myStakingItems"
+              v-for="{ network, icon, unbondPeriod } in myStakingItems"
               :key="network"
               :network="network"
               :icon="icon"
-              :fiatValue="fiatValue"
-              :amount="amount"
-              :asset="asset"
-              :unstakingAmount="unstakingAmount"
+              :fiatValue="getAmountPriceValue(network)"
+              :amount="getStakingAmount(network)"
+              :asset="getAssetName(network)"
+              :unstakingAmount="getUnstakingAmount(network)"
               :unbondPeriod="unbondPeriod"
             />
           </template>
@@ -53,7 +53,7 @@
       </div>
     </ContentForm>
 
-    <Bond v-if="showBond" :network="network" @closeBond="updateNetworkBond" />
+    <Bond v-if="showBond" :networkParams="networkParams" @closeBond="updateNetworkBond" />
   </div>
 </template>
 
@@ -70,9 +70,14 @@ import StakingSettings from '@/screens/staking/StakingSettings.vue';
 import StakingItem from '@/screens/staking/StakingItem.vue';
 import MyStakingItem from '@/screens/staking/MyStakingItem.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { NetworkName } from '@/interfaces';
+import { NetworkName, NetworkParams } from '@/interfaces';
 import Bond from '@/screens/staking/Bond.vue';
-import { getBondingDuration } from '@/extension/messaging';
+import { getStakingParams } from '@/extension/messaging';
+import { SORA_NETWORK_NAME } from '@/consts/sora';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GetAssetPrice } from '@/store';
+import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { getUtilityAsset } from '@/helpers/currencies';
 
 @Component({
   components: {
@@ -89,33 +94,32 @@ export default class Staking extends Vue {
   showNetworkManagement = false;
   activeTabName: StakingTab = 'all';
   filterValue = '';
-  network = '';
+  networkParams: Nullable<NetworkParams> = null;
 
-  stakingItems = [
+  stakingItems: NetworkParams[] = [
     {
-      network: 'Sora mainnet',
+      network: SORA_NETWORK_NAME,
       type: 'regular',
       icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg',
       unbondPeriod: 0,
+      maxNominations: 0,
     },
   ];
 
-  myStakingItems = [
+  myStakingItems: NetworkParams[] = [
     {
-      network: 'Sora mainnet',
+      network: SORA_NETWORK_NAME,
       icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg',
-      fiatValue: '400',
-      asset: 'xor',
-      amount: '5',
-      unstakingAmount: '1.1',
       unbondPeriod: 0,
+      maxNominations: 0,
     },
   ];
 
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get showBond() {
-    return this.network !== '';
+    return this.networkParams !== null;
   }
 
   get showShimmers() {
@@ -136,16 +140,18 @@ export default class Staking extends Vue {
 
   async mounted() {
     const networks = this.stakingItems.map(({ network }) => network);
-    const bondingDurations = await getBondingDuration(networks);
+    const stakingParams = await getStakingParams(networks);
 
-    bondingDurations.forEach(({ network, value }, index) => {
-      this.stakingItems[index].unbondPeriod = value;
+    stakingParams.forEach(({ network, unbondPeriod, maxNominations }, index) => {
+      this.stakingItems[index].unbondPeriod = unbondPeriod;
+      this.stakingItems[index].maxNominations = maxNominations;
 
       const idx = this.myStakingItems.findIndex(
         ({ network: _network }) => _network.toLowerCase() == network.toLowerCase()
       );
 
-      this.myStakingItems[idx].unbondPeriod = value;
+      this.myStakingItems[idx].unbondPeriod = unbondPeriod;
+      this.myStakingItems[idx].maxNominations = maxNominations;
     });
   }
 
@@ -157,8 +163,37 @@ export default class Staking extends Vue {
     this.activeTabName = name;
   }
 
-  updateNetworkBond(network: NetworkName = '') {
-    this.network = network.toLowerCase();
+  updateNetworkBond(networkParams: Nullable<NetworkParams> = null) {
+    this.networkParams = networkParams;
+  }
+
+  getUnstakingAmount(network: NetworkName) {
+    network;
+
+    return '0';
+  }
+
+  getStakingAmount(network: NetworkName) {
+    network;
+
+    return '5';
+  }
+
+  getAssetName(network: NetworkName) {
+    return this.getUtilityAsset(network)?.symbol ?? '';
+  }
+
+  getUtilityAsset(network: NetworkName) {
+    return getUtilityAsset(this.balances, network);
+  }
+
+  getAmountPriceValue(network: NetworkName) {
+    const stakingCurrency = this.getUtilityAsset(network);
+    const priceId = stakingCurrency?.priceId ?? '';
+    const price = this.getAssetPrice(priceId).price;
+    const amount = this.getStakingAmount(network);
+
+    return getCostOfAssets(amount, price).toString();
   }
 }
 </script>

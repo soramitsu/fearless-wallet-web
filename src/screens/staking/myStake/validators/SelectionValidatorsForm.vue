@@ -13,7 +13,7 @@
       :notOversubscribed="notOversubscribed"
       :sortByApy="sortByApy"
       :validators="validators"
-      :countValidators="countValidators"
+      :maxNominations="maxNominations"
       @updateSelectedValidators="updateSelectedValidators"
       @openFiltersPopup="toggleFiltersPopupVisibility"
     />
@@ -61,7 +61,7 @@ export default class SelectionValidatorsForm extends Vue {
 
   @Prop({ type: Number }) step!: number;
   @Prop({ type: Array }) validators!: SelectionValidator[];
-  @Prop({ type: Number }) countValidators!: number;
+  @Prop({ type: Number }) maxNominations!: number;
 
   openValidatorList(isSuggested: boolean) {
     this.$emit('openValidatorList', isSuggested);

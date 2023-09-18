@@ -21,7 +21,7 @@
 
         <InfoRow
           text="staking.selectedValidators"
-          :value="`${selectedQuantity} (${$t('common.max')} ${countValidators})`"
+          :value="`${selectedQuantity} (${$t('common.max')} ${maxNominations})`"
           borderType="default"
         />
 
@@ -41,7 +41,7 @@
         v-else
         :step="step"
         :validators="validators"
-        :countValidators="countValidators"
+        :maxNominations="maxNominations"
         @openValidatorList="openValidatorList"
         @updateSelectedValidators="updateSelectedValidators"
       />
@@ -72,6 +72,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { StakingParams } from '@extension-base/services/staking-service/types';
 import { myValidators } from './mock';
 import type { NetworkName, SelectionValidator } from '@/interfaces';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
@@ -83,8 +84,7 @@ import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vu
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import { getValidators } from '@/extension/messaging';
-import { COUNT_VALIDATORS } from '@/consts/staking';
+import { getStakingParams, getValidators } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -103,6 +103,7 @@ export default class YourValidatorsManagement extends Vue {
   isSuggested = false;
   selectedValidator = '';
   fee = '0';
+  networkParams: Nullable<StakingParams> = null;
 
   @Prop({ type: String }) network!: NetworkName;
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
@@ -170,10 +171,13 @@ export default class YourValidatorsManagement extends Vue {
     return '';
   }
 
-  get countValidators() {
-    if (this.validators.length < COUNT_VALIDATORS[this.network]) return this.validators.length;
+  get maxNominations() {
+    const maxNominations = this.networkParams?.maxNominations ?? 0;
 
-    return COUNT_VALIDATORS[this.network];
+    // Если количество валидаторов в сети меньше, чем maxNominations, то отображаем количество валидаторов как maxNominations
+    if (this.validators.length < maxNominations) return this.validators.length;
+
+    return maxNominations;
   }
 
   get showValidatorInfo() {
@@ -182,6 +186,9 @@ export default class YourValidatorsManagement extends Vue {
 
   async mounted() {
     this.validators = await getValidators({ networkName: this.network });
+    const stakingParams = await getStakingParams([this.network]);
+
+    this.networkParams = stakingParams[0];
 
     this.validators.forEach(({ address, apy, name, description }) => {
       Vue.set(this.state, address, {
@@ -205,12 +212,11 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   openValidatorList(isSuggested: boolean) {
-    if (isSuggested)
-      this.validators = this.validators.map((validator, index) => {
-        const isSelect = index < COUNT_VALIDATORS[this.network]; // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
+    this.validators = this.validators.map((validator, index) => {
+      const isSelect = isSuggested && index < this.maxNominations; // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
 
-        return { ...validator, isSelect };
-      });
+      return { ...validator, isSelect };
+    });
 
     this.isSuggested = isSuggested;
     this.step = isSuggested ? 3 : 5;

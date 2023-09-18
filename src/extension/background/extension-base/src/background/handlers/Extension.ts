@@ -29,8 +29,8 @@ import { balanceItemByNetwork, getSubstrateAddress, isRequireEvmAPI } from '@ext
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { storage } from '@extension-base/stores/Storage';
-import { BondingDurationRequest, ValidatorsRequest } from '@extension-base/services/staking-service/types';
-import { MakeStakingRequest, BondingDurationResponse } from './../../services/staking-service/types';
+import { StakingParamsRequest, ValidatorsRequest } from '@extension-base/services/staking-service/types';
+import { MakeStakingRequest, StakingParamsResponse } from './../../services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type {
   MobileSigningRequest,
@@ -84,8 +84,6 @@ import type { NetworkJson } from '@extension-base/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-// import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-// import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { googleManage } from '@/controllers/googleController';
@@ -1115,12 +1113,8 @@ export default class Extension extends FWExtensionBase {
     return state.stakingService.getValidators(request);
   }
 
-  getMaxNominations(network: NetworkName): Promise<number> {
-    return state.stakingService.getMaxNominations(network);
-  }
-
-  getBondingDuration(networks: NetworkName[]): Promise<BondingDurationResponse> {
-    return state.stakingService.getBondingDuration(networks);
+  getStakingParams(networks: NetworkName[]): Promise<StakingParamsResponse> {
+    return state.stakingService.getStakingParams(networks);
   }
 
   async makeStaking(request: MakeStakingRequest): Promise<BasicTxResponse> {
@@ -1263,11 +1257,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(staking.validators)':
         return this.getValidators(request as ValidatorsRequest);
 
-      case 'pri(staking.maxNominations)':
-        return this.getMaxNominations(request as NetworkName);
-
-      case 'pri(staking.bondingDuration)':
-        return this.getBondingDuration(request as BondingDurationRequest);
+      case 'pri(staking.stakingParams)':
+        return this.getStakingParams(request as StakingParamsRequest);
 
       case 'pri(staking.makeStaking)':
         return this.makeStaking(request as MakeStakingRequest);

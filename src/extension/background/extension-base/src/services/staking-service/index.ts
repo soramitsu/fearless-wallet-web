@@ -9,7 +9,7 @@ import {
   RequestSetControllerAccount,
   RequestBondExtra,
   MakeStakingRequest,
-  BondingDurationResponse,
+  StakingParamsResponse,
 } from './types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import { NetworkName } from '@/interfaces';
@@ -28,16 +28,13 @@ export class StakingService {
 
   constructor(private getSubstrateApiMap: Record<string, ApiProps>) {}
 
-  // TODO use network
-  public async getMaxNominations(network: NetworkName): Promise<number> {
-    console.info('mxNominations', network);
-
-    return apiSora.staking.getMaxNominations();
-  }
-
-  // TODO use networks for getBondingDuration
-  public async getBondingDuration(networks: NetworkName[]): Promise<BondingDurationResponse> {
-    return networks.map((network) => ({ network, value: apiSora.staking.getBondingDuration() }));
+  // TODO use networks
+  public async getStakingParams(networks: NetworkName[]): Promise<StakingParamsResponse> {
+    return networks.map((network) => ({
+      network,
+      unbondPeriod: apiSora.staking.getBondingDuration(),
+      maxNominations: apiSora.staking.getMaxNominations(),
+    }));
   }
 
   public async getValidators({ networkName }: ValidatorsRequest): Promise<FWValidatorInfoFull[]> {

@@ -1,8 +1,8 @@
 import {
   ValidatorsRequest,
   MakeStakingRequest,
-  BondingDurationRequest,
-  BondingDurationResponse,
+  StakingParamsRequest,
+  StakingParamsResponse,
 } from '@extension-base/services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -80,7 +80,6 @@ import type {
   SoraFees,
   SignerPayloadRaw,
   OnboardingStories,
-  NetworkName,
 } from '@/interfaces';
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
@@ -158,8 +157,7 @@ export interface RequestSignatures {
 
   // staking
   'pri(staking.validators)': [ValidatorsRequest, FWValidatorInfoFull[]];
-  'pri(staking.maxNominations)': [NetworkName, number];
-  'pri(staking.bondingDuration)': [BondingDurationRequest, BondingDurationResponse];
+  'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];
   'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];
 
   //ether

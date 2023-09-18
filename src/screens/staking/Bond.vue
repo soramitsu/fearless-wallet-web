@@ -53,7 +53,7 @@
           v-else-if="showSelectionValidatorsForm"
           :step="step"
           :validators="validators"
-          :countValidators="countValidators"
+          :maxNominations="maxNominations"
           @openValidatorList="openValidatorList"
           @updateSelectedValidators="updateSelectedValidators"
         />
@@ -68,7 +68,7 @@
           <ContentForm :height="200" :isStaticHeight="true" :bottomRightCorner="true">
             <InfoRow
               text="staking.selectedValidators"
-              :value="`${selectedQuantity} (${$t('common.max')} ${countValidators})`"
+              :value="`${selectedQuantity} (${$t('common.max')} ${maxNominations})`"
               borderType="default"
             />
 
@@ -106,7 +106,7 @@
             <Icon icon="information-rectangle" class="icon" />
 
             <div>
-              {{ $t('staking.unstakeTokens') }}
+              {{ $t('staking.unstakeTokens', days) }}
             </div>
           </div>
 
@@ -128,7 +128,15 @@
         </template>
       </div>
 
-      <FButton width="100%" size="big" fontSize="big" :text="btnText" :disabled="confirmBtnDisabled" @click="confirm" />
+      <FButton
+        v-if="showBtn"
+        width="100%"
+        size="big"
+        fontSize="big"
+        :text="btnText"
+        :disabled="confirmBtnDisabled"
+        @click="confirm"
+      />
     </div>
 
     <ConfirmationPasswordPopup
@@ -149,7 +157,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
-import type { NetworkName, SelectionValidator } from '@/interfaces';
+import type { NetworkParams, SelectionValidator } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -157,7 +165,6 @@ import SelectValidator from '@/screens/staking/myStake/validators/SelectValidato
 import FiltersPopup from '@/screens/staking/myStake/validators/FiltersPopup.vue';
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
 import { getSoraFees, getValidators } from '@/extension/messaging';
-import { COUNT_VALIDATORS } from '@/consts/staking';
 import { calcTransferableSendMinusFee, getUtilityAsset, isValidAmountAsset } from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { SORA_REWARD_ASSET } from '@/consts/sora';
@@ -181,11 +188,19 @@ export default class Bond extends Vue {
   fee = '';
   amount = '';
 
-  @Prop({ type: String }) network!: NetworkName;
+  @Prop({ type: Object }) networkParams!: NetworkParams;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+
+  get showBtn() {
+    return this.step !== 2;
+  }
+
+  get network() {
+    return this.networkParams.network;
+  }
 
   get stakingAssetId() {
     if (this.balances.length === 0) return '';
@@ -244,6 +259,12 @@ export default class Bond extends Vue {
 
   get confirmBtnDisabled() {
     if (this.step === 1) return this.amount === '' || +this.amount === 0 || !this.isValidAmountAsset;
+
+    if (this.step === 4 || this.step === 5) {
+      const index = Object.values(this.state).findIndex(({ isSelect }) => isSelect);
+
+      return index === -1;
+    }
 
     return false;
   }
@@ -329,14 +350,21 @@ export default class Bond extends Vue {
     return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
   }
 
-  get countValidators() {
-    if (this.validators.length < COUNT_VALIDATORS[this.network]) return this.validators.length;
+  get maxNominations() {
+    const maxNominations = this.networkParams.maxNominations;
 
-    return COUNT_VALIDATORS[this.network];
+    // Если количество валидаторов в сети меньше, чем maxNominations, то отображаем количество валидаторов как maxNominations
+    if (this.validators.length < maxNominations) return this.validators.length;
+
+    return maxNominations;
   }
 
   get selectedQuantity() {
     return Object.values(this.state).filter(({ isSelect }) => isSelect).length;
+  }
+
+  get days() {
+    return { value: this.networkParams.unbondPeriod };
   }
 
   async mounted() {
@@ -364,12 +392,11 @@ export default class Bond extends Vue {
   }
 
   openValidatorList(isSuggested: boolean) {
-    if (isSuggested)
-      this.validators = this.validators.map((validator, index) => {
-        const isSelect = index < COUNT_VALIDATORS[this.network]; // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
+    this.validators = this.validators.map((validator, index) => {
+      const isSelect = isSuggested && index < this.maxNominations; // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
 
-        return { ...validator, isSelect };
-      });
+      return { ...validator, isSelect };
+    });
 
     this.isSuggested = isSuggested;
     this.step = isSuggested ? 3 : 5;

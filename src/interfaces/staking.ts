@@ -20,4 +20,16 @@ interface MyValidator extends Validator {
   rewards: string;
 }
 
-export { Validator, SelectionValidator, MyValidator };
+interface MyValidator extends Validator {
+  rewards: string;
+}
+
+interface NetworkParams {
+  network: string;
+  icon: string;
+  unbondPeriod: number;
+  maxNominations: number;
+  type?: 'regular';
+}
+
+export { Validator, SelectionValidator, MyValidator, NetworkParams };

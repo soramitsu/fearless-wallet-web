@@ -28,7 +28,7 @@
           @update:filterValue="updateFilterValue"
           @update:activeTabName="updateActiveTabName"
           @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
-          @toggleCurrenciesVisible="toggleCurrenciesVisible(...arguments)"
+          @toggleCurrenciesVisible="toggleCurrenciesVisible"
         />
 
         <Currencies

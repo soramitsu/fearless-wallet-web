@@ -30,7 +30,7 @@
 
           <InfoRow
             text="staking.payout"
-            :value="`${payout} ${rewardedAsset}`"
+            :value="`${payout} ${stakingAssetName}`"
             :price="payoutValueString"
             borderType="default"
             icon="info"
@@ -155,6 +155,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { RequestStaking } from '@extension-base/services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
 import type { NetworkParams, SelectionValidator } from '@/interfaces';
@@ -167,8 +168,6 @@ import SelectionValidatorsForm from '@/screens/staking/myStake/validators/Select
 import { getSoraFees, getValidators } from '@/extension/messaging';
 import { calcTransferableSendMinusFee, getUtilityAsset, isValidAmountAsset } from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
-import { SORA_REWARD_ASSET } from '@/consts/sora';
-import { isSora } from '@/helpers';
 
 @Component({
   components: {
@@ -210,23 +209,8 @@ export default class Bond extends Vue {
     return assetId;
   }
 
-  get rewardedAssetId() {
-    if (isSora(this.network)) {
-      const { assetId } = this.balances.find(({ symbol }) => symbol === SORA_REWARD_ASSET)!;
-
-      return assetId;
-    }
-
-    // стейкается всегда утилити токен, он же является ревард токеном
-    return this.stakingAssetId;
-  }
-
   get stakingCurrency() {
     return this.balances.find(({ assetId }) => assetId === this.stakingAssetId);
-  }
-
-  get rewardedCurrency() {
-    return this.balances.find(({ assetId }) => assetId === this.rewardedAssetId);
   }
 
   get accountName() {
@@ -316,24 +300,14 @@ export default class Bond extends Vue {
     return this.stakingCurrency?.symbol ?? '';
   }
 
-  get rewardedAsset() {
-    return this.rewardedCurrency?.symbol ?? '';
-  }
-
   get stakingAssetPrice() {
     const priceId = this.stakingCurrency?.priceId ?? '';
 
     return this.getAssetPrice(priceId).price;
   }
 
-  get rewardedAssetPrice() {
-    const priceId = this.rewardedCurrency?.priceId ?? '';
-
-    return this.getAssetPrice(priceId).price;
-  }
-
   get payoutValueString() {
-    const value = +this.payout * this.rewardedAssetPrice;
+    const value = +this.payout * this.stakingAssetPrice;
 
     return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
   }
@@ -365,6 +339,16 @@ export default class Bond extends Vue {
 
   get days() {
     return { value: this.networkParams.unbondPeriod };
+  }
+
+  get tx() {
+    return {
+      amount: this.amount,
+      from: this.selectedWallet.address,
+      networkName: this.network,
+      stashAccount: '',
+      controller: '',
+    } as RequestStaking;
   }
 
   async mounted() {

@@ -61,9 +61,10 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { AccountJson, TokenBalance } from '@extension-base/background/types/types';
+import { RequestStaking, StakingOperation } from '@extension-base//services/staking-service/types';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import WithdrawUnbonded from '@/screens/staking/myStake/stakingForms/WithdrawUnbonded.vue';
 import Unbond from '@/screens/staking/myStake/stakingForms/Unbond.vue';
@@ -74,10 +75,6 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { NetworkName } from '@/interfaces';
 import { calcTransferableSendMinusFee, isValidAmountAsset } from '@/helpers/currencies';
-import {
-  RequestCheckStaking,
-  StakingOperation,
-} from '@/extension/background/extension-base/src/services/staking-service/types';
 import BaseApi from '@/util/BaseApi';
 import { getSoraFees } from '@/extension/messaging';
 
@@ -211,7 +208,7 @@ export default class MainStakingForm extends Vue {
       networkName: this.network,
       stashAccount: '',
       controller: '',
-    } as RequestCheckStaking;
+    } as RequestStaking;
   }
 
   get lastUnbond() {

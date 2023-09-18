@@ -96,6 +96,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
+import { APIItemState, NETWORK_STATUS } from '@extension-base//api/types/networks';
 import type { CustomEvent, Fn } from '@/interfaces';
 import type { SetHiddenAsset, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
@@ -108,7 +109,6 @@ import {
   filterBalanceItemsByNetwork,
   getSummaryTransferableBalanceFilteredByActiveNetworks,
 } from '@/helpers/currencies';
-import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 import { isNetworkGroup } from '@/helpers/common';
 
 @Component

@@ -71,6 +71,7 @@ import {
   TokenBalance,
   RequestSwap,
 } from '@extension-base/background/types/types';
+import { RequestStaking, StakingOperation } from '@extension-base//services/staking-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
 import type { GetNetwork, GetNetworkGenesisHash, SelectedWallet } from '@/store';
@@ -90,10 +91,6 @@ import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/ext
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { IS_EXTENSION } from '@/consts/global';
-import {
-  RequestStaking,
-  StakingOperation,
-} from '@/extension/background/extension-base/src/services/staking-service/types';
 
 @Component({
   components: { SignMobile },

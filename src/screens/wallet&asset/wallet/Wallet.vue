@@ -82,6 +82,8 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation, Action } from 'vuex-class';
 import { BalanceJson, TokenBalance } from '@extension-base/background/types/types';
+import { NETWORK_STATUS } from '@extension-base//api/types/networks';
+import { BalanceItem } from '@extension-base//api/evm/types/ether';
 import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset, GetNetwork } from '@/store';
 import type { AsyncFn, Fn, TabWallet } from '@/interfaces';
@@ -107,9 +109,7 @@ import { getChangeWalletBalance, getSummaryTransferableWalletBalance, isNetworkG
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
-import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 import { getShimmersVisibility } from '@/helpers/shimmers';
-import { BalanceItem } from '@/extension/background/extension-base/src/api/evm/types/ether';
 
 @Component({
   components: {

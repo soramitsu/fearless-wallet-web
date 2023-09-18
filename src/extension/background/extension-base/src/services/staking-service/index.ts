@@ -28,8 +28,8 @@ export class StakingService {
 
   constructor(private getSubstrateApiMap: Record<string, ApiProps>) {}
 
-  // TODO use networks
   public async getStakingParams(networks: NetworkName[]): Promise<StakingParamsResponse> {
+    // TODO use networks
     return networks.map((network) => ({
       network,
       unbondPeriod: apiSora.staking.getBondingDuration(),

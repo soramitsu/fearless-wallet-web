@@ -103,6 +103,7 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
+import { NETWORK_STATUS } from '@extension-base//api/types/networks';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import type { AsyncFn } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
@@ -115,7 +116,6 @@ import { calculateXorRestPrice, calculateXOREuroBalance, isValidEuroBalanceXor }
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { getXORCurrency } from '@/helpers/currencies';
-import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 import { SORA_NETWORK_NAME } from '@/consts/sora';
 
 @Component({

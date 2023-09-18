@@ -41,6 +41,7 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AccountJson, SigningRequest } from '@extension-base/background/types/types';
+import registry from '@extension-base//api/substrate/typeRegistry';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import BaseApi from '@/util/BaseApi';
 import Checkbox from '@/components/Checkbox.vue';
@@ -54,7 +55,6 @@ import { AsyncFn, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import { beaconController, ExtensionController } from '@/controllers';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import registry from '@/extension/background/extension-base/src/api/substrate/typeRegistry';
 
 @Component({
   components: {

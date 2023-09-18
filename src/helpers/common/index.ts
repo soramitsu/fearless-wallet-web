@@ -1,7 +1,7 @@
+import { APIItemState } from '@extension-base//api/types/networks';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { addNumbers } from '@/helpers/numbers';
 import { ALL_NETWORKS, NETWORK_GROUP } from '@/consts/networks';
-import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 import { AssetsPrice, ChangeWalletBalance, NetworkName } from '@/interfaces';
 import { FEARLESS_TITLE } from '@/consts/global';
 

@@ -444,6 +444,7 @@
     "unstakingDays": "Период анстейкинга {value} дней",
     "days": "дней",
     "unstakingPeriod": "Период анстейкинга",
+    "bond": "Стейк",
     "unbond": "Анстейк",
     "withdrawUnbonded": "Выкупить",
     "alerts": "Оповещения",

@@ -11,6 +11,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { ALL_NETWORKS } from './consts/networks';
 import { beaconController } from './controllers/beaconController';
+import { setTitle } from './helpers/common';
 import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
@@ -61,6 +62,8 @@ export default class App extends Vue {
 
   async created() {
     if (IS_EXTENSION) this.extensionSubscribe();
+
+    setTitle();
     this.setupWallet();
     this.setupNetworks();
     this.setupBalance();

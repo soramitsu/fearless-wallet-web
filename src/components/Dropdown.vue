@@ -6,7 +6,7 @@
       trigger="click"
       class="dropdown"
       size="mini"
-      @select="$emit('handler')"
+      @select="$emit('handler', ...arguments)"
     >
       {{ $t(label) }}
 

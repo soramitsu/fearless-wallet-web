@@ -21,23 +21,22 @@ function getType(historyElement: HistoryElement): TransactionType {
   return reward ? TransactionType.reward : TransactionType.extrinsic;
 }
 
-function getSignTransfer(historyElement: HistoryElement) {
-  const { id } = historyElement;
+function getSignTransfer(historyElement: HistoryElement, address: string) {
   const type = getType(historyElement);
 
   if (type === TransactionType.transfer) {
-    const splitId = id.split('-');
-    const typeTransaction = splitId[splitId.length - 1];
+    const { transfer } = historyElement;
+    const from = transfer?.from ?? '';
 
-    return typeTransaction === 'to' ? '+' : '-';
+    return from.toLowerCase() !== address.toLowerCase() ? '+' : '-';
   }
 
   return '';
 }
 
-function getTypeFormatted(historyElement: HistoryElement) {
+function getTypeFormatted(historyElement: HistoryElement, address: string) {
   const type = getType(historyElement);
-  const signTransfer = getSignTransfer(historyElement);
+  const signTransfer = getSignTransfer(historyElement, address);
 
   if (type === TransactionType.transfer) {
     return signTransfer === '+' ? TransferType.incoming : TransferType.outgoing;
@@ -76,10 +75,10 @@ function getHumanValue(value: string, assetId: string, networkName: NetworkName)
   return +FPNumber.fromCodecValue(value, precision);
 }
 
-function getHistoryValue(historyElement: HistoryElement, assetId: string, networkName: NetworkName) {
+function getHistoryValue(historyElement: HistoryElement, assetId: string, networkName: NetworkName, address: string) {
   const { transfer, reward, extrinsic } = historyElement;
   const type = getType(historyElement);
-  const signTransfer = getSignTransfer(historyElement);
+  const signTransfer = getSignTransfer(historyElement, address);
 
   if (type === TransactionType.transfer && transfer) {
     const { amount } = transfer;

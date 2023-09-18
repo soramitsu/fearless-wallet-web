@@ -431,6 +431,7 @@
     "polkaswapFAQ": "Polkaswap FAQ",
     "important": "IMPORTANT:",
     "polkaswapMemorandum": "Polkaswap Memorandum and Terms of Services",
+    "privacyPolicy": "Privacy Policy",
     "importantText": "I confirm that I have read all of the documents mentioned and pressing 'Сontinue' I accept them."
   },
   "staking": {
@@ -517,6 +518,26 @@
     "tokensUnstaking": "Токены в период анстейкинга не приносят вознаграждения",
     "afterUnstaking": "После периода анстейкинга вам нужно будет выкупить свои токены.",
     "validatorsPayoutRewards": "Валидаторы выплачивают вознаграждение каждые 2-5 дней. Тем не менее, вы можете выплатить их самостоятельно, особенно если срок действия вознаграждения близок к истечению, но вы будете платить комиссию."
+  },
+  "browserTabs": {
+    "welcome": "Добро пожаловать",
+    "onboarding": "Онбординг",
+    "google": "Гугл",
+    "addWallet": "Добавить кошелек",
+    "addMobileWallet": "Добавить мобильный кошелек",
+    "authorize": "Авторизация",
+    "meta": "Мета",
+    "transaction": "Транзакция",
+    "soraCard": "Sora card",
+    "soraSwap": "Sora swap",
+    "polkaswapDisclaimer": "Polkaswap дисклеймер",
+    "wallet": "кошелек",
+    "accounts": "Аккаунты",
+    "nodes": "Ноды",
+    "export": "Экспорт",
+    "crowdloans": "Краудлоны",
+    "staking": "Стейкинг",
+    "polkaswap": "Polkaswap"
   },
   "common": {
     "privacyPolicy": "Политика Конфиденциальности",

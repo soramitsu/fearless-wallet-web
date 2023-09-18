@@ -8,7 +8,7 @@
     :showBorder="showBorder"
     :height="height"
     :maxHeight="maxHeight"
-    @handlerFilter="$emit('handlerFilter')"
+    @handlerFilter="$emit('handlerFilter', ...arguments)"
     @handlerClose="$emit('handlerClose')"
     :horizontalPlacement="horizontalPlacement"
     :verticalPlacement="verticalPlacement"

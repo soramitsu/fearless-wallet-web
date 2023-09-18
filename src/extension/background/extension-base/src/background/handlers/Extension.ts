@@ -3,6 +3,7 @@ import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
+import { ethers, Wallet } from 'ethers';
 import { getSdkError } from '@walletconnect/utils';
 import {
   getERC20TransactionObject,
@@ -25,7 +26,6 @@ import {
   makeCrossChain,
   estimateCrossChainFee,
 } from '@extension-base/api/substrate/crossChain';
-import { ethers, Wallet } from 'ethers';
 import {
   balanceItemByNetwork,
   getSubstrateAddress,
@@ -56,6 +56,7 @@ import {
   isProposalExpired,
   isSupportWalletConnectNamespace,
   isSupportWalletConnectChain,
+  convertHexToUtf8,
   // convertHexToUtf8,
 } from '../../services/wallet-connect-service/utils';
 import type { BasicTxResponse, ResponseCheckTransfer, SigningRequest } from '@extension-base/background/types/types';
@@ -1444,9 +1445,9 @@ export default class Extension extends FWExtensionBase {
         // payload = convertHexToUtf8(params[0]);
       }
 
-      const signature = (await signer.signMessage(params[0] as string)) as HexString;
-      const validateSign = ethers.verifyMessage(signature, params[0]);
-      console.info(validateSign);
+      const signature = (await signer.signMessage(convertHexToUtf8(params[0]))) as HexString;
+      const validateSign = ethers.verifyMessage(params[0], signature);
+      console.info(validateSign, address);
       request.resolve({ id: request.request.topic, signature });
     }
 

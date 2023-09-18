@@ -3,6 +3,7 @@ import { addNumbers } from '@/helpers/numbers';
 import { ALL_NETWORKS, NETWORK_GROUP } from '@/consts/networks';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 import { AssetsPrice, ChangeWalletBalance, NetworkName } from '@/interfaces';
+import { FEARLESS_TITLE } from '@/consts/global';
 
 export function isNetworkGroup(network: string) {
   return NETWORK_GROUP.some((group) => group.toLowerCase() === network.toLowerCase());
@@ -76,3 +77,5 @@ export function getChangeWalletBalance(
     amount: totalChange,
   };
 }
+
+export const setTitle = (title = FEARLESS_TITLE) => (document.title = title);

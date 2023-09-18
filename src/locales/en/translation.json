@@ -428,7 +428,28 @@
     "polkaswapFAQ": "Polkaswap FAQ",
     "important": "IMPORTANT:",
     "polkaswapMemorandum": "Polkaswap Memorandum and Terms of Services",
+    "privacyPolicy": "Privacy Policy",
     "importantText": "I confirm that I have read all of the documents mentioned and pressing 'Сontinue' I accept them."
+  },
+  "browserTabs": {
+    "welcome": "Welcome",
+    "onboarding": "Onboarding",
+    "google": "Google",
+    "addWallet": "Add wallet",
+    "addMobileWallet": "Add mobile wallet",
+    "authorize": "Authorize",
+    "meta": "Meta",
+    "transaction": "Transaction",
+    "soraCard": "Sora card",
+    "soraSwap": "Sora swap",
+    "polkaswapDisclaimer": "Polkaswap disclaimer",
+    "wallet": "Wallet",
+    "accounts": "Accounts",
+    "nodes": "Nodes",
+    "export": "Export",
+    "crowdloans": "Crowdloans",
+    "staking": "Staking",
+    "polkaswap": "Polkaswap"
   },
   "common": {
     "privacyPolicy": "Privacy Policy",

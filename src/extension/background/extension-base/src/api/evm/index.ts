@@ -1,6 +1,6 @@
 import { JsonRpcProvider, WebSocketProvider } from 'ethers';
 import { EvmProvider } from '@extension-base/background/types/types';
-import { getEvmApiKey } from '../../const/networks';
+import { getEvmApiKey } from '@extension-base/const/networks';
 
 const initListeners = (provider: EvmProvider) => {
   provider.on('error', () => {

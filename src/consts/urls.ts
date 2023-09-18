@@ -3,8 +3,8 @@ import { IS_PRODUCTION } from '@/consts/global';
 const BASE_URL = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils';
 
 const CHAINS = IS_PRODUCTION
-  ? `${BASE_URL}/master/chains/v2/chains.json`
-  : `${BASE_URL}/develop-free/chains/v2/chains_dev.json`;
+  ? `${BASE_URL}/master/chains/v3/chains.json`
+  : `${BASE_URL}/develop-free/chains/v3/chains_dev.json`;
 
 const FIATS = `${BASE_URL}/master/fiat/fiats.json`;
 

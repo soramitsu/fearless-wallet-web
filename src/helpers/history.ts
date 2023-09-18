@@ -166,10 +166,11 @@ function getFormattedHistory(
   return history as SubqueryHistory;
 }
 
-function getEthereumApiKey(url: string): string | undefined {
+function getEthereumExplorerApiKey(url: string): string | undefined {
   const keys = [
-    { name: 'etherscan', key: process.env.ETHERSCAN_API_KEY },
-    { name: 'bscscan', key: process.env.BSCSCAN_API_KEY },
+    { name: 'etherscan', key: process.env.FL_WEB_ETHERSCAN_API_KEY },
+    { name: 'bscscan', key: process.env.FL_WEB_BSCSCAN_API_KEY },
+    { name: 'polygon', key: process.env.FL_WEB_POLYGONSCAN_API_KEY },
   ];
 
   return keys.find((el) => url.includes(el.name))?.key;
@@ -178,7 +179,7 @@ function getEthereumApiKey(url: string): string | undefined {
 export {
   getType,
   getTypeFormatted,
-  getEthereumApiKey,
+  getEthereumExplorerApiKey,
   getHumanTransferFee,
   getHistoryValue,
   getFormattedDate,

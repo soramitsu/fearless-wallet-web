@@ -1222,7 +1222,7 @@ export default class State {
   public initNetworkStates(reset?: boolean) {
     for (const [key, network] of Object.entries(this.networkMap)) {
       if (network.active) {
-        if (network.isEthereum && !isRequireEvmAPI(key)) {
+        if (network.isEthereum && isRequireEvmAPI(key)) {
           this.apis.evm[key] = initWeb3Api(network.currentProvider);
         } else {
           if (reset) this.resetApiRetries();

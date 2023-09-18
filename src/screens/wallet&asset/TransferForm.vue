@@ -502,22 +502,17 @@ export default class TransferForm extends Vue {
     const { xcm, parentId } = this.networks.find(
       ({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase()
     )!;
-
     const relay = (CHAIN_IDS[parentId!] ?? this.syncedNetwork).toLowerCase();
+    const balances = this.isTransfer
+      ? this.balances
+      : this.balances.filter(
+          ({ symbol, relayChain }) =>
+            xcm?.availableAssets.some(({ symbol: _symbol }) => {
+              const assetName = getMoonbeamMoonriverAssetName(_symbol, this.syncedNetwork);
 
-    if (this.isTransfer) return getCurrencyOptions(this.assetWithActiveNetworks);
-
-    const balances = this.assetWithActiveNetworks.filter(({ symbol, relayChain }) => {
-      const isAssetMatch = xcm?.availableAssets.some(({ symbol: _symbol }) => {
-        const assetName = getMoonbeamMoonriverAssetName(_symbol, this.syncedNetwork);
-
-        return assetName === symbol.toLowerCase();
-      });
-
-      const isRelayMatch = relayChain.toLowerCase() === relay;
-
-      return isAssetMatch && isRelayMatch;
-    });
+              return assetName === symbol.toLowerCase();
+            }) && relayChain.toLowerCase() === relay
+        );
 
     return getCurrencyOptions(balances);
   }

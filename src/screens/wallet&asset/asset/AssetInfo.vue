@@ -65,6 +65,7 @@ import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers
 import { getSummaryLockedBalance } from '@/helpers/common';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import AccountSettingsPopup from '@/screens/accounts/AccountSettingsPopup.vue';
+import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 
 @Component({
   components: {
@@ -95,7 +96,7 @@ export default class AssetInfo extends Vue {
   }
 
   get showShimmers() {
-    return !navigator.onLine || !this.balances.length || this.currentNetwork?.state !== 'ready';
+    return !navigator.onLine || !this.currency.balances.some(({ state }) => state === APIItemState.READY);
   }
 
   get icon() {

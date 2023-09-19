@@ -6,7 +6,7 @@ const NATIVE_ETHEREUM_NETWORKS = [
   'ethereum',
   'ethereum goerli',
   'polygon',
-  'polygon mumbai',
+  'polygon mumbai testnet',
   'sepolia',
   'binance smart chain',
   'binance smart chain testnet',

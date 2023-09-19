@@ -11,7 +11,7 @@
           placeholder="accounts.urlAddress"
           class="row"
           :errorDescriptions="errorMessage"
-          :isError="isErrorUrlNode || isUrlDuplicate"
+          :isError="isError || isUrlDuplicate"
           :maxlength="150"
         />
       </div>
@@ -22,7 +22,7 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
 import { firstCharToUp } from '@/helpers';
@@ -34,7 +34,7 @@ import { GetNetwork } from '@/store';
 export default class EditNodeForm extends Vue {
   name = '';
   url = '';
-
+  isError = false;
   @Prop(String) network!: string;
   @Prop(String) _name!: string;
   @Prop(String) _url!: string;
@@ -56,17 +56,35 @@ export default class EditNodeForm extends Vue {
 
   get isUrlDuplicate() {
     return (
-      this.networkJson.nodes.some((node) => node.url === this.url) ||
-      this.networkJson.customNodes.some((node) => node.url === this.url)
+      this.networkJson.nodes.some(({ url }) => url === this.url) ||
+      this.networkJson.customNodes.some(({ url }) => url === this.url)
     );
   }
 
-  get isErrorUrlNode() {
-    return this.url.length !== 0 && (this.url.length < 7 || !this.url.startsWith('wss://'));
+  get urlLength() {
+    return this.url.length;
+  }
+
+  @Watch('url')
+  isErrorUrlNode() {
+    this.isError = false;
+
+    if (this.urlLength === 0) return;
+
+    const explorers = this.networkJson.externalApi?.explorers;
+    const isTooLengthTooSmall = this.urlLength < 7;
+
+    if (explorers && explorers[0].type === 'etherscan') {
+      this.isError = isTooLengthTooSmall || !this.url.startsWith('https://');
+
+      return;
+    }
+
+    this.isError = isTooLengthTooSmall || !this.url.startsWith('wss://');
   }
 
   get errorMessage() {
-    if (this.isErrorUrlNode) return 'accounts.invalidNodeAddress';
+    if (this.isError) return 'accounts.invalidNodeAddress';
 
     return 'accounts.customNodeDuplicate';
   }
@@ -84,7 +102,7 @@ export default class EditNodeForm extends Vue {
   }
 
   get buttonDisabled() {
-    return this.name === '' || this.url === '' || this.isErrorUrlNode || (!this.isUrlChanged && !this.isNameChanged);
+    return this.name === '' || this.urlLength === 0 || this.isError || (!this.isUrlChanged && !this.isNameChanged);
   }
 
   mounted() {
@@ -93,6 +111,8 @@ export default class EditNodeForm extends Vue {
   }
 
   updateNodes() {
+    if (this.urlLength === 0) return;
+
     const prepData: Partial<NetworkJson> = {};
     const customNodeIndex = this.networkJson.customNodes.findIndex(
       (el) => el.url === this._url && el.name === this._name

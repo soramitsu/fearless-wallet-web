@@ -2,16 +2,19 @@
   <AboveForm :header="getLocale('header')" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
 
-    <Tabs :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
+    <Tabs v-show="isNetworksExists" :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
+
+    <div v-show="!isNetworksExists" class="network__list-no-found">{{ $t('header.networkManagement.nofound') }}</div>
 
     <NetworkItem
+      v-show="isNetworksExists"
       :network="networkGroup"
       :isNetworkGroup="true"
       :isSelected="isGroupSelected"
       @onChangeNetwork="toggleNetworkType(isGroupSelected)"
     />
 
-    <div class="container" :class="networkListClasses">
+    <div v-show="isNetworksExists" class="container" :class="networkListClasses">
       <Scroll>
         <ul class="network__list">
           <NetworkItem
@@ -124,6 +127,10 @@ export default class NetworkManagement extends Vue {
     });
   }
 
+  get isNetworksExists() {
+    return this.filteredOptionsNetworks.length !== 0;
+  }
+
   getLocale(key: string): string {
     return `header.networkManagement.${key}`;
   }
@@ -222,5 +229,14 @@ export default class NetworkManagement extends Vue {
   flex-flow: column nowrap;
   padding: 0;
   height: 100%;
+}
+.network__list-no-found {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 14px;
+  font-weight: 600;
+  color: $gray-2-color;
 }
 </style>

@@ -245,7 +245,7 @@ export default class HistoryDetailsForm extends Vue {
 
     if (!fees) return '';
 
-    return this.$n(+fees, 'decimalPrecise');
+    return this.$n(fees, 'decimalPrecise');
   }
 
   get date() {

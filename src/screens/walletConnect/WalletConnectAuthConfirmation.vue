@@ -7,7 +7,12 @@
             <WalletConnectHeader :name="title" :url="url" />
             <AppPermissions />
 
-            <ContentForm class="namespaces-form" :bottomRightCorner="true" @click.native="toggleWalletSelectForm">
+            <ContentForm
+              v-if="isSupportNetwork"
+              class="namespaces-form"
+              :bottomRightCorner="true"
+              @click.native="toggleWalletSelectForm"
+            >
               <div class="wallet">
                 <Icon icon="wallet-logo-transaction" class="wallet__logo" />
 
@@ -17,16 +22,20 @@
                 <Icon icon="chevron-right" class="wallet__icon" />
               </div>
             </ContentForm>
+
             <ContentForm class="namespaces-form" :bottomRightCorner="true">
               <div class="namespaces">
                 <span>{{ $t('walletConnect.networks') }}</span>
                 <div class="namespaces__icons">
-                  <ExternalLogo
-                    v-for="(namespace, index) in namespaces"
-                    :name="namespace.icon"
-                    :width="28"
-                    :key="index"
-                  />
+                  <div v-if="!isSupportNetwork">{{ $t('walletConnect.noNetworkSupport') }}</div>
+                  <template v-else>
+                    <ExternalLogo
+                      v-for="(namespace, index) in namespaces"
+                      :name="namespace.icon"
+                      :width="28"
+                      :key="index"
+                    />
+                  </template>
                 </div>
               </div>
             </ContentForm>
@@ -34,10 +43,17 @@
         </Scroll>
       </div>
       <div class="controls">
-        <FButton text="walletConnect.reject" type="secondary" :border="false" width="100%" @click="onReject" />
-        <FButton text="walletConnect.approve" width="100%" @click="onApprove" />
+        <FButton
+          text="walletConnect.reject"
+          :type="isSupportNetwork ? 'secondary' : 'primary'"
+          :border="false"
+          width="100%"
+          @click="onReject"
+        />
+        <FButton v-if="isSupportNetwork" text="walletConnect.approve" width="100%" @click="onApprove" />
       </div>
     </AboveForm>
+
     <WalletChooseForm
       v-if="showWalletSelect"
       :selectedAddress="selectedAddress"
@@ -100,6 +116,7 @@ const namespaces = computed<ChainData[]>(() => {
 
   return [...transformedRequiredNamespaces, ...transformedOptionalNamespaces];
 });
+const isSupportNetwork = computed(() => namespaces.value.length !== 0);
 
 const onApprove = async () => {
   const result = await approveWalletConnectSession({ accounts: [selectedAddress.value], id: id.value });

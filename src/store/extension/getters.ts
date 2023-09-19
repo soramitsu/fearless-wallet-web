@@ -1,5 +1,6 @@
 import type { State } from './state';
 import type {
+  WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
   WalletConnectSessions,
   WalletConnectTransactionRequest,
@@ -28,6 +29,7 @@ export enum GettersTypes {
   wcConnectRequests = 'wcConnectRequests',
   wcSessions = 'wcSessions',
   wcSignList = 'wcSignList',
+  wcNotSupportedRequests = 'wcNotSupportedRequests',
 }
 
 export type Getters = {
@@ -53,6 +55,10 @@ export type Getters = {
     state: State,
     getters?: GetterTree<State, State> & Getters
   ): WalletConnectSessionRequest[];
+  [GettersTypes.wcNotSupportedRequests](
+    state: State,
+    getters?: GetterTree<State, State> & Getters
+  ): WalletConnectNotSupportRequest[];
   [GettersTypes.wcSessions](state: State, getters?: GetterTree<State, State> & Getters): WalletConnectSessions;
   [GettersTypes.wcSignList](
     state: State,
@@ -104,6 +110,9 @@ const getters: GetterTree<State, State> & Getters = {
   },
   [GettersTypes.wcConnectRequests]({ wcConnectRequests }): WalletConnectSessionRequest[] {
     return wcConnectRequests;
+  },
+  [GettersTypes.wcNotSupportedRequests]({ wcNotSupportedRequests }): WalletConnectNotSupportRequest[] {
+    return wcNotSupportedRequests;
   },
   [GettersTypes.wcSessions]({ wcSessions }): WalletConnectSessions {
     return wcSessions;

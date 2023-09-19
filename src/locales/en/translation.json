@@ -333,9 +333,10 @@
     "approve": "Approve",
     "reject": "Reject",
     "newConnection": "New Connection",
-    "networks":"Networks",
-    "requestFields":{
-      "networkError":"Trouble to recognize the network",
+    "noNetworkSupport": "0 network supported",
+    "networks": "Networks",
+    "requestFields": {
+      "networkError": "Trouble to recognize the network",
       "amount": "Amount",
       "network": "Network",
       "gasFee": "Gas fee",
@@ -343,15 +344,15 @@
       "message": "Message"
     },
     "permissions": {
-      "title":"App permissions",
-      "viewAddress":"View your wallet address",
-      "viewBalances":"View your token balances",
-      "transferAssets":"Transfer your tokens without approval"
+      "title": "App permissions",
+      "viewAddress": "View your wallet address",
+      "viewBalances": "View your token balances",
+      "transferAssets": "Transfer your tokens without approval"
     },
-    "notifications":{
-      "sessionExpired":{
-        "title":"Session is expired",
-        "message":"Session proposal is expired, please, try again!"
+    "notifications": {
+      "sessionExpired": {
+        "title": "Session is expired",
+        "message": "Session proposal is expired, please, try again!"
       }
     }
   },

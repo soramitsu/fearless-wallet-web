@@ -527,10 +527,10 @@ export default class State {
       if (data.isEthereum && name in this.apis.evm) delete this.apis.evm[name];
 
       if (currentProvider) {
-        initApi(data);
-
         if (data.isEthereum && isRequireEvmAPI(data.name)) {
           this.apis.evm[data.name] = initWeb3Api(currentProvider);
+        } else {
+          initApi(data);
         }
       }
     }

@@ -29,7 +29,7 @@ import {
 import {
   balanceItemByNetwork,
   getSubstrateAddress,
-  isRequireSubstrateAPI,
+  isRequireEvmAPI,
   uniqueStringArray,
 } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
@@ -57,7 +57,6 @@ import {
   isSupportWalletConnectNamespace,
   isSupportWalletConnectChain,
   convertHexToUtf8,
-  // convertHexToUtf8,
 } from '../../services/wallet-connect-service/utils';
 import type { BasicTxResponse, ResponseCheckTransfer, SigningRequest } from '@extension-base/background/types/types';
 import type {
@@ -941,7 +940,7 @@ export default class Extension extends FWExtensionBase {
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
-    if (isEthereumAddress(from) && isEthereumAddress(to) && !isRequireSubstrateAPI(networkKey)) {
+    if (isEthereumAddress(from) && isEthereumAddress(to) && isRequireEvmAPI(networkKey)) {
       const fromAccountFreeBalance = tokenBalance
         ? balanceItemByNetwork(tokenBalance.balances, networkKey)?.transferable ?? '0'
         : '0';
@@ -1004,7 +1003,7 @@ export default class Extension extends FWExtensionBase {
 
     let transferProm: Promise<void> | undefined;
 
-    if (isEthereumAddress(from) && isEthereumAddress(to) && !isRequireSubstrateAPI(networkKey)) {
+    if (isEthereumAddress(from) && isEthereumAddress(to) && isRequireEvmAPI(networkKey)) {
       // Make transfer with EVM API
       const { privateKey } = this.accountExportPrivateKey({ address: from, password });
       const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
@@ -1079,6 +1078,8 @@ export default class Extension extends FWExtensionBase {
     relayChain,
     amount,
   }: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
+    if (destinationNet === '') return { estimateFee: '0', destEstimateFee: '0' };
+
     const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';
     const address = getSubstrateAddress(from);
     const tokenBalance = this.state.balanceMap[address].find(

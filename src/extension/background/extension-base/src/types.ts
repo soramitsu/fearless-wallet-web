@@ -3,7 +3,7 @@
 
 import { CustomTokenType, NetWorkGroup } from '@extension-base/api/evm/types/ether';
 import { NETWORK_STATUS } from './api/types/networks';
-import type { AssetType, BuyProvider } from '@/interfaces';
+import type { AssetType, BuyProvider, XcmVersion } from '@/interfaces';
 import { ExternalApi } from '@/interfaces';
 
 import { ContractType } from '@/interfaces/ether';
@@ -84,6 +84,11 @@ export type Asset = {
   existentialDeposit?: string;
 };
 
+type XcmAssets = {
+  id: string;
+  symbol: string;
+};
+
 export interface NetworkJson {
   // General Information
   key: string; // Key of network in NetworkMap
@@ -136,11 +141,11 @@ export interface NetworkJson {
   rank?: number;
   favorite: string[];
   xcm?: {
-    xcmVersion: 'v1' | 'v2' | 'v3';
-    availableAssets: string[];
+    xcmVersion: XcmVersion;
+    availableAssets: XcmAssets[];
     availableDestinations: {
       chainId: string;
-      assets: string[];
+      assets: XcmAssets[];
     }[];
   };
 }
@@ -149,13 +154,4 @@ export interface ChainRegistry {
   chainDecimals: number[];
   chainTokens: string[];
   assetsMap: Asset[];
-}
-
-export interface Resolver<T> {
-  reject: (error: Error) => void;
-  resolve: (result: T) => void;
-}
-
-export interface KeyringState {
-  isReady: boolean;
 }

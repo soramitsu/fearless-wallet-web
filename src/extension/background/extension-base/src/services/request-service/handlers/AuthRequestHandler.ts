@@ -1,7 +1,7 @@
 import { BehaviorSubject } from 'rxjs';
 import { assert } from '@polkadot/util';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
-import { Resolver } from '@extension-base/types';
+import { Resolver } from '@extension-base/background/types';
 import AuthorizeStore from '@extension-base/stores/Authorize';
 import State from '@extension-base/background/handlers/State';
 import { isEthereumAddress } from '@polkadot/util-crypto';

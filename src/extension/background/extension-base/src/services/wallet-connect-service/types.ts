@@ -1,7 +1,8 @@
 import { SignerPayloadJSON } from '@polkadot/types/types';
 import { EngineTypes, SignClientTypes, SessionTypes } from '@walletconnect/types';
 import { EvmSendTransactionParams } from '../../api/evm/types/ether';
-import { Resolver } from '../../types';
+import { Resolver } from '../../background/types';
+
 //TODO refactoring types
 type BaseWalletConnectSessionRequest = {
   id: string;

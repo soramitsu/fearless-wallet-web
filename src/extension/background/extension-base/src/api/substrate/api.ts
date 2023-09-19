@@ -12,28 +12,11 @@ import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 
 function createApiObject(): ApiProps {
   return {
+    isEthereum: false,
     isApiConnected: false,
     isApiReady: false,
-    isEthereum: false,
-    isEthereumOnly: false,
     apiRetry: 0,
     nodeIndex: 0,
-  } as unknown as ApiProps;
-}
-
-export function createEvmApiObject(): ApiProps {
-  return {
-    api: undefined,
-    provider: undefined,
-    nodeIndex: 0,
-    isApiConnected: true,
-    isApiReady: false,
-    isEthereum: true,
-    isEthereumOnly: true,
-    apiRetry: 0,
-    get isReady() {
-      return Promise.resolve(this);
-    },
   } as unknown as ApiProps;
 }
 
@@ -44,7 +27,6 @@ function onConnected(networkName: string) {
 
   state.apis.substrate[networkName].apiRetry = 0;
   state.apis.substrate[networkName].isApiConnected = true;
-  state.apis.substrate[networkName].isApiReady = false;
 }
 
 async function onDisconnect(networkName: string) {
@@ -56,7 +38,6 @@ async function onDisconnect(networkName: string) {
 
   api.apiRetry += 1;
   api.isApiConnected = false;
-  api.isApiReady = false;
 
   if (api.apiRetry < MAX_CONTINUE_RETRY) return;
 
@@ -85,15 +66,12 @@ function onReady(networkName: string) {
 
     state.subscribeTotalXorBalance();
   }
-
-  state.apis.substrate[networkName].isApiReady = true;
 }
 
 export async function initApi(network: NetworkJson, retry = false): Promise<void> {
   const { name: networkName, nodes } = network;
 
   if (state.getSubstrateApiMap[networkName] === undefined) {
-    // return EVM HTTP Placeholder
     state.getSubstrateApiMap[networkName] = createApiObject();
   }
 

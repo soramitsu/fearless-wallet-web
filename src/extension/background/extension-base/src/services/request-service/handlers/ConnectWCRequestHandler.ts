@@ -1,10 +1,10 @@
 import { BehaviorSubject } from 'rxjs';
-import { Resolver } from '@extension-base/types';
 import { RequestService } from '@extension-base/services';
 import {
   RequestWalletConnectSession,
   WalletConnectSessionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
+import { Resolver } from '../../../background/types';
 
 // WC = WalletConnect
 export class ConnectWCRequestHandler {

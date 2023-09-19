@@ -28,6 +28,7 @@ export default class Header extends Vue {
 
     return route === Components.AssetNetworks || route === Components.AssetHistory;
   }
+
   get assetPageWrapperClasses() {
     if (this.isAssetPage) return 'network-management--cursor-not-allowed';
 

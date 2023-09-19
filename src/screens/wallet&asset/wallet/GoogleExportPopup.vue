@@ -3,9 +3,9 @@
     headerType="success"
     sizeWidth="big"
     :headerText="statusMessagesHeader"
-    @handlerClose="$emit('closePopup')"
     :zIndex="399"
     :showBorder="true"
+    @handlerClose="$emit('closePopup')"
   >
     <div class="popup-content">
       <template v-if="isAwaiting">

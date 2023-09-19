@@ -1,5 +1,4 @@
-import { ResponseSigning } from '../../background/types';
-import { Resolver } from '../../types';
+import { Resolver, ResponseSigning } from '../../background/types';
 import { WalletConnectTransactionRequest } from '../wallet-connect-service/types';
 
 export type BrowserConfirmationType = 'extension' | 'popup' | 'window';

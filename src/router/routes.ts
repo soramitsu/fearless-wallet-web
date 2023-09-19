@@ -92,16 +92,25 @@ const routes: Array<RouteConfig> = [
     path: '/welcome',
     name: Components.Welcome,
     component: Welcome,
+    meta: {
+      title: 'welcome',
+    },
   },
   {
     path: '/onboarding',
     name: Components.Onboarding,
     component: Onboarding,
+    meta: {
+      title: 'onboarding',
+    },
   },
   {
     path: '/google/:access_token',
     name: Components.AddFromGoogle,
     component: AddFromGoogle,
+    meta: {
+      title: 'google',
+    },
   },
   {
     path: '/google-create/:access_token',
@@ -112,26 +121,41 @@ const routes: Array<RouteConfig> = [
     path: '/add-wallet/:type',
     name: Components.AddWallet,
     component: AddWallet,
+    meta: {
+      title: 'addWallet',
+    },
   },
   {
     path: '/add-mobile-wallet',
     name: Components.MobileConnect,
     component: MobileConnect,
+    meta: {
+      title: 'addMobileWallet',
+    },
   },
   {
     path: '/authorize',
     name: Components.Authorize,
     component: Authorize,
+    meta: {
+      title: 'authorize',
+    },
   },
   {
     path: '/meta',
     name: Components.MetaRequest,
     component: MetaRequest,
+    meta: {
+      title: 'meta',
+    },
   },
   {
     path: '/transaction',
     name: Components.Transaction,
     component: Transaction,
+    meta: {
+      title: 'transaction',
+    },
   },
   {
     path: '/wc-transaction',
@@ -172,16 +196,25 @@ const routes: Array<RouteConfig> = [
       if (showSoraCard()) next();
       else next({ name: Components.Wallet });
     },
+    meta: {
+      title: 'soraCard',
+    },
   },
   {
     path: '/sora-swap',
     name: Components.SoraSwap,
     component: SoraSwap,
+    meta: {
+      title: 'soraSwap',
+    },
   },
   {
     path: '/polkaswap-disclaimer',
     name: Components.PolkaswapDisclaimer,
     component: PolkaswapDisclaimer,
+    meta: {
+      title: 'polkaswapDisclaimer',
+    },
   },
   {
     path: '/fearless',
@@ -190,6 +223,9 @@ const routes: Array<RouteConfig> = [
       {
         path: '/',
         redirect: { name: Components.Wallet },
+        meta: {
+          title: 'wallet',
+        },
       },
       {
         path: 'wallet/:access_token?',
@@ -201,6 +237,9 @@ const routes: Array<RouteConfig> = [
           else if (haveSignRequests()) next({ name: Components.Transaction });
           else if (haveMetaRequests()) next({ name: Components.MetaRequest });
           else next();
+        },
+        meta: {
+          title: 'wallet',
         },
       },
       {
@@ -226,16 +265,25 @@ const routes: Array<RouteConfig> = [
             path: '/',
             name: Components.Accounts,
             component: Accounts,
+            meta: {
+              title: 'accounts',
+            },
           },
           {
             path: ':network',
             name: Components.Nodes,
             component: Nodes,
+            meta: {
+              title: 'nodes',
+            },
           },
           {
             path: ':network/export',
             name: Components.Export,
             component: Export,
+            meta: {
+              title: 'export',
+            },
           },
         ],
       },
@@ -259,16 +307,25 @@ const routes: Array<RouteConfig> = [
         path: 'crowdloans',
         name: Components.Crowdloans,
         component: Crowdloans,
+        meta: {
+          title: 'crowdloans',
+        },
       },
       {
         path: 'staking',
         name: Components.Staking,
         component: Staking,
+        meta: {
+          title: 'staking',
+        },
       },
       {
         path: 'polkaswap',
         name: Components.Polkaswap,
         component: Polkaswap,
+        meta: {
+          title: 'polkaswap',
+        },
       },
       {
         path: 'history',

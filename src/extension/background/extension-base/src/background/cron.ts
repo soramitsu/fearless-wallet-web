@@ -174,8 +174,6 @@ export class FWCron {
     const networkMap = this.state.networkMap;
 
     for (const [key, apiProp] of Object.entries(apiMap.substrate)) {
-      if (apiProp.isEthereumOnly) continue;
-
       if (!navigator.onLine) {
         this.state.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
 

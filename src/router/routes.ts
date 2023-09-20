@@ -142,6 +142,31 @@ const routes: Array<RouteConfig> = [
     },
   },
   {
+    path: '/wc-authorize',
+    name: Components.WalletConnectAuthConfirmation,
+    component: WalletConnectAuthConfirmation,
+  },
+  {
+    path: '/wc-transaction',
+    name: Components.WalletConnectSignConfirmation,
+    component: WalletConnectSignConfirmation,
+  },
+  {
+    path: '/wc-not-supported',
+    name: Components.WalletConnectNotSupportedRequest,
+    component: WalletConnectNotSupportedRequest,
+  },
+  {
+    path: '/wallet-connect',
+    name: Components.WalletConnectInitAuth,
+    component: WalletConnectInitAuth,
+  },
+  {
+    path: '/wc-sign',
+    name: Components.WalletConnectSessionRequest,
+    component: WalletConnectInitAuth,
+  },
+  {
     path: '/meta',
     name: Components.MetaRequest,
     component: MetaRequest,
@@ -156,16 +181,6 @@ const routes: Array<RouteConfig> = [
     meta: {
       title: 'transaction',
     },
-  },
-  {
-    path: '/wc-transaction',
-    name: Components.WalletConnectSignConfirmation,
-    component: WalletConnectSignConfirmation,
-  },
-  {
-    path: '/wc-not-supported',
-    name: Components.WalletConnectNotSupportedRequest,
-    component: WalletConnectNotSupportedRequest,
   },
   {
     path: '/auth-management',
@@ -241,21 +256,6 @@ const routes: Array<RouteConfig> = [
         meta: {
           title: 'wallet',
         },
-      },
-      {
-        path: 'wallet-connect',
-        name: Components.WalletConnectInitAuth,
-        component: WalletConnectInitAuth,
-      },
-      {
-        path: 'wc-authorize',
-        name: Components.WalletConnectAuthConfirmation,
-        component: WalletConnectAuthConfirmation,
-      },
-      {
-        path: 'wc-sign',
-        name: Components.WalletConnectSessionRequest,
-        component: WalletConnectInitAuth,
       },
       {
         path: 'accounts',

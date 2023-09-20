@@ -140,7 +140,6 @@ export default class Extension extends FWExtensionBase {
 
     if (!isEthereumAddress(address)) {
       this.updateCurrentAccount(address);
-      this.updateNetworkForNewWallet(address);
     }
 
     return address;
@@ -479,6 +478,7 @@ export default class Extension extends FWExtensionBase {
 
     this._saveCurrentAccountAddress(address, () => {
       this.triggerWalletsSubscription();
+      this.updateNetworkForNewWallet(address);
     });
 
     return true;

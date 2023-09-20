@@ -2,7 +2,7 @@
   <AboveForm :header="getLocale('header')" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
 
-    <Tabs v-show="isNetworksExists" :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
+    <Tabs v-show="showTabs" :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
 
     <div v-show="!isNetworksExists" class="network__list-no-found">{{ $t('header.networkManagement.nofound') }}</div>
 
@@ -125,6 +125,16 @@ export default class NetworkManagement extends Vue {
     return this.filterNetworks.filter(({ name }) => {
       return name.toLowerCase().includes(filter);
     });
+  }
+
+  get showTabs() {
+    if (!this.isNetworksExists) {
+      if (this.filterValue.trim() !== '') return false;
+
+      return true;
+    }
+
+    return true;
   }
 
   get isNetworksExists() {

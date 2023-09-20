@@ -4,8 +4,6 @@ import type { State } from '@/store/accounts/state';
 import type { AccountJson, BalanceJson } from '@extension-base/background/types/types';
 import { MutationTypes } from '@/store/accounts/mutations';
 import { accountController } from '@/controllers/accountController';
-import router from '@/router';
-import { Components } from '@/router/routes';
 
 export enum ActionTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
@@ -30,14 +28,6 @@ const actions: ActionTree<State, State> & Actions = {
     });
 
     accountController.setSelectedWalletAddress(account?.address);
-
-    if (
-      account === undefined &&
-      router.currentRoute.name !== Components.Welcome &&
-      router.currentRoute.name !== Components.AddFromGoogle &&
-      router.currentRoute.name !== Components.AddWallet
-    )
-      router.replace('/').catch((e) => e);
   },
 
   async [ActionTypes.SET_BALANCE]({ commit, state }, { details, reset, saveSequence = false }) {

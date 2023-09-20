@@ -2,6 +2,8 @@ import { KeypairType } from '@polkadot/util-crypto/types';
 import { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-keyring/types';
 import { keyring } from '@polkadot/ui-keyring';
+import { isEthereumAddress } from '@polkadot/util-crypto';
+import { getSubstrateAddress } from '../../background/utils/utils';
 
 export class KeyringService {
   get addressesSubjectValue() {
@@ -72,26 +74,37 @@ export class KeyringService {
     return keyring.restoreAccount(file, password);
   }
 
-  unlockPair(addressOrPair: string | KeyringPair | null, password: string) {
+  unlockPair(addressOrPair: string | KeyringPair, password: string) {
     const pair = typeof addressOrPair === 'string' ? this.getPair(addressOrPair) : addressOrPair;
 
     if (!pair) return false;
 
-    try {
-      pair.unlock(password);
+    const { address } = pair;
+    const isEthereum = isEthereumAddress(address);
+    const substrateAddress = getSubstrateAddress(address);
+    const substratePair = isEthereum ? this.getPair(substrateAddress) : pair;
+    const ethereumAddress = isEthereum ? address : (substratePair?.meta.ethereumAddress as string | undefined);
 
-      const { meta } = pair;
-      const ethereumAddress = meta?.ethereumAddress as string | undefined;
+    if (!substratePair) return false;
+
+    try {
+      substratePair.unlock(password);
 
       if (ethereumAddress) {
-        const ethereumPair = this.getPair(ethereumAddress)!;
+        const ethereumPair = this.getPair(ethereumAddress);
 
-        ethereumPair.unlock(password);
+        ethereumPair?.unlock(password);
       }
 
       return true;
     } catch (e: any) {
-      pair.lock();
+      substratePair.lock();
+
+      if (ethereumAddress) {
+        const ethereumPair = this.getPair(ethereumAddress);
+
+        ethereumPair?.lock();
+      }
 
       return false;
     }

@@ -140,7 +140,6 @@ export default class Extension extends FWExtensionBase {
 
     if (!isEthereumAddress(address)) {
       this.updateCurrentAccount(address);
-      this.updateNetworkForNewWallet(address);
     }
 
     return address;
@@ -386,8 +385,10 @@ export default class Extension extends FWExtensionBase {
 
     // unlock then lock (locking cleans secretKey, so needs to be last)
     try {
-      pair.decodePkcs8(password);
-      pair.lock();
+      if (password) {
+        pair.decodePkcs8(password);
+        pair.lock();
+      }
 
       return true;
     } catch (e) {
@@ -477,6 +478,7 @@ export default class Extension extends FWExtensionBase {
 
     this._saveCurrentAccountAddress(address, () => {
       this.triggerWalletsSubscription();
+      this.updateNetworkForNewWallet(address);
     });
 
     return true;
@@ -894,6 +896,7 @@ export default class Extension extends FWExtensionBase {
     const tokenInfo = getAssetInfo(assetId);
 
     const pair = this.state.keyringService.getPair(from);
+    const isEthereum = isEthereumAddress(from);
 
     if (pair?.isLocked) {
       const isUnlock = this.state.keyringService.unlockPair(pair, password);
@@ -908,11 +911,10 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
 
     const ethereumAddress = pair ? (pair.meta.ethereumAddress as string | undefined) : '';
-    const isEthereum = isEthereumAddress(from);
-    const address = getSubstrateAddress(from);
+    const substrateAddress = getSubstrateAddress(from);
 
     const savePass = () => {
-      this.savePass(address, isEthereum ? from : ethereumAddress, !!isSavePass, !!isMobile);
+      this.savePass(substrateAddress, isEthereum ? from : ethereumAddress, !!isSavePass, !!isMobile);
     };
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
@@ -1049,9 +1051,7 @@ export default class Extension extends FWExtensionBase {
     const substratePair = this.state.keyringService.getPair(address)!;
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 
-    const savePass = () => {
-      this.savePass(address, ethereumAddress, !!isSavePass, !!isMobile);
-    };
+    const savePass = () => this.savePass(address, ethereumAddress, !!isSavePass, !!isMobile);
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
 

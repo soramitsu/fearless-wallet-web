@@ -119,7 +119,10 @@ const onApprove = async () => {
 .wc-request__details {
   width: 100%;
 }
-
+.scroll__container {
+  height: 460px;
+  overflow-y: hidden;
+}
 .wc-request-content {
   display: flex;
   flex-flow: column;

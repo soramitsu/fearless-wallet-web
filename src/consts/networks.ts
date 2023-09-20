@@ -8,8 +8,8 @@ const NATIVE_ETHEREUM_NETWORKS = [
   'polygon',
   'polygon mumbai testnet',
   'sepolia',
-  'binance smart chain',
-  'binance smart chain testnet',
+  'bnb smart chain',
+  'bnb smart chain testnet',
 ];
 const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, ...NATIVE_ETHEREUM_NETWORKS];
 

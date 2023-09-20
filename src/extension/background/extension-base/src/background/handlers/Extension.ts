@@ -1224,9 +1224,12 @@ export default class Extension extends FWExtensionBase {
   }
 
   async connectWalletConnect({ uri }: RequestConnectWalletConnect) {
-    await this.state.walletConnectService.connect(uri);
+    const pairing = await this.state.walletConnectService
+      .connect(uri)
+      .then(() => true)
+      .catch(() => false);
 
-    return true;
+    return pairing;
   }
 
   private connectWCSubscribe(id: string, port: chrome.runtime.Port): WalletConnectSessionRequest[] {

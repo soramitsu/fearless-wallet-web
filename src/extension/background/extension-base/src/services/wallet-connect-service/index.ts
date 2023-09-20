@@ -105,7 +105,7 @@ export class WalletConnectService {
 
     this.checkClient();
 
-    await this.client?.pair({ uri });
+    return this.client?.pair({ uri });
   }
 
   public async approveSession(result: ResultApproveWalletConnectSession) {

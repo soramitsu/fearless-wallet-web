@@ -334,6 +334,8 @@
     "reject": "Reject",
     "newConnection": "New Connection",
     "noNetworkSupport": "0 network supported",
+    "pairingErrorMessage": "Invalid url! Copy url from Wallet Connect and try again",
+    "insertUrl": "Insert Wallet Connect url",
     "networks": "Networks",
     "requestFields": {
       "networkError": "Trouble to recognize the network",

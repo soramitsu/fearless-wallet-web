@@ -4,7 +4,7 @@
     :showBackIcon="showBackIcon"
     :header="header"
     @handlerBack="handlerBack"
-    @closeHandler="$emit('closeBond')"
+    @closeHandler="closeForm"
   >
     <div class="bond-form">
       <div>
@@ -26,18 +26,16 @@
 
           <Hint class="hint" iconName="notification" :text="text" />
 
-          <FInput v-model="payoutAccount" placeholder="staking.payoutAccount" size="big" />
-
-          <InfoRow
-            text="staking.payout"
-            :value="`${payout} ${stakingAssetName}`"
-            :price="payoutValueString"
-            borderType="default"
-            icon="info"
-            :iconClasses="['payout']"
+          <InputWithIcon
+            v-model="payoutAddress"
+            icon="close"
+            placeholder="staking.payoutAccount"
+            @click="setPayoutAddress"
           />
 
-          <Tooltip text="staking.payout" target=".payout" placement="right" />
+          <div class="activity-buttons">
+            <BadgeButton text="common.paste" @click="paste" />
+          </div>
 
           <InfoRow
             text="assets.networkFee"
@@ -68,7 +66,7 @@
           <ContentForm :height="200" :isStaticHeight="true" :bottomRightCorner="true">
             <InfoRow
               text="staking.selectedValidators"
-              :value="`${selectedQuantity} (${$t('common.max')} ${maxNominations})`"
+              :value="`${selectedValidatorsLength} (${$t('common.max')} ${maxNominations})`"
               borderType="default"
             />
 
@@ -145,8 +143,8 @@
       :amount="amount"
       :value="amountPriceValue"
       :firstIcon="stakingAssetId"
-      :extrinsicType="type"
       :tx="tx"
+      extrinsicType="bond"
       @close="confirmationPasswordPopupClose"
     />
   </AboveForm>
@@ -155,7 +153,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { RequestStaking } from '@extension-base/services/staking-service/types';
+import { RequestBond } from '@extension-base/services/staking-service/types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
 import type { NetworkParams, SelectionValidator } from '@/interfaces';
@@ -168,18 +166,21 @@ import SelectionValidatorsForm from '@/screens/staking/myStake/validators/Select
 import { getSoraFees, getValidators } from '@/extension/messaging';
 import { calcTransferableSendMinusFee, getUtilityAsset, isValidAmountAsset } from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
+import BaseApi from '@/util/BaseApi';
+import { getClipboard } from '@/helpers';
+import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 
 @Component({
   components: {
     FiltersPopup,
     SelectValidator,
     SelectionValidatorsForm,
+    ConfirmationPasswordPopup,
   },
 })
 export default class Bond extends Vue {
   state: Record<string, SelectionValidator> = {};
-  payoutAccount = '';
-  payout = '1';
+  payoutAddress = '';
   validators: FWValidatorInfoFull[] = [];
   step = 1;
   isSuggested = false;
@@ -192,6 +193,12 @@ export default class Bond extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+
+  get isValidPayoutAddress() {
+    if (this.payoutAddress === '') return true;
+
+    return BaseApi.validateAddress(this.payoutAddress, this.network);
+  }
 
   get showBtn() {
     return this.step !== 2;
@@ -242,13 +249,10 @@ export default class Bond extends Vue {
   }
 
   get confirmBtnDisabled() {
-    if (this.step === 1) return this.amount === '' || +this.amount === 0 || !this.isValidAmountAsset;
+    if (this.step === 1)
+      return this.amount === '' || +this.amount === 0 || !this.isValidAmountAsset || !this.isValidPayoutAddress;
 
-    if (this.step === 4 || this.step === 5) {
-      const index = Object.values(this.state).findIndex(({ isSelect }) => isSelect);
-
-      return index === -1;
-    }
+    if (this.step === 4 || this.step === 5) return this.selectedValidatorsLength === 0;
 
     return false;
   }
@@ -288,12 +292,11 @@ export default class Bond extends Vue {
   get text() {
     return {
       text: 'staking.minimumStake',
-      localeProps: { value: this.minStake, asset: this.stakingAssetName.toUpperCase() },
+      localeProps: {
+        value: this.networkParams.minBond,
+        asset: this.stakingAssetName.toUpperCase(),
+      },
     };
-  }
-
-  get minStake() {
-    return 10;
   }
 
   get stakingAssetName() {
@@ -304,12 +307,6 @@ export default class Bond extends Vue {
     const priceId = this.stakingCurrency?.priceId ?? '';
 
     return this.getAssetPrice(priceId).price;
-  }
-
-  get payoutValueString() {
-    const value = +this.payout * this.stakingAssetPrice;
-
-    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
   }
 
   get amountValueString() {
@@ -333,8 +330,14 @@ export default class Bond extends Vue {
     return maxNominations;
   }
 
-  get selectedQuantity() {
-    return Object.values(this.state).filter(({ isSelect }) => isSelect).length;
+  get selectedValidators() {
+    return Object.values(this.state)
+      .filter(({ isSelect }) => isSelect)
+      .map(({ address }) => address);
+  }
+
+  get selectedValidatorsLength() {
+    return this.selectedValidators.length;
   }
 
   get days() {
@@ -346,9 +349,9 @@ export default class Bond extends Vue {
       amount: this.amount,
       from: this.selectedWallet.address,
       networkName: this.network,
-      stashAccount: '',
-      controller: '',
-    } as RequestStaking;
+      controllerAddress: '',
+      validators: this.selectedValidators,
+    } as RequestBond;
   }
 
   async mounted() {
@@ -405,6 +408,10 @@ export default class Bond extends Vue {
     this.step -= 1;
   }
 
+  paste() {
+    this.payoutAddress = getClipboard();
+  }
+
   confirm() {
     if (this.step === 4) this.step += 1;
 
@@ -412,8 +419,22 @@ export default class Bond extends Vue {
     else this.step += 1;
   }
 
+  confirmationPasswordPopupClose(closeForm: boolean) {
+    this.showConfirmationPasswordPopup = false;
+
+    if (closeForm) this.closeForm();
+  }
+
+  closeForm() {
+    this.$emit('closeBond');
+  }
+
   calcTransferableSendMinusFee() {
     return calcTransferableSendMinusFee(this.stakingCurrency, this.network, this.fee);
+  }
+
+  setPayoutAddress(address = '') {
+    this.payoutAddress = address;
   }
 
   async setMax() {
@@ -433,6 +454,12 @@ export default class Bond extends Vue {
 
   .hint {
     padding: $default-padding;
+  }
+
+  .activity-buttons {
+    display: flex;
+    user-select: none;
+    margin-bottom: 15px;
   }
 
   .amount-input {

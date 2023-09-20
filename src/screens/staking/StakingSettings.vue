@@ -1,17 +1,19 @@
 <template>
   <div class="staking-settings">
     <div class="settings-part">
-      <TabButton
-        v-for="{ label, tabName, tooltipText, target, classes } in tabsOptions"
-        class="tab"
-        :key="tabName"
-        :tooltipText="tooltipText"
-        :target="target"
-        :class="classes"
-        :label="label"
-        :isActive="activeTabName === tabName"
-        @click="openTab(tabName)"
-      />
+      <template v-for="{ label, tabName, tooltipText, target, classes, isShow } in tabsOptions">
+        <TabButton
+          v-if="isShow"
+          class="tab"
+          :key="tabName"
+          :tooltipText="tooltipText"
+          :target="target"
+          :class="classes"
+          :label="label"
+          :isActive="activeTabName === tabName"
+          @click="openTab(tabName)"
+        />
+      </template>
     </div>
 
     <div class="settings-part">
@@ -21,7 +23,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, PropSync } from 'vue-property-decorator';
+import { Component, Vue, PropSync, Prop } from 'vue-property-decorator';
 import type { StakingTab } from '@/interfaces/common';
 
 interface TabsOptions {
@@ -29,28 +31,34 @@ interface TabsOptions {
   tabName: StakingTab;
   classes: string;
   target: string;
+  isShow: boolean;
 }
 
 @Component
 export default class StakingSettings extends Vue {
-  readonly tabsOptions: TabsOptions[] = [
-    {
-      label: 'common.all',
-      tabName: 'all',
-      classes: 'all-tab',
-      target: '.all-tab',
-    },
-    {
-      label: 'staking.myStaked',
-      tabName: 'my',
-      classes: 'my-tab',
-      target: '.my-tab',
-    },
-  ];
-
+  @Prop({ type: Boolean }) showStakingItems!: boolean;
+  @Prop({ type: Boolean }) showMyStakingItems!: boolean;
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: StakingTab;
   @PropSync('filterValue', { type: String }) syncedFilterValue!: string;
 
+  get tabsOptions(): TabsOptions[] {
+    return [
+      {
+        label: 'common.all',
+        tabName: 'all',
+        classes: 'all-tab',
+        target: '.all-tab',
+        isShow: this.showStakingItems,
+      },
+      {
+        label: 'staking.myStaked',
+        tabName: 'my',
+        classes: 'my-tab',
+        target: '.my-tab',
+        isShow: this.showMyStakingItems,
+      },
+    ];
+  }
   get isAllTab() {
     return this.syncedActiveTabName === 'all';
   }

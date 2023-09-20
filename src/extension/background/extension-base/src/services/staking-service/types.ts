@@ -12,11 +12,11 @@ export interface ResponseCheckStaking {
 ///////////////////////////////////////////////////////
 
 export interface Bond {
-  stashAccount: string;
-  controller: string;
-  networkName: NetworkName;
   from: string;
+  controllerAddress: string;
+  networkName: NetworkName;
   amount: string;
+  validators: string[];
 }
 
 export type RequestBond = PasswordRequestSign<Bond>;
@@ -66,16 +66,33 @@ export type RequestWithdrawUnbonded = PasswordRequestSign<WithdrawUnbonded>;
 export interface SetControllerAccount {
   networkName: NetworkName;
   from: string;
-  address: string;
+  controllerAddress: string;
 }
 
 export type RequestSetControllerAccount = PasswordRequestSign<SetControllerAccount>;
 
 //////////////////////////////////////////////////////////
 
+export interface Nominate {
+  from: string;
+  networkName: NetworkName;
+  validators: string[];
+}
+
+export type RequestNominate = PasswordRequestSign<Nominate>;
+
+//////////////////////////////////////////////////////////
+
 export type RequestCheckStaking = Bond | BondExtra | Unbond | Rebond | WithdrawUnbonded;
 
-export type StakingOperation = 'bond' | 'bondExtra' | 'unbond' | 'rebond' | 'withdrawUnbonded' | 'controllerAccount';
+export type StakingOperation =
+  | 'bond'
+  | 'bondExtra'
+  | 'unbond'
+  | 'rebond'
+  | 'withdrawUnbonded'
+  | 'controllerAccount'
+  | 'nominate';
 
 export type RequestStaking =
   | RequestBond
@@ -83,7 +100,8 @@ export type RequestStaking =
   | RequestUnbond
   | RequestRebond
   | RequestWithdrawUnbonded
-  | RequestSetControllerAccount;
+  | RequestSetControllerAccount
+  | RequestNominate;
 
 export type MakeStakingRequest = {
   params: RequestStaking;
@@ -96,6 +114,10 @@ export type StakingParams = {
   network: NetworkName;
   unbondPeriod: number;
   maxNominations: number;
+  minBond: number;
+  apy: number;
+  bondAmount: string;
+  unbondAmount: string;
 };
 
 export type StakingParamsResponse = StakingParams[];

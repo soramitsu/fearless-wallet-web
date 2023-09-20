@@ -11,9 +11,9 @@
         </div>
 
         <div class="description-part right-part">
-          <div class="change">{{ changeBalance }}</div>
+          <!-- <div class="change">{{ changeBalance }}</div> -->
 
-          <div class="fiat">{{ fiatSymbol }}{{ valueByFiat }}</div>
+          <div class="fiat">{{ fiatSymbol }}{{ fiatValue }}</div>
 
           <Icon icon="chevron-right" class="chevron" />
         </div>
@@ -24,10 +24,12 @@
           {{ $t('staking.stakingBalance') }}
         </div>
 
-        <div class="value">
-          <div class="change">{{ changeStakingAmount }}</div>
+        <Loading v-if="showLoading" :width="28" />
 
-          {{ amount }} {{ asset }}
+        <div v-else class="value">
+          <!-- <div class="change">{{ changeStakingAmount }}</div> -->
+
+          {{ bondAmount }} {{ asset }}
         </div>
       </div>
 
@@ -35,14 +37,17 @@
         <div>
           {{ $t('staking.unstaking') }}
         </div>
+        <Loading v-if="showLoading" :width="28" />
 
-        <div class="value">{{ unstakingAmount }} {{ asset }}</div>
+        <div v-else class="value">{{ unbondAmount }} {{ asset }}</div>
       </div>
 
       <div class="row">
         <div>APY</div>
 
-        <div class="value">{{ apy }}</div>
+        <Loading v-if="showLoading" :width="28" />
+
+        <div v-else class="value">{{ apy }}</div>
       </div>
 
       <div class="row">
@@ -50,7 +55,9 @@
           {{ $t('staking.unstakingPeriod') }}
         </div>
 
-        <div class="value">{{ period }}</div>
+        <Loading v-if="showLoading" :width="28" />
+
+        <div v-else class="value">{{ period }}</div>
       </div>
     </div>
   </ContentForm>
@@ -63,27 +70,55 @@ import type { NetworkJson } from '@extension-base/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
+import { networksIsPending } from '@/helpers/shimmers';
+import { NetworkParams } from '@/interfaces';
+import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { getUtilityAsset } from '@/helpers/currencies';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { GetAssetPrice } from '@/store';
 
 @Component
 export default class MyStakingItem extends Vue {
-  @Prop(String) network!: string;
-  @Prop(String) icon!: string;
-  @Prop(String) fiatValue!: string;
-  @Prop(String) balance!: string;
-  @Prop(String) amount!: string;
-  @Prop(String) asset!: string;
-  @Prop(String) unstakingAmount!: string;
-  @Prop(Number) unbondPeriod!: number;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Prop(Object) networkParams!: NetworkParams;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
-  // TODO
-  get valueByFiat() {
-    return this.fiatValue;
+  get fiatValue() {
+    const stakingCurrency = getUtilityAsset(this.balances, this.network);
+    const priceId = stakingCurrency?.priceId ?? '';
+    const price = this.getAssetPrice(priceId).price;
+
+    return getCostOfAssets(this.bondAmount, price).toString();
+  }
+
+  get network() {
+    return this.networkParams.network;
+  }
+
+  get icon() {
+    return this.networkParams.icon;
+  }
+
+  get unbondPeriod() {
+    return this.networkParams.unbondPeriod;
+  }
+
+  get unbondAmount() {
+    return this.networkParams.unbondAmount;
+  }
+
+  get asset() {
+    return this.networkParams.asset;
+  }
+
+  get showLoading() {
+    return networksIsPending(this.networks, this.network);
   }
 
   get apy() {
-    return '25%';
+    return `${this.networkParams.apy}%`;
   }
 
   get changeBalance() {
@@ -106,6 +141,10 @@ export default class MyStakingItem extends Vue {
 
   get period() {
     return `${this.unbondPeriod} ${this.$t('staking.days')}`;
+  }
+
+  get bondAmount() {
+    return this.networkParams.bondAmount;
   }
 
   openStakingInfo() {

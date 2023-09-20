@@ -4,8 +4,8 @@
       <div class="about-stake">
         <div class="one block">
           <div class="label">{{ $t('staking.stakingBalance') }}</div>
-          <div class="amount">{{ stakingAmount }} {{ stakingAssetName }}</div>
-          <div class="value">{{ fiatSymbol }}{{ stakingValue }}</div>
+          <div class="amount">{{ bondAmount }} {{ stakingAssetName }}</div>
+          <div class="value">{{ fiatSymbol }}{{ bondValue }}</div>
         </div>
 
         <div class="two block">
@@ -16,8 +16,8 @@
 
         <div class="three block">
           <div class="label">{{ $t('staking.unstaking') }}</div>
-          <div class="amount">{{ unstakingAmount }} {{ stakingAssetName }}</div>
-          <div class="value">{{ fiatSymbol }}{{ unstakingValue }}</div>
+          <div class="amount">{{ unbondAmount }} {{ stakingAssetName }}</div>
+          <div class="value">{{ fiatSymbol }}{{ unbondValue }}</div>
         </div>
 
         <div class="four block">
@@ -54,9 +54,9 @@ export default class About extends Vue {
 
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
-  @Prop({ type: String }) stakingAmount!: string;
+  @Prop({ type: String }) bondAmount!: string;
+  @Prop({ type: String }) unbondAmount!: string;
   @Prop({ type: String }) rewardedAmount!: string;
-  @Prop({ type: String }) unstakingAmount!: string;
   @Prop({ type: String }) redeemableAmount!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
@@ -82,8 +82,8 @@ export default class About extends Vue {
     return this.getAssetPrice(priceId).price;
   }
 
-  get stakingValue() {
-    const value = +this.stakingAmount * this.stakingAssetPrice;
+  get bondValue() {
+    const value = +this.bondAmount * this.stakingAssetPrice;
 
     return this.$n(value, 'price');
   }
@@ -94,8 +94,8 @@ export default class About extends Vue {
     return this.$n(value, 'price');
   }
 
-  get unstakingValue() {
-    const value = +this.unstakingAmount * this.stakingAssetPrice;
+  get unbondValue() {
+    const value = +this.unbondAmount * this.stakingAssetPrice;
 
     return this.$n(value, 'price');
   }

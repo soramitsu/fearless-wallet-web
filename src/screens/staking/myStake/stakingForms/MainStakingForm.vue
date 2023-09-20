@@ -206,8 +206,7 @@ export default class MainStakingForm extends Vue {
       amount: this.amount,
       from: this.selectedWallet.address,
       networkName: this.network,
-      stashAccount: '',
-      controller: '',
+      controllerAddress: '',
     } as RequestStaking;
   }
 

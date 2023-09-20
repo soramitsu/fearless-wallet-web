@@ -53,6 +53,7 @@ export function getMockCurrencies(networks: NetworkJson[]) {
             balances: [],
             color,
             currencyId,
+            isUtility: isUtility ?? false,
           };
 
           result.push(newCurrency);

@@ -5,6 +5,7 @@ declare module '@vue/runtime-dom' {
     AboveForm: typeof import('@/components/AboveForm.vue')['AboveForm'];
     Alert: typeof import('@/components/Alert.vue')['Alert'];
     AssetIcon: typeof import('@/components/AssetIcon.vue')['AssetIcon'];
+    BadgeButton: typeof import('@/components/BadgeButton.vue')['BadgeButton'];
     BorderButton: typeof import('@/components/BorderButton.vue')['BorderButton'];
     FButton: typeof import('@/components/FButton.vue')['Button'];
     Checkbox: typeof import('@/components/Checkbox.vue')['Checkbox'];

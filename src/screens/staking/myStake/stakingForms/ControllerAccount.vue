@@ -4,6 +4,10 @@
 
     <FInput v-model="syncedControllerAccount" size="big" placeholder="staking.controllerAccount" />
 
+    <div class="activity-buttons">
+      <BadgeButton text="common.paste" @click="paste" />
+    </div>
+
     <Hint text="staking.controllerUnbond" iconName="notification" class="hint row" />
 
     <FLink text="staking.learnAboutControllers" class="about-controllers row" @click="openAboutControllers" />
@@ -16,6 +20,7 @@ import { Getter } from 'vuex-class';
 import type { NetworkName } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { getClipboard } from '@/helpers';
 
 @Component
 export default class ControllerAccount extends Vue {
@@ -25,6 +30,10 @@ export default class ControllerAccount extends Vue {
 
   get accountName() {
     return this.selectedWallet.name;
+  }
+
+  paste() {
+    this.syncedControllerAccount = getClipboard();
   }
 
   openAboutControllers() {
@@ -49,6 +58,12 @@ export default class ControllerAccount extends Vue {
 
   .about-controllers {
     margin-top: 10px;
+  }
+
+  .activity-buttons {
+    display: flex;
+    user-select: none;
+    margin-bottom: 15px;
   }
 }
 </style>

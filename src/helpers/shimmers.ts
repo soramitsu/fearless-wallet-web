@@ -1,23 +1,19 @@
 import { NetworkJson } from '@extension-base/types';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
+import { isSameString } from '.';
 import { ALL_NETWORKS } from '@/consts/networks';
-import store from '@/store';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { NetworkName } from '@/interfaces';
 
-function getShimmersVisibility() {
-  const selectedNetwork: string = store.getters[AccountsGettersTypes.selectedNetwork];
-  const networks: NetworkJson[] = store.getters[NetworksGettersTypes.networks];
+function networksIsPending(networks: NetworkJson[], selectedNetwork: NetworkName = 'all') {
+  if (selectedNetwork === ALL_NETWORKS) {
+    const isPendingExists = networks.some(({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING);
 
-  if (selectedNetwork !== ALL_NETWORKS) {
-    const apiStatus = networks.find(({ name }) => name.toLowerCase() === selectedNetwork.toLowerCase())?.apiStatus;
-
-    return apiStatus === NETWORK_STATUS.PENDING;
+    return isPendingExists;
   }
 
-  const isPendingExists = networks.some(({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING);
+  const apiStatus = networks.find(({ name }) => isSameString(name, selectedNetwork))?.apiStatus;
 
-  return isPendingExists;
+  return apiStatus === NETWORK_STATUS.PENDING;
 }
 
-export { getShimmersVisibility };
+export { networksIsPending };

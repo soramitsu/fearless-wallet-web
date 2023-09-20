@@ -77,7 +77,6 @@ export default class AssetInfo extends Vue {
   @Prop(Object) currency!: TokenBalance;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get selectedAssetNetwork() {
     return this.$route.params.selectedNetwork;
@@ -85,14 +84,6 @@ export default class AssetInfo extends Vue {
 
   get pickedNetwork() {
     return this.selectedAssetNetwork ?? this.selectedNetwork;
-  }
-
-  get currentNetwork() {
-    return this.currency.balances?.find(({ name }) => name.toLowerCase() === this.pickedNetwork?.toLowerCase());
-  }
-
-  get showShimmers() {
-    return !navigator.onLine || !this.balances.length || this.currentNetwork?.state === 'pending';
   }
 
   get icon() {
@@ -160,12 +151,6 @@ export default class AssetInfo extends Vue {
   }
 
   toggleBalanceDetailsPopup() {
-    if (this.showShimmers) {
-      this.showBalanceDetailsPopup = false;
-
-      return;
-    }
-
     this.showBalanceDetailsPopup = !this.showBalanceDetailsPopup;
   }
 

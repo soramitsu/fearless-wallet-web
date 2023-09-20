@@ -89,18 +89,15 @@
                 class="row"
                 icon="close"
                 placeholder="assets.sendTo"
-                :isActiveRotate="showDestNetPopup"
                 @click="setRecipient"
               />
 
               <div class="activity-buttons row">
-                <button class="button" @click="toggleHistoryBookVisibility">{{ $t('assets.history') }}</button>
+                <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
 
-                <button class="button" @click="paste">{{ $t('common.paste') }}</button>
+                <BadgeButton text="common.paste" @click="paste" />
 
-                <button v-if="showMyWalletsButton" class="button" @click="toggleMyWalletsVisibility">
-                  {{ $t('assets.myWallets') }}
-                </button>
+                <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
               </div>
 
               <InfoRow
@@ -809,7 +806,7 @@ export default class TransferForm extends Vue {
     );
   }
 
-  async paste() {
+  paste() {
     this.syncedRecipient = getClipboard();
   }
 
@@ -879,27 +876,6 @@ export default class TransferForm extends Vue {
     display: flex;
     user-select: none;
     margin-bottom: 30px;
-
-    .button {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 5px 15px;
-      height: 30px;
-      background: $secondary-background-color;
-      border-radius: 30px;
-      font-weight: 700;
-      font-size: 12px;
-      text-transform: uppercase;
-      color: $plain-white;
-      margin: 5px 14px 0 0;
-      border: none;
-      cursor: pointer;
-
-      &:hover {
-        background: $default-background-color;
-      }
-    }
   }
 }
 </style>

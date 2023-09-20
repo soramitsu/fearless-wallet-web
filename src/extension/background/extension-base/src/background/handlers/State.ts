@@ -200,7 +200,7 @@ export default class State {
   public eventService = new EventService();
   public soraCardService = new SoraCardService();
   public onboardingService = new OnboardingService();
-  public stakingService = new StakingService(this.getSubstrateApiMap);
+  public stakingService = new StakingService(this);
 
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
@@ -1158,9 +1158,10 @@ export default class State {
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
-    // this.networksJson = networks.filter((el) => !el.disabled);
-
     this.networksJson = networks.filter((el) => isSora(el.name));
+    // this.networksJson = networks.filter((el) => el.name.toLowerCase() === 'kusama');
+
+    // this.networksJson = networks.filter((el) => !el.disabled);
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
 

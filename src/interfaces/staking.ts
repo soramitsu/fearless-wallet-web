@@ -26,9 +26,14 @@ interface MyValidator extends Validator {
 
 interface NetworkParams {
   network: string;
+  asset: string;
   icon: string;
   unbondPeriod: number;
   maxNominations: number;
+  minBond: number;
+  apy: number;
+  bondAmount: string;
+  unbondAmount: string;
   type?: 'regular';
 }
 

@@ -208,6 +208,7 @@ export enum TransferErrorCode {
   REBOND_ERROR = 'rebondError',
   REDEEM_ERROR = 'redeemError',
   SET_CONTROLLER_ERROR = 'setControllerError',
+  NOMINATE_ERROR = 'nominateError',
 }
 
 export enum BasicTxErrorCode {
@@ -708,6 +709,7 @@ export interface TokenBalance {
   providers: BuyProvider[];
   balances: BalanceItem[];
   color?: string;
+  isUtility: boolean; // Это поле означает, что токен является утилити для какой-то из сетей
 }
 
 export type BalanceMap = Record<WalletAddress, TokenBalance[]>;

@@ -1,5 +1,6 @@
 import { api as apiSora } from '@sora-substrate/util';
-import { ApiProps, BasicTxResponse, TransferErrorCode } from '../../background/types/types';
+import State from '@extension-base/background/handlers/State';
+import { BasicTxResponse, TransferErrorCode } from '../../background/types/types';
 import {
   ValidatorsRequest,
   RequestBond,
@@ -10,10 +11,12 @@ import {
   RequestBondExtra,
   MakeStakingRequest,
   StakingParamsResponse,
+  RequestNominate,
 } from './types';
 import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import { NetworkName } from '@/interfaces';
 import { DAY1 } from '@/consts/time';
+import { isSameString } from '@/helpers';
 
 type Validators = Record<
   NetworkName,
@@ -23,18 +26,62 @@ type Validators = Record<
   }
 >;
 
+const getStakingParams = (network: string) => ({
+  network,
+  apy: 0,
+  unbondPeriod: 0,
+  maxNominations: 0,
+  minBond: 0,
+  bondAmount: '0',
+  unbondAmount: '0',
+});
+
 export class StakingService {
   validators: Validators = {};
 
-  constructor(private getSubstrateApiMap: Record<string, ApiProps>) {}
+  constructor(private state: State) {}
 
   public async getStakingParams(networks: NetworkName[]): Promise<StakingParamsResponse> {
+    const address = await this.state.getAccountAddress();
+
     // TODO use networks
-    return networks.map((network) => ({
-      network,
-      unbondPeriod: apiSora.staking.getBondingDuration(),
-      maxNominations: apiSora.staking.getMaxNominations(),
-    }));
+    const promises = networks.map(async (network) => {
+      const apiProps = this.state.getSubstrateApiMap[network];
+
+      const { balances } = this.state.balanceMap[address].find(
+        ({ mainNetwork, isUtility }) => isSameString(mainNetwork, network) && isUtility
+      )!; // Такой элемент должен быть всегда один, в случае коллизий нужно переписать логику
+      const tokenBalance = balances.find(({ name }) => isSameString(name, network));
+      const bondAmount = tokenBalance?.frozen ?? '0';
+
+      if (!apiProps.api) return getStakingParams(network);
+
+      const isReady = await apiProps.api?.isReady;
+
+      if (!isReady) return getStakingParams(network);
+
+      const validators = await this.getValidators({ networkName: network });
+      const summaryApy = validators.reduce((result, { apy }) => {
+        return result + +apy;
+      }, 0);
+
+      const apy = summaryApy / validators.length;
+
+      // TODO
+      const unbondAmount = '0';
+
+      return {
+        network,
+        apy,
+        bondAmount,
+        unbondAmount,
+        unbondPeriod: apiSora.staking.getBondingDuration(),
+        maxNominations: apiSora.staking.getMaxNominations(),
+        minBond: await apiSora.staking.getMinNominatorBond(),
+      };
+    });
+
+    return Promise.all(promises);
   }
 
   public async getValidators({ networkName }: ValidatorsRequest): Promise<FWValidatorInfoFull[]> {
@@ -44,7 +91,7 @@ export class StakingService {
       if (this.validators[networkName].timespan - Date.now() < DAY1) return this.validators[networkName].value;
     }
 
-    const apiProps = this.getSubstrateApiMap[networkName];
+    const apiProps = this.state.getSubstrateApiMap[networkName];
 
     if (!apiProps.api) return [];
 
@@ -71,7 +118,7 @@ export class StakingService {
   public async makeStaking({ params, type }: MakeStakingRequest): Promise<BasicTxResponse> {
     const { networkName, isSavePass } = params;
 
-    const apiProps = this.getSubstrateApiMap[networkName];
+    const apiProps = this.state.getSubstrateApiMap[networkName];
 
     if (!apiProps.api) return { status: false };
 
@@ -79,9 +126,14 @@ export class StakingService {
 
     if (!isReady) return { status: false };
 
-    apiSora.shouldPairBeLocked = !isSavePass;
+    if (type === 'bond') {
+      // после бонда не нужно лочить пару, тк следом идет операция номинейта валидаторов
+      apiSora.shouldPairBeLocked = false;
 
-    if (type === 'bond') return this.bond(params as RequestBond);
+      return this.bond(params as RequestBond);
+    }
+
+    apiSora.shouldPairBeLocked = !isSavePass;
 
     if (type === 'bondExtra') return this.bondExtra(params as RequestBondExtra);
 
@@ -91,15 +143,19 @@ export class StakingService {
 
     if (type === 'withdrawUnbonded') return this.withdrawUnbonded(params as RequestWithdrawUnbonded);
 
+    if (type === 'nominate') return this.nominate(params as RequestNominate);
+
     return this.setControllerAccount(params as RequestSetControllerAccount);
   }
 
   public async bond(params: RequestBond): Promise<BasicTxResponse> {
-    const { amount, controller } = params;
+    const { amount, controllerAddress, from, isSavePass } = params;
+
+    const controller = controllerAddress === from ? '' : controllerAddress; // TODO уточнить как передавать controller если он не нужен
+    const payee = controller === '' ? 'Stash' : 'Controller';
 
     try {
-      // TODO дописать параметры
-      apiSora.staking.bond({ value: amount, controller, payee: '' });
+      await apiSora.staking.bond({ value: amount, controller, payee });
     } catch (ex) {
       const message = `[STAKING] Bond failed: ${ex}`;
 
@@ -116,7 +172,12 @@ export class StakingService {
       };
     }
 
-    return { status: true };
+    apiSora.shouldPairBeLocked = !isSavePass;
+
+    // nominate status
+    const { status } = await this.nominate(params);
+
+    return { status };
   }
 
   public async bondExtra(params: RequestBondExtra): Promise<BasicTxResponse> {
@@ -216,10 +277,10 @@ export class StakingService {
   }
 
   public async setControllerAccount(params: RequestSetControllerAccount): Promise<BasicTxResponse> {
-    const { address } = params;
+    const { controllerAddress } = params;
 
     try {
-      apiSora.staking.setController({ address });
+      apiSora.staking.setController({ address: controllerAddress });
     } catch (ex) {
       const message = `[STAKING] Set controller failed: ${ex}`;
 
@@ -230,6 +291,30 @@ export class StakingService {
         errors: [
           {
             code: TransferErrorCode.SET_CONTROLLER_ERROR,
+            message,
+          },
+        ],
+      };
+    }
+
+    return { status: true };
+  }
+
+  public async nominate(params: RequestNominate): Promise<BasicTxResponse> {
+    const { validators } = params;
+
+    try {
+      await apiSora.staking.nominate({ validators });
+    } catch (ex) {
+      const message = `[STAKING] Nominate failed: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.NOMINATE_ERROR,
             message,
           },
         ],

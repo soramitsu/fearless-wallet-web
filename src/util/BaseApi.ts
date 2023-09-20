@@ -15,7 +15,7 @@ import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { NetworksController } from '@/controllers';
 import store from '@/store';
-import { IS_EXTENSION } from '@/consts/global';
+import { IS_EXTENSION, IS_PRODUCTION } from '@/consts/global';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
 type WalletTypes = 'mobile' | 'native';
@@ -111,7 +111,7 @@ export default class BaseApi {
 
       return true;
     } catch (e) {
-      console.info(e);
+      if (!IS_PRODUCTION) console.info(e);
 
       return false;
     }

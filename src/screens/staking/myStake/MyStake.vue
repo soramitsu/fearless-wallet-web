@@ -57,9 +57,9 @@
               v-if="isAbout"
               :stakingCurrency="stakingCurrency"
               :rewardedCurrency="rewardedCurrency"
-              :stakingAmount="stakingAmount"
+              :bondAmount="bondAmount"
               :rewardedAmount="rewardedAmount"
-              :unstakingAmount="unstakingAmount"
+              :unbondAmount="unbondAmount"
               :redeemableAmount="redeemableAmount"
             />
 
@@ -114,7 +114,7 @@ import PendingRewardForm from '@/screens/staking/myStake/rewards/PendingRewardFo
 import { isSora } from '@/helpers';
 import { Components } from '@/router/routes';
 
-type ShowField = 'showBondForm' | 'showBondExtraForm' | 'showUnbondForm' | 'showRedeemForm' | 'showYourValidatorsForm';
+type ShowField = 'showBondExtraForm' | 'showUnbondForm' | 'showRedeemForm' | 'showYourValidatorsForm';
 
 @Component({
   components: {
@@ -129,7 +129,6 @@ type ShowField = 'showBondForm' | 'showBondExtraForm' | 'showUnbondForm' | 'show
 })
 export default class MyStake extends Vue {
   activeTabName: MyStakingTab = 'about';
-  showBondForm = false; // TODO удалить бонд из моего стейка
   showBondExtraForm = false;
   showUnbondForm = false;
   showRedeemForm = false;
@@ -151,7 +150,6 @@ export default class MyStake extends Vue {
 
   get showMainStakingForm() {
     return (
-      this.showBondForm ||
       this.showBondExtraForm ||
       this.showUnbondForm ||
       this.showRedeemForm ||
@@ -161,8 +159,6 @@ export default class MyStake extends Vue {
   }
 
   get type() {
-    if (this.showBondForm) return 'bond';
-
     if (this.showBondExtraForm) return 'bondExtra';
 
     if (this.showUnbondForm) return 'unbond';
@@ -288,7 +284,7 @@ export default class MyStake extends Vue {
     return this.balances.find(({ assetId }) => assetId === this.rewardedAssetId);
   }
 
-  get stakingAmount() {
+  get bondAmount() {
     return '10.00003';
   }
 
@@ -296,7 +292,7 @@ export default class MyStake extends Vue {
     return '0.49191';
   }
 
-  get unstakingAmount() {
+  get unbondAmount() {
     return '2.3';
   }
 
@@ -309,7 +305,6 @@ export default class MyStake extends Vue {
   }
 
   closeStakingManagement() {
-    this.showBondForm = false;
     this.showBondExtraForm = false;
     this.showUnbondForm = false;
     this.showRedeemForm = false;

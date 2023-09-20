@@ -14,9 +14,11 @@ function firstCharToUp(string: string, onlyFirstChat = true) {
 }
 
 function isSora(network: string) {
-  // return network.toLowerCase() === SORA_MAINNET || network.toLowerCase() === SORA_TEST; // временный костыль для стейкинга
-
   return network.toLowerCase() === SORA_NETWORK_NAME;
+}
+
+function isSameString(string1: string, string2: string) {
+  return string1.toLowerCase() === string2.toLowerCase();
 }
 
 function validatePhoneNumber(countryCode: string, phoneNumber: string) {
@@ -69,4 +71,4 @@ function getFormattedDate(timestamp: string | number, type: 's' | 'ms' = 's') {
   return format(date, 'dd MMMM yyyy HH:mm');
 }
 
-export { firstCharToUp, isSora, validatePhoneNumber, validateEmail, cut, getClipboard, getFormattedDate };
+export { firstCharToUp, isSora, isSameString, validatePhoneNumber, validateEmail, cut, getClipboard, getFormattedDate };

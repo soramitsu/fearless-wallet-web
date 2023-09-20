@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :fullScreen="true" :showBackIcon="true" @handlerBack="$emit('onClose')" @handlerClose="$emit('onClose')">
+  <AboveForm :fullScreen="true" :showBackIcon="true" @handlerBack="close" @closeHandler="close">
     <div>
       <div
         v-for="wallet in wallets"
@@ -24,14 +24,14 @@ import { useStore } from '@/store';
 const props = defineProps<{
   selectedAddress: string;
 }>();
-defineEmits(['onSelect', 'onClose']);
+const emit = defineEmits(['onSelect', 'onClose']);
 const store = useStore();
 const wallets = ref<AccountJson[]>(
   (store.getters.getAccounts as AccountJson[]).filter((el) => el.ethereumAddress && !el.isMobile)
 );
+const close = () => emit('onClose');
 const isSelected = (address: string) => address === props.selectedAddress;
 </script>
-
 <style lang="scss" scoped>
 .icon {
   width: 24px;

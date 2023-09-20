@@ -95,21 +95,16 @@ export class FWSubscription {
 
   async start() {
     this.logger.log('Starting subscription');
-    const currentAccount = await this.state.currentAccount;
-    const getAccountsExeptCurrent = this.state
-      .getSubstrateAccounts()
-      .filter((el) => el.address !== currentAccount?.address);
+    const accounts = this.state.getSubstrateAccounts();
 
-    getAccountsExeptCurrent.forEach((account) => {
+    accounts.forEach((account) => {
       const ethAddress = account.meta.ethereumAddress as string;
 
       this.subscribeBalances(account.address, ethAddress, true);
     });
 
-    if (currentAccount) this.subscribeBalances(currentAccount?.address, currentAccount.ethereumAddress);
-
-    !this.serviceSubscription &&
-      (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
+    if (!this.serviceSubscription)
+      this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
           console.info('serviceInfo', serviceInfo);
 
@@ -119,13 +114,7 @@ export class FWSubscription {
 
           this.subscribeBalances(address, ethereumAddress);
         },
-      }));
-
-    getAccountsExeptCurrent.forEach((account) => {
-      const ethAddress = account.meta.ethereumAddress as string;
-
-      this.subscribeBalances(account.address, ethAddress, true);
-    });
+      });
   }
 
   stop() {

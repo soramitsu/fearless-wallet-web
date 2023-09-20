@@ -95,9 +95,13 @@ export class FWSubscription {
 
   async start() {
     this.logger.log('Starting subscription');
-    const accounts = this.state.getSubstrateAccounts();
 
-    accounts.forEach((account) => {
+    const currentAccount = await this.state.currentAccount;
+    const getAccountsExceptCurrent = this.state
+      .getSubstrateAccounts()
+      .filter((el) => el.address !== currentAccount?.address);
+
+    getAccountsExceptCurrent.forEach((account) => {
       const ethAddress = account.meta.ethereumAddress as string;
 
       this.subscribeBalances(account.address, ethAddress, true);

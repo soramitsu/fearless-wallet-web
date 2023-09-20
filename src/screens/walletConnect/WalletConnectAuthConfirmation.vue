@@ -1,10 +1,10 @@
 <template>
   <Fragment>
-    <AboveForm v-if="!showWalletSelect" :fullScreen="true">
+    <AboveForm v-if="!showWalletSelect" :fullScreen="true" @closeHandler="onReject">
       <div class="scroll__container">
         <Scroll>
           <div class="auth-confirmation">
-            <WalletConnectHeader :name="title" :url="url" />
+            <WalletConnectHeader :name="title" :url="url" :isTx="false" />
             <AppPermissions />
 
             <ContentForm

@@ -54,12 +54,6 @@ export default class Currencies extends Vue {
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
 
-  mainText() {
-    if (!navigator.onLine) return 'common.offlineStatus';
-
-    return this.filterValue !== '' ? 'wallet.nothingFound' : 'wallet.allAssetsHidden';
-  }
-
   get isOnline() {
     return navigator.onLine;
   }
@@ -111,6 +105,12 @@ export default class Currencies extends Vue {
 
       return { subscription, fn };
     });
+  }
+
+  mainText() {
+    if (!navigator.onLine) return 'common.offlineStatus';
+
+    return this.filterValue !== '' ? 'wallet.nothingFound' : 'wallet.allAssetsHidden';
   }
 }
 </script>

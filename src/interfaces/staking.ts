@@ -24,17 +24,4 @@ interface MyValidator extends Validator {
   rewards: string;
 }
 
-interface NetworkParams {
-  network: string;
-  asset: string;
-  icon: string;
-  unbondPeriod: number;
-  maxNominations: number;
-  minBond: number;
-  apy: number;
-  bondAmount: string;
-  unbondAmount: string;
-  type?: 'regular';
-}
-
-export { Validator, SelectionValidator, MyValidator, NetworkParams };
+export { Validator, SelectionValidator, MyValidator };

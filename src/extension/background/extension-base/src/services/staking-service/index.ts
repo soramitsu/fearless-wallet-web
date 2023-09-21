@@ -34,6 +34,8 @@ const getStakingParams = (network: string) => ({
   minBond: 0,
   bondAmount: '0',
   unbondAmount: '0',
+  rebondAmount: '0',
+  withdrawUnbondedAmount: '0',
 });
 
 export class StakingService {
@@ -69,12 +71,16 @@ export class StakingService {
 
       // TODO
       const unbondAmount = '0';
+      const rebondAmount = '0';
+      const withdrawUnbondedAmount = '0';
 
       return {
         network,
         apy,
         bondAmount,
         unbondAmount,
+        rebondAmount,
+        withdrawUnbondedAmount,
         unbondPeriod: apiSora.staking.getBondingDuration(),
         maxNominations: apiSora.staking.getMaxNominations(),
         minBond: await apiSora.staking.getMinNominatorBond(),

@@ -1,8 +1,7 @@
 import axios from 'axios';
-
 import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
-import type { FetchHistory, AugmentedActionContext, ToggleFavorite } from '@/store';
+import type { FetchHistory, AugmentedNetworksContext, ToggleFavorite } from '@/store';
 import type { FiatJson, Network } from '@/interfaces';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
@@ -18,9 +17,9 @@ export enum ActionTypes {
 }
 
 export type Actions = {
-  [ActionTypes.FETCH_FIATS](store: AugmentedActionContext): Promise<void>;
-  [ActionTypes.FETCH_HISTORY](store: AugmentedActionContext, props: FetchHistory): Promise<void>;
-  [ActionTypes.TOGGLE_FAVORITE_NETWORK](store: AugmentedActionContext, props: ToggleFavorite): Promise<boolean>;
+  [ActionTypes.FETCH_FIATS](store: AugmentedNetworksContext): Promise<void>;
+  [ActionTypes.FETCH_HISTORY](store: AugmentedNetworksContext, props: FetchHistory): Promise<void>;
+  [ActionTypes.TOGGLE_FAVORITE_NETWORK](store: AugmentedNetworksContext, props: ToggleFavorite): Promise<boolean>;
 };
 
 const actions: ActionTree<State, State> & Actions = {

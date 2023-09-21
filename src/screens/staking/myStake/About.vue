@@ -10,7 +10,7 @@
 
         <div class="two block">
           <div class="label">{{ $t('staking.rewarded') }}</div>
-          <div class="amount">{{ rewardedAmount }} {{ rewardedAsset }}</div>
+          <div class="amount">{{ rewardAmount }} {{ rewardedAsset }}</div>
           <div class="value">{{ fiatSymbol }}{{ rewardedValue }}</div>
         </div>
 
@@ -22,7 +22,7 @@
 
         <div class="four block">
           <div class="label">{{ $t('staking.redeemable') }}</div>
-          <div class="amount">{{ redeemableAmount }} {{ stakingAssetName }}</div>
+          <div class="amount">{{ withdrawUnbondedAmount }} {{ stakingAssetName }}</div>
           <div class="value">{{ fiatSymbol }}{{ redeemableValue }}</div>
         </div>
       </div>
@@ -42,10 +42,11 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { MyStakingTab } from '@/interfaces/common';
-import type { GetAssetPrice } from '@/store';
+import type { GetAssetPrice, GetStakingNetwork } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 
 @Component
 export default class About extends Vue {
@@ -54,13 +55,32 @@ export default class About extends Vue {
 
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
-  @Prop({ type: String }) bondAmount!: string;
-  @Prop({ type: String }) unbondAmount!: string;
-  @Prop({ type: String }) rewardedAmount!: string;
-  @Prop({ type: String }) redeemableAmount!: string;
+  @Prop({ type: String }) network!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
+  @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
+
+  get stakingNetwork() {
+    return this.getStakingNetwork(this.network);
+  }
+
+  get bondAmount() {
+    return this.stakingNetwork.bondAmount;
+  }
+
+  get rewardAmount() {
+    // TODO staking
+    return '0.49191';
+  }
+
+  get unbondAmount() {
+    return this.stakingNetwork.unbondAmount;
+  }
+
+  get withdrawUnbondedAmount() {
+    return this.stakingNetwork.withdrawUnbondedAmount;
+  }
 
   get stakingAssetName() {
     return this.stakingCurrency?.symbol;
@@ -89,7 +109,7 @@ export default class About extends Vue {
   }
 
   get rewardedValue() {
-    const value = +this.rewardedAmount * this.rewardedAssetPrice;
+    const value = +this.rewardAmount * this.rewardedAssetPrice;
 
     return this.$n(value, 'price');
   }
@@ -101,7 +121,7 @@ export default class About extends Vue {
   }
 
   get redeemableValue() {
-    const value = +this.redeemableAmount * this.stakingAssetPrice;
+    const value = +this.withdrawUnbondedAmount * this.stakingAssetPrice;
 
     return this.$n(value, 'price');
   }

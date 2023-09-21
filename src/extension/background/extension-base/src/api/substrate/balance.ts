@@ -11,6 +11,7 @@ import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
 import { CHAIN_IDS } from '@/consts/networks';
 import { SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/sora';
+import { isSameString } from '@/helpers';
 
 async function subscribeTokensBalance(
   address: string,
@@ -89,9 +90,9 @@ async function subscribeTokensBalance(
 
         let pallet;
 
-        const networkNameLower = networkName.toLowerCase();
         const isSoraXOR =
-          symbol === SORA_UTILITY_ASSET && (networkNameLower === SORA_MAINNET || networkNameLower === SORA_TEST);
+          symbol === SORA_UTILITY_ASSET &&
+          (isSameString(networkName, SORA_MAINNET) || isSameString(networkName, SORA_TEST));
 
         if (type === 'normal' || isSoraXOR) pallet = query.system.account(address);
         else if (type === 'assets') {

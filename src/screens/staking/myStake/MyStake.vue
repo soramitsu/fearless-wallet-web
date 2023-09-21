@@ -57,10 +57,7 @@
               v-if="isAbout"
               :stakingCurrency="stakingCurrency"
               :rewardedCurrency="rewardedCurrency"
-              :bondAmount="bondAmount"
-              :rewardedAmount="rewardedAmount"
-              :unbondAmount="unbondAmount"
-              :redeemableAmount="redeemableAmount"
+              :network="network"
             />
 
             <Alerts v-else-if="isAlerts" :alerts="alerts" />
@@ -113,6 +110,8 @@ import YourValidatorsManagement from '@/screens/staking/myStake/validators/YourV
 import PendingRewardForm from '@/screens/staking/myStake/rewards/PendingRewardForm.vue';
 import { isSora } from '@/helpers';
 import { Components } from '@/router/routes';
+import { GetStakingNetwork } from '@/store';
+import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 
 type ShowField = 'showBondExtraForm' | 'showUnbondForm' | 'showRedeemForm' | 'showYourValidatorsForm';
 
@@ -139,6 +138,7 @@ export default class MyStake extends Vue {
 
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
 
   get actionOptions() {
     return [
@@ -172,23 +172,24 @@ export default class MyStake extends Vue {
     return '';
   }
 
+  get stakingNetwork() {
+    return this.getStakingNetwork(this.network);
+  }
+
   get showValidatorsBtn() {
     return !(this.showRebondBtn && this.showRedeemBtn);
   }
 
   get showUnbondBtn() {
-    // TODO: если не делали анбонд
-    return true;
+    return this.stakingNetwork.unbondAmount !== '0';
   }
 
   get showRebondBtn() {
-    // TODO: если сделали анбонд и не делали ребонд
-    return true;
+    return this.stakingNetwork.rebondAmount !== '0';
   }
 
   get showRedeemBtn() {
-    // TODO: если сделали анбонд и не делали ребонд и прошел срок для анбонда
-    return true;
+    return this.stakingNetwork.withdrawUnbondedAmount !== '0';
   }
 
   get isAbout() {
@@ -204,6 +205,7 @@ export default class MyStake extends Vue {
   }
 
   get alerts() {
+    // TODO staking
     return [
       {
         name: 'Change your validators',
@@ -221,6 +223,7 @@ export default class MyStake extends Vue {
   }
 
   get history() {
+    // TODO staking
     return [
       {
         name: 'Reward',
@@ -282,22 +285,6 @@ export default class MyStake extends Vue {
 
   get rewardedCurrency() {
     return this.balances.find(({ assetId }) => assetId === this.rewardedAssetId);
-  }
-
-  get bondAmount() {
-    return '10.00003';
-  }
-
-  get rewardedAmount() {
-    return '0.49191';
-  }
-
-  get unbondAmount() {
-    return '2.3';
-  }
-
-  get redeemableAmount() {
-    return '1.42';
   }
 
   updateActiveTabName(name: MyStakingTab) {

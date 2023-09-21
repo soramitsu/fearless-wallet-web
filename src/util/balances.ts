@@ -14,12 +14,7 @@ export function formatBalance(data: AccountData | OrmlAccountData | u128, assetD
   const locked = FPNumber.max(miscFrozen, feeFrozen, frozen)!;
   const freeAndReserved = free.add(reserved);
 
-  // console.log('data', data?.toHuman());
-  // console.log('free', (data as AccountData)?.free?.toHuman());
-  // console.log('reserved', (data as AccountData)?.reserved?.toHuman());
-  // console.log('miscFrozen', (data as AccountData)?.miscFrozen?.toHuman());
-  // console.log('feeFrozen', (data as AccountData)?.feeFrozen?.toHuman());
-  // console.log('frozen', (data as OrmlAccountData)?.frozen?.toHuman());
+  console.log('data', data?.toHuman());
 
   return {
     frozen: locked.toString(), // замороженный баланс, вроде как это стейкинг баланс ???

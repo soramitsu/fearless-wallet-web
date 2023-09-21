@@ -14,7 +14,7 @@ export interface Message extends MessageEvent {
     id: string;
     origin: string;
     response?: string;
-    subscription?: string;
+    value?: any;
   };
 }
 

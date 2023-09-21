@@ -67,11 +67,11 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
+import type { NetworkParams } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import { networksIsPending } from '@/helpers/shimmers';
-import { NetworkParams } from '@/interfaces';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';

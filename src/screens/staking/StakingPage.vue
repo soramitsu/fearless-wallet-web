@@ -52,9 +52,10 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { StakingTab } from '@/interfaces/common';
+import { Getter, Action } from 'vuex-class';
+import type { AsyncFn, StakingTab } from '@/interfaces/common';
 import type { TokenBalance } from '@extension-base/background/types/types';
+import type { NetworkParams } from '@/store';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { networksIsPending } from '@/helpers/shimmers';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
@@ -63,14 +64,13 @@ import StakingSettings from '@/screens/staking/StakingSettings.vue';
 import StakingItem from '@/screens/staking/StakingItem.vue';
 import MyStakingItem from '@/screens/staking/MyStakingItem.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { NetworkParams } from '@/interfaces';
 import Bond from '@/screens/staking/Bond.vue';
-import { getStakingParams } from '@/extension/messaging';
-import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { GetAssetPrice } from '@/store';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { isSameString } from '@/helpers';
+import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 
 @Component({
   components: {
@@ -83,21 +83,6 @@ import { isSameString } from '@/helpers';
   },
 })
 export default class StakingPage extends Vue {
-  readonly allStakingItems: NetworkParams[] = [
-    {
-      network: SORA_NETWORK_NAME,
-      asset: SORA_UTILITY_ASSET,
-      type: 'regular',
-      icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg',
-      unbondPeriod: 0,
-      maxNominations: 0,
-      minBond: 0,
-      apy: 0,
-      bondAmount: '0',
-      unbondAmount: '0',
-    },
-  ];
-
   showNetworkManagement = false;
   activeTabName: StakingTab | '' = '';
   filterValue = '';
@@ -106,17 +91,12 @@ export default class StakingPage extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(StakingGettersTypes.stakingItems) stakingItems!: NetworkParams[];
+  @Getter(StakingGettersTypes.myStakingItems) myStakingItems!: NetworkParams[];
+  @Action(StakingActionTypes.GET_STAKING_PARAMS) getStakingParams!: AsyncFn;
 
   get showLoader() {
     return this.activeTabName === '';
-  }
-
-  get stakingItems() {
-    return this.allStakingItems.filter(({ bondAmount }) => bondAmount === '0');
-  }
-
-  get myStakingItems() {
-    return this.allStakingItems.filter(({ bondAmount }) => bondAmount !== '0');
   }
 
   get showStakingItems() {
@@ -133,7 +113,7 @@ export default class StakingPage extends Vue {
 
   get showLoading() {
     const networks = this.networks.filter(({ name }) =>
-      this.allStakingItems.some(({ network }) => isSameString(name, network))
+      this.myStakingItems.some(({ network }) => isSameString(name, network))
     );
 
     return networksIsPending(networks);
@@ -155,22 +135,19 @@ export default class StakingPage extends Vue {
     // Добавлено чтобы не было видно переключений с all tab на my tab при отсутствующих stakingItems
     setTimeout(() => this.updateActiveTabName(this.showStakingItems ? 'all' : 'my'), 500);
 
-    const networks = this.allStakingItems.map(({ network }) => network);
-    const stakingParams = await getStakingParams(networks);
-
-    stakingParams.forEach(({ unbondPeriod, maxNominations, minBond, apy, bondAmount, unbondAmount }, index) => {
-      this.allStakingItems[index].unbondPeriod = unbondPeriod;
-      this.allStakingItems[index].maxNominations = maxNominations;
-      this.allStakingItems[index].minBond = minBond;
-      this.allStakingItems[index].apy = apy;
-      this.allStakingItems[index].bondAmount = bondAmount;
-      this.allStakingItems[index].unbondAmount = unbondAmount;
-    });
+    this.getStakingParams();
   }
 
   @Watch('stakingItems')
-  updateTab() {
+  updateTab(stakingItems: any) {
+    console.log('stakingItems', stakingItems);
+
     if (this.activeTabName !== '' && !this.showStakingItems) this.updateActiveTabName('my');
+  }
+
+  @Watch('myStakingItems')
+  updateTab2(myStakingItems: any) {
+    console.log('myStakingItems', myStakingItems);
   }
 
   updateFilterValue(value: string) {

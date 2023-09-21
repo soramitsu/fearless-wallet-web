@@ -95,18 +95,18 @@ export class FWSubscription {
 
   async start() {
     this.logger.log('Starting subscription');
+
     const currentAccount = await this.state.currentAccount;
-    const getAccountsExeptCurrent = this.state
+
+    const getAccountsExceptCurrent = this.state
       .getSubstrateAccounts()
       .filter((el) => el.address !== currentAccount?.address);
 
-    getAccountsExeptCurrent.forEach((account) => {
+    getAccountsExceptCurrent.forEach((account) => {
       const ethAddress = account.meta.ethereumAddress as string;
 
       this.subscribeBalances(account.address, ethAddress, true);
     });
-
-    if (currentAccount) this.subscribeBalances(currentAccount?.address, currentAccount.ethereumAddress);
 
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
@@ -120,12 +120,6 @@ export class FWSubscription {
           this.subscribeBalances(address, ethereumAddress);
         },
       }));
-
-    getAccountsExeptCurrent.forEach((account) => {
-      const ethAddress = account.meta.ethereumAddress as string;
-
-      this.subscribeBalances(account.address, ethAddress, true);
-    });
   }
 
   stop() {
@@ -217,10 +211,10 @@ export function createSubscription<TMessageType extends MessageTypesWithSubscrip
 ): (data: SubscriptionMessageTypes[TMessageType] | null) => void {
   subscriptions[id] = port;
 
-  return (subscription: unknown): void => {
+  return (value: any): void => {
     if (subscriptions[id]) {
       try {
-        port.postMessage({ id, subscription });
+        port.postMessage({ id, value });
       } catch (error) {
         console.info('Error occurred while trying to post message', error);
 

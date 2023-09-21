@@ -23,34 +23,15 @@ export enum GettersTypes {
 
 export type Getters = {
   [GettersTypes.networks](state: State, getters?: GetterTree<State, State> & Getters, rootState?: any): NetworkJson[];
-  [GettersTypes.getFavoriteNetworksNames](
-    state: State,
-    getters?: GetterTree<State, State> & Getters,
-    rootState?: any
-  ): { name: string; favorite: string[] }[];
-  [GettersTypes.allNetworks](
-    state: State,
-    getters?: GetterTree<State, State> & Getters,
-    rootState?: any
-  ): NetworkJson[];
+  [GettersTypes.getFavoriteNetworksNames](state: State): { name: string; favorite: string[] }[];
+  [GettersTypes.allNetworks](state: State): NetworkJson[];
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
-  [GettersTypes.getActiveNodesByNetwork](
-    state: State,
-    getters?: GetterTree<State, State> & Getters
-  ): GetActiveNodesByNetwork;
-  [GettersTypes.getAllNetworksIsReadyToUse](state: State, getters?: GetterTree<State, State> & Getters): boolean;
-  [GettersTypes.getNetworkGenesisHash](
-    state: State,
-    getters?: GetterTree<State, State> & Getters
-  ): GetNetworkGenesisHash;
-
-  [GettersTypes.getAssetPrice](
-    state: State,
-    getters?: GetterTree<State, State> & Getters,
-    rootState?: any
-  ): GetAssetPrice;
+  [GettersTypes.getActiveNodesByNetwork](state: State): GetActiveNodesByNetwork;
+  [GettersTypes.getAllNetworksIsReadyToUse](state: State): boolean;
+  [GettersTypes.getNetworkGenesisHash](state: State): GetNetworkGenesisHash;
+  [GettersTypes.getAssetPrice](state: State): GetAssetPrice;
   [GettersTypes.getPrice](state: State): AssetsPrice;
 };
 
@@ -60,6 +41,7 @@ const getters: GetterTree<State, State> & Getters = {
 
     return haveEthereumAccount ? state.networks : state.networks.filter(({ name }) => !BaseApi.isEthereumNetwork(name));
   },
+
   [GettersTypes.getFavoriteNetworksNames]({ networks }): { name: string; favorite: string[] }[] {
     return networks.filter((el) => el.favorite.length).map(({ name, favorite }) => ({ name, favorite }));
   },

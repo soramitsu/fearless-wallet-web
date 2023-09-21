@@ -34,21 +34,41 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
+import type { NetworkParams } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkParams } from '@/interfaces';
-import { networksIsPending } from '@/helpers/shimmers';
+// import { networksIsPending } from '@/helpers/shimmers';
+import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { isSameString } from '@/helpers';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component
 export default class StakingItem extends Vue {
   @Prop(Object) networkParams!: NetworkParams;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get network() {
     return this.networkParams.network;
   }
 
+  get assetId() {
+    return this.networkParams.assetId;
+  }
+
+  get stakingCurrency() {
+    return this.balances?.find(({ assetId }) => assetId === this.assetId);
+  }
+
   get showShimmers() {
-    return networksIsPending(this.networks, this.network);
+    return !this.balanceIsReady;
+    // return networksIsPending(this.networks, this.network) || !this.balanceIsReady;
+  }
+
+  get balanceIsReady() {
+    const networkBalance = this.stakingCurrency?.balances?.find(({ name }) => isSameString(name, this.network));
+
+    return networkBalance?.state === APIItemState.READY;
   }
 
   get apy() {
@@ -114,6 +134,7 @@ export default class StakingItem extends Vue {
       .stake-name {
         font-size: 12px;
         font-weight: 700;
+        color: $default-white;
       }
 
       .network-name {

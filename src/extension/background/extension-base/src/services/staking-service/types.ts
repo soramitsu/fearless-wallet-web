@@ -118,6 +118,8 @@ export type StakingParams = {
   apy: number;
   bondAmount: string;
   unbondAmount: string;
+  rebondAmount: string;
+  withdrawUnbondedAmount: string;
 };
 
 export type StakingParamsResponse = StakingParams[];

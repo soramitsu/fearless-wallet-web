@@ -13,18 +13,11 @@ import {
   StakingParamsResponse,
   RequestNominate,
 } from './types';
-import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
+import type { FWValidatorInfoFull, StakingParams } from '@extension-base/services/staking-service/types';
 import { NetworkName } from '@/interfaces';
 import { DAY1 } from '@/consts/time';
-import { isSameString } from '@/helpers';
 
-type Validators = Record<
-  NetworkName,
-  {
-    value: FWValidatorInfoFull[];
-    timespan: number;
-  }
->;
+type Params = Record<NetworkName, StakingParams & { timespan: number }>;
 
 const getStakingParams = (network: string) => ({
   network,
@@ -32,29 +25,22 @@ const getStakingParams = (network: string) => ({
   unbondPeriod: 0,
   maxNominations: 0,
   minBond: 0,
-  bondAmount: '0',
   unbondAmount: '0',
-  rebondAmount: '0',
   withdrawUnbondedAmount: '0',
+  validators: [],
 });
 
 export class StakingService {
-  validators: Validators = {};
+  stakingParams: Params = {};
 
   constructor(private state: State) {}
 
   public async getStakingParams(networks: NetworkName[]): Promise<StakingParamsResponse> {
-    const address = await this.state.getAccountAddress();
-
     // TODO use networks
-    const promises = networks.map(async (network) => {
-      const apiProps = this.state.getSubstrateApiMap[network];
+    const promises: Promise<StakingParams>[] = networks.map(async (network) => {
+      if (Date.now() - this.stakingParams[network]?.timespan < DAY1) return this.stakingParams[network];
 
-      const { balances } = this.state.balanceMap[address].find(
-        ({ mainNetwork, isUtility }) => isSameString(mainNetwork, network) && isUtility
-      )!; // Такой элемент должен быть всегда один, в случае коллизий нужно переписать логику
-      const tokenBalance = balances.find(({ name }) => isSameString(name, network));
-      const bondAmount = tokenBalance?.frozen ?? '0';
+      const apiProps = this.state.getSubstrateApiMap[network];
 
       if (!apiProps.api) return getStakingParams(network);
 
@@ -63,23 +49,18 @@ export class StakingService {
       if (!isReady) return getStakingParams(network);
 
       const validators = await this.getValidators({ networkName: network });
-      const summaryApy = validators.reduce((result, { apy }) => {
-        return result + +apy;
-      }, 0);
-
+      const summaryApy = validators.reduce((result, { apy }) => result + +apy, 0);
       const apy = summaryApy / validators.length;
 
       // TODO
       const unbondAmount = '0';
-      const rebondAmount = '0';
       const withdrawUnbondedAmount = '0';
 
       return {
         network,
+        validators,
         apy,
-        bondAmount,
         unbondAmount,
-        rebondAmount,
         withdrawUnbondedAmount,
         unbondPeriod: apiSora.staking.getBondingDuration(),
         maxNominations: apiSora.staking.getMaxNominations(),
@@ -87,23 +68,18 @@ export class StakingService {
       };
     });
 
+    const stakingInfos = await Promise.all(promises);
+    const timespan = Date.now();
+
+    stakingInfos.forEach((item) => {
+      this.stakingParams[item.network] = { ...item, timespan };
+    });
+
     return Promise.all(promises);
   }
 
   public async getValidators({ networkName }: ValidatorsRequest): Promise<FWValidatorInfoFull[]> {
-    if (!this.validators[networkName]) this.validators[networkName] = { value: [], timespan: 0 };
-
-    if (this.validators[networkName].value.length !== 0) {
-      if (this.validators[networkName].timespan - Date.now() < DAY1) return this.validators[networkName].value;
-    }
-
-    const apiProps = this.state.getSubstrateApiMap[networkName];
-
-    if (!apiProps.api) return [];
-
-    const isReady = await apiProps.api?.isReady;
-
-    if (!isReady) return [];
+    console.info('getValidators', networkName);
 
     const validators: FWValidatorInfoFull[] = (await apiSora.staking.getValidatorsInfo()).map((validator) => {
       const info = validator.identity?.info;
@@ -112,11 +88,6 @@ export class StakingService {
 
       return { ...validator, name, description };
     });
-
-    this.validators[networkName] = {
-      value: validators,
-      timespan: Date.now(),
-    };
 
     return validators;
   }

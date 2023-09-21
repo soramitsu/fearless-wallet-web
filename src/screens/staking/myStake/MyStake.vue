@@ -10,7 +10,6 @@
         />
 
         <BorderButton
-          v-if="showUnbondBtn"
           class="action-button"
           text="staking.unbond"
           iconName="unbond"
@@ -44,7 +43,7 @@
         />
 
         <div class="menu">
-          <Dropdown :options="actionOptions" @handler="openForm" type="dots" />
+          <Dropdown :options="actionOptions" type="dots-vertical" @handler="openForm" />
         </div>
       </div>
 
@@ -80,6 +79,7 @@
         v-if="showYourValidatorsForm"
         :stakingCurrency="stakingCurrency"
         :network="network"
+        :networkParams="stakingNetwork"
         @closeForm="toggleVisible('showYourValidatorsForm', false)"
       />
 
@@ -180,12 +180,8 @@ export default class MyStake extends Vue {
     return !(this.showRebondBtn && this.showRedeemBtn);
   }
 
-  get showUnbondBtn() {
-    return this.stakingNetwork.unbondAmount !== '0';
-  }
-
   get showRebondBtn() {
-    return this.stakingNetwork.rebondAmount !== '0';
+    return this.stakingNetwork.unbondAmount !== '0';
   }
 
   get showRedeemBtn() {

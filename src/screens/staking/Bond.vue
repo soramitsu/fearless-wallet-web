@@ -15,7 +15,7 @@
             v-if="showAmountInput"
             class="amount-input"
             text="assets.amount"
-            :transferableAmount="transferableAmount"
+            :totalAmount="transferableAmount"
             :value="amountPriceValue"
             :asset="stakingAssetName"
             :assetId="stakingAssetId"
@@ -27,7 +27,7 @@
           <Hint class="hint" iconName="notification" :text="text" />
 
           <InputWithIcon
-            v-model="payoutAddress"
+            v-model="payoutAddressCut"
             icon="close"
             placeholder="staking.payoutAccount"
             @click="setPayoutAddress"
@@ -141,6 +141,7 @@
       v-if="showConfirmationPasswordPopup"
       :currency="stakingCurrency"
       :amount="amount"
+      :fee="fee"
       :value="amountPriceValue"
       :firstIcon="stakingAssetId"
       :tx="tx"
@@ -154,7 +155,6 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { RequestBond } from '@extension-base/services/staking-service/types';
-import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type { GetAssetPrice, SelectedWallet, NetworkParams } from '@/store';
 import type { SelectionValidator } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
@@ -163,11 +163,11 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectValidator from '@/screens/staking/myStake/validators/SelectValidator.vue';
 import FiltersPopup from '@/screens/staking/myStake/validators/FiltersPopup.vue';
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
-import { getSoraFees, getValidators } from '@/extension/messaging';
+import { getSoraFees } from '@/extension/messaging';
 import { calcTransferableSendMinusFee, getUtilityAsset, isValidAmountAsset } from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import BaseApi from '@/util/BaseApi';
-import { getClipboard } from '@/helpers';
+import { cut, getClipboard } from '@/helpers';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 
 @Component({
@@ -181,7 +181,6 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 export default class Bond extends Vue {
   state: Record<string, SelectionValidator> = {};
   payoutAddress = '';
-  validators: FWValidatorInfoFull[] = [];
   step = 1;
   isSuggested = false;
   showConfirmationPasswordPopup = false;
@@ -198,6 +197,10 @@ export default class Bond extends Vue {
     if (this.payoutAddress === '') return true;
 
     return BaseApi.validateAddress(this.payoutAddress, this.network);
+  }
+
+  get payoutAddressCut() {
+    return cut(this.payoutAddress);
   }
 
   get showBtn() {
@@ -354,11 +357,11 @@ export default class Bond extends Vue {
     } as RequestBond;
   }
 
+  get validators() {
+    return this.networkParams.validators;
+  }
+
   async mounted() {
-    this.validators = await getValidators({ networkName: this.network });
-
-    console.info('validators', this.validators);
-
     this.validators.forEach(({ address, apy, name, description }) => {
       Vue.set(this.state, address, {
         name,
@@ -379,11 +382,9 @@ export default class Bond extends Vue {
   }
 
   openValidatorList(isSuggested: boolean) {
-    this.validators = this.validators.map((validator, index) => {
-      const isSelect = isSuggested && index < this.maxNominations; // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
-
-      return { ...validator, isSelect };
-    });
+    this.validators.forEach(
+      (validator, index) => (this.state[validator.address].isSelect = isSuggested && index < this.maxNominations) // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
+    );
 
     this.isSuggested = isSuggested;
     this.step = isSuggested ? 3 : 5;

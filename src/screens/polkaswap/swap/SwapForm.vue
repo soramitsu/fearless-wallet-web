@@ -42,7 +42,7 @@
           <template v-else-if="step === 1">
             <SelectInput
               text="assets.sendButtonText"
-              :transferableAmount="transferableSendAmount"
+              :totalAmount="transferableSendAmount"
               :value="sendValue"
               :asset="sendAssetName"
               :assetId="sendAssetId"
@@ -56,7 +56,7 @@
             <SelectInput
               class="receive-input"
               text="assets.receiveButtonText"
-              :transferableAmount="transferableReceiveAmount"
+              :totalAmount="transferableReceiveAmount"
               :value="receiveValue"
               :asset="receiveAssetName"
               :assetId="receiveAssetId"
@@ -190,6 +190,7 @@
       v-if="showConfirmationPasswordPopup"
       :currency="sendCurrency"
       :amount="sendAmount"
+      :fee="fee"
       :value="sendValue"
       :firstIcon="sendAssetId"
       :secondIcon="receiveAssetId"

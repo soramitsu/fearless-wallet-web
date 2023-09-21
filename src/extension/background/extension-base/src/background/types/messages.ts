@@ -1,10 +1,8 @@
 import {
-  ValidatorsRequest,
   MakeStakingRequest,
   StakingParamsRequest,
   StakingParamsResponse,
 } from '@extension-base/services/staking-service/types';
-import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
   InjectedAccount,
@@ -156,7 +154,6 @@ export interface RequestSignatures {
   'pri(accounts.soraFees)': [null, SoraFees];
 
   // staking
-  'pri(staking.validators)': [ValidatorsRequest, FWValidatorInfoFull[]];
   'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];
   'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];
 

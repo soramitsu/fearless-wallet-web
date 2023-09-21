@@ -1,4 +1,4 @@
-import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
+import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
 
 interface Validator {
   name: string;

@@ -29,9 +29,8 @@ import { balanceItemByNetwork, getSubstrateAddress, isRequireEvmAPI } from '@ext
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { storage } from '@extension-base/stores/Storage';
-import { StakingParamsRequest, ValidatorsRequest } from '@extension-base/services/staking-service/types';
+import { StakingParamsRequest } from '@extension-base/services/staking-service/types';
 import { MakeStakingRequest, StakingParamsResponse } from './../../services/staking-service/types';
-import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -1109,10 +1108,6 @@ export default class Extension extends FWExtensionBase {
     return this.state.onboardingService.getStories(lang);
   }
 
-  getValidators(request: ValidatorsRequest): Promise<FWValidatorInfoFull[]> {
-    return state.stakingService.getValidators(request);
-  }
-
   getStakingParams(networks: NetworkName[]): Promise<StakingParamsResponse> {
     return state.stakingService.getStakingParams(networks);
   }
@@ -1254,9 +1249,6 @@ export default class Extension extends FWExtensionBase {
         return this.getSoraFees();
 
       // staking
-      case 'pri(staking.validators)':
-        return this.getValidators(request as ValidatorsRequest);
-
       case 'pri(staking.stakingParams)':
         return this.getStakingParams(request as StakingParamsRequest);
 

@@ -13,16 +13,7 @@ export type Mutations = {
 const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.UPDATE_STAKING_PARAMS](state, stakingParams) {
     stakingParams.forEach((params, index) => {
-      const {
-        unbondPeriod,
-        maxNominations,
-        minBond,
-        apy,
-        bondAmount,
-        unbondAmount,
-        rebondAmount,
-        withdrawUnbondedAmount,
-      } = params;
+      const { unbondPeriod, maxNominations, minBond, apy, unbondAmount, withdrawUnbondedAmount, validators } = params;
 
       const newItem = {
         ...state.allStakingNetworks[index],
@@ -30,14 +21,15 @@ const mutations: MutationTree<State> & Mutations = {
         maxNominations,
         minBond,
         apy,
-        bondAmount,
         unbondAmount,
-        rebondAmount,
         withdrawUnbondedAmount,
+        validators,
       };
 
       state.allStakingNetworks.splice(index, 1, newItem);
     });
+
+    state.timespan = Date.now();
   },
 };
 

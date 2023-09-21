@@ -11,7 +11,7 @@ import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
 import { CHAIN_IDS } from '@/consts/networks';
 import { SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/sora';
-import { isSameString } from '@/helpers';
+import { isSameString, isSoraTest } from '@/helpers';
 
 async function subscribeTokensBalance(
   address: string,
@@ -165,7 +165,15 @@ export function subscribeBalance(
   setBalance: (networkKey: string, rs: Partial<BalanceItem>) => void
 ) {
   const unsubList = Object.entries(state.getSubstrateApiMap).map(async ([networkKey, apiProps]) => {
-    const isReady = await apiProps.api?.isReadyOrError;
+    const isReady = isSoraTest(networkKey)
+      ? await new Promise((res) =>
+          setTimeout(async () => {
+            const isReady = await apiProps.api?.isReadyOrError;
+
+            res(isReady);
+          }, 1000)
+        )
+      : await apiProps.api?.isReadyOrError;
 
     if (!isReady) return;
 

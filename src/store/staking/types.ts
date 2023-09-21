@@ -5,6 +5,8 @@ import type { State } from '@/store/staking/state';
 import { NetworkName } from '@/interfaces';
 
 export interface NetworkParams extends StakingParams {
+  bondAmount: string;
+  transferableAmount: string;
   asset: string;
   assetId: string;
   icon: string;

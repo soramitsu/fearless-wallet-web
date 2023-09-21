@@ -2,7 +2,12 @@
   <div class="controller-account">
     <Hint text="staking.stashBond" iconName="notification" class="hint row" />
 
-    <FInput v-model="syncedControllerAccount" size="big" placeholder="staking.controllerAccount" />
+    <InputWithIcon
+      v-model="addressCut"
+      icon="close"
+      placeholder="staking.controllerAccount"
+      @click="setControllerAddress"
+    />
 
     <div class="activity-buttons">
       <BadgeButton text="common.paste" @click="paste" />
@@ -20,20 +25,28 @@ import { Getter } from 'vuex-class';
 import type { NetworkName } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { getClipboard } from '@/helpers';
+import { cut, getClipboard } from '@/helpers';
 
 @Component
 export default class ControllerAccount extends Vue {
   @Prop({ type: String }) network!: NetworkName;
-  @PropSync('controllerAccount', { type: String }) syncedControllerAccount!: string;
+  @PropSync('controllerAddress', { type: String }) syncedControllerAddress!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+
+  get addressCut() {
+    return cut(this.syncedControllerAddress);
+  }
 
   get accountName() {
     return this.selectedWallet.name;
   }
 
   paste() {
-    this.syncedControllerAccount = getClipboard();
+    this.syncedControllerAddress = getClipboard();
+  }
+
+  setControllerAddress(value = '') {
+    this.syncedControllerAddress = value;
   }
 
   openAboutControllers() {

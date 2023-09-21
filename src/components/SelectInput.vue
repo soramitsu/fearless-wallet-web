@@ -36,7 +36,7 @@
         <div v-if="showBalance" class="balance">
           {{ $t('assets.balance') }}
 
-          <div :class="balanceValueClasses" @click="setMax">&nbsp;{{ $n(transferableAmount, 'decimal') }}</div>
+          <div :class="balanceValueClasses" @click="setMax">&nbsp;{{ $n(totalAmount, 'decimal') }}</div>
         </div>
       </div>
     </div>
@@ -58,7 +58,7 @@ export default class SelectInput extends Vue {
   @Prop({ default: '' }) asset!: string;
   @Prop({ default: '' }) assetId!: string;
   @Prop({ default: '' }) value!: string;
-  @Prop({ default: 0 }) transferableAmount!: number;
+  @Prop({ default: 0 }) totalAmount!: number;
   @Prop({ default: true }) showBalance!: boolean;
   @Prop({ default: false }) readonly!: boolean;
   @PropSync('amount', { type: String }) syncedAmount!: string;

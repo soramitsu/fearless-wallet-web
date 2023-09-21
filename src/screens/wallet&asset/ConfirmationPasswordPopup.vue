@@ -12,8 +12,8 @@
           v-model="password"
           placeholder="common.password"
           size="big"
-          :class="classesInput"
           errorDescriptions="common.invalidPassword"
+          :class="classesInput"
           :readonly="!isLocked"
           :isError="isErrorPassword"
           :showPassword="true"
@@ -106,7 +106,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   showUnknownErrorPopup = false;
 
   @Ref('passInput') readonly passInputComponent!: ValidatedInput;
-  @Prop(String) amount!: string;
+  @Prop({ type: String, default: '0' }) amount!: string;
+  @Prop({ type: String, default: '0' }) fee!: string;
   @Prop(String) value!: string;
   @Prop(String) firstIcon!: string;
   @Prop(String) secondIcon!: string;
@@ -125,6 +126,10 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+
+  get amountPlusFee() {
+    return +this.amount + +this.fee;
+  }
 
   get classesInput() {
     return [
@@ -203,7 +208,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transferAmountString() {
-    return `-${this.$n(+this.amount, 'decimal')} ${this.currency?.symbol.toUpperCase()}`;
+    return `-${this.$n(+this.amountPlusFee, 'decimal')} ${this.currency?.symbol.toUpperCase()}`;
   }
 
   get transferValueString() {
@@ -228,7 +233,9 @@ export default class ConfirmationPasswordPopup extends Vue {
       this.extrinsicType === 'bondExtra' ||
       this.extrinsicType === 'unbond' ||
       this.extrinsicType === 'rebond' ||
-      this.extrinsicType === 'withdrawUnbonded'
+      this.extrinsicType === 'withdrawUnbonded' ||
+      this.extrinsicType === 'controllerAccount' ||
+      this.extrinsicType === 'nominate'
     );
   }
 

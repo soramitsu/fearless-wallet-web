@@ -63,7 +63,7 @@
               <SelectInput
                 class="row"
                 text="assets.amount"
-                :transferableAmount="transferableAmount"
+                :totalAmount="transferableAmount"
                 :value="syncedValue"
                 :asset="sendAssetName"
                 :assetId="syncedAssetId"
@@ -157,6 +157,7 @@
       v-if="showConfirmationPasswordPopup"
       :currency="currency"
       :amount="syncedAmount"
+      :fee="fee"
       :value="syncedValue"
       :firstIcon="firstIcon"
       :secondIcon="syncedDestNet"

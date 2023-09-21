@@ -138,16 +138,14 @@ export default class StakingPage extends Vue {
     this.getStakingParams();
   }
 
-  @Watch('stakingItems')
-  updateTab(stakingItems: any) {
-    console.log('stakingItems', stakingItems);
-
-    if (this.activeTabName !== '' && !this.showStakingItems) this.updateActiveTabName('my');
+  @Watch('showStakingItems')
+  updateTab1(newValue: boolean) {
+    if (!newValue) this.updateActiveTabName('my');
   }
 
-  @Watch('myStakingItems')
-  updateTab2(myStakingItems: any) {
-    console.log('myStakingItems', myStakingItems);
+  @Watch('showMyStakingItems')
+  updateTab2(newValue: boolean) {
+    if (!newValue) this.updateActiveTabName('all');
   }
 
   updateFilterValue(value: string) {

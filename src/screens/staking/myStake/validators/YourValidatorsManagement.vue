@@ -60,6 +60,7 @@
         v-if="showConfirmationPasswordPopup"
         amount=""
         value=""
+        :fee="fee"
         :currency="stakingCurrency"
         :firstIcon="stakingAssetId"
         extrinsicType="staking"
@@ -72,19 +73,16 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { StakingParams } from '@extension-base/services/staking-service/types';
 import { myValidators } from './mock';
 import type { NetworkName, SelectionValidator } from '@/interfaces';
-import type { GetAssetPrice, SelectedWallet } from '@/store';
+import type { GetAssetPrice, NetworkParams, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
-import type { FWValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
 import YourValidators from '@/screens/staking/myStake/validators/YourValidators.vue';
 import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import { getStakingParams, getValidators } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -97,14 +95,13 @@ import { getStakingParams, getValidators } from '@/extension/messaging';
 export default class YourValidatorsManagement extends Vue {
   state: Record<string, SelectionValidator> = {};
   showConfirmationPasswordPopup = false;
-  validators: FWValidatorInfoFull[] = [];
   myValidators = myValidators;
   step = 1;
   isSuggested = false;
   selectedValidator = '';
   fee = '0';
-  networkParams: Nullable<StakingParams> = null;
 
+  @Prop({ type: Object }) networkParams!: NetworkParams;
   @Prop({ type: String }) network!: NetworkName;
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
@@ -184,12 +181,11 @@ export default class YourValidatorsManagement extends Vue {
     return this.selectedValidator !== '';
   }
 
+  get validators() {
+    return this.networkParams.validators;
+  }
+
   async mounted() {
-    this.validators = await getValidators({ networkName: this.network });
-    const stakingParams = await getStakingParams([this.network]);
-
-    this.networkParams = stakingParams[0];
-
     this.validators.forEach(({ address, apy, name, description }) => {
       Vue.set(this.state, address, {
         name,
@@ -212,11 +208,9 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   openValidatorList(isSuggested: boolean) {
-    this.validators = this.validators.map((validator, index) => {
-      const isSelect = isSuggested && index < this.maxNominations; // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
-
-      return { ...validator, isSelect };
-    });
+    this.validators.forEach(
+      (validator, index) => (this.state[validator.address].isSelect = isSuggested && index < this.maxNominations) // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
+    );
 
     this.isSuggested = isSuggested;
     this.step = isSuggested ? 3 : 5;

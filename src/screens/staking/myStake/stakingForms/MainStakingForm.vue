@@ -12,7 +12,7 @@
           v-if="showAmountInput"
           class="amount-input"
           text="assets.amount"
-          :transferableAmount="transferableAmount"
+          :totalAmount="totalAmount"
           :value="amountPriceValue"
           :asset="stakingAssetName"
           :assetId="stakingAssetId"
@@ -25,20 +25,15 @@
 
         <Unbond v-else-if="isUnbond" :stakingCurrency="stakingCurrency" :fee="fee" />
 
-        <WithdrawUnbonded
-          v-else-if="isWithdrawUnbonded"
-          :stakingCurrency="stakingCurrency"
-          :fee="fee"
-          :rewards="rewards"
-        />
+        <WithdrawUnbonded v-else-if="isWithdrawUnbonded" :stakingCurrency="stakingCurrency" :fee="fee" />
 
         <Rebond v-else-if="isRebond" :stakingCurrency="stakingCurrency" :fee="fee" :amount="amount" />
 
         <ControllerAccount
           v-else-if="isControllerAccount"
           :network="network"
-          :controllerAccount="controllerAccount"
-          @update:controllerAccount="updateControllerAccount"
+          :controllerAddress="controllerAddress"
+          @update:controllerAddress="updateControllerAddress"
         />
       </Scroll>
 
@@ -49,6 +44,7 @@
       v-if="showConfirmationPasswordPopup"
       :currency="stakingCurrency"
       :amount="amount"
+      :fee="fee"
       :value="amountPriceValue"
       :firstIcon="stakingAssetId"
       :extrinsicType="type"
@@ -63,7 +59,7 @@ import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { AccountJson, TokenBalance } from '@extension-base/background/types/types';
 import { RequestStaking, StakingOperation } from '@extension-base//services/staking-service/types';
-import type { GetAssetPrice, SelectedWallet } from '@/store';
+import type { GetAssetPrice, GetStakingNetwork, SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import WithdrawUnbonded from '@/screens/staking/myStake/stakingForms/WithdrawUnbonded.vue';
@@ -77,6 +73,7 @@ import { NetworkName } from '@/interfaces';
 import { calcTransferableSendMinusFee, isValidAmountAsset } from '@/helpers/currencies';
 import BaseApi from '@/util/BaseApi';
 import { getSoraFees } from '@/extension/messaging';
+import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 
 @Component({
   components: {
@@ -93,9 +90,8 @@ export default class MainStakingForm extends Vue {
   isSuggested = false;
   amount = '';
   fee = '0';
-  rewards = '2';
   step = 1;
-  controllerAccount = '';
+  controllerAddress = '';
 
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
@@ -105,10 +101,15 @@ export default class MainStakingForm extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
+  @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
+
+  get stakingNetwork() {
+    return this.getStakingNetwork(this.network);
+  }
 
   get btnText() {
     if (this.isControllerAccount) {
-      if (this.controllerAccount !== '' && !this.isValidControllerAddress)
+      if (this.controllerAddress !== '' && !this.isValidControllerAddress)
         return this.$t('accounts.invalidAccountAddress');
     }
 
@@ -146,9 +147,9 @@ export default class MainStakingForm extends Vue {
   }
 
   get isValidControllerAddress() {
-    if (this.controllerAccount === '') return false;
+    if (this.controllerAddress === '') return false;
 
-    return BaseApi.validateAddress(this.controllerAccount, this.network);
+    return BaseApi.validateAddress(this.controllerAddress, this.network);
   }
 
   get confirmBtnDisabled() {
@@ -169,22 +170,15 @@ export default class MainStakingForm extends Vue {
     return this.stakingCurrency?.symbol;
   }
 
-  get stakingCurrencyBalance() {
-    return this.stakingCurrency?.balances.find(({ name }) => name.toLowerCase() === this.network.toLowerCase());
-  }
+  get totalAmount() {
+    if (this.isUnbond) return this.stakingNetwork.bondAmount;
 
-  get transferableAmount() {
-    // TODO: количество токенов в находящихся стейкинге
-    if (this.isUnbond) return 1;
+    if (this.isRebond) return this.stakingNetwork.unbondAmount;
 
-    // TODO: общее количество токенов в находящихся в анбонде и не заклеймленных
-    if (this.isRebond) return 1;
-
-    // TODO: общее количество токенов в находящихся в анбонде, срок которых истек и их можно заклеймить
-    if (this.isWithdrawUnbonded) return 1;
+    if (this.isWithdrawUnbonded) return this.stakingNetwork.withdrawUnbondedAmount;
 
     // isBondExtra;
-    return +(this.stakingCurrencyBalance?.transferable ?? 0);
+    return this.stakingNetwork.transferableAmount;
   }
 
   get stakingAssetPrice() {
@@ -206,7 +200,7 @@ export default class MainStakingForm extends Vue {
       amount: this.amount,
       from: this.selectedWallet.address,
       networkName: this.network,
-      controllerAddress: '',
+      controllerAddress: this.controllerAddress,
     } as RequestStaking;
   }
 
@@ -231,8 +225,8 @@ export default class MainStakingForm extends Vue {
     else if (this.isControllerAccount) this.fee = StakingSetController;
   }
 
-  updateControllerAccount(value: string) {
-    this.controllerAccount = value;
+  updateControllerAddress(value: string) {
+    this.controllerAddress = value;
   }
 
   closeForm() {

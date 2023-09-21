@@ -52,7 +52,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { ValidatorInfoFull } from '@extension-base/api/substrate/testStaking/types';
+import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
 import type { GetAssetPrice } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -65,7 +65,7 @@ import Scroll from '@/components/Scroll.vue';
 export default class ValidatorInfo extends Vue {
   @Prop({ type: String }) address!: string;
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
-  @Prop({ type: String }) validators!: ValidatorInfoFull[];
+  @Prop({ type: String }) validators!: FWValidatorInfoFull[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 

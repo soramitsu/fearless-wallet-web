@@ -1,14 +1,6 @@
 <template>
   <div class="withdraw-unbonded-form">
     <InfoRow
-      class="info-fee"
-      text="staking.rewards"
-      :value="`${rewards} ${asset}`"
-      :price="rewardsValueString"
-      borderType="default"
-    />
-
-    <InfoRow
       text="assets.networkFee"
       borderType="default"
       icon="info"
@@ -33,9 +25,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 @Component
 export default class WithdrawUnbonded extends Vue {
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
-  @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
   @Prop({ type: String }) fee!: string;
-  @Prop({ type: String }) rewards!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
@@ -47,18 +37,6 @@ export default class WithdrawUnbonded extends Vue {
     const priceId = this.stakingCurrency?.priceId ?? '';
 
     return this.getAssetPrice(priceId).price;
-  }
-
-  get rewardedAssetPrice() {
-    const priceId = this.rewardedCurrency?.priceId ?? '';
-
-    return this.getAssetPrice(priceId).price;
-  }
-
-  get rewardsValueString() {
-    const value = +this.rewards * this.rewardedAssetPrice;
-
-    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
   }
 
   get feeValueString() {

@@ -62,6 +62,7 @@
       v-if="showConfirmationPasswordPopup"
       :currency="stakingCurrency"
       :amount="summaryRewards"
+      :fee="fee"
       :value="amountPriceValue"
       :firstIcon="stakingAssetId"
       extrinsicType="staking"

@@ -188,6 +188,8 @@ export default class NetworkManagement extends Vue {
   async toggleFavorite(network: string) {
     const isFavorite = await this.setFavorite({ networkName: network, address: this.selectedWallet.address });
 
+    if (this.selectedNetwork === FAVORITE_NETWORKS) updateCurrentNetwork(this.selectedNetwork);
+
     const t = this.getLocale(isFavorite ? 'deleteFavorite' : 'addFavorite');
     const prepNotification = this.$t(t, { network });
 

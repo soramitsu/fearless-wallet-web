@@ -693,26 +693,26 @@ export default class State {
     const networks = Object.values(this.networkMap);
     const prepNetworks = new Set<NetworkJson>();
     const selectedNetworks = Object.values(this.selectedNetworks);
-    const isAllNetworkPicked = selectedNetworks.some((el) => el === ALL_NETWORKS);
+    const isAllNetworkPicked = selectedNetworks.some((selectedNetwork) => selectedNetwork === ALL_NETWORKS);
 
     if (isAllNetworkPicked) return networks;
 
-    selectedNetworks.forEach((el) => {
-      if (el === POPULAR_NETWORKS) {
+    selectedNetworks.forEach((selectedNetwork) => {
+      if (selectedNetwork === POPULAR_NETWORKS) {
         const popular = networks.filter((el) => el.rank !== undefined);
         popular.forEach((el) => prepNetworks.add(el));
 
         return;
       }
 
-      if (el === FAVORITE_NETWORKS) {
+      if (selectedNetwork === FAVORITE_NETWORKS) {
         const favorite = networks.filter((el) => el.favorite.length);
         favorite.forEach((el) => prepNetworks.add(el));
 
         return;
       }
 
-      const singleNetwork = networks.find((network) => network.name === el);
+      const singleNetwork = networks.find((network) => network.name === selectedNetwork);
 
       if (singleNetwork) prepNetworks.add(singleNetwork);
     });

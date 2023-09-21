@@ -12,7 +12,12 @@ import type { OnboardingStory } from '@/interfaces';
 defineProps<{ story: OnboardingStory }>();
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
+@font-face {
+  font-family: 'Unbounded';
+  src: local('Unbounded'), url('@/assets/fonts/Unbounded-Bold.ttf') format('truetype');
+}
+
 .story {
   display: flex;
   flex-flow: column;
@@ -20,8 +25,7 @@ defineProps<{ story: OnboardingStory }>();
   gap: 10px;
 
   &__image {
-    max-width: 440px;
-    max-height: 300px;
+    max-height: 330px;
   }
 
   &__title {

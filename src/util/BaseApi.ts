@@ -14,7 +14,7 @@ import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { isDerivationPathValid, isJsonValid, jsonRestore } from '@/extension/messaging';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import { NetworksController } from '@/controllers';
 import store from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
@@ -98,6 +98,10 @@ export default class BaseApi {
 
   public static isEthereumNetwork(network: string): boolean {
     return ETHEREUM_NETWORKS.includes(network.toLowerCase());
+  }
+
+  public static isEthereumNativeNetwork(network: string): boolean {
+    return NATIVE_ETHEREUM_NETWORKS.includes(network.toLowerCase());
   }
 
   public static parseJson(jsonString: string): KeyringPair$Json {

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ethers } from 'ethers';
+// import { ethers } from 'ethers';
 import type {
   SubqueryHistory,
   GiantsquidHistoryItem,
@@ -150,6 +150,7 @@ async function fetchEthereumTokenHistory(
       module: 'account',
       action: 'tokentx',
       contractAddress: contractAddress,
+      address: address,
       page: 1,
       offset: 50,
       sort: 'desc',
@@ -164,14 +165,12 @@ async function fetchEthereumTokenHistory(
     return [];
   }
 
-  const decimal = +res.data.result[0].tokenDecimal;
-
   return res.data.result.map(({ timeStamp, value, gasPrice, gasUsed, from, to, hash }, index) => ({
     address,
     id: String(index),
     timestamp: (+timeStamp * 1000).toString(),
     transfer: {
-      amount: ethers.formatUnits(value, decimal),
+      amount: value,
       hash,
       eventIdx: 0,
       fee: (+gasPrice * +gasUsed).toString(),

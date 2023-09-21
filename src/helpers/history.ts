@@ -11,6 +11,7 @@ import type { TokenBalance } from '@extension-base/background/types/types';
 import { TransactionType, TransferType } from '@/interfaces';
 import { firstCharToUp } from '@/helpers';
 import store from '@/store';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 function getType(historyElement: HistoryElement): TransactionType {
   const { reward, transfer } = historyElement;
@@ -65,6 +66,16 @@ function getFormattedDate({ timestamp }: HistoryElement) {
   return format(date, 'dd MMMM yyyy HH:mm');
 }
 
+function getHumanFeeValue(value: string, networkName: NetworkName) {
+  const tokenBalances: TokenBalance[] = store.getters.getBalances;
+  const network: NetworkJson = store.getters.getNetwork(networkName);
+  const utilityId = network.assets.find((asset) => asset.isUtility)?.id ?? '';
+  const utilityToken = tokenBalances.find(({ assetId }) => assetId === utilityId);
+  const precision = utilityToken?.precision ?? 0;
+
+  return FPNumber.fromCodecValue(value, precision).toNumber();
+}
+
 function getHumanValue(value: string, assetId: string, networkName: NetworkName) {
   const tokenBalances: TokenBalance[] = store.getters.getBalances;
   const { balances } = tokenBalances.find(({ assetId: id }) => id === assetId)!;
@@ -82,7 +93,7 @@ function getHistoryValue(historyElement: HistoryElement, assetId: string, networ
   if (type === TransactionType.transfer && transfer) {
     const { amount, fee } = transfer;
     const value = getHumanValue(amount, assetId, networkName);
-    const fees = getHumanValue(fee, assetId, networkName);
+    const fees = getHumanFeeValue(fee, networkName);
 
     return { signTransfer, value, fee: fees };
   }
@@ -102,20 +113,20 @@ function getHistoryValue(historyElement: HistoryElement, assetId: string, networ
   return { signTransfer: '-', value };
 }
 
-function getHumanTransferFee(historyElement: HistoryElement, assetId: string, networkName: NetworkName) {
+function getHumanTransferFee(historyElement: HistoryElement, networkName: NetworkName) {
   const { transfer, extrinsic } = historyElement;
   const type = getType(historyElement);
 
   if (type === TransactionType.transfer) {
     const { fee } = transfer!;
 
-    return getHumanValue(fee, assetId, networkName);
+    return getHumanFeeValue(fee, networkName);
   }
 
   if (type === TransactionType.extrinsic) {
     const { fee } = extrinsic!;
 
-    return getHumanValue(fee, assetId, networkName);
+    return getHumanFeeValue(fee, networkName);
   }
 
   return '';
@@ -179,6 +190,7 @@ export {
   getEthereumExplorerApiKey,
   getHumanTransferFee,
   getHistoryValue,
+  getHumanFeeValue,
   getFormattedDate,
   getSignTransfer,
   getFormattedHistory,

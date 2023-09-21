@@ -93,7 +93,7 @@ function getHistoryValue(historyElement: HistoryElement, assetId: string, networ
   if (type === TransactionType.transfer && transfer) {
     const { amount, fee } = transfer;
     const value = getHumanValue(amount, assetId, networkName);
-    const fees = getHumanValue(fee, assetId, networkName);
+    const fees = getHumanFeeValue(fee, networkName);
 
     return { signTransfer, value, fee: fees };
   }

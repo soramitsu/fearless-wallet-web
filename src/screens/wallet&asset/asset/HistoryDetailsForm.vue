@@ -241,7 +241,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get transferFee() {
-    const fees = getHumanTransferFee(this.historyElement, this.assetId, this.selectedNetwork);
+    const fees = getHumanTransferFee(this.historyElement, this.selectedNetwork);
 
     if (!fees) return '';
 

@@ -249,6 +249,12 @@ export default class CurrencyItem extends Vue {
     return this.isCurrentNetwork ? this.selectedNetwork : '';
   }
 
+  get computeActiveNetworks() {
+    return this.assetData.balances.filter((network) => {
+      return this.getNetwork(network.name).active;
+    });
+  }
+
   openAssetPage(event: CustomEvent) {
     if (this.showWarning) return;
 
@@ -262,12 +268,12 @@ export default class CurrencyItem extends Vue {
     )
       return;
 
-    if (this.isCurrentNetwork) {
+    if (this.isCurrentNetwork || this.computeActiveNetworks.length === 1) {
       this.$router.push({
         name: Components.AssetHistory,
         params: {
           assetId: this.assetData.assetId,
-          selectedNetwork: this.redirectNetwork,
+          selectedNetwork: this.redirectNetwork === '' ? this.computeActiveNetworks[0].name : this.redirectNetwork,
         },
       });
 

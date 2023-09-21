@@ -44,12 +44,6 @@
       :providers="providers"
       @closePopup="toggleVisible('showBuyPopup', false)"
     />
-
-    <NetworkManagement
-      v-if="showSelectNetworkPopup"
-      :type="selectedNetwork"
-      @handlerClose="toggleSelectNetworkPopupVisible"
-    />
   </div>
 </template>
 
@@ -99,7 +93,6 @@ export default class Asset extends Vue {
   showCrossChainForm = false;
   showBuyPopup = false;
   showTipPopup = false;
-  showSelectNetworkPopup = false;
   filterValue = '';
 
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
@@ -191,10 +184,6 @@ export default class Asset extends Vue {
 
   closeHistoryDetailsForm() {
     this.historyElement = null;
-  }
-
-  toggleSelectNetworkPopupVisible() {
-    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
   }
 }
 </script>

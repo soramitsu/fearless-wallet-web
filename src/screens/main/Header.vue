@@ -79,7 +79,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
-import { ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
+import { ActiveTabAuthorizeStatus, TokenBalance } from '@extension-base/background/types/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import type { NetworkJson } from '@extension-base/types';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
@@ -121,6 +121,7 @@ export default class Header extends Vue {
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get showBackIcon() {
@@ -137,7 +138,26 @@ export default class Header extends Vue {
     return isNetworkGroup(this.selectedNetwork);
   }
 
+  get selectedAssetId() {
+    return this.$route.params.assetId ?? '';
+  }
+
+  get currentCurrency(): TokenBalance | undefined {
+    return this.balances.find(({ assetId: id }) => id === this.selectedAssetId);
+  }
+
+  get computeActiveNetworks() {
+    if (!this.currentCurrency) return [];
+
+    return this.currentCurrency.balances.filter((network) => {
+      return this.getNetwork(network.name).active;
+    });
+  }
+
   get networkManagementButtonText() {
+    if (this.$route.name === Components.AssetHistory && this.computeActiveNetworks.length === 1)
+      return this.computeActiveNetworks[0].name;
+
     if (this.isGroup) {
       return this.$t(`header.networkManagement.${this.selectedNetwork}`);
     }

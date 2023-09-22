@@ -165,7 +165,7 @@ export function subscribeBalance(
   setBalance: (networkKey: string, rs: Partial<BalanceItem>) => void
 ) {
   const unsubList = Object.entries(state.getSubstrateApiMap).map(async ([networkKey, apiProps]) => {
-    const isReady = await apiProps.api?.isReadyOrError;
+    const isReady = await apiProps.api?.isReady;
 
     if (!isReady) return () => null;
 

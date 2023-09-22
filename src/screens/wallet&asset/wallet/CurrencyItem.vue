@@ -110,6 +110,7 @@ import {
 } from '@/helpers/currencies';
 import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 import { isNetworkGroup } from '@/helpers/common';
+import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 
 @Component
 export default class CurrencyItem extends Vue {
@@ -250,8 +251,14 @@ export default class CurrencyItem extends Vue {
   }
 
   get computeActiveNetworks() {
-    return this.assetData.balances.filter((network) => {
-      return this.getNetwork(network.name).active;
+    return this.assetData.balances.filter(({ name }) => {
+      const network = this.getNetwork(name);
+
+      if (this.selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
+      if (this.selectedNetwork === FAVORITE_NETWORKS)
+        return network.favorite.some((address) => address === this.selectedWallet.address);
+
+      return this.getNetwork(name).active;
     });
   }
 

@@ -147,9 +147,7 @@ export class FWCron {
 
     const apiMap = this.state.getApiMap;
 
-    for (const [key] of Object.entries(apiMap.evm)) {
-      this.state.refreshWeb3Api(key);
-    }
+    for (const [key] of Object.entries(apiMap.evm)) this.state.refreshWeb3Api(key);
 
     for (const [key, substrate] of Object.entries(apiMap.substrate)) {
       if (substrate.api === undefined) {

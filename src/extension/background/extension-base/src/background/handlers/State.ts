@@ -691,33 +691,38 @@ export default class State {
 
   public getActiveNetworks() {
     const networks = Object.values(this.networkMap);
-    const prepNetworks = new Set<NetworkJson>();
-    const selectedNetworks = Object.values(this.selectedNetworks);
-    const isAllNetworkPicked = selectedNetworks.some((selectedNetwork) => selectedNetwork === ALL_NETWORKS);
+    const uniqNetworks = new Set<NetworkJson>();
+    const selectedNetworks = Object.keys(this.selectedNetworks);
+
+    const isAllNetworkPicked = selectedNetworks.some((address) => this.selectedNetworks[address] === ALL_NETWORKS);
 
     if (isAllNetworkPicked) return networks;
 
-    selectedNetworks.forEach((selectedNetwork) => {
-      if (selectedNetwork === POPULAR_NETWORKS) {
+    selectedNetworks.forEach((address) => {
+      const value = this.selectedNetworks[address];
+
+      if (value === POPULAR_NETWORKS) {
         const popular = networks.filter((el) => el.rank !== undefined);
-        popular.forEach((el) => prepNetworks.add(el));
+        popular.forEach((el) => uniqNetworks.add(el));
 
         return;
       }
 
-      if (selectedNetwork === FAVORITE_NETWORKS) {
-        const favorite = networks.filter((el) => el.favorite.length);
-        favorite.forEach((el) => prepNetworks.add(el));
+      if (value === FAVORITE_NETWORKS) {
+        const favorite = networks.filter((el) => el.favorite.length && el.favorite.includes(address));
+
+        favorite.forEach((el) => uniqNetworks.add(el));
 
         return;
       }
 
-      const singleNetwork = networks.find((network) => network.name === selectedNetwork);
+      const singleNetwork = networks.find((network) => network.name === value);
 
-      if (singleNetwork) prepNetworks.add(singleNetwork);
+      if (singleNetwork) uniqNetworks.add(singleNetwork);
     });
+    console.info(uniqNetworks, 'set this to Active');
 
-    return Array.from(prepNetworks);
+    return Array.from(uniqNetworks);
   }
 
   public async setActiveNetworks(type: string) {
@@ -733,7 +738,8 @@ export default class State {
     const networks = this.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((key) => {
-      const isExists = networks.some(({ name }) => name === key);
+      const isExists = networks.some(({ name }) => name.toLowerCase() === key.toLowerCase());
+
       this.networkMap[key].active = isExists;
     });
 

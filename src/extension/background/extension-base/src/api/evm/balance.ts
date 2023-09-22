@@ -42,6 +42,7 @@ function subscribeERC20Interval(
           frozen: '0',
           free,
           transferable: free,
+          relayChain: 'ethereum',
           total: free,
           icon,
           name,
@@ -84,14 +85,16 @@ export function subscribeEVMBalance(
   callback: (networkKey: string, rs: Partial<BalanceItem>) => void
 ) {
   const network = state.networkMap[networkKey];
-  const { icon, name, type, id } = network.assets.find((el) => el.isUtility)!;
+  const { icon, name, type, id, symbol } = network.assets.find((el) => el.isUtility)!;
   const balanceItem = {
     state: APIItemState.PENDING,
+    symbol,
     name,
     icon,
     type,
     id,
     free: '0',
+    relayChain: 'ethereum',
     reserved: '0',
     miscFrozen: '0',
     frozen: '0',

@@ -152,6 +152,7 @@ export class FWCron {
     for (const [key, substrate] of Object.entries(apiMap.substrate)) {
       if (substrate.api === undefined) {
         this.state.refreshDotSamaApi(key);
+
         continue;
       }
 

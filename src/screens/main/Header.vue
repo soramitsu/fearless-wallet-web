@@ -155,8 +155,11 @@ export default class Header extends Vue {
   }
 
   get networkManagementButtonText() {
-    if (this.$route.name === Components.AssetHistory && this.computeActiveNetworks.length === 1)
-      return this.computeActiveNetworks[0].name;
+    if (this.$route.name === Components.AssetHistory) {
+      if (this.computeActiveNetworks.length === 1) return this.computeActiveNetworks[0].name;
+
+      return this.getNetwork(this.$route.params.selectedNetwork).name;
+    }
 
     if (this.isGroup) {
       return this.$t(`header.networkManagement.${this.selectedNetwork}`);

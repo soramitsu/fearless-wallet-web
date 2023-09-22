@@ -2,7 +2,7 @@ import { NetworkFeesObject } from '@sora-substrate/util';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Node } from '@/interfaces';
 
-type RelayChainName = 'polkadot' | 'kusama' | 'westend' | 'rococo';
+type RelayChainName = 'polkadot' | 'kusama' | 'westend' | 'rococo' | 'ethereum';
 
 type SoraFees = {
   [key in keyof NetworkFeesObject]: string;

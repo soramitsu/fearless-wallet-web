@@ -2,16 +2,6 @@ import { ValidatorInfoFull } from '@sora-substrate/util/src/staking/types';
 import { PasswordRequestSign } from '../../background/types/types';
 import { NetworkName } from '@/interfaces';
 
-export interface ValidatorsRequest {
-  networkName: NetworkName;
-}
-
-export interface ResponseCheckStaking {
-  fee: string;
-}
-
-///////////////////////////////////////////////////////
-
 export interface Bond {
   from: string;
   controllerAddress: string;
@@ -109,8 +99,6 @@ export type MakeStakingRequest = {
   type: StakingOperation;
 };
 
-export type StakingParamsRequest = NetworkName[];
-
 export interface FWValidatorInfoFull extends ValidatorInfoFull {
   name: string;
   description: string;
@@ -125,6 +113,17 @@ export type StakingParams = {
   unbondAmount: string;
   withdrawUnbondedAmount: string;
   validators: FWValidatorInfoFull[];
+  myValidators: FWValidatorInfoFull[];
+};
+
+export type StakingParamsRequest = {
+  networks: NetworkName[];
 };
 
 export type StakingParamsResponse = StakingParams[];
+
+export type GetMyValidatorsRequest = {
+  network: NetworkName;
+};
+
+export type GetMyValidatorsResponse = FWValidatorInfoFull[];

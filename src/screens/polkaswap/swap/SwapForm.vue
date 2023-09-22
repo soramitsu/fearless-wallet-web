@@ -190,7 +190,6 @@
       v-if="showConfirmationPasswordPopup"
       :currency="sendCurrency"
       :amount="sendAmount"
-      :fee="fee"
       :value="sendValue"
       :firstIcon="sendAssetId"
       :secondIcon="receiveAssetId"

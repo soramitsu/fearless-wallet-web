@@ -1,5 +1,9 @@
 import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
 
+interface SelectionValidator extends FWValidatorInfoFull {
+  isSelect: boolean;
+}
+
 interface Validator {
   name: string;
   address: string;
@@ -10,14 +14,6 @@ interface Validator {
   isOversubscribed: boolean;
   limitValidatorsIdentity: boolean;
   onchainIdentity: boolean;
-}
-
-interface SelectionValidator extends FWValidatorInfoFull {
-  isSelect: boolean;
-}
-
-interface MyValidator extends Validator {
-  rewards: string;
 }
 
 interface MyValidator extends Validator {

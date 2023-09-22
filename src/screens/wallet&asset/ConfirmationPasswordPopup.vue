@@ -70,6 +70,7 @@ import {
   RequestCrossChain,
   TokenBalance,
   RequestSwap,
+  BasicTxErrorCode,
 } from '@extension-base/background/types/types';
 import { RequestStaking, StakingOperation } from '@extension-base//services/staking-service/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -107,8 +108,9 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   @Ref('passInput') readonly passInputComponent!: ValidatedInput;
   @Prop({ type: String, default: '0' }) amount!: string;
+  @Prop({ type: String, default: '0' }) value!: string;
   @Prop({ type: String, default: '0' }) fee!: string;
-  @Prop(String) value!: string;
+  @Prop({ type: String, default: '0' }) feeValue!: string;
   @Prop(String) firstIcon!: string;
   @Prop(String) secondIcon!: string;
   @Prop(String) transactionId?: string;
@@ -126,10 +128,6 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
-
-  get amountPlusFee() {
-    return +this.amount + +this.fee;
-  }
 
   get classesInput() {
     return [
@@ -189,18 +187,26 @@ export default class ConfirmationPasswordPopup extends Vue {
     return this.isLocked ? 'assets.15min' : 'assets.15minExtend';
   }
 
-  get headerType() {
-    if (this.transactionState === 'success') return 'success';
+  get isSuccess() {
+    return this.transactionState === 'success';
+  }
 
-    if (this.transactionState === 'failed') return 'failed';
+  get isFailed() {
+    return this.transactionState === 'failed';
+  }
+
+  get headerType() {
+    if (this.isSuccess) return 'success';
+
+    if (this.isFailed) return 'failed';
 
     return 'pending';
   }
 
   get popupHeader() {
-    if (this.transactionState === 'success') return 'assets.transactionDone';
+    if (this.isSuccess) return 'assets.transactionDone';
 
-    if (this.transactionState === 'failed') return 'assets.transactionError';
+    if (this.isFailed) return 'assets.transactionError';
 
     if (this.isTransactionPending) return 'assets.transactionPending';
 
@@ -208,11 +214,17 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transferAmountString() {
-    return `-${this.$n(+this.amountPlusFee, 'decimal')} ${this.currency?.symbol.toUpperCase()}`;
+    const sumValue = +this.amount + +this.fee;
+    const value = this.isSuccess ? sumValue : +this.fee;
+
+    return `-${this.$n(value, 'decimal')} ${this.currency?.symbol.toUpperCase()}`;
   }
 
   get transferValueString() {
-    return `${this.fiatSymbol}${this.$n(+this.value, 'price')}`;
+    const sumValue = +this.value + +this.feeValue;
+    const value = this.isSuccess ? sumValue : +this.feeValue;
+
+    return `${this.fiatSymbol}${this.$n(value, 'price')}`;
   }
 
   get isTransactionInit() {
@@ -224,7 +236,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get isTransactionFinished() {
-    return this.transactionState === 'success' || this.transactionState === 'failed';
+    return this.isSuccess || this.isFailed;
   }
 
   get isStaking() {
@@ -359,12 +371,18 @@ export default class ConfirmationPasswordPopup extends Vue {
     const results = await this.makeExtrinsic();
 
     if (!results?.status) {
-      this.isErrorPassword = true;
+      const isErrorPassword = results?.errors?.some(({ code }) => code === BasicTxErrorCode.INVALID_PASSWORD) ?? false;
 
-      this.resetTxStatus();
+      if (isErrorPassword) {
+        this.isErrorPassword = true;
+
+        this.resetTxStatus();
+
+        return;
+      }
     }
 
-    // функции выполняются через "@sora-substrate/util
+    // функции выполняются через "@sora-substrate/util, для них не работают колбеки с подпиской
     if (this.extrinsicType === 'swap' || this.isStaking) this.transactionState = results?.status ? 'success' : 'failed';
   }
 }

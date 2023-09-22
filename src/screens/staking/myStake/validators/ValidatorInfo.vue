@@ -70,9 +70,7 @@ export default class ValidatorInfo extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get validatorName() {
-    const name = this.validatorInfo.identity?.info.display ?? 'no validator info';
-
-    return name;
+    return this.validatorInfo.name;
   }
 
   get validatorInfo() {

@@ -24,7 +24,6 @@
 
         <ConfirmationPasswordPopup
           v-if="isSignPopupVisible"
-          sizeWidth="medium"
           :address="payload.address"
           :transactionId="request.id"
           :payload="payload"

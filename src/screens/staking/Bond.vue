@@ -16,7 +16,7 @@
             class="amount-input"
             text="assets.amount"
             :totalAmount="transferableAmount"
-            :value="amountPriceValue"
+            :value="amountValue"
             :asset="stakingAssetName"
             :assetId="stakingAssetId"
             :amount="amount"
@@ -141,8 +141,9 @@
       v-if="showConfirmationPasswordPopup"
       :currency="stakingCurrency"
       :amount="amount"
+      :value="amountValue"
       :fee="fee"
-      :value="amountPriceValue"
+      :feeValue="feeValue"
       :firstIcon="stakingAssetId"
       :tx="tx"
       extrinsicType="bond"
@@ -231,7 +232,11 @@ export default class Bond extends Vue {
     return this.stakingCurrency?.balances.find(({ name }) => name.toLowerCase() === this.network.toLowerCase());
   }
 
-  get amountPriceValue() {
+  get feeValue() {
+    return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
+  }
+
+  get amountValue() {
     return getCostOfAssets(this.amount, this.stakingAssetPrice).toString();
   }
 
@@ -352,17 +357,17 @@ export default class Bond extends Vue {
       amount: this.amount,
       from: this.selectedWallet.address,
       networkName: this.network,
-      controllerAddress: '',
+      controllerAddress: this.payoutAddress,
       validators: this.selectedValidators,
     } as RequestBond;
   }
 
   get validators() {
-    return this.networkParams.validators;
+    return Object.values(this.state);
   }
 
-  async mounted() {
-    this.validators.forEach(({ address, apy, name, description }) => {
+  mounted() {
+    this.networkParams.validators.forEach(({ address, apy, name, description }) => {
       Vue.set(this.state, address, {
         name,
         address,
@@ -376,9 +381,11 @@ export default class Bond extends Vue {
   }
 
   async getSoraFees() {
-    const { StakingBond } = await getSoraFees();
+    const { StakingBond, StakingNominate } = await getSoraFees();
 
-    this.fee = StakingBond;
+    // показываем комиссию бонд+номинейт, потому что делаем обе операции за раз
+    // TODO: в сетях кроме соры, контроллер устанавливается отдельным вызовом, по этому нужно прибавлять и комиссию за StakingSetController
+    this.fee = (+StakingBond + +StakingNominate).toString();
   }
 
   openValidatorList(isSuggested: boolean) {

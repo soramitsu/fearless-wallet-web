@@ -171,7 +171,7 @@ export function subscribeBalance(
             const isReady = await apiProps.api?.isReadyOrError;
 
             res(isReady);
-          }, 1000)
+          }, 1500)
         )
       : await apiProps.api?.isReadyOrError;
 

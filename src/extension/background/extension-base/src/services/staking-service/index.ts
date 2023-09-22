@@ -1,8 +1,9 @@
 import { api as apiSora } from '@sora-substrate/util';
 import State from '@extension-base/background/handlers/State';
 import { BasicTxResponse, TransferErrorCode } from '../../background/types/types';
+import { CurrentAccountState } from '../../stores/CurrentAccountStore';
+import { isEthereumNetwork } from '../../background/utils/utils';
 import {
-  ValidatorsRequest,
   RequestBond,
   RequestUnbond,
   RequestRebond,
@@ -13,44 +14,42 @@ import {
   StakingParamsResponse,
   RequestNominate,
 } from './types';
-import type { FWValidatorInfoFull, StakingParams } from '@extension-base/services/staking-service/types';
+import type {
+  FWValidatorInfoFull,
+  StakingParams,
+  StakingParamsRequest,
+} from '@extension-base/services/staking-service/types';
 import { NetworkName } from '@/interfaces';
-import { DAY1 } from '@/consts/time';
+import { getDefaultStakingParams } from '@/helpers/staking';
+import { noTimeHasPassed } from '@/helpers/common';
+import { cut } from '@/helpers';
 
-type Params = Record<NetworkName, StakingParams & { timespan: number }>;
-
-const getStakingParams = (network: string) => ({
-  network,
-  apy: 0,
-  unbondPeriod: 0,
-  maxNominations: 0,
-  minBond: 0,
-  unbondAmount: '0',
-  withdrawUnbondedAmount: '0',
-  validators: [],
-});
+type Params = Record<string, Record<NetworkName, StakingParams & { timespan: number }>>;
 
 export class StakingService {
   stakingParams: Params = {};
 
   constructor(private state: State) {}
 
-  public async getStakingParams(networks: NetworkName[]): Promise<StakingParamsResponse> {
+  public async getStakingParams(params: StakingParamsRequest): Promise<StakingParamsResponse> {
+    const { networks } = params;
+
+    const currentAccount = await this.state.currentAccount;
+
     // TODO use networks
     const promises: Promise<StakingParams>[] = networks.map(async (network) => {
-      if (Date.now() - this.stakingParams[network]?.timespan < DAY1) return this.stakingParams[network];
-
       const apiProps = this.state.getSubstrateApiMap[network];
 
-      if (!apiProps.api) return getStakingParams(network);
+      if (!apiProps.api) return getDefaultStakingParams(network);
 
       const isReady = await apiProps.api?.isReady;
 
-      if (!isReady) return getStakingParams(network);
+      if (!isReady) return getDefaultStakingParams(network);
 
-      const validators = await this.getValidators({ networkName: network });
+      const validators = await this.getValidators(network, currentAccount);
       const summaryApy = validators.reduce((result, { apy }) => result + +apy, 0);
       const apy = summaryApy / validators.length;
+      const myValidators = await this.getMyValidators(network, validators, currentAccount);
 
       // TODO
       const unbondAmount = '0';
@@ -59,12 +58,13 @@ export class StakingService {
       return {
         network,
         validators,
+        myValidators,
         apy,
         unbondAmount,
         withdrawUnbondedAmount,
         unbondPeriod: apiSora.staking.getBondingDuration(),
         maxNominations: apiSora.staking.getMaxNominations(),
-        minBond: await apiSora.staking.getMinNominatorBond(),
+        minBond: await this.getMinNominatorBond(network, currentAccount),
       };
     });
 
@@ -72,24 +72,58 @@ export class StakingService {
     const timespan = Date.now();
 
     stakingInfos.forEach((item) => {
-      this.stakingParams[item.network] = { ...item, timespan };
+      if (!this.stakingParams[currentAccount!.address]) this.stakingParams[currentAccount!.address] = {};
+
+      this.stakingParams[currentAccount!.address][item.network] = { ...item, timespan };
     });
 
     return Promise.all(promises);
   }
 
-  public async getValidators({ networkName }: ValidatorsRequest): Promise<FWValidatorInfoFull[]> {
-    console.info('getValidators', networkName);
+  public async getValidators(
+    networkName: NetworkName,
+    currentAccount: CurrentAccountState
+  ): Promise<FWValidatorInfoFull[]> {
+    const params = this.stakingParams?.[currentAccount!.address]?.[networkName];
+
+    if (noTimeHasPassed(params?.timespan, 'day')) return params.validators;
 
     const validators: FWValidatorInfoFull[] = (await apiSora.staking.getValidatorsInfo()).map((validator) => {
       const info = validator.identity?.info;
-      const name = info?.display || info?.legal || 'no validator info';
+
+      const name = info?.display || info?.legal || cut(validator.address);
       const description = info?.twitter || info?.web || 'no validator info';
 
       return { ...validator, name, description };
     });
 
     return validators;
+  }
+
+  public async getMyValidators(
+    network: NetworkName,
+    _validators?: FWValidatorInfoFull[],
+    _currentAccount?: CurrentAccountState
+  ): Promise<FWValidatorInfoFull[]> {
+    const currentAccount = _currentAccount ?? (await this.state.currentAccount);
+    const validators = _validators ?? (await this.getValidators(network, currentAccount));
+
+    const address = isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
+    const nominations = await apiSora.staking.getNominations(address);
+
+    if (nominations === null) return [];
+
+    const addresses = nominations.targets;
+
+    return validators.filter(({ address }) => addresses.includes(address));
+  }
+
+  public async getMinNominatorBond(network: NetworkName, currentAccount: CurrentAccountState) {
+    const params = this.stakingParams?.[currentAccount!.address]?.[network];
+
+    if (noTimeHasPassed(params?.timespan, 'day')) return params.minBond;
+
+    return await apiSora.staking.getMinNominatorBond();
   }
 
   public async makeStaking({ params, type }: MakeStakingRequest): Promise<BasicTxResponse> {
@@ -128,8 +162,8 @@ export class StakingService {
   public async bond(params: RequestBond): Promise<BasicTxResponse> {
     const { amount, controllerAddress, from, isSavePass } = params;
 
-    const controller = controllerAddress === from ? '' : controllerAddress; // TODO уточнить как передавать controller если он не нужен
-    const payee = controller === '' ? 'Stash' : 'Controller';
+    const controller = controllerAddress !== '' ? controllerAddress : from;
+    const payee = controllerAddress !== '' ? 'Controller' : 'Stash'; // TODO ??? уточнить как формировать payee
 
     try {
       await apiSora.staking.bond({ value: amount, controller, payee });
@@ -161,7 +195,7 @@ export class StakingService {
     const { amount } = params;
 
     try {
-      apiSora.staking.bondExtra({ value: amount });
+      await apiSora.staking.bondExtra({ value: amount });
     } catch (ex) {
       const message = `[STAKING] BondExtra failed: ${ex}`;
 
@@ -185,7 +219,7 @@ export class StakingService {
     const { amount } = params;
 
     try {
-      apiSora.staking.unbond({ value: amount });
+      await apiSora.staking.unbond({ value: amount });
     } catch (ex) {
       const message = `[STAKING] Unbond failed: ${ex}`;
 
@@ -209,7 +243,7 @@ export class StakingService {
     const { amount } = params;
 
     try {
-      apiSora.staking.rebond({ value: amount });
+      await apiSora.staking.rebond({ value: amount });
     } catch (ex) {
       const message = `[STAKING] Rebond failed: ${ex}`;
 
@@ -233,7 +267,7 @@ export class StakingService {
     const { amount } = params;
 
     try {
-      apiSora.staking.withdrawUnbonded({ value: amount });
+      await apiSora.staking.withdrawUnbonded({ value: amount });
     } catch (ex) {
       const message = `[STAKING] WithdrawUnbonded failed: ${ex}`;
 
@@ -257,7 +291,7 @@ export class StakingService {
     const { controllerAddress } = params;
 
     try {
-      apiSora.staking.setController({ address: controllerAddress });
+      await apiSora.staking.setController({ address: controllerAddress });
     } catch (ex) {
       const message = `[STAKING] Set controller failed: ${ex}`;
 

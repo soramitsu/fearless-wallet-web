@@ -215,6 +215,7 @@ export enum BasicTxErrorCode {
   INVALID_PARAM = 'invalidParam',
   KEYRING_ERROR = 'keyringError',
   BALANCE_TO_LOW = 'balanceTooLow',
+  INVALID_PASSWORD = 'invalidPassword',
 }
 
 export interface BasicTxResponse {

@@ -23,13 +23,17 @@ import {
   makeCrossChain,
   estimateCrossChainFee,
 } from '@extension-base/api/substrate/crossChain';
-import { RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
+import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
 import { ethers } from 'ethers';
 import { balanceItemByNetwork, getSubstrateAddress, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { storage } from '@extension-base/stores/Storage';
-import { StakingParamsRequest } from '@extension-base/services/staking-service/types';
+import {
+  GetMyValidatorsRequest,
+  GetMyValidatorsResponse,
+  StakingParamsRequest,
+} from '@extension-base/services/staking-service/types';
 import { MakeStakingRequest, StakingParamsResponse } from './../../services/staking-service/types';
 import type {
   MobileSigningRequest,
@@ -92,7 +96,6 @@ import {
   GoogleAuthTypes,
   ICreateFile,
   IGetFilesResponse,
-  NetworkName,
   OnboardingStories,
   SoraFees,
   VerifyTokenResponse,
@@ -1108,12 +1111,16 @@ export default class Extension extends FWExtensionBase {
     return this.state.onboardingService.getStories(lang);
   }
 
-  getStakingParams(networks: NetworkName[]): Promise<StakingParamsResponse> {
-    return state.stakingService.getStakingParams(networks);
+  getStakingParams(params: StakingParamsRequest): Promise<StakingParamsResponse> {
+    return state.stakingService.getStakingParams(params);
+  }
+
+  getMyValidators(params: GetMyValidatorsRequest): Promise<GetMyValidatorsResponse> {
+    return state.stakingService.getMyValidators(params.network);
   }
 
   async makeStaking(request: MakeStakingRequest): Promise<BasicTxResponse> {
-    const { from, password } = request.params;
+    const { from, password, isSavePass } = request.params;
 
     const pair = this.state.keyringService.getPair(from);
 
@@ -1121,11 +1128,18 @@ export default class Extension extends FWExtensionBase {
       const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock) {
-        return { status: false, errors: [{ message: 'Invalid password' }] };
+        return { status: false, errors: [{ code: BasicTxErrorCode.INVALID_PASSWORD, message: 'Invalid password' }] };
       }
     }
 
-    return state.stakingService.makeStaking(request);
+    const address = getSubstrateAddress(from);
+    const ethereumAddress = this.state.keyringService.getAccount(address)?.meta.ethereumAddress as string | undefined;
+
+    const result = await state.stakingService.makeStaking(request);
+
+    this.savePass(address, ethereumAddress, isSavePass, false);
+
+    return result;
   }
 
   async handle<TMessageType extends MessageTypes>(
@@ -1251,6 +1265,9 @@ export default class Extension extends FWExtensionBase {
       // staking
       case 'pri(staking.stakingParams)':
         return this.getStakingParams(request as StakingParamsRequest);
+
+      case 'pri(staking.myValidators)':
+        return this.getMyValidators(request as GetMyValidatorsRequest);
 
       case 'pri(staking.makeStaking)':
         return this.makeStaking(request as MakeStakingRequest);

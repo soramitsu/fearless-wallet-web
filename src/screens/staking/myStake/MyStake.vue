@@ -10,6 +10,7 @@
         />
 
         <BorderButton
+          v-if="showUnbondBtn"
           class="action-button"
           text="staking.unbond"
           iconName="unbond"
@@ -71,15 +72,14 @@
         :stakingCurrency="stakingCurrency"
         :rewardedCurrency="rewardedCurrency"
         :type="type"
-        :network="network"
+        :stakingNetwork="stakingNetwork"
         @closeForm="closeStakingManagement"
       />
 
       <YourValidatorsManagement
         v-if="showYourValidatorsForm"
         :stakingCurrency="stakingCurrency"
-        :network="network"
-        :networkParams="stakingNetwork"
+        :stakingNetwork="stakingNetwork"
         @closeForm="toggleVisible('showYourValidatorsForm', false)"
       />
 
@@ -95,8 +95,8 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { MyStakingTab } from '@/interfaces/common';
+import { Getter, Action } from 'vuex-class';
+import type { MyStakingTab, AsyncFn } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import MyStakeSettings from '@/screens/staking/myStake/MyStakeSettings.vue';
 import About from '@/screens/staking/myStake/About.vue';
@@ -112,6 +112,7 @@ import { isSora } from '@/helpers';
 import { Components } from '@/router/routes';
 import { GetStakingNetwork } from '@/store';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
+import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 
 type ShowField = 'showBondExtraForm' | 'showUnbondForm' | 'showRedeemForm' | 'showYourValidatorsForm';
 
@@ -139,10 +140,11 @@ export default class MyStake extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
+  @Action(StakingActionTypes.GET_STAKING_PARAMS) getStakingParams!: AsyncFn;
 
   get actionOptions() {
     return [
-      { label: 'staking.yourValidators', value: 'showYourValidatorsForm', visibility: this.showValidatorsBtn },
+      { label: 'staking.yourValidators', value: 'showYourValidatorsForm', visibility: !this.showValidatorsBtn },
       { label: 'staking.controllerAccount', value: 'showControllerAccountForm' },
       { label: 'staking.pendingRewards', value: 'showPendingRewardForm' },
     ];
@@ -178,6 +180,10 @@ export default class MyStake extends Vue {
 
   get showValidatorsBtn() {
     return !(this.showRebondBtn && this.showRedeemBtn);
+  }
+
+  get showUnbondBtn() {
+    return this.stakingNetwork.bondAmount !== '0';
   }
 
   get showRebondBtn() {
@@ -281,6 +287,10 @@ export default class MyStake extends Vue {
 
   get rewardedCurrency() {
     return this.balances.find(({ assetId }) => assetId === this.rewardedAssetId);
+  }
+
+  created() {
+    this.getStakingParams();
   }
 
   updateActiveTabName(name: MyStakingTab) {

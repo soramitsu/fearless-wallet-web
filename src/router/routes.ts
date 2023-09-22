@@ -1,11 +1,12 @@
 import { RouteConfig } from 'vue-router';
-import store from '@/store';
+import store, { NetworkParams } from '@/store';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import { isOnboardingRequired } from '@/extension/messaging';
+import { NetworkName } from '@/interfaces';
 
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
@@ -66,10 +67,12 @@ const haveSelectedWallet = () => {
   return store.getters.selectedWallet.address.length !== 0;
 };
 
-const haveAuthRequests = () => store.getters.authList.length;
-const haveSignRequests = () => store.getters.signList.length;
-const haveMetaRequests = () => store.getters.metaRequests.length;
-const showSoraCard = () => store.getters.features?.fiat?.soraCard;
+const haveAuthRequests = (): number => store.getters.authList.length;
+const haveSignRequests = (): number => store.getters.signList.length;
+const haveMetaRequests = (): number => store.getters.metaRequests.length;
+const showSoraCard = (): boolean => store.getters.features?.fiat?.soraCard;
+const getStakingNetwork = async (network: NetworkName): Promise<NetworkParams> =>
+  await new Promise((res) => setTimeout(() => res(store.getters.getStakingNetwork(network)), 100));
 
 const routes: Array<RouteConfig> = [
   {
@@ -173,6 +176,13 @@ const routes: Array<RouteConfig> = [
     path: '/my-stake/:network',
     name: Components.MyStake,
     component: MyStake,
+    beforeEnter: async (to, from, next) => {
+      const network = to.params.network;
+      const stakingParams = await getStakingNetwork(network);
+
+      if (stakingParams.bondAmount === '0') next({ name: Components.Staking });
+      else next();
+    },
     meta: {
       title: 'myStake',
     },

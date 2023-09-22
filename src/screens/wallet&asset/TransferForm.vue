@@ -157,7 +157,6 @@
       v-if="showConfirmationPasswordPopup"
       :currency="currency"
       :amount="syncedAmount"
-      :fee="fee"
       :value="syncedValue"
       :firstIcon="firstIcon"
       :secondIcon="syncedDestNet"

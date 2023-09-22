@@ -14,14 +14,14 @@
         :validators="validators"
       />
 
-      <YourValidators v-else-if="step === 1" :validators="myValidators" @openValidatorInfo="openValidatorInfo" />
+      <YourValidators v-else-if="step === 1" :stakingNetwork="stakingNetwork" @openValidatorInfo="openValidatorInfo" />
 
       <div v-else-if="step === 6">
         <FInput v-model="selectedAccountName" placeholder="accounts.account" size="big" :readonly="true" />
 
         <InfoRow
           text="staking.selectedValidators"
-          :value="`${selectedQuantity} (${$t('common.max')} ${maxNominations})`"
+          :value="`${selectedValidatorsLength} (${$t('common.max')} ${maxNominations})`"
           borderType="default"
         />
 
@@ -51,19 +51,19 @@
         size="big"
         fontSize="big"
         width="100%"
-        :border="false"
         :text="buttontext"
+        :disabled="confirmBtnDisabled"
         @click="openSelectionValidatorsForm"
       />
 
       <ConfirmationPasswordPopup
         v-if="showConfirmationPasswordPopup"
-        amount=""
-        value=""
-        :fee="fee"
         :currency="stakingCurrency"
         :firstIcon="stakingAssetId"
-        extrinsicType="staking"
+        extrinsicType="nominate"
+        :tx="tx"
+        :fee="fee"
+        :feeValue="feeValue"
         @close="confirmationPasswordPopupClose"
       />
     </div>
@@ -72,10 +72,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { myValidators } from './mock';
-import type { NetworkName, SelectionValidator } from '@/interfaces';
-import type { GetAssetPrice, NetworkParams, SelectedWallet } from '@/store';
+import { Getter, Action } from 'vuex-class';
+import type { AsyncFn, SelectionValidator } from '@/interfaces';
+import type { GetAssetPrice, GetMyValidatorsProps, NetworkParams, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
 import YourValidators from '@/screens/staking/myStake/validators/YourValidators.vue';
@@ -83,6 +82,10 @@ import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vu
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
+import { RequestNominate } from '@/extension/background/extension-base/src/services/staking-service/types';
+import { getSoraFees } from '@/extension/messaging';
+import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 
 @Component({
   components: {
@@ -95,25 +98,24 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 export default class YourValidatorsManagement extends Vue {
   state: Record<string, SelectionValidator> = {};
   showConfirmationPasswordPopup = false;
-  myValidators = myValidators;
   step = 1;
   isSuggested = false;
   selectedValidator = '';
   fee = '0';
 
-  @Prop({ type: Object }) networkParams!: NetworkParams;
-  @Prop({ type: String }) network!: NetworkName;
+  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+  @Action(StakingActionTypes.GET_MY_VALIDATORS) getMyValidators!: AsyncFn<GetMyValidatorsProps>;
 
   get selectedAccountName() {
     return this.selectedWallet.name;
   }
 
-  get selectedQuantity() {
-    return Object.values(this.state).filter(({ isSelect }) => isSelect).length;
+  get network() {
+    return this.stakingNetwork.network;
   }
 
   get stakingAssetName() {
@@ -131,13 +133,17 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   get feeValueString() {
-    const value = +this.fee * this.stakingAssetPrice;
-
-    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
+    return `${this.fiatSymbol}${this.$n(+this.feeValue, 'price')}`;
   }
 
   get showConfirmButton() {
     return this.step !== 2 && !this.showValidatorInfo;
+  }
+
+  get confirmBtnDisabled() {
+    if (this.step === 4 || this.step === 5) return this.selectedValidatorsLength === 0;
+
+    return false;
   }
 
   get buttontext() {
@@ -148,6 +154,10 @@ export default class YourValidatorsManagement extends Vue {
 
   get showBackIcon() {
     return this.step !== 1 || this.showValidatorInfo;
+  }
+
+  get feeValue() {
+    return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
   }
 
   get header() {
@@ -169,7 +179,7 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   get maxNominations() {
-    const maxNominations = this.networkParams?.maxNominations ?? 0;
+    const maxNominations = this.stakingNetwork.maxNominations;
 
     // Если количество валидаторов в сети меньше, чем maxNominations, то отображаем количество валидаторов как maxNominations
     if (this.validators.length < maxNominations) return this.validators.length;
@@ -182,11 +192,29 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   get validators() {
-    return this.networkParams.validators;
+    return Object.values(this.state);
   }
 
-  async mounted() {
-    this.validators.forEach(({ address, apy, name, description }) => {
+  get selectedValidatorsLength() {
+    return this.selectedValidators.length;
+  }
+
+  get selectedValidators() {
+    return Object.values(this.state)
+      .filter(({ isSelect }) => isSelect)
+      .map(({ address }) => address);
+  }
+
+  get tx() {
+    return {
+      from: this.selectedWallet.address,
+      networkName: this.network,
+      validators: this.selectedValidators,
+    } as RequestNominate;
+  }
+
+  mounted() {
+    this.stakingNetwork.validators.forEach(({ address, apy, name, description }) => {
       Vue.set(this.state, address, {
         name,
         address,
@@ -195,6 +223,14 @@ export default class YourValidatorsManagement extends Vue {
         isSelect: false,
       });
     });
+
+    this.getSoraFees();
+  }
+
+  async getSoraFees() {
+    const { StakingNominate } = await getSoraFees();
+
+    this.fee = StakingNominate.toString();
   }
 
   closeForm() {
@@ -204,7 +240,10 @@ export default class YourValidatorsManagement extends Vue {
   confirmationPasswordPopupClose(closeForm: boolean) {
     this.showConfirmationPasswordPopup = false;
 
-    if (closeForm) this.closeForm();
+    if (closeForm) {
+      this.getMyValidators({ network: this.network });
+      this.closeForm();
+    }
   }
 
   openValidatorList(isSuggested: boolean) {

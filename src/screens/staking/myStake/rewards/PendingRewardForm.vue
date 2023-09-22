@@ -30,7 +30,7 @@
           <SelectInput
             class="amount-input"
             text="assets.amount"
-            :value="amountPriceValue"
+            :value="amountValue"
             :asset="rewardedAssetName"
             :assetId="rewardedAssetId"
             :amount="summaryRewards"
@@ -62,8 +62,9 @@
       v-if="showConfirmationPasswordPopup"
       :currency="stakingCurrency"
       :amount="summaryRewards"
+      :value="amountValue"
       :fee="fee"
-      :value="amountPriceValue"
+      :feeValue="feeValue"
       :firstIcon="stakingAssetId"
       extrinsicType="staking"
       @close="confirmationPasswordPopupClose"
@@ -172,7 +173,11 @@ export default class StakingManagement extends Vue {
     return this.getAssetPrice(priceId).price;
   }
 
-  get amountPriceValue() {
+  get feeValue() {
+    return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
+  }
+
+  get amountValue() {
     return getCostOfAssets(this.summaryRewards, this.rewardedAssetPrice).toString();
   }
 

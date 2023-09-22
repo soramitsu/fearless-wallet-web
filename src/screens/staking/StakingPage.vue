@@ -53,7 +53,7 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import type { AsyncFn, StakingTab } from '@/interfaces/common';
+import type { AsyncFn, StakingTab } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import type { NetworkParams } from '@/store';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
@@ -71,6 +71,7 @@ import { GetAssetPrice } from '@/store';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { isSameString } from '@/helpers';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
+import { getCostOfAssets } from '@/controllers/transferHelpers';
 
 @Component({
   components: {
@@ -124,14 +125,20 @@ export default class StakingPage extends Vue {
   }
 
   get stakingBalance() {
-    return 0;
+    return this.myStakingItems.reduce((sum, { bondAmount, assetId }) => {
+      const { priceId } = this.balances.find(({ assetId: _assetId }) => _assetId === assetId)!;
+      const assetPrice = this.getAssetPrice(priceId ?? '').price;
+      const value = getCostOfAssets(bondAmount, assetPrice);
+
+      return sum + value;
+    }, 0);
   }
 
   get isAllTab() {
     return this.activeTabName === 'all';
   }
 
-  async created() {
+  created() {
     // Добавлено чтобы не было видно переключений с all tab на my tab при отсутствующих stakingItems
     setTimeout(() => this.updateActiveTabName(this.showStakingItems ? 'all' : 'my'), 500);
 

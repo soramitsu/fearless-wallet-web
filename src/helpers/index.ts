@@ -1,6 +1,5 @@
 import EmailValidator from 'email-validator';
 import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
-// import { SORA_NETWORK_NAME, SORA_MAINNET, SORA_TEST } from '@/consts/sora';
 import { SORA_NETWORK_NAME, SORA_TEST } from '@/consts/sora';
 
 const MIN_PHONE_LENGTH_WITH_CODE = 8;

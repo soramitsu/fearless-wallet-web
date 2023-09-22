@@ -1,4 +1,6 @@
 import {
+  GetMyValidatorsRequest,
+  GetMyValidatorsResponse,
   MakeStakingRequest,
   StakingParamsRequest,
   StakingParamsResponse,
@@ -155,6 +157,7 @@ export interface RequestSignatures {
 
   // staking
   'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];
+  'pri(staking.myValidators)': [GetMyValidatorsRequest, GetMyValidatorsResponse];
   'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];
 
   //ether

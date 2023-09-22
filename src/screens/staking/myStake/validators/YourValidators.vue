@@ -1,8 +1,14 @@
 <template>
   <div>
-    <Alert headerText="common.attention" message="staking.tokensAllocated" sizeText="small" class="alert" />
+    <Alert
+      v-if="showAlert"
+      headerText="common.attention"
+      message="staking.tokensAllocated"
+      sizeText="small"
+      class="alert"
+    />
 
-    <ContentForm :height="305" :isStaticHeight="true" :bottomRightCorner="true">
+    <ContentForm :height="430" :bottomRightCorner="true">
       <Scroll>
         <div class="form-layout">
           <div class="label">{{ $t('staking.elected') }}</div>
@@ -10,16 +16,16 @@
           <div class="sub-label">{{ $t('staking.stakeAllocated') }}</div>
 
           <ValidatorItem
-            v-for="validator in withAllocationValidators"
+            v-for="validator in myValidators"
             :key="validator.address"
             :validator="validator"
             :showCheckbox="false"
             @openValidatorInfo="$emit('openValidatorInfo', $event)"
           />
 
-          <div class="sub-label">{{ $t('staking.withoutAllocation') }}</div>
-
           <template v-if="showWithoutAllocation">
+            <div class="sub-label">{{ $t('staking.withoutAllocation') }}</div>
+
             <ValidatorItem
               v-for="validator in withoutAllocationValidators"
               :key="validator.address"
@@ -36,7 +42,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { SelectionValidator } from '@/interfaces';
+import type { NetworkParams } from '@/store';
 import ValidatorItem from '@/screens/staking/myStake/validators/ValidatorItem.vue';
 
 @Component({
@@ -45,10 +51,10 @@ import ValidatorItem from '@/screens/staking/myStake/validators/ValidatorItem.vu
   },
 })
 export default class YourValidators extends Vue {
-  @Prop({ type: Array }) validators!: SelectionValidator[];
+  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
 
-  get withAllocationValidators() {
-    return this.validators;
+  get myValidators() {
+    return this.stakingNetwork.myValidators;
   }
 
   get showWithoutAllocation() {
@@ -56,7 +62,13 @@ export default class YourValidators extends Vue {
   }
 
   get withoutAllocationValidators() {
-    return this.validators;
+    // TODO staking
+    return [];
+  }
+
+  get showAlert() {
+    // TODO staking
+    return false;
   }
 }
 </script>

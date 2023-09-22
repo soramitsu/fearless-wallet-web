@@ -1130,7 +1130,7 @@ export default class State {
     });
   }
 
-  public getCurrentAccount(update: (value: CurrentAccountState) => void): void {
+  public getCurrentAccount(update: (value: CurrentAccountState) => void = () => null): void {
     this.currentAccountStore.get('CurrentAccountInfo', update);
   }
 

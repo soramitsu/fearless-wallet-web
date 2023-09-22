@@ -691,38 +691,38 @@ export default class State {
 
   public getActiveNetworks() {
     const networks = Object.values(this.networkMap);
-    const prepNetworks = new Set<NetworkJson>();
-    const selectedNetworks = Object.values(this.selectedNetworks);
-    const selectedNetworksKeys = Object.keys(this.selectedNetworks);
+    const uniqNetworks = new Set<NetworkJson>();
+    const selectedNetworks = Object.keys(this.selectedNetworks);
 
-    const isAllNetworkPicked = selectedNetworks.some((selectedNetwork) => selectedNetwork === ALL_NETWORKS);
+    const isAllNetworkPicked = selectedNetworks.some((address) => this.selectedNetworks[address] === ALL_NETWORKS);
 
     if (isAllNetworkPicked) return networks;
 
-    selectedNetworksKeys.forEach((selectedNetwork) => {
-      const value = this.selectedNetworks[selectedNetwork];
+    selectedNetworks.forEach((address) => {
+      const value = this.selectedNetworks[address];
 
       if (value === POPULAR_NETWORKS) {
         const popular = networks.filter((el) => el.rank !== undefined);
-        popular.forEach((el) => prepNetworks.add(el));
+        popular.forEach((el) => uniqNetworks.add(el));
 
         return;
       }
 
       if (value === FAVORITE_NETWORKS) {
-        const favorite = networks.filter((el) => el.favorite.length && el.favorite.includes(selectedNetwork));
-        favorite.forEach((el) => prepNetworks.add(el));
+        const favorite = networks.filter((el) => el.favorite.length && el.favorite.includes(address));
+
+        favorite.forEach((el) => uniqNetworks.add(el));
 
         return;
       }
 
       const singleNetwork = networks.find((network) => network.name === value);
 
-      if (singleNetwork) prepNetworks.add(singleNetwork);
+      if (singleNetwork) uniqNetworks.add(singleNetwork);
     });
-    console.info(prepNetworks, 'set this to Active');
+    console.info(uniqNetworks, 'set this to Active');
 
-    return Array.from(prepNetworks);
+    return Array.from(uniqNetworks);
   }
 
   public async setActiveNetworks(type: string) {

@@ -12,8 +12,8 @@
         :selectedNetwork="selectedNetwork"
         :showAssetsManagementForm="showAssetsManagementForm"
         :timeoutCallback="timeoutCallback"
-        @toggleVisibleActivityForm="$emit('toggleVisibleActivityForm', $event)"
-        @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible', $event)"
+        @toggleVisibleActivityForm="$emit('toggleVisibleActivityForm', ...arguments)"
+        @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible', ...arguments)"
       />
     </Draggable>
   </Scroll>

@@ -120,11 +120,13 @@ export default class History extends Vue {
   }
 
   get isEvmNetworks() {
-    return BaseApi.isEthereumNativeNetwork(this.selectedNetwork);
+    return BaseApi.isEthereumNetwork(this.selectedNetwork);
   }
 
   async fetchHistory() {
-    if ((this.history.length !== 0 || !this.isMainNetwork) && !this.isEvmNetworks) return;
+    if (this.history.length !== 0) return;
+
+    if (!this.isMainNetwork && !this.isEvmNetworks) return;
 
     this.showLoader = true;
 

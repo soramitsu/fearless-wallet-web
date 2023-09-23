@@ -181,7 +181,7 @@ function getEthereumExplorerApiKey(url: string): string | undefined {
     { name: 'polygon', key: process.env.FL_WEB_POLYGONSCAN_API_KEY },
   ];
 
-  return keys.find((el) => url.includes(el.name))?.key;
+  return keys.find(({ name }) => url.includes(name))?.key;
 }
 
 export {

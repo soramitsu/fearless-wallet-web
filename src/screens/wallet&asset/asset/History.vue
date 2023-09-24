@@ -64,6 +64,10 @@ export default class History extends Vue {
     return this.$route.params.selectedNetwork;
   }
 
+  get assetId() {
+    return this.$route.params.assetId;
+  }
+
   get isEmptyHistory() {
     return this.filteredHistory?.length === 0;
   }
@@ -87,10 +91,7 @@ export default class History extends Vue {
   get history() {
     if (!this.selectedNetwork) return [];
 
-    return (
-      this.getHistory(this.currency?.assetId, this.selectedWallet.address, this.selectedNetwork.toLowerCase())?.nodes ??
-      []
-    );
+    return this.getHistory(this.assetId, this.selectedWallet.address, this.selectedNetwork.toLowerCase())?.nodes ?? [];
   }
 
   get filteredHistory() {
@@ -130,7 +131,7 @@ export default class History extends Vue {
 
     this.showLoader = true;
 
-    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.currency.assetId);
+    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.assetId);
 
     this.showLoader = false;
   }

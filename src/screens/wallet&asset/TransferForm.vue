@@ -450,7 +450,9 @@ export default class TransferForm extends Vue {
   }
 
   get currency() {
-    return this.balances.find(({ symbol, assetId }) => symbol === this.syncedAssetId || assetId === this.syncedAssetId); // TODO проверить нужны ли оба условия
+    return this.balances.find(({ balances }) =>
+      balances.some((el) => el.id.toLowerCase() === this.syncedAssetId.toLowerCase())
+    )!;
   }
 
   get currencyBalance() {

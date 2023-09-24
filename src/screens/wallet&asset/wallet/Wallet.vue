@@ -224,6 +224,7 @@ export default class Wallet extends Vue {
 
     return !navigator.onLine || isPendingExists;
   }
+
   get filteredCurrencies() {
     const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
 

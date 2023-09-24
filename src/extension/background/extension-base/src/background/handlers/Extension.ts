@@ -853,11 +853,11 @@ export default class Extension extends FWExtensionBase {
       };
 
     const tokenInfo = getAssetInfo(assetId);
+
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
 
     const address = getSubstrateAddress(from);
     let fee = 0;
-
     const tokenBalance = this.state.balanceMap[address].find(
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;

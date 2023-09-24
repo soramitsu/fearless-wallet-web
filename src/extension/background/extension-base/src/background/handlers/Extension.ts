@@ -873,11 +873,11 @@ export default class Extension extends FWExtensionBase {
       if (!isMainToken && tokenInfo.id) {
         const { fee: feeValue } = await getERC20TransactionObject(tokenInfo.id, networkKey, from, to, txVal);
 
-        fee = +ethers.formatEther(feeValue);
+        fee = +ethers.formatUnits(feeValue, 'gwei');
       } else {
         const { fee: feeValue } = await getEVMTransactionObject(networkKey, to, txVal);
 
-        fee = +ethers.formatEther(feeValue);
+        fee = +ethers.formatUnits(feeValue, 'gwei');
       }
     } else {
       // Estimate with DotSama API

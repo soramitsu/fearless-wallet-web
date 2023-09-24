@@ -741,9 +741,11 @@ export default class TransferForm extends Vue {
   }
 
   calcTransferableUtility() {
-    const balance = this.utilityAsset!.balances.find(({ isUtility }) => isUtility)!;
+    const balance = this.utilityAsset!.balances.find(
+      ({ isUtility, name }) => isUtility && name.toLowerCase() === this.syncedNetwork.toLowerCase()
+    )!;
 
-    return balance.transferable?.toString() ?? '';
+    return balance.transferable?.toString() ?? '0';
   }
 
   calcTransferableSendMinusFee(fee = '0') {

@@ -102,8 +102,11 @@ export async function getERC20TransactionObject(
   };
 
   const gasLimit = await web3Api.estimateGas(transactionObject);
+
   transactionObject.gasLimit = gasLimit;
   const { gasPrice } = await web3Api.getFeeData();
+  // const functionGasFees = await erc20Contract.estimateGas(to, parseUnits('0', 6));
+
   const prepGasPrice = gasPrice ? gasPrice : BigInt(0);
   const estimateFee = prepGasPrice * gasLimit;
 

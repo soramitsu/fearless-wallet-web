@@ -29,6 +29,8 @@ import { balanceItemByNetwork, getSubstrateAddress, isRequireEvmAPI } from '@ext
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { storage } from '@extension-base/stores/Storage';
+import { MetadataDef } from '@polkadot/extension-inject/types';
+import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -82,8 +84,6 @@ import type { NetworkJson } from '@extension-base/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-// import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-// import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { googleManage } from '@/controllers/googleController';
@@ -98,6 +98,10 @@ import {
   VerifyTokenResponse,
 } from '@/interfaces';
 import { IS_PRODUCTION } from '@/consts/global';
+
+function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
+  return (value as SignerPayloadJSON).genesisHash !== undefined;
+}
 
 async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
   const currentAccount = await state.currentAccount;
@@ -471,14 +475,14 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  private updateCurrentAccount(address: string): boolean {
+  private updateCurrentAccount(address: string, isNew = true): boolean {
     if (isEthereumAddress(address)) return false;
 
     this.state.generateDefaultBalance(address);
 
     this._saveCurrentAccountAddress(address, () => {
       this.triggerWalletsSubscription();
-      this.updateNetworkForNewWallet(address);
+      if (isNew) this.updateNetworkForNewWallet(address);
     });
 
     return true;
@@ -513,19 +517,19 @@ export default class Extension extends FWExtensionBase {
       pair.decodePkcs8(password);
     }
 
-    // const { payload } = request;
+    const { payload } = request;
 
-    // if (isJsonPayload(payload)) {
-    //   // Get the metadata for the genesisHash
-    //   const currentMetadata = this.state.knownMetadata.find(
-    //     (meta: MetadataDef) => meta.genesisHash === payload.genesisHash
-    //   );
+    if (isJsonPayload(payload)) {
+      // Get the metadata for the genesisHash
+      const currentMetadata = this.state.knownMetadata.find(
+        (meta: MetadataDef) => meta.genesisHash === payload.genesisHash
+      );
 
-    //   // set the registry before calling the sign function
-    //   registry.setSignedExtensions(payload.signedExtensions, currentMetadata?.userExtensions);
+      // set the registry before calling the sign function
+      registry.setSignedExtensions(payload.signedExtensions, currentMetadata?.userExtensions);
 
-    //   if (currentMetadata) registry.register(currentMetadata?.types);
-    // }
+      if (currentMetadata) registry.register(currentMetadata?.types);
+    }
 
     const result = request.sign(registry, pair);
 
@@ -849,11 +853,11 @@ export default class Extension extends FWExtensionBase {
       };
 
     const tokenInfo = getAssetInfo(assetId);
+
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
 
     const address = getSubstrateAddress(from);
     let fee = 0;
-
     const tokenBalance = this.state.balanceMap[address].find(
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
@@ -869,11 +873,11 @@ export default class Extension extends FWExtensionBase {
       if (!isMainToken && tokenInfo.id) {
         const { fee: feeValue } = await getERC20TransactionObject(tokenInfo.id, networkKey, from, to, txVal);
 
-        fee = +ethers.formatEther(feeValue);
+        fee = +ethers.formatUnits(feeValue, 18);
       } else {
         const { fee: feeValue } = await getEVMTransactionObject(networkKey, to, txVal);
 
-        fee = +ethers.formatEther(feeValue);
+        fee = +ethers.formatUnits(feeValue, 18);
       }
     } else {
       // Estimate with DotSama API
@@ -1205,7 +1209,7 @@ export default class Extension extends FWExtensionBase {
         return this.subscribePrice(id, port);
 
       case 'pri(accounts.update.current)':
-        return this.updateCurrentAccount(request as string);
+        return this.updateCurrentAccount(request as string, false);
 
       case 'pri(accounts.update.currentNetwork)':
         return this.enableNetworkType(request as string);

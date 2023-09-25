@@ -1199,7 +1199,10 @@ export default class State {
 
     this.networkMapStore.set('NetworkMap', result);
     this.networkMap = result;
-
+    this.keyringService.getAccounts().forEach((el) => {
+      //Migration from old network managment
+      if (!this.selectedNetworks[el.address]) this.selectedNetworks[el.address] = ALL_NETWORKS;
+    });
     const activeNetworks = this.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((key) => {
@@ -1213,7 +1216,6 @@ export default class State {
   public async init() {
     await this.eventService.waitCryptoReady;
     await this.prepNetworkJson();
-
     this.initNetworkStates();
     this.updateServiceInfo();
   }
@@ -1305,6 +1307,7 @@ export default class State {
     );
 
     const asset = balancesByAddress[currencyIndex];
+
     const assetIndex = asset.balances.findIndex(({ name }) => {
       const key = prepNetworkNames[name] ?? name;
 

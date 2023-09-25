@@ -15,10 +15,10 @@
             <SIcon name="chevron-bottom-16" />
           </Rotate>
         </div>
-        <div v-if="!isGroup && isAddressExists" class="copy-adress" @click.stop="copyAddress">
+        <div v-if="!isGroup && isAddressExists" class="copy-address" @click.stop="copyAddress">
           <span>{{ cutAddress }}</span>
           <Icon icon="copy" className="copy" />
-          <Tooltip text="common.copied" target=".copy" placement="top" trigger="click" />
+          <Tooltip text="common.copied" target=".copy-address" placement="top-end" trigger="click" />
         </div>
       </div>
 
@@ -324,7 +324,7 @@ export default class Header extends Vue {
           white-space: nowrap;
         }
       }
-      .copy-adress {
+      .copy-address {
         display: flex;
         flex-flow: row nowrap;
         align-items: center;

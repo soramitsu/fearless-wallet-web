@@ -15,6 +15,7 @@ export interface BalanceItem {
   id: string;
   relayChain?: string;
   existentialDeposit?: string;
+  mainNetwork?: string;
   currencyId?: string;
   key?: string;
   precision: number;

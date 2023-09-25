@@ -78,7 +78,9 @@ function getHumanFeeValue(value: string, networkName: NetworkName) {
 
 function getHumanValue(value: string, assetId: string, networkName: NetworkName) {
   const tokenBalances: TokenBalance[] = store.getters.getBalances;
-  const { balances } = tokenBalances.find(({ assetId: id }) => id === assetId)!;
+  const { balances } = tokenBalances.find(
+    ({ assetId: id, balances }) => id === assetId || balances.some((el) => el.id === assetId)
+  )!;
 
   const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
 
@@ -179,7 +181,7 @@ function getEthereumExplorerApiKey(url: string): string | undefined {
     { name: 'polygon', key: process.env.FL_WEB_POLYGONSCAN_API_KEY },
   ];
 
-  return keys.find((el) => url.includes(el.name))?.key;
+  return keys.find(({ name }) => url.includes(name))?.key;
 }
 
 export {

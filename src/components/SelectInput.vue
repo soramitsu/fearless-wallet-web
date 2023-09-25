@@ -81,7 +81,9 @@ export default class SelectInput extends Vue {
   }
 
   get assetIcon() {
-    return this.balances.find(({ assetId }) => assetId === this.assetId)?.icon;
+    return this.balances.find(
+      ({ assetId, balances }) => assetId === this.assetId || balances.some((el) => el.id === this.assetId)
+    )?.icon;
   }
 
   get valueCut() {

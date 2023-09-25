@@ -64,6 +64,10 @@ export default class History extends Vue {
     return this.$route.params.selectedNetwork;
   }
 
+  get assetId() {
+    return this.$route.params.assetId;
+  }
+
   get isEmptyHistory() {
     return this.filteredHistory?.length === 0;
   }
@@ -87,10 +91,7 @@ export default class History extends Vue {
   get history() {
     if (!this.selectedNetwork) return [];
 
-    return (
-      this.getHistory(this.currency?.assetId, this.selectedWallet.address, this.selectedNetwork.toLowerCase())?.nodes ??
-      []
-    );
+    return this.getHistory(this.assetId, this.selectedWallet.address, this.selectedNetwork.toLowerCase())?.nodes ?? [];
   }
 
   get filteredHistory() {
@@ -109,7 +110,7 @@ export default class History extends Vue {
   }
 
   get isMainNetwork() {
-    return !!this.currency.balances?.find(
+    return this.currency.balances?.some(
       ({ name, isUtility, isNative }) =>
         name.toLowerCase() === this.selectedNetwork?.toLowerCase() && (isUtility || isNative)
     );
@@ -120,15 +121,17 @@ export default class History extends Vue {
   }
 
   get isEvmNetworks() {
-    return BaseApi.isEthereumNativeNetwork(this.selectedNetwork);
+    return BaseApi.isEthereumNetwork(this.selectedNetwork);
   }
 
   async fetchHistory() {
-    if ((this.history.length !== 0 || !this.isMainNetwork) && !this.isEvmNetworks) return;
+    if (this.history.length !== 0) return;
+
+    if (!this.isMainNetwork && !this.isEvmNetworks) return;
 
     this.showLoader = true;
 
-    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.currency.assetId);
+    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.assetId);
 
     this.showLoader = false;
   }

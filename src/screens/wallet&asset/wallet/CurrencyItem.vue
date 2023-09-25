@@ -154,10 +154,18 @@ export default class CurrencyItem extends Vue {
   }
 
   get mainNetwork() {
+    if (this.assetData.relayChain === 'ethereum' && !isNetworkGroup(this.selectedNetwork))
+      return this.assetData.balances
+        .find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase())
+        ?.name?.toLowerCase();
+
     return this.assetData.mainNetwork?.toLowerCase();
   }
 
   get assetId() {
+    if (this.assetData.relayChain === 'ethereum' && !isNetworkGroup(this.selectedNetwork))
+      return this.assetData.balances.find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase())?.id;
+
     return this.assetData.assetId;
   }
 
@@ -279,7 +287,7 @@ export default class CurrencyItem extends Vue {
       this.$router.push({
         name: Components.AssetHistory,
         params: {
-          assetId: this.assetData.assetId,
+          assetId: this.assetId ?? this.assetData.assetId,
           selectedNetwork: this.redirectNetwork === '' ? this.computeActiveNetworks[0].name : this.redirectNetwork,
         },
       });

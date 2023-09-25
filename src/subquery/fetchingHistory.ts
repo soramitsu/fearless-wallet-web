@@ -145,6 +145,7 @@ async function fetchEthereumTokenHistory(
   const abort = new AbortController();
   const signal = abort.signal;
   const apikey = getEthereumExplorerApiKey(url);
+
   const res = await axios.get<EthereumHistoryResponse<EthereumTokenHistoryData>>(url, {
     params: {
       module: 'account',

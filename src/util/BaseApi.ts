@@ -97,6 +97,8 @@ export default class BaseApi {
   }
 
   public static isEthereumNetwork(network: string): boolean {
+    if (!network) return false;
+
     return ETHEREUM_NETWORKS.includes(network.toLowerCase());
   }
 

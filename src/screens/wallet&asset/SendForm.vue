@@ -88,7 +88,9 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get currency() {
-    return this.balances.find(({ assetId }) => assetId.toLowerCase() === this.assetId.toLowerCase());
+    return this.balances.find(({ balances }) =>
+      balances.some((el) => el.id.toLowerCase() === this.assetId.toLowerCase())
+    )!;
   }
 
   get isUtilityAsset() {
@@ -118,10 +120,9 @@ export default class SendForm extends Vue {
   }
 
   get selectedAsset() {
-    return this.balances.find(
+    return this.currency.balances.find(
       (el) =>
-        el.symbol.toLowerCase() === this.assetId.toLowerCase() ||
-        el.assetId.toLowerCase() === this.assetId.toLowerCase()
+        el.symbol.toLowerCase() === this.assetId.toLowerCase() || el.id.toLowerCase() === this.assetId.toLowerCase()
     )!;
   }
 

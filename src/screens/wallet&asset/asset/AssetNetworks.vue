@@ -23,14 +23,14 @@
         <Scroll>
           <div class="networks networks-content">
             <AssetRow
-              v-for="({ name, icon }, index) in sortedNetworks"
+              v-for="({ name, icon, id }, index) in sortedNetworks"
               :key="index"
               :text="name"
               :value="getBalanceInNetworkString(name)"
               :price="getFiatInNetworkString(name)"
               :icon="icon"
               :isIconPrepend="true"
-              @selectHistory="selectNetworkHistory(name)"
+              @selectHistory="selectNetworkHistory(name, id)"
             />
           </div>
         </Scroll>
@@ -174,10 +174,11 @@ export default class AssetNetworks extends Vue {
     return +(price ?? 0);
   }
 
-  selectNetworkHistory(name: string) {
+  selectNetworkHistory(name: string, assetId: string) {
     this.$router.push({
       name: Components.AssetHistory,
       params: {
+        assetId,
         selectedNetwork: name.toLowerCase(),
       },
     });

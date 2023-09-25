@@ -153,7 +153,7 @@ export default class App extends Vue {
     clearInterval(this.assetsPriceInterval!);
   }
 
-  beforeUnmount() {
+  beforeDestroy() {
     this.unsubscribe();
   }
 }

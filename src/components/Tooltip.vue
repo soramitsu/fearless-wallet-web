@@ -27,7 +27,7 @@ export default class Tooltip extends Vue {
     this.createTooltip();
   }
 
-  beforeUnmount() {
+  beforeDestroy() {
     this.tooltips.forEach((item) => item.destroy());
   }
 

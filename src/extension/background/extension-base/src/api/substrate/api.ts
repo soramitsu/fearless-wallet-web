@@ -42,7 +42,8 @@ async function onDisconnect(networkName: string) {
 
   const network = state.networkMap[networkName];
 
-  api.provider?.disconnect();
+  api.api?.disconnect();
+
   api.nodeIndex += 1;
 
   if (api.nodeIndex <= network.nodes.length - 1) {

@@ -450,9 +450,9 @@ export default class TransferForm extends Vue {
   }
 
   get currency() {
-    return this.balances.find(({ balances }) =>
-      balances.some((el) => el.id.toLowerCase() === this.syncedAssetId.toLowerCase())
-    )!;
+    return this.balances.find(({ balances }) => {
+      return balances.some((el) => el.id.toLowerCase() === this.syncedAssetId.toLowerCase());
+    })!;
   }
 
   get currencyBalance() {
@@ -480,7 +480,9 @@ export default class TransferForm extends Vue {
 
   get assetWithActiveNetworks() {
     const result = this.balances.filter(({ balances }) => {
-      return balances.some(({ name }) => {
+      const prepBalances = balances ?? [];
+
+      return prepBalances.some(({ name }) => {
         const { active, rank, favorite } = this.getNetwork(name);
 
         if (!active) return false;
@@ -741,11 +743,11 @@ export default class TransferForm extends Vue {
   }
 
   calcTransferableUtility() {
-    const balance = this.utilityAsset!.balances.find(
+    const balance = this.utilityAsset.balances.find(
       ({ isUtility, name }) => isUtility && name.toLowerCase() === this.syncedNetwork.toLowerCase()
     )!;
 
-    return balance.transferable?.toString() ?? '0';
+    return balance?.transferable?.toString() ?? '0';
   }
 
   calcTransferableSendMinusFee(fee = '0') {

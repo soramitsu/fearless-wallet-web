@@ -141,7 +141,10 @@ export default class CrossChainForm extends Vue {
   }
 
   get currency() {
-    return this.balances.find(({ assetId }) => assetId === this.assetId);
+    return this.balances.find(
+      ({ assetId, balances }) =>
+        assetId === this.assetId || balances.some((el) => el.id.toLowerCase() === this.assetId.toLowerCase())
+    );
   }
 
   get assetName() {
@@ -188,7 +191,7 @@ export default class CrossChainForm extends Vue {
       const asset = getNativeAssetName(this.assetName);
 
       const destChainId = originNet?.xcm?.availableDestinations.find(({ assets }) =>
-        assets.some(({ symbol }) => symbol.toLowerCase() === asset)
+        assets.some(({ symbol }) => symbol.toLowerCase() === asset.toLowerCase())
       )?.chainId;
 
       if (!destChainId) return;

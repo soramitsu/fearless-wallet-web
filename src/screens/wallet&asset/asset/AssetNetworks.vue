@@ -72,6 +72,7 @@ import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
 import { Components } from '@/router/routes';
 import { NetworksController } from '@/controllers';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
+import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 
 interface TabsOptions {
   label: string;
@@ -123,8 +124,10 @@ export default class AssetNetworks extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
   get filteredNetworks() {
-    const baseFilter = this.currency.balances?.filter(({ name }) => {
+    const baseFilter = this.currency.balances?.filter(({ name, state }) => {
       const network = this.getNetwork(name);
+
+      if (state !== APIItemState.READY) return false;
 
       if (this.selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
       if (this.selectedNetwork === FAVORITE_NETWORKS)

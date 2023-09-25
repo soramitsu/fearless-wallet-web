@@ -29,6 +29,8 @@ import { balanceItemByNetwork, getSubstrateAddress, isRequireEvmAPI } from '@ext
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { storage } from '@extension-base/stores/Storage';
+import { MetadataDef } from '@polkadot/extension-inject/types';
+import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -82,8 +84,6 @@ import type { NetworkJson } from '@extension-base/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-// import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-// import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { googleManage } from '@/controllers/googleController';
@@ -99,9 +99,9 @@ import {
 } from '@/interfaces';
 import { IS_PRODUCTION } from '@/consts/global';
 
-// function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
-//   return (value as SignerPayloadJSON).genesisHash !== undefined;
-// }
+function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
+  return (value as SignerPayloadJSON).genesisHash !== undefined;
+}
 
 async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
   const currentAccount = await state.currentAccount;
@@ -517,19 +517,19 @@ export default class Extension extends FWExtensionBase {
       pair.decodePkcs8(password);
     }
 
-    // const { payload } = request;
+    const { payload } = request;
 
-    // if (isJsonPayload(payload)) {
-    //   // Get the metadata for the genesisHash
-    //   const currentMetadata = this.state.knownMetadata.find(
-    //     (meta: MetadataDef) => meta.genesisHash === payload.genesisHash
-    //   );
+    if (isJsonPayload(payload)) {
+      // Get the metadata for the genesisHash
+      const currentMetadata = this.state.knownMetadata.find(
+        (meta: MetadataDef) => meta.genesisHash === payload.genesisHash
+      );
 
-    //   // set the registry before calling the sign function
-    //   registry.setSignedExtensions(payload.signedExtensions, currentMetadata?.userExtensions);
+      // set the registry before calling the sign function
+      registry.setSignedExtensions(payload.signedExtensions, currentMetadata?.userExtensions);
 
-    //   if (currentMetadata) registry.register(currentMetadata?.types);
-    // }
+      if (currentMetadata) registry.register(currentMetadata?.types);
+    }
 
     const result = request.sign(registry, pair);
 

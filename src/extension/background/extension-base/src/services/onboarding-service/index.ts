@@ -1,9 +1,9 @@
 import { storage } from '@extension-base/stores/Storage';
-import { axios } from '../../utils';
-import { FALLBACK_LANG, ONBOARDING_URL } from '../../const';
+import { axios } from '@extension-base/utils/axios';
 import type { UserType } from './types';
 import type { OnBoardingStoriesLocales, OnboardingStories } from '@/interfaces';
 import { IS_PRODUCTION } from '@/consts/global';
+import { URLS } from '@/consts/urls';
 
 export class OnboardingService {
   private userType: UserType = 'new';
@@ -24,7 +24,7 @@ export class OnboardingService {
       this.changeUserType(onboarding.user);
     }
 
-    const res = await axios.get<OnBoardingStoriesLocales>(ONBOARDING_URL).catch(() => {
+    const res = await axios.get<OnBoardingStoriesLocales>(URLS.ONBOARDING_URL).catch(() => {
       console.info('onboarding fetch error');
     });
 
@@ -43,7 +43,7 @@ export class OnboardingService {
   getStories(lang: string): OnboardingStories {
     if (!IS_PRODUCTION) return [];
 
-    const localizeStories = this.stories[lang] ?? this.stories[FALLBACK_LANG];
+    const localizeStories = this.stories[lang] ?? this.stories[this.defaultLocale];
 
     return localizeStories[this.userType];
   }

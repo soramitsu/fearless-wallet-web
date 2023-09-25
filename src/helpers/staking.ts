@@ -10,6 +10,7 @@ const getDefaultStakingParams = (network: NetworkName) => ({
   withdrawUnbondedAmount: '0',
   validators: [],
   myValidators: [],
+  payee: '',
 });
 
 export { getDefaultStakingParams };

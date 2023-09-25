@@ -357,7 +357,7 @@ export default class Bond extends Vue {
       amount: this.amount,
       from: this.selectedWallet.address,
       networkName: this.network,
-      controllerAddress: this.payoutAddress,
+      payoutAddress: this.payoutAddress,
       validators: this.selectedValidators,
     } as RequestBond;
   }

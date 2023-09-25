@@ -1,19 +1,18 @@
 <template>
   <div class="controller-account">
-    <Hint text="staking.stashBond" iconName="notification" class="hint row" />
-
     <InputWithIcon
       v-model="addressCut"
       icon="close"
-      placeholder="staking.controllerAccount"
-      @click="setControllerAddress"
+      placeholder="staking.payoutAccount"
+      class="payout-account"
+      @click="setPayoutAddress"
     />
 
     <div class="activity-buttons">
       <BadgeButton text="common.paste" @click="paste" />
     </div>
 
-    <Hint text="staking.controllerUnbond" iconName="notification" class="hint row" />
+    <Hint text="staking.defaultPayout" iconName="notification" class="hint row" />
 
     <InfoRow
       class="info-fee"
@@ -28,7 +27,7 @@
 
     <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
 
-    <FLink text="staking.learnAboutControllers" class="about-controllers row" @click="openAboutControllers" />
+    <FLink text="staking.learnAboutRewards" class="about-controllers row" @click="openAboutRewards" />
   </div>
 </template>
 
@@ -42,10 +41,10 @@ import { cut, getClipboard } from '@/helpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
-export default class ControllerAccount extends Vue {
+export default class Payee extends Vue {
   @Prop({ type: String }) fee!: string;
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
-  @PropSync('controllerAddress', { type: String }) syncedControllerAddress!: string;
+  @PropSync('payoutAddress', { type: String }) syncedPayoutAddress!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
@@ -55,7 +54,7 @@ export default class ControllerAccount extends Vue {
   }
 
   get addressCut() {
-    return cut(this.syncedControllerAddress);
+    return cut(this.syncedPayoutAddress);
   }
 
   get accountName() {
@@ -75,15 +74,15 @@ export default class ControllerAccount extends Vue {
   }
 
   paste() {
-    this.syncedControllerAddress = getClipboard();
+    this.syncedPayoutAddress = getClipboard();
   }
 
-  setControllerAddress(value = '') {
-    this.syncedControllerAddress = value;
+  setPayoutAddress(value = '') {
+    this.syncedPayoutAddress = value;
   }
 
-  openAboutControllers() {
-    console.info('openAboutControllers');
+  openAboutRewards() {
+    console.info('openAboutRewards');
   }
 }
 </script>
@@ -97,6 +96,10 @@ export default class ControllerAccount extends Vue {
   .info-fee {
     margin-top: 10px;
     margin-bottom: 20px;
+  }
+
+  .payout-account {
+    margin-top: 10px;
   }
 
   .hint {

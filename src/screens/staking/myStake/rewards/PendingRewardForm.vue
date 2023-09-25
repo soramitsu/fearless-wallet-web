@@ -38,7 +38,7 @@
             :readonly="true"
           />
 
-          <FInput v-model="destinationAccount" placeholder="staking.rewardsDestination" size="big" />
+          <FInput v-model="destinationAccount" placeholder="staking.payee" size="big" />
         </div>
 
         <InfoRow

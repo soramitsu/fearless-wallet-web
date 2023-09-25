@@ -4,7 +4,7 @@ import { NetworkName } from '@/interfaces';
 
 export interface Bond {
   from: string;
-  controllerAddress: string;
+  payoutAddress: string;
   networkName: NetworkName;
   amount: string;
   validators: string[];
@@ -74,7 +74,15 @@ export type RequestNominate = PasswordRequestSign<Nominate>;
 
 //////////////////////////////////////////////////////////
 
-export type RequestCheckStaking = Bond | BondExtra | Unbond | Rebond | WithdrawUnbonded;
+export interface SetPayee {
+  from: string;
+  networkName: NetworkName;
+  payee: string;
+}
+
+export type RequestSetPayee = PasswordRequestSign<SetPayee>;
+
+//////////////////////////////////////////////////////////
 
 export type StakingOperation =
   | 'bond'
@@ -83,7 +91,8 @@ export type StakingOperation =
   | 'rebond'
   | 'withdrawUnbonded'
   | 'controllerAccount'
-  | 'nominate';
+  | 'nominate'
+  | 'payee';
 
 export type RequestStaking =
   | RequestBond
@@ -92,12 +101,22 @@ export type RequestStaking =
   | RequestRebond
   | RequestWithdrawUnbonded
   | RequestSetControllerAccount
-  | RequestNominate;
+  | RequestNominate
+  | RequestSetPayee;
 
 export type MakeStakingRequest = {
   params: RequestStaking;
   type: StakingOperation;
 };
+
+export type StakingOperationParams =
+  | BondExtra
+  | Unbond
+  | Rebond
+  | WithdrawUnbonded
+  | SetControllerAccount
+  | Nominate
+  | SetPayee;
 
 export interface FWValidatorInfoFull extends ValidatorInfoFull {
   name: string;
@@ -112,6 +131,7 @@ export type StakingParams = {
   apy: number;
   unbondAmount: string;
   withdrawUnbondedAmount: string;
+  payee: string;
   validators: FWValidatorInfoFull[];
   myValidators: FWValidatorInfoFull[];
 };

@@ -114,7 +114,13 @@ import { GetStakingNetwork } from '@/store';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 
-type ShowField = 'showBondExtraForm' | 'showUnbondForm' | 'showRedeemForm' | 'showYourValidatorsForm';
+type ShowField =
+  | 'showBondExtraForm'
+  | 'showUnbondForm'
+  | 'showRedeemForm'
+  | 'showControllerAccountForm'
+  | 'showPayeeForm'
+  | 'showYourValidatorsForm';
 
 @Component({
   components: {
@@ -135,6 +141,7 @@ export default class MyStake extends Vue {
   showRebondForm = false;
   showControllerAccountForm = false;
   showYourValidatorsForm = false;
+  showPayeeForm = false;
   showPendingRewardForm = false;
 
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -146,6 +153,7 @@ export default class MyStake extends Vue {
     return [
       { label: 'staking.yourValidators', value: 'showYourValidatorsForm', visibility: !this.showValidatorsBtn },
       { label: 'staking.controllerAccount', value: 'showControllerAccountForm' },
+      { label: 'staking.payee', value: 'showPayeeForm' },
       { label: 'staking.pendingRewards', value: 'showPendingRewardForm' },
     ];
   }
@@ -156,7 +164,8 @@ export default class MyStake extends Vue {
       this.showUnbondForm ||
       this.showRedeemForm ||
       this.showRebondForm ||
-      this.showControllerAccountForm
+      this.showControllerAccountForm ||
+      this.showPayeeForm
     );
   }
 
@@ -170,6 +179,8 @@ export default class MyStake extends Vue {
     if (this.showRedeemForm) return 'withdrawUnbonded';
 
     if (this.showControllerAccountForm) return 'controllerAccount';
+
+    if (this.showPayeeForm) return 'payee';
 
     return '';
   }
@@ -303,6 +314,7 @@ export default class MyStake extends Vue {
     this.showRedeemForm = false;
     this.showRebondForm = false;
     this.showControllerAccountForm = false;
+    this.showPayeeForm = false;
   }
 
   toggleVisible(field: ShowField, value: boolean) {

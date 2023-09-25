@@ -1,6 +1,6 @@
 import { api as apiSora } from '@sora-substrate/util';
 import State from '@extension-base/background/handlers/State';
-import { BasicTxResponse, TransferErrorCode } from '../../background/types/types';
+import { BasicTxErrorCode, BasicTxResponse, TransferErrorCode } from '../../background/types/types';
 import { CurrentAccountState } from '../../stores/CurrentAccountStore';
 import { isEthereumNetwork } from '../../background/utils/utils';
 import {
@@ -16,6 +16,7 @@ import {
 } from './types';
 import type {
   FWValidatorInfoFull,
+  RequestSetPayee,
   StakingParams,
   StakingParamsRequest,
 } from '@extension-base/services/staking-service/types';
@@ -46,7 +47,8 @@ export class StakingService {
 
       if (!isReady) return getDefaultStakingParams(network);
 
-      const validators = await this.getValidators(network, currentAccount);
+      const address = isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
+      const validators = await this.getValidators(network, address);
       const summaryApy = validators.reduce((result, { apy }) => result + +apy, 0);
       const apy = summaryApy / validators.length;
       const myValidators = await this.getMyValidators(network, validators, currentAccount);
@@ -62,7 +64,10 @@ export class StakingService {
         apy,
         unbondAmount,
         withdrawUnbondedAmount,
-        unbondPeriod: apiSora.staking.getBondingDuration(),
+        // payee: apiSora.staking.getPayee(address),
+        // unbondPeriod: apiSora.staking.getUnbondPeriod(),
+        payee: address,
+        unbondPeriod: 7,
         maxNominations: apiSora.staking.getMaxNominations(),
         minBond: await this.getMinNominatorBond(network, currentAccount),
       };
@@ -80,11 +85,8 @@ export class StakingService {
     return Promise.all(promises);
   }
 
-  public async getValidators(
-    networkName: NetworkName,
-    currentAccount: CurrentAccountState
-  ): Promise<FWValidatorInfoFull[]> {
-    const params = this.stakingParams?.[currentAccount!.address]?.[networkName];
+  public async getValidators(networkName: NetworkName, currentAddress: string): Promise<FWValidatorInfoFull[]> {
+    const params = this.stakingParams?.[currentAddress]?.[networkName];
 
     if (noTimeHasPassed(params?.timespan, 'day')) return params.validators;
 
@@ -106,7 +108,7 @@ export class StakingService {
     _currentAccount?: CurrentAccountState
   ): Promise<FWValidatorInfoFull[]> {
     const currentAccount = _currentAccount ?? (await this.state.currentAccount);
-    const validators = _validators ?? (await this.getValidators(network, currentAccount));
+    const validators = _validators ?? (await this.getValidators(network, currentAccount!.address));
 
     const address = isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
     const nominations = await apiSora.staking.getNominations(address);
@@ -156,17 +158,21 @@ export class StakingService {
 
     if (type === 'nominate') return this.nominate(params as RequestNominate);
 
-    return this.setControllerAccount(params as RequestSetControllerAccount);
+    if (type === 'controllerAccount') return this.setControllerAccount(params as RequestSetControllerAccount);
+
+    if (type === 'payee') return this.setPayee(params as RequestSetPayee);
+
+    return {
+      status: false,
+      errors: [{ message: '[STAKING] unknown operation', code: BasicTxErrorCode.INVALID_PARAM }],
+    };
   }
 
   public async bond(params: RequestBond): Promise<BasicTxResponse> {
-    const { amount, controllerAddress, from, isSavePass } = params;
-
-    const controller = controllerAddress !== '' ? controllerAddress : from;
-    const payee = controllerAddress !== '' ? 'Controller' : 'Stash'; // TODO ??? уточнить как формировать payee
+    const { amount, payoutAddress, from, isSavePass } = params;
 
     try {
-      await apiSora.staking.bond({ value: amount, controller, payee });
+      await apiSora.staking.bond({ value: amount, controller: from, payee: payoutAddress }); // Controller аккаунт по умолчанию это Stash
     } catch (ex) {
       const message = `[STAKING] Bond failed: ${ex}`;
 
@@ -326,6 +332,30 @@ export class StakingService {
         errors: [
           {
             code: TransferErrorCode.NOMINATE_ERROR,
+            message,
+          },
+        ],
+      };
+    }
+
+    return { status: true };
+  }
+
+  public async setPayee(params: RequestSetPayee): Promise<BasicTxResponse> {
+    const { payee } = params;
+
+    try {
+      await apiSora.staking.setPayee({ payee });
+    } catch (ex) {
+      const message = `[STAKING] Set payee failed: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.SET_PAYEE_ERROR,
             message,
           },
         ],

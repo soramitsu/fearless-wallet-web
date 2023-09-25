@@ -209,6 +209,7 @@ export enum TransferErrorCode {
   REDEEM_ERROR = 'redeemError',
   SET_CONTROLLER_ERROR = 'setControllerError',
   NOMINATE_ERROR = 'nominateError',
+  SET_PAYEE_ERROR = 'setPayeeError',
 }
 
 export enum BasicTxErrorCode {

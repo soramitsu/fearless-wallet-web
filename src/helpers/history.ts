@@ -78,7 +78,9 @@ function getHumanFeeValue(value: string, networkName: NetworkName) {
 
 function getHumanValue(value: string, assetId: string, networkName: NetworkName) {
   const tokenBalances: TokenBalance[] = store.getters.getBalances;
-  const { balances } = tokenBalances.find(({ assetId: id }) => id === assetId)!;
+  const { balances } = tokenBalances.find(
+    ({ assetId: id, balances }) => id === assetId || balances.some((el) => el.id === assetId)
+  )!;
 
   const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
 

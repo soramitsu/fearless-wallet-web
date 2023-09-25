@@ -44,7 +44,7 @@ export async function getEVMTransactionObject(
   value: string
 ): Promise<{ tx: TransactionRequest; value: string; fee: bigint }> {
   const web3Api = state.getEvmApiMap[networkKey];
-  const { maxFeePerGas, maxPriorityFeePerGas, gasPrice } = await web3Api.getFeeData();
+  const { maxFeePerGas, maxPriorityFeePerGas } = await web3Api.getFeeData();
 
   const transactionObject = {
     maxFeePerGas,
@@ -53,10 +53,11 @@ export async function getEVMTransactionObject(
     value: parseEther(value),
   } as TransactionRequest;
 
-  const gas = await web3Api.provider.estimateGas(transactionObject);
-  transactionObject.gasLimit = gas;
-  const prepGasPrice = gasPrice ?? BigInt(0);
-  const estimateFee = prepGasPrice * gas;
+  const gasLimit = await web3Api.provider.estimateGas(transactionObject);
+  transactionObject.gasLimit = gasLimit;
+
+  const prepGasPrice = maxPriorityFeePerGas ? maxPriorityFeePerGas : BigInt(0);
+  const estimateFee = prepGasPrice * gasLimit;
 
   transactionObject.value = parseEther(value);
 
@@ -104,10 +105,9 @@ export async function getERC20TransactionObject(
   const gasLimit = await web3Api.estimateGas(transactionObject);
 
   transactionObject.gasLimit = gasLimit;
-  const { gasPrice } = await web3Api.getFeeData();
-  // const functionGasFees = await erc20Contract.estimateGas(to, parseUnits('0', 6));
+  const { maxPriorityFeePerGas } = await web3Api.getFeeData();
 
-  const prepGasPrice = gasPrice ? gasPrice : BigInt(0);
+  const prepGasPrice = maxPriorityFeePerGas ? maxPriorityFeePerGas : BigInt(0);
   const estimateFee = prepGasPrice * gasLimit;
 
   return { tx: transactionObject, value, fee: estimateFee };

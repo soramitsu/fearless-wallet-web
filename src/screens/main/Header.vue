@@ -200,10 +200,14 @@ export default class Header extends Vue {
 
   get address() {
     if (this.selectedWallet.address === '') return '';
+    const asset = this.currentCurrency?.balances.find((el) => el.id === this.selectedAssetId);
 
-    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
+    if (!asset) return '';
 
-    return BaseApi.encodeAddress(this.selectedWallet.address, this.decimals);
+    if (BaseApi.isEthereumNetwork(asset.name)) return this.selectedWallet.ethereumAddress;
+    const network = this.getNetwork(asset.name);
+
+    return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
   }
 
   get name() {

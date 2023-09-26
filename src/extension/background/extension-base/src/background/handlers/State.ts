@@ -693,8 +693,8 @@ export default class State {
     const networks = Object.values(this.networkMap);
     const uniqNetworks = new Set<NetworkJson>();
     const selectedNetworks = Object.keys(this.selectedNetworks);
-
     const isAllNetworkPicked = selectedNetworks.some((address) => this.selectedNetworks[address] === ALL_NETWORKS);
+
     if (isAllNetworkPicked) return networks;
 
     selectedNetworks.forEach((address) => {
@@ -1230,11 +1230,12 @@ export default class State {
     for (const [key, network] of Object.entries(this.networkMap)) {
       if (network.active) {
         if (network.isEthereum && isRequireEvmAPI(key)) {
-          if (this.apis.evm[key] && !this.apis.evm[key].ready)
+          if (!this.apis.evm[key] || !this.apis.evm[key].ready)
             this.apis.evm[key] = initWeb3Api(network.currentProvider);
         } else {
           if (this.apis.substrate[network.name]) {
             const isReady = await this.apis.substrate[network.name].api?.isReady;
+
             if (isReady) return;
           }
 

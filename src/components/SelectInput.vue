@@ -94,7 +94,7 @@ export default class SelectInput extends Vue {
         return;
       }
 
-      this.syncedAmount = string ;
+      this.syncedAmount = string;
     }
   }
 

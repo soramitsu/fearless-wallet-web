@@ -9,7 +9,7 @@ import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS, ALL_NETWORKS } from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
-import { isSora } from '@/helpers';
+import { isSameString, isSora } from '@/helpers';
 import store from '@/store';
 import { getSummaryTransferableBalance, isNetworkGroup } from '@/helpers/common';
 
@@ -99,7 +99,7 @@ function getCurrencyOptions(currencies: TokenBalance[]) {
 
 function getUtilityAsset(balances: TokenBalance[], _network: NetworkName) {
   return balances.find(({ balances }) =>
-    balances.some(({ name, isUtility }) => name.toLowerCase() === _network.toLowerCase() && isUtility)
+    balances.some(({ name, isUtility }) => isSameString(name, _network) && isUtility)
   )!;
 }
 

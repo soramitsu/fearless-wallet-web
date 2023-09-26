@@ -50,12 +50,7 @@ export default class SelectValidator extends Vue {
   @Prop({ type: Number }) maxNominations!: number;
 
   get filteredValidatorsBySettings() {
-    return this.validators.filter(() => {
-      const isSlashed = false;
-      const limitValidatorsIdentity = false;
-      const onchainIdentity = false;
-      const isOversubscribed = false;
-
+    return this.validators.filter(({ isOversubscribed, onchainIdentity, isSlashed, limitValidatorsIdentity }) => {
       if (this.onchainIdentity && !onchainIdentity) return false;
 
       if (this.notSlashed && isSlashed) return false;

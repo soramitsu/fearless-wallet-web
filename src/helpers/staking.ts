@@ -7,6 +7,7 @@ const getDefaultStakingParams = (network: NetworkName): StakingParams => ({
   unbondPeriod: 0,
   maxNominations: 0,
   minBond: 0,
+  maxNominatorRewardedPerValidator: 0,
   unbond: { sum: '0', unlocking: [] },
   redeemAmount: '0',
   validators: [],

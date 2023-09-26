@@ -1,6 +1,12 @@
-import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
-
-interface SelectionValidator extends FWValidatorInfoFull {
+interface SelectionValidator {
+  name: string;
+  address: string;
+  apy: string;
+  description: string;
+  isOversubscribed: boolean;
+  onchainIdentity: boolean;
+  isSlashed: boolean;
+  limitValidatorsIdentity: boolean;
   isSelect: boolean;
 }
 

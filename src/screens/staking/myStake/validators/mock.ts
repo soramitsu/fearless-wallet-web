@@ -1,6 +1,4 @@
-import type { MyValidator } from '@/interfaces';
-
-export const myValidators: MyValidator[] = [
+export const myValidators = [
   {
     name: 'Agustín trabajo',
     address: '5E2ku91ffpVpz78WNwP18ZxR2ComiB9KLQqWnEd6UCS2f3m3',

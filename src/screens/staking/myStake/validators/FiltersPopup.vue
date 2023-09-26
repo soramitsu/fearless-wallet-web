@@ -6,7 +6,7 @@
     horizontalPlacement="right"
     :showBorder="true"
     :top="50"
-    :handlerClose="handlerClose"
+    @handlerClose="$emit('handlerClose')"
   >
     <div class="settings">
       <div class="label">{{ $t('staking.show') }}</div>

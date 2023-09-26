@@ -2,7 +2,6 @@ import type { MutationTree } from 'vuex';
 import type { State } from './state';
 import type { SetAllStakingItems, SetMyValidators, SetUnlocking } from './types';
 import { isSameString } from '@/helpers';
-import { getDefaultStakingParams } from '@/helpers/staking';
 
 export enum MutationTypes {
   UPDATE_STAKING_PARAMS = 'UPDATE_STAKING_PARAMS',
@@ -21,20 +20,9 @@ export type Mutations = {
 const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.UPDATE_STAKING_PARAMS](state, stakingParams) {
     stakingParams.forEach((params, index) => {
-      const { unbondPeriod, maxNominations, minBond, apy, unbond, redeemAmount, validators, myValidators, payee } =
-        params;
-
       const newItem = {
         ...state.allStakingNetworks[index],
-        unbondPeriod,
-        maxNominations,
-        minBond,
-        apy,
-        unbond,
-        redeemAmount,
-        validators,
-        myValidators,
-        payee,
+        ...params,
         loading: false,
       };
 

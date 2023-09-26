@@ -70,7 +70,7 @@ export default class StakingItem extends Vue {
   }
 
   get apy() {
-    return `${this.networkParams.apy}%`;
+    return `${this.$n(this.networkParams.apy, 'price')}%`;
   }
 
   get asset() {

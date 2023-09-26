@@ -1,4 +1,4 @@
-import { ValidatorInfoFull } from '@sora-substrate/util/src/staking/types';
+import { ValidatorInfoFull } from '@sora-substrate/util/build/staking/types';
 import { PasswordRequestSign } from '../../background/types/types';
 import { NetworkName } from '@/interfaces';
 
@@ -134,6 +134,7 @@ export type StakingParams = {
   unbondPeriod: number;
   maxNominations: number;
   minBond: number;
+  maxNominatorRewardedPerValidator: number;
   apy: number;
   unbond: {
     unlocking: Unlocking[];

@@ -44,7 +44,7 @@ export default class ValidatorItem extends Vue {
   }
 
   click() {
-    if (!this.showCheckbox) this.$emit('openValidatorInfo', this.validator.address);
+    if (!this.showCheckbox) this.$emit('openValidatorInfo', this.validator);
   }
 
   onSelect(value: boolean) {

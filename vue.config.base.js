@@ -32,8 +32,8 @@ module.exports = {
       definitions[0]['process.env'].RAMP_PROD_API_KEY = JSON.stringify(process.env.RAMP_PROD_API_KEY);
       definitions[0]['process.env'].MOONPAY_TEST_API_KEY = JSON.stringify(process.env.MOONPAY_TEST_API_KEY);
       definitions[0]['process.env'].MOONPAY_PROD_API_KEY = JSON.stringify(process.env.MOONPAY_PROD_API_KEY);
-      definitions[0]['process.env'].ETHERSCAN_API_KEY = JSON.stringify(process.env.ETHERSCAN_API_KEY);
-      definitions[0]['process.env'].BSCSCAN_API_KEY = JSON.stringify(process.env.BSCSCAN_API_KEY);
+      definitions[0]['process.env'].FL_WEB_ETHERSCAN_API_KEY = JSON.stringify(process.env.FL_WEB_ETHERSCAN_API_KEY);
+      definitions[0]['process.env'].FL_WEB_BSCSCAN_API_KEY = JSON.stringify(process.env.FL_WEB_BSCSCAN_API_KEY);
 
       return definitions;
     });

@@ -9,9 +9,9 @@
     <div class="your-validators">
       <ValidatorInfo
         v-if="showValidatorInfo"
-        :address="selectedValidator"
+        :validator="selectedValidator"
+        :stakingNetwork="stakingNetwork"
         :stakingCurrency="stakingCurrency"
-        :validators="validators"
       />
 
       <YourValidators v-else-if="step === 1" :stakingNetwork="stakingNetwork" @openValidatorInfo="openValidatorInfo" />
@@ -82,7 +82,10 @@ import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vu
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import { RequestNominate } from '@/extension/background/extension-base/src/services/staking-service/types';
+import {
+  FWValidatorInfoFull,
+  RequestNominate,
+} from '@/extension/background/extension-base/src/services/staking-service/types';
 import { getSoraFees } from '@/extension/messaging';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
@@ -100,7 +103,7 @@ export default class YourValidatorsManagement extends Vue {
   showConfirmationPasswordPopup = false;
   step = 1;
   isSuggested = false;
-  selectedValidator = '';
+  selectedValidator: FWValidatorInfoFull | null = null;
   fee = '0';
 
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
@@ -188,7 +191,7 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   get showValidatorInfo() {
-    return this.selectedValidator !== '';
+    return this.selectedValidator !== null;
   }
 
   get validators() {
@@ -214,12 +217,20 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   mounted() {
-    this.stakingNetwork.validators.forEach(({ address, apy, name, description }) => {
+    // TODO staking
+    const isSlashed = false;
+    const limitValidatorsIdentity = false;
+
+    this.stakingNetwork.validators.forEach(({ address, apy, name, description, isOversubscribed, isKnownGood }) => {
       Vue.set(this.state, address, {
         name,
         address,
         apy,
         description,
+        isOversubscribed,
+        onchainIdentity: isKnownGood,
+        isSlashed,
+        limitValidatorsIdentity,
         isSelect: false,
       });
     });
@@ -266,13 +277,13 @@ export default class YourValidatorsManagement extends Vue {
     else this.step += 1;
   }
 
-  openValidatorInfo(value: string) {
-    this.selectedValidator = value;
+  openValidatorInfo(validator: FWValidatorInfoFull) {
+    this.selectedValidator = validator;
   }
 
   handlerBack() {
     if (this.showValidatorInfo) {
-      this.selectedValidator = '';
+      this.selectedValidator = null;
 
       return;
     }

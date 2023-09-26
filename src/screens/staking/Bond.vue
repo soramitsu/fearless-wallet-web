@@ -367,12 +367,20 @@ export default class Bond extends Vue {
   }
 
   mounted() {
-    this.networkParams.validators.forEach(({ address, apy, name, description }) => {
+    // TODO staking
+    const isSlashed = false;
+    const limitValidatorsIdentity = false;
+
+    this.networkParams.validators.forEach(({ address, apy, name, description, isOversubscribed, isKnownGood }) => {
       Vue.set(this.state, address, {
         name,
         address,
         apy,
         description,
+        isOversubscribed,
+        onchainIdentity: isKnownGood,
+        isSlashed,
+        limitValidatorsIdentity,
         isSelect: false,
       });
     });

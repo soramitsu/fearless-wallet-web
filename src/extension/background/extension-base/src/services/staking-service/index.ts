@@ -1,6 +1,7 @@
 import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import State from '@extension-base/background/handlers/State';
 import { BasicTxErrorCode, BasicTxResponse, TransferErrorCode } from '../../background/types/types';
+import { getUtilityProps } from '../../background/utils/utils';
 import {
   RequestBond,
   RequestUnbond,
@@ -39,7 +40,7 @@ export class StakingService {
       if (!isReady) return getDefaultStakingParams(network);
 
       const address = await this.state.getCurrentAddress(network, currentAccount);
-      const validators = await this.getValidators();
+      const validators = await this.getValidators(network);
       const myValidators = await this.getMyValidators(network, validators, address);
       const { unbond, redeem } = await this.getUnlocking(network, address);
       const apy = validators.reduce((result, { apy }) => result + +apy, 0) / validators.length;
@@ -53,6 +54,7 @@ export class StakingService {
         redeemAmount: redeem,
         unbondPeriod: this.getUnbondPeriod(),
         maxNominations: this.getMaxNominations(),
+        maxNominatorRewardedPerValidator: this.maxNominatorRewardedPerValidator(),
         payee: await this.getPayee(address),
         minBond: await this.getMinNominatorBond(),
       };
@@ -89,14 +91,23 @@ export class StakingService {
     return { unbond: { unlocking, sum }, redeem };
   }
 
-  public async getValidators(): Promise<FWValidatorInfoFull[]> {
+  public async getValidators(network: NetworkName): Promise<FWValidatorInfoFull[]> {
+    const { precision } = getUtilityProps(network);
+
     const validators: FWValidatorInfoFull[] = (await apiSora.staking.getValidatorsInfo()).map((validator) => {
       const info = validator.identity?.info;
 
       const name = info?.display || info?.legal || cut(validator.address);
       const description = info?.twitter || info?.web || 'no validator info';
 
-      return { ...validator, name, description };
+      const stake = Object.fromEntries(
+        Object.entries(validator.stake).map(([key, value]) => [
+          key,
+          FPNumber.fromCodecValue(value, precision).toString(),
+        ])
+      );
+
+      return { ...validator, name, description, stake } as FWValidatorInfoFull;
     });
 
     return validators;
@@ -107,7 +118,7 @@ export class StakingService {
     _validators?: FWValidatorInfoFull[],
     _address?: string
   ): Promise<FWValidatorInfoFull[]> {
-    const validators = _validators ?? (await this.getValidators());
+    const validators = _validators ?? (await this.getValidators(network));
     const address = _address ?? (await this.state.getCurrentAddress(network));
 
     const nominations = await apiSora.staking.getNominations(address);
@@ -133,6 +144,10 @@ export class StakingService {
 
   public getUnbondPeriod() {
     return apiSora.staking.getUnbondPeriod();
+  }
+
+  public maxNominatorRewardedPerValidator() {
+    return apiSora.staking.getMaxNominatorRewardedPerValidator();
   }
 
   public async makeStaking({ params, type }: MakeStakingRequest): Promise<BasicTxResponse> {

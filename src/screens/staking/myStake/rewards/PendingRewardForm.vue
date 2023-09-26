@@ -117,6 +117,7 @@ export default class StakingManagement extends Vue {
     return 'common.confirm';
   }
 
+  // TODO staking
   get summaryRewards() {
     return this.myValidators
       .reduce((result, { rewards }) => {

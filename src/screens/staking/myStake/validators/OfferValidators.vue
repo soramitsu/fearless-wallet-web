@@ -15,7 +15,7 @@
         <div class="row">
           <Icon icon="check" class="icon-check" />
 
-          {{ $t('staking.oversubscribed') }}
+          {{ $t('staking.notOversubscribed') }}
         </div>
 
         <div class="row">

@@ -3,7 +3,7 @@
     <div class="validator-info">
       <FInput v-model="address" :placeholder="validatorName" size="big" :readonly="true" />
 
-      <ContentForm :height="355" :isStaticHeight="true" :bottomRightCorner="true" class="about-staking">
+      <ContentForm :height="validatorFormHeight" :isStaticHeight="true" :bottomRightCorner="true" class="about-staking">
         <div class="label">{{ $t('staking.staking') }}</div>
 
         <InfoRow text="common.status" :value="status" :showBorder="false" />
@@ -12,18 +12,14 @@
 
         <InfoRow
           text="staking.nominators"
-          :value="`${nominators} (${$t('common.max')} ${maxNominators})`"
+          :value="`${nominatorsCount} (${$t('common.max')} ${maxNominatorRewardedPerValidator})`"
           borderType="default"
           :showBorder="false"
         />
 
-        <Hint iconName="warning" text="staking.oversubscribedOnly" />
+        <Hint v-if="showOversubscribedWarning" iconName="warning" text="staking.oversubscribed" />
 
-        <InfoRow
-          text="staking.totalStake"
-          :value="`${totalStake} ${stakingAssetName}`"
-          :price="`${fiatSymbol} ${totalStakeValue}`"
-        />
+        <InfoRow text="staking.totalStake" :value="`${totalStake} ${stakingAssetName}`" :price="totalStakeValue" />
 
         <InfoRow text="staking.estimatedRewards" :value="`${apy}% APY`" borderType="default" />
       </ContentForm>
@@ -53,7 +49,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
-import type { GetAssetPrice } from '@/store';
+import type { GetAssetPrice, NetworkParams } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -63,50 +59,67 @@ import Scroll from '@/components/Scroll.vue';
   components: { Scroll },
 })
 export default class ValidatorInfo extends Vue {
-  @Prop({ type: String }) address!: string;
+  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
+  @Prop({ type: Object }) validator!: FWValidatorInfoFull;
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
-  @Prop({ type: String }) validators!: FWValidatorInfoFull[];
+  @Prop({ type: Array }) validators!: FWValidatorInfoFull[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
+  get validatorFormHeight() {
+    const sub = !this.showOversubscribedWarning ? 55 : 0;
+
+    return 355 - sub;
+  }
+
+  get stakingAssetName() {
+    return this.stakingCurrency.symbol;
+  }
+
+  get showOversubscribedWarning() {
+    return this.validator.isOversubscribed;
+  }
+
+  get address() {
+    return this.validator.address;
+  }
+
   get validatorName() {
-    return this.validatorInfo.name;
+    return this.validator.name;
   }
 
-  get validatorInfo() {
-    return this.validators.find(({ address }) => address === this.address)!;
+  get nominatorsCount() {
+    return this.validator.nominators.length;
   }
 
-  get nominators() {
-    return 139;
+  get legalName() {
+    return this.validator.identity?.info.legal;
   }
 
+  get email() {
+    return this.validator.identity?.info.email;
+  }
+
+  get web() {
+    return this.validator.identity?.info.web;
+  }
+
+  get twitter() {
+    return this.validator.identity?.info.twitter;
+  }
+
+  // TODO staking
   get status() {
     return 'Elected';
   }
 
-  get legalName() {
-    return 'Andy Brown';
-  }
-
-  get email() {
-    return 'andybrown@gmail.com';
-  }
-
-  get web() {
-    return 'www.andybrown.com';
-  }
-
-  get twitter() {
-    return '@andybrown';
-  }
-
+  // TODO staking что это?
   get elementName() {
-    return '@andbrwn:web3.foundation';
+    return '';
   }
 
-  get maxNominators() {
-    return 256;
+  get maxNominatorRewardedPerValidator() {
+    return this.stakingNetwork.maxNominatorRewardedPerValidator;
   }
 
   get stakingAssetPrice() {
@@ -116,21 +129,19 @@ export default class ValidatorInfo extends Vue {
   }
 
   get apy() {
-    return this.validatorInfo?.apy;
+    return this.validator?.apy;
   }
 
   get totalStake() {
-    return 19.1;
+    const total = this.validator.stake.total ?? '0';
+
+    return this.$n(+total, 'decimal');
   }
 
   get totalStakeValue() {
-    const value = this.totalStake * this.stakingAssetPrice;
+    const value = +this.totalStake * this.stakingAssetPrice;
 
     return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
-  }
-
-  get stakingAssetName() {
-    return this.stakingCurrency.symbol;
   }
 }
 </script>

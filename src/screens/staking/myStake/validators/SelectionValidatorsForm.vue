@@ -20,7 +20,6 @@
 
     <FiltersPopup
       v-if="showFiltersPopup"
-      :handlerClose="toggleFiltersPopupVisibility"
       :onchainIdentity="onchainIdentity"
       :notSlashed="notSlashed"
       :limitValidatorsIdentity="limitValidatorsIdentity"
@@ -31,6 +30,7 @@
       @update:notOversubscribed="updateNotOversubscribed"
       @update:limitValidatorsIdentity="updateLimitValidatorsIdentity"
       @update:sortByApy="updateSortByApy"
+      @handlerClose="toggleFiltersPopupVisibility"
     />
   </div>
 </template>

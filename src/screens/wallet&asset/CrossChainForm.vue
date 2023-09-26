@@ -141,10 +141,9 @@ export default class CrossChainForm extends Vue {
   }
 
   get currency() {
-    return this.balances.find(
-      ({ assetId, balances }) =>
-        assetId === this.assetId || balances.some((el) => el.id.toLowerCase() === this.assetId.toLowerCase())
-    );
+    return this.balances.find(({ assetId, balances }) => {
+      return assetId === this.assetId || balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase());
+    });
   }
 
   get assetName() {

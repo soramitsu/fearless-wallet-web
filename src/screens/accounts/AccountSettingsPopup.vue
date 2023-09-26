@@ -45,7 +45,7 @@ import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { EVM_EXPLORERS_BASE_URLS, EXPLORERS_BASE_URLS } from '@/consts/networks';
+import { EXPLORERS_BASE_URLS } from '@/consts/networks';
 @Component
 export default class AccountSettingsPopup extends Vue {
   @Prop(String) selectedNetwork!: string;
@@ -59,6 +59,14 @@ export default class AccountSettingsPopup extends Vue {
 
   get explorerType() {
     return this.getNetwork(this.selectedNetwork)?.externalApi?.history?.type;
+  }
+
+  get explorerUrl() {
+    const network = this.getNetwork(this.selectedNetwork);
+
+    if (network.externalApi?.explorers) return network?.externalApi?.explorers[0].url;
+
+    return '';
   }
 
   get buttonText() {
@@ -91,13 +99,10 @@ export default class AccountSettingsPopup extends Vue {
     return EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] ?? this.selectedNetwork;
   }
 
-  get evmExplorerByNetwork() {
-    return EVM_EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] ?? '';
-  }
-
   openEvmExplorer() {
-    if (this.evmExplorerByNetwork !== '')
-      window.open(`https://${this.evmExplorerByNetwork}/address/${this.addressByNetwork}`);
+    const hostname = new URL(this.explorerUrl).hostname;
+
+    window.open(`https://${hostname}/address/${this.addressByNetwork}`);
   }
 
   openSubscan() {
@@ -105,7 +110,7 @@ export default class AccountSettingsPopup extends Vue {
   }
 
   openExplorer() {
-    if (this.evmExplorerByNetwork !== '') return this.openEvmExplorer();
+    if (this.explorerType === 'etherscan') return this.openEvmExplorer();
     else this.openSubscan();
 
     this.close();

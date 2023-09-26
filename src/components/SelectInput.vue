@@ -69,17 +69,17 @@ export default class SelectInput extends Vue {
 
     if (this.syncedAmount[this.syncedAmount.length - 1] === '0') return this.syncedAmount;
 
-    if (FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString() === 'NaN') return this.syncedAmount;
+    const localString = FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
 
-    return FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
+    if (this.syncedAmount[this.syncedAmount.length - 1] === '.') return `${localString}.`;
+
+    if (localString === 'NaN') return this.syncedAmount;
+
+    return localString;
   }
 
-  set amountInternal(value: string) {
-    if (value === '') {
-      this.syncedAmount = '';
-
-      return;
-    }
+  set amountInternal(_value: string) {
+    const value = _value.replaceAll(',', '').replaceAll(' ', '');
 
     if (value.length < this.syncedAmount.length) {
       this.syncedAmount = value;
@@ -87,8 +87,17 @@ export default class SelectInput extends Vue {
       return;
     }
 
-    if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN')
+    if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN') {
+      const string = FPNumber.fromCodecValue(value || 0, 0).toString();
+
+      if (this.value[this.value.length - 1] === '.') {
+        this.syncedAmount = this.syncedAmount = `${string}.`;
+
+        return;
+      }
+
       this.syncedAmount = FPNumber.fromCodecValue(value || 0, 0).toString();
+    }
   }
 
   get header() {

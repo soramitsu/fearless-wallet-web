@@ -67,11 +67,11 @@ export default class SelectInput extends Vue {
   get amountInternal() {
     if (this.syncedAmount === '') return '';
 
-    if (this.syncedAmount[this.syncedAmount.length - 1] === '0') return this.syncedAmount;
+    if (this.syncedAmount.endsWith('0')) return this.syncedAmount;
 
     const localString = FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
 
-    if (this.syncedAmount[this.syncedAmount.length - 1] === '.') return `${localString}.`;
+    if (this.syncedAmount.endsWith('.')) return `${localString}.`;
 
     if (localString === 'NaN') return this.syncedAmount;
 
@@ -90,13 +90,13 @@ export default class SelectInput extends Vue {
     if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN') {
       const string = FPNumber.fromCodecValue(value || 0, 0).toString();
 
-      if (this.value[this.value.length - 1] === '.') {
+      if (this.value.endsWith('0')) {
         this.syncedAmount = this.syncedAmount = `${string}.`;
 
         return;
       }
 
-      this.syncedAmount = FPNumber.fromCodecValue(value || 0, 0).toString();
+      this.syncedAmount = string ;
     }
   }
 

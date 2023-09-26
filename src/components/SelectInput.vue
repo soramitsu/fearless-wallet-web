@@ -43,7 +43,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type { TokenBalance } from '@extension-base/background/types/types';
@@ -52,7 +52,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 @Component
 export default class SelectInput extends Vue {
   inputIsFocused = false;
-
+  timer: NodeJS.Timeout | undefined = undefined;
   @Prop({ default: '' }) text!: string;
   @Prop({ default: '' }) asset!: string;
   @Prop({ default: '' }) assetId!: string;
@@ -62,18 +62,22 @@ export default class SelectInput extends Vue {
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  amountInternal = '';
 
-  get amountInternal() {
-    if (this.syncedAmount === '') return '';
-
-    return FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
+  @Watch('amountInternal')
+  watchAmountInternal(value: string) {
+    clearTimeout(this.timer);
+    this.timer = undefined;
+    this.timer = setTimeout(() => {
+      if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN') {
+        this.syncedAmount = FPNumber.fromCodecValue(value || 0, 0).toString();
+      }
+    }, 500);
   }
 
-  set amountInternal(value: string) {
-    if (value === '') return;
-
-    if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN')
-      this.syncedAmount = FPNumber.fromCodecValue(value || 0, 0).toString();
+  @Watch('syncedAmount')
+  watchSyncAmount(value: string) {
+    this.amountInternal = FPNumber.fromCodecValue(value || 0, 0).toLocaleString();
   }
 
   get header() {
@@ -100,6 +104,8 @@ export default class SelectInput extends Vue {
   }
 
   IsNumber(event: KeyboardEvent) {
+    if (this.amountInternal.includes('.') && event.key === '.') return event.preventDefault();
+
     if (!/\d/.test(event.key) && event.key !== '.') return event.preventDefault();
   }
 

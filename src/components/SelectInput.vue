@@ -67,23 +67,28 @@ export default class SelectInput extends Vue {
   get amountInternal() {
     if (this.syncedAmount === '') return '';
 
-    clearTimeout(this.timer);
+    if (this.syncedAmount[this.syncedAmount.length - 1] === '0') return this.syncedAmount;
 
-    this.timer = setTimeout(() => {
-      this.valueInternal = this.syncedAmount;
-    }, 400);
+    if (FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString() === 'NaN') return this.syncedAmount;
 
-    return this.valueInternal;
+    return FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
   }
 
   set amountInternal(value: string) {
-    if (value === '') return;
+    if (value === '') {
+      this.syncedAmount = '';
 
-    this.valueInternal = value;
-
-    if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN') {
-      this.syncedAmount = FPNumber.fromCodecValue(value || 0, 0).toString();
+      return;
     }
+
+    if (value.length < this.syncedAmount.length) {
+      this.syncedAmount = value;
+
+      return;
+    }
+
+    if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN')
+      this.syncedAmount = FPNumber.fromCodecValue(value || 0, 0).toString();
   }
 
   get header() {

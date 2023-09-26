@@ -111,7 +111,7 @@ export default class YourValidatorsManagement extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Action(StakingActionTypes.GET_MY_VALIDATORS) getMyValidators!: AsyncFn<GetStakingNetworkProps>;
+  @Action(StakingActionTypes.GET_MY_STAKING_INFO) getMyStakingInfo!: AsyncFn<GetStakingNetworkProps>;
 
   get selectedAccountName() {
     return this.selectedWallet.name;
@@ -252,7 +252,7 @@ export default class YourValidatorsManagement extends Vue {
     this.showConfirmationPasswordPopup = false;
 
     if (closeForm) {
-      this.getMyValidators({ network: this.network });
+      this.getMyStakingInfo({ network: this.network });
       this.closeForm();
     }
   }

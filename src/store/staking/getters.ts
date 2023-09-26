@@ -27,27 +27,26 @@ const getters: GetterTree<State, State> & Getters = {
     const accountBalances: TokenBalance[] = rootState.account.balances ?? [];
 
     return allStakingNetworks.map((params) => {
-      if (accountBalances.length === 0) return { ...params, bondAmount: '0' };
+      if (accountBalances.length === 0) return { ...params };
 
       const { balances } = accountBalances.find(({ assetId }) => isSameString(assetId, params.assetId))!;
       const balance = balances.find(({ name }) => isSameString(name, params.network))!;
-      const bondAmount = balance.frozen ?? '0';
       const transferableAmount = balance.transferable ?? '0';
 
-      return { ...params, bondAmount, transferableAmount };
+      return { ...params, transferableAmount };
     });
   },
 
   [GettersTypes.stakingItems](state, getters): NetworkParams[] {
     const allStakingItems: NetworkParams[] = getters?.allStakingItems as unknown as NetworkParams[];
 
-    return allStakingItems.filter(({ bondAmount }) => bondAmount === '0');
+    return allStakingItems.filter(({ totalStake }) => totalStake === '0');
   },
 
   [GettersTypes.myStakingItems](state, getters): NetworkParams[] {
     const allStakingItems: NetworkParams[] = getters?.allStakingItems as unknown as NetworkParams[];
 
-    return allStakingItems.filter(({ bondAmount }) => bondAmount !== '0');
+    return allStakingItems.filter(({ totalStake }) => totalStake !== '0');
   },
 
   [GettersTypes.getStakingNetwork]: (state, getters) => (networkName: string) => {

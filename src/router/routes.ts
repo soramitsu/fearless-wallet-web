@@ -180,7 +180,7 @@ const routes: Array<RouteConfig> = [
       const network = to.params.network;
       const stakingParams = await getStakingNetwork(network);
 
-      if (stakingParams.bondAmount === '0') next({ name: Components.Staking });
+      if (stakingParams.totalStake === '0') next({ name: Components.Staking });
       else next();
     },
     meta: {

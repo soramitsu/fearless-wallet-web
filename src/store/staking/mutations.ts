@@ -1,20 +1,18 @@
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
-import type { SetAllStakingItems, SetMyValidators, SetUnlocking } from './types';
+import type { SetAllStakingItems, SetMyStakingInfo } from './types';
 import { isSameString } from '@/helpers';
 
 export enum MutationTypes {
   UPDATE_STAKING_PARAMS = 'UPDATE_STAKING_PARAMS',
   CLEAR_STAKING_PARAMS = 'CLEAR_STAKING_PARAMS',
-  UPDATE_MY_VALIDATORS = 'UPDATE_MY_VALIDATORS',
-  UPDATE_UNLOCKING = 'UPDATE_UNLOCKING',
+  UPDATE_MY_STAKING_INFO = 'UPDATE_MY_STAKING_INFO',
 }
 
 export type Mutations = {
   [MutationTypes.UPDATE_STAKING_PARAMS](state: State, props: SetAllStakingItems): void;
   [MutationTypes.CLEAR_STAKING_PARAMS](state: State): void;
-  [MutationTypes.UPDATE_MY_VALIDATORS](state: State, props: SetMyValidators): void;
-  [MutationTypes.UPDATE_UNLOCKING](state: State, props: SetUnlocking): void;
+  [MutationTypes.UPDATE_MY_STAKING_INFO](state: State, props: SetMyStakingInfo): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -41,18 +39,14 @@ const mutations: MutationTree<State> & Mutations = {
     return;
   },
 
-  [MutationTypes.UPDATE_MY_VALIDATORS](state, { network, myValidators }) {
+  [MutationTypes.UPDATE_MY_STAKING_INFO](state, { network, stakingInfo }) {
     const index = state.allStakingNetworks.findIndex(({ network: _network }) => isSameString(_network, network));
     const oldItem = state.allStakingNetworks[index];
 
-    state.allStakingNetworks.splice(index, 1, { ...oldItem, myValidators });
-  },
-
-  [MutationTypes.UPDATE_UNLOCKING](state, { network, unlocking: { redeem, unbond } }) {
-    const index = state.allStakingNetworks.findIndex(({ network: _network }) => isSameString(_network, network));
-    const oldItem = state.allStakingNetworks[index];
-
-    state.allStakingNetworks.splice(index, 1, { ...oldItem, unbond, redeemAmount: redeem });
+    state.allStakingNetworks.splice(index, 1, {
+      ...oldItem,
+      ...stakingInfo,
+    });
   },
 };
 

@@ -456,7 +456,7 @@ export default class Bond extends Vue {
   async setMax() {
     if (!this.stakingCurrency) return;
 
-    this.amount = this.calcTransferableSendMinusFee().toString();
+    this.amount = this.calcTransferableSendMinusFee();
   }
 }
 </script>

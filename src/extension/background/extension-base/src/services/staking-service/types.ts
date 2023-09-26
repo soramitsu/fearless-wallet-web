@@ -136,22 +136,31 @@ export type StakingParams = {
   minBond: number;
   maxNominatorRewardedPerValidator: number;
   apy: number;
+  validators: FWValidatorInfoFull[];
+
+  // my stake info:
+  myValidators: FWValidatorInfoFull[];
+  payee: string;
+  activeStake: string;
+  totalStake: string;
+  redeemAmount: string;
   unbond: {
     unlocking: Unlocking[];
     sum: string;
   };
-  redeemAmount: string;
-  payee: string;
-  validators: FWValidatorInfoFull[];
-  myValidators: FWValidatorInfoFull[];
 };
 
-export type Unlocking_Redeem = {
+export type MyStakingInfo = {
+  myValidators: FWValidatorInfoFull[];
+  payee: string;
+  controller: string;
+  redeemAmount: string;
+  activeStake: string;
+  totalStake: string;
   unbond: {
     unlocking: Unlocking[];
     sum: string;
   };
-  redeem: string;
 };
 
 export type StakingParamsRequest = {
@@ -166,4 +175,4 @@ export type StakingNetworkRequest = {
 
 export type MyValidatorsResponse = FWValidatorInfoFull[];
 
-export type UnlockingResponse = Unlocking_Redeem;
+export type MyStakingInfoResponse = MyStakingInfo;

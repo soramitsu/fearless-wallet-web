@@ -118,7 +118,7 @@ export default class MainStakingForm extends Vue {
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
-  @Action(StakingActionTypes.GET_UNLOCKING) getUnlocking!: AsyncFn<GetStakingNetworkProps>;
+  @Action(StakingActionTypes.GET_MY_STAKING_INFO) getMyStakingInfo!: AsyncFn<GetStakingNetworkProps>;
 
   get network() {
     return this.stakingNetwork.network;
@@ -209,7 +209,7 @@ export default class MainStakingForm extends Vue {
   }
 
   get totalAmount() {
-    if (this.isUnbond) return this.stakingNetwork.bondAmount;
+    if (this.isUnbond) return this.stakingNetwork.activeStake;
 
     if (this.isRebond) return this.stakingNetwork.unbond.sum;
 
@@ -296,7 +296,7 @@ export default class MainStakingForm extends Vue {
     this.showConfirmationPasswordPopup = false;
 
     if (closeForm) {
-      if (this.isUnbond || this.isRebond) this.getUnlocking({ network: this.network });
+      if (this.isUnbond || this.isRebond) this.getMyStakingInfo({ network: this.network });
 
       this.closeForm();
     }
@@ -313,9 +313,9 @@ export default class MainStakingForm extends Vue {
   async setMax() {
     if (!this.stakingCurrency) return;
 
-    if (this.isBondExtra) this.amount = this.calcTransferableSendMinusFee().toString();
+    if (this.isBondExtra) this.amount = this.calcTransferableSendMinusFee();
 
-    if (this.isUnbond) this.amount = this.stakingNetwork.bondAmount;
+    if (this.isUnbond) this.amount = this.stakingNetwork.activeStake;
 
     if (this.isRebond) this.amount = this.stakingNetwork.unbond.sum;
 

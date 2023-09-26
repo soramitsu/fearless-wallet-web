@@ -31,9 +31,8 @@ import { addresses as addressesObservable } from '@polkadot/ui-keyring/observabl
 import { storage } from '@extension-base/stores/Storage';
 import {
   StakingNetworkRequest,
-  MyValidatorsResponse,
   StakingParamsRequest,
-  UnlockingResponse,
+  MyStakingInfoResponse,
 } from '@extension-base/services/staking-service/types';
 import { MakeStakingRequest, StakingParamsResponse } from './../../services/staking-service/types';
 import type {
@@ -88,6 +87,8 @@ import type { NetworkJson } from '@extension-base/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { googleManage } from '@/controllers/googleController';
@@ -124,6 +125,10 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
     });
 
   return transformedAccounts;
+}
+
+function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
+  return (value as SignerPayloadJSON).genesisHash !== undefined;
 }
 
 export default class Extension extends FWExtensionBase {
@@ -518,19 +523,19 @@ export default class Extension extends FWExtensionBase {
       pair.decodePkcs8(password);
     }
 
-    // const { payload } = request;
+    const { payload } = request;
 
-    // if (isJsonPayload(payload)) {
-    //   // Get the metadata for the genesisHash
-    //   const currentMetadata = this.state.knownMetadata.find(
-    //     (meta: MetadataDef) => meta.genesisHash === payload.genesisHash
-    //   );
+    if (isJsonPayload(payload)) {
+      // Get the metadata for the genesisHash
+      const currentMetadata = this.state.knownMetadata.find(
+        (meta: MetadataDef) => meta.genesisHash === payload.genesisHash
+      );
 
-    //   // set the registry before calling the sign function
-    //   registry.setSignedExtensions(payload.signedExtensions, currentMetadata?.userExtensions);
+      // set the registry before calling the sign function
+      registry.setSignedExtensions(payload.signedExtensions, currentMetadata?.userExtensions);
 
-    //   if (currentMetadata) registry.register(currentMetadata?.types);
-    // }
+      if (currentMetadata) registry.register(currentMetadata?.types);
+    }
 
     const result = request.sign(registry, pair);
 
@@ -1116,12 +1121,8 @@ export default class Extension extends FWExtensionBase {
     return state.stakingService.getStakingParams(params);
   }
 
-  getMyValidators(params: StakingNetworkRequest): Promise<MyValidatorsResponse> {
-    return state.stakingService.getMyValidators(params.network);
-  }
-
-  getUnlocking(params: StakingNetworkRequest): Promise<UnlockingResponse> {
-    return state.stakingService.getUnlocking(params.network);
+  getMyStakingInfo(params: StakingNetworkRequest): Promise<MyStakingInfoResponse> {
+    return state.stakingService.getMyStakingInfo(params.network);
   }
 
   async makeStaking(request: MakeStakingRequest): Promise<BasicTxResponse> {
@@ -1271,11 +1272,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(staking.stakingParams)':
         return this.getStakingParams(request as StakingParamsRequest);
 
-      case 'pri(staking.myValidators)':
-        return this.getMyValidators(request as StakingNetworkRequest);
-
-      case 'pri(staking.unlocking)':
-        return this.getUnlocking(request as StakingNetworkRequest);
+      case 'pri(staking.myStaking)':
+        return this.getMyStakingInfo(request as StakingNetworkRequest);
 
       case 'pri(staking.makeStaking)':
         return this.makeStaking(request as MakeStakingRequest);

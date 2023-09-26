@@ -119,21 +119,21 @@ function calcTransferableSendMinusFee(
   const destNetFeeFP = new FPNumber(destNetFee ?? 0);
 
   const currencyBalance = currency.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase())!;
-  const transferable = +(currencyBalance.transferable ?? 0);
+  const transferable = currencyBalance.transferable ?? '0';
 
   // Для Utility ассета вычитаем комиссию, тк комиссия всегда списывается в Utility токене
   if (currencyBalance.isUtility) {
     const amountSubFee = new FPNumber(transferable).sub(new FPNumber(fee));
     const amountSubFeeSubDestFee = isCrossChain ? amountSubFee.sub(destNetFeeFP) : amountSubFee;
 
-    return FPNumber.lt(amountSubFeeSubDestFee, FPNumber.ZERO) ? '0' : amountSubFeeSubDestFee.toNumber();
+    return FPNumber.lt(amountSubFeeSubDestFee, FPNumber.ZERO) ? '0' : amountSubFeeSubDestFee.toString();
   }
 
   // вычитаем CrossChain комиссию
   if (isCrossChain) {
     const amountSubDestFee = new FPNumber(transferable).sub(destNetFeeFP);
 
-    return FPNumber.lt(amountSubDestFee, FPNumber.ZERO) ? 0 : amountSubDestFee.toNumber();
+    return FPNumber.lt(amountSubDestFee, FPNumber.ZERO) ? '0' : amountSubDestFee.toString();
   }
 
   return transferable;

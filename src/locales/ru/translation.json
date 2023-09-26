@@ -437,6 +437,7 @@
   },
   "staking": {
     "stakingBalance": "Баланс стейкинга",
+    "stakingActiveBalance": "Баланс активного стейкинга",
     "myStaked": "Мой стейкинг",
     "staking": "Стейкинг",
     "rewarded": "Награды",

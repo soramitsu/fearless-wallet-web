@@ -533,30 +533,28 @@ export default class SwapForm extends Vue {
   }
 
   activated() {
-    const { reset } = this.$route.params;
+    const { reset, restPriceXOR, assetId } = this.$route.params;
 
     if (reset !== undefined) {
       this.receiveAssetId = '';
       this.sendAmount = '';
       this.receiveAmount = '';
     }
-  }
-
-  deactivated() {
-    this.selectAssetType = '';
-    this.step = 1;
-  }
-
-  async created() {
-    const { assetId, restPriceXOR } = this.$route.params;
 
     if (restPriceXOR) {
       this.receiveAssetId = SORA_XOR_ASSET_ID;
       this.receiveAmount = restPriceXOR;
       this.isExchangeB = true;
-    } else this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
+    }
+
+    this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
 
     this.getSoraFees();
+  }
+
+  deactivated() {
+    this.selectAssetType = '';
+    this.step = 1;
   }
 
   async getSoraFees() {
@@ -732,7 +730,7 @@ export default class SwapForm extends Vue {
 
   setMax() {
     this.isExchangeB = false;
-    this.sendAmount = this.calcTransferableSendMinusFee().toString();
+    this.sendAmount = this.calcTransferableSendMinusFee();
 
     this.checkSwap();
   }

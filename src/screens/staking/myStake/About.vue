@@ -3,9 +3,9 @@
     <ContentForm :height="210" :isStaticHeight="true" :bottomRightCorner="true" class="about-form">
       <div class="about-stake">
         <div class="one block">
-          <div class="label">{{ $t('staking.stakingBalance') }}</div>
-          <div class="amount">{{ bondAmount }} {{ stakingAssetName }}</div>
-          <div class="value">{{ fiatSymbol }}{{ bondValue }}</div>
+          <div class="label">{{ $t('staking.stakingActiveBalance') }}</div>
+          <div class="amount">{{ activeStake }} {{ stakingAssetName }}</div>
+          <div class="value">{{ fiatSymbol }}{{ activeStakeValue }}</div>
         </div>
 
         <div class="two block">
@@ -65,8 +65,8 @@ export default class About extends Vue {
     return this.getStakingNetwork(this.network);
   }
 
-  get bondAmount() {
-    return this.stakingNetwork.bondAmount;
+  get activeStake() {
+    return this.stakingNetwork.activeStake;
   }
 
   get rewardAmount() {
@@ -102,8 +102,8 @@ export default class About extends Vue {
     return this.getAssetPrice(priceId).price;
   }
 
-  get bondValue() {
-    const value = +this.bondAmount * this.stakingAssetPrice;
+  get activeStakeValue() {
+    const value = +this.activeStake * this.stakingAssetPrice;
 
     return this.$n(value, 'price');
   }

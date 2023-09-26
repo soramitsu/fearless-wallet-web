@@ -439,6 +439,7 @@
   },
   "staking": {
     "stakingBalance": "Staking balance",
+    "stakingActiveBalance": "Staking active balance",
     "myStaked": "My staked",
     "staking": "Staking",
     "unstaking": "Unstaking",

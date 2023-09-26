@@ -126,10 +126,10 @@ export default class StakingPage extends Vue {
   }
 
   get stakingBalance() {
-    return this.myStakingItems.reduce((sum, { bondAmount, assetId }) => {
+    return this.myStakingItems.reduce((sum, { totalStake, assetId }) => {
       const { priceId } = this.balances.find(({ assetId: _assetId }) => _assetId === assetId)!;
       const assetPrice = this.getAssetPrice(priceId ?? '').price;
-      const value = getCostOfAssets(bondAmount, assetPrice);
+      const value = getCostOfAssets(totalStake, assetPrice);
 
       return sum + value;
     }, 0);

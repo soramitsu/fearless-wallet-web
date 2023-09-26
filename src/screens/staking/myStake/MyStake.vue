@@ -194,7 +194,7 @@ export default class MyStake extends Vue {
   }
 
   get showUnbondBtn() {
-    return this.stakingNetwork.bondAmount !== '0';
+    return this.stakingNetwork.activeStake !== '0';
   }
 
   get showRebondBtn() {

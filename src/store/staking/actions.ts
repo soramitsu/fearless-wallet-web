@@ -2,19 +2,17 @@ import { MutationTypes } from './mutations';
 import type { State } from '@/store/staking/state';
 import type { ActionTree } from 'vuex';
 import type { AugmentedStakingContext, GetStakingNetworkProps } from './types';
-import { getMyValidators, getStakingParams, getUnlocking } from '@/extension/messaging';
+import { getStakingParams, getMyStakingInfo } from '@/extension/messaging';
 import { SEC1 } from '@/consts/time';
 
 export enum ActionTypes {
   GET_STAKING_PARAMS = 'GET_STAKING_PARAMS',
-  GET_MY_VALIDATORS = 'GET_MY_VALIDATORS',
-  GET_UNLOCKING = 'GET_UNLOCKING',
+  GET_MY_STAKING_INFO = 'GET_MY_STAKING_INFO',
 }
 
 export type Actions = {
   [ActionTypes.GET_STAKING_PARAMS](store: AugmentedStakingContext): Promise<void>;
-  [ActionTypes.GET_MY_VALIDATORS](store: AugmentedStakingContext, props: GetStakingNetworkProps): Promise<void>;
-  [ActionTypes.GET_UNLOCKING](store: AugmentedStakingContext, props: GetStakingNetworkProps): Promise<void>;
+  [ActionTypes.GET_MY_STAKING_INFO](store: AugmentedStakingContext, props: GetStakingNetworkProps): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
@@ -27,19 +25,11 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.UPDATE_STAKING_PARAMS, stakingParams);
   },
 
-  async [ActionTypes.GET_MY_VALIDATORS]({ commit }, { network }) {
+  async [ActionTypes.GET_MY_STAKING_INFO]({ commit }, { network }) {
     setTimeout(async () => {
-      const myValidators = await getMyValidators({ network });
+      const stakingInfo = await getMyStakingInfo({ network });
 
-      commit(MutationTypes.UPDATE_MY_VALIDATORS, { network, myValidators });
-    }, SEC1 * 5);
-  },
-
-  async [ActionTypes.GET_UNLOCKING]({ commit }, { network }) {
-    setTimeout(async () => {
-      const unlocking = await getUnlocking({ network });
-
-      commit(MutationTypes.UPDATE_UNLOCKING, { network, unlocking });
+      commit(MutationTypes.UPDATE_MY_STAKING_INFO, { network, stakingInfo });
     }, SEC1 * 5);
   },
 };

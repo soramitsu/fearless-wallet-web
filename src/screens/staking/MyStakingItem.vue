@@ -29,7 +29,7 @@
         <div v-else class="value">
           <!-- <div class="change">{{ changeStakingAmount }}</div> -->
 
-          {{ bondAmount }} {{ asset }}
+          {{ totalStake }} {{ asset }}
         </div>
       </div>
 
@@ -89,7 +89,7 @@ export default class MyStakingItem extends Vue {
     const priceId = stakingCurrency?.priceId ?? '';
     const price = this.getAssetPrice(priceId).price;
 
-    return getCostOfAssets(this.bondAmount, price).toString();
+    return getCostOfAssets(this.totalStake, price).toString();
   }
 
   get network() {
@@ -142,8 +142,8 @@ export default class MyStakingItem extends Vue {
     return `${this.unbondPeriod} ${this.$t('staking.days')}`;
   }
 
-  get bondAmount() {
-    return this.networkParams.bondAmount;
+  get totalStake() {
+    return this.networkParams.totalStake;
   }
 
   openStakingInfo() {

@@ -135,6 +135,8 @@ export default class Header extends Vue {
   }
 
   get isGroup() {
+    if (this.$route.name === Components.AssetHistory) return false;
+
     return isNetworkGroup(this.selectedNetwork);
   }
 
@@ -143,7 +145,10 @@ export default class Header extends Vue {
   }
 
   get currentCurrency(): TokenBalance | undefined {
-    return this.balances.find(({ assetId: id }) => id === this.selectedAssetId);
+    return this.balances.find(
+      ({ assetId: id, balances }) =>
+        id === this.selectedAssetId || balances.some((el) => el.id === this.selectedAssetId)
+    );
   }
 
   get computeActiveNetworks() {
@@ -170,6 +175,13 @@ export default class Header extends Vue {
 
   get selectedNetworkIcon() {
     if (this.isGroup) return this.allNetworksIcon;
+
+    if (this.$route.name === Components.AssetHistory) {
+      const asset = this.currentCurrency?.balances.find((el) => el.id === this.selectedAssetId);
+      if (!asset) return '';
+
+      return this.getNetwork(asset?.name).icon;
+    }
 
     const network = this.getNetwork(this.selectedNetwork);
 

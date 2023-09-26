@@ -89,7 +89,7 @@ export type StakingOperation =
   | 'bondExtra'
   | 'unbond'
   | 'rebond'
-  | 'withdrawUnbonded'
+  | 'redeem'
   | 'controllerAccount'
   | 'nominate'
   | 'payee';
@@ -123,17 +123,34 @@ export interface FWValidatorInfoFull extends ValidatorInfoFull {
   description: string;
 }
 
+type Unlocking = {
+  value: string;
+  remainingEras: string;
+  remainingDays: string;
+};
+
 export type StakingParams = {
   network: NetworkName;
   unbondPeriod: number;
   maxNominations: number;
   minBond: number;
   apy: number;
-  unbondAmount: string;
-  withdrawUnbondedAmount: string;
+  unbond: {
+    unlocking: Unlocking[];
+    sum: string;
+  };
+  redeemAmount: string;
   payee: string;
   validators: FWValidatorInfoFull[];
   myValidators: FWValidatorInfoFull[];
+};
+
+export type Unlocking_Redeem = {
+  unbond: {
+    unlocking: Unlocking[];
+    sum: string;
+  };
+  redeem: string;
 };
 
 export type StakingParamsRequest = {
@@ -142,8 +159,10 @@ export type StakingParamsRequest = {
 
 export type StakingParamsResponse = StakingParams[];
 
-export type GetMyValidatorsRequest = {
+export type StakingNetworkRequest = {
   network: NetworkName;
 };
 
-export type GetMyValidatorsResponse = FWValidatorInfoFull[];
+export type MyValidatorsResponse = FWValidatorInfoFull[];
+
+export type UnlockingResponse = Unlocking_Redeem;

@@ -24,7 +24,7 @@
           {{ $t('staking.stakingBalance') }}
         </div>
 
-        <Loading v-if="showLoading" :width="28" />
+        <Loading v-if="isLoading" :width="28" />
 
         <div v-else class="value">
           <!-- <div class="change">{{ changeStakingAmount }}</div> -->
@@ -37,7 +37,7 @@
         <div>
           {{ $t('staking.unstaking') }}
         </div>
-        <Loading v-if="showLoading" :width="28" />
+        <Loading v-if="isLoading" :width="28" />
 
         <div v-else class="value">{{ unbondAmount }} {{ asset }}</div>
       </div>
@@ -45,7 +45,7 @@
       <div class="row">
         <div>APY</div>
 
-        <Loading v-if="showLoading" :width="28" />
+        <Loading v-if="isLoading" :width="28" />
 
         <div v-else class="value">{{ apy }}</div>
       </div>
@@ -55,7 +55,7 @@
           {{ $t('staking.unstakingPeriod') }}
         </div>
 
-        <Loading v-if="showLoading" :width="28" />
+        <Loading v-if="isLoading" :width="28" />
 
         <div v-else class="value">{{ period }}</div>
       </div>
@@ -71,7 +71,6 @@ import type { NetworkParams } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
-import { networksIsPending } from '@/helpers/shimmers';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
@@ -106,15 +105,15 @@ export default class MyStakingItem extends Vue {
   }
 
   get unbondAmount() {
-    return this.networkParams.unbondAmount;
+    return this.networkParams.unbond.sum;
   }
 
   get asset() {
     return this.networkParams.asset;
   }
 
-  get showLoading() {
-    return networksIsPending(this.networks, this.network);
+  get isLoading() {
+    return this.networkParams.loading;
   }
 
   get apy() {
@@ -148,12 +147,14 @@ export default class MyStakingItem extends Vue {
   }
 
   openStakingInfo() {
-    this.$router.push({
-      name: Components.MyStake,
-      params: {
-        network: this.network.toLowerCase(),
-      },
-    });
+    if (!this.isLoading)
+      this.$router.push({
+        name: Components.MyStake,
+        params: {
+          network: this.network.toLowerCase(),
+          paramsLoaded: 'true',
+        },
+      });
   }
 }
 </script>

@@ -25,7 +25,7 @@
 
         <Unbond v-else-if="isUnbond" :stakingCurrency="stakingCurrency" :fee="fee" />
 
-        <WithdrawUnbonded v-else-if="isWithdrawUnbonded" :stakingCurrency="stakingCurrency" :fee="fee" />
+        <WithdrawUnbonded v-else-if="isRedeem" :stakingCurrency="stakingCurrency" :fee="fee" />
 
         <Rebond v-else-if="isRebond" :stakingCurrency="stakingCurrency" :fee="fee" :amount="amount" />
 
@@ -68,10 +68,10 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Getter, Action } from 'vuex-class';
 import { AccountJson, TokenBalance } from '@extension-base/background/types/types';
 import { StakingOperation, StakingOperationParams } from '@extension-base//services/staking-service/types';
-import type { GetAssetPrice, GetStakingNetwork, NetworkParams, SelectedWallet } from '@/store';
+import type { GetAssetPrice, GetStakingNetwork, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import WithdrawUnbonded from '@/screens/staking/myStake/stakingForms/WithdrawUnbonded.vue';
@@ -86,6 +86,8 @@ import { calcTransferableSendMinusFee, isValidAmountAsset } from '@/helpers/curr
 import BaseApi from '@/util/BaseApi';
 import { getSoraFees } from '@/extension/messaging';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
+import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
+import { AsyncFn } from '@/interfaces';
 
 @Component({
   components: {
@@ -116,6 +118,7 @@ export default class MainStakingForm extends Vue {
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
+  @Action(StakingActionTypes.GET_UNLOCKING) getUnlocking!: AsyncFn<GetStakingNetworkProps>;
 
   get network() {
     return this.stakingNetwork.network;
@@ -151,8 +154,8 @@ export default class MainStakingForm extends Vue {
     return this.type === 'unbond';
   }
 
-  get isWithdrawUnbonded() {
-    return this.type === 'withdrawUnbonded';
+  get isRedeem() {
+    return this.type === 'redeem';
   }
 
   get isRebond() {
@@ -208,9 +211,9 @@ export default class MainStakingForm extends Vue {
   get totalAmount() {
     if (this.isUnbond) return this.stakingNetwork.bondAmount;
 
-    if (this.isRebond) return this.stakingNetwork.unbondAmount;
+    if (this.isRebond) return this.stakingNetwork.unbond.sum;
 
-    if (this.isWithdrawUnbonded) return this.stakingNetwork.withdrawUnbondedAmount;
+    if (this.isRedeem) return this.stakingNetwork.redeemAmount;
 
     // isBondExtra;
     return this.stakingNetwork.transferableAmount;
@@ -244,13 +247,13 @@ export default class MainStakingForm extends Vue {
     } as StakingOperationParams;
   }
 
-  get lastUnbond() {
-    // TODO staking
-    return '1.1'; // текущее количество в анбонде
-  }
-
   mounted() {
-    if (this.isRebond) this.amount = this.lastUnbond;
+    if (this.isRebond) {
+      const unlocking = this.stakingNetwork.unbond.unlocking;
+      const lastUnbond = unlocking[unlocking.length - 1].value;
+
+      this.amount = lastUnbond;
+    }
 
     this.getSoraFees();
   }
@@ -268,7 +271,7 @@ export default class MainStakingForm extends Vue {
     if (this.isBondExtra) this.fee = StakingBondExtra;
     else if (this.isUnbond) this.fee = StakingUnbond;
     else if (this.isRebond) this.fee = StakingRebond;
-    else if (this.isWithdrawUnbonded) this.fee = StakingWithdrawUnbonded;
+    else if (this.isRedeem) this.fee = StakingWithdrawUnbonded;
     else if (this.isControllerAccount) this.fee = StakingSetController;
     else if (this.isPayee) this.fee = StakingSetPayee;
   }
@@ -292,7 +295,11 @@ export default class MainStakingForm extends Vue {
   confirmationPasswordPopupClose(closeForm: boolean) {
     this.showConfirmationPasswordPopup = false;
 
-    if (closeForm) this.closeForm();
+    if (closeForm) {
+      if (this.isUnbond || this.isRebond) this.getUnlocking({ network: this.network });
+
+      this.closeForm();
+    }
   }
 
   updateAmount(amount: string) {
@@ -310,9 +317,9 @@ export default class MainStakingForm extends Vue {
 
     if (this.isUnbond) this.amount = this.stakingNetwork.bondAmount;
 
-    if (this.isRebond) this.amount = this.stakingNetwork.unbondAmount;
+    if (this.isRebond) this.amount = this.stakingNetwork.unbond.sum;
 
-    if (this.isWithdrawUnbonded) this.amount = this.stakingNetwork.withdrawUnbondedAmount;
+    if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
   }
 
   handlerBack() {

@@ -11,17 +11,21 @@
     <ContentForm :height="430" :bottomRightCorner="true">
       <Scroll>
         <div class="form-layout">
-          <div class="label">{{ $t('staking.elected') }}</div>
+          <template v-if="showMyValidators">
+            <div class="label">{{ $t('staking.elected') }}</div>
 
-          <div class="sub-label">{{ $t('staking.stakeAllocated') }}</div>
+            <div class="sub-label">{{ $t('staking.stakeAllocated') }}</div>
 
-          <ValidatorItem
-            v-for="validator in myValidators"
-            :key="validator.address"
-            :validator="validator"
-            :showCheckbox="false"
-            @openValidatorInfo="$emit('openValidatorInfo', $event)"
-          />
+            <ValidatorItem
+              v-for="validator in myValidators"
+              :key="validator.address"
+              :validator="validator"
+              :showCheckbox="false"
+              @openValidatorInfo="$emit('openValidatorInfo', $event)"
+            />
+          </template>
+
+          <div v-else class="no-validators">{{ $t('staking.noValidators') }}</div>
 
           <template v-if="showWithoutAllocation">
             <div class="sub-label">{{ $t('staking.withoutAllocation') }}</div>
@@ -57,13 +61,17 @@ export default class YourValidators extends Vue {
     return this.stakingNetwork.myValidators;
   }
 
-  get showWithoutAllocation() {
-    return this.withoutAllocationValidators.length !== 0;
+  get showMyValidators() {
+    return this.myValidators.length !== 0;
   }
 
   get withoutAllocationValidators() {
     // TODO staking
     return [];
+  }
+
+  get showWithoutAllocation() {
+    return this.withoutAllocationValidators.length !== 0;
   }
 
   get showAlert() {
@@ -80,19 +88,29 @@ export default class YourValidators extends Vue {
   align-items: flex-start;
   height: 100%;
   padding: $default-padding;
-}
 
-.label {
-  font-weight: 600;
-  text-align: left;
-  color: $default-white;
-}
+  .label {
+    font-weight: 600;
+    text-align: left;
+    color: $default-white;
+  }
 
-.sub-label {
-  font-size: 12px;
-  text-align: left;
-  color: $grayish-white-2;
-  margin: 10px 0;
+  .sub-label {
+    font-size: 12px;
+    text-align: left;
+    color: $grayish-white-2;
+    margin: 10px 0;
+  }
+
+  .no-validators {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+  }
 }
 
 .alert {

@@ -4,7 +4,6 @@ import { addNumbers } from '@/helpers/numbers';
 import { ALL_NETWORKS, NETWORK_GROUP } from '@/consts/networks';
 import { AssetsPrice, ChangeWalletBalance, NetworkName } from '@/interfaces';
 import { FEARLESS_TITLE } from '@/consts/global';
-import { DAY1, HOUR1, WEEK1 } from '@/consts/time';
 
 export function isNetworkGroup(network: string) {
   return NETWORK_GROUP.some((group) => group.toLowerCase() === network.toLowerCase());
@@ -77,14 +76,6 @@ export function getChangeWalletBalance(
     percent: totalPercentChange,
     amount: totalChange,
   };
-}
-
-export function noTimeHasPassed(timespan: number | undefined, _interval: 'hour' | 'day' | 'week') {
-  if (timespan === undefined) return false;
-
-  const interval = _interval === 'hour' ? HOUR1 : _interval === 'day' ? DAY1 : _interval === 'week' ? WEEK1 : 0;
-
-  return Date.now() - timespan < interval;
 }
 
 export const setTitle = (title = FEARLESS_TITLE) => (document.title = title);

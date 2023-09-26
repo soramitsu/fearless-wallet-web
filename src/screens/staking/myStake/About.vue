@@ -22,7 +22,7 @@
 
         <div class="four block">
           <div class="label">{{ $t('staking.redeemable') }}</div>
-          <div class="amount">{{ withdrawUnbondedAmount }} {{ stakingAssetName }}</div>
+          <div class="amount">{{ redeemAmount }} {{ stakingAssetName }}</div>
           <div class="value">{{ fiatSymbol }}{{ redeemableValue }}</div>
         </div>
       </div>
@@ -75,11 +75,11 @@ export default class About extends Vue {
   }
 
   get unbondAmount() {
-    return this.stakingNetwork.unbondAmount;
+    return this.stakingNetwork.unbond.sum;
   }
 
-  get withdrawUnbondedAmount() {
-    return this.stakingNetwork.withdrawUnbondedAmount;
+  get redeemAmount() {
+    return this.stakingNetwork.redeemAmount;
   }
 
   get stakingAssetName() {
@@ -121,7 +121,7 @@ export default class About extends Vue {
   }
 
   get redeemableValue() {
-    const value = +this.withdrawUnbondedAmount * this.stakingAssetPrice;
+    const value = +this.redeemAmount * this.stakingAssetPrice;
 
     return this.$n(value, 'price');
   }

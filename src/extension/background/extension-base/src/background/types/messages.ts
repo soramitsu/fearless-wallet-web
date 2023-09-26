@@ -1,9 +1,10 @@
 import {
-  GetMyValidatorsRequest,
-  GetMyValidatorsResponse,
+  StakingNetworkRequest,
+  MyValidatorsResponse,
   MakeStakingRequest,
   StakingParamsRequest,
   StakingParamsResponse,
+  UnlockingResponse,
 } from '@extension-base/services/staking-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -157,7 +158,8 @@ export interface RequestSignatures {
 
   // staking
   'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];
-  'pri(staking.myValidators)': [GetMyValidatorsRequest, GetMyValidatorsResponse];
+  'pri(staking.myValidators)': [StakingNetworkRequest, MyValidatorsResponse];
+  'pri(staking.unlocking)': [StakingNetworkRequest, UnlockingResponse];
   'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];
 
   //ether

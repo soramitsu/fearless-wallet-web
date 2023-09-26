@@ -2,6 +2,7 @@ import {
   FWValidatorInfoFull,
   StakingParams,
   StakingParamsResponse,
+  Unlocking_Redeem,
 } from '@extension-base/services/staking-service/types';
 import type { Mutations } from '@/store/staking/mutations';
 import type { ActionContext } from 'vuex';
@@ -14,6 +15,7 @@ export interface NetworkParams extends StakingParams {
   asset: string;
   assetId: string;
   icon: string;
+  loading: boolean;
   type?: 'regular';
 }
 
@@ -23,7 +25,9 @@ export type SetAllStakingItems = StakingParamsResponse;
 
 export type SetMyValidators = { network: NetworkName; myValidators: FWValidatorInfoFull[] };
 
-export type GetMyValidatorsProps = { network: NetworkName };
+export type SetUnlocking = { network: NetworkName; unlocking: Unlocking_Redeem };
+
+export type GetStakingNetworkProps = { network: NetworkName };
 
 export type AugmentedStakingContext = {
   commit<K extends keyof Mutations>(key: K, payload: Parameters<Mutations[K]>[1]): ReturnType<Mutations[K]>;

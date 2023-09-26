@@ -29,7 +29,7 @@
         <BorderButton
           v-if="showRedeemBtn"
           class="action-button"
-          text="staking.withdrawUnbonded"
+          text="staking.redeem"
           iconName="redeem"
           @click="toggleVisible('showRedeemForm', true)"
         />
@@ -176,7 +176,7 @@ export default class MyStake extends Vue {
 
     if (this.showRebondForm) return 'rebond';
 
-    if (this.showRedeemForm) return 'withdrawUnbonded';
+    if (this.showRedeemForm) return 'redeem';
 
     if (this.showControllerAccountForm) return 'controllerAccount';
 
@@ -190,7 +190,7 @@ export default class MyStake extends Vue {
   }
 
   get showValidatorsBtn() {
-    return !(this.showRebondBtn && this.showRedeemBtn);
+    return !(this.showRebondBtn || this.showRedeemBtn);
   }
 
   get showUnbondBtn() {
@@ -198,11 +198,11 @@ export default class MyStake extends Vue {
   }
 
   get showRebondBtn() {
-    return this.stakingNetwork.unbondAmount !== '0';
+    return this.stakingNetwork.unbond.sum !== '0';
   }
 
   get showRedeemBtn() {
-    return this.stakingNetwork.withdrawUnbondedAmount !== '0';
+    return this.stakingNetwork.redeemAmount !== '0';
   }
 
   get isAbout() {
@@ -301,7 +301,7 @@ export default class MyStake extends Vue {
   }
 
   created() {
-    this.getStakingParams();
+    if (this.$route.params.paramsLoaded !== 'true') this.getStakingParams();
   }
 
   updateActiveTabName(name: MyStakingTab) {

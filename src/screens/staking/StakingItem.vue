@@ -12,15 +12,15 @@
 
     <div class="description-part right-part">
       <div class="values">
-        <Shimmer v-if="showShimmers" height="12px" width="135px" />
+        <Shimmer v-if="isLoading" height="12px" width="135px" />
 
         <div v-else class="unstaking">{{ $t('staking.unstakingDays', days) }}</div>
 
-        <Shimmer v-if="showShimmers" height="20px" width="155px" />
+        <Shimmer v-if="isLoading" height="20px" width="155px" />
 
         <div v-else class="apy">{{ apy }} APY</div>
 
-        <Shimmer v-if="showShimmers" height="12px" width="55px" />
+        <Shimmer v-if="isLoading" height="12px" width="55px" />
 
         <div v-else class="min-bond">{{ $t('common.min') }} {{ minBond }} {{ asset }}</div>
       </div>
@@ -36,7 +36,6 @@ import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
 import type { NetworkParams } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-// import { networksIsPending } from '@/helpers/shimmers';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { isSameString } from '@/helpers';
@@ -60,9 +59,8 @@ export default class StakingItem extends Vue {
     return this.balances?.find(({ assetId }) => assetId === this.assetId);
   }
 
-  get showShimmers() {
+  get isLoading() {
     return !this.balanceIsReady;
-    // return networksIsPending(this.networks, this.network) || !this.balanceIsReady;
   }
 
   get balanceIsReady() {
@@ -100,7 +98,7 @@ export default class StakingItem extends Vue {
   }
 
   click() {
-    if (!this.showShimmers) this.$emit('click');
+    if (!this.isLoading) this.$emit('click');
   }
 }
 </script>

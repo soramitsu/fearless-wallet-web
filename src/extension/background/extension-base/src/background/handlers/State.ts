@@ -1465,4 +1465,10 @@ export default class State {
   public subscribeNetworkMap() {
     return this.networkMapStore.getSubject();
   }
+
+  async getCurrentAddress(network: NetworkName, _currentAccount?: CurrentAccountState) {
+    const currentAccount = _currentAccount ?? (await this.currentAccount);
+
+    return isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
+  }
 }

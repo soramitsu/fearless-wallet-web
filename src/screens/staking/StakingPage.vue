@@ -55,7 +55,7 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { AsyncFn, StakingTab } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
-import type { NetworkParams } from '@/store';
+import type { NetworkParams, SelectedWallet } from '@/store';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { networksIsPending } from '@/helpers/shimmers';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
@@ -90,6 +90,7 @@ export default class StakingPage extends Vue {
   networkParams: Nullable<NetworkParams> = null;
 
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(StakingGettersTypes.stakingItems) stakingItems!: NetworkParams[];
@@ -153,6 +154,11 @@ export default class StakingPage extends Vue {
   @Watch('showMyStakingItems')
   updateTab2(newValue: boolean) {
     if (!newValue) this.updateActiveTabName('all');
+  }
+
+  @Watch('selectedWallet')
+  updateTabStakingParams() {
+    this.getStakingParams();
   }
 
   updateFilterValue(value: string) {

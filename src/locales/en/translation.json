@@ -448,7 +448,7 @@
     "unstakingPeriod": "Unstaking period",
     "bond": "Stake",
     "unbond": "Unstake",
-    "withdrawUnbonded": "Redeem",
+    "redeem": "Redeem",
     "alerts": "Alerts",
     "history": "History",
     "rewards": "Rewards",
@@ -521,7 +521,8 @@
     "unstakeTokens": "If you want to unstake tokens, you will have to wait for the unstaking period ({value} days).",
     "tokensUnstaking": "Tokens in unstaking period generate no rewards",
     "afterUnstaking": "After unstaking period you will need to redeem your tokens",
-    "validatorsPayoutRewards": "Validators payout the rewards every 2-5 days. However, you can payout them by yourself, especially if rewards are close to expiring, but you will pay the fee."
+    "validatorsPayoutRewards": "Validators payout the rewards every 2-5 days. However, you can payout them by yourself, especially if rewards are close to expiring, but you will pay the fee.",
+    "noValidators": "You have not selected any validators."
   },
   "browserTabs": {
     "welcome": "Welcome",

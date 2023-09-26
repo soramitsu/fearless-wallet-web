@@ -74,7 +74,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { AsyncFn, SelectionValidator } from '@/interfaces';
-import type { GetAssetPrice, GetMyValidatorsProps, NetworkParams, SelectedWallet } from '@/store';
+import type { GetAssetPrice, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
 import YourValidators from '@/screens/staking/myStake/validators/YourValidators.vue';
@@ -108,7 +108,7 @@ export default class YourValidatorsManagement extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Action(StakingActionTypes.GET_MY_VALIDATORS) getMyValidators!: AsyncFn<GetMyValidatorsProps>;
+  @Action(StakingActionTypes.GET_MY_VALIDATORS) getMyValidators!: AsyncFn<GetStakingNetworkProps>;
 
   get selectedAccountName() {
     return this.selectedWallet.name;

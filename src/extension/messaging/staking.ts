@@ -2,8 +2,9 @@ import {
   MakeStakingRequest,
   StakingParamsRequest,
   StakingParamsResponse,
-  GetMyValidatorsRequest,
-  GetMyValidatorsResponse,
+  StakingNetworkRequest,
+  MyValidatorsResponse,
+  UnlockingResponse,
 } from '../background/extension-base/src/services/staking-service/types';
 import type { BasicTxResponse } from '@extension-base/background/types/types';
 import { sendMessage } from '@/extension/messaging/index';
@@ -12,8 +13,12 @@ export function getStakingParams(request: StakingParamsRequest): Promise<Staking
   return sendMessage('pri(staking.stakingParams)', request);
 }
 
-export function getMyValidators(request: GetMyValidatorsRequest): Promise<GetMyValidatorsResponse> {
+export function getMyValidators(request: StakingNetworkRequest): Promise<MyValidatorsResponse> {
   return sendMessage('pri(staking.myValidators)', request);
+}
+
+export function getUnlocking(request: StakingNetworkRequest): Promise<UnlockingResponse> {
+  return sendMessage('pri(staking.unlocking)', request);
 }
 
 export function makeStaking(request: MakeStakingRequest): Promise<BasicTxResponse> {

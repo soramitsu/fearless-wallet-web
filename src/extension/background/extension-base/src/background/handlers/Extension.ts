@@ -30,9 +30,10 @@ import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { storage } from '@extension-base/stores/Storage';
 import {
-  GetMyValidatorsRequest,
-  GetMyValidatorsResponse,
+  StakingNetworkRequest,
+  MyValidatorsResponse,
   StakingParamsRequest,
+  UnlockingResponse,
 } from '@extension-base/services/staking-service/types';
 import { MakeStakingRequest, StakingParamsResponse } from './../../services/staking-service/types';
 import type {
@@ -1115,8 +1116,12 @@ export default class Extension extends FWExtensionBase {
     return state.stakingService.getStakingParams(params);
   }
 
-  getMyValidators(params: GetMyValidatorsRequest): Promise<GetMyValidatorsResponse> {
+  getMyValidators(params: StakingNetworkRequest): Promise<MyValidatorsResponse> {
     return state.stakingService.getMyValidators(params.network);
+  }
+
+  getUnlocking(params: StakingNetworkRequest): Promise<UnlockingResponse> {
+    return state.stakingService.getUnlocking(params.network);
   }
 
   async makeStaking(request: MakeStakingRequest): Promise<BasicTxResponse> {
@@ -1267,7 +1272,10 @@ export default class Extension extends FWExtensionBase {
         return this.getStakingParams(request as StakingParamsRequest);
 
       case 'pri(staking.myValidators)':
-        return this.getMyValidators(request as GetMyValidatorsRequest);
+        return this.getMyValidators(request as StakingNetworkRequest);
+
+      case 'pri(staking.unlocking)':
+        return this.getUnlocking(request as StakingNetworkRequest);
 
       case 'pri(staking.makeStaking)':
         return this.makeStaking(request as MakeStakingRequest);

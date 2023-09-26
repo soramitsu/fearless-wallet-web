@@ -5,10 +5,10 @@ const NATIVE_ETHEREUM_NETWORKS = [
   'ethereum',
   'ethereum goerli',
   'polygon',
-  'polygon mumbai',
+  'polygon mumbai testnet',
   'sepolia',
-  'binance smart chain',
-  'binance smart chain testnet',
+  'bnb smart chain',
+  'bnb smart chain testnet',
 ];
 const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, ...NATIVE_ETHEREUM_NETWORKS];
 
@@ -56,6 +56,8 @@ const EVM_EXPLORERS_BASE_URLS: Record<string, string> = {
   'ethereum goerli': 'goerli.etherscan.io',
   'binance smart chain': 'bscscan.com',
   'binance smart chain testnet': 'testnet.bscscan.com',
+  polygon: 'polygon-mainnet.blastapi.io',
+  'polygon mumbai testnet': 'polygon-testnet.blastapi.io',
 } as const;
 
 const EXPLORERS_BASE_URLS: Record<string, string> = {

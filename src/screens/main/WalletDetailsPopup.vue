@@ -62,7 +62,7 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   async deleteWallet() {
-    forgetAccount(this.selectedWalletAddress, this.isMobileWallet ? 'mobile' : 'native');
+    await forgetAccount(this.selectedWalletAddress, this.isMobileWallet ? 'mobile' : 'native');
 
     if (this.isMobileWallet) beaconController.resetConnection();
     if (this.accounts.length === 0) this.$router.push({ name: Components.Welcome });

@@ -31,6 +31,7 @@ export class OnboardingService {
     if (res && res.status === 200) this.stories = res.data;
     else {
       this.isRequired = false;
+      this.updateStorage();
 
       return;
     }
@@ -38,6 +39,7 @@ export class OnboardingService {
     const userStories = this.stories[this.defaultLocale][this.userType];
 
     if (userStories.length && IS_PRODUCTION) this.isRequired = true;
+    this.updateStorage();
   }
 
   getStories(lang: string): OnboardingStories {

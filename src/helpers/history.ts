@@ -20,23 +20,22 @@ function getType(historyElement: HistoryElement): TransactionType {
   return reward ? TransactionType.reward : TransactionType.extrinsic;
 }
 
-function getSignTransfer(historyElement: HistoryElement) {
-  const { id } = historyElement;
+function getSignTransfer(historyElement: HistoryElement, address: string) {
   const type = getType(historyElement);
 
   if (type === TransactionType.transfer) {
-    const splitId = id.split('-');
-    const typeTransaction = splitId[splitId.length - 1];
+    const { transfer } = historyElement;
+    const from = transfer?.from ?? '';
 
-    return typeTransaction === 'to' ? '+' : '-';
+    return from.toLowerCase() !== address.toLowerCase() ? '+' : '-';
   }
 
   return '';
 }
 
-function getTypeFormatted(historyElement: HistoryElement) {
+function getTypeFormatted(historyElement: HistoryElement, address: string) {
   const type = getType(historyElement);
-  const signTransfer = getSignTransfer(historyElement);
+  const signTransfer = getSignTransfer(historyElement, address);
 
   if (type === TransactionType.transfer) {
     return signTransfer === '+' ? TransferType.incoming : TransferType.outgoing;
@@ -61,10 +60,10 @@ function getHumanValue(value: string, assetId: string, networkName: NetworkName)
   return +FPNumber.fromCodecValue(value, precision);
 }
 
-function getHistoryValue(historyElement: HistoryElement, assetId: string, networkName: NetworkName) {
+function getHistoryValue(historyElement: HistoryElement, assetId: string, networkName: NetworkName, address: string) {
   const { transfer, reward, extrinsic } = historyElement;
   const type = getType(historyElement);
-  const signTransfer = getSignTransfer(historyElement);
+  const signTransfer = getSignTransfer(historyElement, address);
 
   if (type === TransactionType.transfer && transfer) {
     const { amount } = transfer;
@@ -152,10 +151,11 @@ function getFormattedHistory(
   return history as SubqueryHistory;
 }
 
-function getEthereumApiKey(url: string): string | undefined {
+function getEthereumExplorerApiKey(url: string): string | undefined {
   const keys = [
-    { name: 'etherscan', key: process.env.ETHERSCAN_API_KEY },
-    { name: 'bscscan', key: process.env.BSCSCAN_API_KEY },
+    { name: 'etherscan', key: process.env.FL_WEB_ETHERSCAN_API_KEY },
+    { name: 'bscscan', key: process.env.FL_WEB_BSCSCAN_API_KEY },
+    { name: 'polygon', key: process.env.FL_WEB_POLYGONSCAN_API_KEY },
   ];
 
   return keys.find((el) => url.includes(el.name))?.key;
@@ -164,7 +164,7 @@ function getEthereumApiKey(url: string): string | undefined {
 export {
   getType,
   getTypeFormatted,
-  getEthereumApiKey,
+  getEthereumExplorerApiKey,
   getHumanTransferFee,
   getHistoryValue,
   getSignTransfer,

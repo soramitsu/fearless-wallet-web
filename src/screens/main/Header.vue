@@ -295,6 +295,7 @@ export default class Header extends Vue {
         align-items: center;
         overflow: hidden;
         text-overflow: ellipsis;
+        column-gap: 6px;
 
         .wallet-title {
           text-overflow: ellipsis;

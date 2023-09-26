@@ -279,7 +279,7 @@ export default class Wallet extends Vue {
       return;
     }
 
-    const nonZeroBalanceCb = ({ transferable }: BalanceItem) => transferable && transferable !== '0';
+    const nonZeroBalanceCb = ({ transferable }: BalanceItem) => transferable && +transferable > 0;
 
     this.balances.forEach(({ assetId, balances }) => {
       const index = balances.findIndex(nonZeroBalanceCb);

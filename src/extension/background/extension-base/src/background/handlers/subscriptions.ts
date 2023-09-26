@@ -1,5 +1,3 @@
-// Copyright 2019-2022 @subwallet/extension-koni authors & contributors
-// SPDX-License-Identifier: Apache-2.0
 import { logger as createLogger } from '@polkadot/util';
 import { Subscription } from 'rxjs';
 import { subscribeBalance } from '@extension-base/api/substrate/balance';
@@ -97,7 +95,6 @@ export class FWSubscription {
     this.logger.log('Starting subscription');
 
     const currentAccount = await this.state.currentAccount;
-
     const getAccountsExceptCurrent = this.state
       .getSubstrateAccounts()
       .filter((el) => el.address !== currentAccount?.address);
@@ -108,8 +105,8 @@ export class FWSubscription {
       this.subscribeBalances(account.address, ethAddress, true);
     });
 
-    !this.serviceSubscription &&
-      (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
+    if (!this.serviceSubscription)
+      this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
           console.info('serviceInfo', serviceInfo);
 
@@ -119,7 +116,7 @@ export class FWSubscription {
 
           this.subscribeBalances(address, ethereumAddress);
         },
-      }));
+      });
   }
 
   stop() {

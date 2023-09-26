@@ -12,19 +12,28 @@
               <span :class="changePriceClasses">{{ priceChangeString }}</span>
               <span :class="changePriceClasses">{{ fiatPriceChangeString }}</span>
             </div>
+
             <span class="asset__price-item">{{ assetPriceString }}</span>
 
             <div v-if="showSettingsPopup" @click="toggleDetailsPopup">
               <Icon icon="three-dots-vertical" className="asset__price-details" />
             </div>
           </div>
-          <div class="asset__balance">{{ countAssetsString }}</div>
-          <span class="asset__balance asset__balance--fiat">{{ transferableFiatBalanceInNetworkString }}</span>
+
+          <Shimmer v-if="showShimmers" height="14px" width="120px" />
+
+          <div v-else class="asset__balance">{{ countAssetsString }}</div>
+
+          <Shimmer v-if="showShimmers" height="14px" width="120px" />
+
+          <span v-else class="asset__balance asset__balance--fiat">{{ transferableFiatBalanceInNetworkString }}</span>
 
           <div class="asset__locked" @click="toggleBalanceDetailsPopup">
             <div class="asset__locked-content">
               <span class="asset__locked-title">{{ $t('assets.locked') }}</span>
-              <span>{{ lockedBalanceString }}</span>
+              <Shimmer v-if="showShimmers" height="14px" width="60px" />
+
+              <span v-else>{{ lockedBalanceString }}</span>
 
               <Icon icon="info" class="details-icon" />
             </div>
@@ -62,6 +71,7 @@ import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers
 import { getSummaryLockedBalance } from '@/helpers/common';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import AccountSettingsPopup from '@/screens/accounts/AccountSettingsPopup.vue';
+import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 
 @Component({
   components: {
@@ -84,6 +94,10 @@ export default class AssetInfo extends Vue {
 
   get pickedNetwork() {
     return this.selectedAssetNetwork ?? this.selectedNetwork;
+  }
+
+  get showShimmers() {
+    return !navigator.onLine || !this.currency.balances.some(({ state }) => state === APIItemState.READY);
   }
 
   get icon() {

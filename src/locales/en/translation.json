@@ -147,6 +147,7 @@
       }
     },
     "networkManagement": {
+      "nofound": "No networks were found for your request",
       "tabs": {
         "all": "All",
         "favorites": "Favorites",

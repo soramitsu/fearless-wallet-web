@@ -7,7 +7,7 @@
       placement="bottom-end"
       class="dropdown"
       size="mini"
-      @select="$emit('handler', $event)"
+      @select="$emit('handler', ...arguments)"
     >
       {{ $t(label) }}
 

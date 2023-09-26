@@ -205,10 +205,17 @@ import {
   getUtilityAsset,
 } from '@/helpers/currencies';
 import { cut, firstCharToUp, getClipboard } from '@/helpers';
-import { VALID_SUBSTRATE_ADDRESS, VALID_ETHEREUM_ADDRESS, CHAIN_IDS } from '@/consts/networks';
+import {
+  VALID_SUBSTRATE_ADDRESS,
+  VALID_ETHEREUM_ADDRESS,
+  CHAIN_IDS,
+  POPULAR_NETWORKS,
+  FAVORITE_NETWORKS,
+} from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
 import { checkTransfer, checkCrossChain } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
+import { isNetworkGroup } from '@/helpers/common';
 
 @Component({
   components: {
@@ -248,6 +255,7 @@ export default class TransferForm extends Vue {
   @PropSync('partialFee', { type: String }) syncedFee!: string;
   @PropSync('destNetFee', { type: String, default: '0' }) syncedDestNetFee!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetworkInManagement!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
@@ -463,11 +471,36 @@ export default class TransferForm extends Vue {
     return options.filter(({ name }) => name.toLowerCase().includes(filter));
   }
 
+  get isSelectedNetworkGroup() {
+    return isNetworkGroup(this.selectedNetworkInManagement);
+  }
+
+  get assetWithActiveNetworks() {
+    const result = this.balances.filter(({ balances }) => {
+      return balances.some(({ name }) => {
+        const { active, rank, favorite } = this.getNetwork(name);
+
+        if (!active) return false;
+
+        if (this.isSelectedNetworkGroup) {
+          if (this.selectedNetworkInManagement === POPULAR_NETWORKS && rank) return true;
+
+          const isNetworkInFavorites = favorite.some((el) => el === this.selectedWallet.address);
+
+          if (this.selectedNetworkInManagement === FAVORITE_NETWORKS && isNetworkInFavorites) return true;
+        }
+
+        return this.selectedNetworkInManagement.toLowerCase() === name.toLowerCase();
+      });
+    });
+
+    return result;
+  }
+
   get optionsCurrency() {
     const { xcm, parentId } = this.networks.find(
       ({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase()
     )!;
-
     const relay = (CHAIN_IDS[parentId!] ?? this.syncedNetwork).toLowerCase();
     const balances = this.isTransfer
       ? this.balances

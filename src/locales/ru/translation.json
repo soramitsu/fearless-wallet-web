@@ -145,6 +145,7 @@
       }
     },
     "networkManagement": {
+      "nofound": "По вашему запросу ничего не найдено",
       "tabs": {
         "all": "Все",
         "favorites": "Избранные",

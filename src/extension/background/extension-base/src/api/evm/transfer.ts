@@ -58,7 +58,7 @@ export async function getEVMTransactionObject(
   const baseFeePerGas = block?.baseFeePerGas ?? BigInt(0);
   transactionObject.gasLimit = gasLimit;
 
-  const prepGasPrice = maxPriorityFeePerGas ? maxPriorityFeePerGas : gasPrice ?? BigInt(0) + baseFeePerGas;
+  const prepGasPrice = (maxPriorityFeePerGas ? maxPriorityFeePerGas : gasPrice ?? BigInt(0)) + baseFeePerGas;
   const estimateFee = prepGasPrice * gasLimit;
 
   transactionObject.value = parseEther(value);

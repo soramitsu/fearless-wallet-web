@@ -858,8 +858,11 @@ export default class Extension extends FWExtensionBase {
 
     const address = getSubstrateAddress(from);
     let fee = 0;
+
     const tokenBalance = this.state.balanceMap[address].find(
-      (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
+      (balance) =>
+        balance.balances.some((el) => el.id === assetId) &&
+        balance.relayChain?.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
     if (isEthereumAddress(from) && isEthereumAddress(to) && isRequireEvmAPI(networkKey)) {
@@ -1005,7 +1008,9 @@ export default class Extension extends FWExtensionBase {
     const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';
     const address = getSubstrateAddress(from);
     const tokenBalance = this.state.balanceMap[address].find(
-      (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
+      (balance) =>
+        balance.balances.some((el) => el.id === assetId) &&
+        balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
     const extrinsic = await createCrossChainExtrinsic(assetId, originNet, destinationNet, to, amount!, tokenBalance);

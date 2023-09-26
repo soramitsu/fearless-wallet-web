@@ -14,21 +14,7 @@ export default class EvmRequestHandler {
 
   constructor(requestService: RequestService) {
     this.requestService = requestService;
-    // this.addCachedRequests();
   }
-
-  // private async addCachedRequests() {
-  //   const data = await storage.get(['wc@2:client:0.3//request']);
-  //   const req = data['wc@2:client:0.3//request'] as WalletConnectTransactionRequest[];
-
-  //   if (!req.length) return;
-
-  //   const prepReq: Record<string, WalletConnectTransactionRequest> = {};
-  //   req.forEach((el) => {
-  //     prepReq[el.topic] = el;
-  //   });
-  // this.wcRequests = prepReq;
-  // }
 
   public get numWcSignRequest() {
     return Object.keys(this.wcRequests).length;

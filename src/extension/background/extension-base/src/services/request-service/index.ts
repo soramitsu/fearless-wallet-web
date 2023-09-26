@@ -227,8 +227,8 @@ export class RequestService {
       this.numAuthRequests +
       this.numSubstrateRequests +
       this.numConnectWCRequests +
-      this.numSignWCRequests +
-      this.numNotSupportWCRequests
+      this.numNotSupportWCRequests +
+      this.numSignWCRequests
     );
   }
 }

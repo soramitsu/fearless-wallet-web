@@ -131,6 +131,8 @@ export default class SelectInput extends Vue {
 
   setFocusValue(value: boolean) {
     this.inputIsFocused = value;
+
+    if (!value) this.syncedAmount = FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toString();
   }
 
   setMax() {

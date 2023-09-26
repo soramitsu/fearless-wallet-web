@@ -52,7 +52,6 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 @Component
 export default class SelectInput extends Vue {
   inputIsFocused = false;
-  timer: NodeJS.Timeout | undefined = undefined;
   @Prop({ default: '' }) text!: string;
   @Prop({ default: '' }) asset!: string;
   @Prop({ default: '' }) assetId!: string;
@@ -62,7 +61,6 @@ export default class SelectInput extends Vue {
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
-  valueInternal = '';
 
   get amountInternal() {
     if (this.syncedAmount === '') return '';

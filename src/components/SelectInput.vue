@@ -88,7 +88,7 @@ export default class SelectInput extends Vue {
     if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN') {
       const string = FPNumber.fromCodecValue(value || 0, 0).toString();
 
-      if (this.value.endsWith('0')) {
+      if (this.value.endsWith('.')) {
         this.syncedAmount = this.syncedAmount = `${string}.`;
 
         return;

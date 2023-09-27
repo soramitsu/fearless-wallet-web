@@ -13,7 +13,7 @@
         :showAssetsManagementForm="showAssetsManagementForm"
         :timeoutCallback="timeoutCallback"
         @toggleVisibleActivityForm="$emit('toggleVisibleActivityForm', ...arguments)"
-        @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible', ...arguments)"
+        @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
       />
     </Draggable>
   </Scroll>

@@ -15,10 +15,10 @@
             <SIcon name="chevron-bottom-16" />
           </Rotate>
         </div>
-        <div v-if="!isGroup && isAddressExists" class="copy-adress" @click.stop="copyAddress">
+        <div v-if="!isGroup && isAddressExists" class="copy-address" @click.stop="copyAddress">
           <span>{{ cutAddress }}</span>
           <Icon icon="copy" className="copy" />
-          <Tooltip text="common.copied" target=".copy" placement="top" trigger="click" />
+          <Tooltip text="common.copied" target=".copy-address" placement="top-end" trigger="click" />
         </div>
       </div>
 
@@ -79,7 +79,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
-import { ActiveTabAuthorizeStatus } from '@extension-base/background/types';
+import { ActiveTabAuthorizeStatus, TokenBalance } from '@extension-base/background/types/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import type { NetworkJson } from '@extension-base/types';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
@@ -121,6 +121,7 @@ export default class Header extends Vue {
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get showBackIcon() {
@@ -134,10 +135,37 @@ export default class Header extends Vue {
   }
 
   get isGroup() {
+    if (this.$route.name === Components.AssetHistory) return false;
+
     return isNetworkGroup(this.selectedNetwork);
   }
 
+  get selectedAssetId() {
+    return this.$route.params.assetId ?? '';
+  }
+
+  get currentCurrency(): TokenBalance | undefined {
+    return this.balances.find(
+      ({ assetId: id, balances }) =>
+        id === this.selectedAssetId || balances.some((el) => el.id === this.selectedAssetId)
+    );
+  }
+
+  get computeActiveNetworks() {
+    if (!this.currentCurrency) return [];
+
+    return this.currentCurrency.balances.filter((network) => {
+      return this.getNetwork(network.name).active;
+    });
+  }
+
   get networkManagementButtonText() {
+    if (this.$route.name === Components.AssetHistory) {
+      if (this.computeActiveNetworks.length === 1) return this.computeActiveNetworks[0].name;
+
+      return this.getNetwork(this.$route.params.selectedNetwork).name;
+    }
+
     if (this.isGroup) {
       return this.$t(`header.networkManagement.${this.selectedNetwork}`);
     }
@@ -147,6 +175,13 @@ export default class Header extends Vue {
 
   get selectedNetworkIcon() {
     if (this.isGroup) return this.allNetworksIcon;
+
+    if (this.$route.name === Components.AssetHistory) {
+      const asset = this.currentCurrency?.balances.find((el) => el.id === this.selectedAssetId);
+      if (!asset) return '';
+
+      return this.getNetwork(asset?.name).icon;
+    }
 
     const network = this.getNetwork(this.selectedNetwork);
 
@@ -165,10 +200,14 @@ export default class Header extends Vue {
 
   get address() {
     if (this.selectedWallet.address === '') return '';
+    const asset = this.currentCurrency?.balances.find((el) => el.id === this.selectedAssetId);
 
-    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
+    if (!asset) return '';
 
-    return BaseApi.encodeAddress(this.selectedWallet.address, this.decimals);
+    if (BaseApi.isEthereumNetwork(asset.name)) return this.selectedWallet.ethereumAddress;
+    const network = this.getNetwork(asset.name);
+
+    return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
   }
 
   get name() {
@@ -293,13 +332,15 @@ export default class Header extends Vue {
         align-items: center;
         overflow: hidden;
         text-overflow: ellipsis;
+        column-gap: 6px;
+
         .wallet-title {
           text-overflow: ellipsis;
           overflow: hidden;
           white-space: nowrap;
         }
       }
-      .copy-adress {
+      .copy-address {
         display: flex;
         flex-flow: row nowrap;
         align-items: center;

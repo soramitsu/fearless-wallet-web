@@ -68,6 +68,7 @@ import { URLS } from '@/consts/urls';
 import {
   ALL_NETWORKS,
   FAVORITE_NETWORKS,
+  NETWORK_GROUP,
   POPULAR_NETWORKS,
   SORA_NETWORK_NAME,
   SORA_XOR_ASSET_ID,
@@ -342,10 +343,10 @@ export default class State {
       if (data.isEthereum && name in this.apis.evm) delete this.apis.evm[name];
 
       if (currentProvider) {
-        initApi(data);
-
         if (data.isEthereum && isRequireEvmAPI(data.name)) {
           this.apis.evm[data.name] = initWeb3Api(currentProvider);
+        } else {
+          initApi(data);
         }
       }
     }
@@ -456,34 +457,87 @@ export default class State {
     return result;
   }
 
-  public isPopularNetworksSelected(network: NetworkJson, address: string) {
-    const networks = this.selectedNetworksExceptAddress(address);
+  public isPopularNetworksSelected() {
+    const networks = Object.values(this.selectedNetworks);
 
-    return network.rank !== undefined && networks.some((el) => el === POPULAR_NETWORKS);
+    return networks.some((el) => el === POPULAR_NETWORKS);
   }
 
-  public isNetworkSelectedInAnotherWallet(network: NetworkJson, address: string) {
-    const isSelected =
-      this.isPopularNetworksSelected(network, address) ||
-      this.isFavoriteNetworkSelected(network, address) ||
-      this.isSingleNetworkSelected(network.name, address);
+  public isNetworkAlreadySelected(type: string, network: NetworkJson, address: string) {
+    const isGroup = NETWORK_GROUP.some((group) => group === type);
 
-    return isSelected;
+    if (isGroup) {
+      if (type === POPULAR_NETWORKS) {
+        const values = Object.values(this.selectedNetworks);
+        const isPrevioslySelected = values.some((el) => el === POPULAR_NETWORKS);
+
+        if (isPrevioslySelected) return true;
+
+        return this.isPopularNetworksSelected();
+      }
+
+      if (type === FAVORITE_NETWORKS) return this.isFavoriteNetworkSelected();
+    }
+
+    return this.isSingleNetworkSelected(network, address);
   }
 
-  public isSingleNetworkSelected(selectedType: string, address: string) {
+  public isSingleNetworkSelected(network: NetworkJson, address: string) {
     const networks = this.selectedNetworksExceptAddress(address);
-    const isTypeAlreadySelected = networks.some((network) => network === selectedType);
-    const isNotGroup =
-      selectedType !== ALL_NETWORKS && selectedType !== POPULAR_NETWORKS && selectedType !== FAVORITE_NETWORKS;
+    const networkName = network.name;
+    const isPartOfPopular = network.rank !== undefined;
+    const isPopularSelected = networks.some((network) => network.toLowerCase() === POPULAR_NETWORKS);
+
+    if (isPartOfPopular && isPopularSelected) return true;
+
+    const isPartOfFavorite = network.favorite.length !== 0;
+    const isFavoriteAlreadySelected = networks.some((el) => el === FAVORITE_NETWORKS);
+
+    if (isFavoriteAlreadySelected && isPartOfFavorite) return true;
+
+    const isTypeAlreadySelected = networks.some((network) => network.toLowerCase() === networkName.toLowerCase());
+    const isNotGroup = NETWORK_GROUP.every((el) => el.toLowerCase() !== networkName.toLowerCase());
 
     return isNotGroup && isTypeAlreadySelected;
   }
 
-  public isFavoriteNetworkSelected(network: NetworkJson, address: string) {
-    const favorites = network.favorite.filter((el) => el !== address);
+  public isFavoriteNetworkSelected() {
+    return Object.values(this.selectedNetworks).some((el) => el === FAVORITE_NETWORKS);
+  }
 
-    return favorites.some((el) => this.selectedNetworks[el] === FAVORITE_NETWORKS);
+  public getActiveNetworks() {
+    const networks = Object.values(this.networkMap);
+    const uniqNetworks = new Set<NetworkJson>();
+    const selectedNetworks = Object.keys(this.selectedNetworks);
+    const isAllNetworkPicked = selectedNetworks.some((address) => this.selectedNetworks[address] === ALL_NETWORKS);
+
+    if (isAllNetworkPicked) return networks;
+
+    selectedNetworks.forEach((address) => {
+      const value = this.selectedNetworks[address];
+
+      if (value === POPULAR_NETWORKS) {
+        const popular = networks.filter((el) => el.rank !== undefined);
+        popular.forEach((el) => uniqNetworks.add(el));
+
+        return;
+      }
+
+      if (value === FAVORITE_NETWORKS) {
+        const favorite = networks.filter((el) => el.favorite.length && el.favorite.includes(address));
+
+        favorite.forEach((el) => uniqNetworks.add(el));
+
+        return;
+      }
+
+      const singleNetwork = networks.find((network) => network.name === value);
+
+      if (singleNetwork) uniqNetworks.add(singleNetwork);
+    });
+    console.info(uniqNetworks, 'set this to Active');
+
+    return Array.from(uniqNetworks);
   }
 
   public async setActiveNetworks(type: string) {
@@ -491,73 +545,25 @@ export default class State {
 
     if (!currentAccount) return;
 
-    this.subscription.stop();
-    this.cron.stop();
+    this.selectedNetworks[currentAccount.address] = type;
+
+    const unsub = this.subscription.getSubscription('balance', currentAccount.address);
+    unsub && unsub();
+
+    const networks = this.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((key) => {
-      const network = this.networkMap[key];
-      const { name } = network;
-      const isFavorite = network.favorite.some((address) => address === currentAccount.address);
+      const isExists = networks.some(({ name }) => name.toLowerCase() === key.toLowerCase());
 
-      const isAllNetworkSelected = Object.values(this.selectedNetworks).some((el) => el === ALL_NETWORKS);
-      const isAlreadySelectedType =
-        isAllNetworkSelected ?? this.isNetworkSelectedInAnotherWallet(network, currentAccount.address);
-
-      switch (type) {
-        case ALL_NETWORKS:
-          network.active = true;
-
-          break;
-        case FAVORITE_NETWORKS:
-          if (isFavorite) {
-            network.active = true;
-
-            break;
-          }
-
-          if (isAlreadySelectedType) break;
-
-          network.active = false;
-
-          break;
-        case POPULAR_NETWORKS:
-          if (network.rank !== undefined) {
-            network.active = true;
-            break;
-          }
-
-          if (isAlreadySelectedType) break;
-
-          network.active = false;
-          break;
-        default: //type = single network, like Moonriver etc
-          if (isAlreadySelectedType) break;
-
-          network.active = type === network.name;
-      }
-
-      if (!network.active) {
-        if (this.apis.substrate[name]) {
-          this.apis.substrate[name].provider?.disconnect();
-
-          return;
-        }
-
-        if (this.apis.evm[name]) {
-          this.apis.evm[name].provider.destroy();
-        }
-      }
+      this.networkMap[key].active = isExists;
     });
 
-    this.networkMapSubject.next(this.networkMap);
-    this.networkMapStore.set('NetworkMap', this.networkMap);
-
-    this.selectedNetworks[currentAccount.address] = type;
-    storage.set({ selectedNetworks: this.selectedNetworks });
-
     this.updateServiceInfo();
-
     this.initNetworkStates(true);
+
+    this.networkMapStore.set('NetworkMap', this.networkMap);
+    this.networkMapSubject.next(this.networkMap);
+    storage.set({ selectedNetworks: this.selectedNetworks });
   }
 
   getCurrentTabStatus() {
@@ -752,11 +758,9 @@ export default class State {
     });
   }
 
-  public getAccountAddress(): Promise<string | null | undefined> {
+  public getAccountAddress(): Promise<string> {
     return new Promise((resolve) => {
-      this.getCurrentAccount((account) => {
-        account ? resolve(account.address) : resolve(null);
-      });
+      this.getCurrentAccount((account) => resolve(account?.address ?? ''));
     });
   }
 
@@ -810,9 +814,7 @@ export default class State {
       const prepCurrentProvider = network.nodes[0].url;
       const prepNodes: Record<string, string> = {};
 
-      network.nodes.forEach((node) => {
-        prepNodes[node.name] = node.url;
-      });
+      network.nodes.forEach(({ name, url }) => (prepNodes[name] = url));
 
       const isEthereum = isEthereumNetwork(network.name);
       const networkFromStorage = networksFromStorage ? networksFromStorage[network.name] : undefined;
@@ -835,6 +837,16 @@ export default class State {
 
     this.networkMapStore.set('NetworkMap', result);
     this.networkMap = result;
+    this.getSubstrateAccounts().forEach((el) => {
+      //Migration from old network managment
+      if (!this.selectedNetworks[el.address]) this.selectedNetworks[el.address] = ALL_NETWORKS;
+    });
+    const activeNetworks = this.getActiveNetworks();
+
+    Object.keys(this.networkMap).forEach((key) => {
+      const isExists = activeNetworks.some(({ name }) => name === key);
+      this.networkMap[key].active = isExists;
+    });
 
     this.generateDefaultBalanceMap();
   }
@@ -842,7 +854,6 @@ export default class State {
   public async init() {
     await this.eventService.waitCryptoReady;
     await this.prepNetworkJson();
-
     this.initNetworkStates();
     this.updateServiceInfo();
   }
@@ -854,22 +865,26 @@ export default class State {
     });
   }
 
-  public initNetworkStates(reset?: boolean) {
-    this.networkMapStore.get('NetworkMap', async (storedNetworkMap) => {
-      for (const [key, network] of Object.entries(storedNetworkMap)) {
-        if (network.active) {
-          if (network.isEthereum && isRequireEvmAPI(key)) {
+  public async initNetworkStates(reset?: boolean) {
+    for (const [key, network] of Object.entries(this.networkMap)) {
+      if (network.active) {
+        if (network.isEthereum && isRequireEvmAPI(key)) {
+          if (!this.apis.evm[key] || !this.apis.evm[key].ready)
             this.apis.evm[key] = initWeb3Api(network.currentProvider);
-          } else {
-            if (reset) this.resetApiRetries();
+        } else {
+          if (this.apis.substrate[network.name]) {
+            const isReady = await this.apis.substrate[network.name].api?.isReady;
 
-            initApi(network);
+            if (isReady) return;
           }
+
+          if (reset) this.resetApiRetries();
+          initApi(network);
         }
       }
+    }
 
-      this.onReady();
-    });
+    this.onReady();
   }
 
   public getWallets(): KeyringAddress[] {
@@ -937,6 +952,7 @@ export default class State {
     );
 
     const asset = balancesByAddress[currencyIndex];
+
     const assetIndex = asset.balances.findIndex(({ name }) => {
       const key = prepNetworkNames[name] ?? name;
 

@@ -10,8 +10,8 @@ import type {
 import type { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { TransactionType, TransferType } from '@/interfaces';
 import { firstCharToUp } from '@/helpers';
-import { formattedNumber } from '@/helpers/numbers';
 import store from '@/store';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 function getType(historyElement: HistoryElement): TransactionType {
   const { reward, transfer } = historyElement;
@@ -21,23 +21,22 @@ function getType(historyElement: HistoryElement): TransactionType {
   return reward ? TransactionType.reward : TransactionType.extrinsic;
 }
 
-function getSignTransfer(historyElement: HistoryElement) {
-  const { id } = historyElement;
+function getSignTransfer(historyElement: HistoryElement, address: string) {
   const type = getType(historyElement);
 
   if (type === TransactionType.transfer) {
-    const splitId = id.split('-');
-    const typeTransaction = splitId[splitId.length - 1];
+    const { transfer } = historyElement;
+    const from = transfer?.from ?? '';
 
-    return typeTransaction === 'to' ? '+' : '-';
+    return from.toLowerCase() !== address.toLowerCase() ? '+' : '-';
   }
 
   return '';
 }
 
-function getTypeFormatted(historyElement: HistoryElement) {
+function getTypeFormatted(historyElement: HistoryElement, address: string) {
   const type = getType(historyElement);
-  const signTransfer = getSignTransfer(historyElement);
+  const signTransfer = getSignTransfer(historyElement, address);
 
   if (type === TransactionType.transfer) {
     return signTransfer === '+' ? TransferType.incoming : TransferType.outgoing;
@@ -67,19 +66,31 @@ function getFormattedDate({ timestamp }: HistoryElement) {
   return format(date, 'dd MMMM yyyy HH:mm');
 }
 
+function getHumanFeeValue(value: string, networkName: NetworkName) {
+  const tokenBalances: TokenBalance[] = store.getters.getBalances;
+  const network: NetworkJson = store.getters.getNetwork(networkName);
+  const utilityId = network.assets.find((asset) => asset.isUtility)?.id ?? '';
+  const utilityToken = tokenBalances.find(({ assetId }) => assetId === utilityId);
+  const precision = utilityToken?.precision ?? 0;
+
+  return FPNumber.fromCodecValue(value, precision).toNumber();
+}
+
 function getHumanValue(value: string, assetId: string, networkName: NetworkName) {
   const tokenBalances: TokenBalance[] = store.getters.getBalances;
-  const { balances } = tokenBalances.find(({ assetId: id }) => id === assetId)!;
+  const { balances } = tokenBalances.find(
+    ({ assetId: id, balances }) => id === assetId || balances.some((el) => el.id === assetId)
+  )!;
 
   const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
 
   return +FPNumber.fromCodecValue(value, precision);
 }
 
-function getHistoryValue(historyElement: HistoryElement, assetId: string, networkName: NetworkName) {
+function getHistoryValue(historyElement: HistoryElement, assetId: string, networkName: NetworkName, address: string) {
   const { transfer, reward, extrinsic } = historyElement;
   const type = getType(historyElement);
-  const signTransfer = getSignTransfer(historyElement);
+  const signTransfer = getSignTransfer(historyElement, address);
 
   if (type === TransactionType.transfer && transfer) {
     const { amount } = transfer;
@@ -102,24 +113,20 @@ function getHistoryValue(historyElement: HistoryElement, assetId: string, networ
   return { signTransfer: '-', value };
 }
 
-function getHumanTransferFee(historyElement: HistoryElement, assetId: string, networkName: NetworkName) {
+function getHumanTransferFee(historyElement: HistoryElement, networkName: NetworkName) {
   const { transfer, extrinsic } = historyElement;
   const type = getType(historyElement);
 
   if (type === TransactionType.transfer) {
     const { fee } = transfer!;
-    const value = getHumanValue(fee, assetId, networkName);
-    const formattedValue = formattedNumber(value, { decimalsValue: 4 });
 
-    return `${formattedValue !== '0' ? '-' : ''}${formattedValue}`;
+    return getHumanFeeValue(fee, networkName);
   }
 
   if (type === TransactionType.extrinsic) {
     const { fee } = extrinsic!;
-    const value = getHumanValue(fee, assetId, networkName);
-    const formattedValue = formattedNumber(value, { decimalsValue: 4 });
 
-    return `${formattedValue !== '0' ? '-' : ''}${formattedValue}`;
+    return getHumanFeeValue(fee, networkName);
   }
 
   return '';
@@ -167,21 +174,23 @@ function getFormattedHistory(
   return history as SubqueryHistory;
 }
 
-function getEthereumApiKey(url: string): string | undefined {
+function getEthereumExplorerApiKey(url: string): string | undefined {
   const keys = [
-    { name: 'etherscan', key: process.env.ETHERSCAN_API_KEY },
-    { name: 'bscscan', key: process.env.BSCSCAN_API_KEY },
+    { name: 'etherscan', key: process.env.FL_WEB_ETHERSCAN_API_KEY },
+    { name: 'bscscan', key: process.env.FL_WEB_BSCSCAN_API_KEY },
+    { name: 'polygon', key: process.env.FL_WEB_POLYGONSCAN_API_KEY },
   ];
 
-  return keys.find((el) => url.includes(el.name))?.key;
+  return keys.find(({ name }) => url.includes(name))?.key;
 }
 
 export {
   getType,
   getTypeFormatted,
-  getEthereumApiKey,
+  getEthereumExplorerApiKey,
   getHumanTransferFee,
   getHistoryValue,
+  getHumanFeeValue,
   getFormattedDate,
   getSignTransfer,
   getFormattedHistory,

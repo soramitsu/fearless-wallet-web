@@ -11,6 +11,7 @@ type Props = {
   icon: string;
   iconColor?: string;
   className?: string[] | string;
+  isHoverable?: boolean;
   width?: string;
   height?: string;
 };
@@ -23,7 +24,11 @@ const getIconName = computed(() => `#icon-${props.icon}`);
 const styles = computed(() => `width:${props.width}; height:${props.height};`);
 
 const getSvgClasses = computed(() => {
-  const classes = ['svg-icon', ...[props.className].flat()];
+  const prepClasses = Array.isArray(props.className) ? props.className.flat() : [props.className];
+
+  const classes = [...prepClasses];
+
+  if (props.isHoverable) classes.push('svg-icon--hover');
 
   if (props.iconColor) classes.push(getIconColor.value);
 
@@ -39,7 +44,7 @@ const getSvgClasses = computed(() => {
   outline: none;
 }
 
-.svg-icon:hover {
+.svg-icon--hover:hover {
   opacity: 0.5;
 }
 

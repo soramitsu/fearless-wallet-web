@@ -11,7 +11,6 @@ export interface BaseExchangeProps {
   assetA: Asset | AccountAsset;
   assetB: Asset | AccountAsset;
   slippage?: number;
-  swapOptions: SwapOptions;
   amountA: string;
   amountB?: string;
 }
@@ -19,7 +18,7 @@ export interface BaseExchangeProps {
 export interface ExtrinsicSwapOptions {
   amountA: string;
   amountB: string;
-  swapOptions: SwapOptions;
+  swapOptions?: SwapOptions;
   swapDexId: DexId;
   isExchangeB: boolean;
   network: string;
@@ -42,6 +41,6 @@ export type CreateSwapResult = {
   providerFee: string;
   AToB: string;
   BToA: string;
-  extrinsicOptions: ExtrinsicSwapOptions;
   route: string;
+  swapOptions: SwapOptions;
 };

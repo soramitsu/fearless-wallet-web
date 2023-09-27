@@ -108,10 +108,10 @@ const getXORCurrency = (balances: TokenBalance[]) => {
 };
 
 function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: string) {
-  const network = store.getters.getNetwork(balance.name) as NetworkJson;
+  const network: NetworkJson = store.getters.getNetwork(balance.name);
 
   const favoriteNetworks = store.getters.getFavoriteNetworksNames as { name: string; favorite: string[] }[];
-  const { address } = store.getters.getSelectedWallet as Wallet;
+  const { address }: Wallet = store.getters.getSelectedWallet;
 
   if (selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
 

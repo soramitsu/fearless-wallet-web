@@ -2,16 +2,19 @@
   <AboveForm :header="getLocale('header')" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
 
-    <Tabs :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
+    <Tabs v-show="showTabs" :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
+
+    <div v-show="!isNetworksExists" class="network__list-no-found">{{ $t('header.networkManagement.nofound') }}</div>
 
     <NetworkItem
+      v-show="isNetworksExists"
       :network="networkGroup"
       :isNetworkGroup="true"
       :isSelected="isGroupSelected"
       @onChangeNetwork="toggleNetworkType(isGroupSelected)"
     />
 
-    <div class="container" :class="networkListClasses">
+    <div v-show="isNetworksExists" class="container" :class="networkListClasses">
       <Scroll>
         <ul class="network__list">
           <NetworkItem
@@ -95,9 +98,14 @@ export default class NetworkManagement extends Vue {
   }
 
   get filterNetworks() {
-    if (this.activeTab === ALL_NETWORKS) return this.networks;
+    const baseFilter =
+      this.selectedWallet.ethereumAddress === ''
+        ? this.networks.filter((network) => !BaseApi.isEthereumNetwork(network.name))
+        : this.networks;
 
-    const networks = this.networks.filter(({ favorite, rank }) => {
+    if (this.activeTab === ALL_NETWORKS) return baseFilter;
+
+    const networks = baseFilter.filter(({ favorite, rank }) => {
       if (this.activeTab === POPULAR_NETWORKS) return rank !== undefined;
 
       if (this.activeTab === FAVORITE_NETWORKS)
@@ -122,6 +130,20 @@ export default class NetworkManagement extends Vue {
     return this.filterNetworks.filter(({ name }) => {
       return name.toLowerCase().includes(filter);
     });
+  }
+
+  get showTabs() {
+    if (!this.isNetworksExists) {
+      if (this.filterValue.trim() !== '') return false;
+
+      return true;
+    }
+
+    return true;
+  }
+
+  get isNetworksExists() {
+    return this.filteredOptionsNetworks.length !== 0;
   }
 
   getLocale(key: string): string {
@@ -170,6 +192,8 @@ export default class NetworkManagement extends Vue {
 
   async toggleFavorite(network: string) {
     const isFavorite = await this.setFavorite({ networkName: network, address: this.selectedWallet.address });
+
+    if (this.selectedNetwork === FAVORITE_NETWORKS) updateCurrentNetwork(this.selectedNetwork);
 
     const t = this.getLocale(isFavorite ? 'deleteFavorite' : 'addFavorite');
     const prepNotification = this.$t(t, { network });
@@ -222,5 +246,14 @@ export default class NetworkManagement extends Vue {
   flex-flow: column nowrap;
   padding: 0;
   height: 100%;
+}
+.network__list-no-found {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 14px;
+  font-weight: 600;
+  color: $gray-2-color;
 }
 </style>

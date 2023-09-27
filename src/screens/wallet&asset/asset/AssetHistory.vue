@@ -52,7 +52,7 @@ export default class AssetHistory extends Vue {
   @Getter(ExtensionGettersTypes.features) features!: Nullable<Features>;
 
   get selectedAssetId() {
-    return this.$route.params.assetId ?? '';
+    return this.$route.params.assetId ?? '0';
   }
 
   get providers() {

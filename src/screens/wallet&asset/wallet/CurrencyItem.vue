@@ -110,6 +110,7 @@ import {
 } from '@/helpers/currencies';
 import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 import { isNetworkGroup } from '@/helpers/common';
+import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 
 @Component
 export default class CurrencyItem extends Vue {
@@ -153,10 +154,18 @@ export default class CurrencyItem extends Vue {
   }
 
   get mainNetwork() {
+    if (this.assetData.relayChain === 'ethereum' && !isNetworkGroup(this.selectedNetwork))
+      return this.assetData.balances
+        .find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase())
+        ?.name?.toLowerCase();
+
     return this.assetData.mainNetwork?.toLowerCase();
   }
 
   get assetId() {
+    if (this.assetData.relayChain === 'ethereum' && !isNetworkGroup(this.selectedNetwork))
+      return this.assetData.balances.find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase())?.id;
+
     return this.assetData.assetId;
   }
 
@@ -249,6 +258,18 @@ export default class CurrencyItem extends Vue {
     return this.isCurrentNetwork ? this.selectedNetwork : '';
   }
 
+  get computeActiveNetworks() {
+    return this.assetData.balances.filter(({ name }) => {
+      const network = this.getNetwork(name);
+
+      if (this.selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
+      if (this.selectedNetwork === FAVORITE_NETWORKS)
+        return network.favorite.some((address) => address === this.selectedWallet.address);
+
+      return this.getNetwork(name).active;
+    });
+  }
+
   openAssetPage(event: CustomEvent) {
     if (this.showWarning) return;
 
@@ -262,12 +283,12 @@ export default class CurrencyItem extends Vue {
     )
       return;
 
-    if (this.isCurrentNetwork) {
+    if (this.isCurrentNetwork || this.computeActiveNetworks.length === 1) {
       this.$router.push({
         name: Components.AssetHistory,
         params: {
-          assetId: this.assetData.assetId,
-          selectedNetwork: this.redirectNetwork,
+          assetId: this.assetId ?? this.assetData.assetId,
+          selectedNetwork: this.redirectNetwork === '' ? this.computeActiveNetworks[0].name : this.redirectNetwork,
         },
       });
 

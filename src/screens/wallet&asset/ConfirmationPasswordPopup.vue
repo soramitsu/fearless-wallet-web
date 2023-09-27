@@ -130,7 +130,9 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   get firstIconUrl() {
     if (this.extrinsicType === 'transfer' || this.extrinsicType === 'swap')
-      return this.balances.find(({ assetId }) => assetId === this.firstIcon)?.icon;
+      return this.balances.find(
+        ({ assetId, balances }) => assetId === this.firstIcon || balances.some((el) => el.id === this.firstIcon)
+      )?.icon;
 
     // firstIcon === networkName for crossChain
     return this.getNetwork(this.firstIcon)?.icon ?? '';

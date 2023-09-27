@@ -205,10 +205,17 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { cut, firstCharToUp, getClipboard } from '@/helpers/';
 import { getCurrencyOptions, getUtilityAsset } from '@/helpers/currencies';
-import { VALID_SUBSTRATE_ADDRESS, VALID_ETHEREUM_ADDRESS, CHAIN_IDS } from '@/consts/networks';
+import {
+  VALID_SUBSTRATE_ADDRESS,
+  VALID_ETHEREUM_ADDRESS,
+  CHAIN_IDS,
+  POPULAR_NETWORKS,
+  FAVORITE_NETWORKS,
+} from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
 import { checkTransfer, checkCrossChain } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
+import { isNetworkGroup } from '@/helpers/common';
 
 @Component({
   components: {
@@ -249,6 +256,7 @@ export default class TransferForm extends Vue {
   @PropSync('partialFee', { type: String }) syncedFee!: string;
   @PropSync('destNetFee', { type: String, default: '0' }) syncedDestNetFee!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetworkInManagment!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
@@ -442,7 +450,9 @@ export default class TransferForm extends Vue {
   }
 
   get currency() {
-    return this.balances.find(({ symbol, assetId }) => symbol === this.syncedAssetId || assetId === this.syncedAssetId); // TODO проверить нужны ли оба условия
+    return this.balances.find(({ balances }) => {
+      return balances.some((el) => el.id.toLowerCase() === this.syncedAssetId.toLowerCase());
+    })!;
   }
 
   get currencyBalance() {
@@ -464,11 +474,38 @@ export default class TransferForm extends Vue {
     return options.filter(({ name }) => name.toLowerCase().includes(filter));
   }
 
+  get isSelectedNetworkGroup() {
+    return isNetworkGroup(this.selectedNetworkInManagment);
+  }
+
+  get assetWithActiveNetworks() {
+    const result = this.balances.filter(({ balances }) => {
+      const prepBalances = balances ?? [];
+
+      return prepBalances.some(({ name }) => {
+        const { active, rank, favorite } = this.getNetwork(name);
+
+        if (!active) return false;
+
+        if (this.isSelectedNetworkGroup) {
+          if (this.selectedNetworkInManagment === POPULAR_NETWORKS && rank) return true;
+
+          const isNetworkInFavorites = favorite.some((el) => el === this.selectedWallet.address);
+
+          if (this.selectedNetworkInManagment === FAVORITE_NETWORKS && isNetworkInFavorites) return true;
+        }
+
+        return this.selectedNetworkInManagment.toLowerCase() === name.toLowerCase();
+      });
+    });
+
+    return result;
+  }
+
   get optionsCurrency() {
     const { xcm, parentId } = this.networks.find(
       ({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase()
     )!;
-
     const relay = (CHAIN_IDS[parentId!] ?? this.syncedNetwork).toLowerCase();
     const balances = this.isTransfer
       ? this.balances
@@ -706,9 +743,11 @@ export default class TransferForm extends Vue {
   }
 
   calcTransferableUtility() {
-    const balance = this.utilityAsset!.balances.find(({ isUtility }) => isUtility)!;
+    const balance = this.utilityAsset.balances.find(
+      ({ isUtility, name }) => isUtility && name.toLowerCase() === this.syncedNetwork.toLowerCase()
+    )!;
 
-    return balance.transferable?.toString() ?? '';
+    return balance?.transferable?.toString() ?? '0';
   }
 
   calcTransferableSendMinusFee(fee = '0') {

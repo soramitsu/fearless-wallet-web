@@ -82,9 +82,11 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation, Action } from 'vuex-class';
 import { BalanceJson, TokenBalance } from '@extension-base/background/types/types';
+import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset, GetNetwork } from '@/store';
 import type { AsyncFn, Fn, TabWallet } from '@/interfaces';
+import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import ContentSettings from '@/screens/wallet&asset/wallet/ContentSettings.vue';
@@ -106,8 +108,7 @@ import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance, isNetworkGroup } from '@/helpers/common';
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
-import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
-import { BalanceItem } from '@/extension/background/extension-base/src/api/evm/types/ether';
+import BaseApi from '@/util/BaseApi';
 
 @Component({
   components: {
@@ -227,10 +228,14 @@ export default class Wallet extends Vue {
 
   get filteredCurrencies() {
     const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
+    const baseFilter =
+      this.selectedWallet.ethereumAddress === ''
+        ? this.sortedCurrencies.filter((el) => !BaseApi.isEthereumNetwork(el.mainNetwork))
+        : this.sortedCurrencies;
 
     const filteredByNetwork = isAllNetworks
-      ? this.sortedCurrencies
-      : this.sortedCurrencies.filter(({ balances }) => {
+      ? baseFilter
+      : baseFilter.filter(({ balances }) => {
           return balances.some((balance) => filterBalanceItemsByNetwork(balance, this.selectedNetwork));
         });
 

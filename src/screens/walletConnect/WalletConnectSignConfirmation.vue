@@ -101,7 +101,9 @@ const onApprove = async () => {
   display: flex;
   flex-direction: row;
   width: 100%;
-  gap: 10px;
+  column-gap: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 .wc-request {
@@ -109,12 +111,16 @@ const onApprove = async () => {
   justify-content: space-between;
   align-items: center;
   flex-direction: column;
-  height: 320px;
   overflow-y: hidden;
+  padding-left: 10px;
+  padding-right: 10px;
+  gap: 10px;
 }
 .wc-request__input {
   width: 100%;
   height: 96px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 .wc-request__details {
   width: 100%;
@@ -123,10 +129,12 @@ const onApprove = async () => {
   height: 460px;
   overflow-y: hidden;
 }
+
 .wc-request-content {
   display: flex;
   flex-flow: column;
   justify-content: space-between;
   height: 100%;
+  gap: 10px;
 }
 </style>

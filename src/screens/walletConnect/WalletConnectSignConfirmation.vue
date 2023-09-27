@@ -15,7 +15,7 @@
         v-model="password"
         placeholder="addWallet.enterPassword"
         errorDescriptions="common.invalidPassword"
-        :showPassword="false"
+        :showPassword="true"
         class="wc-request__input"
         :isError="isPassValid"
       />

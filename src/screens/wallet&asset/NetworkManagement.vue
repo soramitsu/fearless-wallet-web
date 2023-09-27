@@ -98,9 +98,14 @@ export default class NetworkManagement extends Vue {
   }
 
   get filterNetworks() {
-    if (this.activeTab === ALL_NETWORKS) return this.networks;
+    const baseFilter =
+      this.selectedWallet.ethereumAddress === ''
+        ? this.networks.filter((network) => !BaseApi.isEthereumNetwork(network.name))
+        : this.networks;
 
-    const networks = this.networks.filter(({ favorite, rank }) => {
+    if (this.activeTab === ALL_NETWORKS) return baseFilter;
+
+    const networks = baseFilter.filter(({ favorite, rank }) => {
       if (this.activeTab === POPULAR_NETWORKS) return rank !== undefined;
 
       if (this.activeTab === FAVORITE_NETWORKS)

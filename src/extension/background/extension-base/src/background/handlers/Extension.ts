@@ -772,11 +772,10 @@ export default class Extension extends FWExtensionBase {
 
   private async makeSwap(options: RequestSwap): Promise<ResponseMakeSwap> {
     const { extrinsicOptions } = await createSwap(options, apiSora);
+
     const { password, isSavePass } = options;
-    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = extrinsicOptions;
     const errors: Array<BasicTxError> = [];
     const address = await this.state.getAccountAddress();
-    const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
 
     if (!address) {
       errors.push({
@@ -802,6 +801,9 @@ export default class Extension extends FWExtensionBase {
     apiSora.shouldPairBeLocked = !isSavePass;
 
     try {
+      const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = extrinsicOptions;
+      const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
+
       await apiSora.swap.execute(assetA, assetB, amountA, amountB, slippage, isExchangeB, liquiditySource, swapDexId);
     } catch (ex) {
       errors.push({

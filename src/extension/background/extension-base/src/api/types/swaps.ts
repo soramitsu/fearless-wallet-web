@@ -11,7 +11,6 @@ export interface BaseExchangeProps {
   assetA: Asset | AccountAsset;
   assetB: Asset | AccountAsset;
   slippage?: number;
-  swapOptions?: SwapOptions;
   amountA: string;
   amountB?: string;
 }
@@ -43,5 +42,5 @@ export type CreateSwapResult = {
   AToB: string;
   BToA: string;
   route: string;
-  swapOptions?: SwapOptions;
+  swapOptions: SwapOptions;
 };

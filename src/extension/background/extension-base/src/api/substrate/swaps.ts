@@ -7,7 +7,10 @@ import type { CreateSwapResult, BaseExchangeProps } from '@extension-base/api/ty
 import type { SwapOptions } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 
-async function createExchangeB(props: BaseExchangeProps, api: Api<void>): Promise<CreateSwapResult> {
+async function createExchangeB(
+  props: BaseExchangeProps,
+  api: Api<void>
+): Promise<Omit<CreateSwapResult, 'swapOptions'>> {
   const { expectedAmount, providerFee, route, assetA, assetB, amountB, slippage } = props;
   const minMaxValue = api.swap.getMinMaxValue(assetA, assetB, expectedAmount.toString(), amountB!, true, slippage!);
 
@@ -22,7 +25,10 @@ async function createExchangeB(props: BaseExchangeProps, api: Api<void>): Promis
   };
 }
 
-async function createExchangeA(props: BaseExchangeProps, api: Api<void>): Promise<CreateSwapResult> {
+async function createExchangeA(
+  props: BaseExchangeProps,
+  api: Api<void>
+): Promise<Omit<CreateSwapResult, 'swapOptions'>> {
   const { expectedAmount, providerFee, route, assetA, assetB, amountA, slippage } = props;
   const minMaxValue = api.swap.getMinMaxValue(assetA, assetB, amountA!, expectedAmount.toString(), false, slippage!);
 
@@ -79,7 +85,9 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
     assetBAddress,
     amountWithDirection,
     isExchangeB,
-    liquiditySource
+    liquiditySource,
+    true,
+    DexId.XSTUSD
   );
 
   const amountDexIdXORFP = FPNumber.fromCodecValue(amountDexIdXOR);
@@ -137,16 +145,14 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
     amountB: amountB ?? '0',
   };
 
-  const result: CreateSwapResult = isExchangeB
-    ? await createExchangeB(baseOptions, api)
-    : await createExchangeA(baseOptions, api);
+  const swapResult = isExchangeB ? await createExchangeB(baseOptions, api) : await createExchangeA(baseOptions, api);
 
   return {
-    ...result,
+    ...swapResult,
     swapOptions: {
       ...swapOptions,
-      amountA: result.amountA,
-      amountB: result.amountB,
+      amountA: swapResult.amountA,
+      amountB: swapResult.amountB,
     },
   };
 }

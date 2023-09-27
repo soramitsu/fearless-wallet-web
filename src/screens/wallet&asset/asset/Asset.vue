@@ -139,13 +139,7 @@ export default class Asset extends Vue {
   }
 
   get currentCurrency() {
-    return (
-      this.balances.find(
-        ({ assetId: id, balances }) =>
-          id === this.selectedAssetId ||
-          balances.some((el) => el.id.toLowerCase() === this.selectedAssetId.toLowerCase())
-      )! ?? {}
-    );
+    return this.balances.find(({ assetId: id }) => id === this.selectedAssetId)! ?? {};
   }
 
   get displayAddressByNetwork() {

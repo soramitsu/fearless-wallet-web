@@ -704,7 +704,7 @@ export type ResponseTotalBalances = {
 
 export interface TokenBalance {
   mainNetwork: string;
-  assetId: string;
+  assetId: string; // TODO: rename to groupId
   priceId?: string;
   tokenName: string;
   symbol: string;

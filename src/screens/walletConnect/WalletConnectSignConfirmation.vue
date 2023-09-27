@@ -63,9 +63,11 @@ const header = computed(() => {
 
   return 'assets.transaction';
 });
+
 const address = computed(() => {
-  if (method.value === EIP155_SIGNING_METHODS.ETH_SIGN_TRANSACTION)
+  if (method.value === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
     return request.params.request.params[0].from as string;
+  }
 
   return request.params.request.params[1];
 });
@@ -89,7 +91,6 @@ const onError = (error: Error) => {
 
 const onApprove = async () => {
   isPassValid.value = false;
-
   const res = await walletConnectRequestApprove(address.value, password.value, request.topic).catch(onError);
 
   if (res) router.back();

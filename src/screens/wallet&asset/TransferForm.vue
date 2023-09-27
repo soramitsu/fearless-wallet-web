@@ -507,9 +507,12 @@ export default class TransferForm extends Vue {
       ({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase()
     )!;
     const relay = (CHAIN_IDS[parentId!] ?? this.syncedNetwork).toLowerCase();
+    const baseBalances = this.balances.filter((el) => {
+      return el.balances.some((asset) => this.getNetwork(asset.name).active);
+    });
     const balances = this.isTransfer
-      ? this.balances
-      : this.balances.filter(
+      ? baseBalances
+      : baseBalances.filter(
           ({ symbol, relayChain }) =>
             xcm?.availableAssets.some(({ symbol: _symbol }) => {
               const assetName = getMoonbeamMoonriverAssetName(_symbol, this.syncedNetwork);

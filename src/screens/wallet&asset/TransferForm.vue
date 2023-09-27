@@ -63,7 +63,7 @@
               <SelectInput
                 class="row"
                 text="assets.amount"
-                :transferableAmount="transferableAmount"
+                :totalAmount="transferableAmount"
                 :value="syncedValue"
                 :asset="sendAssetName"
                 :assetId="syncedAssetId"
@@ -71,7 +71,7 @@
                 :isRotate="showSelectedAssetPopup"
                 @update:amount="updateAmount"
                 @setMax="setMax"
-                @toggleSelectAssetPopupVisibility="toggleValue('showSelectedAssetPopup')"
+                @togglePopupVisibility="toggleValue('showSelectedAssetPopup')"
               />
 
               <InputWithIcon
@@ -130,9 +130,9 @@
             size="big"
             class="button"
             :disabled="buttonDisabled"
-            :iconName="buttonLoading ? 'loader' : ''"
-            :iconType="buttonLoading ? 'loading' : ''"
-            :text="buttonLoading ? '' : buttonText"
+            :iconName="isFetchingFees ? 'loader' : ''"
+            :iconType="isFetchingFees ? 'loading' : ''"
+            :text="isFetchingFees ? '' : buttonText"
             @click="handlerContinueButton"
           />
         </div>
@@ -232,6 +232,7 @@ import { isNetworkGroup } from '@/helpers/common';
 export default class TransferForm extends Vue {
   readonly isPopup = BaseApi.useIsPopup();
 
+  timeoutSubscription: NodeJS.Timeout | undefined;
   showSelectedAssetPopup = false;
   showSelectNetworkPopup = false;
   showDestNetPopup = false;
@@ -239,7 +240,6 @@ export default class TransferForm extends Vue {
   showConfirmationPasswordPopup = false;
   showMyWallets = false;
   showHistoryBook = false;
-  buttonLoading = false;
   newAddress = '';
   filterValue = '';
   isFetchingFees = false;
@@ -410,7 +410,7 @@ export default class TransferForm extends Vue {
   }
 
   get buttonDisabled() {
-    if (this.buttonLoading) return true;
+    if (this.isFetchingFees) return true;
 
     if (!navigator.onLine) return true;
 
@@ -674,10 +674,14 @@ export default class TransferForm extends Vue {
   @Watch('syncedRecipient')
   @Watch('syncedAmount')
   async calculateEstimates() {
-    const { estimateFee, destEstimateFee } = await this.verifyTx();
+    clearTimeout(this.timeoutSubscription);
 
-    this.syncedFee = estimateFee ?? '0';
-    this.syncedDestNetFee = destEstimateFee ?? '0';
+    this.timeoutSubscription = setTimeout(async () => {
+      const { estimateFee, destEstimateFee } = await this.verifyTx();
+
+      this.syncedFee = estimateFee ?? '0';
+      this.syncedDestNetFee = destEstimateFee ?? '0';
+    }, 2000);
   }
 
   created() {
@@ -785,7 +789,6 @@ export default class TransferForm extends Vue {
   }
 
   toggleLoading(value = true) {
-    this.buttonLoading = value;
     this.isFetchingFees = value;
   }
 

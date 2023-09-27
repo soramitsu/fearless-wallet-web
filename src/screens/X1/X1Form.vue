@@ -97,7 +97,7 @@ export default class X1Form extends Vue {
     this.loadX1();
   }
 
-  beforeUnmount() {
+  beforeDestroy() {
     this.unloadX1();
   }
 

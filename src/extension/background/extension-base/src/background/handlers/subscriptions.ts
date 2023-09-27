@@ -106,9 +106,10 @@ export class FWSubscription {
 
       this.subscribeBalances(account.address, ethAddress, true);
     });
+    if (currentAccount) this.subscribeBalances(currentAccount.address, currentAccount.ethereumAddress);
 
-    if (!this.serviceSubscription)
-      this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
+    !this.serviceSubscription &&
+      (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
           console.info('serviceInfo', serviceInfo);
 
@@ -118,7 +119,7 @@ export class FWSubscription {
 
           this.subscribeBalances(address, ethereumAddress);
         },
-      });
+      }));
   }
 
   stop() {

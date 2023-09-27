@@ -527,10 +527,10 @@ export default class State {
       if (data.isEthereum && name in this.apis.evm) delete this.apis.evm[name];
 
       if (currentProvider) {
-        initApi(data);
-
         if (data.isEthereum && isRequireEvmAPI(data.name)) {
           this.apis.evm[data.name] = initWeb3Api(currentProvider);
+        } else {
+          initApi(data);
         }
       }
     }
@@ -691,33 +691,37 @@ export default class State {
 
   public getActiveNetworks() {
     const networks = Object.values(this.networkMap);
-    const prepNetworks = new Set<NetworkJson>();
-    const selectedNetworks = Object.values(this.selectedNetworks);
-    const isAllNetworkPicked = selectedNetworks.some((el) => el === ALL_NETWORKS);
+    const uniqNetworks = new Set<NetworkJson>();
+    const selectedNetworks = Object.keys(this.selectedNetworks);
+    const isAllNetworkPicked = selectedNetworks.some((address) => this.selectedNetworks[address] === ALL_NETWORKS);
 
     if (isAllNetworkPicked) return networks;
 
-    selectedNetworks.forEach((el) => {
-      if (el === POPULAR_NETWORKS) {
+    selectedNetworks.forEach((address) => {
+      const value = this.selectedNetworks[address];
+
+      if (value === POPULAR_NETWORKS) {
         const popular = networks.filter((el) => el.rank !== undefined);
-        popular.forEach((el) => prepNetworks.add(el));
+        popular.forEach((el) => uniqNetworks.add(el));
 
         return;
       }
 
-      if (el === FAVORITE_NETWORKS) {
-        const favorite = networks.filter((el) => el.favorite.length);
-        favorite.forEach((el) => prepNetworks.add(el));
+      if (value === FAVORITE_NETWORKS) {
+        const favorite = networks.filter((el) => el.favorite.length && el.favorite.includes(address));
+
+        favorite.forEach((el) => uniqNetworks.add(el));
 
         return;
       }
 
-      const singleNetwork = networks.find((network) => network.name === el);
+      const singleNetwork = networks.find((network) => network.name === value);
 
-      if (singleNetwork) prepNetworks.add(singleNetwork);
+      if (singleNetwork) uniqNetworks.add(singleNetwork);
     });
+    console.info(uniqNetworks, 'set this to Active');
 
-    return Array.from(prepNetworks);
+    return Array.from(uniqNetworks);
   }
 
   public async setActiveNetworks(type: string) {
@@ -733,7 +737,8 @@ export default class State {
     const networks = this.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((key) => {
-      const isExists = networks.some(({ name }) => name === key);
+      const isExists = networks.some(({ name }) => name.toLowerCase() === key.toLowerCase());
+
       this.networkMap[key].active = isExists;
     });
 
@@ -1112,11 +1117,9 @@ export default class State {
     });
   }
 
-  public getAccountAddress(): Promise<string | null | undefined> {
+  public getAccountAddress(): Promise<string> {
     return new Promise((resolve) => {
-      this.getCurrentAccount((account) => {
-        account ? resolve(account.address) : resolve(null);
-      });
+      this.getCurrentAccount((account) => resolve(account?.address ?? ''));
     });
   }
 
@@ -1193,7 +1196,10 @@ export default class State {
 
     this.networkMapStore.set('NetworkMap', result);
     this.networkMap = result;
-
+    this.getSubstrateAccounts().forEach((el) => {
+      //Migration from old network managment
+      if (!this.selectedNetworks[el.address]) this.selectedNetworks[el.address] = ALL_NETWORKS;
+    });
     const activeNetworks = this.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((key) => {
@@ -1207,7 +1213,6 @@ export default class State {
   public async init() {
     await this.eventService.waitCryptoReady;
     await this.prepNetworkJson();
-
     this.initNetworkStates();
     this.updateServiceInfo();
   }
@@ -1219,12 +1224,19 @@ export default class State {
     });
   }
 
-  public initNetworkStates(reset?: boolean) {
+  public async initNetworkStates(reset?: boolean) {
     for (const [key, network] of Object.entries(this.networkMap)) {
       if (network.active) {
         if (network.isEthereum && isRequireEvmAPI(key)) {
-          this.apis.evm[key] = initWeb3Api(network.currentProvider);
+          if (!this.apis.evm[key] || !this.apis.evm[key].ready)
+            this.apis.evm[key] = initWeb3Api(network.currentProvider);
         } else {
+          if (this.apis.substrate[network.name]) {
+            const isReady = await this.apis.substrate[network.name].api?.isReady;
+
+            if (isReady) return;
+          }
+
           if (reset) this.resetApiRetries();
           initApi(network);
         }
@@ -1299,6 +1311,7 @@ export default class State {
     );
 
     const asset = balancesByAddress[currencyIndex];
+
     const assetIndex = asset.balances.findIndex(({ name }) => {
       const key = prepNetworkNames[name] ?? name;
 

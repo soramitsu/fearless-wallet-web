@@ -13,6 +13,8 @@ export function getMockCurrencies(networks: NetworkJson[]) {
   const currencies = networks.reduce<TokenBalance[]>((result, network) => {
     const { assets: networkAssets, name: mainNet, parentId, icon: networkIcon } = network;
     const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNet) as RelayChainName;
+    const optionEthereum = !!network.options?.some((el) => el === 'ethereum');
+    const prepRelayChain = optionEthereum ? 'ethereum' : relayChain;
 
     networkAssets.forEach(
       ({
@@ -31,10 +33,11 @@ export function getMockCurrencies(networks: NetworkJson[]) {
         currencyId,
       }) => {
         const mainNetwork = MAIN_NETWORKS[symbol] ?? mainNet;
+
         const currencyIndex = result.findIndex(({ assetId: _assetId, relayChain: _relayChain, symbol: _symbol }) => {
           const isExistingAssetId = _assetId === assetId;
           const isExistingSymbol = _symbol === symbol;
-          const isExistingAsset = isExistingSymbol && _relayChain === relayChain;
+          const isExistingAsset = isExistingSymbol && _relayChain === prepRelayChain;
 
           return isExistingAssetId || isExistingAsset;
         });
@@ -47,7 +50,7 @@ export function getMockCurrencies(networks: NetworkJson[]) {
             precision,
             symbol,
             tokenName,
-            relayChain,
+            relayChain: prepRelayChain,
             icon: assetIcon,
             providers: purchaseProviders ?? [],
             balances: [],

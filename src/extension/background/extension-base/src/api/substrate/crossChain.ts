@@ -382,7 +382,9 @@ async function makeCrossChain({
   await apiProps.api?.isReady;
 
   const address = getSubstrateAddress(from);
-  const tokenBalance = state.balanceMap[address].find(({ assetId: _assetId }) => _assetId === assetId)!;
+  const tokenBalance = state.balanceMap[address].find(
+    ({ assetId: _assetId, balances }) => _assetId === assetId || balances.some((el) => el.id === assetId)
+  )!;
   const [, crossChainFee] = await estimateCrossChainFee(originNet, destinationNet, tokenBalance);
 
   const amountWithCrossChain = new FPNumber(amount).add(crossChainFee).toString();

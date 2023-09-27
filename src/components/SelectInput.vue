@@ -52,7 +52,6 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 @Component
 export default class SelectInput extends Vue {
   inputIsFocused = false;
-
   @Prop({ default: '' }) text!: string;
   @Prop({ default: '' }) asset!: string;
   @Prop({ default: '' }) assetId!: string;
@@ -66,14 +65,37 @@ export default class SelectInput extends Vue {
   get amountInternal() {
     if (this.syncedAmount === '') return '';
 
-    return FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
+    if (this.syncedAmount.endsWith('0')) return this.syncedAmount;
+
+    const localString = FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
+
+    if (this.syncedAmount.endsWith('.')) return `${localString}.`;
+
+    if (localString === 'NaN') return this.syncedAmount;
+
+    return localString;
   }
 
-  set amountInternal(value: string) {
-    if (value === '') return;
+  set amountInternal(_value: string) {
+    const value = _value.replaceAll(',', '').replaceAll(' ', '');
 
-    if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN')
-      this.syncedAmount = FPNumber.fromCodecValue(value || 0, 0).toString();
+    if (value.length < this.syncedAmount.length) {
+      this.syncedAmount = value;
+
+      return;
+    }
+
+    if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN') {
+      const string = FPNumber.fromCodecValue(value || 0, 0).toString();
+
+      if (value.endsWith('.')) {
+        this.syncedAmount = this.syncedAmount = `${string}.`;
+
+        return;
+      }
+
+      this.syncedAmount = string;
+    }
   }
 
   get header() {
@@ -81,7 +103,9 @@ export default class SelectInput extends Vue {
   }
 
   get assetIcon() {
-    return this.balances.find(({ assetId }) => assetId === this.assetId)?.icon;
+    return this.balances.find(
+      ({ assetId, balances }) => assetId === this.assetId || balances.some((el) => el.id === this.assetId)
+    )?.icon;
   }
 
   get valueCut() {
@@ -98,11 +122,15 @@ export default class SelectInput extends Vue {
   }
 
   IsNumber(event: KeyboardEvent) {
+    if (this.amountInternal.includes('.') && event.key === '.') return event.preventDefault();
+
     if (!/\d/.test(event.key) && event.key !== '.') return event.preventDefault();
   }
 
   setFocusValue(value: boolean) {
     this.inputIsFocused = value;
+
+    if (!value) this.syncedAmount = FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toString();
   }
 
   setMax() {

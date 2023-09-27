@@ -121,7 +121,7 @@ export default class HistoryDetailsForm extends Vue {
   @Prop(String) historyType!: string;
   @Prop(Object) historyElement!: HistoryElement;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get isTransfer() {
@@ -135,16 +135,16 @@ export default class HistoryDetailsForm extends Vue {
     return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
   }
 
-  get getNetworkByAsset() {
-    return this.allNetworks.find((network) => network.assets.some((asset) => asset.id === this.assetId));
+  get seletedNetworkJson() {
+    return this.networks.find((network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase());
   }
 
   get explorerType() {
-    return this.getNetworkByAsset?.externalApi?.history?.type;
+    return this.seletedNetworkJson?.externalApi?.history?.type;
   }
 
   get explorerUrl() {
-    if (this.getNetworkByAsset?.externalApi?.explorers) return this.getNetworkByAsset?.externalApi?.explorers[0].url;
+    if (this.seletedNetworkJson?.externalApi?.explorers) return this.seletedNetworkJson?.externalApi?.explorers[0].url;
 
     return '';
   }
@@ -241,11 +241,11 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get transferFee() {
-    const fees = getHumanTransferFee(this.historyElement, this.assetId, this.selectedNetwork);
+    const fees = getHumanTransferFee(this.historyElement, this.selectedNetwork);
 
     if (!fees) return '';
 
-    return this.$n(+fees, 'decimalPrecise');
+    return this.$n(fees, 'decimalPrecise');
   }
 
   get date() {
@@ -285,8 +285,6 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   openExplorer() {
-    const addressByNetwork = BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
-
     if (this.explorerType === 'etherscan') {
       if (this.explorerUrl) {
         const url = this.explorerUrl
@@ -299,9 +297,9 @@ export default class HistoryDetailsForm extends Vue {
       return;
     }
 
-    const url = this.isExtrinsic
-      ? `https://${this.selectedNetwork}.subscan.io/extrinsic/${this.hash}`
-      : `https://${this.selectedNetwork}.subscan.io/account/${addressByNetwork}`;
+    const url = this.explorerUrl
+      .replace('{type}', 'extrinsic')
+      .replace('{value}', this.historyElement?.transfer?.hash ?? '');
 
     window.open(url);
   }

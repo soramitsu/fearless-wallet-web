@@ -171,7 +171,6 @@ export function subscribeBalance(
 
     const addressForNetwork = isEthereumNetwork(networkKey) ? ethereumAddress : address;
 
-    // case: if ethereumAddress === ''
     if (addressForNetwork === '') return () => null;
 
     return subscribeWithAccount(addressForNetwork, networkKey, apiProps, setBalance);

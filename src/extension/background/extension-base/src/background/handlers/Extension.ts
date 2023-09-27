@@ -23,7 +23,7 @@ import {
   makeCrossChain,
   estimateCrossChainFee,
 } from '@extension-base/api/substrate/crossChain';
-import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
+import { RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
 import { ethers } from 'ethers';
 import { balanceItemByNetwork, getSubstrateAddress, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
@@ -753,13 +753,13 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async validateSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
-    const { AToB, BToA, amountA, amountB, minMaxValue, extrinsicOptions, providerFee, route } = await createSwap(
+    const { AToB, BToA, amountA, amountB, minMaxValue, providerFee, route, swapOptions } = await createSwap(
       options,
       apiSora
     );
 
     return {
-      swapOptions: extrinsicOptions.swapOptions,
+      swapOptions,
       fee: providerFee,
       AToB,
       BToA,
@@ -771,26 +771,14 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async makeSwap(options: RequestSwap): Promise<ResponseMakeSwap> {
-    const { extrinsicOptions } = await createSwap(options, apiSora);
-
+    const { swapOptions } = await createSwap(options, apiSora);
     const { password, isSavePass } = options;
+    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = swapOptions!;
     const errors: Array<BasicTxError> = [];
     const address = await this.state.getAccountAddress();
-
-    if (!address) {
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        message: 'Failed to get address',
-      });
-
-      return {
-        errors,
-        status: false,
-      };
-    }
+    const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
 
     const pair = this.state.keyringService.getPair(address)!;
-    const remainTime = this.refreshAccountPasswordCache(pair);
 
     if (pair?.isLocked) {
       const isUnlock = this.state.keyringService.unlockPair(pair, password);
@@ -801,9 +789,6 @@ export default class Extension extends FWExtensionBase {
     apiSora.shouldPairBeLocked = !isSavePass;
 
     try {
-      const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = extrinsicOptions;
-      const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
-
       await apiSora.swap.execute(assetA, assetB, amountA, amountB, slippage, isExchangeB, liquiditySource, swapDexId);
     } catch (ex) {
       errors.push({
@@ -816,28 +801,13 @@ export default class Extension extends FWExtensionBase {
 
     const ethereumAddress = this.state.keyringService.getAccount(address)?.meta.ethereumAddress as string | undefined;
 
-    if (isSavePass) {
-      this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
-
-      if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
-    } else if (remainTime) {
-      this.cachedUnlocks[address] = 0;
-
-      this.state.keyringService.lockPair(pair);
-
-      if (ethereumAddress) {
-        this.cachedUnlocks[ethereumAddress] = 0;
-
-        this.state.keyringService.lockPair(ethereumAddress);
-      }
-    }
+    this.savePass(address, ethereumAddress, !!isSavePass, false);
 
     return {
       status: true,
       errors,
     };
   }
-
   private async checkTransfer({
     from,
     networkKey: givenNetwork,

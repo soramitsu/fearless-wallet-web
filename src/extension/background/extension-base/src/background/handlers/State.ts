@@ -1117,11 +1117,9 @@ export default class State {
     });
   }
 
-  public getAccountAddress(): Promise<string | null | undefined> {
+  public getAccountAddress(): Promise<string> {
     return new Promise((resolve) => {
-      this.getCurrentAccount((account) => {
-        account ? resolve(account.address) : resolve(null);
-      });
+      this.getCurrentAccount((account) => resolve(account?.address ?? ''));
     });
   }
 

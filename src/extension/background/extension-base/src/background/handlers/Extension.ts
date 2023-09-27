@@ -1417,16 +1417,10 @@ export default class Extension extends FWExtensionBase {
     if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
       const txData = request.request.params.request.params[0] as { to: string; value: string };
 
-      const hash = await signer.sendTransaction(txData);
-      request.resolve({ id: request.request.topic, signature: hash.hash as HexString });
+      const { hash } = await signer.sendTransaction(txData);
+      request.resolve({ id: request.request.topic, signature: hash as HexString });
     } else {
       const params = request.request.params.request.params;
-      // let payload: unknown;
-      // const [p1, p2] = params as [string, string];
-
-      // if (address === '' || !payload) {
-      //   throw new Error('Not found address or payload to sign');
-      // }
 
       if (
         [
@@ -1441,18 +1435,9 @@ export default class Extension extends FWExtensionBase {
         throw new Error('Not found sign method');
       }
 
-      if (['eth_signTypedData_v3', 'eth_signTypedData_v4'].indexOf(method) > -1) {
-        // payload = JSON.parse(payload as string);
-      }
+      const signature = await signer.signMessage(convertHexToUtf8(params[0]));
 
-      if (['personal_sign'].indexOf(method) > -1) {
-        // payload = convertHexToUtf8(params[0]);
-      }
-
-      const signature = (await signer.signMessage(convertHexToUtf8(params[0]))) as HexString;
-      const validateSign = ethers.verifyMessage(params[0], signature);
-      console.info(validateSign, address);
-      request.resolve({ id: request.request.topic, signature });
+      request.resolve({ id: request.request.topic, signature: signature as HexString });
     }
 
     return true;

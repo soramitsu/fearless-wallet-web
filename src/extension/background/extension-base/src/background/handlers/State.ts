@@ -52,11 +52,8 @@ import type {
   Providers,
   ResponseTotalBalances,
   RequestAuthorizeCancel,
-  SigningRequest,
   ApiProps,
-  AuthorizeRequest,
   BalanceJson,
-  MetadataRequest,
   RequestAccountExportPrivateKey,
   ResponseAccountExportPrivateKey,
   EvmApiMap,
@@ -133,10 +130,7 @@ export default class State {
   public customTokenSubject = new Subject<CustomTokenJson>();
   public customTokenStore = new CustomTokenStore();
   public mobileSignRequests: Record<string, MobileSignRequest> = {};
-  public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
-  public readonly metaSubject = new BehaviorSubject<MetadataRequest[]>([]);
-  public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
-  public readonly mobileSignSubject = new BehaviorSubject<MobileSigningRequest[]>([]);
+  public readonly mobileSignSubject = new BehaviorSubject<MobileSigningRequest[]>([]); //TODO MOVE TO. IT's ON HANDLER
   public balanceService = new BalanceService();
   public lazyMap: Record<string, unknown> = {};
   public soraFees: SoraFees = {} as SoraFees;

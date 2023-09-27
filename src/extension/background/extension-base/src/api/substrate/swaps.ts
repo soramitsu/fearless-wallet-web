@@ -81,7 +81,9 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
     assetBAddress,
     amountWithDirection,
     isExchangeB,
-    liquiditySource
+    liquiditySource,
+    true,
+    DexId.XOR
   );
 
   const {
@@ -94,7 +96,8 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
     amountWithDirection,
     isExchangeB,
     liquiditySource,
-    true
+    true,
+    DexId.XSTUSD
   );
 
   const swapOptions = { ...options, assetA, assetB } as SwapOptions;

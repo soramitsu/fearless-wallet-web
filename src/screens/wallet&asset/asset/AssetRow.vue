@@ -34,7 +34,7 @@ export default class AssetRow extends Vue {
   }
 
   onSelect() {
-    this.$emit('selectHistory');
+    this.$emit('openAsset');
   }
 }
 </script>

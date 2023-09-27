@@ -138,7 +138,6 @@ export default class SendForm extends Vue {
 
   created() {
     this.assetId = this._selectedAssetId;
-
     this.selectedNetwork = this._selectedNetwork;
   }
 

@@ -570,14 +570,6 @@ export default class State {
   }
 
   public async enableNetworkType(type: string): Promise<void> {
-    const currentAccount = await this.currentAccount;
-
-    if (currentAccount) {
-      this.selectedNetworks[currentAccount.address] = type;
-
-      storage.set({ selectedNetworks: this.selectedNetworks });
-    }
-
     return this.setActiveNetworks(type);
   }
 
@@ -737,16 +729,16 @@ export default class State {
     const networks = this.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((key) => {
-      const isExists = networks.some(({ name }) => name.toLowerCase() === key.toLowerCase());
-
-      this.networkMap[key].active = isExists;
+      this.networkMap[key].active = networks.some(({ name }) => name.toLowerCase() === key.toLowerCase());
     });
 
     this.updateServiceInfo();
     this.initNetworkStates(true);
 
-    this.networkMapStore.set('NetworkMap', this.networkMap);
+    this.subscription.initBalanceSubscription(currentAccount.address, currentAccount.ethereumAddress);
     this.networkMapSubject.next(this.networkMap);
+
+    this.networkMapStore.set('NetworkMap', this.networkMap);
     storage.set({ selectedNetworks: this.selectedNetworks });
   }
 
@@ -1225,25 +1217,29 @@ export default class State {
   }
 
   public async initNetworkStates(reset?: boolean) {
-    for (const [key, network] of Object.entries(this.networkMap)) {
-      if (network.active) {
-        if (network.isEthereum && isRequireEvmAPI(key)) {
-          if (!this.apis.evm[key] || !this.apis.evm[key].ready)
-            this.apis.evm[key] = initWeb3Api(network.currentProvider);
-        } else {
-          if (this.apis.substrate[network.name]) {
-            const isReady = await this.apis.substrate[network.name].api?.isReady;
+    const activeNetworks = Object.values(this.networkMap).filter(({ active }) => active);
 
-            if (isReady) return;
+    for (const network of activeNetworks) {
+      const { name, active, currentProvider, isEthereum } = network;
+
+      if (active) {
+        if (isEthereum && isRequireEvmAPI(name)) {
+          if (!this.apis.evm[name] || !this.apis.evm[name].ready) this.apis.evm[name] = initWeb3Api(currentProvider);
+        } else {
+          if (this.apis.substrate[name]) {
+            const isReady = await this.apis.substrate[name].api?.isReady;
+
+            if (isReady) continue;
           }
 
           if (reset) this.resetApiRetries();
+
           initApi(network);
         }
       }
     }
 
-    this.onReady();
+    if (!reset) this.onReady();
   }
 
   public getWallets(): KeyringAddress[] {

@@ -80,8 +80,9 @@ export class FWSubscription {
 
   stopAllSubscription() {
     if (this.subscriptionMap.balance) {
-      Object.values(this.subscriptionMap.balance).forEach((el) => {
-        Object.values(el).forEach((sub) => sub());
+      Object.keys(this.subscriptionMap.balance).forEach((address) => {
+        const unsub = this.subscriptionMap.balance[address];
+        unsub();
       });
 
       if (this.subscriptionMap.xorTotalBalance) {
@@ -105,7 +106,6 @@ export class FWSubscription {
 
       this.subscribeBalances(account.address, ethAddress, true);
     });
-    if (currentAccount) this.subscribeBalances(currentAccount.address, currentAccount.ethereumAddress);
 
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
@@ -119,12 +119,6 @@ export class FWSubscription {
           this.subscribeBalances(address, ethereumAddress);
         },
       }));
-
-    getAccountsExeptCurrent.forEach((account) => {
-      const ethAddress = account.meta.ethereumAddress as string;
-
-      this.subscribeBalances(account.address, ethAddress, true);
-    });
   }
 
   stop() {

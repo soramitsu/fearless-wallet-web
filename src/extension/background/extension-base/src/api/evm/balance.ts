@@ -86,6 +86,7 @@ export function subscribeEVMBalance(
 ) {
   const network = state.networkMap[networkKey];
   const { icon, name, type, id, symbol } = network.assets.find((el) => el.isUtility)!;
+
   const balanceItem = {
     state: APIItemState.PENDING,
     symbol,
@@ -129,7 +130,7 @@ export function subscribeEVMBalance(
 
   return () => {
     clearInterval(interval);
-    unsub && unsub();
+    unsub();
   };
 }
 

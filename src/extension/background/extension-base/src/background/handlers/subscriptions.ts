@@ -105,7 +105,6 @@ export class FWSubscription {
 
       this.subscribeBalances(account.address, ethAddress, true);
     });
-
     if (currentAccount) this.subscribeBalances(currentAccount.address, currentAccount.ethereumAddress);
 
     !this.serviceSubscription &&

@@ -101,12 +101,12 @@ export class FWSubscription {
       .filter((el) => el.address !== currentAccount?.address);
 
     getAccountsExeptCurrent.forEach((account) => {
-      const ethAddress = account.meta.ethereumAddress as string;
+      const ethAddress = (account.meta.ethereumAddress as string) ?? '';
 
       this.subscribeBalances(account.address, ethAddress, true);
     });
 
-    if (currentAccount) this.subscribeBalances(currentAccount?.address, currentAccount.ethereumAddress);
+    if (currentAccount) this.subscribeBalances(currentAccount.address, currentAccount.ethereumAddress);
 
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({

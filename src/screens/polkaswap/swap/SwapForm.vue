@@ -593,9 +593,10 @@ export default class SwapForm extends Vue {
         isExchangeB: this.isExchangeB,
         marketType: this.marketType,
       });
-
       if (this.isExchangeB) this.sendAmount = amountA;
       else this.receiveAmount = amountB;
+
+      if (this.receiveAmount !== '' && swapOptions) swapOptions.amountB = amountB;
 
       this.swapOptions = swapOptions!;
       this.minMaxAmount = minMaxValue;
@@ -610,7 +611,6 @@ export default class SwapForm extends Vue {
 
     createSwap();
   }
-
   clearSwapInterval() {
     clearInterval(this.swapInterval);
   }
@@ -672,7 +672,7 @@ export default class SwapForm extends Vue {
       this.slippage = this.temporarySlippage;
       this.showSettings = false;
 
-      this.checkSwap();
+      await this.checkSwap();
     } else if (this.step === 1) this.step += 1;
     else this.showConfirmationPasswordPopup = true;
   }
@@ -740,7 +740,7 @@ export default class SwapForm extends Vue {
       return FPNumber.lt(result, FPNumber.ZERO) ? '0' : result.toString();
     }
 
-    return transferable.toString();
+    return new FPNumber(+transferable).sub(new FPNumber(this.fee)).toString();
   }
 
   setMax() {

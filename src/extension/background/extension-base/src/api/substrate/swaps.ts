@@ -76,26 +76,25 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
     amount: amountDexIdXOR,
     fee: providerFeeDexIdXOR,
     route: routeDexIdXOR,
-  } = await api.swap.getResultFromBackend(
+  } = await api.swap.getResultFromDexRpc(
     assetAAddress,
     assetBAddress,
     amountWithDirection,
     isExchangeB,
-    liquiditySource,
-    DexId.XOR
+    liquiditySource
   );
 
   const {
     amount: amountDexIdXSTUSD,
     fee: providerFeeDexIdXSTUSD,
     route: routeDexIdXSTUSD,
-  } = await api.swap.getResultFromBackend(
+  } = await api.swap.getResultFromDexRpc(
     assetAAddress,
     assetBAddress,
     amountWithDirection,
     isExchangeB,
     liquiditySource,
-    DexId.XSTUSD
+    true
   );
 
   const swapOptions = { ...options, assetA, assetB } as SwapOptions;

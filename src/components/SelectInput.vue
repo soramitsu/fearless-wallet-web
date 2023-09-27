@@ -96,7 +96,9 @@ export default class SelectInput extends Vue {
     if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN') {
       const string = FPNumber.fromCodecValue(value || 0, 0).toString();
 
-      if (value.endsWith('0') && value.includes('.')) {
+      // Если последний символ это 0 и это дробная часть
+      // При этом string это целое число
+      if (value.endsWith('0') && value.includes('.') && !string.includes('.')) {
         const zeros = value.match(/[0]*$/)!;
 
         this.syncedAmount = `${string}.${zeros}`;

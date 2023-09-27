@@ -1269,11 +1269,11 @@ export default class Extension extends FWExtensionBase {
     Object.entries(requiredNamespaces).forEach(([key, namespace]) => {
       if (isSupportWalletConnectNamespace(key)) {
         if (namespace.chains) {
-          // const unSupportChains = namespace.chains.filter((chain) => !isSupportWalletConnectChain(chain, chainInfoMap));
+          const unSupportChains = namespace.chains.filter((chain) => !isSupportWalletConnectChain(chain, chainInfoMap));
 
-          // if (unSupportChains.length) {
-          //   throw new Error(`${getSdkError('UNSUPPORTED_CHAINS').message} ${unSupportChains.toString()}`);
-          // }
+          if (unSupportChains.length) {
+            throw new Error(`${getSdkError('UNSUPPORTED_CHAINS').message} ${unSupportChains.toString()}`);
+          }
 
           availableNamespaces[key] = namespace;
         }
@@ -1336,7 +1336,7 @@ export default class Extension extends FWExtensionBase {
 
     const result: ResultApproveWalletConnectSession = {
       id: wcId,
-      namespaces: namespaces,
+      namespaces,
       relayProtocol: params.relays[0].protocol,
     };
 

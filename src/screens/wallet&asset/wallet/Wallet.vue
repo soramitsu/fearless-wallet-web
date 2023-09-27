@@ -238,7 +238,7 @@ export default class Wallet extends Vue {
 
     const filter = this.filterValue.trim().toLowerCase();
 
-    return filteredByNetwork.filter(({ symbol }) => symbol.includes(filter));
+    return filteredByNetwork.filter(({ symbol }) => symbol.toLowerCase().includes(filter));
   }
 
   get showCurrencies() {

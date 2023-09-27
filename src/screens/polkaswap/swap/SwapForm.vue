@@ -596,8 +596,6 @@ export default class SwapForm extends Vue {
       if (this.isExchangeB) this.sendAmount = amountA;
       else this.receiveAmount = amountB;
 
-      if (this.receiveAmount !== '' && swapOptions) swapOptions.amountB = amountB;
-
       this.swapOptions = swapOptions!;
       this.minMaxAmount = minMaxValue;
       this.providerFee = fee;

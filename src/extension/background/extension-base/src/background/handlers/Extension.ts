@@ -908,7 +908,7 @@ export default class Extension extends FWExtensionBase {
       if (tokenInfo && !isMainToken && tokenInfo.id) {
         transferProm = makeERC20Transfer(tokenInfo.id, networkKey, from, to, privateKey, amount || '0', callback);
       } else {
-        transferProm = makeEVMTransfer(networkKey, to, privateKey, amount || '0', callback);
+        transferProm = makeEVMTransfer(assetId, networkKey, to, privateKey, amount || '0', callback);
       }
     } else {
       // Make transfer with Dotsama API

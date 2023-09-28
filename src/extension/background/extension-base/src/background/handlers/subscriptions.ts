@@ -1,10 +1,6 @@
-// Copyright 2019-2022 @subwallet/extension-koni authors & contributors
-// SPDX-License-Identifier: Apache-2.0
 import { logger as createLogger } from '@polkadot/util';
 import { Subscription } from 'rxjs';
 import { subscribeBalance } from '@extension-base/api/substrate/balance';
-import { subscribeEvmBalance } from '@extension-base/api/evm/balance';
-import { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type State from '@extension-base/background/handlers/State';
 import type { Logger } from '@polkadot/util/types';
 import type {
@@ -167,28 +163,16 @@ export class FWSubscription {
   initBalanceSubscription(address: string, ethereumAddress: string, onlyRunOnFirstTime?: boolean) {
     this.state.generateDefaultBalance(address);
 
-    const setBalance = (networkKey: string, rs: Partial<BalanceItem>) => {
-      const isAccountExists = this.state.keyringService.getAccounts().some((el) => el.address === address);
-
-      if (!isAccountExists) return;
-
-      this.state.setBalanceItem(networkKey, rs, address);
-    };
-
-    const unsub = subscribeBalance(address, ethereumAddress, setBalance);
-
-    const unsubEvm = ethereumAddress ? subscribeEvmBalance(address, ethereumAddress, setBalance) : () => {};
+    const unsub = subscribeBalance(address, ethereumAddress);
 
     if (onlyRunOnFirstTime) {
       unsub && unsub();
-      unsubEvm && unsubEvm();
 
       return () => {};
     }
 
     return () => {
       unsub();
-      unsubEvm();
     };
   }
 }

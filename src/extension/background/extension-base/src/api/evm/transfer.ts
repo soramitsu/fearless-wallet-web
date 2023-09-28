@@ -3,16 +3,19 @@ import { BasicTxResponse, TransferErrorCode } from '@extension-base/background/t
 import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
 import { state } from '@extension-base/background/handlers';
 import { getAssetInfo } from '../substrate/registry';
+import { fetchEvmAssetBalance } from './balance';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
 export type HandleTxResponse<T extends BasicTxResponse> = (data: T) => void;
+export type HandleTransferProps = {
+  tx: TransactionRequest;
+  networkKey: string;
+  privateKey: string;
+  assetId: string;
+  callback: (data: BasicTxResponse) => void;
+};
 
-export async function handleTransfer(
-  transactionObject: TransactionRequest,
-  networkKey: string,
-  privateKey: string,
-  callback: (data: BasicTxResponse) => void
-) {
+export async function handleTransfer({ assetId, callback, networkKey, privateKey, tx }: HandleTransferProps) {
   const web3Api = state.getEvmApiMap[networkKey];
   const signer = new Wallet(privateKey, web3Api);
 
@@ -21,7 +24,10 @@ export async function handleTransfer(
   };
 
   try {
-    await signer.sendTransaction(transactionObject);
+    await signer.sendTransaction(tx);
+
+    const address = tx.from as string;
+    fetchEvmAssetBalance(address, networkKey, assetId);
 
     response.status = true;
     callback(response);
@@ -67,6 +73,7 @@ export async function getEVMTransactionObject(
 }
 
 export async function makeEVMTransfer(
+  assetId: string,
   networkKey: string,
   to: string,
   privateKey: string,
@@ -74,8 +81,15 @@ export async function makeEVMTransfer(
   callback: (data: BasicTxResponse) => void
 ): Promise<void> {
   const { tx } = await getEVMTransactionObject(networkKey, to, value);
+  const props: HandleTransferProps = {
+    assetId,
+    callback,
+    networkKey,
+    privateKey,
+    tx,
+  };
 
-  await handleTransfer(tx, networkKey, privateKey, callback);
+  await handleTransfer(props);
 }
 
 export async function getERC20TransactionObject(
@@ -117,7 +131,7 @@ export async function getERC20TransactionObject(
 }
 
 export async function makeERC20Transfer(
-  assetAddress: string,
+  assetId: string,
   networkKey: string,
   from: string,
   to: string,
@@ -125,7 +139,14 @@ export async function makeERC20Transfer(
   value: string,
   callback: (data: BasicTxResponse) => void
 ) {
-  const { tx } = await getERC20TransactionObject(assetAddress, networkKey, from, to, value);
+  const { tx } = await getERC20TransactionObject(assetId, networkKey, from, to, value);
+  const props: HandleTransferProps = {
+    assetId,
+    callback,
+    networkKey,
+    privateKey,
+    tx,
+  };
 
-  await handleTransfer(tx, networkKey, privateKey, callback);
+  await handleTransfer(props);
 }

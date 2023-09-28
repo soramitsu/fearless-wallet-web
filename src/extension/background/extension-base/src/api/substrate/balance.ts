@@ -1,22 +1,17 @@
 import { ApiPromise } from '@polkadot/api';
 import { state } from '@extension-base/background/handlers';
-import { isEthereumNetwork } from '@extension-base/background/utils/utils';
+import { getSubstrateAddress, isEthereumNetwork } from '@extension-base/background/utils/utils';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
+import { setBalance } from '../helpers';
 import type { ApiProps } from '@extension-base/background/types/types';
-import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { RelayChainName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
 import { CHAIN_IDS, SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/networks';
 
-async function subscribeTokensBalance(
-  address: string,
-  networkKey: string,
-  api: ApiPromise,
-  setBalance: (networkKey: string, rs: Partial<BalanceItem>) => void
-) {
+async function subscribeTokensBalance(address: string, networkKey: string, api: ApiPromise) {
   const {
     parentId,
     assets,
@@ -40,17 +35,21 @@ async function subscribeTokensBalance(
 
         const transferable = FPNumber.fromCodecValue(balanceValue, precision);
 
-        setBalance(networkKey, {
-          state: APIItemState.READY,
-          relayChain,
-          symbol: symbol,
-          id,
-          reserved: '0',
-          frozen: '0',
-          total: locked.add(transferable).toString(),
-          locked: locked.toString(),
-          transferable: transferable.toString(),
-        });
+        setBalance(
+          networkKey,
+          {
+            state: APIItemState.READY,
+            relayChain,
+            symbol: symbol,
+            id,
+            reserved: '0',
+            frozen: '0',
+            total: locked.add(transferable).toString(),
+            locked: locked.toString(),
+            transferable: transferable.toString(),
+          },
+          address
+        );
 
         return id;
       });
@@ -58,19 +57,24 @@ async function subscribeTokensBalance(
       // У Equilibrium system.account это "особенный" паллет, балансы возвращаются разом для всех токенов
       // Причем возвращаются только не нулевые балансы
       // Поэтому нужно пройтись по остальным(нулевым) балансам и проставить для них статуc Ready, тк по факту мы их "получили" и знаем, что они = 0
+      const substrateAddress = getSubstrateAddress(address);
       assets.forEach(({ id, symbol }) => {
         if (!notZeroBalances.includes(id))
-          setBalance(networkKey, {
-            state: APIItemState.READY,
-            relayChain,
-            symbol,
-            id,
-            reserved: '0',
-            frozen: '0',
-            total: '0',
-            locked: '0',
-            transferable: '0',
-          });
+          setBalance(
+            networkKey,
+            {
+              state: APIItemState.READY,
+              relayChain,
+              symbol,
+              id,
+              reserved: '0',
+              frozen: '0',
+              total: '0',
+              locked: '0',
+              transferable: '0',
+            },
+            substrateAddress
+          );
       });
     });
 
@@ -108,28 +112,37 @@ async function subscribeTokensBalance(
               : balances;
 
           const { frozen, locked, reserved, total, transferable } = formatBalance(balance, precision);
+          const substrateAddress = getSubstrateAddress(address);
 
-          setBalance(networkKey, {
-            state: APIItemState.READY,
-            relayChain,
-            symbol,
-            id,
-            reserved,
-            locked,
-            frozen,
-            transferable,
-            total,
-          });
+          setBalance(
+            networkKey,
+            {
+              state: APIItemState.READY,
+              relayChain,
+              symbol,
+              id,
+              reserved,
+              locked,
+              frozen,
+              transferable,
+              total,
+            },
+            substrateAddress
+          );
         };
 
         return pallet.subscribe(onBalanceFetch);
       } catch (err: any) {
-        setBalance(networkKey, {
-          state: APIItemState.ERROR,
-          relayChain,
-          symbol,
-          id,
-        });
+        setBalance(
+          networkKey,
+          {
+            state: APIItemState.ERROR,
+            relayChain,
+            symbol,
+            id,
+          },
+          address
+        );
         console.warn(err.message, networkKey, `type: ${type}`);
       }
 
@@ -144,13 +157,8 @@ async function subscribeTokensBalance(
   };
 }
 
-export async function subscribeWithAccount(
-  address: string,
-  networkKey: string,
-  networkAPI: ApiProps,
-  setBalance: (networkKey: string, rs: Partial<BalanceItem>) => void
-) {
-  const unsub = await subscribeTokensBalance(address, networkKey, networkAPI.api!, setBalance).catch((e) => {
+export async function subscribeWithAccount(address: string, networkKey: string, networkAPI: ApiProps) {
+  const unsub = await subscribeTokensBalance(address, networkKey, networkAPI.api!).catch((e) => {
     console.info(`Failed to subscribe to ${networkKey}`, e);
   });
 
@@ -159,11 +167,7 @@ export async function subscribeWithAccount(
   };
 }
 
-export function subscribeBalance(
-  address: string,
-  ethereumAddress: string,
-  setBalance: (networkKey: string, rs: Partial<BalanceItem>) => void
-) {
+export function subscribeBalance(address: string, ethereumAddress: string) {
   const unsubList = Object.entries(state.getSubstrateApiMap).map(async ([networkKey, apiProps]) => {
     const isReady = await apiProps.api?.isReady;
 
@@ -173,7 +177,7 @@ export function subscribeBalance(
 
     if (addressForNetwork === '') return () => null;
 
-    return subscribeWithAccount(addressForNetwork, networkKey, apiProps, setBalance);
+    return subscribeWithAccount(addressForNetwork, networkKey, apiProps);
   });
 
   return () => {

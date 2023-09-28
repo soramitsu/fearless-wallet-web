@@ -26,9 +26,6 @@ export async function handleTransfer({ assetId, callback, networkKey, privateKey
   try {
     await signer.sendTransaction(tx);
 
-    const address = tx.from as string;
-    fetchEvmAssetBalance(address, networkKey, assetId);
-
     response.status = true;
     callback(response);
   } catch (error) {
@@ -42,6 +39,12 @@ export async function handleTransfer({ assetId, callback, networkKey, privateKey
     });
     callback(response);
   }
+
+  setTimeout(() => {
+    const address = tx.from as string;
+
+    fetchEvmAssetBalance(address, networkKey, assetId);
+  }, 15000);
 }
 
 export async function getEVMTransactionObject(

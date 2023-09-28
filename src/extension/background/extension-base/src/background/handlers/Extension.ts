@@ -33,6 +33,7 @@ import {
   StakingNetworkRequest,
   StakingParamsRequest,
   MyStakingInfoResponse,
+  RewardsResponse,
 } from '@extension-base/services/staking-service/types';
 import { MakeStakingRequest, StakingParamsResponse } from './../../services/staking-service/types';
 import type {
@@ -98,6 +99,7 @@ import {
   GoogleAuthTypes,
   ICreateFile,
   IGetFilesResponse,
+  NetworkName,
   OnboardingStories,
   SoraFees,
   VerifyTokenResponse,
@@ -1121,8 +1123,16 @@ export default class Extension extends FWExtensionBase {
     return state.stakingService.getStakingParams(params);
   }
 
-  getMyStakingInfo(params: StakingNetworkRequest): Promise<MyStakingInfoResponse> {
-    return state.stakingService.getMyStakingInfo(params.network);
+  async getRewards(network: NetworkName): Promise<RewardsResponse> {
+    const address = await this.state.getCurrentAddress(network);
+
+    return state.stakingService.getRewards(network, address);
+  }
+
+  async getMyStakingInfo(params: StakingNetworkRequest): Promise<MyStakingInfoResponse> {
+    const validators = await state.stakingService.getValidators(params.network);
+
+    return state.stakingService.getMyStakingInfo(params.network, validators);
   }
 
   async makeStaking(request: MakeStakingRequest): Promise<BasicTxResponse> {
@@ -1271,6 +1281,9 @@ export default class Extension extends FWExtensionBase {
       // staking
       case 'pri(staking.stakingParams)':
         return this.getStakingParams(request as StakingParamsRequest);
+
+      case 'pri(staking.rewards)':
+        return this.getRewards(request as NetworkName);
 
       case 'pri(staking.myStaking)':
         return this.getMyStakingInfo(request as StakingNetworkRequest);

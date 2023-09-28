@@ -4,6 +4,7 @@ import {
   StakingParamsRequest,
   StakingParamsResponse,
   MyStakingInfoResponse,
+  RewardsResponse,
 } from '@extension-base/services/staking-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -80,6 +81,7 @@ import type {
   SoraFees,
   SignerPayloadRaw,
   OnboardingStories,
+  NetworkName,
 } from '@/interfaces';
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
@@ -157,6 +159,7 @@ export interface RequestSignatures {
 
   // staking
   'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];
+  'pri(staking.rewards)': [NetworkName, RewardsResponse];
   'pri(staking.myStaking)': [StakingNetworkRequest, MyStakingInfoResponse];
   'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];
 

@@ -27,7 +27,7 @@
 
             <div v-else class="select-label">Select</div>
 
-            <Rotate :isActive="syncedIsRotate" class="rotate-asset">
+            <Rotate v-if="!readonly" :isActive="syncedIsRotate" class="rotate-asset">
               <SIcon name="chevron-bottom-16" />
             </Rotate>
           </button>
@@ -287,7 +287,7 @@ export default class SelectInput extends Vue {
 
     .select-button-readonly {
       cursor: default;
-      opacity: 0.5;
+      // opacity: 0.5;
     }
 
     .balance {

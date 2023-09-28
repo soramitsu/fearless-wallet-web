@@ -4,6 +4,7 @@ import { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-
 import { keyring } from '@polkadot/ui-keyring';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { getSubstrateAddress } from '../../background/utils/utils';
+import { isSameString } from '@/helpers';
 
 export class KeyringService {
   get addressesSubjectValue() {
@@ -53,6 +54,12 @@ export class KeyringService {
     } catch {
       return null;
     }
+  }
+
+  getAccountName(address: string) {
+    const keyringAddress = isEthereumAddress(address) ? address : this.encodeAddress(address);
+
+    return this.getAccounts().find(({ address }) => isSameString(address, keyringAddress))?.meta.name;
   }
 
   // в общем и целом можно использоваь getPair вместо getAccount

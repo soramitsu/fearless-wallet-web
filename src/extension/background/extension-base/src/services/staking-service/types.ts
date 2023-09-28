@@ -144,11 +144,27 @@ export type MyStakingInfo = {
   };
 };
 
+type RewardValidator = FWValidatorInfoFull & {
+  total: string;
+  value: string;
+};
+
+export type EraReward = {
+  era: string;
+  eraRewards: string;
+  validators: RewardValidator[];
+};
+
 export type StakingParamsRequest = {
   networks: NetworkName[];
 };
 
 export type StakingParamsResponse = StakingParams[];
+
+export type RewardsResponse = {
+  rewards: EraReward[];
+  sum: string;
+};
 
 export type StakingNetworkRequest = {
   network: NetworkName;

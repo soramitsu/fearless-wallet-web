@@ -1,5 +1,6 @@
 import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import State from '@extension-base/background/handlers/State';
+import { storage } from '@extension-base/stores/Storage';
 import { BasicTxErrorCode, BasicTxResponse, TransferErrorCode } from '../../background/types/types';
 import { getUtilityProps } from '../../background/utils/utils';
 import {
@@ -19,10 +20,11 @@ import type {
   StakingParams,
   StakingParamsRequest,
   MyStakingInfo,
+  RewardsResponse,
 } from '@extension-base/services/staking-service/types';
 import { NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
-import { cut } from '@/helpers';
+import { cut, isSameString } from '@/helpers';
 
 export class StakingService {
   constructor(private state: State) {}
@@ -41,8 +43,6 @@ export class StakingService {
       const myStakingInfo = await this.getMyStakingInfo(network, validators);
       const apy = validators.reduce((result, { apy }) => result + +apy, 0) / validators.length;
 
-      this.getRewards(network);
-
       return {
         ...myStakingInfo,
         network,
@@ -58,36 +58,76 @@ export class StakingService {
     return Promise.all(promises);
   }
 
-  public async getRewards(network: NetworkName) {
-    const address = await this.state.getCurrentAddress(network);
-    const apiProps = this.state.getSubstrateApiMap[network];
-
-    const stakerRewards = await apiProps.api?.derive.staking.stakerRewards(address);
-
-    console.log('stakerRewards', stakerRewards);
-
-    return 1;
-  }
-
-  public async getMyStakingInfo(network: NetworkName, validators?: FWValidatorInfoFull[]): Promise<MyStakingInfo> {
+  public async getMyStakingInfo(network: NetworkName, validators: FWValidatorInfoFull[]): Promise<MyStakingInfo> {
     const address = await this.state.getCurrentAddress(network);
 
     const stakingInfo = await apiSora.staking.getMyStakingInfo(address);
+    const { addressBook } = await storage.get(['addressBook']);
+
+    const myAccountName = this.state.keyringService.getAccountName(stakingInfo.payee);
+    const addressBookName = addressBook[network]?.find(({ address: _address }) =>
+      isSameString(_address, stakingInfo.payee)
+    )?.name;
+    const payee = myAccountName ?? addressBookName ?? stakingInfo.payee;
 
     return {
       ...stakingInfo,
-      myValidators: await this.getValidatorsInfo(network, stakingInfo.myValidators, validators),
+      payee,
+      myValidators: await this.getValidatorsInformation(network, stakingInfo.myValidators, validators),
     };
   }
 
-  public async getValidatorsInfo(
-    network: NetworkName,
-    myValidators: string[],
-    _validators?: FWValidatorInfoFull[]
-  ): Promise<FWValidatorInfoFull[]> {
-    const validators = _validators ?? (await this.getValidators(network));
+  public async getRewards(network: NetworkName, address: string): Promise<RewardsResponse> {
+    const apiProps = this.state.getSubstrateApiMap[network];
 
-    return validators.filter(({ address }) => myValidators.includes(address));
+    const stakerRewards = await apiProps.api!.derive.staking.stakerRewards(address);
+    const rewards = stakerRewards.map(({ era, validators: _validators }) => {
+      const validators = Object.entries(_validators).map(([address, { total, value }]) => ({
+        address,
+        total: FPNumber.fromCodecValue(total.toString()).toString(), // todo val decimals
+        value: FPNumber.fromCodecValue(value.toString()).toString(), // todo val decimals
+      }));
+
+      return {
+        era: era.toString(),
+        eraRewards: validators.reduce((sum, { value }) => sum.add(new FPNumber(value)), FPNumber.ZERO).toString(),
+        validators,
+      };
+    });
+    const sum = rewards.reduce((sum, { eraRewards }) => sum.add(new FPNumber(eraRewards)), FPNumber.ZERO).toString();
+
+    // const result = { rewards, sum };
+
+    const allValidators = await this.getValidators(network);
+
+    return {
+      sum,
+      rewards: rewards.map(({ era, eraRewards, validators: _validators }) => {
+        const validators = _validators.map(({ total, value, address }) => {
+          const info = this.getValidatorsInformation(network, [address], allValidators);
+
+          return {
+            total,
+            value,
+            ...info[0],
+          };
+        });
+
+        return {
+          era,
+          eraRewards,
+          validators,
+        };
+      }),
+    };
+  }
+
+  public getValidatorsInformation(
+    network: NetworkName,
+    validatorsAddress: string[],
+    validators: FWValidatorInfoFull[]
+  ): FWValidatorInfoFull[] {
+    return validators.filter(({ address }) => validatorsAddress.includes(address));
   }
 
   public async getValidators(network: NetworkName): Promise<FWValidatorInfoFull[]> {

@@ -14,7 +14,7 @@
               <div class="descriptions">{{ $t('staking.validatorsPayoutRewards') }}</div>
 
               <ValidatorItem
-                v-for="validator in myValidators"
+                v-for="validator in myValidatorRewards"
                 :key="validator.address"
                 :validator="validator"
                 :rewardedCurrency="rewardedCurrency"
@@ -38,7 +38,7 @@
             :readonly="true"
           />
 
-          <FInput v-model="destinationAccount" placeholder="staking.payee" size="big" />
+          <FInput v-model="payee" :readonly="true" placeholder="staking.payee" size="big" />
         </div>
 
         <InfoRow
@@ -53,7 +53,7 @@
         <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
       </div>
 
-      <FButton width="100%" size="big" fontSize="big" :text="btnText" @click="confirm" />
+      <FButton width="100%" size="big" fontSize="big" :disabled="disabledBtn" :text="btnText" @click="confirm" />
     </div>
 
     <WarningPopup v-if="showWarningPopup" :handlerAccept="handlerAccept" :handlerClose="closeWarningPopup" />
@@ -75,7 +75,7 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { GetAssetPrice, GetStakingNetwork, NetworkParams, SelectedWallet } from '@/store';
+import type { GetAssetPrice, NetworkParams, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -83,8 +83,8 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
 import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
-import { getSoraFees } from '@/extension/messaging';
-import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
+import { getRewards, getSoraFees } from '@/extension/messaging';
+import { RewardsResponse } from '@/extension/background/extension-base/src/services/staking-service/types';
 
 @Component({
   components: {
@@ -96,10 +96,10 @@ import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 export default class StakingManagement extends Vue {
   showConfirmationPasswordPopup = false;
   showWarningPopup = false;
-  destinationAccount = '';
   amount = '';
   step = 1;
   fee = '0.7';
+  rewards: RewardsResponse = { rewards: [], sum: '0' };
 
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
@@ -107,7 +107,6 @@ export default class StakingManagement extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
 
   get selectedAccountName() {
     return this.selectedWallet.name;
@@ -119,21 +118,22 @@ export default class StakingManagement extends Vue {
     return 'common.confirm';
   }
 
-  get myValidators() {
-    return this.stakingNetwork.myValidators;
+  get disabledBtn() {
+    if (this.step === 1) return this.myValidatorRewards.length === 0;
+
+    return 'common.confirm';
   }
 
-  // TODO staking
+  get payee() {
+    return this.stakingNetwork.payee;
+  }
+
+  get myValidatorRewards() {
+    return this.rewards?.rewards;
+  }
+
   get summaryRewards() {
-    return '2';
-
-    // return this.myValidators
-    //   .reduce((result, { rewards }) => {
-    //     result += +rewards;
-
-    //     return result;
-    //   }, 0)
-    //   .toString();
+    return this.rewards.sum;
   }
 
   get feeValueString() {
@@ -190,7 +190,11 @@ export default class StakingManagement extends Vue {
     return getCostOfAssets(this.summaryRewards, this.rewardedAssetPrice).toString();
   }
 
-  mounted() {
+  async created() {
+    this.rewards = await getRewards(this.stakingNetwork.network);
+
+    console.log('rewards', this.rewards);
+
     this.getSoraFees();
   }
 

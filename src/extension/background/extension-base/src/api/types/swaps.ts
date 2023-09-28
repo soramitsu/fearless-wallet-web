@@ -10,9 +10,9 @@ export interface BaseExchangeProps {
   assetA: Asset | AccountAsset;
   assetB: Asset | AccountAsset;
   slippage?: number;
-  swapOptions: SwapOptions;
   amountA: string;
   amountB?: string;
+  swapOptions?: SwapOptions;
 }
 
 export type CreateSwapResult = {
@@ -22,6 +22,6 @@ export type CreateSwapResult = {
   providerFee: string;
   AToB: string;
   BToA: string;
-  swapOptions: SwapOptions;
   route: string;
+  swapOptions?: SwapOptions;
 };

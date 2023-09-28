@@ -532,29 +532,35 @@ export default class SwapForm extends Vue {
     return this.receiveAssetPrice * amount;
   }
 
+  created() {
+    this.updateComponentParams();
+
+    this.getSoraFees();
+  }
+
   activated() {
+    this.updateComponentParams();
+  }
+
+  deactivated() {
+    this.selectAssetType = '';
+    this.step = 1;
+  }
+
+  updateComponentParams() {
     const { reset, restPriceXOR, assetId } = this.$route.params;
 
     if (reset !== undefined) {
       this.receiveAssetId = '';
       this.sendAmount = '';
       this.receiveAmount = '';
-    }
-
-    if (restPriceXOR) {
+    } else if (restPriceXOR) {
       this.receiveAssetId = SORA_XOR_ASSET_ID;
       this.receiveAmount = restPriceXOR;
       this.isExchangeB = true;
     }
 
     this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
-
-    this.getSoraFees();
-  }
-
-  deactivated() {
-    this.selectAssetType = '';
-    this.step = 1;
   }
 
   async getSoraFees() {

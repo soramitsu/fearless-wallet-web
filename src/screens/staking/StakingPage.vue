@@ -53,6 +53,7 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
+import { NetworkJson } from '@extension-base/types';
 import type { AsyncFn, StakingTab } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import type { NetworkParams, SelectedWallet } from '@/store';
@@ -68,7 +69,6 @@ import Bond from '@/screens/staking/Bond.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { GetAssetPrice } from '@/store';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { isSameString } from '@/helpers';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { getCostOfAssets } from '@/controllers/transferHelpers';

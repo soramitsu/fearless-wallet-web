@@ -1,4 +1,4 @@
-import { StakingParams } from '@/extension/background/extension-base/src/services/staking-service/types';
+import { StakingParams } from '@extension-base/services/staking-service/types';
 import { NetworkName } from '@/interfaces';
 
 const getDefaultStakingParams = (network: NetworkName): StakingParams => ({

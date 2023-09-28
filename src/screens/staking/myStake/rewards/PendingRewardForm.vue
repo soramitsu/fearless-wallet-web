@@ -75,8 +75,7 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { myValidators } from '../validators/mock';
-import type { GetAssetPrice, SelectedWallet } from '@/store';
+import type { GetAssetPrice, GetStakingNetwork, NetworkParams, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -84,6 +83,8 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
 import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
+import { getSoraFees } from '@/extension/messaging';
+import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 
 @Component({
   components: {
@@ -95,7 +96,6 @@ import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
 export default class StakingManagement extends Vue {
   showConfirmationPasswordPopup = false;
   showWarningPopup = false;
-  myValidators = myValidators;
   destinationAccount = '';
   amount = '';
   step = 1;
@@ -103,9 +103,11 @@ export default class StakingManagement extends Vue {
 
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
+  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
 
   get selectedAccountName() {
     return this.selectedWallet.name;
@@ -117,15 +119,21 @@ export default class StakingManagement extends Vue {
     return 'common.confirm';
   }
 
+  get myValidators() {
+    return this.stakingNetwork.myValidators;
+  }
+
   // TODO staking
   get summaryRewards() {
-    return this.myValidators
-      .reduce((result, { rewards }) => {
-        result += +rewards;
+    return '2';
 
-        return result;
-      }, 0)
-      .toString();
+    // return this.myValidators
+    //   .reduce((result, { rewards }) => {
+    //     result += +rewards;
+
+    //     return result;
+    //   }, 0)
+    //   .toString();
   }
 
   get feeValueString() {
@@ -182,6 +190,16 @@ export default class StakingManagement extends Vue {
     return getCostOfAssets(this.summaryRewards, this.rewardedAssetPrice).toString();
   }
 
+  mounted() {
+    this.getSoraFees();
+  }
+
+  async getSoraFees() {
+    const { StakingPayout } = await getSoraFees();
+
+    this.fee = StakingPayout;
+  }
+
   closeForm() {
     this.$emit('closeForm');
   }
@@ -207,11 +225,7 @@ export default class StakingManagement extends Vue {
   }
 
   confirm() {
-    if (this.step === 1 && +this.summaryRewards <= +this.fee) {
-      this.showWarningPopup = true;
-
-      return;
-    } else if (this.step === 2) this.showConfirmationPasswordPopup = true;
+    if (this.step === 2) this.showConfirmationPasswordPopup = true;
     else this.step += 1;
   }
 }

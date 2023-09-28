@@ -265,6 +265,7 @@ export default class Header extends Vue {
   .header-part-right {
     gap: 4px;
     justify-content: flex-end;
+    align-items: center;
   }
 
   .header-part-left {

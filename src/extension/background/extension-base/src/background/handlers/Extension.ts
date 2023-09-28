@@ -782,7 +782,7 @@ export default class Extension extends FWExtensionBase {
   private async makeSwap(options: RequestSwap): Promise<ResponseMakeSwap> {
     const { swapOptions } = await createSwap(options, apiSora);
     const { password, isSavePass } = options;
-    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = swapOptions;
+    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = swapOptions!;
     const errors: Array<BasicTxError> = [];
     const address = await this.state.getAccountAddress();
     const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];

@@ -64,6 +64,7 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { APIItemState } from '@extension-base/api/types/networks';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import type { AssetPrice } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -71,7 +72,6 @@ import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers
 import { getSummaryLockedBalance } from '@/helpers/common';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import AccountSettingsPopup from '@/screens/accounts/AccountSettingsPopup.vue';
-import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 
 @Component({
   components: {

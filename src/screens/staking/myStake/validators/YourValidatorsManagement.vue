@@ -73,6 +73,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
+import { FWValidatorInfoFull, RequestNominate } from '@extension-base/services/staking-service/types';
 import type { AsyncFn, SelectionValidator } from '@/interfaces';
 import type { GetAssetPrice, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
@@ -82,10 +83,6 @@ import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vu
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import {
-  FWValidatorInfoFull,
-  RequestNominate,
-} from '@/extension/background/extension-base/src/services/staking-service/types';
 import { getSoraFees } from '@/extension/messaging';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';

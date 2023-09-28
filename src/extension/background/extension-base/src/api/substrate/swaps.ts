@@ -8,7 +8,7 @@ import type { SwapOptions } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 
 async function createExchangeB(props: BaseExchangeProps, api: Api<void>): Promise<CreateSwapResult> {
-  const { expectedAmount, providerFee, route, assetA, assetB, amountB, slippage, swapOptions } = props;
+  const { expectedAmount, providerFee, route, assetA, assetB, amountB, slippage } = props;
   const minMaxValue = api.swap.getMinMaxValue(assetA, assetB, expectedAmount.toString(), amountB!, true, slippage!);
 
   return {
@@ -18,13 +18,12 @@ async function createExchangeB(props: BaseExchangeProps, api: Api<void>): Promis
     BToA: new FPNumber(amountB!).div(expectedAmount).toString(),
     minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
     providerFee: FPNumber.fromCodecValue(providerFee).toString(),
-    swapOptions,
     route,
   };
 }
 
 async function createExchangeA(props: BaseExchangeProps, api: Api<void>): Promise<CreateSwapResult> {
-  const { expectedAmount, providerFee, route, assetA, assetB, amountA, slippage, swapOptions } = props;
+  const { expectedAmount, providerFee, route, assetA, assetB, amountA, slippage } = props;
   const minMaxValue = api.swap.getMinMaxValue(assetA, assetB, amountA!, expectedAmount.toString(), false, slippage!);
 
   return {
@@ -34,7 +33,6 @@ async function createExchangeA(props: BaseExchangeProps, api: Api<void>): Promis
     BToA: expectedAmount.div(new FPNumber(amountA!)).toString(),
     minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
     providerFee: FPNumber.fromCodecValue(providerFee).toString(),
-    swapOptions,
     route,
   };
 }
@@ -130,7 +128,6 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
   } as SwapOptions;
 
   const baseOptions: BaseExchangeProps = {
-    swapOptions,
     expectedAmount,
     providerFee,
     isDexXor,
@@ -142,5 +139,14 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
     amountB: amountB ?? '0',
   };
 
-  return isExchangeB ? createExchangeB(baseOptions, api) : createExchangeA(baseOptions, api);
+  const result = isExchangeB ? await createExchangeB(baseOptions, api) : await createExchangeA(baseOptions, api);
+
+  return {
+    ...result,
+    swapOptions: {
+      ...swapOptions,
+      amountA: result.amountA,
+      amountB: result.amountB,
+    },
+  };
 }

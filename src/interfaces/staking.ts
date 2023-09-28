@@ -1,4 +1,14 @@
-interface SelectionValidator {
+import {
+  BondExtra,
+  Nominate,
+  Rebond,
+  SetControllerAccount,
+  SetPayee,
+  Unbond,
+  WithdrawUnbonded,
+} from '@extension-base/services/staking-service/types';
+
+export interface SelectionValidator {
   name: string;
   address: string;
   apy: string;
@@ -10,20 +20,21 @@ interface SelectionValidator {
   isSelect: boolean;
 }
 
-interface Validator {
-  name: string;
-  address: string;
-  description: string;
-  apy: number;
-  isRecommended?: true;
-  isSlashed: boolean;
-  isOversubscribed: boolean;
-  limitValidatorsIdentity: boolean;
-  onchainIdentity: boolean;
-}
+export type StakingOperation =
+  | 'bond'
+  | 'bondExtra'
+  | 'unbond'
+  | 'rebond'
+  | 'redeem'
+  | 'controllerAccount'
+  | 'nominate'
+  | 'payee';
 
-interface MyValidator extends Validator {
-  rewards: string;
-}
-
-export { Validator, SelectionValidator, MyValidator };
+export type StakingOperationParams =
+  | BondExtra
+  | Unbond
+  | Rebond
+  | WithdrawUnbonded
+  | SetControllerAccount
+  | Nominate
+  | SetPayee;

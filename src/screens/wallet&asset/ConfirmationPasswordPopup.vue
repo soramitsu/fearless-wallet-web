@@ -72,9 +72,16 @@ import {
   RequestSwap,
   BasicTxErrorCode,
 } from '@extension-base/background/types/types';
-import { RequestStaking, StakingOperation } from '@extension-base//services/staking-service/types';
+import { RequestStaking } from '@extension-base//services/staking-service/types';
 import type { NetworkJson } from '@extension-base/types';
-import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
+import type {
+  RequestSentInfo,
+  AsyncFn,
+  SignerPayloadJSON,
+  PayloadJSON,
+  SwapOptions,
+  StakingOperation,
+} from '@/interfaces';
 import type { GetNetwork, GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
 import {

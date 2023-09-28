@@ -24,10 +24,6 @@ import { NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
 import { cut } from '@/helpers';
 
-// TODO remove:
-// getNominations
-// getPayee
-
 export class StakingService {
   constructor(private state: State) {}
 
@@ -45,6 +41,8 @@ export class StakingService {
       const myStakingInfo = await this.getMyStakingInfo(network, validators);
       const apy = validators.reduce((result, { apy }) => result + +apy, 0) / validators.length;
 
+      this.getRewards(network);
+
       return {
         ...myStakingInfo,
         network,
@@ -58,6 +56,17 @@ export class StakingService {
     });
 
     return Promise.all(promises);
+  }
+
+  public async getRewards(network: NetworkName) {
+    const address = await this.state.getCurrentAddress(network);
+    const apiProps = this.state.getSubstrateApiMap[network];
+
+    const stakerRewards = await apiProps.api?.derive.staking.stakerRewards(address);
+
+    console.log('stakerRewards', stakerRewards);
+
+    return 1;
   }
 
   public async getMyStakingInfo(network: NetworkName, validators?: FWValidatorInfoFull[]): Promise<MyStakingInfo> {
@@ -102,23 +111,6 @@ export class StakingService {
 
     return validators;
   }
-
-  // public async getMyValidators(network: NetworkName, _address?: string): Promise<FWValidatorInfoFull[]> {
-  //   const validators = await this.getValidators(network);
-  //   const address = _address ?? (await this.state.getCurrentAddress(network));
-
-  //   const nominations = await apiSora.staking.getNominations(address);
-
-  //   if (nominations === null) return [];
-
-  //   const addresses = nominations.targets;
-
-  //   return validators.filter(({ address }) => addresses.includes(address));
-  // }
-
-  // public async getPayee(address: string) {
-  //   return await apiSora.staking.getPayee(address);
-  // }
 
   public async getMinNominatorBond() {
     return await apiSora.staking.getMinNominatorBond();

@@ -1,8 +1,8 @@
+import { TokenBalance } from '@extension-base/background/types/types';
 import { GetStakingNetwork, NetworkParams } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import { isSameString } from '@/helpers';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 export enum GettersTypes {
   allStakingItems = 'allStakingItems',

@@ -17,12 +17,11 @@
           @click="toggleVisible('showUnbondForm', true)"
         />
 
-        <!-- TODO: Заменить иконку на rebond -->
         <BorderButton
           v-if="showRebondBtn"
           class="action-button"
           text="staking.rebond"
-          iconName="send"
+          iconName="rebond"
           @click="toggleVisible('showRebondForm', true)"
         />
 
@@ -34,12 +33,11 @@
           @click="toggleVisible('showRedeemForm', true)"
         />
 
-        <!-- TODO: Заменить иконку на yourValidators -->
         <BorderButton
           v-if="showValidatorsBtn"
           class="action-button"
           text="staking.yourValidators"
-          iconName="send"
+          iconName="validators"
           @click="toggleVisible('showYourValidatorsForm', true)"
         />
 
@@ -87,6 +85,7 @@
         v-if="showPendingRewardForm"
         :stakingCurrency="stakingCurrency"
         :rewardedCurrency="rewardedCurrency"
+        :stakingNetwork="stakingNetwork"
         @closeForm="toggleVisible('showPendingRewardForm', false)"
       />
     </div>

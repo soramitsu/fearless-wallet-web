@@ -70,7 +70,6 @@
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AccountJson, TokenBalance } from '@extension-base/background/types/types';
-import { StakingOperation, StakingOperationParams } from '@extension-base//services/staking-service/types';
 import type { GetAssetPrice, GetStakingNetwork, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -87,7 +86,7 @@ import BaseApi from '@/util/BaseApi';
 import { getSoraFees } from '@/extension/messaging';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
-import { AsyncFn } from '@/interfaces';
+import { AsyncFn, StakingOperation, StakingOperationParams } from '@/interfaces';
 
 @Component({
   components: {

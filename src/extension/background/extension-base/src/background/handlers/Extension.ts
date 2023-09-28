@@ -687,6 +687,15 @@ export default class Extension extends FWExtensionBase {
     return this.state.getBalance(reset);
   }
 
+  private async fetchEvmBalance() {
+    const currentAccount = await this.state.currentAccount;
+
+    if (!currentAccount) return;
+    if (currentAccount.ethereumAddress === '') return;
+
+    this.state.fetchEvmBalance(currentAccount.ethereumAddress);
+  }
+
   private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {
     const cb = createSubscription<'pri(balance.subscription)'>(id, port);
 
@@ -1302,6 +1311,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(balance)':
         return this.getBalance();
+
+      case 'pri(fetch.evm.balance)':
+        return this.fetchEvmBalance();
 
       case 'pri(balance.subscription)':
         return this.subscribeBalance(id, port);

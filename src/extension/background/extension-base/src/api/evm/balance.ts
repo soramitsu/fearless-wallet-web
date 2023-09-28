@@ -21,33 +21,12 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
   if (!asset) return;
 
   const contract = getERC20Contract(networkKey, contractAddress);
-  const { symbol, precision, icon, name, id } = asset;
+  const { symbol, precision, icon, id } = asset;
   let free = '0';
+  let balance;
 
   try {
-    const balance = await contract.balanceOf(address);
-
-    free = ethers.formatUnits(balance, precision);
-
-    setBalance(
-      networkKey,
-      {
-        state: APIItemState.READY,
-        key: networkKey,
-        symbol,
-        id,
-        reserved: '0',
-        frozen: '0',
-        free,
-        transferable: free,
-        relayChain: 'ethereum',
-        total: free,
-        icon,
-        name,
-        chain: networkKey,
-      },
-      address
-    );
+    balance = await contract.balanceOf(address);
   } catch (err) {
     setBalance(
       networkKey,
@@ -59,26 +38,48 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
         id,
         free,
         icon,
-        name,
+        name: networkKey,
         chain: networkKey,
       },
       address
     );
     console.info(`There is problem when fetching ${symbol} token balance on ${networkKey}`, err);
   }
+
+  free = ethers.formatUnits(balance, precision);
+
+  setBalance(
+    networkKey,
+    {
+      state: APIItemState.READY,
+      key: networkKey,
+      symbol,
+      id,
+      reserved: '0',
+      frozen: '0',
+      free,
+      transferable: free,
+      relayChain: 'ethereum',
+      total: free,
+      icon,
+      name: networkKey,
+      chain: networkKey,
+    },
+    address
+  );
 }
 
 function fetchUtilityBalance(networkKey: string, ethereumAddress: string) {
   const network = state.networkMap[networkKey];
-  const { icon, name, type, id, symbol } = network.assets.find((el) => el.isUtility)!;
+  const { icon, type, id, symbol } = network.assets.find((el) => el.isUtility)!;
 
   const balanceItem = {
     state: APIItemState.PENDING,
     symbol,
-    name,
     icon,
     type,
     id,
+    name: networkKey,
     free: '0',
     relayChain: 'ethereum',
     reserved: '0',

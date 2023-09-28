@@ -109,6 +109,7 @@ import { getChangeWalletBalance, getSummaryTransferableWalletBalance, isNetworkG
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 import BaseApi from '@/util/BaseApi';
+import { fetchEvmBalance } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -263,6 +264,10 @@ export default class Wallet extends Vue {
     this.$router.replace('/').catch((e) => e);
 
     this.$emit('closeSelectWalletPopup');
+  }
+
+  activated() {
+    fetchEvmBalance();
   }
 
   deactivated() {

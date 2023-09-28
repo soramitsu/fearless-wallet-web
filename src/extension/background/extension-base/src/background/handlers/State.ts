@@ -23,7 +23,12 @@ import { axios } from '@extension-base/utils/axios';
 import { prepNetworkNames } from '@extension-base/const/networks';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
-import { getMockCurrencies, isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import {
+  getMockCurrencies,
+  getSubstrateAddress,
+  isEthereumNetwork,
+  isRequireEvmAPI,
+} from '@extension-base/background/utils/utils';
 import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
@@ -31,6 +36,7 @@ import { SignerPayloadRaw } from '@polkadot/types/types';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
+import { fetchEvmAssetBalance } from '../../api/evm/balance';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -1308,15 +1314,17 @@ export default class State {
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
     const { reserved, free, locked, frozen, total, transferable, state, id, relayChain, symbol } = item;
+    const accountAddress = getSubstrateAddress(address);
+    const balancesByAddress = this.balanceMap[accountAddress];
 
-    const balancesByAddress = this.balanceMap[address];
     const currencyIndex = balancesByAddress.findIndex(
-      ({ assetId: _assetId, symbol: _symbol, relayChain: _relayChain }) => {
-        const isExistingAssetId = _assetId === id;
+      ({ assetId: _assetId, symbol: _symbol, relayChain: _relayChain, balances }) => {
+        const isExistingGroupAssetId = _assetId === id;
+        const isAssetId = balances.some((asset) => asset.id === id);
         const isExistingDisplayName = _symbol === symbol;
         const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
 
-        return isExistingAssetId || isExistingAsset;
+        return isExistingGroupAssetId || isExistingAsset || isAssetId;
       }
     );
 
@@ -1448,6 +1456,14 @@ export default class State {
         res(totalBalances);
       })
     );
+  }
+
+  public async fetchEvmBalance(ethereumAddress: string) {
+    const networks = Object.values(this.networkMap).filter(({ name, active }) => isRequireEvmAPI(name) && active);
+
+    for (const network of networks) {
+      network.assets.forEach(({ id }) => fetchEvmAssetBalance(ethereumAddress, network.name, id));
+    }
   }
 
   public async getBalance(reset = false): Promise<BalanceJson> {

@@ -22,54 +22,43 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
 
   const contract = getERC20Contract(networkKey, contractAddress);
   const { symbol, precision, icon, id } = asset;
-  let free = '0';
-  let balance;
+
+  const balanceItem = {
+    state: APIItemState.PENDING,
+    symbol,
+    id,
+    icon,
+    reserved: '0',
+    frozen: '0',
+    free: '0',
+    transferable: '0',
+    total: '0',
+    relayChain: 'ethereum',
+    key: networkKey,
+    name: networkKey,
+    chain: networkKey,
+  } as BalanceItem;
 
   try {
-    balance = await contract.balanceOf(address);
+    const balance = await contract.balanceOf(address);
+    const free = ethers.formatUnits(balance, precision);
+
+    balanceItem.free = free;
+    balanceItem.transferable = free;
+    balanceItem.total = free;
+    balanceItem.state = APIItemState.READY;
+
+    setBalance(networkKey, balanceItem, address);
   } catch (err) {
-    setBalance(
-      networkKey,
-      {
-        state: APIItemState.ERROR,
-        key: networkKey,
-        symbol,
-        relayChain: 'ethereum',
-        id,
-        free,
-        icon,
-        name: networkKey,
-        chain: networkKey,
-      },
-      address
-    );
+    balanceItem.state = APIItemState.ERROR;
+
+    setBalance(networkKey, balanceItem, address);
+
     console.info(`There is problem when fetching ${symbol} token balance on ${networkKey}`, err);
   }
-
-  free = ethers.formatUnits(balance, precision);
-
-  setBalance(
-    networkKey,
-    {
-      state: APIItemState.READY,
-      key: networkKey,
-      symbol,
-      id,
-      reserved: '0',
-      frozen: '0',
-      free,
-      transferable: free,
-      relayChain: 'ethereum',
-      total: free,
-      icon,
-      name: networkKey,
-      chain: networkKey,
-    },
-    address
-  );
 }
 
-function fetchUtilityBalance(networkKey: string, ethereumAddress: string) {
+async function fetchUtilityBalance(networkKey: string, ethereumAddress: string) {
   const network = state.networkMap[networkKey];
   const { icon, type, id, symbol } = network.assets.find((el) => el.isUtility)!;
 
@@ -91,19 +80,20 @@ function fetchUtilityBalance(networkKey: string, ethereumAddress: string) {
 
   const address = getSubstrateAddress(ethereumAddress);
 
-  getUtilityBalance(networkKey, ethereumAddress)
-    .then((balance) => {
-      balanceItem.free = balance;
-      balanceItem.total = balance;
-      balanceItem.transferable = balance;
-      balanceItem.state = APIItemState.READY;
+  try {
+    const balance = await getUtilityBalance(networkKey, ethereumAddress);
 
-      setBalance(networkKey, balanceItem, address);
-    })
-    .catch(() => {
-      balanceItem.state = APIItemState.ERROR;
-      setBalance(networkKey, balanceItem, address);
-    });
+    balanceItem.free = balance;
+    balanceItem.total = balance;
+    balanceItem.transferable = balance;
+    balanceItem.state = APIItemState.READY;
+
+    setBalance(networkKey, balanceItem, address);
+  } catch {
+    balanceItem.state = APIItemState.ERROR;
+
+    setBalance(networkKey, balanceItem, address);
+  }
 }
 
 export function fetchEvmAssetBalance(ethereumAddress: string, networkKey: string, assetId: string) {

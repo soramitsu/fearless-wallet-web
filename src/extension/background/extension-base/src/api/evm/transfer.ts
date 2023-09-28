@@ -19,25 +19,22 @@ export async function handleTransfer({ assetId, callback, networkKey, privateKey
   const web3Api = state.getEvmApiMap[networkKey];
   const signer = new Wallet(privateKey, web3Api);
 
-  const response: BasicTxResponse = {
-    errors: [],
-  };
-
   try {
     await signer.sendTransaction(tx);
 
-    response.status = true;
-    callback(response);
-  } catch (error) {
+    callback({ status: true });
+  } catch (error: any) {
     console.warn(error);
-    response.status = false;
-    response.errors?.push({
-      code: TransferErrorCode.TRANSFER_ERROR,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      message: error.message,
+
+    callback({
+      status: false,
+      errors: [
+        {
+          code: TransferErrorCode.TRANSFER_ERROR,
+          message: error.message,
+        },
+      ],
     });
-    callback(response);
   }
 
   setTimeout(() => {

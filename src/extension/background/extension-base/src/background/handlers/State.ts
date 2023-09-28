@@ -36,7 +36,6 @@ import { SignerPayloadRaw } from '@polkadot/types/types';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
-import { fetchEvmAssetBalance } from '../../api/evm/balance';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -137,6 +136,7 @@ const metaStore = new MetadataStore();
 export default class State {
   public notification = 'popup';
   private cron: FWCron;
+  public timespans: Record<string, number> = {};
   public windows: number[] = [];
   public prices: {
     json: PriceJson;
@@ -1456,14 +1456,6 @@ export default class State {
         res(totalBalances);
       })
     );
-  }
-
-  public async fetchEvmBalance(ethereumAddress: string) {
-    const networks = Object.values(this.networkMap).filter(({ name, active }) => isRequireEvmAPI(name) && active);
-
-    for (const network of networks) {
-      network.assets.forEach(({ id }) => fetchEvmAssetBalance(ethereumAddress, network.name, id));
-    }
   }
 
   public async getBalance(reset = false): Promise<BalanceJson> {

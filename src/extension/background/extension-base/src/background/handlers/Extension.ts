@@ -689,11 +689,11 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async fetchEvmBalance() {
-    if (Date.now() - this.state.getTimespan('evmBalances') < 1000 * 30) return;
-
     const currentAccount = await this.state.currentAccount;
 
     if (!currentAccount || currentAccount?.ethereumAddress === '') return;
+
+    if (Date.now() - this.state.getTimespan('evmBalances', currentAccount.ethereumAddress) < 1000 * 30) return;
 
     const networks = Object.values(this.state.networkMap).filter(({ name, active }) => isRequireEvmAPI(name) && active);
 
@@ -701,7 +701,7 @@ export default class Extension extends FWExtensionBase {
       network.assets.forEach(({ id }) => fetchEvmAssetBalance(currentAccount.ethereumAddress, network.name, id));
     }
 
-    this.state.saveTimespan('evmBalances', Date.now());
+    this.state.saveTimespan('evmBalances', currentAccount.ethereumAddress, Date.now());
   }
 
   private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {

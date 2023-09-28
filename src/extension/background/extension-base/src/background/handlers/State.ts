@@ -131,12 +131,16 @@ type APIs = {
   substrate: Record<NetworkName, ApiProps>;
 };
 
+type Timespans = {
+  evmBalances?: Record<string, number>;
+};
+
 const metaStore = new MetadataStore();
 
 export default class State {
   public notification = 'popup';
   private cron: FWCron;
-  public timespans: Record<string, number> = {};
+  public timespans: Timespans = {};
   public windows: number[] = [];
   public prices: {
     json: PriceJson;
@@ -1497,11 +1501,13 @@ export default class State {
     return this.networkMapStore.getSubject();
   }
 
-  getTimespan(name: string) {
-    return this.timespans[name] ?? 0;
+  getTimespan(name: keyof Timespans, address: string) {
+    return this.timespans[name]?.[address] ?? 0;
   }
 
-  saveTimespan(name: string, value: number) {
-    this.timespans[name] = value;
+  saveTimespan(name: keyof Timespans, address: string, value: number) {
+    if (!this.timespans[name]) this.timespans[name] = {};
+
+    this.timespans[name]![address] = value;
   }
 }

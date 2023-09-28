@@ -109,7 +109,6 @@ import { getChangeWalletBalance, getSummaryTransferableWalletBalance, isNetworkG
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 import BaseApi from '@/util/BaseApi';
-import { fetchEvmBalance } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -266,10 +265,6 @@ export default class Wallet extends Vue {
     this.$emit('closeSelectWalletPopup');
   }
 
-  activated() {
-    fetchEvmBalance();
-  }
-
   deactivated() {
     this.showAssetsManagementForm = false;
     this.showNetworkManagement = false;
@@ -305,6 +300,7 @@ export default class Wallet extends Vue {
 
       if (isZeroBalance) this.setHiddenAssets({ assetId, value: false });
     });
+
     const assetsVisibleWithBalance = this.balances.filter(({ balances, assetId }) => {
       const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
       const isVisibleAsset = !this.hiddenAssets.includes(assetId);

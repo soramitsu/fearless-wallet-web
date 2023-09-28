@@ -28,14 +28,6 @@ export default class FWExtensionBase {
     this.token = '';
   }
 
-  getTimespan(name: string) {
-    return this.state.timespans[name];
-  }
-
-  saveTimespan(name: string, value: number) {
-    this.state.timespans[name] = value;
-  }
-
   accountsExport({ address, password }: RequestAccountExport): ResponseAccountExport {
     return { exportedJson: this.state.keyringService.backupAccount(address, password)! };
   }

@@ -73,6 +73,8 @@ import { Components } from '@/router/routes';
 import { NetworksController } from '@/controllers';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
+import { fetchEvmBalance } from '@/extension/messaging';
+import BaseApi from '@/util/BaseApi';
 
 interface TabsOptions {
   label: string;
@@ -175,6 +177,10 @@ export default class AssetNetworks extends Vue {
     const price = this.getTokenPrice(this.currency.priceId ?? '').price;
 
     return +(price ?? 0);
+  }
+
+  mounted() {
+    if (BaseApi.isEthereumNetwork(this.currency.mainNetwork)) fetchEvmBalance();
   }
 
   openAsset(name: string) {

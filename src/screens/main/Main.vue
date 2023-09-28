@@ -59,6 +59,7 @@ import FiatsPopup from './FiatsPopup.vue';
 import AboutPopup from './AboutPopup.vue';
 import LanguagePopup from './LanguagePopup.vue';
 import ManageAuths from '@/screens/extension-ui/authorize/ManageAuths.vue';
+import { fetchEvmBalance } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -87,6 +88,10 @@ export default class Main extends Vue {
 
   get highlightSettingsIcon() {
     return this.showSettings || this.showAboutPopup || this.showLanguagePopup || this.showFiatsPopup;
+  }
+
+  mounted() {
+    fetchEvmBalance();
   }
 
   deactivated() {

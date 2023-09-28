@@ -1496,4 +1496,12 @@ export default class State {
   public subscribeNetworkMap() {
     return this.networkMapStore.getSubject();
   }
+
+  getTimespan(name: string) {
+    return this.timespans[name] ?? 0;
+  }
+
+  saveTimespan(name: string, value: number) {
+    this.timespans[name] = value;
+  }
 }

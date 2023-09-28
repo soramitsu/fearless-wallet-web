@@ -689,7 +689,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async fetchEvmBalance() {
-    if (Date.now() - this.getTimespan('evmBalances') < 1000 * 30) return;
+    if (Date.now() - this.state.getTimespan('evmBalances') < 1000 * 30) return;
 
     const currentAccount = await this.state.currentAccount;
 
@@ -701,7 +701,7 @@ export default class Extension extends FWExtensionBase {
       network.assets.forEach(({ id }) => fetchEvmAssetBalance(currentAccount.ethereumAddress, network.name, id));
     }
 
-    this.saveTimespan('evmBalances', Date.now());
+    this.state.saveTimespan('evmBalances', Date.now());
   }
 
   private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {

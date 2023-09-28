@@ -730,6 +730,20 @@ export default class State {
 
     Object.keys(this.networkMap).forEach((key) => {
       this.networkMap[key].active = networks.some(({ name }) => name.toLowerCase() === key.toLowerCase());
+      const isEthereum = this.networkMap[key].isEthereum;
+      const isActive = this.networkMap[key].active;
+
+      if (isEthereum) {
+        if (!isActive && this.apis.evm[key]) {
+          this.apis.evm[key].destroy();
+          delete this.apis.evm[key];
+        }
+      } else {
+        if (!isActive && this.apis.substrate[key]) {
+          this.apis.substrate[key].api?.disconnect();
+          delete this.apis.substrate[key];
+        }
+      }
     });
 
     this.updateServiceInfo();
@@ -1305,6 +1319,10 @@ export default class State {
         return isExistingAssetId || isExistingAsset;
       }
     );
+
+    if (currencyIndex === -1) {
+      throw new Error(`Failed to find ${symbol} on ${networkKey}`);
+    }
 
     const asset = balancesByAddress[currencyIndex];
 

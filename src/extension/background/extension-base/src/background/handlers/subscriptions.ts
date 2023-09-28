@@ -183,12 +183,12 @@ export class FWSubscription {
       unsub && unsub();
       unsubEvm && unsubEvm();
 
-      return;
+      return () => {};
     }
 
     return () => {
-      unsub && unsub();
-      unsubEvm && unsubEvm();
+      unsub();
+      unsubEvm();
     };
   }
 }

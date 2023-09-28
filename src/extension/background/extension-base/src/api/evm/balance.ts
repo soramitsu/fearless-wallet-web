@@ -29,6 +29,7 @@ function subscribeERC20Interval(
 
       try {
         const contract = ERC20ContractMap[symbol];
+
         const balance = await contract.balanceOf(address);
 
         free = ethers.formatUnits(balance, precision);
@@ -53,6 +54,7 @@ function subscribeERC20Interval(
           state: APIItemState.ERROR,
           key: networkKey,
           symbol,
+          relayChain: 'ethereum',
           id,
           free,
           icon,

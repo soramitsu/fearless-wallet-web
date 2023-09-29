@@ -145,8 +145,9 @@ export interface RequestSignatures {
   'pri(accounts.swap)': [RequestSwap, ResponseMakeSwap];
   'pri(accounts.soraFees)': [null, SoraFees];
 
-  //ether
+  //Balances
   'pri(balance)': [null, BalanceJson];
+  'pri(fetch.evm.balance)': [null, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
 
   'pri(price.update.currency)': [string, void];

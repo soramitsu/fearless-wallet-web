@@ -1,10 +1,6 @@
-// Copyright 2019-2022 @subwallet/extension-koni authors & contributors
-// SPDX-License-Identifier: Apache-2.0
 import { logger as createLogger } from '@polkadot/util';
 import { Subscription } from 'rxjs';
 import { subscribeBalance } from '@extension-base/api/substrate/balance';
-import { subscribeEvmBalance } from '@extension-base/api/evm/balance';
-import { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type State from '@extension-base/background/handlers/State';
 import type { Logger } from '@polkadot/util/types';
 import type {
@@ -80,8 +76,9 @@ export class FWSubscription {
 
   stopAllSubscription() {
     if (this.subscriptionMap.balance) {
-      Object.values(this.subscriptionMap.balance).forEach((el) => {
-        Object.values(el).forEach((sub) => sub());
+      Object.keys(this.subscriptionMap.balance).forEach((address) => {
+        const unsub = this.subscriptionMap.balance[address];
+        unsub();
       });
 
       if (this.subscriptionMap.xorTotalBalance) {
@@ -105,7 +102,6 @@ export class FWSubscription {
 
       this.subscribeBalances(account.address, ethAddress, true);
     });
-    if (currentAccount) this.subscribeBalances(currentAccount.address, currentAccount.ethereumAddress);
 
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
@@ -119,12 +115,6 @@ export class FWSubscription {
           this.subscribeBalances(address, ethereumAddress);
         },
       }));
-
-    getAccountsExeptCurrent.forEach((account) => {
-      const ethAddress = account.meta.ethereumAddress as string;
-
-      this.subscribeBalances(account.address, ethAddress, true);
-    });
   }
 
   stop() {
@@ -173,28 +163,16 @@ export class FWSubscription {
   initBalanceSubscription(address: string, ethereumAddress: string, onlyRunOnFirstTime?: boolean) {
     this.state.generateDefaultBalance(address);
 
-    const setBalance = (networkKey: string, rs: Partial<BalanceItem>) => {
-      const isAccountExists = this.state.keyringService.getAccounts().some((el) => el.address === address);
-
-      if (!isAccountExists) return;
-
-      this.state.setBalanceItem(networkKey, rs, address);
-    };
-
-    const unsub = subscribeBalance(address, ethereumAddress, setBalance);
-
-    const unsubEvm = ethereumAddress ? subscribeEvmBalance(address, ethereumAddress, setBalance) : () => {};
+    const unsub = subscribeBalance(address, ethereumAddress);
 
     if (onlyRunOnFirstTime) {
       unsub && unsub();
-      unsubEvm && unsubEvm();
 
-      return;
+      return () => {};
     }
 
     return () => {
-      unsub && unsub();
-      unsubEvm && unsubEvm();
+      unsub();
     };
   }
 }

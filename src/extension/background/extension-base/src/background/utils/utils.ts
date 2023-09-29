@@ -121,8 +121,9 @@ export function getMoonbeamMoonriverAssetName(asset: AssetName, network: Network
 }
 
 export function getSubstrateAddress(address: string) {
-  const accounts = state.keyringService.getAccounts();
+  if (!isEthereumAddress(address)) return address;
 
+  const accounts = state.keyringService.getAccounts();
   const ethereumAccount = accounts.find(({ meta: { ethereumAddress } }) => ethereumAddress === address);
 
   if (isEthereumAddress(address) && ethereumAccount) return ethereumAccount.address;

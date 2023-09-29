@@ -4,6 +4,7 @@ import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
 import type { FetchHistory, AugmentedActionContext, ToggleFavorite } from '@/store';
 import type { FiatJson, Network } from '@/interfaces';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import { fetchHistory } from '@/subquery/fetchingHistory';
@@ -40,13 +41,17 @@ const actions: ActionTree<State, State> & Actions = {
 
     const { type, url } = externalApi.history;
     const formattedAddress = BaseApi.formatAddress(wallet, networkName);
+    const isNativeEvm = isRequireEvmAPI(networkName);
+    const balances: TokenBalance[] = rootState.account.balances;
+    const asset = isNativeEvm
+      ? balances.find((el) => el.balances.some((asset) => asset.id === assetId))!
+      : getUtilityAsset(rootState.account.balances, networkName)!;
 
-    const asset = getUtilityAsset(rootState.account.balances, networkName)!;
-
-    const utilityId = isRequireEvmAPI(networkName)
+    const utilityId = isNativeEvm
       ? asset.balances.find((el) => el.name.toLowerCase() === networkName.toLowerCase() && el.isUtility)?.id
       : asset.assetId;
-    const isUtility = assetId === utilityId;
+    const isUtility = isNativeEvm ? utilityId !== undefined : assetId === utilityId;
+
     // сейчас эндпоинт истории парсит только историю утилити токена
     // TODO: когда появится история других токенов отрефаткорить данную логику
 

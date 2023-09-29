@@ -210,7 +210,8 @@ export default class CurrencyItem extends Vue {
 
   get showWarning() {
     return (
-      this.assetData.balances.some((el) => el.state === APIItemState.ERROR) ||
+      this.assetData.balances.some((el) => el.state === APIItemState.ERROR && el.name === this.selectedNetwork) ||
+      this.assetData.balances.every((el) => el.state === APIItemState.ERROR) ||
       this.networkJson?.apiStatus === NETWORK_STATUS.DISCONNECTED
     );
   }

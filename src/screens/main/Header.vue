@@ -154,8 +154,8 @@ export default class Header extends Vue {
   get computeActiveNetworks() {
     if (!this.currentCurrency) return [];
 
-    return this.currentCurrency.balances.filter((network) => {
-      return this.getNetwork(network.name).active;
+    return this.currentCurrency.balances.filter(({ name }) => {
+      return this.getNetwork(name).active;
     });
   }
 
@@ -173,14 +173,15 @@ export default class Header extends Vue {
     return this.selectedNetwork;
   }
 
+  get selectedAssetNetwork() {
+    return this.$route.params.selectedNetwork;
+  }
+
   get selectedNetworkIcon() {
     if (this.isGroup) return this.allNetworksIcon;
 
     if (this.$route.name === Components.AssetHistory) {
-      const asset = this.currentCurrency?.balances.find((el) => el.id === this.selectedAssetId);
-      if (!asset) return '';
-
-      return this.getNetwork(asset?.name).icon;
+      return this.getNetwork(this.selectedAssetNetwork).icon;
     }
 
     const network = this.getNetwork(this.selectedNetwork);

@@ -1,11 +1,12 @@
-import { Contract, ethers } from 'ethers';
-import { ETHEREUM_REFRESH_BALANCE_INTERVAL, SUB_TOKEN_REFRESH_BALANCE_INTERVAL } from '@extension-base/const/intervals';
+import { ethers } from 'ethers';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { state } from '@extension-base/background/handlers';
 import { BalanceItem } from '@extension-base/api/evm/types/ether';
 import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
+import { getSubstrateAddress } from '@extension-base/background/utils/utils';
+import { setBalance } from '@extension-base/api/helpers';
 
-export async function getEtherBalance(networkKey: string, address: string): Promise<string> {
+async function getUtilityBalance(networkKey: string, address: string): Promise<string> {
   const eth = state.getEvmApiMap[networkKey];
 
   const balance = await eth.getBalance(address);
@@ -13,86 +14,61 @@ export async function getEtherBalance(networkKey: string, address: string): Prom
   return ethers.formatEther(balance);
 }
 
-function subscribeERC20Interval(
-  address: string,
-  networkKey: string,
-  subCallback: (rs: Partial<BalanceItem>) => void
-): () => void {
-  const ERC20ContractMap = {} as Record<string, Contract>;
+async function fetchTokenBalance(address: string, networkKey: string, contractAddress: string) {
   const network = state.networkMap[networkKey];
+  const asset = network.assets.find((el) => el.id === contractAddress);
 
-  const getTokenBalances = async () => {
-    const assets = network.assets.filter((el) => !el.isUtility);
+  if (!asset) return;
 
-    for (const { symbol, name, icon, id, precision } of assets) {
-      let free = '0';
+  const contract = getERC20Contract(networkKey, contractAddress);
+  const { symbol, precision, icon, id } = asset;
 
-      try {
-        const contract = ERC20ContractMap[symbol];
-        const balance = await contract.balanceOf(address);
-
-        free = ethers.formatUnits(balance, precision);
-
-        subCallback({
-          state: APIItemState.READY,
-          key: networkKey,
-          symbol,
-          id,
-          reserved: '0',
-          frozen: '0',
-          free,
-          transferable: free,
-          relayChain: 'ethereum',
-          total: free,
-          icon,
-          name,
-          chain: networkKey,
-        });
-      } catch (err) {
-        subCallback({
-          state: APIItemState.ERROR,
-          key: networkKey,
-          symbol,
-          id,
-          free,
-          icon,
-          name,
-          chain: networkKey,
-        });
-        console.info(`There is problem when fetching ${symbol} token balance on ${networkKey}`, err);
-      }
-    }
-  };
-
-  network.assets.forEach(({ id: contractAddress, isUtility, symbol }) => {
-    if (!isUtility) {
-      ERC20ContractMap[symbol] = getERC20Contract(networkKey, contractAddress);
-    }
-  });
-
-  getTokenBalances();
-
-  const interval = setInterval(getTokenBalances, SUB_TOKEN_REFRESH_BALANCE_INTERVAL);
-
-  return () => {
-    clearInterval(interval);
-  };
-}
-
-export function subscribeEVMBalance(
-  networkKey: string,
-  address: string,
-  callback: (networkKey: string, rs: Partial<BalanceItem>) => void
-) {
-  const network = state.networkMap[networkKey];
-  const { icon, name, type, id, symbol } = network.assets.find((el) => el.isUtility)!;
   const balanceItem = {
     state: APIItemState.PENDING,
     symbol,
-    name,
+    id,
+    icon,
+    reserved: '0',
+    frozen: '0',
+    free: '0',
+    transferable: '0',
+    total: '0',
+    relayChain: 'ethereum',
+    key: networkKey,
+    name: networkKey,
+    chain: networkKey,
+  } as BalanceItem;
+
+  try {
+    const balance = await contract.balanceOf(address);
+    const free = ethers.formatUnits(balance, precision);
+
+    balanceItem.free = free;
+    balanceItem.transferable = free;
+    balanceItem.total = free;
+    balanceItem.state = APIItemState.READY;
+
+    setBalance(networkKey, balanceItem, address);
+  } catch (err) {
+    balanceItem.state = APIItemState.ERROR;
+
+    setBalance(networkKey, balanceItem, address);
+
+    console.info(`There is problem when fetching ${symbol} token balance on ${networkKey}`, err);
+  }
+}
+
+async function fetchUtilityBalance(networkKey: string, ethereumAddress: string) {
+  const network = state.networkMap[networkKey];
+  const { icon, type, id, symbol } = network.assets.find((el) => el.isUtility)!;
+
+  const balanceItem = {
+    state: APIItemState.PENDING,
+    symbol,
     icon,
     type,
     id,
+    name: networkKey,
     free: '0',
     relayChain: 'ethereum',
     reserved: '0',
@@ -102,48 +78,40 @@ export function subscribeEVMBalance(
     total: '0',
   } as BalanceItem;
 
-  function getBalance() {
-    getEtherBalance(networkKey, address)
-      .then((balance) => {
-        balanceItem.free = balance;
-        balanceItem.total = balance;
-        balanceItem.transferable = balance;
-        balanceItem.state = APIItemState.READY;
+  const address = getSubstrateAddress(ethereumAddress);
 
-        callback(networkKey, balanceItem);
-      })
-      .catch(() => {
-        balanceItem.state = APIItemState.ERROR;
-        callback(networkKey, balanceItem);
-      });
+  try {
+    const balance = await getUtilityBalance(networkKey, ethereumAddress);
+
+    balanceItem.free = balance;
+    balanceItem.total = balance;
+    balanceItem.transferable = balance;
+    balanceItem.state = APIItemState.READY;
+
+    setBalance(networkKey, balanceItem, address);
+  } catch {
+    balanceItem.state = APIItemState.ERROR;
+
+    setBalance(networkKey, balanceItem, address);
   }
-
-  function subCallback(item: Partial<BalanceItem>) {
-    callback(networkKey, item);
-  }
-
-  getBalance();
-
-  const interval = setInterval(getBalance, ETHEREUM_REFRESH_BALANCE_INTERVAL);
-  const unsub = subscribeERC20Interval(address, networkKey, subCallback);
-
-  return () => {
-    clearInterval(interval);
-    unsub && unsub();
-  };
 }
 
-export function subscribeEvmBalance(
-  address: string,
-  ethereumAddress: string,
-  setBalance: (networkKey: string, rs: Partial<BalanceItem>) => void
-) {
-  const entries = Object.entries(state.getEvmApiMap);
-  const unsubList = entries.map(([networkKey]) => subscribeEVMBalance(networkKey, ethereumAddress, setBalance));
+export function fetchEvmAssetBalance(ethereumAddress: string, networkKey: string, assetId: string) {
+  const network = state.networkMap[networkKey];
+  const asset = network.assets.find((asset) => asset.id === assetId);
 
-  return () => {
-    unsubList.forEach((sub) => {
-      sub && sub();
-    });
-  };
+  if (!asset) throw new Error(`Asset ${assetId} is missing on ${networkKey}`);
+
+  if (asset.isUtility) fetchUtilityBalance(networkKey, ethereumAddress);
+  else fetchTokenBalance(ethereumAddress, networkKey, asset.id);
+}
+
+export function fetchEvmTokenBalances(address: string, networkKey: string) {
+  const network = state.networkMap[networkKey];
+
+  const assets = network.assets;
+
+  for (const asset of assets) {
+    fetchTokenBalance(address, networkKey, asset.id);
+  }
 }

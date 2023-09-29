@@ -23,7 +23,12 @@ import { axios } from '@extension-base/utils/axios';
 import { prepNetworkNames } from '@extension-base/const/networks';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
-import { getMockCurrencies, isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import {
+  getMockCurrencies,
+  getSubstrateAddress,
+  isEthereumNetwork,
+  isRequireEvmAPI,
+} from '@extension-base/background/utils/utils';
 import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
@@ -126,11 +131,16 @@ type APIs = {
   substrate: Record<NetworkName, ApiProps>;
 };
 
+type Timespans = {
+  evmBalances?: Record<string, number>;
+};
+
 const metaStore = new MetadataStore();
 
 export default class State {
   public notification = 'popup';
   private cron: FWCron;
+  public timespans: Timespans = {};
   public windows: number[] = [];
   public prices: {
     json: PriceJson;
@@ -570,14 +580,6 @@ export default class State {
   }
 
   public async enableNetworkType(type: string): Promise<void> {
-    const currentAccount = await this.currentAccount;
-
-    if (currentAccount) {
-      this.selectedNetworks[currentAccount.address] = type;
-
-      storage.set({ selectedNetworks: this.selectedNetworks });
-    }
-
     return this.setActiveNetworks(type);
   }
 
@@ -737,16 +739,30 @@ export default class State {
     const networks = this.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((key) => {
-      const isExists = networks.some(({ name }) => name.toLowerCase() === key.toLowerCase());
+      this.networkMap[key].active = networks.some(({ name }) => name.toLowerCase() === key.toLowerCase());
+      const isEthereum = this.networkMap[key].isEthereum;
+      const isActive = this.networkMap[key].active;
 
-      this.networkMap[key].active = isExists;
+      if (isEthereum) {
+        if (!isActive && this.apis.evm[key]) {
+          this.apis.evm[key].destroy();
+          delete this.apis.evm[key];
+        }
+      } else {
+        if (!isActive && this.apis.substrate[key]) {
+          this.apis.substrate[key].api?.disconnect();
+          delete this.apis.substrate[key];
+        }
+      }
     });
 
     this.updateServiceInfo();
     this.initNetworkStates(true);
 
-    this.networkMapStore.set('NetworkMap', this.networkMap);
+    this.subscription.initBalanceSubscription(currentAccount.address, currentAccount.ethereumAddress);
     this.networkMapSubject.next(this.networkMap);
+
+    this.networkMapStore.set('NetworkMap', this.networkMap);
     storage.set({ selectedNetworks: this.selectedNetworks });
   }
 
@@ -1225,25 +1241,29 @@ export default class State {
   }
 
   public async initNetworkStates(reset?: boolean) {
-    for (const [key, network] of Object.entries(this.networkMap)) {
-      if (network.active) {
-        if (network.isEthereum && isRequireEvmAPI(key)) {
-          if (!this.apis.evm[key] || !this.apis.evm[key].ready)
-            this.apis.evm[key] = initWeb3Api(network.currentProvider);
-        } else {
-          if (this.apis.substrate[network.name]) {
-            const isReady = await this.apis.substrate[network.name].api?.isReady;
+    const activeNetworks = Object.values(this.networkMap).filter(({ active }) => active);
 
-            if (isReady) return;
+    for (const network of activeNetworks) {
+      const { name, active, currentProvider, isEthereum } = network;
+
+      if (active) {
+        if (isEthereum && isRequireEvmAPI(name)) {
+          if (!this.apis.evm[name] || !this.apis.evm[name].ready) this.apis.evm[name] = initWeb3Api(currentProvider);
+        } else {
+          if (this.apis.substrate[name]) {
+            const isReady = await this.apis.substrate[name].api?.isReady;
+
+            if (isReady) continue;
           }
 
           if (reset) this.resetApiRetries();
+
           initApi(network);
         }
       }
     }
 
-    this.onReady();
+    if (!reset) this.onReady();
   }
 
   public getWallets(): KeyringAddress[] {
@@ -1298,17 +1318,23 @@ export default class State {
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
     const { reserved, free, locked, frozen, total, transferable, state, id, relayChain, symbol } = item;
+    const accountAddress = getSubstrateAddress(address);
+    const balancesByAddress = this.balanceMap[accountAddress];
 
-    const balancesByAddress = this.balanceMap[address];
     const currencyIndex = balancesByAddress.findIndex(
-      ({ assetId: _assetId, symbol: _symbol, relayChain: _relayChain }) => {
-        const isExistingAssetId = _assetId === id;
+      ({ assetId: _assetId, symbol: _symbol, relayChain: _relayChain, balances }) => {
+        const isExistingGroupAssetId = _assetId === id;
+        const isAssetId = balances.some((asset) => asset.id === id);
         const isExistingDisplayName = _symbol === symbol;
         const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
 
-        return isExistingAssetId || isExistingAsset;
+        return isExistingGroupAssetId || isExistingAsset || isAssetId;
       }
     );
+
+    if (currencyIndex === -1) {
+      throw new Error(`Failed to find ${symbol} on ${networkKey}`);
+    }
 
     const asset = balancesByAddress[currencyIndex];
 
@@ -1473,5 +1499,15 @@ export default class State {
 
   public subscribeNetworkMap() {
     return this.networkMapStore.getSubject();
+  }
+
+  getTimespan(name: keyof Timespans, address: string) {
+    return this.timespans[name]?.[address] ?? 0;
+  }
+
+  saveTimespan(name: keyof Timespans, address: string, value: number) {
+    if (!this.timespans[name]) this.timespans[name] = {};
+
+    this.timespans[name]![address] = value;
   }
 }

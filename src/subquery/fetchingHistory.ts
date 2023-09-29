@@ -150,8 +150,8 @@ async function fetchEthereumTokenHistory(
     params: {
       module: 'account',
       action: 'tokentx',
-      contractAddress: contractAddress,
-      address: address,
+      contractAddress,
+      address,
       page: 1,
       offset: 300,
       sort: 'desc',

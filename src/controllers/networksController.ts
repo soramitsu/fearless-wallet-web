@@ -74,16 +74,18 @@ export class NetworksController {
     if (delay !== undefined) {
       const timeout = delay * 1000;
 
-      setTimeout(() => {
-        store.dispatch(NetworksActionTypes.FETCH_HISTORY, {
-          networkName,
-          wallet,
-          assetId,
-          isPreviously,
-        });
-      }, timeout);
+      return await new Promise((res) => {
+        setTimeout(async () => {
+          await store.dispatch(NetworksActionTypes.FETCH_HISTORY, {
+            networkName,
+            wallet,
+            assetId,
+            isPreviously,
+          });
 
-      return;
+          res();
+        }, timeout);
+      });
     }
 
     await store.dispatch(NetworksActionTypes.FETCH_HISTORY, {

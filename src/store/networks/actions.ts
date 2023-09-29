@@ -55,7 +55,8 @@ const actions: ActionTree<State, State> & Actions = {
     // сейчас эндпоинт истории парсит только историю утилити токена
     // TODO: когда появится история других токенов отрефаткорить данную логику
 
-    const history = await fetchHistory(url, formattedAddress, type, networkName, assetId, isUtility);
+    const { id } = asset.balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
+    const history = await fetchHistory(url, formattedAddress, type, networkName, id, isUtility);
 
     if (history)
       commit(MutationTypes.SET_HISTORY, {

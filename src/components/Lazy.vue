@@ -33,22 +33,18 @@ export default class Lazy extends Vue {
 
   mounted() {
     const el = this.$refs[this.targetRef] as Element;
-    const observer = new IntersectionObserver((entries, observer) => {
+    const observer = new IntersectionObserver((entries) => {
       entries.forEach(({ isIntersecting }) => {
-        if (!isIntersecting) return;
-
-        if (this.isTimeout) this.timeoutCallback(this.setShouldRender);
-        else this.setShouldRender();
-
-        observer.unobserve(el);
+        if (this.isTimeout) this.timeoutCallback(() => this.updateShouldRender(isIntersecting));
+        else this.updateShouldRender(isIntersecting);
       });
     }, this.options);
 
     observer.observe(el);
   }
 
-  setShouldRender() {
-    this.shouldRender = true;
+  updateShouldRender(value: boolean) {
+    this.shouldRender = value;
   }
 }
 </script>

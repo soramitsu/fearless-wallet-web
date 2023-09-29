@@ -1,4 +1,4 @@
-import { ValidatorInfoFull } from '@sora-substrate/util/build/staking/types';
+import { ValidatorInfoFull, Payouts } from '@sora-substrate/util/build/staking/types';
 import { PasswordRequestSign } from '../../background/types/types';
 import { NetworkName, StakingOperation } from '@/interfaces';
 
@@ -84,6 +84,16 @@ export type RequestSetPayee = PasswordRequestSign<SetPayee>;
 
 //////////////////////////////////////////////////////////
 
+export interface PayoutRewards {
+  from: string;
+  networkName: NetworkName;
+  payouts: Payouts;
+}
+
+export type RequestPayoutRewards = PasswordRequestSign<PayoutRewards>;
+
+//////////////////////////////////////////////////////////
+
 export type RequestStaking =
   | RequestBond
   | RequestBondExtra
@@ -92,7 +102,8 @@ export type RequestStaking =
   | RequestWithdrawUnbonded
   | RequestSetControllerAccount
   | RequestNominate
-  | RequestSetPayee;
+  | RequestSetPayee
+  | RequestPayoutRewards;
 
 export type MakeStakingRequest = {
   params: RequestStaking;
@@ -144,26 +155,20 @@ export type MyStakingInfo = {
   };
 };
 
-type RewardValidator = FWValidatorInfoFull & {
-  total: string;
-  value: string;
-};
-
-export type EraReward = {
-  era: string;
-  eraRewards: string;
-  validators: RewardValidator[];
-};
-
 export type StakingParamsRequest = {
   networks: NetworkName[];
 };
 
 export type StakingParamsResponse = StakingParams[];
 
+export type ValidatorReward = FWValidatorInfoFull & {
+  rewards: string;
+};
+
 export type RewardsResponse = {
-  rewards: EraReward[];
-  sum: string;
+  validators: ValidatorReward[];
+  sum: string; // per all current Eras
+  payouts: Payouts;
 };
 
 export type StakingNetworkRequest = {

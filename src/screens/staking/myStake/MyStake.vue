@@ -177,9 +177,9 @@ export default class MyStake extends Vue {
 
     if (this.showRedeemForm) return 'redeem';
 
-    if (this.showControllerAccountForm) return 'controllerAccount';
+    if (this.showControllerAccountForm) return 'setControllerAccount';
 
-    if (this.showPayeeForm) return 'payee';
+    if (this.showPayeeForm) return 'setPayee';
 
     return '';
   }

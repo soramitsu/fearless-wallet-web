@@ -71,7 +71,7 @@ export default class About extends Vue {
 
   get rewardAmount() {
     // TODO staking
-    return '0.49191';
+    return '0.001';
   }
 
   get unbondAmount() {

@@ -9,7 +9,9 @@
     <div class="pending-rewards">
       <div>
         <ContentForm v-if="step === 1" :height="380" :isStaticHeight="true" :bottomRightCorner="true">
-          <div class="form-layout">
+          <Loader v-if="showLoader" />
+
+          <div v-show="!showLoader" class="form-layout">
             <Scroll>
               <div class="descriptions">{{ $t('staking.validatorsPayoutRewards') }}</div>
 
@@ -66,7 +68,8 @@
       :fee="fee"
       :feeValue="feeValue"
       :firstIcon="stakingAssetId"
-      extrinsicType="staking"
+      :tx="tx"
+      extrinsicType="payoutRewards"
       @close="confirmationPasswordPopupClose"
     />
   </AboveForm>
@@ -84,7 +87,10 @@ import { getCostOfAssets } from '@/controllers/transferHelpers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
 import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
 import { getRewards, getSoraFees } from '@/extension/messaging';
-import { RewardsResponse } from '@/extension/background/extension-base/src/services/staking-service/types';
+import {
+  PayoutRewards,
+  RewardsResponse,
+} from '@/extension/background/extension-base/src/services/staking-service/types';
 
 @Component({
   components: {
@@ -98,8 +104,9 @@ export default class StakingManagement extends Vue {
   showWarningPopup = false;
   amount = '';
   step = 1;
-  fee = '0.7';
-  rewards: RewardsResponse = { rewards: [], sum: '0' };
+  fee = '';
+  showLoader = false;
+  rewards: RewardsResponse = { validators: [], payouts: [], sum: '0' };
 
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
@@ -121,7 +128,7 @@ export default class StakingManagement extends Vue {
   get disabledBtn() {
     if (this.step === 1) return this.myValidatorRewards.length === 0;
 
-    return 'common.confirm';
+    return false;
   }
 
   get payee() {
@@ -129,7 +136,7 @@ export default class StakingManagement extends Vue {
   }
 
   get myValidatorRewards() {
-    return this.rewards?.rewards;
+    return this.rewards?.validators;
   }
 
   get summaryRewards() {
@@ -190,12 +197,22 @@ export default class StakingManagement extends Vue {
     return getCostOfAssets(this.summaryRewards, this.rewardedAssetPrice).toString();
   }
 
+  get tx() {
+    return {
+      payouts: this.rewards.payouts,
+      from: this.selectedWallet.address,
+      networkName: this.stakingNetwork.network,
+    } as PayoutRewards;
+  }
+
   async created() {
+    this.getSoraFees();
+
+    this.showLoader = true;
+
     this.rewards = await getRewards(this.stakingNetwork.network);
 
-    console.log('rewards', this.rewards);
-
-    this.getSoraFees();
+    this.showLoader = false;
   }
 
   async getSoraFees() {

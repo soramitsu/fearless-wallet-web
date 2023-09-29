@@ -17,7 +17,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
+import { ValidatorReward } from '@extension-base/services/staking-service/types';
 import type { GetAssetPrice } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -25,15 +25,13 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class ValidatorItem extends Vue {
-  @Prop({ type: Object }) validator!: FWValidatorInfoFull;
+  @Prop({ type: Object }) validator!: ValidatorReward;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get rewards() {
-    return '1';
-
-    // return this.validator.rewards;
+    return this.$n(+this.validator.rewards, 'decimal');
   }
 
   get rewardedAssetPrice() {
@@ -47,7 +45,7 @@ export default class ValidatorItem extends Vue {
   }
 
   get price() {
-    const value = +this.rewards * this.rewardedAssetPrice;
+    const value = +this.validator.rewards * this.rewardedAssetPrice;
 
     return this.$n(value, 'price');
   }

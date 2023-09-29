@@ -162,11 +162,11 @@ export default class MainStakingForm extends Vue {
   }
 
   get isControllerAccount() {
-    return this.type === 'controllerAccount';
+    return this.type === 'setControllerAccount';
   }
 
   get isPayee() {
-    return this.type === 'payee';
+    return this.type === 'setPayee';
   }
 
   get isValidControllerAddress() {

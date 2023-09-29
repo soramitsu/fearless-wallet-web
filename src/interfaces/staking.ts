@@ -26,9 +26,10 @@ export type StakingOperation =
   | 'unbond'
   | 'rebond'
   | 'redeem'
-  | 'controllerAccount'
   | 'nominate'
-  | 'payee';
+  | 'setControllerAccount'
+  | 'setPayee'
+  | 'payoutRewards';
 
 export type StakingOperationParams =
   | BondExtra

@@ -210,6 +210,7 @@ export enum TransferErrorCode {
   SET_CONTROLLER_ERROR = 'setControllerError',
   NOMINATE_ERROR = 'nominateError',
   SET_PAYEE_ERROR = 'setPayeeError',
+  PAYOUT_REWARDS_ERROR = 'payoutRewardsError',
 }
 
 export enum BasicTxErrorCode {

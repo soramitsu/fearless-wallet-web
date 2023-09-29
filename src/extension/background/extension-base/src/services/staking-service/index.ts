@@ -21,6 +21,7 @@ import type {
   StakingParamsRequest,
   MyStakingInfo,
   RewardsResponse,
+  RequestPayoutRewards,
 } from '@extension-base/services/staking-service/types';
 import { NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
@@ -73,57 +74,43 @@ export class StakingService {
     return {
       ...stakingInfo,
       payee,
-      myValidators: await this.getValidatorsInformation(network, stakingInfo.myValidators, validators),
+      myValidators: this.getValidatorsInformation(stakingInfo.myValidators, validators),
     };
   }
 
   public async getRewards(network: NetworkName, address: string): Promise<RewardsResponse> {
-    const apiProps = this.state.getSubstrateApiMap[network];
+    const rewards = await apiSora.staking.getNominatorsReward(address);
 
-    const stakerRewards = await apiProps.api!.derive.staking.stakerRewards(address);
-    const rewards = stakerRewards.map(({ era, validators: _validators }) => {
-      const validators = Object.entries(_validators).map(([address, { total, value }]) => ({
-        address,
-        total: FPNumber.fromCodecValue(total.toString()).toString(), // todo val decimals
-        value: FPNumber.fromCodecValue(value.toString()).toString(), // todo val decimals
-      }));
+    const validatorsRewards = rewards.reduce((result, { validators }) => {
+      validators.forEach(({ address, value }) => {
+        if (!result[address]) result[address] = new FPNumber(value);
+        else result[address] = result[address].add(new FPNumber(value));
+      });
 
-      return {
-        era: era.toString(),
-        eraRewards: validators.reduce((sum, { value }) => sum.add(new FPNumber(value)), FPNumber.ZERO).toString(),
-        validators,
-      };
-    });
-    const sum = rewards.reduce((sum, { eraRewards }) => sum.add(new FPNumber(eraRewards)), FPNumber.ZERO).toString();
+      return result;
+    }, {} as Record<string, FPNumber>);
 
-    // const result = { rewards, sum };
+    const sum = Object.values(validatorsRewards)
+      .reduce((sum, rewards) => sum.add(new FPNumber(rewards)), FPNumber.ZERO)
+      .toString();
 
     const allValidators = await this.getValidators(network);
 
     return {
       sum,
-      rewards: rewards.map(({ era, eraRewards, validators: _validators }) => {
-        const validators = _validators.map(({ total, value, address }) => {
-          const info = this.getValidatorsInformation(network, [address], allValidators);
-
-          return {
-            total,
-            value,
-            ...info[0],
-          };
-        });
+      payouts: rewards.map(({ era, validators }) => ({ era, validators: validators.map(({ address }) => address) })),
+      validators: Object.entries(validatorsRewards).map(([address, rewards]) => {
+        const info = this.getValidatorsInformation([address], allValidators)[0];
 
         return {
-          era,
-          eraRewards,
-          validators,
+          ...info,
+          rewards: rewards.toString(),
         };
       }),
     };
   }
 
   public getValidatorsInformation(
-    network: NetworkName,
     validatorsAddress: string[],
     validators: FWValidatorInfoFull[]
   ): FWValidatorInfoFull[] {
@@ -194,9 +181,11 @@ export class StakingService {
 
     if (type === 'nominate') return this.nominate(params as RequestNominate);
 
-    if (type === 'controllerAccount') return this.setControllerAccount(params as RequestSetControllerAccount);
+    if (type === 'setControllerAccount') return this.setControllerAccount(params as RequestSetControllerAccount);
 
-    if (type === 'payee') return this.setPayee(params as RequestSetPayee);
+    if (type === 'setPayee') return this.setPayee(params as RequestSetPayee);
+
+    if (type === 'payoutRewards') return this.payoutRewards(params as RequestPayoutRewards);
 
     return {
       status: false,
@@ -392,6 +381,28 @@ export class StakingService {
         errors: [
           {
             code: TransferErrorCode.SET_PAYEE_ERROR,
+            message,
+          },
+        ],
+      };
+    }
+
+    return { status: true };
+  }
+
+  public async payoutRewards({ payouts }: RequestPayoutRewards): Promise<BasicTxResponse> {
+    try {
+      await apiSora.staking.payout({ payouts });
+    } catch (ex) {
+      const message = `[STAKING] Payout rewards: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.PAYOUT_REWARDS_ERROR,
             message,
           },
         ],

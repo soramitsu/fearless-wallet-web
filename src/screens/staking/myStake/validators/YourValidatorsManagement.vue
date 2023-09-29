@@ -60,10 +60,10 @@
         v-if="showConfirmationPasswordPopup"
         :currency="stakingCurrency"
         :firstIcon="stakingAssetId"
-        extrinsicType="nominate"
         :tx="tx"
         :fee="fee"
         :feeValue="feeValue"
+        extrinsicType="nominate"
         @close="confirmationPasswordPopupClose"
       />
     </div>

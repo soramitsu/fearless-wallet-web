@@ -57,9 +57,13 @@ export class KeyringService {
   }
 
   getAccountName(address: string) {
-    const keyringAddress = isEthereumAddress(address) ? address : this.encodeAddress(address);
+    try {
+      const keyringAddress = isEthereumAddress(address) ? address : this.encodeAddress(address);
 
-    return this.getAccounts().find(({ address }) => isSameString(address, keyringAddress))?.meta.name;
+      return this.getAccounts().find(({ address }) => isSameString(address, keyringAddress))?.meta.name;
+    } catch {
+      return undefined;
+    }
   }
 
   // в общем и целом можно использоваь getPair вместо getAccount

@@ -15,9 +15,12 @@
             <SIcon name="chevron-bottom-16" />
           </Rotate>
         </div>
-        <div v-if="!isGroup && isAddressExists" class="copy-address" @click.stop="copyAddress">
+
+        <div v-if="isAddressExists" class="copy-address" @click.stop="copyAddress">
           <span>{{ cutAddress }}</span>
+
           <Icon icon="copy" className="copy" />
+
           <Tooltip text="common.copied" target=".copy-address" placement="top-end" trigger="click" />
         </div>
       </div>
@@ -131,12 +134,16 @@ export default class Header extends Vue {
   }
 
   get isAddressExists() {
-    return this.address !== '';
+    if (this.isGroup) return this.routeName === Components.AssetHistory;
+
+    return true;
+  }
+
+  get routeName() {
+    return this.$route.name;
   }
 
   get isGroup() {
-    if (this.$route.name === Components.AssetHistory) return false;
-
     return isNetworkGroup(this.selectedNetwork);
   }
 
@@ -200,15 +207,11 @@ export default class Header extends Vue {
   }
 
   get address() {
+    if (!this.isAddressExists) return '';
+
     if (this.selectedWallet.address === '') return '';
-    const asset = this.currentCurrency?.balances.find((el) => el.id === this.selectedAssetId);
 
-    if (!asset) return '';
-
-    if (BaseApi.isEthereumNetwork(asset.name)) return this.selectedWallet.ethereumAddress;
-    const network = this.getNetwork(asset.name);
-
-    return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
+    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
   }
 
   get name() {

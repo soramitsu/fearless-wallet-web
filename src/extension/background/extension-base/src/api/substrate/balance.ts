@@ -1,3 +1,4 @@
+import { Subscription } from 'rxjs';
 import { ApiPromise } from '@polkadot/api';
 import { state } from '@extension-base/background/handlers';
 import { getSubstrateAddress, isEthereumNetwork } from '@extension-base/background/utils/utils';
@@ -6,10 +7,11 @@ import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
 import { setBalance } from '../helpers';
 import type { ApiProps } from '@extension-base/background/types/types';
-import type { RelayChainName } from '@/interfaces';
+import type { Fn, RelayChainName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
 import { CHAIN_IDS, SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/networks';
+import { isSoraTest } from '@/helpers';
 
 async function subscribeTokensBalance(address: string, networkKey: string, api: ApiPromise) {
   const {
@@ -22,7 +24,7 @@ async function subscribeTokensBalance(address: string, networkKey: string, api: 
   if (networkName === 'Equilibrium') {
     const pallet = api!.rx.query.system.account(address);
 
-    const unsub = pallet.subscribe((balances: any) => {
+    const sub = pallet.subscribe((balances: any) => {
       const asV0 = balances.data['asV0'];
       const locked = FPNumber.fromCodecValue((asV0.lock as u128).toNumber(), 9); // TODO: 9 дефолтный precision, уточнить насчет asV0.lock
       const balance: any[] = asV0.balance;
@@ -78,7 +80,7 @@ async function subscribeTokensBalance(address: string, networkKey: string, api: 
       });
     });
 
-    return () => unsub;
+    return () => sub.unsubscribe();
   }
 
   const unsubList = await Promise.all(
@@ -86,7 +88,7 @@ async function subscribeTokensBalance(address: string, networkKey: string, api: 
       try {
         const options = getAssetOptions(id);
 
-        if (!api || !api.rx) return undefined;
+        if (!api || !api.rx) return () => null;
 
         const query = api.rx.query;
 
@@ -131,7 +133,9 @@ async function subscribeTokensBalance(address: string, networkKey: string, api: 
           );
         };
 
-        return pallet.subscribe(onBalanceFetch);
+        const sub: Subscription = pallet.subscribe(onBalanceFetch);
+
+        return () => sub.unsubscribe();
       } catch (err: any) {
         setBalance(
           networkKey,
@@ -146,30 +150,34 @@ async function subscribeTokensBalance(address: string, networkKey: string, api: 
         console.warn(err.message, networkKey, `type: ${type}`);
       }
 
-      return undefined;
+      return () => null;
     })
   );
 
-  return () => {
-    unsubList.forEach((unsub) => {
-      unsub;
-    });
-  };
+  return () => unsubList.forEach((unsubscribe) => unsubscribe());
 }
 
-export async function subscribeWithAccount(address: string, networkKey: string, networkAPI: ApiProps) {
+export async function subscribeWithAccount(address: string, networkKey: string, networkAPI: ApiProps): Promise<Fn> {
   const unsub = await subscribeTokensBalance(address, networkKey, networkAPI.api!).catch((e) => {
     console.info(`Failed to subscribe to ${networkKey}`, e);
   });
 
   return () => {
-    unsub && unsub();
+    unsub?.();
   };
 }
 
-export function subscribeBalance(address: string, ethereumAddress: string) {
+export function subscribeBalance(address: string, ethereumAddress: string): Fn {
   const unsubList = Object.entries(state.getSubstrateApiMap).map(async ([networkKey, apiProps]) => {
-    const isReady = await apiProps.api?.isReady;
+    const isReady = isSoraTest(networkKey)
+      ? await new Promise((res) =>
+          setTimeout(async () => {
+            const isReady = await apiProps.api?.isReady;
+
+            res(isReady);
+          }, 1500)
+        )
+      : await apiProps.api?.isReady;
 
     if (!isReady) return () => null;
 
@@ -180,13 +188,10 @@ export function subscribeBalance(address: string, ethereumAddress: string) {
     return subscribeWithAccount(addressForNetwork, networkKey, apiProps);
   });
 
-  return () => {
-    unsubList.forEach((subProm) => {
-      subProm
-        .then((unsub) => {
-          unsub && unsub();
-        })
-        .catch((err) => err);
+  return () =>
+    unsubList.forEach(async (unsubscribe) => {
+      const unsub = await unsubscribe;
+
+      unsub?.();
     });
-  };
 }

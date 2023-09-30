@@ -14,7 +14,8 @@ export default abstract class SubscribableStore<T> extends BaseStore<T> {
   public override set(_key: string, value: T, update?: () => void): void {
     super.set(_key, value, () => {
       this.subject.next(value);
-      update && update();
+
+      update?.();
     });
   }
 

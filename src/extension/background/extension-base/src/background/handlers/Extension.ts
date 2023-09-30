@@ -143,9 +143,7 @@ export default class Extension extends FWExtensionBase {
   accountsCreate({ password, suri, type, meta }: RequestAccountCreateSuri): string {
     const address = this.state.keyringService.addAccount(suri, password, { ...meta, isMobile: false }, type);
 
-    if (!isEthereumAddress(address)) {
-      this.updateCurrentAccount(address);
-    }
+    if (!isEthereumAddress(address)) this.updateCurrentAccount(address);
 
     return address;
   }
@@ -425,8 +423,8 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  private async enableNetworkType(type: string): Promise<void> {
-    this.state.enableNetworkType(type);
+  private async setActiveNetworks(type: string): Promise<void> {
+    this.state.setActiveNetworks(type);
   }
 
   private async toggleNetworkFavorite(networkKey: string): Promise<void> {
@@ -435,7 +433,7 @@ export default class Extension extends FWExtensionBase {
 
   private async upsertNetworkMap(data: NetworkJson): Promise<boolean> {
     try {
-      return await this.state.upsertNetworkMap(data);
+      return this.state.upsertNetworkMap(data);
     } catch (e) {
       console.error(e);
 
@@ -461,9 +459,7 @@ export default class Extension extends FWExtensionBase {
       ethereumAddress: (ethereumAddress as string) ?? '',
     };
 
-    this.state.setCurrentAccount(accountInfo, () => {
-      callback && callback(accountInfo);
-    });
+    this.state.setCurrentAccount(accountInfo, () => callback?.(accountInfo));
   }
 
   private triggerWalletsSubscription(): boolean {
@@ -479,10 +475,11 @@ export default class Extension extends FWExtensionBase {
   private updateCurrentAccount(address: string, isNew = true): boolean {
     if (isEthereumAddress(address)) return false;
 
-    this.state.generateDefaultBalance(address);
+    console.log('updateCurrentAccount', 111111111);
 
     this._saveCurrentAccountAddress(address, () => {
       this.triggerWalletsSubscription();
+
       if (isNew) this.updateNetworkForNewWallet(address);
     });
 
@@ -1200,7 +1197,7 @@ export default class Extension extends FWExtensionBase {
         return this.updateCurrentAccount(request as string, false);
 
       case 'pri(accounts.update.currentNetwork)':
-        return this.enableNetworkType(request as string);
+        return this.setActiveNetworks(request as string);
 
       case 'pri(accounts.update.meta)':
         return this.updatePairMeta(request as RequestUpdateMeta);

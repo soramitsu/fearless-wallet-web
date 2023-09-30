@@ -11,6 +11,7 @@ import type {
 } from '@extension-base/background/types/types';
 
 type SubscriptionName = 'balance' | 'xorTotalBalance';
+
 type UpdateSub =
   | {
       name: 'balance';
@@ -21,14 +22,17 @@ type UpdateSub =
       name: 'xorTotalBalance';
       func: () => void;
     };
+
 const subscriptions: Subscriptions = {};
+
 type SubscriptionMap = {
   balance: Record<string, () => void>;
   xorTotalBalance: (() => void) | undefined;
 };
+
 export class FWSubscription {
   private serviceSubscription: Subscription | undefined;
-  private state: State;
+  private addressSubscribed: string | undefined;
   private subscriptionMap: SubscriptionMap = {
     balance: {},
     xorTotalBalance: undefined,
@@ -36,9 +40,8 @@ export class FWSubscription {
 
   private logger: Logger;
 
-  constructor(state: State) {
+  constructor(private state: State) {
     this.logger = createLogger('Subscription');
-    this.state = state;
     this.init();
   }
 
@@ -59,7 +62,9 @@ export class FWSubscription {
       const { name, address, func } = payload;
       const oldSub = this.subscriptionMap[name][address];
 
-      if (oldSub) oldSub();
+      console.log('oldSub', oldSub);
+
+      oldSub?.();
 
       this.subscriptionMap[name][address] = func;
 
@@ -69,7 +74,7 @@ export class FWSubscription {
     const { name, func } = payload;
     const oldSub = this.subscriptionMap[name];
 
-    if (oldSub) oldSub();
+    oldSub?.();
 
     if (func) this.subscriptionMap[name] = func;
   }
@@ -92,19 +97,20 @@ export class FWSubscription {
 
   async start() {
     this.logger.log('Starting subscription');
+
     const currentAccount = await this.state.currentAccount;
-    const getAccountsExeptCurrent = this.state
+    const accountsExceptCurrent = this.state
       .getSubstrateAccounts()
       .filter((el) => el.address !== currentAccount?.address);
 
-    getAccountsExeptCurrent.forEach((account) => {
+    accountsExceptCurrent.forEach((account) => {
       const ethAddress = (account.meta.ethereumAddress as string) ?? '';
 
       this.subscribeBalances(account.address, ethAddress, true);
     });
 
-    !this.serviceSubscription &&
-      (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
+    if (!this.serviceSubscription)
+      this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
           console.info('serviceInfo', serviceInfo);
 
@@ -112,13 +118,17 @@ export class FWSubscription {
 
           const { address, ethereumAddress } = serviceInfo.currentAccountInfo;
 
-          this.subscribeBalances(address, ethereumAddress);
+          if (this.addressSubscribed !== address) {
+            this.addressSubscribed = address;
+
+            this.subscribeBalances(address, ethereumAddress);
+          }
         },
-      }));
+      });
   }
 
   stop() {
-    this.logger.log('Stopping subscription');
+    this.logger.log('Stop subscription');
 
     if (this.serviceSubscription) {
       this.serviceSubscription.unsubscribe();
@@ -147,33 +157,28 @@ export class FWSubscription {
     });
   }
 
-  subscribeBalances(address: string, ethereumAddress: string, onlyRunOnFirstTime?: boolean) {
-    this.logger.log('Start balance sub for:', address);
+  subscribeBalances(address: string, ethereumAddress: string, isFirstRun?: boolean) {
+    this.logger.warn(`Start balance sub for: ${address}`);
 
-    this.state
-      .resetBalanceMap()
-      .then(() => {
-        const unsub = this.initBalanceSubscription(address, ethereumAddress, onlyRunOnFirstTime);
+    try {
+      const unsub = this.initBalanceSubscription(address, ethereumAddress, isFirstRun);
 
-        if (unsub) this.updateSubscription({ name: 'balance', func: unsub, address });
-      })
-      .catch((err) => console.warn('Unable to subscribe', err));
+      if (isFirstRun) unsub();
+      else
+        this.updateSubscription({
+          name: 'balance',
+          func: unsub,
+          address,
+        });
+    } catch {
+      this.logger.warn(`Unable to subscribe: ${address}`);
+    }
   }
 
-  initBalanceSubscription(address: string, ethereumAddress: string, onlyRunOnFirstTime?: boolean) {
-    this.state.generateDefaultBalance(address);
+  initBalanceSubscription(address: string, ethereumAddress: string, isFirstRun?: boolean) {
+    if (isFirstRun) this.state.generateDefaultBalance(address);
 
-    const unsub = subscribeBalance(address, ethereumAddress);
-
-    if (onlyRunOnFirstTime) {
-      unsub && unsub();
-
-      return () => {};
-    }
-
-    return () => {
-      unsub();
-    };
+    return subscribeBalance(address, ethereumAddress);
   }
 }
 

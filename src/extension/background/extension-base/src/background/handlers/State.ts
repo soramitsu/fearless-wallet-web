@@ -476,31 +476,32 @@ export default class State {
 
     const accounts = this.getSubstrateAccounts();
 
-    if (accounts.length) {
-      const [
-        {
-          address,
-          meta: { name, ethereumAddress, isMobile },
-        },
-      ] = accounts;
-
-      this.setCurrentAccount({
-        address,
-        name: name as string,
-        ethereumAddress: ethereumAddress as string,
-        isMobile: isMobile as boolean,
-      });
+    if (accounts.length === 0) {
+      this.setCurrentAccount(null);
 
       return;
     }
 
-    this.setCurrentAccount(null);
+    const [
+      {
+        address,
+        meta: { name, ethereumAddress, isMobile },
+      },
+    ] = accounts;
+
+    this.setCurrentAccount({
+      address,
+      name: name as string,
+      ethereumAddress: ethereumAddress as string,
+      isMobile: isMobile as boolean,
+    });
   }
 
   public upsertNetworkMap(data: NetworkJson): boolean {
     if (this.lockNetworkMap) return false;
 
     this.lockNetworkMap = true;
+
     const { name, currentProvider, chain, blockExplorer, paraId, nativeToken, decimals, customNodes } = data;
 
     if (name in this.networkMap) {
@@ -547,7 +548,9 @@ export default class State {
 
     this.networkMapSubject.next(this.networkMap);
     this.networkMapStore.set('NetworkMap', this.networkMap);
+
     this.updateServiceInfo();
+
     this.lockNetworkMap = false;
 
     return true;
@@ -557,6 +560,7 @@ export default class State {
     if (this.lockNetworkMap) return false; // todo ???
 
     this.lockNetworkMap = true; // todo ???
+
     const network = this.networkMap[networkKey];
 
     delete this.apis.substrate[networkKey];
@@ -565,9 +569,11 @@ export default class State {
 
     network.active = false;
     network.apiStatus = NETWORK_STATUS.DISCONNECTED;
+
     this.networkMapSubject.next(this.networkMap);
     this.updateServiceInfo();
     this.networkMapStore.set('NetworkMap', this.networkMap);
+
     this.lockNetworkMap = false;
 
     this.getAuthorize((data) => {
@@ -577,10 +583,6 @@ export default class State {
     });
 
     return true;
-  }
-
-  public async enableNetworkType(type: string): Promise<void> {
-    return this.setActiveNetworks(type);
   }
 
   public updateServiceInfo() {
@@ -734,7 +736,8 @@ export default class State {
     this.selectedNetworks[currentAccount.address] = type;
 
     const unsub = this.subscription.getSubscription('balance', currentAccount.address);
-    unsub && unsub();
+
+    unsub?.();
 
     const networks = this.getActiveNetworks();
 
@@ -746,11 +749,13 @@ export default class State {
       if (isEthereum) {
         if (!isActive && this.apis.evm[key]) {
           this.apis.evm[key].destroy();
+
           delete this.apis.evm[key];
         }
       } else {
         if (!isActive && this.apis.substrate[key]) {
           this.apis.substrate[key].api?.disconnect();
+
           delete this.apis.substrate[key];
         }
       }
@@ -1223,12 +1228,13 @@ export default class State {
       this.networkMap[key].active = isExists;
     });
 
-    this.generateDefaultBalanceMap();
+    this.getSubstrateAccounts().forEach(({ address }) => this.generateDefaultBalance(address));
   }
 
   public async init() {
     await this.eventService.waitCryptoReady;
     await this.prepNetworkJson();
+
     this.initNetworkStates();
     this.updateServiceInfo();
   }
@@ -1419,13 +1425,7 @@ export default class State {
   public generateDefaultBalance(address: string) {
     if (address === '') return;
 
-    if (this.balanceMap && this.balanceMap[address] !== undefined) return;
-
-    this.balanceMap[address] = getMockCurrencies(this.networksJson);
-  }
-
-  public generateDefaultBalanceMap() {
-    this.getSubstrateAccounts().forEach(({ address }) => this.generateDefaultBalance(address));
+    if (this.balanceMap?.[address] === undefined) this.balanceMap[address] = getMockCurrencies(this.networksJson);
   }
 
   public accountExportPrivateKey({

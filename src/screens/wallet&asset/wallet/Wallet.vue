@@ -90,7 +90,6 @@ import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import ContentSettings from '@/screens/wallet&asset/wallet/ContentSettings.vue';
-import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import { accountController } from '@/controllers/accountController';
@@ -121,13 +120,11 @@ import { fetchEvmBalance } from '@/extension/messaging';
     SoraCardBanner,
     ContentSettings,
     NetworkManagement,
-    SelectNetworkButton,
     NetworkUnavailablePopup,
     GoogleExportPopup,
   },
 })
 export default class Wallet extends Vue {
-  readonly selectNetworkButtonRef = 'selectNetworkButton';
   showNetworkManagement = false;
   showAssetsManagementForm = false;
   showSendForm = false;

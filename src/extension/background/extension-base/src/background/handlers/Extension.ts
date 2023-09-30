@@ -137,7 +137,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   public updateNetworkForNewWallet(address: string) {
-    this.state.setActiveNetworks(this.state.selectedNetworks[address] ?? ALL_NETWORKS);
+    this.setActiveNetworks(this.state.selectedNetworks[address] ?? ALL_NETWORKS);
   }
 
   accountsCreate({ password, suri, type, meta }: RequestAccountCreateSuri): string {
@@ -474,6 +474,8 @@ export default class Extension extends FWExtensionBase {
 
   private updateCurrentAccount(address: string, isNew = true): boolean {
     if (isEthereumAddress(address)) return false;
+
+    this.state.generateDefaultBalance(address);
 
     this._saveCurrentAccountAddress(address, () => {
       this.triggerWalletsSubscription();

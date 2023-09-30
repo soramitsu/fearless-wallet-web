@@ -31,8 +31,6 @@ export function getSummaryTransferableWalletBalance(
 
     // TODO: нужна проверка на то, входит ли сеть в группу
     balances.forEach(({ state, transferable }) => {
-      // if (!isNetworkExistGroup(name, network)) return;
-
       if (state === APIItemState.READY) {
         const assetCount = +(transferable ?? 0);
         const assetValue = assetCount * tokenPrice;

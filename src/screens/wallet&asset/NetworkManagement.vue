@@ -12,7 +12,7 @@
         :network="networkGroup"
         :isNetworkGroup="true"
         :isSelected="isGroupSelected"
-        @onChangeNetwork="toggleNetworkType(isGroupSelected)"
+        @onChangeNetwork="toggleNetworkType"
       />
 
       <div v-show="isNetworksExists" class="container" :class="networkListClasses">
@@ -21,10 +21,10 @@
             <NetworkItem
               v-for="network in filteredOptionsNetworks"
               :network="network"
-              :isSelected="isNetworkSelected(network)"
-              @onChangeNetwork="enableSingleNetwork(network.name, isNetworkSelected(network))"
-              @onToggleFavorite="toggleFavorite(network.name)"
+              :isSelected="isNetworkSelected(network.name)"
               :key="network.name"
+              @onChangeNetwork="enableSingleNetwork(network.name)"
+              @onToggleFavorite="toggleFavorite(network.name)"
             />
           </ul>
         </Scroll>
@@ -156,7 +156,7 @@ export default class NetworkManagement extends Vue {
     if (isNetworkGroup(this.selectedNetwork)) this.activeTab = this.selectedNetwork as keyof Tabs;
   }
 
-  isNetworkSelected({ name }: NetworkJson) {
+  isNetworkSelected(name: string) {
     return this.selectedNetwork === name;
   }
 
@@ -164,8 +164,8 @@ export default class NetworkManagement extends Vue {
     this.activeTab = value;
   }
 
-  toggleNetworkType(isGroupSelected: boolean) {
-    if (isGroupSelected) return;
+  toggleNetworkType() {
+    if (this.isGroupSelected) return;
 
     const network = this.tabs[this.activeTab].name;
 
@@ -180,7 +180,9 @@ export default class NetworkManagement extends Vue {
     this.$notify({ title: prepNotification, message: '', type: 'success' });
   }
 
-  enableSingleNetwork(network: string, isSelected: boolean) {
+  enableSingleNetwork(network: string) {
+    const isSelected = this.isNetworkSelected(network);
+
     if (isSelected) return;
 
     this.setSelectedNetwork(network);

@@ -111,7 +111,6 @@ export default class Header extends Vue {
   readonly walletNameRef = 'walletName';
   readonly settingsNameRef = 'settingsName';
   readonly isPopup = BaseApi.useIsPopup();
-  readonly selectNetworkButtonRef = 'selectNetworkButton';
   readonly allNetworksIcon = 'all-networks';
   showConnectionPopup = false;
   showSelectNetworkPopup = false;

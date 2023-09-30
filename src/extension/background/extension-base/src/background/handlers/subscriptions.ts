@@ -57,23 +57,13 @@ export class FWSubscription {
   }
 
   updateSubscription(payload: UpdateSub) {
-    if (payload.name === 'balance') {
-      const { name, func } = payload;
-      const oldSub = this.subscriptionMap[name];
-
-      oldSub?.();
-
-      this.subscriptionMap[name] = func;
-
-      return;
-    }
-
     const { name, func } = payload;
+
     const oldSub = this.subscriptionMap[name];
 
     oldSub?.();
 
-    if (func) this.subscriptionMap[name] = func;
+    this.subscriptionMap[name] = func;
   }
 
   stopAllSubscription() {

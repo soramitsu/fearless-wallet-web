@@ -55,7 +55,6 @@ import type { HistoryElement } from '@/interfaces/history';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import HistoryDetailsForm from '@/screens/wallet&asset/asset/HistoryDetailsForm.vue';
-import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
@@ -79,14 +78,11 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'sh
     ReceiveForm,
     CrossChainForm,
     HistoryDetailsForm,
-    SelectNetworkButton,
     NetworkManagementButton,
     NetworkManagement,
   },
 })
 export default class Asset extends Vue {
-  readonly selectNetworkButtonRef = 'selectNetworkButton';
-
   historyElement: HistoryElement | Record<string, string> | null = null;
   showSendForm = false;
   showReceiveForm = false;

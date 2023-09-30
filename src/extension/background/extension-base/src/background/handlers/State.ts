@@ -696,16 +696,15 @@ export default class State {
   public getActiveNetworks() {
     const networks = Object.values(this.networkMap);
     const uniqNetworks = new Set<NetworkJson>();
-    const selectedNetworks = Object.keys(this.selectedNetworks);
-    const isAllNetworkPicked = selectedNetworks.some((address) => this.selectedNetworks[address] === ALL_NETWORKS);
+    const selectedNetworks = Object.entries(this.selectedNetworks);
+    const isAllNetworkPicked = selectedNetworks.some(([, value]) => value === ALL_NETWORKS);
 
     if (isAllNetworkPicked) return networks;
 
-    selectedNetworks.forEach((address) => {
-      const value = this.selectedNetworks[address];
-
+    selectedNetworks.forEach(([address, value]) => {
       if (value === POPULAR_NETWORKS) {
         const popular = networks.filter((el) => el.rank !== undefined);
+
         popular.forEach((el) => uniqNetworks.add(el));
 
         return;
@@ -719,11 +718,12 @@ export default class State {
         return;
       }
 
-      const singleNetwork = networks.find((network) => network.name === value);
+      const singleNetwork = networks.find(({ name }) => name === value);
 
       if (singleNetwork) uniqNetworks.add(singleNetwork);
     });
-    console.info(uniqNetworks, 'set this to Active');
+
+    console.info('Set Active Networks: ', Array.from(uniqNetworks));
 
     return Array.from(uniqNetworks);
   }
@@ -741,23 +741,23 @@ export default class State {
 
     const networks = this.getActiveNetworks();
 
-    Object.keys(this.networkMap).forEach((key) => {
-      this.networkMap[key].active = networks.some(({ name }) => name.toLowerCase() === key.toLowerCase());
+    Object.keys(this.networkMap).forEach(async (key) => {
+      const isActive = networks.some(({ name }) => name.toLowerCase() === key.toLowerCase());
+
+      this.networkMap[key].active = isActive;
+
+      if (isActive) return;
+
       const isEthereum = this.networkMap[key].isEthereum;
-      const isActive = this.networkMap[key].active;
 
-      if (isEthereum) {
-        if (!isActive && this.apis.evm[key]) {
-          this.apis.evm[key].destroy();
+      if (isEthereum && this.apis.evm[key]) {
+        this.apis.evm[key].destroy();
 
-          delete this.apis.evm[key];
-        }
-      } else {
-        if (!isActive && this.apis.substrate[key]) {
-          this.apis.substrate[key].api?.disconnect();
+        delete this.apis.evm[key];
+      } else if (this.apis.substrate[key]) {
+        await this.apis.substrate[key].api?.disconnect();
 
-          delete this.apis.substrate[key];
-        }
+        delete this.apis.substrate[key];
       }
     });
 
@@ -1217,14 +1217,17 @@ export default class State {
 
     this.networkMapStore.set('NetworkMap', result);
     this.networkMap = result;
+
     this.getSubstrateAccounts().forEach((el) => {
       //Migration from old network managment
       if (!this.selectedNetworks[el.address]) this.selectedNetworks[el.address] = ALL_NETWORKS;
     });
+
     const activeNetworks = this.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((key) => {
       const isExists = activeNetworks.some(({ name }) => name === key);
+
       this.networkMap[key].active = isExists;
     });
 

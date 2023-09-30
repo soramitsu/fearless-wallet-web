@@ -80,7 +80,7 @@ import { URLS } from '@/consts/urls';
 import {
   ALL_NETWORKS,
   FAVORITE_NETWORKS,
-  NETWORK_GROUP,
+  NETWORKS_GROUPS,
   POPULAR_NETWORKS,
   SORA_NETWORK_NAME,
   SORA_XOR_ASSET_ID,
@@ -652,7 +652,7 @@ export default class State {
   }
 
   public isNetworkAlreadySelected(type: string, network: NetworkJson, address: string) {
-    const isGroup = NETWORK_GROUP.some((group) => group === type);
+    const isGroup = NETWORKS_GROUPS.some((group) => group === type);
 
     if (isGroup) {
       if (type === POPULAR_NETWORKS) {
@@ -684,7 +684,7 @@ export default class State {
     if (isFavoriteAlreadySelected && isPartOfFavorite) return true;
 
     const isTypeAlreadySelected = networks.some((network) => network.toLowerCase() === networkName.toLowerCase());
-    const isNotGroup = NETWORK_GROUP.every((el) => el.toLowerCase() !== networkName.toLowerCase());
+    const isNotGroup = NETWORKS_GROUPS.every((el) => el.toLowerCase() !== networkName.toLowerCase());
 
     return isNotGroup && isTypeAlreadySelected;
   }
@@ -735,7 +735,7 @@ export default class State {
 
     this.selectedNetworks[currentAccount.address] = type;
 
-    const unsub = this.subscription.getSubscription('balance', currentAccount.address);
+    const unsub = this.subscription.getSubscription('balance');
 
     unsub?.();
 

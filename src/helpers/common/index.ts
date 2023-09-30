@@ -1,25 +1,39 @@
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { addNumbers } from '@/helpers/numbers';
-import { ALL_NETWORKS, NETWORK_GROUP } from '@/consts/networks';
+import { ALL_NETWORKS, NETWORKS_GROUPS } from '@/consts/networks';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 import { AssetsPrice, ChangeWalletBalance, NetworkName } from '@/interfaces';
 import { FEARLESS_TITLE } from '@/consts/global';
 
 export function isNetworkGroup(network: string) {
-  return NETWORK_GROUP.some((group) => group.toLowerCase() === network.toLowerCase());
+  return NETWORKS_GROUPS.some((group) => group.toLowerCase() === network.toLowerCase());
+}
+
+export function getTransferableBalanceInNetwork(token: TokenBalance, network: string) {
+  return token.balances?.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
 }
 
 export function getSummaryTransferableWalletBalance(
   tokens: TokenBalance[],
   price: AssetsPrice,
-  network: NetworkName
+  network: NetworkName // network name or group name
 ): number {
-  return tokens.reduce((result, { balances, priceId }) => {
-    balances.forEach(({ state, transferable, name }) => {
-      if (network !== ALL_NETWORKS && name !== network) return;
+  return tokens.reduce((result, token) => {
+    const { balances, priceId } = token;
+    const tokenPrice = price.tokenPriceMap[priceId ?? ''] ?? 0;
+
+    if (!isNetworkGroup(network)) {
+      const assetCount = getTransferableBalanceInNetwork(token, network);
+      const assetValue = +assetCount * tokenPrice;
+
+      return result + assetValue;
+    }
+
+    // TODO: нужна проверка на то, входит ли сеть в группу
+    balances.forEach(({ state, transferable }) => {
+      // if (!isNetworkExistGroup(name, network)) return;
 
       if (state === APIItemState.READY) {
-        const tokenPrice = price.tokenPriceMap[priceId ?? ''] ?? 0;
         const assetCount = +(transferable ?? 0);
         const assetValue = assetCount * tokenPrice;
 
@@ -31,13 +45,10 @@ export function getSummaryTransferableWalletBalance(
   }, 0);
 }
 
-export function getTransferableBalanceInNetwork(token: TokenBalance, network: string) {
-  return token.balances?.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
-}
-
 export function getSummaryTransferableBalance(token: TokenBalance, network = ALL_NETWORKS) {
   if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
 
+  // TODO: нужна проверка на то, входит ли сеть в группу
   return token.balances.reduce((result, { state, transferable }) => {
     if (state === APIItemState.READY && transferable) result += +transferable;
 
@@ -56,7 +67,7 @@ export function getSummaryLockedBalance(token: TokenBalance) {
 export function getChangeWalletBalance(
   tokens: TokenBalance[],
   price: AssetsPrice,
-  network: NetworkName
+  network: NetworkName // network name or group name
 ): ChangeWalletBalance {
   const changeAssets = tokens.map((token) => {
     const priceChange = price?.tokenPriceChange[token.priceId ?? ''] ?? 0;

@@ -126,7 +126,10 @@ function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: stri
   return balance.name.toLowerCase() === selectedNetwork.toLowerCase();
 }
 
-export function getSummaryTransferableBalanceFilteredByActiveNetworks(token: TokenBalance, network = ALL_NETWORKS) {
+export function getSummaryTransferableBalanceFilteredByActiveNetworks(
+  token: TokenBalance,
+  network: string = ALL_NETWORKS
+) {
   if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
 
   return (

@@ -1,32 +1,34 @@
 <template>
   <AboveForm :header="getLocale('header')" :fullScreen="true" @closeHandler="$emit('handlerClose')">
-    <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
+    <div class="management">
+      <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
 
-    <Tabs v-show="showTabs" :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
+      <Tabs v-show="showTabs" :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
 
-    <div v-show="!isNetworksExists" class="network__list-no-found">{{ $t('header.networkManagement.nofound') }}</div>
+      <div v-show="!isNetworksExists" class="network__list-no-found">{{ $t('header.networkManagement.nofound') }}</div>
 
-    <NetworkItem
-      v-show="isNetworksExists"
-      :network="networkGroup"
-      :isNetworkGroup="true"
-      :isSelected="isGroupSelected"
-      @onChangeNetwork="toggleNetworkType(isGroupSelected)"
-    />
+      <NetworkItem
+        v-show="isNetworksExists"
+        :network="networkGroup"
+        :isNetworkGroup="true"
+        :isSelected="isGroupSelected"
+        @onChangeNetwork="toggleNetworkType(isGroupSelected)"
+      />
 
-    <div v-show="isNetworksExists" class="container" :class="networkListClasses">
-      <Scroll>
-        <ul class="network__list">
-          <NetworkItem
-            v-for="network in filteredOptionsNetworks"
-            :network="network"
-            :isSelected="isNetworkSelected(network)"
-            @onChangeNetwork="enableSingleNetwork(network.name, isNetworkSelected(network))"
-            @onToggleFavorite="toggleFavorite(network.name)"
-            :key="network.name"
-          />
-        </ul>
-      </Scroll>
+      <div v-show="isNetworksExists" class="container" :class="networkListClasses">
+        <Scroll>
+          <ul class="network__list">
+            <NetworkItem
+              v-for="network in filteredOptionsNetworks"
+              :network="network"
+              :isSelected="isNetworkSelected(network)"
+              @onChangeNetwork="enableSingleNetwork(network.name, isNetworkSelected(network))"
+              @onToggleFavorite="toggleFavorite(network.name)"
+              :key="network.name"
+            />
+          </ul>
+        </Scroll>
+      </div>
     </div>
   </AboveForm>
 </template>
@@ -208,52 +210,59 @@ export default class NetworkManagement extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.search-input {
-  padding-bottom: 16px;
-}
-
-.button {
+.management {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 5px 15px;
-  height: 30px;
-  background: $secondary-background-color;
-  border-radius: 30px;
-  font-weight: 700;
-  font-size: 12px;
-  text-transform: uppercase;
-  color: $plain-white;
-  margin: 5px 14px 0 0;
-  border: none;
-  cursor: pointer;
-
-  &:hover {
-    background: $default-background-color;
-  }
-}
-.container {
-  height: 350px;
-  overflow-y: hidden;
-
-  &--fullscreen {
-    height: calc(100vh - 270px);
-  }
-}
-
-.network__list {
-  display: flex;
-  flex-flow: column nowrap;
-  padding: 0;
+  flex-direction: column;
   height: 100%;
-}
-.network__list-no-found {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  font-size: 14px;
-  font-weight: 600;
-  color: $gray-2-color;
+
+  .search-input {
+    padding-bottom: 16px;
+  }
+
+  .button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 5px 15px;
+    height: 30px;
+    background: $secondary-background-color;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: $plain-white;
+    margin: 5px 14px 0 0;
+    border: none;
+    cursor: pointer;
+
+    &:hover {
+      background: $default-background-color;
+    }
+  }
+  .container {
+    height: 350px;
+    overflow-y: hidden;
+
+    &--fullscreen {
+      height: calc(100vh - 270px);
+    }
+  }
+
+  .network__list {
+    display: flex;
+    flex-flow: column nowrap;
+    padding: 0;
+    height: 100%;
+  }
+
+  .network__list-no-found {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 14px;
+    font-weight: 600;
+    color: $gray-2-color;
+  }
 }
 </style>

@@ -66,7 +66,7 @@ import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NETWORK_GROUP } from '@/consts/networks';
+import { NETWORKS_GROUPS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common/index';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
@@ -123,7 +123,7 @@ export default class Asset extends Vue {
   }
 
   get isSelectedNetworkHistory() {
-    if (!NETWORK_GROUP.includes(this.selectedNetwork)) return false;
+    if (!NETWORKS_GROUPS.includes(this.selectedNetwork)) return false;
 
     return this.selectedAssetNetwork === '';
   }

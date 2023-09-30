@@ -220,7 +220,7 @@ export default class Extension extends FWExtensionBase {
     if (this.state.balanceMap[address]) {
       delete this.state.balanceMap[address];
 
-      const subs = this.state.subscription.getSubscription('balance', address);
+      const subs = this.state.subscription.getSubscription('balance');
 
       if (subs) subs();
     }
@@ -474,8 +474,6 @@ export default class Extension extends FWExtensionBase {
 
   private updateCurrentAccount(address: string, isNew = true): boolean {
     if (isEthereumAddress(address)) return false;
-
-    console.log('updateCurrentAccount', 111111111);
 
     this._saveCurrentAccountAddress(address, () => {
       this.triggerWalletsSubscription();

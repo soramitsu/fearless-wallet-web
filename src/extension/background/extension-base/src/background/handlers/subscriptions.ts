@@ -16,7 +16,6 @@ type UpdateSub =
   | {
       name: 'balance';
       func: () => void;
-      address: string;
     }
   | {
       name: 'xorTotalBalance';
@@ -26,7 +25,7 @@ type UpdateSub =
 const subscriptions: Subscriptions = {};
 
 type SubscriptionMap = {
-  balance: Record<string, () => void>;
+  balance?: (() => void) | undefined;
   xorTotalBalance: (() => void) | undefined;
 };
 
@@ -34,7 +33,7 @@ export class FWSubscription {
   private serviceSubscription: Subscription | undefined;
   private addressSubscribed: string | undefined;
   private subscriptionMap: SubscriptionMap = {
-    balance: {},
+    balance: undefined,
     xorTotalBalance: undefined,
   };
 
@@ -49,8 +48,8 @@ export class FWSubscription {
     return this.subscriptionMap;
   }
 
-  getSubscription(name: SubscriptionName, address?: string): (() => void) | undefined {
-    if (name === 'balance' && address) return this.subscriptionMap[name][address];
+  getSubscription(name: SubscriptionName): (() => void) | undefined {
+    if (name === 'balance') return this.subscriptionMap[name];
 
     if (name === 'xorTotalBalance') return this.subscriptionMap[name];
 
@@ -59,14 +58,12 @@ export class FWSubscription {
 
   updateSubscription(payload: UpdateSub) {
     if (payload.name === 'balance') {
-      const { name, address, func } = payload;
-      const oldSub = this.subscriptionMap[name][address];
-
-      console.log('oldSub', oldSub);
+      const { name, func } = payload;
+      const oldSub = this.subscriptionMap[name];
 
       oldSub?.();
 
-      this.subscriptionMap[name][address] = func;
+      this.subscriptionMap[name] = func;
 
       return;
     }
@@ -80,19 +77,11 @@ export class FWSubscription {
   }
 
   stopAllSubscription() {
-    if (this.subscriptionMap.balance) {
-      Object.keys(this.subscriptionMap.balance).forEach((address) => {
-        const unsub = this.subscriptionMap.balance[address];
-        unsub();
-      });
+    this.subscriptionMap.balance?.();
+    this.subscriptionMap.balance = undefined;
 
-      if (this.subscriptionMap.xorTotalBalance) {
-        this.subscriptionMap.xorTotalBalance();
-        this.subscriptionMap.xorTotalBalance = undefined;
-      }
-
-      this.subscriptionMap.balance = {};
-    }
+    this.subscriptionMap.xorTotalBalance?.();
+    this.subscriptionMap.xorTotalBalance = undefined;
   }
 
   async start() {
@@ -168,7 +157,6 @@ export class FWSubscription {
         this.updateSubscription({
           name: 'balance',
           func: unsub,
-          address,
         });
     } catch {
       this.logger.warn(`Unable to subscribe: ${address}`);

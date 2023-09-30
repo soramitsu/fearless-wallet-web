@@ -42,18 +42,8 @@ export class FWCron {
   };
 
   addCron = (name: string, callback: (param?: unknown) => void, interval: number, runFirst = true) => {
-    if (runFirst) {
-      callback();
-    }
+    if (runFirst) callback();
 
-    this.cronMap[name] = setInterval(callback, interval);
-  };
-
-  addSubscribeCron = <T>(name: string, callback: (subject: Subject<T>) => void, interval: number) => {
-    const sb = new Subject<T>();
-
-    callback(sb);
-    this.subjectMap[name] = sb;
     this.cronMap[name] = setInterval(callback, interval);
   };
 
@@ -62,6 +52,7 @@ export class FWCron {
 
     if (interval) {
       clearInterval(interval);
+
       delete this.cronMap[name];
     }
   };
@@ -142,20 +133,21 @@ export class FWCron {
     this.status = 'stopped';
   };
 
-  recoverApiMap = () => {
+  recoverApiMap = async () => {
     if (!navigator.onLine) return;
 
     const apiMap = this.state.getApiMap;
 
-    for (const [key] of Object.entries(apiMap.evm)) this.state.refreshWeb3Api(key);
+    for (const key of Object.keys(apiMap.evm)) this.state.refreshWeb3Api(key);
 
     for (const [key, substrate] of Object.entries(apiMap.substrate)) {
       if (substrate.api === undefined) {
         this.state.refreshDotSamaApi(key);
+
         continue;
       }
 
-      substrate.api?.isReadyOrError.catch(() => this.state.refreshDotSamaApi(key));
+      await substrate.api?.isReadyOrError.catch(() => this.state.refreshDotSamaApi(key));
     }
 
     this.state.getCurrentAccount((currentAccount) => {
@@ -163,7 +155,7 @@ export class FWCron {
 
       const { address, ethereumAddress } = currentAccount;
 
-      this.subscriptions.subscribeBalances(address, ethereumAddress);
+      this.subscriptions.subscribeBalances(address, ethereumAddress, null);
     });
   };
 

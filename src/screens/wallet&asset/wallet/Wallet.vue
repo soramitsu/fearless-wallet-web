@@ -257,11 +257,6 @@ export default class Wallet extends Vue {
     if (value.length === 0) this.showNetworkManagement = false;
   }
 
-  @Watch('selectedWallet')
-  srcWatcher() {
-    fetchEvmBalance();
-  }
-
   activated() {
     fetchEvmBalance();
   }

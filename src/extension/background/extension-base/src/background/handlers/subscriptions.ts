@@ -9,6 +9,7 @@ import type {
   SubscriptionMessageTypes,
   Subscriptions,
 } from '@extension-base/background/types/types';
+import { NetworkName } from '@/interfaces';
 
 type SubscriptionName = 'balance' | 'xorTotalBalance';
 
@@ -31,7 +32,10 @@ type SubscriptionMap = {
 
 export class FWSubscription {
   private serviceSubscription: Subscription | undefined;
-  private addressSubscribed: string | undefined;
+  private serviceInfo: { networks: { substrate: NetworkName[]; evm: NetworkName[] }; address: string } = {
+    address: '',
+    networks: { evm: [], substrate: [] },
+  };
   private subscriptionMap: SubscriptionMap = {
     balance: undefined,
     xorTotalBalance: undefined,
@@ -85,7 +89,7 @@ export class FWSubscription {
     accountsExceptCurrent.forEach((account) => {
       const ethAddress = (account.meta.ethereumAddress as string) ?? '';
 
-      this.subscribeBalances(account.address, ethAddress, true);
+      this.subscribeBalances(account.address, ethAddress, null, true);
     });
 
     if (!this.serviceSubscription)
@@ -97,11 +101,42 @@ export class FWSubscription {
 
           const { address, ethereumAddress } = serviceInfo.currentAccountInfo;
 
-          if (this.addressSubscribed !== address) {
-            this.addressSubscribed = address;
+          const allNewSubstrateNetworks = Object.keys(serviceInfo?.apiMap.substrate ?? {});
+          const newSubstrateNetworksWithoutSubscribe = allNewSubstrateNetworks.filter(
+            (network) => !this.serviceInfo?.networks.substrate.includes(network)
+          );
 
-            this.subscribeBalances(address, ethereumAddress);
+          const allNewEvmNetworks = Object.keys(serviceInfo?.apiMap.evm ?? {});
+          const newEvmNetworksWithoutSubscribe = allNewEvmNetworks.filter(
+            (network) => !this.serviceInfo?.networks.evm.includes(network)
+          );
+
+          const addressHasChanged = this.serviceInfo.address !== address;
+
+          // если изменился адрес или появились новые сети на которые мы сейчас не подписаны, то подписываемся
+          if (
+            addressHasChanged ||
+            newSubstrateNetworksWithoutSubscribe.length !== 0 ||
+            newEvmNetworksWithoutSubscribe.length !== 0
+          ) {
+            if (addressHasChanged) {
+              this.serviceInfo.address = address;
+
+              // если адрес изменился, то подписываемся на все сети
+              this.subscribeBalances(address, ethereumAddress, null);
+              this.state.fetchEvmBalance(null);
+            } else {
+              // если адрес не менялся, подписываемся только на новые сети(которые только что включили)
+              if (newSubstrateNetworksWithoutSubscribe.length)
+                this.subscribeBalances(address, ethereumAddress, newSubstrateNetworksWithoutSubscribe);
+
+              if (newEvmNetworksWithoutSubscribe.length) this.state.fetchEvmBalance(newEvmNetworksWithoutSubscribe);
+            }
           }
+
+          // обновляем список сетей на балансы которых мы подписаны
+          this.serviceInfo.networks.substrate = allNewSubstrateNetworks;
+          this.serviceInfo.networks.evm = allNewEvmNetworks;
         },
       });
   }
@@ -136,11 +171,11 @@ export class FWSubscription {
     });
   }
 
-  subscribeBalances(address: string, ethereumAddress: string, isFirstRun?: boolean) {
+  subscribeBalances(address: string, ethereumAddress: string, newNetworks: NetworkName[] | null, isFirstRun?: boolean) {
     this.logger.warn(`Start balance sub for: ${address}`);
 
     try {
-      const unsub = this.initBalanceSubscription(address, ethereumAddress, isFirstRun);
+      const unsub = this.initBalanceSubscription(address, ethereumAddress, newNetworks, isFirstRun);
 
       if (isFirstRun) unsub();
       else
@@ -153,10 +188,15 @@ export class FWSubscription {
     }
   }
 
-  initBalanceSubscription(address: string, ethereumAddress: string, isFirstRun?: boolean) {
+  initBalanceSubscription(
+    address: string,
+    ethereumAddress: string,
+    newNetworks: NetworkName[] | null,
+    isFirstRun?: boolean
+  ) {
     if (isFirstRun) this.state.generateDefaultBalance(address);
 
-    return subscribeBalance(address, ethereumAddress);
+    return subscribeBalance(address, ethereumAddress, newNetworks);
   }
 }
 

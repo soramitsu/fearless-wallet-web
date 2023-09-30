@@ -31,7 +31,6 @@ import { addresses as addressesObservable } from '@polkadot/ui-keyring/observabl
 import { storage } from '@extension-base/stores/Storage';
 import { MetadataDef } from '@polkadot/extension-inject/types';
 import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import { fetchEvmAssetBalance } from '../../api/evm/balance';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -686,19 +685,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async fetchEvmBalance() {
-    const currentAccount = await this.state.currentAccount;
-
-    if (!currentAccount || currentAccount?.ethereumAddress === '') return;
-
-    if (Date.now() - this.state.getTimespan('evmBalances', currentAccount.ethereumAddress) < 1000 * 30) return;
-
-    const networks = Object.values(this.state.networkMap).filter(({ name, active }) => isRequireEvmAPI(name) && active);
-
-    for (const network of networks) {
-      network.assets.forEach(({ id }) => fetchEvmAssetBalance(currentAccount.ethereumAddress, network.name, id));
-    }
-
-    this.state.saveTimespan('evmBalances', currentAccount.ethereumAddress, Date.now());
+    this.state.fetchEvmBalance(null);
   }
 
   private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {

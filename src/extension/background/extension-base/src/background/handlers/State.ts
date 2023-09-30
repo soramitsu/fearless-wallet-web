@@ -36,6 +36,7 @@ import { SignerPayloadRaw } from '@polkadot/types/types';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
+import { fetchEvmAssetBalance } from '../../api/evm/balance';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -80,7 +81,6 @@ import { URLS } from '@/consts/urls';
 import {
   ALL_NETWORKS,
   FAVORITE_NETWORKS,
-  NETWORKS_GROUPS,
   POPULAR_NETWORKS,
   SORA_NETWORK_NAME,
   SORA_XOR_ASSET_ID,
@@ -511,9 +511,7 @@ export default class State {
       // update provider for existed network
       network.customNodes = customNodes;
 
-      if (currentProvider !== network.currentProvider && currentProvider) {
-        network.currentProvider = currentProvider;
-      }
+      if (currentProvider !== network.currentProvider && currentProvider) network.currentProvider = currentProvider;
 
       network.chain = chain;
 
@@ -532,17 +530,15 @@ export default class State {
       // update API map if network is active
       if (data.name in this.apis.substrate) {
         this.apis.substrate[name].api?.disconnect && this.apis.substrate[name].api?.disconnect();
+
         delete this.apis.substrate[name];
       }
 
       if (data.isEthereum && name in this.apis.evm) delete this.apis.evm[name];
 
       if (currentProvider) {
-        if (data.isEthereum && isRequireEvmAPI(data.name)) {
-          this.apis.evm[data.name] = initWeb3Api(currentProvider);
-        } else {
-          initApi(data);
-        }
+        if (data.isEthereum && isRequireEvmAPI(data.name)) this.apis.evm[data.name] = initWeb3Api(currentProvider);
+        else initApi(data);
       }
     }
 
@@ -636,70 +632,13 @@ export default class State {
     return true;
   }
 
-  public selectedNetworksExceptAddress(address: string): string[] {
-    const result: string[] = [];
-    Object.keys(this.selectedNetworks).forEach((el) => {
-      if (el !== address) result.push(this.selectedNetworks[el]);
-    });
-
-    return result;
-  }
-
-  public isPopularNetworksSelected() {
-    const networks = Object.values(this.selectedNetworks);
-
-    return networks.some((el) => el === POPULAR_NETWORKS);
-  }
-
-  public isNetworkAlreadySelected(type: string, network: NetworkJson, address: string) {
-    const isGroup = NETWORKS_GROUPS.some((group) => group === type);
-
-    if (isGroup) {
-      if (type === POPULAR_NETWORKS) {
-        const values = Object.values(this.selectedNetworks);
-        const isPrevioslySelected = values.some((el) => el === POPULAR_NETWORKS);
-
-        if (isPrevioslySelected) return true;
-
-        return this.isPopularNetworksSelected();
-      }
-
-      if (type === FAVORITE_NETWORKS) return this.isFavoriteNetworkSelected();
-    }
-
-    return this.isSingleNetworkSelected(network, address);
-  }
-
-  public isSingleNetworkSelected(network: NetworkJson, address: string) {
-    const networks = this.selectedNetworksExceptAddress(address);
-    const networkName = network.name;
-    const isPartOfPopular = network.rank !== undefined;
-    const isPopularSelected = networks.some((network) => network.toLowerCase() === POPULAR_NETWORKS);
-
-    if (isPartOfPopular && isPopularSelected) return true;
-
-    const isPartOfFavorite = network.favorite.length !== 0;
-    const isFavoriteAlreadySelected = networks.some((el) => el === FAVORITE_NETWORKS);
-
-    if (isFavoriteAlreadySelected && isPartOfFavorite) return true;
-
-    const isTypeAlreadySelected = networks.some((network) => network.toLowerCase() === networkName.toLowerCase());
-    const isNotGroup = NETWORKS_GROUPS.every((el) => el.toLowerCase() !== networkName.toLowerCase());
-
-    return isNotGroup && isTypeAlreadySelected;
-  }
-
-  public isFavoriteNetworkSelected() {
-    return Object.values(this.selectedNetworks).some((el) => el === FAVORITE_NETWORKS);
-  }
-
   public getActiveNetworks() {
     const networks = Object.values(this.networkMap);
     const uniqNetworks = new Set<NetworkJson>();
     const selectedNetworks = Object.entries(this.selectedNetworks);
-    const isAllNetworkPicked = selectedNetworks.some(([, value]) => value === ALL_NETWORKS);
+    // const isAllNetworkPicked = selectedNetworks.some(([, value]) => value === ALL_NETWORKS);
 
-    if (isAllNetworkPicked) return networks;
+    // if (isAllNetworkPicked) return networks;
 
     selectedNetworks.forEach(([address, value]) => {
       if (value === POPULAR_NETWORKS) {
@@ -735,9 +674,9 @@ export default class State {
 
     this.selectedNetworks[currentAccount.address] = type;
 
-    const unsub = this.subscription.getSubscription('balance');
+    // const unsub = this.subscription.getSubscription('balance');
 
-    unsub?.();
+    // unsub?.();
 
     const networks = this.getActiveNetworks();
 
@@ -755,7 +694,7 @@ export default class State {
 
         delete this.apis.evm[key];
       } else if (this.apis.substrate[key]) {
-        await this.apis.substrate[key].api?.disconnect();
+        this.apis.substrate[key].api?.disconnect();
 
         delete this.apis.substrate[key];
       }
@@ -764,7 +703,6 @@ export default class State {
     this.updateServiceInfo();
     this.initNetworkStates(true);
 
-    this.subscription.initBalanceSubscription(currentAccount.address, currentAccount.ethereumAddress);
     this.networkMapSubject.next(this.networkMap);
 
     this.networkMapStore.set('NetworkMap', this.networkMap);
@@ -1253,22 +1191,20 @@ export default class State {
     const activeNetworks = Object.values(this.networkMap).filter(({ active }) => active);
 
     for (const network of activeNetworks) {
-      const { name, active, currentProvider, isEthereum } = network;
+      const { name, currentProvider, isEthereum } = network;
 
-      if (active) {
-        if (isEthereum && isRequireEvmAPI(name)) {
-          if (!this.apis.evm[name] || !this.apis.evm[name].ready) this.apis.evm[name] = initWeb3Api(currentProvider);
-        } else {
-          if (this.apis.substrate[name]) {
-            const isReady = await this.apis.substrate[name].api?.isReady;
+      if (isEthereum && isRequireEvmAPI(name)) {
+        if (!this.apis.evm[name] || !this.apis.evm[name].ready) this.apis.evm[name] = initWeb3Api(currentProvider);
+      } else {
+        if (this.apis.substrate[name]) {
+          const isReady = await this.apis.substrate[name].api?.isReady;
 
-            if (isReady) continue;
-          }
-
-          if (reset) this.resetApiRetries();
-
-          initApi(network);
+          if (isReady) continue;
         }
+
+        if (reset) this.resetApiRetries();
+
+        initApi(network);
       }
     }
 
@@ -1512,5 +1448,29 @@ export default class State {
     if (!this.timespans[name]) this.timespans[name] = {};
 
     this.timespans[name]![address] = value;
+  }
+
+  async fetchEvmBalance(_networks: NetworkName[] | null) {
+    const currentAccount = await this.currentAccount;
+
+    if (!currentAccount || currentAccount?.ethereumAddress === '') return;
+
+    if (Date.now() - this.getTimespan('evmBalances', currentAccount.ethereumAddress) < 1000 * 30) return;
+
+    const networks = Object.values(this.networkMap).filter(({ name, active }) => {
+      if (_networks !== null && !_networks.includes(name)) return false;
+
+      if (!active) return false;
+
+      if (!isRequireEvmAPI(name)) return false;
+
+      return true;
+    });
+
+    networks.forEach(({ assets, name }) =>
+      assets.forEach(({ id }) => fetchEvmAssetBalance(currentAccount.ethereumAddress, name, id))
+    );
+
+    this.saveTimespan('evmBalances', currentAccount.ethereumAddress, Date.now());
   }
 }

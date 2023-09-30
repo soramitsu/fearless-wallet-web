@@ -7,7 +7,7 @@ import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
 import { setBalance } from '../helpers';
 import type { ApiProps } from '@extension-base/background/types/types';
-import type { Fn, RelayChainName } from '@/interfaces';
+import type { Fn, NetworkName, RelayChainName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
 import { CHAIN_IDS, SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/networks';
@@ -167,15 +167,19 @@ export async function subscribeWithAccount(address: string, networkKey: string, 
   };
 }
 
-export function subscribeBalance(address: string, ethereumAddress: string): Fn {
+export function subscribeBalance(address: string, ethereumAddress: string, newNetworks: NetworkName[] | null): Fn {
   const unsubList = Object.entries(state.getSubstrateApiMap).map(async ([networkKey, apiProps]) => {
+    const isNewNetwork = newNetworks !== null ? newNetworks.includes(networkKey) : true; // если список  === null, значит коннектимся ко всем сетям
+
+    if (!isNewNetwork) return () => state.getSubstrateApiMap[networkKey]?.api?.disconnect();
+
     const isReady = isSoraTest(networkKey)
       ? await new Promise((res) =>
           setTimeout(async () => {
             const isReady = await apiProps.api?.isReady;
 
             res(isReady);
-          }, 1500)
+          }, 2000)
         )
       : await apiProps.api?.isReady;
 

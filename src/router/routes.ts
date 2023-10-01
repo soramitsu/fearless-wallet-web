@@ -5,7 +5,6 @@ import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
-import { isOnboardingRequired } from '@/extension/messaging';
 
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Staking = () => import('@/screens/staking/Staking.vue');
@@ -277,11 +276,8 @@ const routes: Array<RouteConfig> = [
   {
     path: '*',
     component: Welcome,
-    beforeEnter: async (to, from, next) => {
-      const isRequired = await isOnboardingRequired();
-
-      if (isRequired) next({ name: Components.Onboarding });
-      else if (haveSelectedWallet()) next({ name: Components.Wallet });
+    beforeEnter: (to, from, next) => {
+      if (haveSelectedWallet()) next({ name: Components.Wallet });
       else next();
     },
   },

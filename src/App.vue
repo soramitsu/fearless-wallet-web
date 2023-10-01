@@ -15,6 +15,7 @@ import { beaconController } from './controllers/beaconController';
 import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
+import { Components } from '@/router/routes';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as ExtensionMutationTypes } from '@/store/extension/mutations';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
@@ -23,6 +24,7 @@ import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import {
+  isOnboardingRequired,
   pingServiceWorker,
   subscribeAccounts,
   subscribeAddresses,
@@ -74,8 +76,12 @@ export default class App extends Vue {
     this.getUserStatus(); // SORA Card
   }
 
-  mounted() {
+  async mounted() {
     this.mobileWalletListeners();
+
+    const isRequired = await isOnboardingRequired();
+
+    if (isRequired) this.$router.push({ name: Components.Onboarding });
   }
 
   mobileWalletListeners() {
@@ -99,17 +105,15 @@ export default class App extends Vue {
   }
 
   async setupBalance() {
-    const balance = await subscribeBalance((balanceUpdates) => {
-      this.setBalance(balanceUpdates);
-    });
+    const balance = await subscribeBalance((balanceUpdates) => this.setBalance(balanceUpdates));
 
     this.setBalance(balance);
   }
 
   async setupNetworks() {
-    const nets = await subscribeNetworkMap((networksUpdates) => {
-      this.setNetworks({ networks: Object.values(networksUpdates) });
-    });
+    const nets = await subscribeNetworkMap((networksUpdates) =>
+      this.setNetworks({ networks: Object.values(networksUpdates) })
+    );
 
     this.setNetworks({ networks: Object.values(nets) });
   }

@@ -69,9 +69,7 @@ function onReady(networkName: string) {
 export async function initApi(network: NetworkJson, retry = false): Promise<void> {
   const { name: networkName, nodes } = network;
 
-  if (state.getSubstrateApiMap[networkName] === undefined) {
-    state.getSubstrateApiMap[networkName] = createApiObject();
-  }
+  if (state.getSubstrateApiMap[networkName] === undefined) state.getSubstrateApiMap[networkName] = createApiObject();
 
   if (retry) {
     state.apis.substrate[networkName].nodeIndex = 0;

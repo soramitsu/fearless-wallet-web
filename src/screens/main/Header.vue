@@ -142,6 +142,10 @@ export default class Header extends Vue {
     return this.$route.name;
   }
 
+  get routeParams() {
+    return this.$route.params;
+  }
+
   get isGroup() {
     return isNetworkGroup(this.selectedNetwork);
   }
@@ -210,7 +214,9 @@ export default class Header extends Vue {
 
     if (this.selectedWallet.address === '') return '';
 
-    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
+    const selectedNetwork = this.isGroup ? this.routeParams.selectedNetwork : this.selectedNetwork;
+
+    return BaseApi.formatAddress(this.selectedWallet, selectedNetwork);
   }
 
   get name() {

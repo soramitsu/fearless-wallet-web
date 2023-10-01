@@ -553,18 +553,15 @@ export default class State {
   }
 
   public disableNetworkMap(networkKey: string): boolean {
-    if (this.lockNetworkMap) return false; // todo ???
+    if (this.lockNetworkMap) return false;
 
-    this.lockNetworkMap = true; // todo ???
+    this.lockNetworkMap = true;
 
-    const network = this.networkMap[networkKey];
+    if (this.networkMap[networkKey].isEthereum) delete this.apis.evm[networkKey];
+    else delete this.apis.substrate[networkKey];
 
-    delete this.apis.substrate[networkKey];
-
-    if (network.isEthereum) delete this.apis.evm[networkKey]; // todo аналогично
-
-    network.active = false;
-    network.apiStatus = NETWORK_STATUS.DISCONNECTED;
+    this.networkMap[networkKey].active = false;
+    this.networkMap[networkKey].apiStatus = NETWORK_STATUS.DISCONNECTED;
 
     this.networkMapSubject.next(this.networkMap);
     this.updateServiceInfo();
@@ -573,7 +570,7 @@ export default class State {
     this.lockNetworkMap = false;
 
     this.getAuthorize((data) => {
-      if (network.isEthereum) this.evmChainSubject.next(data);
+      if (this.networkMap[networkKey].isEthereum) this.evmChainSubject.next(data);
 
       this.authorizeUrlSubject.next(data);
     });
@@ -594,9 +591,7 @@ export default class State {
   public refreshWeb3Api(key: string) {
     const currentProvider = getCurrentProvider(this.networkMap[key]);
 
-    if (currentProvider) {
-      this.apis.evm[key] = initWeb3Api(currentProvider);
-    }
+    if (currentProvider) this.apis.evm[key] = initWeb3Api(currentProvider);
   }
 
   public refreshDotSamaApi(key: string) {
@@ -608,7 +603,7 @@ export default class State {
       api.apiRetry = 0;
     }
 
-    if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network);
+    initApi(network);
   }
 
   public getNetworkByKey(key: string): NetworkJson | undefined {
@@ -1301,7 +1296,6 @@ export default class State {
   public setCurrentAccount(data: CurrentAccountState, callback?: () => void): void {
     this.currentAccountStore.set('CurrentAccountInfo', data, () => {
       this.setActiveNetworks();
-      // this.updateServiceInfo();
 
       // logic for Sora library
       if (data?.address && !data.isMobile) {

@@ -8,7 +8,6 @@ import {
   CRON_REFRESH_PRICE_INTERVAL,
   CRON_UPDATE_JSON_INTERVAL,
 } from '@extension-base/const/intervals';
-import type { NetworkJson } from '@extension-base/types';
 import type FWState from '@extension-base/background/handlers/State';
 import type { FWSubscription } from '@extension-base/background/handlers/subscriptions';
 import type { ServiceInfo } from '@extension-base/background/types/types';
@@ -132,19 +131,17 @@ export class FWCron {
   recoverApiMap = async () => {
     if (!navigator.onLine) return;
 
-    const apiMap = this.state.getApiMap;
+    const { evm, substrate } = this.state.getApiMap;
 
-    for (const key of Object.keys(apiMap.evm)) this.state.refreshWeb3Api(key);
+    Object.keys(evm).forEach((network) => this.state.refreshWeb3Api(network));
 
-    for (const [key, substrate] of Object.entries(apiMap.substrate)) {
-      if (substrate.api === undefined) {
-        this.state.refreshDotSamaApi(key);
+    Object.entries(substrate).forEach(async ([network, apiProp]) => {
+      if (!apiProp?.api?.isConnected) {
+        await apiProp.api?.disconnect();
 
-        continue;
+        this.state.refreshDotSamaApi(network);
       }
-
-      await substrate.api?.isReadyOrError.catch(() => this.state.refreshDotSamaApi(key));
-    }
+    });
 
     this.state.getCurrentAccount((currentAccount) => {
       if (!currentAccount) return;
@@ -158,7 +155,7 @@ export class FWCron {
   updateApiMapStatus = async () => {
     const { evm, substrate } = this.state.getApiMap;
 
-    for (const [key, apiProp] of Object.entries(substrate)) {
+    Object.entries(substrate).forEach(([key, apiProp]) => {
       const status: NETWORK_STATUS = !navigator.onLine
         ? NETWORK_STATUS.DISCONNECTED
         : apiProp.api?.isConnected
@@ -166,9 +163,9 @@ export class FWCron {
         : NETWORK_STATUS.CONNECTING;
 
       this.state.updateNetworkStatus(key, status);
-    }
+    });
 
-    for (const [key, api] of Object.entries(evm)) {
+    Object.entries(evm).forEach(async ([key, api]) => {
       if (!navigator.onLine) this.state.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
       else {
         try {
@@ -179,22 +176,10 @@ export class FWCron {
           this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
         }
       }
-    }
+    });
   };
 
   checkNetworkAvailable = (serviceInfo: ServiceInfo): boolean => {
     return Object.keys(serviceInfo.apiMap.substrate).length > 0 || Object.keys(serviceInfo.apiMap.evm).length > 0;
-  };
-
-  getActiveContractSupportedNetworks = (networkMap: Record<string, NetworkJson>): Record<string, NetworkJson> => {
-    const contractSupportedNetworkMap: Record<string, NetworkJson> = {};
-
-    Object.entries(networkMap).forEach(([key, network]) => {
-      if (network.active && network.supportSmartContract && network.supportSmartContract.length > 0) {
-        contractSupportedNetworkMap[key] = network;
-      }
-    });
-
-    return contractSupportedNetworkMap;
   };
 }

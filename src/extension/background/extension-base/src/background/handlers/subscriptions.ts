@@ -172,7 +172,7 @@ export class FWSubscription {
   }
 
   subscribeBalances(address: string, ethereumAddress: string, newNetworks: NetworkName[] | null, isFirstRun?: boolean) {
-    this.logger.warn(`Start balance sub for: ${address}`);
+    console.info(`Start balance sub for: ${address}`);
 
     try {
       if (isFirstRun) this.state.generateDefaultBalance(address);

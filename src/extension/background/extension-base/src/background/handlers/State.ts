@@ -139,7 +139,7 @@ const metaStore = new MetadataStore();
 
 export default class State {
   public notification = 'popup';
-  private cron: FWCron;
+  public cron: FWCron;
   public timespans: Timespans = {};
   public windows: number[] = [];
   public prices: {
@@ -217,8 +217,8 @@ export default class State {
   constructor() {
     this.injectFromStorage();
     this.onboardingService.init();
-    this.subscription = new FWSubscription(this);
-    this.cron = new FWCron(this, this.subscription);
+    this.cron = new FWCron(this);
+    this.subscription = new FWSubscription(this, this.cron);
     this.init();
   }
 
@@ -561,7 +561,7 @@ export default class State {
     else delete this.apis.substrate[networkKey];
 
     this.networkMap[networkKey].active = false;
-    this.networkMap[networkKey].apiStatus = NETWORK_STATUS.DISCONNECTED;
+    this.networkMap[networkKey].networkStatus = NETWORK_STATUS.DISCONNECTED;
 
     this.networkMapSubject.next(this.networkMap);
     this.updateServiceInfo();
@@ -641,8 +641,6 @@ export default class State {
 
             return name === selectedNetwork;
           });
-
-    console.info('Set Active Networks: ', activeNetworks);
 
     return activeNetworks;
   }
@@ -725,9 +723,9 @@ export default class State {
   }
 
   public updateNetworkStatus(networkKey: string, status: NETWORK_STATUS) {
-    if (this.networkMap[networkKey].apiStatus === status) return;
+    if (this.networkMap[networkKey].networkStatus === status) return;
 
-    this.networkMap[networkKey].apiStatus = status;
+    this.networkMap[networkKey].networkStatus = status;
 
     this.networkMapSubject.next(this.networkMap);
     this.networkMapStore.set('NetworkMap', this.networkMap);

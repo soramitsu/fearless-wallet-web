@@ -1,3 +1,4 @@
+import { FWCron } from '@extension-base/background/cron';
 import { logger as createLogger } from '@polkadot/util';
 import { Subscription } from 'rxjs';
 import { subscribeBalance } from '@extension-base/api/substrate/balance';
@@ -43,7 +44,7 @@ export class FWSubscription {
 
   private logger: Logger;
 
-  constructor(private state: State) {
+  constructor(private state: State, private cron: FWCron) {
     this.logger = createLogger('Subscription');
     this.init();
   }
@@ -92,6 +93,8 @@ export class FWSubscription {
       this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
           console.info('serviceInfo', serviceInfo);
+
+          this.cron.updateCron(serviceInfo);
 
           if (!serviceInfo.currentAccountInfo) return;
 

@@ -1,6 +1,6 @@
 <template>
   <Scroll>
-    <Loader v-if="showLoading" class="asset-loader" />
+    <Loader v-if="isEmptyBalances" class="asset-loader" />
 
     <div v-else-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText()) }}</div>
 
@@ -46,6 +46,7 @@ export default class Currencies extends Vue {
   timeout: NodeJS.Timeout | null = null;
 
   @Prop(Array) balances!: TokenBalance[];
+  @Prop(Boolean) isEmptyBalances!: boolean;
   @Prop(String) selectedNetwork!: string;
   @Prop(String) filterValue!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
@@ -62,10 +63,6 @@ export default class Currencies extends Vue {
 
   get isOnline() {
     return navigator.onLine;
-  }
-
-  get showLoading() {
-    return this.balances.length === 0;
   }
 
   get showAllAssetsHiddenText() {

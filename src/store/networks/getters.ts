@@ -16,7 +16,6 @@ export enum GettersTypes {
   getFiats = 'getFiats',
   getHistory = 'getHistory',
   getActiveNodesByNetwork = 'getActiveNodesByNetwork',
-  getAllNetworksIsReadyToUse = 'getAllNetworksIsReadyToUse',
   getAssetsPriceInterval = 'getAssetsPriceInterval',
   getFavoriteNetworksNames = 'getFavoriteNetworksNames',
 }
@@ -40,7 +39,6 @@ export type Getters = {
     state: State,
     getters?: GetterTree<State, State> & Getters
   ): GetActiveNodesByNetwork;
-  [GettersTypes.getAllNetworksIsReadyToUse](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getNetworkGenesisHash](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -118,10 +116,6 @@ const getters: GetterTree<State, State> & Getters = {
 
       return !node ? nodes[0] : node;
     },
-
-  [GettersTypes.getAllNetworksIsReadyToUse]({ networks }): boolean {
-    return !networks.some(({ apiStatus }) => apiStatus === 'pending' || apiStatus === 'connected');
-  },
 };
 
 export default getters;

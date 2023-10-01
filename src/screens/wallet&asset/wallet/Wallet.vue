@@ -33,6 +33,7 @@
 
         <Currencies
           v-if="showCurrencies"
+          :isEmptyBalances="isEmptyBalances"
           :balances="filteredCurrencies"
           :selectedNetwork="selectedNetwork"
           :showAssetsManagementForm="showAssetsManagementForm"
@@ -163,20 +164,24 @@ export default class Wallet extends Vue {
     return this.networkUnavailable !== '';
   }
 
+  get isEmptyBalances() {
+    return this.balances.length === 0;
+  }
+
   get showWarningIcon() {
     if (this.selectedNetwork !== ALL_NETWORKS) {
-      const apiStatus = this.networks.find(
+      const networkStatus = this.networks.find(
         ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
-      )?.apiStatus;
+      )?.networkStatus;
 
-      return apiStatus === NETWORK_STATUS.DISCONNECTED;
+      return networkStatus === NETWORK_STATUS.DISCONNECTED;
     }
 
     return this.networksWithWarning.length !== 0;
   }
 
   get disconnectedNetworks() {
-    return this.networks.filter(({ apiStatus }) => apiStatus === NETWORK_STATUS.DISCONNECTED);
+    return this.networks.filter(({ networkStatus }) => networkStatus === NETWORK_STATUS.DISCONNECTED);
   }
 
   get networksWithWarning() {
@@ -212,17 +217,15 @@ export default class Wallet extends Vue {
 
   get showLoadingBalance() {
     if (!isNetworkGroup(this.selectedNetwork)) {
-      const apiStatus = this.networks.find(
+      const networkStatus = this.networks.find(
         ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
-      )?.apiStatus;
+      )?.networkStatus;
 
-      return apiStatus === NETWORK_STATUS.PENDING || apiStatus === NETWORK_STATUS.CONNECTING;
+      return networkStatus === NETWORK_STATUS.CONNECTING;
     }
 
     //TODO добавить проверку по группам
-    const isPendingExists = this.networks.some(
-      ({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING || apiStatus === NETWORK_STATUS.CONNECTING
-    );
+    const isPendingExists = this.networks.some(({ networkStatus }) => networkStatus === NETWORK_STATUS.CONNECTING);
 
     return !navigator.onLine || isPendingExists;
   }

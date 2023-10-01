@@ -3,6 +3,7 @@ import { api as apiSora } from '@sora-substrate/util';
 import { connection as soraConnection } from '@sora-substrate/connection';
 import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
 import { state } from '@extension-base/background/handlers';
+import { NETWORK_STATUS } from '../types/networks';
 import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import type { ApiProps } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -13,10 +14,10 @@ import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 function createApiObject(): ApiProps {
   return {
     isEthereum: false,
-    isApiReady: false,
+    apiStatus: NETWORK_STATUS.CONNECTING,
     apiRetry: 0,
     nodeIndex: 0,
-  } as unknown as ApiProps;
+  };
 }
 
 function onConnected(networkName: string) {
@@ -25,6 +26,7 @@ function onConnected(networkName: string) {
   }
 
   state.apis.substrate[networkName].apiRetry = 0;
+  state.apis.substrate[networkName].apiStatus = NETWORK_STATUS.CONNECTED;
 }
 
 async function onDisconnect(networkName: string) {
@@ -50,11 +52,12 @@ async function onDisconnect(networkName: string) {
     api.api = undefined;
 
     if (navigator.onLine) initApi(network);
+    else api.apiStatus = NETWORK_STATUS.DISCONNECTED;
+  } else {
+    api.apiStatus = NETWORK_STATUS.DISCONNECTED; // попробовали все ноды, не смогил подключиться, ставим статус дисконнект
 
-    return;
+    state.disableNetworkMap(networkName);
   }
-
-  state.disableNetworkMap(networkName);
 }
 
 function onReady(networkName: string) {

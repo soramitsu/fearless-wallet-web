@@ -1,4 +1,3 @@
-import { Subject, Subscription } from 'rxjs';
 import { logger as createLogger } from '@polkadot/util';
 import { Logger } from '@polkadot/util/types';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
@@ -9,34 +8,31 @@ import {
   CRON_UPDATE_JSON_INTERVAL,
 } from '@extension-base/const/intervals';
 import type FWState from '@extension-base/background/handlers/State';
-import type { FWSubscription } from '@extension-base/background/handlers/subscriptions';
 import type { ServiceInfo } from '@extension-base/background/types/types';
 
 export class FWCron {
-  subscriptions: FWSubscription;
   public status: 'pending' | 'running' | 'stopped' = 'pending';
-  private serviceSubscription: Subscription | undefined;
   private state: FWState;
   private logger: Logger;
   private cronMap: Record<string, unknown> = {};
-  private subjectMap: Record<string, Subject<any>> = {};
 
-  constructor(state: FWState, subscriptions: FWSubscription) {
-    this.subscriptions = subscriptions;
+  constructor(state: FWState) {
     this.state = state;
     this.logger = createLogger('Cron');
   }
 
-  getCron = (name: string): unknown => {
+  getCron(name: string) {
     return this.cronMap[name];
-  };
+  }
 
-  getSubjectMap = (name: string): unknown => {
-    return this.subjectMap[name];
-  };
+  isCronExist(name: string) {
+    return this.getCron(name) !== undefined;
+  }
 
   addCron = (name: string, callback: (param?: unknown) => void, interval: number, runFirst = true) => {
     if (runFirst) callback();
+
+    this.removeCron(name);
 
     this.cronMap[name] = setInterval(callback, interval);
   };
@@ -93,36 +89,30 @@ export class FWCron {
       }
     });
 
-    this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
-      next: (serviceInfo) => {
-        this.removeCron('refreshPrice');
-        this.removeCron('checkStatusApiMap');
-        this.removeCron('recoverApiMap');
-
-        if (!serviceInfo.currentAccountInfo) return;
-
-        if (this.checkNetworkAvailable(serviceInfo)) {
-          // only add cron job if there's at least 1 active network
-
-          this.addCron('refreshPrice', () => this.state.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
-          this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
-          this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
-        }
-      },
-    });
-
     this.status = 'running';
   };
+
+  updateCron(serviceInfo: ServiceInfo) {
+    this.removeCron('refreshPrice');
+    this.removeCron('checkStatusApiMap');
+    this.removeCron('recoverApiMap');
+
+    if (!serviceInfo.currentAccountInfo) return;
+
+    if (this.checkNetworkAvailable(serviceInfo)) {
+      // only add cron job if there's at least 1 active network
+
+      this.addCron('refreshPrice', () => this.state.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
+      this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
+      this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
+    }
+  }
 
   stop = () => {
     if (this.status === 'stopped') return;
 
-    if (this.serviceSubscription) {
-      this.serviceSubscription.unsubscribe();
-      this.serviceSubscription = undefined;
-    }
-
     this.logger.log('Stopping cron jobs');
+
     this.removeAllCrons();
 
     this.status = 'stopped';
@@ -142,27 +132,13 @@ export class FWCron {
         this.state.refreshDotSamaApi(network);
       }
     });
-
-    this.state.getCurrentAccount((currentAccount) => {
-      if (!currentAccount) return;
-
-      const { address, ethereumAddress } = currentAccount;
-
-      this.subscriptions.subscribeBalances(address, ethereumAddress, null);
-    });
   };
 
   updateApiMapStatus = async () => {
     const { evm, substrate } = this.state.getApiMap;
 
-    Object.entries(substrate).forEach(([key, apiProp]) => {
-      const status: NETWORK_STATUS = !navigator.onLine
-        ? NETWORK_STATUS.DISCONNECTED
-        : apiProp.api?.isConnected
-        ? NETWORK_STATUS.CONNECTED
-        : NETWORK_STATUS.CONNECTING;
-
-      this.state.updateNetworkStatus(key, status);
+    Object.entries(substrate).forEach(([key, { apiStatus }]) => {
+      this.state.updateNetworkStatus(key, apiStatus);
     });
 
     Object.entries(evm).forEach(async ([key, api]) => {

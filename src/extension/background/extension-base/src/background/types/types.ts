@@ -5,6 +5,7 @@ import { ALLOWED_PATH } from '@extension-base/defaults';
 import MetadataStore from '@extension-base/stores/Metadata';
 import { JsonRpcProvider, WebSocketProvider } from 'ethers';
 import { UserType } from '../../services/onboarding-service/types';
+import { NETWORK_STATUS } from '../../api/types/networks';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
@@ -238,6 +239,7 @@ export type BasicTxError = {
 export interface ApiProps {
   api?: ApiPromise;
   provider?: WsProvider;
+  apiStatus: NETWORK_STATUS;
   apiRetry: number;
   nodeIndex: number;
   isEthereum: boolean;

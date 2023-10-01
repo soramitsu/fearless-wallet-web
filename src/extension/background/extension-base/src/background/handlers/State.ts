@@ -632,53 +632,36 @@ export default class State {
     return true;
   }
 
-  public getActiveNetworks() {
+  public getActiveNetworks(address: string) {
+    const selectedNetwork = this.selectedNetworks[address];
+
     const networks = Object.values(this.networkMap);
-    const uniqNetworks = new Set<NetworkJson>();
-    const selectedNetworks = Object.entries(this.selectedNetworks);
-    // const isAllNetworkPicked = selectedNetworks.some(([, value]) => value === ALL_NETWORKS);
+    const activeNetworks =
+      selectedNetwork === ALL_NETWORKS
+        ? networks
+        : networks.filter(({ rank, name, favorite }) => {
+            if (selectedNetwork === POPULAR_NETWORKS) return rank !== undefined;
 
-    // if (isAllNetworkPicked) return networks;
+            if (selectedNetwork === FAVORITE_NETWORKS) return favorite?.includes(address);
 
-    selectedNetworks.forEach(([address, value]) => {
-      if (value === POPULAR_NETWORKS) {
-        const popular = networks.filter((el) => el.rank !== undefined);
+            return name === selectedNetwork;
+          });
 
-        popular.forEach((el) => uniqNetworks.add(el));
+    console.info('Set Active Networks: ', activeNetworks);
 
-        return;
-      }
-
-      if (value === FAVORITE_NETWORKS) {
-        const favorite = networks.filter((el) => el.favorite.length && el.favorite.includes(address));
-
-        favorite.forEach((el) => uniqNetworks.add(el));
-
-        return;
-      }
-
-      const singleNetwork = networks.find(({ name }) => name === value);
-
-      if (singleNetwork) uniqNetworks.add(singleNetwork);
-    });
-
-    console.info('Set Active Networks: ', Array.from(uniqNetworks));
-
-    return Array.from(uniqNetworks);
+    return activeNetworks;
   }
 
-  public async setActiveNetworks(type: string) {
+  public async setActiveNetworks(type?: string) {
     const currentAccount = await this.currentAccount;
 
     if (!currentAccount) return;
 
-    this.selectedNetworks[currentAccount.address] = type;
+    if (type) {
+      this.selectedNetworks[currentAccount.address] = type;
+    }
 
-    // const unsub = this.subscription.getSubscription('balance');
-
-    // unsub?.();
-
-    const networks = this.getActiveNetworks();
+    const networks = this.getActiveNetworks(currentAccount.address);
 
     Object.keys(this.networkMap).forEach(async (key) => {
       const isActive = networks.some(({ name }) => name.toLowerCase() === key.toLowerCase());
@@ -1161,7 +1144,8 @@ export default class State {
       if (!this.selectedNetworks[el.address]) this.selectedNetworks[el.address] = ALL_NETWORKS;
     });
 
-    const activeNetworks = this.getActiveNetworks();
+    const currentAccount = await this.currentAccount;
+    const activeNetworks = this.getActiveNetworks(currentAccount?.address ?? '');
 
     Object.keys(this.networkMap).forEach((key) => {
       const isExists = activeNetworks.some(({ name }) => name === key);
@@ -1316,7 +1300,8 @@ export default class State {
 
   public setCurrentAccount(data: CurrentAccountState, callback?: () => void): void {
     this.currentAccountStore.set('CurrentAccountInfo', data, () => {
-      this.updateServiceInfo();
+      this.setActiveNetworks();
+      // this.updateServiceInfo();
 
       // logic for Sora library
       if (data?.address && !data.isMobile) {
@@ -1327,7 +1312,7 @@ export default class State {
         this.subscribeTotalXorBalance();
       }
 
-      callback && callback();
+      callback?.();
     });
   }
 

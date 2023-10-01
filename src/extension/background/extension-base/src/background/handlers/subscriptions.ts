@@ -48,10 +48,6 @@ export class FWSubscription {
     this.init();
   }
 
-  getSubscriptionMap() {
-    return this.subscriptionMap;
-  }
-
   getSubscription(name: SubscriptionName): (() => void) | undefined {
     if (name === 'balance') return this.subscriptionMap[name];
 
@@ -137,6 +133,10 @@ export class FWSubscription {
           // обновляем список сетей на балансы которых мы подписаны
           this.serviceInfo.networks.substrate = allNewSubstrateNetworks;
           this.serviceInfo.networks.evm = allNewEvmNetworks;
+
+          // кейс, когда было [sora, polkadot, kusama]
+          // стало [sora], обрабатывать и отписываться от подписок на балансы не нужно,
+          // тк мы полностью отклюачемся от api, следовательно подписки умирают сами
         },
       });
   }
@@ -175,7 +175,9 @@ export class FWSubscription {
     this.logger.warn(`Start balance sub for: ${address}`);
 
     try {
-      const unsub = this.initBalanceSubscription(address, ethereumAddress, newNetworks, isFirstRun);
+      if (isFirstRun) this.state.generateDefaultBalance(address);
+
+      const unsub = subscribeBalance(address, ethereumAddress, newNetworks);
 
       if (isFirstRun) unsub();
       else
@@ -186,17 +188,6 @@ export class FWSubscription {
     } catch {
       this.logger.warn(`Unable to subscribe: ${address}`);
     }
-  }
-
-  initBalanceSubscription(
-    address: string,
-    ethereumAddress: string,
-    newNetworks: NetworkName[] | null,
-    isFirstRun?: boolean
-  ) {
-    if (isFirstRun) this.state.generateDefaultBalance(address);
-
-    return subscribeBalance(address, ethereumAddress, newNetworks);
   }
 }
 

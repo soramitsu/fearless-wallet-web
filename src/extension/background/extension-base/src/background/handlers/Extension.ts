@@ -185,23 +185,17 @@ export default class Extension extends FWExtensionBase {
     const accounts = this.state.keyringService.getAccounts();
     const addresses = this.state.keyringService.getAddresses();
 
-    const currentAcc = await this.state.currentAccount;
+    const currentAccount = await this.state.currentAccount;
 
-    const shouldUpdate =
-      !accounts.some(({ address }) => address === currentAcc?.address) ||
-      !addresses.some(({ address }) => address === currentAcc?.address);
+    const isWasCurrentAccount = address === currentAccount?.address;
 
-    const isNoAccounts = !accounts.length && !addresses.length;
-
-    if (shouldUpdate || isNoAccounts) {
+    if (isWasCurrentAccount) {
       let account;
 
       if (accounts.length) account = accounts.find(({ address }) => !isEthereumAddress(address))!;
-      else if (addresses.length) {
-        account = addresses[0];
-      }
+      else if (addresses.length) account = addresses[0];
 
-      this.updateCurrentAccount(account ? account.address : '');
+      this.updateCurrentAccount(account?.address ?? '');
     }
 
     this.cleanupDeletedAccount(address);
@@ -216,13 +210,7 @@ export default class Extension extends FWExtensionBase {
       storage.set({ selectedNetworks: this.state.selectedNetworks });
     }
 
-    if (this.state.balanceMap[address]) {
-      delete this.state.balanceMap[address];
-
-      const subs = this.state.subscription.getSubscription('balance');
-
-      if (subs) subs();
-    }
+    if (this.state.balanceMap[address]) delete this.state.balanceMap[address];
   }
 
   accountsValidatePassword({ address, password }: RequestAccountValidate): boolean {

@@ -204,15 +204,27 @@ export default class CurrencyItem extends Vue {
   }
 
   get showShimmers() {
+    if (this.showWarning) return false;
+
     // Убираем шимммер если баланс загружен хотя бы в одной сети
     return !this.assetData.balances.some(({ state }) => state === APIItemState.READY);
   }
 
   get showWarning() {
+    if (!isNetworkGroup(this.selectedNetwork)) return this.networkJson?.networkStatus === NETWORK_STATUS.DISCONNECTED;
+
+    // Если все сети токена в статусе DISCONNECTED, то показываем ошибку
+    const allNetworksDisconnected = this.assetData.balances.some(({ name }) => {
+      const network = this.getNetwork(name);
+
+      return network.networkStatus === NETWORK_STATUS.DISCONNECTED;
+    });
+
+    if (allNetworksDisconnected) return true;
+
     return (
       this.assetData.balances.some((el) => el.state === APIItemState.ERROR && el.name === this.selectedNetwork) ||
-      this.assetData.balances.every((el) => el.state === APIItemState.ERROR) ||
-      this.networkJson?.networkStatus === NETWORK_STATUS.DISCONNECTED
+      this.assetData.balances.every((el) => el.state === APIItemState.ERROR)
     );
   }
 

@@ -238,7 +238,6 @@ export type BasicTxError = {
 export interface ApiProps {
   api?: ApiPromise;
   provider?: WsProvider;
-  isApiConnected: boolean;
   apiRetry: number;
   nodeIndex: number;
   isEthereum: boolean;

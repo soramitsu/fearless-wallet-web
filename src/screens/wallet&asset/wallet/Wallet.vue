@@ -11,7 +11,7 @@
         />
 
         <div class="wallet-balance__loading">
-          <Loading :width="28" v-if="showShimmers" />
+          <Loading :width="28" v-if="showLoadingBalance" />
         </div>
       </div>
     </header>
@@ -210,16 +210,19 @@ export default class Wallet extends Vue {
     });
   }
 
-  get showShimmers() {
-    if (this.selectedNetwork !== ALL_NETWORKS) {
+  get showLoadingBalance() {
+    if (!isNetworkGroup(this.selectedNetwork)) {
       const apiStatus = this.networks.find(
         ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
       )?.apiStatus;
 
-      return apiStatus === NETWORK_STATUS.PENDING;
+      return apiStatus === NETWORK_STATUS.PENDING || apiStatus === NETWORK_STATUS.CONNECTING;
     }
 
-    const isPendingExists = this.networks.some(({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING);
+    //TODO добавить проверку по группам
+    const isPendingExists = this.networks.some(
+      ({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING || apiStatus === NETWORK_STATUS.CONNECTING
+    );
 
     return !navigator.onLine || isPendingExists;
   }

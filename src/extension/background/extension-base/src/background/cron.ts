@@ -1,11 +1,6 @@
-// Copyright 2019-2022 @subwallet/extension-koni authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
 import { Subject, Subscription } from 'rxjs';
-
 import { logger as createLogger } from '@polkadot/util';
 import { Logger } from '@polkadot/util/types';
-
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import {
   CRON_AUTO_RECOVER_DOTSAMA_INTERVAL,
@@ -83,6 +78,7 @@ export class FWCron {
     if (this.status === 'running') return;
 
     this.logger.log('Starting cron jobs');
+
     this.addCron('refreshJsons', () => this.state.init(), CRON_UPDATE_JSON_INTERVAL, false);
 
     this.state.getCurrentAccount((currentAccount) => {
@@ -159,48 +155,30 @@ export class FWCron {
     });
   };
 
-  updateApiMapStatus = () => {
-    const apiMap = this.state.getApiMap;
-    const networkMap = this.state.networkMap;
+  updateApiMapStatus = async () => {
+    const { evm, substrate } = this.state.getApiMap;
 
-    for (const [key, apiProp] of Object.entries(apiMap.substrate)) {
-      if (!navigator.onLine) {
-        this.state.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
+    for (const [key, apiProp] of Object.entries(substrate)) {
+      const status: NETWORK_STATUS = !navigator.onLine
+        ? NETWORK_STATUS.DISCONNECTED
+        : apiProp.api?.isConnected
+        ? NETWORK_STATUS.CONNECTED
+        : NETWORK_STATUS.CONNECTING;
 
-        continue;
-      }
-
-      let status: NETWORK_STATUS = NETWORK_STATUS.CONNECTING;
-
-      if (apiProp.isApiConnected) status = NETWORK_STATUS.CONNECTED;
-
-      if (!networkMap[key].apiStatus) this.state.updateNetworkStatus(key, status);
-      else if (networkMap[key].apiStatus && networkMap[key].apiStatus !== status) {
-        this.state.updateNetworkStatus(key, status);
-      }
+      this.state.updateNetworkStatus(key, status);
     }
 
-    for (const [key, evm] of Object.entries(apiMap.evm)) {
-      const apiStatus = networkMap[key].apiStatus;
+    for (const [key, api] of Object.entries(evm)) {
+      if (!navigator.onLine) this.state.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
+      else {
+        try {
+          await api.provider._waitUntilReady();
 
-      if (!navigator.onLine) {
-        this.state.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
-        continue;
+          this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
+        } catch {
+          this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
+        }
       }
-
-      evm.provider
-        ._waitUntilReady()
-        .then(() => {
-          if (!apiStatus) this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
-          else if (apiStatus !== NETWORK_STATUS.CONNECTED) {
-            this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
-          }
-        })
-        .catch(() => {
-          if (!apiStatus || apiStatus !== NETWORK_STATUS.CONNECTING) {
-            this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
-          }
-        });
     }
   };
 

@@ -13,7 +13,6 @@ import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 function createApiObject(): ApiProps {
   return {
     isEthereum: false,
-    isApiConnected: false,
     isApiReady: false,
     apiRetry: 0,
     nodeIndex: 0,
@@ -26,7 +25,6 @@ function onConnected(networkName: string) {
   }
 
   state.apis.substrate[networkName].apiRetry = 0;
-  state.apis.substrate[networkName].isApiConnected = true;
 }
 
 async function onDisconnect(networkName: string) {
@@ -37,7 +35,6 @@ async function onDisconnect(networkName: string) {
   if (api === undefined) return;
 
   api.apiRetry += 1;
-  api.isApiConnected = false;
 
   if (api.apiRetry < MAX_CONTINUE_RETRY) return;
 

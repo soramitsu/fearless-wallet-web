@@ -9,7 +9,7 @@ export const state = new State();
 export const extension = new Extension(state);
 export const tabs = new Tabs(state);
 
-export default function handler<TMessageType extends MessageTypes>(
+export function handlers<TMessageType extends MessageTypes>(
   { id, message, request }: TransportRequestMessage<TMessageType>,
   port?: Port,
   extensionPortName = PORT_EXTENSION
@@ -22,7 +22,7 @@ export default function handler<TMessageType extends MessageTypes>(
   const from = isExtension ? 'extension' : (sender.tab && sender.tab.url) || sender.url || '<unknown>';
   const source = `${from}: ${id}: ${message}`;
 
-  console.info(` [in] ${source}`);
+  console.info(`[in] ${source}`);
 
   const promise = isExtension
     ? extension.handle(id, message, request, port)

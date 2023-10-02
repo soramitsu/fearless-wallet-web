@@ -1,10 +1,10 @@
 import { Subscription } from 'rxjs';
 import { ApiPromise } from '@polkadot/api';
-import { state } from '@extension-base/background/handlers';
 import { getSubstrateAddress, isEthereumNetwork } from '@extension-base/background/utils/utils';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
+import State from '@extension-base/background/handlers/State';
 import { setBalance } from '../helpers';
 import type { ApiProps } from '@extension-base/background/types/types';
 import type { Fn, NetworkName, RelayChainName } from '@/interfaces';
@@ -13,7 +13,7 @@ import { formatBalance } from '@/util/balances';
 import { CHAIN_IDS, SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/networks';
 import { isSora } from '@/helpers';
 
-async function subscribeTokensBalance(address: string, networkKey: string, api: ApiPromise) {
+async function subscribeTokensBalance(address: string, networkKey: string, api: ApiPromise, state: State) {
   const {
     parentId,
     assets,
@@ -50,7 +50,8 @@ async function subscribeTokensBalance(address: string, networkKey: string, api: 
             locked: locked.toString(),
             transferable: transferable.toString(),
           },
-          address
+          address,
+          state
         );
 
         return id;
@@ -59,7 +60,7 @@ async function subscribeTokensBalance(address: string, networkKey: string, api: 
       // У Equilibrium system.account это "особенный" паллет, балансы возвращаются разом для всех токенов
       // Причем возвращаются только не нулевые балансы
       // Поэтому нужно пройтись по остальным(нулевым) балансам и проставить для них статуc Ready, тк по факту мы их "получили" и знаем, что они = 0
-      const substrateAddress = getSubstrateAddress(address);
+      const substrateAddress = getSubstrateAddress(address, state);
       assets.forEach(({ id, symbol }) => {
         if (!notZeroBalances.includes(id))
           setBalance(
@@ -75,7 +76,8 @@ async function subscribeTokensBalance(address: string, networkKey: string, api: 
               locked: '0',
               transferable: '0',
             },
-            substrateAddress
+            substrateAddress,
+            state
           );
       });
     });
@@ -86,7 +88,7 @@ async function subscribeTokensBalance(address: string, networkKey: string, api: 
   const unsubList = await Promise.all(
     assets.map(({ precision, symbol, id, type }) => {
       try {
-        const options = getAssetOptions(id);
+        const options = getAssetOptions(id, state.assetsMap);
 
         if (!api || !api.rx) return () => null;
 
@@ -114,7 +116,7 @@ async function subscribeTokensBalance(address: string, networkKey: string, api: 
               : balances;
 
           const { frozen, locked, reserved, total, transferable } = formatBalance(balance, precision);
-          const substrateAddress = getSubstrateAddress(address);
+          const substrateAddress = getSubstrateAddress(address, state);
 
           setBalance(
             networkKey,
@@ -129,7 +131,8 @@ async function subscribeTokensBalance(address: string, networkKey: string, api: 
               transferable,
               total,
             },
-            substrateAddress
+            substrateAddress,
+            state
           );
         };
 
@@ -145,7 +148,8 @@ async function subscribeTokensBalance(address: string, networkKey: string, api: 
             symbol,
             id,
           },
-          address
+          address,
+          state
         );
         console.warn(err.message, networkKey, `type: ${type}`);
       }
@@ -157,8 +161,13 @@ async function subscribeTokensBalance(address: string, networkKey: string, api: 
   return () => unsubList.forEach((unsubscribe) => unsubscribe());
 }
 
-export async function subscribeWithAccount(address: string, networkKey: string, networkAPI: ApiProps): Promise<Fn> {
-  const unsub = await subscribeTokensBalance(address, networkKey, networkAPI.api!).catch((e) => {
+export async function subscribeWithAccount(
+  address: string,
+  networkKey: string,
+  networkAPI: ApiProps,
+  state: State
+): Promise<Fn> {
+  const unsub = await subscribeTokensBalance(address, networkKey, networkAPI.api!, state).catch((e) => {
     console.info(`Failed to subscribe to ${networkKey}`, e);
   });
 
@@ -167,7 +176,12 @@ export async function subscribeWithAccount(address: string, networkKey: string, 
   };
 }
 
-export function subscribeBalance(address: string, ethereumAddress: string, newNetworks: NetworkName[] | null): Fn {
+export function subscribeBalance(
+  address: string,
+  ethereumAddress: string,
+  newNetworks: NetworkName[] | null,
+  state: State
+): Fn {
   const unsubList = Object.entries(state.getSubstrateApiMap).map(async ([networkKey, apiProps]) => {
     const isNewNetwork = newNetworks !== null ? newNetworks.includes(networkKey) : true; // если список  === null, значит коннектимся ко всем сетям
 
@@ -202,7 +216,7 @@ export function subscribeBalance(address: string, ethereumAddress: string, newNe
 
     if (addressForNetwork === '') return () => null;
 
-    return subscribeWithAccount(addressForNetwork, networkKey, apiProps);
+    return subscribeWithAccount(addressForNetwork, networkKey, apiProps, state);
   });
 
   return () =>

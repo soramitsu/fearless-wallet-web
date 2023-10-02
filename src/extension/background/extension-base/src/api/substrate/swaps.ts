@@ -1,7 +1,7 @@
 import { Api, FPNumber } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
-import { state } from '@extension-base/background/handlers';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
+import State from '@extension-base/background/handlers/State';
 import type { Asset } from '@sora-substrate/util/build/assets/types';
 import type { CreateSwapResult, BaseExchangeProps } from '@extension-base/api/types/swaps';
 import type { SwapOptions } from '@/interfaces';
@@ -48,10 +48,14 @@ async function createExchangeA(
  * @param {Partial<SwapOptions>} options
  * @returns {Promise<CreateSwapResult>}
  */
-export async function createSwap(options: Partial<SwapOptions>, api: Api<void>): Promise<CreateSwapResult> {
+export async function createSwap(
+  options: Partial<SwapOptions>,
+  api: Api<void>,
+  state: State
+): Promise<CreateSwapResult> {
   const { assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage, marketType } = options;
-  const assetAAddress = getAssetOptions(assetAId!) as string;
-  const assetBAddress = getAssetOptions(assetBId!) as string;
+  const assetAAddress = getAssetOptions(assetAId!, state.assetsMap) as string;
+  const assetBAddress = getAssetOptions(assetBId!, state.assetsMap) as string;
   const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
   const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
   const assetA: Asset = { address: assetAAddress, decimals: 18, name: symbolA!, symbol: symbolA! };

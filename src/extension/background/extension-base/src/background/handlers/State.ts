@@ -88,8 +88,6 @@ import {
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
 import { EXTENSION_ID } from '@/consts/global';
 
-export const cacheRegistryMap: Record<string, ChainRegistry> = {};
-
 function extractMetadata(store: MetadataStore): void {
   store.allMap((map): void => {
     const knownEntries = Object.entries(knownGenesis);
@@ -136,6 +134,11 @@ type Timespans = {
   evmBalances?: Record<string, number>;
 };
 
+export type Prices = {
+  json: PriceJson;
+  timestamp: number;
+};
+
 const metaStore = new MetadataStore();
 
 export default class State {
@@ -143,10 +146,7 @@ export default class State {
   public cron: FWCron;
   public timespans: Timespans = {};
   public windows: number[] = [];
-  public prices: {
-    json: PriceJson;
-    timestamp: number;
-  } = {
+  public prices: Prices = {
     json: {
       tokenPriceMap: {},
       currency: 'usd',
@@ -207,7 +207,7 @@ export default class State {
     authorizeAccountsCount: 0,
     dAppName: '',
   };
-  public keyringService = new KeyringService();
+  public keyringService = new KeyringService(this);
   public eventService = new EventService();
   public soraCardService = new SoraCardService();
   public onboardingService = new OnboardingService();
@@ -216,6 +216,8 @@ export default class State {
   }
 
   constructor() {
+    console.log('constructor', 55555);
+
     this.injectFromStorage();
     this.onboardingService.init();
     this.cron = new FWCron(this);
@@ -536,7 +538,7 @@ export default class State {
 
       if (currentProvider) {
         if (data.isEthereum && isRequireEvmAPI(data.name)) this.apis.evm[data.name] = initWeb3Api(currentProvider);
-        else initApi(data);
+        else initApi(data, this);
       }
     }
 
@@ -601,7 +603,7 @@ export default class State {
       api.apiRetry = 0;
     }
 
-    initApi(network);
+    initApi(network, this);
   }
 
   public getNetworkByKey(key: string): NetworkJson | undefined {
@@ -1071,7 +1073,7 @@ export default class State {
   public refreshPrice() {
     const assets: string[] = this.assetsMap.filter(({ priceId }) => priceId).map(({ priceId }) => priceId);
 
-    getTokenPrice(Array.from(new Set(assets)), this.fiatSymbol)
+    getTokenPrice(Array.from(new Set(assets)), this.fiatSymbol, this.prices)
       .then((rs) => {
         this.setPrice(rs);
       })
@@ -1179,7 +1181,7 @@ export default class State {
 
         if (reset) this.resetApiRetries();
 
-        initApi(network);
+        initApi(network, this);
       }
     }
 
@@ -1206,7 +1208,7 @@ export default class State {
       else {
         const assets: string[] = this.assetsMap.filter(({ priceId }) => priceId).map(({ priceId }) => priceId);
 
-        getTokenPrice(Array.from(new Set(assets)), this.fiatSymbol)
+        getTokenPrice(Array.from(new Set(assets)), this.fiatSymbol, this.prices)
           .then((rs) => {
             this.setPrice(rs);
             update(rs);
@@ -1238,7 +1240,7 @@ export default class State {
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
     const { reserved, free, locked, frozen, total, transferable, state, id, relayChain, symbol } = item;
-    const accountAddress = getSubstrateAddress(address);
+    const accountAddress = getSubstrateAddress(address, this);
     const balancesByAddress = this.balanceMap[accountAddress];
 
     const currencyIndex = balancesByAddress.findIndex(
@@ -1443,7 +1445,7 @@ export default class State {
     });
 
     networks.forEach(({ assets, name }) =>
-      assets.forEach(({ id }) => fetchEvmAssetBalance(currentAccount.ethereumAddress, name, id))
+      assets.forEach(({ id }) => fetchEvmAssetBalance(currentAccount.ethereumAddress, name, id, this))
     );
 
     this.saveTimespan('evmBalances', currentAccount.ethereumAddress, Date.now());

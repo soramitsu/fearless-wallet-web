@@ -9,15 +9,13 @@ import {
   makeERC20Transfer,
   makeEVMTransfer,
 } from '@extension-base/api/evm/transfer';
-import { checkMainToken } from '@extension-base/api/helpers';
+import { checkMainToken, getAssetInfo } from '@extension-base/api/helpers';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
-import { getAssetInfo } from '@extension-base/api/substrate/registry';
 import { createSwap } from '@extension-base/api/substrate/swaps';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import State, { registry } from '@extension-base/background/handlers/State';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
-import { state } from '@extension-base/background/handlers';
 import {
   createCrossChainExtrinsic,
   makeCrossChain,
@@ -103,7 +101,7 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
   return (value as SignerPayloadJSON).genesisHash !== undefined;
 }
 
-async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
+async function transformAccounts(accounts: SubjectInfo, state: State): Promise<AccountJson[]> {
   const currentAccount = await state.currentAccount;
 
   const transformedAccounts = Object.values(accounts)
@@ -226,10 +224,10 @@ export default class Extension extends FWExtensionBase {
   async addressesSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(addresses.subscribe)'>(id, port);
 
-    const transformedAddresses = transformAccounts(addressesObservable.subject.value);
+    const transformedAddresses = transformAccounts(addressesObservable.subject.value, this.state);
 
     const subscription = addressesObservable.subject.subscribe((addresses: SubjectInfo): void => {
-      transformAccounts(addresses).then(cb);
+      transformAccounts(addresses, this.state).then(cb);
     });
 
     port.onDisconnect.addListener((): void => {
@@ -243,10 +241,10 @@ export default class Extension extends FWExtensionBase {
   async accountsSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
 
-    const transformedAccounts = transformAccounts(accountsObservable.subject.value);
+    const transformedAccounts = transformAccounts(accountsObservable.subject.value, this.state);
 
     const subscription = accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
-      transformAccounts(accounts).then(cb);
+      transformAccounts(accounts, this.state).then(cb);
     });
 
     port.onDisconnect.addListener((): void => {
@@ -744,7 +742,8 @@ export default class Extension extends FWExtensionBase {
   private async validateSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
     const { AToB, BToA, amountA, amountB, minMaxValue, providerFee, route, swapOptions } = await createSwap(
       options,
-      apiSora
+      apiSora,
+      this.state
     );
 
     return {
@@ -760,7 +759,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async makeSwap(options: RequestSwap): Promise<ResponseMakeSwap> {
-    const { swapOptions } = await createSwap(options, apiSora);
+    const { swapOptions } = await createSwap(options, apiSora, this.state);
     const { password, isSavePass } = options;
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = swapOptions!;
     const errors: Array<BasicTxError> = [];
@@ -813,11 +812,10 @@ export default class Extension extends FWExtensionBase {
         estimateFee: '0',
       };
 
-    const tokenInfo = getAssetInfo(assetId);
+    const tokenInfo = getAssetInfo(assetId, this.state);
+    const isMainToken = checkMainToken(networkKey, tokenInfo.id, this.state);
+    const address = getSubstrateAddress(from, this.state);
 
-    const isMainToken = checkMainToken(networkKey, tokenInfo.id);
-
-    const address = getSubstrateAddress(from);
     let fee = 0;
 
     const tokenBalance = this.state.balanceMap[address].find(
@@ -835,18 +833,25 @@ export default class Extension extends FWExtensionBase {
 
       // Estimate with EVM API
       if (!isMainToken && tokenInfo.id) {
-        const { fee: feeValue } = await getERC20TransactionObject(tokenInfo.id, networkKey, from, to, txVal);
+        const { fee: feeValue } = await getERC20TransactionObject(
+          tokenInfo.id,
+          networkKey,
+          from,
+          to,
+          txVal,
+          this.state
+        );
 
         fee = +ethers.formatUnits(feeValue, 18);
       } else {
-        const { fee: feeValue } = await getEVMTransactionObject(networkKey, to, txVal);
+        const { fee: feeValue } = await getEVMTransactionObject(networkKey, to, txVal, this.state);
 
         fee = +ethers.formatUnits(feeValue, 18);
       }
     } else {
       // Estimate with DotSama API
 
-      fee = await estimateFee(networkKey, to, amount, tokenBalance);
+      fee = await estimateFee(networkKey, to, amount, tokenBalance, this.state);
     }
 
     return {
@@ -861,7 +866,7 @@ export default class Extension extends FWExtensionBase {
     { from, networkKey: givenNetwork, password, to, assetId, amount, isSavePass, isMobile }: RequestTransfer
   ): Promise<BasicTxResponse | undefined> {
     const networkKey = this.state.getNetworkByKey(givenNetwork)?.name ?? '';
-    const tokenInfo = getAssetInfo(assetId);
+    const tokenInfo = getAssetInfo(assetId, this.state);
 
     const pair = this.state.keyringService.getPair(from);
 
@@ -877,9 +882,9 @@ export default class Extension extends FWExtensionBase {
 
     const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
 
-    const substrateAddress = getSubstrateAddress(from);
+    const substrateAddress = getSubstrateAddress(from, this.state);
 
-    const address = getSubstrateAddress(from);
+    const address = getSubstrateAddress(from, this.state);
     const substratePair = this.state.keyringService.getPair(address)!;
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 
@@ -892,26 +897,38 @@ export default class Extension extends FWExtensionBase {
     if (isEthereumAddress(from) && isEthereumAddress(to) && isRequireEvmAPI(networkKey)) {
       // Make transfer with EVM API
       const { privateKey } = this.accountExportPrivateKey({ address: from, password });
-      const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
+      const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id, this.state) : false;
 
       if (tokenInfo && !isMainToken && tokenInfo.id) {
-        transferProm = makeERC20Transfer(tokenInfo.id, networkKey, from, to, privateKey, amount || '0', callback);
+        transferProm = makeERC20Transfer(
+          tokenInfo.id,
+          networkKey,
+          from,
+          to,
+          privateKey,
+          amount || '0',
+          callback,
+          this.state
+        );
       } else {
-        transferProm = makeEVMTransfer(assetId, networkKey, to, privateKey, amount || '0', callback);
+        transferProm = makeEVMTransfer(assetId, networkKey, to, privateKey, amount || '0', callback, this.state);
       }
     } else {
       // Make transfer with Dotsama API
-      transferProm = makeTransfer({
-        networkKey,
-        assetId,
-        amount: amount ?? '0',
-        from,
-        to,
-        password,
-        isSavePass,
-        callback,
-        isMobile: !!isMobile,
-      });
+      transferProm = makeTransfer(
+        {
+          networkKey,
+          assetId,
+          amount: amount ?? '0',
+          from,
+          to,
+          password,
+          isSavePass,
+          callback,
+          isMobile: !!isMobile,
+        },
+        this.state
+      );
     }
 
     await transferProm
@@ -967,18 +984,32 @@ export default class Extension extends FWExtensionBase {
     if (destinationNet === '') return { estimateFee: '0', destEstimateFee: '0' };
 
     const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';
-    const address = getSubstrateAddress(from);
+    const address = getSubstrateAddress(from, this.state);
     const tokenBalance = this.state.balanceMap[address].find(
       (balance) =>
         balance.balances.some((el) => el.id === assetId) &&
         balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
-    const extrinsic = await createCrossChainExtrinsic(assetId, originNet, destinationNet, to, amount!, tokenBalance);
+    const extrinsic = await createCrossChainExtrinsic(
+      assetId,
+      originNet,
+      destinationNet,
+      to,
+      amount!,
+      tokenBalance,
+      this.state
+    );
 
     if (!IS_PRODUCTION) console.info('CrossChain', extrinsic);
 
-    const [fee, crossChainFee] = await estimateCrossChainFee(originNet, destinationNet, tokenBalance, extrinsic);
+    const [fee, crossChainFee] = await estimateCrossChainFee(
+      originNet,
+      destinationNet,
+      tokenBalance,
+      this.state,
+      extrinsic
+    );
 
     return {
       estimateFee: fee.toString(),
@@ -1017,7 +1048,7 @@ export default class Extension extends FWExtensionBase {
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
 
-    const address = getSubstrateAddress(from);
+    const address = getSubstrateAddress(from, this.state);
     const substratePair = this.state.keyringService.getPair(address)!;
     const ethereumAddress = substratePair.meta.ethereumAddress as string;
 
@@ -1025,17 +1056,20 @@ export default class Extension extends FWExtensionBase {
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
 
-    const transferProm: Promise<void> | undefined = makeCrossChain({
-      assetId,
-      originNet,
-      destinationNet,
-      amount: amount ?? '0',
-      from,
-      to,
-      password,
-      isSavePass,
-      callback,
-    });
+    const transferProm: Promise<void> | undefined = makeCrossChain(
+      {
+        assetId,
+        originNet,
+        destinationNet,
+        amount: amount ?? '0',
+        from,
+        to,
+        password,
+        isSavePass,
+        callback,
+      },
+      this.state
+    );
 
     await transferProm
       .then(() =>

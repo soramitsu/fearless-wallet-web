@@ -2,7 +2,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { api as apiSora } from '@sora-substrate/util';
 import { connection as soraConnection } from '@sora-substrate/connection';
 import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
-import { state } from '@extension-base/background/handlers';
+import State from '@extension-base/background/handlers/State';
 import { NETWORK_STATUS } from '../types/networks';
 import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import type { ApiProps } from '@extension-base/background/types/types';
@@ -20,7 +20,7 @@ function createApiObject(): ApiProps {
   };
 }
 
-function onConnected(networkName: string) {
+function onConnected(networkName: string, state: State) {
   if (isSora(networkName)) {
     state.apis.substrate[networkName].api = soraConnection.api!;
   }
@@ -29,7 +29,7 @@ function onConnected(networkName: string) {
   state.apis.substrate[networkName].apiStatus = NETWORK_STATUS.CONNECTED;
 }
 
-async function onDisconnect(networkName: string) {
+async function onDisconnect(networkName: string, state: State) {
   const api = state.getSubstrateApiMap[networkName];
 
   if (!state.networkMap[networkName].active) return;
@@ -51,7 +51,7 @@ async function onDisconnect(networkName: string) {
     api.provider = undefined;
     api.api = undefined;
 
-    if (navigator.onLine) initApi(network);
+    if (navigator.onLine) initApi(network, state);
     else api.apiStatus = NETWORK_STATUS.DISCONNECTED;
   } else {
     api.apiStatus = NETWORK_STATUS.DISCONNECTED; // попробовали все ноды, не смогил подключиться, ставим статус дисконнект
@@ -60,7 +60,7 @@ async function onDisconnect(networkName: string) {
   }
 }
 
-function onReady(networkName: string) {
+function onReady(networkName: string, state: State) {
   if (isSora(networkName)) {
     apiSora.initialize(false);
     apiSora.calcStaticNetworkFees();
@@ -69,24 +69,19 @@ function onReady(networkName: string) {
   }
 }
 
-export async function initApi(network: NetworkJson, retry = false): Promise<void> {
+export async function initApi(network: NetworkJson, state: State): Promise<void> {
   const { name: networkName, nodes } = network;
 
   if (state.getSubstrateApiMap[networkName] === undefined) state.getSubstrateApiMap[networkName] = createApiObject();
-
-  if (retry) {
-    state.apis.substrate[networkName].nodeIndex = 0;
-    state.apis.substrate[networkName].apiRetry = 0;
-  }
 
   const { nodeIndex } = state.getSubstrateApiMap[networkName];
 
   const autoSelectNode = network.isManual ? null : nodes[nodeIndex].url;
   const currentProvider = autoSelectNode ?? network.currentProvider;
   const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [
-    ['connected', () => onConnected(networkName)],
-    ['disconnected', () => onDisconnect(networkName)],
-    ['ready', () => onReady(networkName)],
+    ['connected', () => onConnected(networkName, state)],
+    ['disconnected', () => onDisconnect(networkName, state)],
+    ['ready', () => onReady(networkName, state)],
     ['error', () => null],
   ];
 

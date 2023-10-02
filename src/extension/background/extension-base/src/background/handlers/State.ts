@@ -216,8 +216,6 @@ export default class State {
   }
 
   constructor() {
-    console.log('constructor', 55555);
-
     this.injectFromStorage();
     this.onboardingService.init();
     this.cron = new FWCron(this);
@@ -502,7 +500,8 @@ export default class State {
 
     this.lockNetworkMap = true;
 
-    const { name, currentProvider, chain, blockExplorer, paraId, nativeToken, decimals, customNodes } = data;
+    const { name, currentProvider, chain, blockExplorer, paraId, nativeToken, decimals, customNodes, isEthereum } =
+      data;
 
     if (name in this.networkMap) {
       const network = this.networkMap[name];
@@ -528,17 +527,22 @@ export default class State {
 
     if (this.networkMap[name].active) {
       // update API map if network is active
-      if (data.name in this.apis.substrate) {
+      if (name in this.apis.substrate) {
         this.apis.substrate[name].api?.disconnect && this.apis.substrate[name].api?.disconnect();
 
         delete this.apis.substrate[name];
       }
 
-      if (data.isEthereum && name in this.apis.evm) delete this.apis.evm[name];
+      if (isEthereum && name in this.apis.evm) delete this.apis.evm[name];
 
       if (currentProvider) {
-        if (data.isEthereum && isRequireEvmAPI(data.name)) this.apis.evm[data.name] = initWeb3Api(currentProvider);
-        else initApi(data, this);
+        if (isEthereum && isRequireEvmAPI(name)) {
+          this.getCurrentAccount((value) => {
+            if (value?.ethereumAddress === '') return;
+
+            this.initWeb3Api(data);
+          });
+        } else initApi(data, this);
       }
     }
 
@@ -588,10 +592,19 @@ export default class State {
     });
   }
 
-  public refreshWeb3Api(key: string) {
-    const currentProvider = getCurrentProvider(this.networkMap[key]);
+  public refreshWeb3Api(network: string) {
+    console.log('network', network);
 
-    if (currentProvider) this.apis.evm[key] = initWeb3Api(currentProvider);
+    this.initWeb3Api(this.networkMap[network]);
+  }
+
+  public initWeb3Api(network: NetworkJson | undefined) {
+    if (network === undefined) return;
+
+    const { name } = network;
+    const currentProvider = getCurrentProvider(network);
+
+    if (currentProvider) this.apis.evm[name] = initWeb3Api(currentProvider);
   }
 
   public refreshDotSamaApi(key: string) {
@@ -676,8 +689,8 @@ export default class State {
       }
     });
 
+    await this.initNetworkStates(true);
     this.updateServiceInfo();
-    this.initNetworkStates(true);
 
     this.networkMapSubject.next(this.networkMap);
 
@@ -1105,10 +1118,10 @@ export default class State {
     });
 
     this.networksJson.forEach((network) => {
-      const prepCurrentProvider = network.nodes[0].url;
-      const prepNodes: Record<string, string> = {};
+      const currentProvider = network.nodes[0].url;
+      const providers: Record<string, string> = {};
 
-      network.nodes.forEach(({ name, url }) => (prepNodes[name] = url));
+      network.nodes.forEach(({ name, url }) => (providers[name] = url));
 
       const isEthereum = isEthereumNetwork(network.name);
       const networkFromStorage = networksFromStorage ? networksFromStorage[network.name] : undefined;
@@ -1124,8 +1137,8 @@ export default class State {
         active: true,
         customNodes: [],
         favorite,
-        providers: prepNodes,
-        currentProvider: prepCurrentProvider,
+        providers,
+        currentProvider,
       };
     });
 
@@ -1167,11 +1180,15 @@ export default class State {
   public async initNetworkStates(reset?: boolean) {
     const activeNetworks = Object.values(this.networkMap).filter(({ active }) => active);
 
+    const currentAccount = await this.currentAccount;
+
     for (const network of activeNetworks) {
-      const { name, currentProvider, isEthereum } = network;
+      const { name, isEthereum } = network;
 
       if (isEthereum && isRequireEvmAPI(name)) {
-        if (!this.apis.evm[name] || !this.apis.evm[name].ready) this.apis.evm[name] = initWeb3Api(currentProvider);
+        if (currentAccount?.ethereumAddress === '') continue;
+
+        if (!this.apis.evm[name] || !this.apis.evm[name].ready) this.initWeb3Api(network);
       } else {
         if (this.apis.substrate[name]) {
           const isReady = await this.apis.substrate[name].api?.isReady;
@@ -1291,21 +1308,25 @@ export default class State {
     return network && network.genesisHash;
   }
 
-  public setCurrentAccount(data: CurrentAccountState, callback?: () => void): void {
-    this.currentAccountStore.set('CurrentAccountInfo', data, () => {
-      this.setActiveNetworks();
+  public setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null, updateNetworks = true): void {
+    const cb = () => {
+      if (updateNetworks) {
+        this.setActiveNetworks();
 
-      // logic for Sora library
-      if (data?.address && !data.isMobile) {
-        const pair = this.keyringService.getPair(data?.address)!;
+        // logic for Sora library
+        if (data?.address && !data.isMobile) {
+          const pair = this.keyringService.getPair(data?.address)!;
 
-        apiSora.account = { json: null as any, pair };
+          apiSora.account = { json: null as any, pair };
 
-        this.subscribeTotalXorBalance();
-      }
+          this.subscribeTotalXorBalance();
+        }
+      } else this.updateServiceInfo();
 
-      callback?.();
-    });
+      callback();
+    };
+
+    this.currentAccountStore.set('CurrentAccountInfo', data, cb);
   }
 
   public subscribeTotalXorBalance() {

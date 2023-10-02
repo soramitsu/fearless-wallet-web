@@ -69,9 +69,10 @@ function getFormattedDate({ timestamp }: HistoryElement) {
 function getHumanFeeValue(value: string, networkName: NetworkName) {
   const tokenBalances: TokenBalance[] = store.getters.getBalances;
   const network: NetworkJson = store.getters.getNetwork(networkName);
-  const utilityId = network.assets.find((asset) => asset.isUtility)?.id ?? '';
-  const utilityToken = tokenBalances.find(({ assetId }) => assetId === utilityId);
-  const precision = utilityToken?.precision ?? 0;
+  const asset = network.assets.find((asset) => asset.isUtility);
+  const token = tokenBalances.find(({ symbol }) => symbol === asset?.symbol);
+  const balance = token?.balances.find(({ id }) => id === asset?.id);
+  const precision = balance?.precision ?? 0;
 
   return FPNumber.fromCodecValue(value, precision).toNumber();
 }
@@ -131,7 +132,7 @@ function getHumanTransferFee(historyElement: HistoryElement, networkName: Networ
     return getHumanFeeValue(fee, networkName);
   }
 
-  return '';
+  return 0;
 }
 
 // temporary function, remove after complete transition to subsquid

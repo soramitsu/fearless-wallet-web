@@ -358,8 +358,10 @@ export interface RequestAccountForget {
 
 export interface RequestUpdateMeta {
   address: string;
-  meta: KeyringPair$Meta;
+  meta: Meta;
 }
+
+export type Meta = KeyringPair$Meta & { ethereumAddress: string };
 
 export interface RequestAccountName {
   address: string;
@@ -388,7 +390,6 @@ export interface ApiMap {
 export interface ServiceInfo {
   networkMap: Record<string, NetworkJson>;
   apiMap: ApiMap;
-  isLock?: boolean;
   currentAccountInfo: CurrentAccountState;
 }
 

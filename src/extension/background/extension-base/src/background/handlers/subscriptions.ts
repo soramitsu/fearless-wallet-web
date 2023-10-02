@@ -11,6 +11,7 @@ import type {
   Subscriptions,
 } from '@extension-base/background/types/types';
 import { NetworkName } from '@/interfaces';
+import { SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 
 type SubscriptionName = 'balance' | 'xorTotalBalance';
 
@@ -33,8 +34,13 @@ type SubscriptionMap = {
 
 export class FWSubscription {
   private serviceSubscription: Subscription | undefined;
-  private serviceInfo: { networks: { substrate: NetworkName[]; evm: NetworkName[] }; address: string } = {
+  private serviceInfo: {
+    networks: { substrate: NetworkName[]; evm: NetworkName[] };
+    address: string;
+    ethereumAddress: string;
+  } = {
     address: '',
+    ethereumAddress: '',
     networks: { evm: [], substrate: [] },
   };
   private subscriptionMap: SubscriptionMap = {
@@ -60,7 +66,7 @@ export class FWSubscription {
   updateSubscription(payload: UpdateSub) {
     const { name, func } = payload;
 
-    const oldSub = this.subscriptionMap[name];
+    const oldSub = this.getSubscription(name);
 
     oldSub?.();
 
@@ -111,10 +117,12 @@ export class FWSubscription {
           );
 
           const addressHasChanged = this.serviceInfo.address !== address;
+          const thereIsEthereumAddress = this.serviceInfo.ethereumAddress === '' && ethereumAddress !== '';
 
           // если изменился адрес или появились новые сети на которые мы сейчас не подписаны, то подписываемся
           if (
             addressHasChanged ||
+            thereIsEthereumAddress ||
             newSubstrateNetworksWithoutSubscribe.length !== 0 ||
             newEvmNetworksWithoutSubscribe.length !== 0
           ) {
@@ -123,6 +131,10 @@ export class FWSubscription {
 
               // если адрес изменился, то подписываемся на все сети
               this.subscribeBalances(address, ethereumAddress, null);
+              this.state.fetchEvmBalance(null);
+            } else if (thereIsEthereumAddress) {
+              this.serviceInfo.ethereumAddress = address;
+              this.subscribeBalances(address, ethereumAddress, SUBSTRATE_ETHEREUM_NETWORKS);
               this.state.fetchEvmBalance(null);
             } else {
               // если адрес не менялся, подписываемся только на новые сети(которые только что включили)
@@ -180,7 +192,7 @@ export class FWSubscription {
     try {
       if (isFirstRun) this.state.generateDefaultBalance(address);
 
-      const unsub = subscribeBalance(address, ethereumAddress, newNetworks);
+      const unsub = subscribeBalance(address, ethereumAddress, newNetworks, this.state);
 
       if (isFirstRun) unsub();
       else

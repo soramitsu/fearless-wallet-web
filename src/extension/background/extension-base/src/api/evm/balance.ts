@@ -49,12 +49,12 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
     balanceItem.state = APIItemState.READY;
 
     setBalance(networkKey, balanceItem, address, state);
-  } catch (err) {
+  } catch {
     balanceItem.state = APIItemState.ERROR;
 
     setBalance(networkKey, balanceItem, address, state);
 
-    console.info(`There is problem when fetching ${symbol} token balance on ${networkKey}`, err);
+    console.info(`There is problem when fetching ${symbol} token balance on ${networkKey}`);
   }
 }
 

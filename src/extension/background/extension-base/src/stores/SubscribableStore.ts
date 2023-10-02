@@ -1,6 +1,3 @@
-// Copyright 2019-2022 @subwallet/extension-koni authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
 import { Subject } from 'rxjs';
 import BaseStore from '@extension-base/stores/Base';
 
@@ -20,9 +17,7 @@ export default abstract class SubscribableStore<T> extends BaseStore<T> {
   }
 
   public asyncGet = async (key: string): Promise<T> => {
-    return new Promise((resolve) => {
-      this.get(key, resolve);
-    });
+    return new Promise((resolve) => this.get(key, resolve));
   };
 
   public removeAll() {

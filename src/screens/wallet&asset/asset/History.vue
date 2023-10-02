@@ -116,6 +116,11 @@ export default class History extends Vue {
     );
   }
 
+  @Watch('isMainNetwork')
+  watchNetwork() {
+    this.fetchHistory();
+  }
+
   mounted() {
     this.fetchHistory();
   }

@@ -61,6 +61,7 @@ async function subscribeTokensBalance(address: string, networkKey: string, api: 
       // Причем возвращаются только не нулевые балансы
       // Поэтому нужно пройтись по остальным(нулевым) балансам и проставить для них статуc Ready, тк по факту мы их "получили" и знаем, что они = 0
       const substrateAddress = getSubstrateAddress(address, state);
+
       assets.forEach(({ id, symbol }) => {
         if (!notZeroBalances.includes(id))
           setBalance(
@@ -167,13 +168,9 @@ export async function subscribeWithAccount(
   networkAPI: ApiProps,
   state: State
 ): Promise<Fn> {
-  const unsub = await subscribeTokensBalance(address, networkKey, networkAPI.api!, state).catch((e) => {
-    console.info(`Failed to subscribe to ${networkKey}`, e);
-  });
+  const unsub = await subscribeTokensBalance(address, networkKey, networkAPI.api!, state);
 
-  return () => {
-    unsub?.();
-  };
+  return () => unsub();
 }
 
 export function subscribeBalance(
@@ -183,9 +180,12 @@ export function subscribeBalance(
   state: State
 ): Fn {
   const unsubList = Object.entries(state.getSubstrateApiMap).map(async ([networkKey, apiProps]) => {
-    const isNewNetwork = newNetworks !== null ? newNetworks.includes(networkKey) : true; // если список  === null, значит коннектимся ко всем сетям
+    const isNewNetwork = newNetworks !== null ? newNetworks.includes(networkKey) : true; // если список  === null, значит коннектимся ко всем включенным сетям
 
-    if (!isNewNetwork) return () => state.getSubstrateApiMap[networkKey]?.api?.disconnect();
+    if (!isNewNetwork)
+      return () => {
+        // state.getSubstrateApiMap[networkKey]?.api?.disconnect();
+      };
 
     const isReady = isSora(networkKey)
       ? await new Promise((res) => {

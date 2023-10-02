@@ -24,9 +24,7 @@ export function canDerive(type?: KeypairType): boolean {
 }
 
 export const getCurrentProvider = (data: NetworkJson): string | undefined => {
-  if (!data?.currentProvider) {
-    return undefined;
-  }
+  if (!data?.currentProvider) return undefined;
 
   if (data.currentProvider.startsWith('custom') && data.customNodes.length) {
     return data.customNodes.find((value) => value.url === data.currentProvider)?.url;

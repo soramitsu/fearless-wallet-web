@@ -59,7 +59,9 @@
         <Tooltip text="common.networkDisconnected" target=".warning-img" placement="left" />
       </template>
 
-      <template v-else-if="!showAssetsManagementForm">
+      <Switcher v-if="showAssetsManagementForm" v-model="currencyVisible" />
+
+      <template v-else-if="!showWarning">
         <CircleButton
           iconName="send-white"
           backgroundColor="black"
@@ -87,8 +89,6 @@
           target=".details"
         />
       </template>
-
-      <Switcher v-else v-model="currencyVisible" />
     </div>
   </Lazy>
 </template>
@@ -436,6 +436,7 @@ export default class CurrencyItem extends Vue {
     width: 28px;
     height: 28px;
     opacity: 0.9;
+    margin-right: 10px;
 
     &:hover {
       opacity: 1;

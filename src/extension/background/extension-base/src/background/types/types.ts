@@ -645,7 +645,6 @@ export interface IState {
   onboarding: {
     user: UserType;
     isRequired: boolean;
-    seen: boolean;
   };
 }
 

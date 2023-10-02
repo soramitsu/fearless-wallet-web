@@ -864,7 +864,6 @@ export default class Extension extends FWExtensionBase {
     const tokenInfo = getAssetInfo(assetId);
 
     const pair = this.state.keyringService.getPair(from);
-    const isEthereum = isEthereumAddress(from);
 
     if (pair?.isLocked) {
       const isUnlock = this.state.keyringService.unlockPair(pair, password);
@@ -878,12 +877,13 @@ export default class Extension extends FWExtensionBase {
 
     const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
 
-    const ethereumAddress = pair ? (pair.meta.ethereumAddress as string | undefined) : '';
     const substrateAddress = getSubstrateAddress(from);
 
-    const savePass = () => {
-      this.savePass(substrateAddress, isEthereum ? from : ethereumAddress, !!isSavePass, !!isMobile);
-    };
+    const address = getSubstrateAddress(from);
+    const substratePair = this.state.keyringService.getPair(address)!;
+    const ethereumAddress = substratePair.meta.ethereumAddress as string;
+
+    const savePass = () => this.savePass(substrateAddress, ethereumAddress, !!isSavePass, !!isMobile);
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
 

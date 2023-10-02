@@ -25,7 +25,9 @@ const actions: ActionTree<State, State> & Actions = {
     await initPayWingsAuthSdk(setAuthLogin);
   },
 
-  async [ActionTypes.GET_USER_STATUS]({ commit }) {
+  async [ActionTypes.GET_USER_STATUS]({ commit, rootState }) {
+    if (!rootState.extension.features.fiat.soraCard) return;
+
     const { kycStatus, verificationStatus, rejectReason } = await defineUserStatus();
 
     commit(MutationTypes.SET_KYC_STATUS, kycStatus);

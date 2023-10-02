@@ -93,19 +93,23 @@ export class FWCron {
   };
 
   updateCron(serviceInfo: ServiceInfo) {
-    this.removeCron('refreshPrice');
-    this.removeCron('checkStatusApiMap');
-    this.removeCron('recoverApiMap');
+    // Если не подключены ни к одной сети или нет выбранного аккаунта
+    if (!serviceInfo.currentAccountInfo || !this.checkNetworkAvailable(serviceInfo)) {
+      this.removeCron('refreshPrice');
+      this.removeCron('checkStatusApiMap');
+      this.removeCron('recoverApiMap');
 
-    if (!serviceInfo.currentAccountInfo) return;
-
-    if (this.checkNetworkAvailable(serviceInfo)) {
-      // only add cron job if there's at least 1 active network
-
-      this.addCron('refreshPrice', () => this.state.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
-      this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
-      this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
+      return;
     }
+
+    if (!this.isCronExist('refreshPrice'))
+      this.addCron('refreshPrice', () => this.state.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
+
+    if (!this.isCronExist('checkStatusApiMap'))
+      this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
+
+    if (!this.isCronExist('recoverApiMap'))
+      this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
   }
 
   stop = () => {

@@ -1,5 +1,3 @@
-// Copyright 2019-2022 @polkadot/extension authors & contributors
-// SPDX-License-Identifier: Apache-2.0
 import { assert } from '@polkadot/util';
 import { PORT_EXTENSION } from '@extension-base/defaults';
 import Extension from '@extension-base/background/handlers/Extension';

@@ -86,6 +86,7 @@ import {
   SORA_XOR_ASSET_ID,
 } from '@/consts/networks';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
+import { EXTENSION_ID } from '@/consts/global';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -451,7 +452,7 @@ export default class State {
 
     const url = new URL(tab.url);
     const tabHostName =
-      url.hostname === 'nhlnehondigmgckngjomcpcefcdplmgc' || url.hostname === '39fb1478-3519-4b4e-8eba-15e6e594494c'
+      url.hostname === EXTENSION_ID || url.hostname === '39fb1478-3519-4b4e-8eba-15e6e594494c'
         ? 'header.currentExtensionPage'
         : url.hostname;
 
@@ -476,25 +477,22 @@ export default class State {
 
     const accounts = this.getSubstrateAccounts();
 
-    if (accounts.length === 0) {
-      this.setCurrentAccount(null);
+    if (accounts.length === 0) this.setCurrentAccount(null);
+    else {
+      const [
+        {
+          address,
+          meta: { name, ethereumAddress, isMobile },
+        },
+      ] = accounts;
 
-      return;
-    }
-
-    const [
-      {
+      this.setCurrentAccount({
         address,
-        meta: { name, ethereumAddress, isMobile },
-      },
-    ] = accounts;
-
-    this.setCurrentAccount({
-      address,
-      name: name as string,
-      ethereumAddress: ethereumAddress as string,
-      isMobile: isMobile as boolean,
-    });
+        name: name as string,
+        ethereumAddress: ethereumAddress as string,
+        isMobile: isMobile as boolean,
+      });
+    }
   }
 
   public upsertNetworkMap(data: NetworkJson): boolean {

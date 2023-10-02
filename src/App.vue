@@ -66,13 +66,16 @@ export default class App extends Vue {
     if (IS_EXTENSION) this.extensionSubscribe();
 
     setTitle();
+
     this.setupWallet();
     this.setupNetworks();
     this.setupBalance();
     this.fetchFiats();
-    this.fetchFeatures();
     this.setupPrice();
     this.setupSWPing();
+
+    await this.fetchFeatures();
+
     this.getUserStatus(); // SORA Card
   }
 

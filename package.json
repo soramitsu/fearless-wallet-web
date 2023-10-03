@@ -116,7 +116,7 @@
     "lint-staged": "^9.5.0",
     "network-information-types": "^0.1.1",
     "node-polyfill-webpack-plugin": "^1.1.4",
-    "postcss": "^8.4.21",
+    "postcss": "^8.4.31",
     "postcss-loader": "^7.0.2",
     "prettier": "^2.2.1",
     "sass": "^1.57.1",

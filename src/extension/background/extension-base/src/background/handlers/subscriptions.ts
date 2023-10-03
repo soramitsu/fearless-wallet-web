@@ -84,7 +84,7 @@ export class FWSubscription {
     accountsExceptCurrent.forEach((account) => {
       const ethAddress = (account.meta.ethereumAddress as string) ?? '';
 
-      this.subscribeBalances(account.address, ethAddress, null, true);
+      this.subscribeBalances(account.address, ethAddress, null, null, true);
     });
 
     if (!this.serviceSubscription)
@@ -120,15 +120,18 @@ export class FWSubscription {
           ) {
             if (addressHasChanged) {
               // если адрес изменился, то подписываемся на все сети
-              this.subscribeBalances(address, ethereumAddress, null);
-              this.state.fetchEvmBalance(null);
+              this.subscribeBalances(address, ethereumAddress, null, null);
             } else if (thereIsEthereumAddress) {
-              this.subscribeBalances(address, ethereumAddress, SUBSTRATE_ETHEREUM_NETWORKS);
-              this.state.fetchEvmBalance(null);
+              this.subscribeBalances(address, ethereumAddress, SUBSTRATE_ETHEREUM_NETWORKS, null);
             } else {
               // если адрес не менялся, подписываемся только на новые сети(которые только что включили)
               if (newSubstrateNetworksWithoutSubscribe.length) {
-                this.subscribeBalances(address, ethereumAddress, newSubstrateNetworksWithoutSubscribe);
+                this.subscribeBalances(
+                  address,
+                  ethereumAddress,
+                  newSubstrateNetworksWithoutSubscribe,
+                  newEvmNetworksWithoutSubscribe
+                );
               }
 
               if (newEvmNetworksWithoutSubscribe.length) this.state.fetchEvmBalance(newEvmNetworksWithoutSubscribe);
@@ -188,28 +191,40 @@ export class FWSubscription {
     });
   }
 
-  subscribeBalances(address: string, ethereumAddress: string, newNetworks: NetworkName[] | null, isFirstRun?: boolean) {
-    console.info(`Start balance sub for: ${address}${isFirstRun ? `; isFirstRun: true` : ''}`);
+  async subscribeBalances(
+    address: string,
+    ethereumAddress: string,
+    newNetworks: NetworkName[] | null,
+    newEvmNetworks: NetworkName[] | null,
+    isFirstRun?: boolean
+  ) {
+    console.info(`Start balance sub for: ${address}${isFirstRun ? `; isFirstRun: ${true}` : ''}`);
 
-    try {
-      if (isFirstRun) this.state.generateDefaultBalance(address);
+    if (isFirstRun) this.state.generateDefaultBalance(address);
 
-      const unsubList = subscribeBalance(address, ethereumAddress, newNetworks, this.state);
+    this.state.fetchEvmBalance(newEvmNetworks);
 
+    const unsubList = subscribeBalance(address, ethereumAddress, newNetworks, this.state);
+
+    if (isFirstRun) {
+      // ждем 20 секунд, потом отписываемся, за это время ответят большинство сетей
+      // можно было бы дожидаться и await`ить все подписки разом, но некоторые сети очень долго отвечают
+      setTimeout(() => {
+        unsubList.forEach(async (item) => {
+          const value = await item;
+
+          value.unsub();
+        });
+      }, 20000);
+    } else
       unsubList.forEach(async (item) => {
         const value = await item;
-        const unsub = await value.unsub;
 
-        if (isFirstRun) unsub();
-        else
-          this.updateSubscription({
-            name: value.networkName,
-            func: unsub,
-          });
+        this.updateSubscription({
+          name: value.networkName,
+          func: value.unsub,
+        });
       });
-    } catch {
-      this.logger.warn(`Unable to subscribe: ${address}`);
-    }
   }
 }
 

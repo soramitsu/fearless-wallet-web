@@ -470,7 +470,7 @@ export default class State {
     const currentAccount = await this.currentAccount;
 
     if (currentAccount) {
-      this.setCurrentAccount({ ...currentAccount });
+      this.setCurrentAccount(currentAccount);
 
       return;
     }
@@ -605,15 +605,12 @@ export default class State {
   }
 
   public refreshDotSamaApi(key: string) {
-    const network = this.networkMap[key];
-    const api = this.getSubstrateApiMap[key];
-
-    if (api) {
-      api.nodeIndex = 0;
-      api.apiRetry = 0;
+    if (this.getSubstrateApiMap[key]) {
+      this.getSubstrateApiMap[key].nodeIndex = 0;
+      this.getSubstrateApiMap[key].apiRetry = 0;
     }
 
-    initApi(network, this);
+    initApi(this.networkMap[key], this);
   }
 
   public getNetworkByKey(key: string): NetworkJson | undefined {
@@ -660,9 +657,7 @@ export default class State {
 
     if (!currentAccount) return;
 
-    if (type) {
-      this.selectedNetworks[currentAccount.address] = type;
-    }
+    if (type) this.selectedNetworks[currentAccount.address] = type;
 
     const networks = this.getActiveNetworks(currentAccount.address);
 
@@ -1177,7 +1172,7 @@ export default class State {
   public async initNetworkStates(reset?: boolean) {
     const activeNetworks = Object.values(this.networkMap).filter(({ active }) => active);
 
-    for (const network of activeNetworks) {
+    activeNetworks.forEach(async (network) => {
       const { name, isEthereum } = network;
 
       if (isEthereum && isRequireEvmAPI(name)) {
@@ -1186,14 +1181,14 @@ export default class State {
         if (this.apis.substrate[name]) {
           const isReady = await this.apis.substrate[name].api?.isReady;
 
-          if (isReady) continue;
+          if (isReady) return;
         }
 
         if (reset) this.resetApiRetries();
 
         initApi(network, this);
       }
-    }
+    });
 
     if (!reset) this.onReady();
   }

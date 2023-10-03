@@ -26,8 +26,10 @@ async function getActiveTabs() {
 
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'update') {
-    state.onboardingService.isRequired = false;
+    state.onboardingService.isRequired = true;
     state.onboardingService.updateStorage();
+
+    chrome.runtime.reload();
   }
 
   await initStorage();

@@ -6,14 +6,13 @@ import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
 import State from '@extension-base/background/handlers/State';
 import { setBalance } from '../helpers';
-import type { ApiProps } from '@extension-base/background/types/types';
-import type { Fn, NetworkName, RelayChainName } from '@/interfaces';
+import type { NetworkName, RelayChainName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
 import { CHAIN_IDS, SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/networks';
 import { isSora } from '@/helpers';
 
-async function subscribeTokensBalance(address: string, networkKey: string, api: ApiPromise, state: State) {
+function subscribeTokensBalance(address: string, networkKey: string, api: ApiPromise, state: State) {
   const {
     parentId,
     assets,
@@ -86,91 +85,78 @@ async function subscribeTokensBalance(address: string, networkKey: string, api: 
     return () => sub.unsubscribe();
   }
 
-  const unsubList = await Promise.all(
-    assets.map(({ precision, symbol, id, type }) => {
-      try {
-        const options = getAssetOptions(id, state.assetsMap);
+  const unsubList = assets.map(({ precision, symbol, id, type }) => {
+    try {
+      const options = getAssetOptions(id, state.assetsMap);
 
-        if (!api || !api.rx) return () => null;
+      if (!api || !api.rx) return () => null;
 
-        const query = api.rx.query;
+      const query = api.rx.query;
 
-        let pallet;
+      let pallet;
 
-        const networkNameLower = networkName.toLowerCase();
-        const isSoraXOR =
-          symbol === SORA_UTILITY_ASSET && (networkNameLower === SORA_MAINNET || networkNameLower === SORA_TEST);
+      const networkNameLower = networkName.toLowerCase();
+      const isSoraXOR =
+        symbol === SORA_UTILITY_ASSET && (networkNameLower === SORA_MAINNET || networkNameLower === SORA_TEST);
 
-        if (type === 'normal' || isSoraXOR) pallet = query.system.account(address);
-        else if (type === 'assets') {
-          pallet = (query.assets as any).account(options, address);
-        } else pallet = query.tokens.accounts(address, options);
+      if (type === 'normal' || isSoraXOR) pallet = query.system.account(address);
+      else if (type === 'assets') {
+        pallet = (query.assets as any).account(options, address);
+      } else pallet = query.tokens.accounts(address, options);
 
-        const onBalanceFetch = (balances: any) => {
-          const balance =
-            type === 'assets'
-              ? {
-                  free: FPNumber.fromCodecValue(balances.toJSON()?.balance ?? 0, precision),
-                }
-              : balances.data
-              ? balances.data
-              : balances;
+      const onBalanceFetch = (balances: any) => {
+        const balance =
+          type === 'assets'
+            ? {
+                free: FPNumber.fromCodecValue(balances.toJSON()?.balance ?? 0, precision),
+              }
+            : balances.data
+            ? balances.data
+            : balances;
 
-          const { frozen, locked, reserved, total, transferable } = formatBalance(balance, precision);
-          const substrateAddress = getSubstrateAddress(address, state);
+        const { frozen, locked, reserved, total, transferable } = formatBalance(balance, precision);
+        const substrateAddress = getSubstrateAddress(address, state);
 
-          setBalance(
-            networkKey,
-            {
-              state: APIItemState.READY,
-              relayChain,
-              symbol,
-              id,
-              reserved,
-              locked,
-              frozen,
-              transferable,
-              total,
-            },
-            substrateAddress,
-            state
-          );
-        };
-
-        const sub: Subscription = pallet.subscribe(onBalanceFetch);
-
-        return () => sub.unsubscribe();
-      } catch (err: any) {
         setBalance(
           networkKey,
           {
-            state: APIItemState.ERROR,
+            state: APIItemState.READY,
             relayChain,
             symbol,
             id,
+            reserved,
+            locked,
+            frozen,
+            transferable,
+            total,
           },
-          address,
+          substrateAddress,
           state
         );
-        console.warn(err.message, networkKey, `type: ${type}`);
-      }
+      };
 
-      return () => null;
-    })
-  );
+      const sub: Subscription = pallet.subscribe(onBalanceFetch);
+
+      return () => sub.unsubscribe();
+    } catch (err: any) {
+      setBalance(
+        networkKey,
+        {
+          state: APIItemState.ERROR,
+          relayChain,
+          symbol,
+          id,
+        },
+        address,
+        state
+      );
+      console.warn(err.message, networkKey, `type: ${type}`);
+    }
+
+    return () => null;
+  });
 
   return () => unsubList.forEach((unsubscribe) => unsubscribe());
-}
-
-export async function subscribeWithAccount(
-  address: string,
-  networkKey: string,
-  networkAPI: ApiProps,
-  state: State
-): Promise<Fn> {
-  const unsub = await subscribeTokensBalance(address, networkKey, networkAPI.api!, state);
-
-  return () => unsub();
 }
 
 export function subscribeBalance(
@@ -179,7 +165,7 @@ export function subscribeBalance(
   newNetworks: NetworkName[] | null,
   state: State
 ) {
-  const unsubList = Object.entries(state.getSubstrateApiMap)
+  const unsubListPromises = Object.entries(state.getSubstrateApiMap)
     .filter(([networkName]) => {
       // если список  === null, значит коннектимся ко всем включенным сетям
       if (newNetworks === null) return true;
@@ -197,7 +183,7 @@ export function subscribeBalance(
             const timespan = Date.now();
 
             const interval = setInterval(async () => {
-              const isReady = await apiProps.api?.isReady;
+              const isReady = await apiProps.api?.isReadyOrError;
 
               if (isReady) {
                 clearInterval(interval);
@@ -208,7 +194,7 @@ export function subscribeBalance(
               }
             }, 1000);
           })
-        : await apiProps.api?.isReady;
+        : await apiProps.api?.isReadyOrError;
 
       if (!isReady)
         return {
@@ -226,9 +212,9 @@ export function subscribeBalance(
 
       return {
         networkName,
-        unsub: subscribeWithAccount(addressForNetwork, networkName, apiProps, state),
+        unsub: subscribeTokensBalance(addressForNetwork, networkName, apiProps.api!, state),
       };
     });
 
-  return unsubList;
+  return unsubListPromises;
 }

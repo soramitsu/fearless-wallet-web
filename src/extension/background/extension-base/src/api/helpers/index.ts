@@ -13,7 +13,9 @@ export function checkMainToken(networkKey: string, id: string, state: State): bo
 }
 
 export const setBalance = (networkKey: string, rs: Partial<BalanceItem>, address: string, state: State) => {
-  const isAccountExists = state.keyringService.getAccounts().some((el) => el.address === address);
+  const isAccountExists = [...state.keyringService.getAccounts(), ...state.keyringService.getAddresses()].some(
+    (el) => el.address === address
+  );
 
   if (!isAccountExists) return;
 

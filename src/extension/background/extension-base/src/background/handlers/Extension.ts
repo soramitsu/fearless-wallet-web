@@ -618,10 +618,6 @@ export default class Extension extends FWExtensionBase {
     this.state.updateCurrentTabsUrl(tabs);
   }
 
-  createAddress({ address, meta }: RequestAddressCreate) {
-    this.state.keyringService.saveAddress(address, meta, 'address');
-  }
-
   initAuth({ type, wallet }: GoogleAuthTypes): void {
     googleManage.authExtension(type, wallet);
   }
@@ -1100,10 +1096,10 @@ export default class Extension extends FWExtensionBase {
     return this.state.networkMap;
   }
 
-  private createMobileWallet(wallet: RequestAddressCreate) {
-    this.createAddress(wallet);
+  private createMobileWallet({ address, meta }: RequestAddressCreate) {
+    this.state.keyringService.saveAddress(address, meta, 'address');
 
-    this.updateCurrentAccount(wallet.address);
+    this.updateCurrentAccount(address);
   }
 
   private subscribeNetworkMap(id: string, port: Port): Record<string, NetworkJson> {

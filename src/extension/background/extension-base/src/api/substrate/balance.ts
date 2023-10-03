@@ -178,51 +178,57 @@ export function subscribeBalance(
   ethereumAddress: string,
   newNetworks: NetworkName[] | null,
   state: State
-): Fn {
-  const unsubList = Object.entries(state.getSubstrateApiMap).map(async ([networkKey, apiProps]) => {
-    const isNewNetwork = newNetworks !== null ? newNetworks.includes(networkKey) : true; // если список  === null, значит коннектимся ко всем включенным сетям
+) {
+  const unsubList = Object.entries(state.getSubstrateApiMap)
+    .filter(([networkName]) => {
+      // если список  === null, значит коннектимся ко всем включенным сетям
+      if (newNetworks === null) return true;
 
-    if (!isNewNetwork)
-      return () => {
-        // state.getSubstrateApiMap[networkKey]?.api?.disconnect();
+      return newNetworks.includes(networkName);
+    })
+    .map(async ([networkName, apiProps]) => {
+      const isReady = isSora(networkName)
+        ? await new Promise((res) => {
+            // Sora сеть проверяем через setInterval
+            // потому, что instance api сохраняется в state.apis только, когда подключились к сети(см api.ts, onConnected)
+            // у остальных сетей такой проблемы нет, потому что api мы сохраняем сразу при создании
+            // если прошло 60 сек и api не появилось, отписываемся и резолвим false
+
+            const timespan = Date.now();
+
+            const interval = setInterval(async () => {
+              const isReady = await apiProps.api?.isReady;
+
+              if (isReady) {
+                clearInterval(interval);
+                res(isReady);
+              } else if (Date.now() - timespan > 60000) {
+                clearInterval(interval);
+                res(false);
+              }
+            }, 1000);
+          })
+        : await apiProps.api?.isReady;
+
+      if (!isReady)
+        return {
+          networkName,
+          unsub: () => null,
+        };
+
+      const addressForNetwork = isEthereumNetwork(networkName) ? ethereumAddress : address;
+
+      if (addressForNetwork === '')
+        return {
+          networkName,
+          unsub: () => null,
+        };
+
+      return {
+        networkName,
+        unsub: subscribeWithAccount(addressForNetwork, networkName, apiProps, state),
       };
-
-    const isReady = isSora(networkKey)
-      ? await new Promise((res) => {
-          // Sora сеть проверяем через setInterval
-          // потому, что instance api сохраняется в state.apis только, когда подключились к сети(см api.ts, onConnected)
-          // у остальных сетей такой проблемы нет, потому что api мы сохраняем сразу при создании
-          // если прошло 60 сек и api не появилось, отписываемся и резолвим false
-
-          const timespan = Date.now();
-
-          const interval = setInterval(async () => {
-            const isReady = await apiProps.api?.isReady;
-
-            if (isReady) {
-              clearInterval(interval);
-              res(isReady);
-            } else if (Date.now() - timespan > 60000) {
-              clearInterval(interval);
-              res(false);
-            }
-          }, 1000);
-        })
-      : await apiProps.api?.isReady;
-
-    if (!isReady) return () => null;
-
-    const addressForNetwork = isEthereumNetwork(networkKey) ? ethereumAddress : address;
-
-    if (addressForNetwork === '') return () => null;
-
-    return subscribeWithAccount(addressForNetwork, networkKey, apiProps, state);
-  });
-
-  return () =>
-    unsubList.forEach(async (unsubscribe) => {
-      const unsub = await unsubscribe;
-
-      unsub?.();
     });
+
+  return unsubList;
 }

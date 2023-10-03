@@ -13,23 +13,17 @@ import type {
 import { NetworkName } from '@/interfaces';
 import { SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 
-type SubscriptionName = 'balance' | 'xorTotalBalance';
+type SubscriptionName = 'xorTotalBalance' | NetworkName;
 
-type UpdateSub =
-  | {
-      name: 'balance';
-      func: () => void;
-    }
-  | {
-      name: 'xorTotalBalance';
-      func: () => void;
-    };
+type UpdateSub = {
+  name: SubscriptionName;
+  func: () => void;
+};
 
 const subscriptions: Subscriptions = {};
 
 type SubscriptionMap = {
-  balance?: (() => void) | undefined;
-  xorTotalBalance: (() => void) | undefined;
+  [key in string]: (() => void) | undefined;
 };
 
 export class FWSubscription {
@@ -43,11 +37,7 @@ export class FWSubscription {
     ethereumAddress: '',
     networks: { evm: [], substrate: [] },
   };
-  private subscriptionMap: SubscriptionMap = {
-    balance: undefined,
-    xorTotalBalance: undefined,
-  };
-
+  private subscriptionMap: SubscriptionMap = {};
   private logger: Logger;
 
   constructor(private state: State, private cron: FWCron) {
@@ -56,11 +46,7 @@ export class FWSubscription {
   }
 
   getSubscription(name: SubscriptionName): (() => void) | undefined {
-    if (name === 'balance') return this.subscriptionMap[name];
-
-    if (name === 'xorTotalBalance') return this.subscriptionMap[name];
-
-    return undefined;
+    return this.subscriptionMap[name];
   }
 
   updateSubscription(payload: UpdateSub) {
@@ -73,12 +59,18 @@ export class FWSubscription {
     this.subscriptionMap[name] = func;
   }
 
-  stopAllSubscription() {
-    this.subscriptionMap.balance?.();
-    this.subscriptionMap.balance = undefined;
+  stopAllSubscription(names?: string[]) {
+    if (names?.length === 0) return;
 
-    this.subscriptionMap.xorTotalBalance?.();
-    this.subscriptionMap.xorTotalBalance = undefined;
+    Object.entries(this.subscriptionMap)
+      .filter(([name]) => names?.includes(name) ?? true)
+      .forEach(([name, unsub]) => {
+        unsub?.();
+
+        this.subscriptionMap[name] = undefined;
+      });
+
+    if (names === undefined) this.subscriptionMap = {};
   }
 
   async start() {
@@ -138,12 +130,22 @@ export class FWSubscription {
               this.state.fetchEvmBalance(null);
             } else {
               // если адрес не менялся, подписываемся только на новые сети(которые только что включили)
-              if (newSubstrateNetworksWithoutSubscribe.length)
+              if (newSubstrateNetworksWithoutSubscribe.length) {
                 this.subscribeBalances(address, ethereumAddress, newSubstrateNetworksWithoutSubscribe);
+              }
 
               if (newEvmNetworksWithoutSubscribe.length) this.state.fetchEvmBalance(newEvmNetworksWithoutSubscribe);
             }
           }
+
+          // если сетей нет в списке сетей на балансы которых нужно быть подписанными
+          // то удаляем ее подписку
+          // P.S этого можно не делать, тк api сети уже disconnect, но все же удалим подписку
+          const networkUnsub = this.serviceInfo?.networks.substrate.filter(
+            (name) => !allNewSubstrateNetworks.includes(name)
+          );
+
+          this.stopAllSubscription(networkUnsub);
 
           // обновляем список сетей на балансы которых мы подписаны
           this.serviceInfo.networks.substrate = allNewSubstrateNetworks;
@@ -192,14 +194,19 @@ export class FWSubscription {
     try {
       if (isFirstRun) this.state.generateDefaultBalance(address);
 
-      const unsub = subscribeBalance(address, ethereumAddress, newNetworks, this.state);
+      const unsubList = subscribeBalance(address, ethereumAddress, newNetworks, this.state);
 
-      if (isFirstRun) unsub();
-      else
-        this.updateSubscription({
-          name: 'balance',
-          func: unsub,
-        });
+      unsubList.forEach(async (item) => {
+        const value = await item;
+        const unsub = await value.unsub;
+
+        if (isFirstRun) unsub();
+        else
+          this.updateSubscription({
+            name: value.networkName,
+            func: unsub,
+          });
+      });
     } catch {
       this.logger.warn(`Unable to subscribe: ${address}`);
     }

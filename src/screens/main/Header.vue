@@ -331,7 +331,6 @@ export default class Header extends Vue {
       display: flex;
       align-items: flex-start;
       flex-direction: column;
-      gap: 5px;
 
       .name {
         display: flex;

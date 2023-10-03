@@ -593,8 +593,6 @@ export default class State {
   }
 
   public refreshWeb3Api(network: string) {
-    console.log('network', network);
-
     this.initWeb3Api(this.networkMap[network]);
   }
 
@@ -1165,8 +1163,8 @@ export default class State {
   public async init() {
     await this.eventService.waitCryptoReady;
     await this.prepNetworkJson();
+    await this.initNetworkStates();
 
-    this.initNetworkStates();
     this.updateServiceInfo();
   }
 

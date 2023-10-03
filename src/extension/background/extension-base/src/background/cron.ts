@@ -127,11 +127,7 @@ export class FWCron {
 
     const { evm, substrate } = this.state.getApiMap;
 
-    this.state.getCurrentAccount((value) => {
-      if (value?.ethereumAddress === '') return;
-
-      Object.keys(evm).forEach((network) => this.state.refreshWeb3Api(network));
-    });
+    Object.keys(evm).forEach((network) => this.state.refreshWeb3Api(network));
 
     Object.entries(substrate).forEach(async ([network, apiProp]) => {
       if (!apiProp?.api?.isConnected) {

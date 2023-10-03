@@ -23,7 +23,12 @@ import {
 } from '@extension-base/api/substrate/crossChain';
 import { RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
 import { ethers } from 'ethers';
-import { balanceItemByNetwork, getSubstrateAddress, isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import {
+  balanceItemByNetwork,
+  getEthereumAddress,
+  getSubstrateAddress,
+  isRequireEvmAPI,
+} from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { storage } from '@extension-base/stores/Storage';
@@ -810,11 +815,11 @@ export default class Extension extends FWExtensionBase {
 
     const tokenInfo = getAssetInfo(assetId, this.state);
     const isMainToken = checkMainToken(networkKey, tokenInfo.id, this.state);
-    const address = getSubstrateAddress(from, this.state);
+    const substrateAddress = getSubstrateAddress(from, this.state);
 
     let fee = 0;
 
-    const tokenBalance = this.state.balanceMap[address].find(
+    const tokenBalance = this.state.balanceMap[substrateAddress].find(
       (balance) =>
         balance.balances.some((el) => el.id === assetId) &&
         balance.relayChain?.toLowerCase() === relayChain?.toLowerCase()
@@ -879,10 +884,7 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
 
     const substrateAddress = getSubstrateAddress(from, this.state);
-
-    const address = getSubstrateAddress(from, this.state);
-    const substratePair = this.state.keyringService.getPair(address)!;
-    const ethereumAddress = substratePair.meta.ethereumAddress as string;
+    const ethereumAddress = getEthereumAddress(from, this.state);
 
     const savePass = () => this.savePass(substrateAddress, ethereumAddress, !!isSavePass, !!isMobile);
 
@@ -980,8 +982,8 @@ export default class Extension extends FWExtensionBase {
     if (destinationNet === '') return { estimateFee: '0', destEstimateFee: '0' };
 
     const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';
-    const address = getSubstrateAddress(from, this.state);
-    const tokenBalance = this.state.balanceMap[address].find(
+    const substrateAddress = getSubstrateAddress(from, this.state);
+    const tokenBalance = this.state.balanceMap[substrateAddress].find(
       (balance) =>
         balance.balances.some((el) => el.id === assetId) &&
         balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
@@ -1045,8 +1047,7 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
 
     const address = getSubstrateAddress(from, this.state);
-    const substratePair = this.state.keyringService.getPair(address)!;
-    const ethereumAddress = substratePair.meta.ethereumAddress as string;
+    const ethereumAddress = getEthereumAddress(from, this.state);
 
     const savePass = () => this.savePass(address, ethereumAddress, !!isSavePass, !!isMobile);
 

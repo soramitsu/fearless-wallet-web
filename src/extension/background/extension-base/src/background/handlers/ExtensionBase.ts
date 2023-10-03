@@ -56,16 +56,20 @@ export default class FWExtensionBase {
 
     // если передали ethereumAddress, нужно сохранить ethereumAddress для аккаунта
     if (meta.ethereumAddress) {
-      this.state.getCurrentAccount((account) =>
-        this.state.setCurrentAccount({
-          ...account!,
-          ethereumAddress: meta.ethereumAddress,
-        })
-      );
+      const cb = () =>
+        Object.keys(this.state.networkMap).forEach((network) => {
+          if (isRequireEvmAPI(network)) this.state.refreshWeb3Api(network);
+        });
 
-      Object.keys(this.state.networkMap).forEach((network) => {
-        if (isRequireEvmAPI(network)) this.state.refreshWeb3Api(network);
-      });
+      this.state.getCurrentAccount((account) =>
+        this.state.setCurrentAccount(
+          {
+            ...account!,
+            ethereumAddress: meta.ethereumAddress,
+          },
+          cb
+        )
+      );
 
       this.state.updateServiceInfo();
     }

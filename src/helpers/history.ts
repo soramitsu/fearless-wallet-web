@@ -79,10 +79,7 @@ function getHumanFeeValue(value: string, networkName: NetworkName) {
 
 function getHumanValue(value: string, assetId: string, networkName: NetworkName) {
   const tokenBalances: TokenBalance[] = store.getters.getBalances;
-  const { balances } = tokenBalances.find(
-    ({ assetId: id, balances }) => id === assetId || balances.some((el) => el.id === assetId)
-  )!;
-
+  const { balances } = tokenBalances.find(({ assetId: id }) => id === assetId)!;
   const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
 
   return FPNumber.fromCodecValue(value, precision).toNumber();
@@ -95,6 +92,7 @@ function getHistoryValue(historyElement: HistoryElement, assetId: string, networ
 
   if (type === TransactionType.transfer && transfer) {
     const { amount, fee } = transfer;
+
     const value = getHumanValue(amount, assetId, networkName);
     const fees = getHumanFeeValue(fee, networkName);
 

@@ -348,7 +348,9 @@ async function createCrossChainExtrinsic(
   // Поэтому просто берем первый попавшийся элемент из массива availableDestinations, берем его assets и ищем нужный токен внутри assets
   const { chainId: destChainId } = state.networkMap[destNet];
   const { assets } = xcm!.availableDestinations.find(({ chainId }) => chainId === destChainId)!;
-  const { id: xcmAssetId } = assets.find(({ symbol: _symbol }) => _symbol.toLowerCase() === symbol.toLowerCase())!;
+  const { id: xcmAssetId } = assets.find(
+    ({ symbol: _symbol }) => _symbol.toLowerCase() === getNativeAssetName(symbol)
+  )!;
 
   if (isNativeNetwork(originNet)) {
     // Case RelayChain -> Nonnative ParaChain (polkadot -> acala, etc; kusama -> bifrost, etc) pallet = xcmPallet, module = limitedReserveTransferAssets

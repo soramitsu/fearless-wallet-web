@@ -20,6 +20,10 @@ export class KeyringService {
     });
   }
 
+  getAllAccounts() {
+    return [...this.getAccounts(), ...this.getAddresses()];
+  }
+
   getAccounts() {
     return keyring.getAccounts();
   }

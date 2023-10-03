@@ -536,13 +536,8 @@ export default class State {
       if (isEthereum && name in this.apis.evm) delete this.apis.evm[name];
 
       if (currentProvider) {
-        if (isEthereum && isRequireEvmAPI(name)) {
-          this.getCurrentAccount((value) => {
-            if (value?.ethereumAddress === '') return;
-
-            this.initWeb3Api(data);
-          });
-        } else initApi(data, this);
+        if (isEthereum && isRequireEvmAPI(name)) this.initWeb3Api(data);
+        else initApi(data, this);
       }
     }
 
@@ -599,10 +594,14 @@ export default class State {
   public initWeb3Api(network: NetworkJson | undefined) {
     if (network === undefined) return;
 
-    const { name } = network;
-    const currentProvider = getCurrentProvider(network);
+    this.getCurrentAccount((value) => {
+      if (value?.ethereumAddress === '') return;
 
-    if (currentProvider) this.apis.evm[name] = initWeb3Api(currentProvider);
+      const { name } = network;
+      const currentProvider = getCurrentProvider(network);
+
+      if (currentProvider) this.apis.evm[name] = initWeb3Api(currentProvider);
+    });
   }
 
   public refreshDotSamaApi(key: string) {
@@ -1178,14 +1177,10 @@ export default class State {
   public async initNetworkStates(reset?: boolean) {
     const activeNetworks = Object.values(this.networkMap).filter(({ active }) => active);
 
-    const currentAccount = await this.currentAccount;
-
     for (const network of activeNetworks) {
       const { name, isEthereum } = network;
 
       if (isEthereum && isRequireEvmAPI(name)) {
-        if (currentAccount?.ethereumAddress === '') continue;
-
         if (!this.apis.evm[name] || !this.apis.evm[name].ready) this.initWeb3Api(network);
       } else {
         if (this.apis.substrate[name]) {
@@ -1381,12 +1376,19 @@ export default class State {
       this.getPrice((prices) => {
         const balances: BalanceMap = { ...this.balanceMap };
 
-        const totalBalances = Object.keys(balances).map((account) => {
-          const total = getSummaryTransferableWalletBalance(balances[account], prices, ALL_NETWORKS);
-          const change = getChangeWalletBalance(balances[account], prices, ALL_NETWORKS);
+        const totalBalances = Object.keys(balances).map((address) => {
+          const total = getSummaryTransferableWalletBalance(
+            address,
+            balances[address],
+            prices,
+            ALL_NETWORKS,
+            this.networksJson
+          );
+
+          const change = getChangeWalletBalance(balances[address], prices, ALL_NETWORKS);
 
           return {
-            address: account,
+            address,
             total,
             change,
           };

@@ -119,13 +119,10 @@ export class FWSubscription {
             newEvmNetworksWithoutSubscribe.length !== 0
           ) {
             if (addressHasChanged) {
-              this.serviceInfo.address = address;
-
               // если адрес изменился, то подписываемся на все сети
               this.subscribeBalances(address, ethereumAddress, null);
               this.state.fetchEvmBalance(null);
             } else if (thereIsEthereumAddress) {
-              this.serviceInfo.ethereumAddress = address;
               this.subscribeBalances(address, ethereumAddress, SUBSTRATE_ETHEREUM_NETWORKS);
               this.state.fetchEvmBalance(null);
             } else {
@@ -136,6 +133,9 @@ export class FWSubscription {
 
               if (newEvmNetworksWithoutSubscribe.length) this.state.fetchEvmBalance(newEvmNetworksWithoutSubscribe);
             }
+
+            this.serviceInfo.address = address;
+            this.serviceInfo.ethereumAddress = address;
           }
 
           // если сетей нет в списке сетей на балансы которых нужно быть подписанными
@@ -189,7 +189,7 @@ export class FWSubscription {
   }
 
   subscribeBalances(address: string, ethereumAddress: string, newNetworks: NetworkName[] | null, isFirstRun?: boolean) {
-    console.info(`Start balance sub for: ${address}`);
+    console.info(`Start balance sub for: ${address}${isFirstRun ? `; isFirstRun: true` : ''}`);
 
     try {
       if (isFirstRun) this.state.generateDefaultBalance(address);

@@ -27,9 +27,10 @@ export function getAssetOptions(assetId: string, assetsMap: Asset[]) {
   if (type === 'soraAsset') return currencyId;
   if (type === 'equilibrium') return currencyId;
   if (type === 'assets') return currencyId;
-
-  // TODO
   if (type === 'assetId') return currencyId;
+
+  // TODO AUSD
+  if (assetId === '91a69026-0ab7-4db0-af53-8d571fd33ac4') return { Token: currencyId!.toUpperCase() };
 
   return { Token: symbol.toUpperCase() };
 }

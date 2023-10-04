@@ -30,20 +30,6 @@ const POPULAR_NETWORKS = 'popular';
 const FAVORITE_NETWORKS = 'favorites';
 const NETWORKS_GROUPS = [ALL_NETWORKS, POPULAR_NETWORKS, FAVORITE_NETWORKS];
 
-interface GroupMap {
-  all: [];
-  popular: [];
-  favorites: [];
-}
-
-const GROUPS_MAP = NETWORKS_GROUPS.reduce((result, nameGroup) => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  //@ts-ignore
-  result[nameGroup] = [];
-
-  return result;
-}, {} as GroupMap);
-
 const POLKADOT_ID = '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3';
 const KUSAMA_ID = 'b0a8d493285c2df73290dfb7e61f870f17b41801197a149ca93654499ea3dafe';
 
@@ -132,5 +118,4 @@ export {
   SUBSTRATE_ETHEREUM_NETWORKS,
   EXPLORERS_BASE_URLS,
   EVM_EXPLORERS_BASE_URLS,
-  GROUPS_MAP,
 };

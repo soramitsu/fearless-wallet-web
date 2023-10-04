@@ -190,6 +190,7 @@
   "assets": {
     "all": "Все",
     "locked": "Заблокированно",
+    "totalLocked": "Суммарно аблокированно",
     "myNetworks": "Мои сети",
     "availableNetworks": "Доступные сети",
     "networkAssets": "Ассеты в сетях",

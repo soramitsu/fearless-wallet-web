@@ -1,5 +1,5 @@
 import EmailValidator from 'email-validator';
-import { SORA_NETWORK_NAME } from '@/consts/networks';
+import { SORA_NETWORK_NAME, SORA_TEST } from '@/consts/networks';
 
 const MIN_PHONE_LENGTH_WITH_CODE = 8;
 
@@ -13,6 +13,10 @@ function firstCharToUp(string: string, onlyFirstChat = true) {
 
 function isSora(network: string) {
   return network.toLowerCase() === SORA_NETWORK_NAME;
+}
+
+function isSoraTest(network: string) {
+  return network.toLowerCase() === SORA_TEST;
 }
 
 function validatePhoneNumber(countryCode: string, phoneNumber: string) {
@@ -51,4 +55,4 @@ function getClipboard() {
   return paste;
 }
 
-export { firstCharToUp, isSora, validatePhoneNumber, validateEmail, cut, getClipboard };
+export { firstCharToUp, isSora, validatePhoneNumber, validateEmail, cut, getClipboard, isSoraTest };

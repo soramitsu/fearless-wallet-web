@@ -3,9 +3,12 @@ import { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyri
 import { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-keyring/types';
 import { keyring } from '@polkadot/ui-keyring';
 import { isEthereumAddress } from '@polkadot/util-crypto';
+import State from '@extension-base/background/handlers/State';
 import { getSubstrateAddress } from '../../background/utils/utils';
 
 export class KeyringService {
+  constructor(readonly state: State) {}
+
   get addressesSubjectValue() {
     return keyring.addresses.subject.value;
   }
@@ -15,6 +18,10 @@ export class KeyringService {
       store,
       type,
     });
+  }
+
+  getAllAccounts() {
+    return [...this.getAccounts(), ...this.getAddresses()];
   }
 
   getAccounts() {
@@ -81,7 +88,7 @@ export class KeyringService {
 
     const { address } = pair;
     const isEthereum = isEthereumAddress(address);
-    const substrateAddress = getSubstrateAddress(address);
+    const substrateAddress = getSubstrateAddress(address, this.state);
     const substratePair = isEthereum ? this.getPair(substrateAddress) : pair;
     const ethereumAddress = isEthereum ? address : (substratePair?.meta.ethereumAddress as string | undefined);
 

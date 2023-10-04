@@ -2,7 +2,6 @@ export enum NETWORK_STATUS {
   CONNECTED = 'connected',
   CONNECTING = 'connecting',
   DISCONNECTED = 'disconnected',
-  PENDING = 'pending',
 }
 
 export enum APIItemState {

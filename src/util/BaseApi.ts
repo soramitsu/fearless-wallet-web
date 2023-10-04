@@ -14,7 +14,7 @@ import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { isDerivationPathValid, isJsonValid, jsonRestore } from '@/extension/messaging';
-import { ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import { NetworksController } from '@/controllers';
 import store from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
@@ -94,6 +94,12 @@ export default class BaseApi {
     return (store.getters.getAccounts as AccountJson[]).some(
       (account) => account.address === address && account.isMobile
     );
+  }
+
+  public static isSubstrateEthereumNetwork(network: string): boolean {
+    if (!network) return false;
+
+    return SUBSTRATE_ETHEREUM_NETWORKS.includes(network.toLowerCase());
   }
 
   public static isEthereumNetwork(network: string): boolean {

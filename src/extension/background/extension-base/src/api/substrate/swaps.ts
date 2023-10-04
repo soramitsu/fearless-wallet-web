@@ -1,11 +1,12 @@
 import { Api, FPNumber } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
-import { state } from '@extension-base/background/handlers';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
+import State from '@extension-base/background/handlers/State';
 import type { Asset } from '@sora-substrate/util/build/assets/types';
 import type { CreateSwapResult, BaseExchangeProps } from '@extension-base/api/types/swaps';
 import type { SwapOptions } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
+import { SORA_NETWORK_NAME } from '@/consts/networks';
 
 async function createExchangeB(
   props: BaseExchangeProps,
@@ -48,10 +49,22 @@ async function createExchangeA(
  * @param {Partial<SwapOptions>} options
  * @returns {Promise<CreateSwapResult>}
  */
-export async function createSwap(options: Partial<SwapOptions>, api: Api<void>): Promise<CreateSwapResult> {
+export async function createSwap(
+  options: Partial<SwapOptions>,
+  api: Api<void>,
+  state: State
+): Promise<CreateSwapResult> {
   const { assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage, marketType } = options;
-  const assetAAddress = getAssetOptions(assetAId!) as string;
-  const assetBAddress = getAssetOptions(assetBId!) as string;
+  const currentAccount = await state.currentAccount;
+
+  const tokenBalanceA = state.balanceMap[currentAccount!.address].find(({ assetId }) => assetId === assetAId);
+  const aId = tokenBalanceA?.balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
+
+  const tokenBalanceB = state.balanceMap[currentAccount!.address].find(({ assetId }) => assetId === assetBId);
+  const aIB = tokenBalanceB?.balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
+
+  const assetAAddress = getAssetOptions(aId!.id, state.assetsMap) as string;
+  const assetBAddress = getAssetOptions(aIB!.id, state.assetsMap) as string;
   const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
   const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
   const assetA: Asset = { address: assetAAddress, decimals: 18, name: symbolA!, symbol: symbolA! };

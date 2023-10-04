@@ -5,6 +5,7 @@ import { ALLOWED_PATH } from '@extension-base/defaults';
 import MetadataStore from '@extension-base/stores/Metadata';
 import { JsonRpcProvider, WebSocketProvider } from 'ethers';
 import { UserType } from '../../services/onboarding-service/types';
+import { NETWORK_STATUS } from '../../api/types/networks';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
@@ -238,7 +239,7 @@ export type BasicTxError = {
 export interface ApiProps {
   api?: ApiPromise;
   provider?: WsProvider;
-  isApiConnected: boolean;
+  apiStatus: NETWORK_STATUS;
   apiRetry: number;
   nodeIndex: number;
   isEthereum: boolean;
@@ -357,8 +358,10 @@ export interface RequestAccountForget {
 
 export interface RequestUpdateMeta {
   address: string;
-  meta: KeyringPair$Meta;
+  meta: Meta;
 }
+
+export type Meta = KeyringPair$Meta & { ethereumAddress: string };
 
 export interface RequestAccountName {
   address: string;
@@ -387,7 +390,6 @@ export interface ApiMap {
 export interface ServiceInfo {
   networkMap: Record<string, NetworkJson>;
   apiMap: ApiMap;
-  isLock?: boolean;
   currentAccountInfo: CurrentAccountState;
 }
 
@@ -644,7 +646,6 @@ export interface IState {
   onboarding: {
     user: UserType;
     isRequired: boolean;
-    seen: boolean;
   };
 }
 

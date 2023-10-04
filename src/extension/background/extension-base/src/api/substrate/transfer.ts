@@ -1,16 +1,17 @@
 import { FPNumber } from '@sora-substrate/util';
-import { state } from '@extension-base/background/handlers';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
 import { getUtilityProps, getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { BasicTxResponse, TransferErrorCode, SignerType, TokenBalance } from '@extension-base/background/types/types';
+import State from '@extension-base/background/handlers/State';
 import { NetworkName } from '@/interfaces';
 
 export async function estimateFee(
   networkKey: string,
   to: string,
   value: string | undefined,
-  tokenBalance: TokenBalance
+  tokenBalance: TokenBalance,
+  state: State
 ): Promise<number> {
   const apiProps = state.getSubstrateApiMap[networkKey];
   const api = apiProps.api;
@@ -24,11 +25,13 @@ export async function estimateFee(
     tokenBalance,
     to,
     networkKey,
+    api,
+    assetsMap: state.assetsMap,
   });
 
   if (!extrinsic) return 0;
 
-  const { precision: utilityPrecision } = getUtilityProps(networkKey);
+  const { precision: utilityPrecision } = getUtilityProps(networkKey, state);
 
   try {
     const paymentInfo = await extrinsic.paymentInfo(to);
@@ -65,23 +68,19 @@ export interface MakeTransferProps {
   isMobile: boolean;
 }
 
-export async function makeTransfer({
-  from,
-  networkKey,
-  to,
-  assetId,
-  isSavePass,
-  password,
-  amount,
-  callback,
-  isMobile,
-}: MakeTransferProps): Promise<void> {
+export async function makeTransfer(
+  { from, networkKey, to, assetId, isSavePass, password, amount, callback, isMobile }: MakeTransferProps,
+  state: State
+): Promise<void> {
   const txState: BasicTxResponse = {};
   const apiProps = state.getSubstrateApiMap[networkKey];
+  const api = apiProps.api;
 
-  await apiProps.api?.isReady;
+  if (!api) return;
 
-  const address = getSubstrateAddress(from);
+  await api?.isReady;
+
+  const address = getSubstrateAddress(from, state);
   const tokenBalance = state.balanceMap[address].find(({ assetId: _assetId }) => _assetId === assetId)!;
 
   const extrinsic = createExtrinsicTransfer({
@@ -89,17 +88,22 @@ export async function makeTransfer({
     tokenBalance,
     to,
     networkKey,
+    api,
+    assetsMap: state.assetsMap,
   });
 
-  await signAndSendExtrinsic({
-    type: isMobile ? SignerType.MOBILE : SignerType.PASSWORD,
-    apiProps,
-    callback,
-    extrinsic,
-    txState,
-    password,
-    isSavePass,
-    address: from,
-    errorMessage: 'error transfer',
-  });
+  await signAndSendExtrinsic(
+    {
+      type: isMobile ? SignerType.MOBILE : SignerType.PASSWORD,
+      apiProps,
+      callback,
+      extrinsic,
+      txState,
+      password,
+      isSavePass,
+      address: from,
+      errorMessage: 'error transfer',
+    },
+    state
+  );
 }

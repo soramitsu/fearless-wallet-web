@@ -140,7 +140,7 @@ export default class Tabs {
     if (this.state.keyringService.getAccount(address)) meta = this.getSigningPair(address).meta;
     else if (isMobile) meta = this.state.keyringService.getAddress(address, 'address')?.meta;
 
-    const signer = isMobile ? new BeaconSignerJSON(request) : new RequestExtrinsicSign(request);
+    const signer = isMobile ? new BeaconSignerJSON(request, this.state.signature!) : new RequestExtrinsicSign(request);
 
     return this.state.sign(url, signer, {
       address: address,

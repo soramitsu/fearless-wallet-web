@@ -1,47 +1,57 @@
 import { type TransactionRequest, Wallet, parseEther, parseUnits } from 'ethers';
 import { BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
 import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
-import { state } from '@extension-base/background/handlers';
-import { getAssetInfo } from '../substrate/registry';
+import { getAssetInfo } from '@extension-base/api/helpers';
+import { fetchEvmAssetBalance } from './balance';
+import type State from '@extension-base/background/handlers/State';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
 export type HandleTxResponse<T extends BasicTxResponse> = (data: T) => void;
+export type HandleTransferProps = {
+  tx: TransactionRequest;
+  networkKey: string;
+  privateKey: string;
+  assetId: string;
+  callback: (data: BasicTxResponse) => void;
+};
 
 export async function handleTransfer(
-  transactionObject: TransactionRequest,
-  networkKey: string,
-  privateKey: string,
-  callback: (data: BasicTxResponse) => void
+  { assetId, callback, networkKey, privateKey, tx }: HandleTransferProps,
+  state: State
 ) {
   const web3Api = state.getEvmApiMap[networkKey];
   const signer = new Wallet(privateKey, web3Api);
 
-  const response: BasicTxResponse = {
-    errors: [],
-  };
-
   try {
-    await signer.sendTransaction(transactionObject);
+    await signer.sendTransaction(tx);
 
-    response.status = true;
-    callback(response);
-  } catch (error) {
+    callback({ status: true });
+  } catch (error: any) {
     console.warn(error);
-    response.status = false;
-    response.errors?.push({
-      code: TransferErrorCode.TRANSFER_ERROR,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      message: error.message,
+
+    callback({
+      status: false,
+      errors: [
+        {
+          code: TransferErrorCode.TRANSFER_ERROR,
+          message: error.message,
+        },
+      ],
     });
-    callback(response);
   }
+
+  setTimeout(() => {
+    const address = tx.from as string;
+
+    fetchEvmAssetBalance(address, networkKey, assetId, state);
+  }, 15000);
 }
 
 export async function getEVMTransactionObject(
   networkKey: string,
   to: string,
-  value: string
+  value: string,
+  state: State
 ): Promise<{ tx: TransactionRequest; value: string; fee: bigint }> {
   const web3Api = state.getEvmApiMap[networkKey];
   const { maxFeePerGas, maxPriorityFeePerGas, gasPrice } = await web3Api.getFeeData();
@@ -67,15 +77,24 @@ export async function getEVMTransactionObject(
 }
 
 export async function makeEVMTransfer(
+  assetId: string,
   networkKey: string,
   to: string,
   privateKey: string,
   value: string,
-  callback: (data: BasicTxResponse) => void
+  callback: (data: BasicTxResponse) => void,
+  state: State
 ): Promise<void> {
-  const { tx } = await getEVMTransactionObject(networkKey, to, value);
+  const { tx } = await getEVMTransactionObject(networkKey, to, value, state);
+  const props: HandleTransferProps = {
+    assetId,
+    callback,
+    networkKey,
+    privateKey,
+    tx,
+  };
 
-  await handleTransfer(tx, networkKey, privateKey, callback);
+  await handleTransfer(props, state);
 }
 
 export async function getERC20TransactionObject(
@@ -83,13 +102,14 @@ export async function getERC20TransactionObject(
   networkKey: string,
   from: string,
   to: string,
-  value: string
+  value: string,
+  state: State
 ): Promise<{ tx: TransactionRequest; value: string; fee: bigint }> {
   const web3Api = state.getEvmApiMap[networkKey];
-  const erc20Contract = getERC20Contract(networkKey, assetId);
+  const erc20Contract = getERC20Contract(networkKey, assetId, state);
 
   function generateTransferData(to: string, transferValue: string): string {
-    const tokenInfo = getAssetInfo(assetId);
+    const tokenInfo = getAssetInfo(assetId, state);
     const parsedValue = parseUnits(transferValue, tokenInfo.precision);
 
     return erc20Contract.interface.encodeFunctionData('transfer', [to, parsedValue]);
@@ -117,15 +137,23 @@ export async function getERC20TransactionObject(
 }
 
 export async function makeERC20Transfer(
-  assetAddress: string,
+  assetId: string,
   networkKey: string,
   from: string,
   to: string,
   privateKey: string,
   value: string,
-  callback: (data: BasicTxResponse) => void
+  callback: (data: BasicTxResponse) => void,
+  state: State
 ) {
-  const { tx } = await getERC20TransactionObject(assetAddress, networkKey, from, to, value);
+  const { tx } = await getERC20TransactionObject(assetId, networkKey, from, to, value, state);
+  const props: HandleTransferProps = {
+    assetId,
+    callback,
+    networkKey,
+    privateKey,
+    tx,
+  };
 
-  await handleTransfer(tx, networkKey, privateKey, callback);
+  await handleTransfer(props, state);
 }

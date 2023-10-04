@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="Details" :blur="true" @closeHandler="$emit('handlerClose')">
+  <AboveForm header="Details" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="details">
       <div class="descriptions">
         <div v-if="isExtrinsic" class="item">
@@ -135,16 +135,17 @@ export default class HistoryDetailsForm extends Vue {
     return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
   }
 
-  get seletedNetworkJson() {
+  get selectedNetworkJson() {
     return this.networks.find((network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase());
   }
 
   get explorerType() {
-    return this.seletedNetworkJson?.externalApi?.history?.type;
+    return this.selectedNetworkJson?.externalApi?.history?.type;
   }
 
   get explorerUrl() {
-    if (this.seletedNetworkJson?.externalApi?.explorers) return this.seletedNetworkJson?.externalApi?.explorers[0].url;
+    if (this.selectedNetworkJson?.externalApi?.explorers)
+      return this.selectedNetworkJson?.externalApi?.explorers[0].url;
 
     return '';
   }
@@ -242,8 +243,6 @@ export default class HistoryDetailsForm extends Vue {
 
   get transferFee() {
     const fees = getHumanTransferFee(this.historyElement, this.selectedNetwork);
-
-    if (!fees) return '';
 
     return this.$n(fees, 'decimalPrecise');
   }

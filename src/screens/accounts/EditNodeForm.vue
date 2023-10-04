@@ -1,52 +1,53 @@
 <template>
-  <AboveForm :fullScreen="true" header="accounts.newNode" :closeHandler="closeForm">
+  <AboveForm :fullScreen="true" header="accounts.newNode" @closeHandler="$emit('closeForm')">
     <div class="add-node-form">
       <div>
-        <Input v-model="networkCharUp" placeholder="accounts.network" size="big" class="row" :readonly="true" />
+        <FInput v-model="networkCharUp" placeholder="accounts.network" size="big" class="row" :readonly="true" />
 
-        <Input v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
+        <FInput v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
 
         <ValidatedInput
           v-model="url"
           placeholder="accounts.urlAddress"
           class="row"
           :errorDescriptions="errorMessage"
-          :isError="isErrorUrlNode || isUrlDuplicate"
+          :isError="isError || isUrlDuplicate"
           :maxlength="150"
         />
       </div>
 
-      <Button size="big" :text="buttonText" :disabled="buttonDisabled" @click="updateNodes" />
+      <FButton size="big" :text="buttonText" :disabled="buttonDisabled" @click="updateNodes" />
     </div>
   </AboveForm>
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { firstCharToUp } from '@/helpers/common';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import type { NetworkJson } from '@extension-base/types';
+import { firstCharToUp } from '@/helpers';
 import { upsertNetworkMap } from '@/extension/messaging';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GetNetwork } from '@/store';
 
 @Component
 export default class EditNodeForm extends Vue {
   name = '';
   url = '';
-
-  @Prop(Function) closeForm!: (nodesUpdated?: boolean) => void;
+  isError = false;
   @Prop(String) network!: string;
   @Prop(String) _name!: string;
   @Prop(String) _url!: string;
   @Prop(Boolean) isActive!: boolean;
   @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get buttonText() {
     return this.isEdit ? 'common.save' : 'accounts.addNode';
   }
 
   get networkJson() {
-    return this.networks.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!;
+    return this.getNetwork(this.network);
   }
 
   get isEdit() {
@@ -55,17 +56,35 @@ export default class EditNodeForm extends Vue {
 
   get isUrlDuplicate() {
     return (
-      this.networkJson.nodes.some((node) => node.url === this.url) ||
-      this.networkJson.customNodes.some((node) => node.url === this.url)
+      this.networkJson.nodes.some(({ url }) => url === this.url) ||
+      this.networkJson.customNodes.some(({ url }) => url === this.url)
     );
   }
 
-  get isErrorUrlNode() {
-    return this.url.length !== 0 && (this.url.length < 7 || !this.url.startsWith('wss://'));
+  get urlLength() {
+    return this.url.length;
+  }
+
+  @Watch('url')
+  isErrorUrlNode() {
+    this.isError = false;
+
+    if (this.urlLength === 0) return;
+
+    const explorers = this.networkJson.externalApi?.explorers;
+    const isTooLengthTooSmall = this.urlLength < 7;
+
+    if (explorers && explorers[0].type === 'etherscan') {
+      this.isError = isTooLengthTooSmall || !this.url.startsWith('https://');
+
+      return;
+    }
+
+    this.isError = isTooLengthTooSmall || !this.url.startsWith('wss://');
   }
 
   get errorMessage() {
-    if (this.isErrorUrlNode) return 'accounts.invalidNodeAddress';
+    if (this.isError) return 'accounts.invalidNodeAddress';
 
     return 'accounts.customNodeDuplicate';
   }
@@ -83,7 +102,7 @@ export default class EditNodeForm extends Vue {
   }
 
   get buttonDisabled() {
-    return this.name === '' || this.url === '' || this.isErrorUrlNode || (!this.isUrlChanged && !this.isNameChanged);
+    return this.name === '' || this.urlLength === 0 || this.isError || (!this.isUrlChanged && !this.isNameChanged);
   }
 
   mounted() {
@@ -92,6 +111,8 @@ export default class EditNodeForm extends Vue {
   }
 
   updateNodes() {
+    if (this.urlLength === 0) return;
+
     const prepData: Partial<NetworkJson> = {};
     const customNodeIndex = this.networkJson.customNodes.findIndex(
       (el) => el.url === this._url && el.name === this._name
@@ -110,7 +131,7 @@ export default class EditNodeForm extends Vue {
       isManual: false,
     });
 
-    this.closeForm(true);
+    this.$emit('closeForm', true);
   }
 }
 </script>

@@ -7,7 +7,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component
 export default class Shimmer extends Vue {
-  @Prop({ default: 'line' }) type!: boolean;
+  @Prop({ default: 'line' }) type!: string;
   @Prop({ default: '10px' }) height!: string;
   @Prop({ default: '10px' }) width!: string;
 

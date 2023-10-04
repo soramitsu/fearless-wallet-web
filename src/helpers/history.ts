@@ -7,39 +7,36 @@ import type {
   HistoryServiceType,
   NetworkName,
 } from '@/interfaces';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { TransactionType, TransferType } from '@/interfaces';
-import { firstCharToUp } from '@/helpers/common';
-import { formattedNumber } from '@/helpers/numbers';
+import { firstCharToUp } from '@/helpers';
 import store from '@/store';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 function getType(historyElement: HistoryElement): TransactionType {
   const { reward, transfer } = historyElement;
 
-  return transfer !== null
-    ? TransactionType.transfer
-    : reward !== null
-    ? TransactionType.reward
-    : TransactionType.extrinsic;
+  if (transfer) return TransactionType.transfer;
+
+  return reward ? TransactionType.reward : TransactionType.extrinsic;
 }
 
-function getSignTransfer(historyElement: HistoryElement) {
-  const { id } = historyElement;
+function getSignTransfer(historyElement: HistoryElement, address: string) {
   const type = getType(historyElement);
 
   if (type === TransactionType.transfer) {
-    const splitId = id.split('-');
-    const typeTransaction = splitId[splitId.length - 1];
+    const { transfer } = historyElement;
+    const from = transfer?.from ?? '';
 
-    return typeTransaction === 'to' ? '+' : '-';
+    return from.toLowerCase() !== address.toLowerCase() ? '+' : '-';
   }
 
   return '';
 }
 
-function getTypeFormatted(historyElement: HistoryElement) {
+function getTypeFormatted(historyElement: HistoryElement, address: string) {
   const type = getType(historyElement);
-  const signTransfer = getSignTransfer(historyElement);
+  const signTransfer = getSignTransfer(historyElement, address);
 
   if (type === TransactionType.transfer) {
     return signTransfer === '+' ? TransferType.incoming : TransferType.outgoing;
@@ -69,29 +66,42 @@ function getFormattedDate({ timestamp }: HistoryElement) {
   return format(date, 'dd MMMM yyyy HH:mm');
 }
 
+function getHumanFeeValue(value: string, networkName: NetworkName) {
+  const tokenBalances: TokenBalance[] = store.getters.getBalances;
+  const network: NetworkJson = store.getters.getNetwork(networkName);
+  const asset = network.assets.find((asset) => asset.isUtility);
+  const token = tokenBalances.find(({ balances }) => balances.some(({ id }) => id === asset?.id));
+  const balance = token?.balances.find(({ id }) => id === asset?.id);
+
+  const precision = balance?.precision ?? 0;
+
+  return FPNumber.fromCodecValue(value, precision).toNumber();
+}
+
 function getHumanValue(value: string, assetId: string, networkName: NetworkName) {
   const tokenBalances: TokenBalance[] = store.getters.getBalances;
   const { balances } = tokenBalances.find(({ assetId: id }) => id === assetId)!;
-
   const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
 
-  return +FPNumber.fromCodecValue(value, precision);
+  return FPNumber.fromCodecValue(value, precision).toNumber();
 }
 
-function getHistoryValue(historyElement: HistoryElement, assetId: string, networkName: NetworkName) {
+function getHistoryValue(historyElement: HistoryElement, assetId: string, networkName: NetworkName, address: string) {
   const { transfer, reward, extrinsic } = historyElement;
   const type = getType(historyElement);
-  const signTransfer = getSignTransfer(historyElement);
+  const signTransfer = getSignTransfer(historyElement, address);
 
-  if (type === TransactionType.transfer) {
-    const { amount } = transfer!;
+  if (type === TransactionType.transfer && transfer) {
+    const { amount, fee } = transfer;
+
     const value = getHumanValue(amount, assetId, networkName);
+    const fees = getHumanFeeValue(fee, networkName);
 
-    return { signTransfer, value };
+    return { signTransfer, value, fee: fees };
   }
 
-  if (type === TransactionType.reward) {
-    const { amount } = reward!;
+  if (type === TransactionType.reward && reward) {
+    const { amount } = reward;
     const value = getHumanValue(amount, assetId, networkName);
 
     return { signTransfer: '+', value };
@@ -99,32 +109,29 @@ function getHistoryValue(historyElement: HistoryElement, assetId: string, networ
 
   // extrinsic
   const { fee } = extrinsic!;
+
   const value = getHumanValue(fee, assetId, networkName);
 
   return { signTransfer: '-', value };
 }
 
-function getHumanTransferFee(historyElement: HistoryElement, assetId: string, networkName: NetworkName) {
+function getHumanTransferFee(historyElement: HistoryElement, networkName: NetworkName) {
   const { transfer, extrinsic } = historyElement;
   const type = getType(historyElement);
 
   if (type === TransactionType.transfer) {
     const { fee } = transfer!;
-    const value = getHumanValue(fee, assetId, networkName);
-    const formattedValue = formattedNumber(value, { decimalsValue: 4 });
 
-    return `${formattedValue !== '0' ? '-' : ''}${formattedValue}`;
+    return getHumanFeeValue(fee, networkName);
   }
 
   if (type === TransactionType.extrinsic) {
     const { fee } = extrinsic!;
-    const value = getHumanValue(fee, assetId, networkName);
-    const formattedValue = formattedNumber(value, { decimalsValue: 4 });
 
-    return `${formattedValue !== '0' ? '-' : ''}${formattedValue}`;
+    return getHumanFeeValue(fee, networkName);
   }
 
-  return '';
+  return 0;
 }
 
 // temporary function, remove after complete transition to subsquid
@@ -134,17 +141,16 @@ function getFormattedHistory(
 ): SubqueryHistory {
   if (serviceType === 'giantsquid') {
     const nodes: HistoryElement[] = (history as GiantsquidHistoryItem[]).map(({ id, transfer }) => {
-      const { amount, from, success, timestamp, to } = transfer;
+      const { amount, from, success, timestamp, to, extrinsicHash } = transfer;
 
       return {
         id,
         timestamp: (new Date(timestamp).getTime() / 1000).toString(),
         address: '',
-        extrinsic: null,
-        reward: null,
         transfer: {
           amount,
           success,
+          hash: extrinsicHash,
           from: from.id,
           to: to.id,
           eventIdx: -1,
@@ -156,7 +162,7 @@ function getFormattedHistory(
     return { nodes, pageInfo: { endCursor: '', startCursor: '' } };
   }
 
-  if (serviceType === 'subsquid') {
+  if (serviceType === 'subsquid' || serviceType === 'etherscan') {
     const nodes: HistoryElement[] = (history as HistoryElement[]).map((historyElement) => {
       return {
         ...historyElement,
@@ -170,11 +176,23 @@ function getFormattedHistory(
   return history as SubqueryHistory;
 }
 
+function getEthereumExplorerApiKey(url: string): string | undefined {
+  const keys = [
+    { name: 'etherscan', key: process.env.FL_WEB_ETHERSCAN_API_KEY },
+    { name: 'bscscan', key: process.env.FL_WEB_BSCSCAN_API_KEY },
+    { name: 'polygon', key: process.env.FL_WEB_POLYGONSCAN_API_KEY },
+  ];
+
+  return keys.find(({ name }) => url.includes(name))?.key;
+}
+
 export {
   getType,
   getTypeFormatted,
+  getEthereumExplorerApiKey,
   getHumanTransferFee,
   getHistoryValue,
+  getHumanFeeValue,
   getFormattedDate,
   getSignTransfer,
   getFormattedHistory,

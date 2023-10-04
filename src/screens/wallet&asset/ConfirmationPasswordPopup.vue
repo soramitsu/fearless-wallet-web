@@ -1,7 +1,7 @@
 <template>
-  <Popup :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close" :zIndex="399">
+  <Popup :headerType="headerType" sizeWidth="big" :headerText="popupHeader" @handlerClose="close" :zIndex="399">
     <div class="popup-content">
-      <template v-if="!txStatus && !isSignMobile">
+      <template v-if="!transactionState && !isSignMobile">
         <Icon icon="lock-green" className="icon__lock-green" iconColor="success" />
 
         <div class="text row">{{ $t('assets.passwordTransaction') }}</div>
@@ -24,7 +24,7 @@
           <Checkbox v-model="isSavePass" size="medium" :label="$t(min15Label)" />
         </div>
 
-        <Button
+        <FButton
           text="common.continue"
           width="100%"
           size="medium"
@@ -36,7 +36,7 @@
         />
       </template>
 
-      <SignMobile v-else-if="!txStatus" @onSign="onSignMobile" @onCancel="close" />
+      <SignMobile v-else-if="!transactionState" @onSign="onSignMobile" @onCancel="close" />
 
       <Loader v-if="isTransactionPending" />
 
@@ -62,8 +62,17 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch, Ref } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
+import {
+  AccountJson,
+  RequestCheckTransfer,
+  RequestCheckCrossChain,
+  RequestTransfer,
+  RequestCrossChain,
+  TokenBalance,
+} from '@extension-base/background/types/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
-import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
+import type { GetNetwork, GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
 import { isSignLocked, makeSwap, makeTransfer, makeCrossChain, cancelMobileSignRequest } from '@/extension/messaging';
 import { beaconController, ExtensionController } from '@/controllers';
@@ -72,16 +81,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import {
-  AccountJson,
-  RequestCheckTransfer,
-  RequestCheckCrossChain,
-  RequestTransfer,
-  RequestCrossChain,
-  TokenBalance,
-} from '@/extension/background/extension-base/src/background/types/types';
 import { IS_EXTENSION } from '@/consts/global';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component({
   components: { SignMobile },
@@ -116,6 +116,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get classesInput() {
     return [
@@ -129,10 +130,12 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   get firstIconUrl() {
     if (this.extrinsicType === 'transfer' || this.extrinsicType === 'swap')
-      return this.balances.find(({ assetId }) => assetId === this.firstIcon)?.icon;
+      return this.balances.find(
+        ({ assetId, balances }) => assetId === this.firstIcon || balances.some((el) => el.id === this.firstIcon)
+      )?.icon;
 
     // firstIcon === networkName for crossChain
-    return this.networks.find(({ name }) => name.toLowerCase() === this.firstIcon.toLowerCase())?.icon ?? '';
+    return this.getNetwork(this.firstIcon)?.icon ?? '';
   }
 
   get secondIconUrl() {
@@ -140,7 +143,7 @@ export default class ConfirmationPasswordPopup extends Vue {
       return this.balances.find(({ assetId }) => assetId === this.secondIcon)?.icon;
 
     // secondIcon === networkName for crossChain
-    return this.networks.find(({ name }) => name.toLowerCase() === this.secondIcon.toLowerCase())?.icon ?? '';
+    return this.getNetwork(this.secondIcon)?.icon ?? '';
   }
 
   get requestTransfer() {
@@ -194,14 +197,10 @@ export default class ConfirmationPasswordPopup extends Vue {
     return 'pending';
   }
 
-  get txStatus() {
-    return this.transactionState;
-  }
-
   get popupHeader() {
-    if (this.txStatus === 'success') return 'assets.transactionDone';
+    if (this.transactionState === 'success') return 'assets.transactionDone';
 
-    if (this.txStatus === 'failed') return 'assets.transactionError';
+    if (this.transactionState === 'failed') return 'assets.transactionError';
 
     if (this.isTransactionPending) return 'assets.transactionPending';
 
@@ -209,7 +208,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transferAmountString() {
-    return `-${this.amount} ${this.currency?.symbol.toUpperCase()}`;
+    return `-${this.$n(+this.amount, 'decimal')} ${this.currency?.symbol.toUpperCase()}`;
   }
 
   get transferValueString() {
@@ -217,15 +216,15 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get isTransactionNotInit() {
-    return this.txStatus === undefined;
+    return this.transactionState === undefined;
   }
 
   get isTransactionPending() {
-    return this.txStatus === 'pending';
+    return this.transactionState === 'pending';
   }
 
   get isTransactionFinished() {
-    return this.txStatus === 'success' || this.txStatus === 'failed';
+    return this.transactionState === 'success' || this.transactionState === 'failed';
   }
 
   @Watch('password')
@@ -330,9 +329,10 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.extrinsicType === 'swap' && this.swapOptions) {
       const res = await makeSwap({ ...this.swapOptions, password: this.password, isSavePass: this.isSavePass });
 
-      if (res.errors?.length) {
-        this.resetTxStatus();
+      if (!res?.status) {
         this.isErrorPassword = true;
+
+        this.resetTxStatus();
 
         return;
       }
@@ -354,7 +354,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     const results = await this.makeExtrinsic();
 
-    if (results?.errors?.length) {
+    if (!results?.status) {
       this.isErrorPassword = true;
 
       this.resetTxStatus();
@@ -404,7 +404,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     padding: 12px;
 
     .s-icon-arrows-arrow-right-24 {
-      color: rgba(255, 255, 255, 0.3);
+      color: $gray-2-color;
       font-size: 30px !important;
       margin: 0 10px;
     }

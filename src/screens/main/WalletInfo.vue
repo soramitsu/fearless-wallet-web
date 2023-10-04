@@ -19,7 +19,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { ResponseTotalBalances } from '@/extension/background/extension-base/src/background/types/types';
+import type { ResponseTotalBalances } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { CustomEvent } from '@/interfaces';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
@@ -32,6 +32,7 @@ export default class WalletInfo extends Vue {
   readonly dotsHorizontalRef = 'dotsHorizontal';
   showWalletMenu = false;
   totalBalances: ResponseTotalBalances[] = [];
+  interval: NodeJS.Timer | undefined;
 
   $refs!: {
     dotsHorizontal: HTMLDivElement;
@@ -65,8 +66,14 @@ export default class WalletInfo extends Vue {
     ];
   }
 
-  async mounted() {
+  async created() {
     this.totalBalances = await getTotalBalances();
+
+    this.interval = setInterval(async () => (this.totalBalances = await getTotalBalances()), 5000);
+  }
+
+  beforeDestroy() {
+    clearInterval(this.interval);
   }
 
   setWallet({ target: { classList } }: CustomEvent) {

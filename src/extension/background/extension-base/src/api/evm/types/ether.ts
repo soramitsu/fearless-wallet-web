@@ -15,6 +15,7 @@ export interface BalanceItem {
   id: string;
   relayChain?: string;
   existentialDeposit?: string;
+  mainNetwork?: string;
   currencyId?: string;
   key?: string;
   precision: number;
@@ -22,7 +23,7 @@ export interface BalanceItem {
   free?: string;
   isUtility?: boolean;
   isNative?: boolean;
-  icon?: string; // is network icon
+  icon: string; // is network icon
   reserved?: string;
   locked?: string;
   miscFrozen?: string;
@@ -42,8 +43,8 @@ export enum CustomTokenType {
 
 export interface CustomToken {
   // general interface for all kinds of tokens
-  smartContract: string;
   chain: string;
+  id: string;
   type: CustomTokenType;
   name?: string;
   symbol?: string;

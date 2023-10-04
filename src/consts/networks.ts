@@ -1,9 +1,18 @@
 import { IS_PRODUCTION } from '@/consts/global';
 import { NetworkName } from '@/interfaces';
 
-const NOT_SUPPORTED_ALL_TRANSFER_NETWORKS = ['karura', 'acala', 'acala_testnet'];
 const SUBSTRATE_ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
-const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, 'ethereum', 'ethereum_gorli'];
+const NATIVE_ETHEREUM_NETWORKS = [
+  'ethereum',
+  'ethereum goerli',
+  'polygon',
+  'polygon mumbai testnet',
+  'sepolia',
+  'bnb smart chain',
+  'bnb smart chain testnet',
+];
+const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, ...NATIVE_ETHEREUM_NETWORKS];
+
 const RELAY_CHAINS = ['polkadot', 'kusama', 'westend', 'rococo'];
 const NATIVE_PARACHAINS = [
   'statemint',
@@ -15,7 +24,25 @@ const NATIVE_PARACHAINS = [
   'rockmine',
 ];
 const NATIVE_NETWORKS = [...RELAY_CHAINS, ...NATIVE_PARACHAINS];
-const ALL_NETWORKS = 'All';
+
+const ALL_NETWORKS = 'all';
+const POPULAR_NETWORKS = 'popular';
+const FAVORITE_NETWORKS = 'favorites';
+const NETWORKS_GROUPS = [ALL_NETWORKS, POPULAR_NETWORKS, FAVORITE_NETWORKS];
+
+interface GroupMap {
+  all: [];
+  popular: [];
+  favorites: [];
+}
+
+const GROUPS_MAP = NETWORKS_GROUPS.reduce((result, nameGroup) => {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  //@ts-ignore
+  result[nameGroup] = [];
+
+  return result;
+}, {} as GroupMap);
 
 const POLKADOT_ID = '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3';
 const KUSAMA_ID = 'b0a8d493285c2df73290dfb7e61f870f17b41801197a149ca93654499ea3dafe';
@@ -36,10 +63,24 @@ const MAIN_NETWORKS: Record<string, string> = {
   dot: 'Polkadot',
   ksm: 'Kusama',
   ethereum: 'Ethereum',
-  ethereum_goerli: 'Ethereum_goerli',
+  'ethereum goerli': 'Ethereum Goerli',
   wnd: 'Westend',
   roc: 'Rococo',
 };
+
+const EVM_EXPLORERS_BASE_URLS: Record<string, string> = {
+  ethereum: 'etherscan.io',
+  'ethereum goerli': 'goerli.etherscan.io',
+  'binance smart chain': 'bscscan.com',
+  'binance smart chain testnet': 'testnet.bscscan.com',
+  polygon: 'polygon-mainnet.blastapi.io',
+  'polygon mumbai testnet': 'polygon-testnet.blastapi.io',
+} as const;
+
+const EXPLORERS_BASE_URLS: Record<string, string> = {
+  'polkadot assethub': 'assethub-polkadot',
+  'kusama assethub': 'assethub-kusama',
+} as const;
 
 const ETHEREUM_ADDRESS_LENGTH = 42;
 const ETHEREUM_ADDRESS_PREFIX = '0x';
@@ -62,6 +103,9 @@ const SORA_UTILITY_ASSET = 'xor';
 
 export {
   ALL_NETWORKS,
+  POPULAR_NETWORKS,
+  FAVORITE_NETWORKS,
+  NETWORKS_GROUPS,
   RELAY_CHAINS,
   MAIN_NETWORKS,
   NATIVE_NETWORKS,
@@ -71,7 +115,6 @@ export {
   ETHEREUM_ADDRESS_PREFIX,
   ETHEREUM_ADDRESS_LENGTH,
   MAX_CONTINUE_RETRY,
-  NOT_SUPPORTED_ALL_TRANSFER_NETWORKS,
   WESTEND_GENESISHASH,
   MOONBEAM_GENESISHASH,
   SORA_NETWORK_NAME,
@@ -79,6 +122,7 @@ export {
   SORA_XOR_ASSET_ID,
   VALID_SUBSTRATE_ADDRESS,
   VALID_ETHEREUM_ADDRESS,
+  NATIVE_ETHEREUM_NETWORKS,
   POLKADOT_ID,
   KUSAMA_ID,
   CHAIN_IDS,
@@ -86,4 +130,7 @@ export {
   SORA_TEST,
   NETWORKS_ALIASES,
   SUBSTRATE_ETHEREUM_NETWORKS,
+  EXPLORERS_BASE_URLS,
+  EVM_EXPLORERS_BASE_URLS,
+  GROUPS_MAP,
 };

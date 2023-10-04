@@ -64,10 +64,6 @@ export class NetworksController {
     return store.getters[NetworksGettersTypes.getAssetPrice](assetId);
   }
 
-  public static async connectToNodes(): Promise<void> {
-    // await store.dispatch(NetworksActionTypes.CONNECT_TO_NODES);
-  }
-
   public static async fetchHistory(
     networkName: string,
     wallet: Wallet,
@@ -78,16 +74,18 @@ export class NetworksController {
     if (delay !== undefined) {
       const timeout = delay * 1000;
 
-      setTimeout(() => {
-        store.dispatch(NetworksActionTypes.FETCH_HISTORY, {
-          networkName,
-          wallet,
-          assetId,
-          isPreviously,
-        });
-      }, timeout);
+      return await new Promise((res) => {
+        setTimeout(async () => {
+          await store.dispatch(NetworksActionTypes.FETCH_HISTORY, {
+            networkName,
+            wallet,
+            assetId,
+            isPreviously,
+          });
 
-      return;
+          res();
+        }, timeout);
+      });
     }
 
     await store.dispatch(NetworksActionTypes.FETCH_HISTORY, {
@@ -97,17 +95,4 @@ export class NetworksController {
       isPreviously,
     });
   }
-
-  // public static subscribeToBalancesOfNetworks(accounts: CustomAccounts, networksProps?: Networks): void {
-  // store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, networksProps });
-  // }
-  //
-  // public static async toggleActiveNode(
-  //   network: string,
-  //   nodeName?: string,
-  //   nodeUrl?: string,
-  //   oldNodeUrl?: string
-  // ): Promise<void> {
-  //   await store.dispatch(NetworksActionTypes.TOGGLE_ACTIVE_NODE, { network, nodeName, nodeUrl, oldNodeUrl });
-  // }
 }

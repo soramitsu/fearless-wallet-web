@@ -1,12 +1,11 @@
-import { NetworkJson } from '@extension-base/types';
 import { BalanceItem } from '@extension-base/api/evm/types/ether';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { TokenBalance } from '@extension-base/background/types/types';
-import { state } from '@extension-base/background/handlers';
-import { keyring } from '@polkadot/ui-keyring';
 import { isEthereumAddress } from '@polkadot/util-crypto';
+import State from '../handlers/State';
+import type { NetworkJson } from '@extension-base/types';
 import type { AssetName, NetworkName } from '@/interfaces';
-import { MAIN_NETWORKS, ETHEREUM_NETWORKS, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
+import { MAIN_NETWORKS, ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import { RelayChainName } from '@/interfaces';
 import { ETHEREUM_UTILITY_ASSETS } from '@/consts/currencies';
 
@@ -14,6 +13,8 @@ export function getMockCurrencies(networks: NetworkJson[]) {
   const currencies = networks.reduce<TokenBalance[]>((result, network) => {
     const { assets: networkAssets, name: mainNet, parentId, icon: networkIcon } = network;
     const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNet) as RelayChainName;
+    const optionEthereum = !!network.options?.some((el) => el === 'ethereum');
+    const prepRelayChain = optionEthereum ? 'ethereum' : relayChain;
 
     networkAssets.forEach(
       ({
@@ -32,10 +33,11 @@ export function getMockCurrencies(networks: NetworkJson[]) {
         currencyId,
       }) => {
         const mainNetwork = MAIN_NETWORKS[symbol] ?? mainNet;
+
         const currencyIndex = result.findIndex(({ assetId: _assetId, relayChain: _relayChain, symbol: _symbol }) => {
           const isExistingAssetId = _assetId === assetId;
           const isExistingSymbol = _symbol === symbol;
-          const isExistingAsset = isExistingSymbol && _relayChain === relayChain;
+          const isExistingAsset = isExistingSymbol && _relayChain === prepRelayChain;
 
           return isExistingAssetId || isExistingAsset;
         });
@@ -48,7 +50,7 @@ export function getMockCurrencies(networks: NetworkJson[]) {
             precision,
             symbol,
             tokenName,
-            relayChain,
+            relayChain: prepRelayChain,
             icon: assetIcon,
             providers: purchaseProviders ?? [],
             balances: [],
@@ -94,11 +96,11 @@ export function isEthereumNetwork(network: string) {
   return ETHEREUM_NETWORKS.includes(network.toLowerCase());
 }
 
-export function isRequireSubstrateAPI(network: string) {
-  return SUBSTRATE_ETHEREUM_NETWORKS.includes(network.toLowerCase());
+export function isRequireEvmAPI(network: string) {
+  return NATIVE_ETHEREUM_NETWORKS.includes(network.toLowerCase());
 }
 
-export function getUtilityProps(_network: NetworkName) {
+export function getUtilityProps(_network: NetworkName, state: State) {
   return state.networksJson.find(({ name }) => name.toLowerCase() === _network.toLowerCase())!.assets[0];
 }
 
@@ -106,7 +108,11 @@ export function getNativeAssetName(asset: AssetName) {
   return asset.toLowerCase().replace('xc', '');
 }
 
-export function getEthereumAssetName(asset: AssetName, network: NetworkName) {
+export function balanceItemByNetwork(balances: BalanceItem[], network: string) {
+  return balances.find((balance) => balance.name.toLowerCase() === network.toLowerCase());
+}
+
+export function getMoonbeamMoonriverAssetName(asset: AssetName, network: NetworkName) {
   const assetLower = asset.toLowerCase();
 
   return isEthereumNetwork(network) && !Object.values(ETHEREUM_UTILITY_ASSETS).includes(assetLower)
@@ -114,10 +120,20 @@ export function getEthereumAssetName(asset: AssetName, network: NetworkName) {
     : assetLower;
 }
 
-export function getSubstrateAddress(address: string) {
-  const accounts = keyring.getAccounts();
+export function getSubstrateAddress(address: string, state: State) {
+  if (!isEthereumAddress(address)) return address;
 
-  return isEthereumAddress(address)
-    ? accounts.find(({ meta: { ethereumAddress } }) => ethereumAddress === address)?.address ?? address
-    : address;
+  const accounts = state.keyringService.getAllAccounts();
+  const account = accounts.find(({ meta: { ethereumAddress } }) => ethereumAddress === address);
+
+  return account?.address ?? address;
+}
+
+export function getEthereumAddress(address: string, state: State) {
+  if (isEthereumAddress(address)) return address;
+
+  const accounts = state.keyringService.getAllAccounts();
+  const account = accounts.find(({ address: _address }) => _address === address);
+
+  return account?.address ?? address;
 }

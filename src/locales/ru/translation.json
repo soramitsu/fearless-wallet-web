@@ -109,7 +109,11 @@
     "requesting": "Запрашиваем разрешения...",
     "connected": "Мобильный кошелек, подключенн к Fearless Wallet Extension",
     "noAnswer": "Ответ от вашего кошелька еще не получен. Пожалуйста, убедитесь, что кошелек открыт",
-    "signMobile": "Чтобы подписать с помощью мобильного устройства, проверьте, что ваш мобильный клиент открыт на странице Beacon dApp, и нажмите «Подписать»."
+    "signMobile": "Чтобы подписать с помощью мобильного устройства, проверьте, что ваш мобильный клиент открыт на странице Beacon dApp, и нажмите «Подписать».",
+    "rateLimitWarning": {
+      "title": "Слишком много транзакций!",
+      "message": "Matrix сеть загружена, попробуйте снова позже"
+    }
   },
   "metadata": {
     "text": "Метадата",
@@ -139,6 +143,23 @@
         "text": "Язык",
         "translated": "Переведено командой"
       }
+    },
+    "networkManagement": {
+      "nofound": "По вашему запросу ничего не найдено",
+      "tabs": {
+        "all": "Все",
+        "favorites": "Избранные",
+        "popular": "Популярные"
+      },
+      "header": "Выберите сеть",
+      "all": "Все сети",
+      "favorites": "Избранные сети",
+      "favorite": "Избранная",
+      "popular": "Популярные сети",
+      "networkSelected": "{network} сеть выбрана",
+      "groupSelected": "{group} сети выбраны",
+      "addFavorite": "{network} сеть добавлена в избранные",
+      "deleteFavorite": "{network} сеть удалена из избранного"
     }
   },
   "menu": {
@@ -168,6 +189,17 @@
   },
   "assets": {
     "all": "Все",
+    "locked": "Заблокированно",
+    "totalLocked": "Суммарно аблокированно",
+    "myNetworks": "Мои сети",
+    "availableNetworks": "Доступные сети",
+    "networkAssets": "Ассеты в сетях",
+    "filters": {
+      "fiat": "Фиат баланс",
+      "popularity": "Популярность",
+      "name": "Имя"
+    },
+    "networkManagementTip": "Чтобы начать перевод и смотреть историю транзакций, выберете нужную сеть",
     "feeDescription": "Каждый раз, когда вы отправляете криптографию в блокчейн, взимается плата за сеть. По сути, сетевая плата — это вознаграждение для майнеров и узлов, которые транслируют вашу транзакцию в блокчейн.",
     "createContact": "Создать контакт",
     "saveAddressForAllNetwork": "Сохранить адрес для всех сетей",
@@ -192,7 +224,7 @@
     "slippageWarning": "Ваши транзакции будут отменены, если цена изменится неблагоприятно более чем на этот процент.",
     "preview": "Предпросмотр",
     "calculateFee": "Расчет комиссии",
-    "balanceDetails": "Детализация баланса",
+    "lockedDetails": "Детализация заблокированного баланса",
     "buyHeader": "Купить {asset} через",
     "buy": "Купить",
     "polkaswap": "Polkaswap",
@@ -218,7 +250,9 @@
     "valueIn": "ЗНАЧЕНИЕ В {asset}",
     "assetsAmount": "Сумма активов",
     "summary": "Итог",
-    "transferable": "Передаваемые",
+    "reserved": "Зарезервировано",
+    "frozen": "Заморожено",
+    "transferable": "Доступно",
     "fee": "Комиссия",
     "total": "Суммарно",
     "signTransaction": "Подпишите транзакцию",
@@ -269,6 +303,7 @@
     "switchNode": "Сменить ноду",
     "copyAddress": "Копировать адрес",
     "subscan": "Смотреть в Subscan",
+    "etherscan": "Смотреть в Etherscan",
     "deleteCustomNode": "Удалить пользовательскую ноду?",
     "careful": "Будьте осторожны",
     "sharingSecret": "Копирование или передача вашего секретного ключа очень рисковано, не отправляй его никому. Вы хотите продолжить?",
@@ -369,7 +404,7 @@
         "statusText": "Верицикация отклонена",
         "text1": "Верицикация отклонена",
         "text2": "Ваша заявка отклонена.",
-        "text3": "PLACEHOLDER TEXT: *Display 'additional description' provided in the answer* (done by devs. We should check the format of the answer, to be sure it's human-readable)"
+        "text3": "Причина отклонения:"
       },
       "accepted": {
         "statusText": "Карта в пути",
@@ -397,7 +432,28 @@
     "polkaswapFAQ": "Polkaswap FAQ",
     "important": "IMPORTANT:",
     "polkaswapMemorandum": "Polkaswap Memorandum and Terms of Services",
+    "privacyPolicy": "Privacy Policy",
     "importantText": "I confirm that I have read all of the documents mentioned and pressing 'Сontinue' I accept them."
+  },
+  "browserTabs": {
+    "welcome": "Добро пожаловать",
+    "onboarding": "Онбординг",
+    "google": "Гугл",
+    "addWallet": "Добавить кошелек",
+    "addMobileWallet": "Добавить мобильный кошелек",
+    "authorize": "Авторизация",
+    "meta": "Мета",
+    "transaction": "Транзакция",
+    "soraCard": "Sora card",
+    "soraSwap": "Sora swap",
+    "polkaswapDisclaimer": "Polkaswap дисклеймер",
+    "wallet": "кошелек",
+    "accounts": "Аккаунты",
+    "nodes": "Ноды",
+    "export": "Экспорт",
+    "crowdloans": "Краудлоны",
+    "staking": "Стейкинг",
+    "polkaswap": "Polkaswap"
   },
   "common": {
     "privacyPolicy": "Политика Конфиденциальности",
@@ -438,6 +494,8 @@
     "acceptContinue": "Принять и продолжить",
     "email": "Email",
     "start": "Начать",
+    "next": "Далее",
+    "skip": "Пропустить",
     "and": "и",
     "read": "Читать",
     "aboutApp": "О приложении",

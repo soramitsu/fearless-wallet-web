@@ -15,9 +15,9 @@
       <Hint iconName="notification" text="soraCard.wellSendEmail" class="hint" />
 
       <template v-if="showNameInputs">
-        <Input v-model="firstName" placeholder="soraCard.firstName" size="big" :maxlength="50" />
+        <FInput v-model="firstName" placeholder="soraCard.firstName" size="big" :maxlength="50" />
 
-        <Input v-model="lastName" placeholder="soraCard.lastName" size="big" class="last-name" :maxlength="50" />
+        <FInput v-model="lastName" placeholder="soraCard.lastName" size="big" class="last-name" :maxlength="50" />
 
         <Hint iconName="notification" text="soraCard.useRealName" class="hint" />
       </template>
@@ -25,7 +25,7 @@
       <Disclaimer />
     </div>
 
-    <Button
+    <FButton
       :text="textBtnSend"
       width="100%"
       size="big"
@@ -35,7 +35,7 @@
       @click="sendEmail"
     />
 
-    <Button
+    <FButton
       v-show="showVerifyEmailForm"
       text="soraCard.useAnotherEmail"
       width="100%"
@@ -52,7 +52,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { validateEmail } from '@/helpers/common';
+import { validateEmail } from '@/helpers';
 import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { RESEND_INTERVAL } from '@/consts/soraCard';

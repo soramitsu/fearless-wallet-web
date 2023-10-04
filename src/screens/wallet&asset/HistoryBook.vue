@@ -51,7 +51,7 @@
       </div>
     </Scroll>
 
-    <Button size="big" fontSize="big" width="100%" text="assets.createContact" @click="setAddress(' ')" />
+    <FButton size="big" fontSize="big" width="100%" text="assets.createContact" @click="setAddress(' ')" />
   </div>
 </template>
 
@@ -67,7 +67,7 @@ import type { AddressBook } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { cut } from '@/helpers/common';
+import { cut } from '@/helpers/';
 import { NetworksController } from '@/controllers';
 import { getType } from '@/helpers/history';
 import { TransactionType } from '@/interfaces/history';

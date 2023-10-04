@@ -6,31 +6,15 @@
           class="balance"
           :balance="summaryTransferableBalance"
           :changeWalletBalance="changeWalletBalance"
+          :staticWidth="false"
           @click.native="$emit('openFiatsPopup', true)"
         />
 
         <div class="wallet-balance__loading">
-          <Loading :width="28" v-if="showShimmers" />
+          <Loading :width="28" v-if="showLoadingBalance" />
         </div>
       </div>
-
-      <SelectNetworkButton
-        :ref="selectNetworkButtonRef"
-        :text="selectedNetwork"
-        :isActive="showSelectNetworkPopup"
-        :showWarningIcon="showWarningIcon"
-        @openNetworkPopup="toggleSelectNetworkPopupVisible"
-        @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
-      />
     </header>
-
-    <SelectNetworkPopup
-      v-if="showSelectNetworkPopup"
-      :selectedNetwork="selectedNetwork"
-      :height="410"
-      :toggleSelectedNetwork="toggleSelectedNetwork"
-      :handlerClose="toggleSelectNetworkPopupVisible"
-    />
 
     <SoraCardBanner />
 
@@ -49,11 +33,12 @@
 
         <Currencies
           v-if="showCurrencies"
+          :isEmptyBalances="isEmptyBalances"
           :balances="filteredCurrencies"
           :selectedNetwork="selectedNetwork"
           :showAssetsManagementForm="showAssetsManagementForm"
-          :toggleVisibleActivityForm="toggleVisibleActivityForm"
           :filterValue="filterValue"
+          @toggleVisibleActivityForm="toggleVisibleActivityForm"
           @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
         />
       </div>
@@ -63,20 +48,20 @@
       v-if="showSendForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :_selectedAssetId="selectedCurrency.assetId"
-      :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false, {})"
+      @closeForm="toggleVisibleActivityForm('showSendForm', {}, false)"
     />
 
     <ReceiveForm
       v-if="showReceiveForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :selectedAssetId="selectedCurrency.assetId"
-      :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false, {})"
+      @closeForm="toggleVisibleActivityForm('showReceiveForm', {}, false)"
     />
 
     <NetworkManagement
       v-if="showNetworkManagement"
       :networks="networksWithWarning"
-      :closeForm="toggleNetworkManagementVisible"
+      @closeForm="toggleNetworkManagementVisible"
       @setNetworkUnavailable="setNetworkUnavailable"
     />
 
@@ -84,10 +69,10 @@
       v-if="showNetworkUnavailablePopup"
       :networks="networksWithWarning"
       :network="networkUnavailable"
-      :closePopup="setNetworkUnavailable"
+      @closePopup="setNetworkUnavailable"
     />
 
-    <GoogleExportPopup v-if="showGoogleExportPopup" :closePopup="closeGoogleExportPopup" />
+    <GoogleExportPopup v-if="showGoogleExportPopup" @closePopup="closeGoogleExportPopup" />
 
     <Tooltip text="wallet.walletBalance" target=".wallet-balance" placement="right" />
     <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
@@ -97,15 +82,15 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation, Action } from 'vuex-class';
-import { HexString } from '@polkadot/util/types';
-import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset } from '@/store';
+import { BalanceJson, TokenBalance } from '@extension-base/background/types/types';
+import { NETWORK_STATUS } from '@extension-base/api/types/networks';
+import type { NetworkJson } from '@extension-base/types';
+import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset, GetNetwork } from '@/store';
 import type { AsyncFn, Fn, TabWallet } from '@/interfaces';
-import { BalanceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import ContentSettings from '@/screens/wallet&asset/wallet/ContentSettings.vue';
-import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
-import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import { accountController } from '@/controllers/accountController';
@@ -118,17 +103,13 @@ import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.v
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import { ALL_NETWORKS } from '@/consts/networks';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { AssetsPrice } from '@/interfaces';
-import {
-  defaultSortingCurrencies,
-  getChangeWalletBalance,
-  getSummaryTransferableWalletBalance,
-} from '@/helpers/currencies';
-import { tieAccount } from '@/extension/messaging';
+import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers/currencies';
+import { getChangeWalletBalance, getSummaryTransferableWalletBalance, isNetworkGroup } from '@/helpers/common';
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
-import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
+import BaseApi from '@/util/BaseApi';
+import { fetchEvmBalance } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -140,19 +121,15 @@ import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/ty
     SoraCardBanner,
     ContentSettings,
     NetworkManagement,
-    SelectNetworkPopup,
-    SelectNetworkButton,
     NetworkUnavailablePopup,
     GoogleExportPopup,
   },
 })
 export default class Wallet extends Vue {
-  readonly selectNetworkButtonRef = 'selectNetworkButton';
   showNetworkManagement = false;
   showAssetsManagementForm = false;
   showSendForm = false;
   showReceiveForm = false;
-  showSelectNetworkPopup = false;
   networkUnavailable = '';
   activeTabName: TabWallet = 'Currencies';
   filterValue = '';
@@ -170,7 +147,7 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
@@ -180,28 +157,31 @@ export default class Wallet extends Vue {
   get contentFormHeight() {
     const subtractionNumber = this.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
 
-    // IMPORTANT: if <Menu /> showed use 397
-    return 457 - subtractionNumber;
+    return 452 - subtractionNumber;
   }
 
   get showNetworkUnavailablePopup() {
     return this.networkUnavailable !== '';
   }
 
+  get isEmptyBalances() {
+    return this.balances.length === 0;
+  }
+
   get showWarningIcon() {
     if (this.selectedNetwork !== ALL_NETWORKS) {
-      const apiStatus = this.networks.find(
+      const networkStatus = this.networks.find(
         ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
-      )?.apiStatus;
+      )?.networkStatus;
 
-      return apiStatus === NETWORK_STATUS.DISCONNECTED;
+      return networkStatus === NETWORK_STATUS.DISCONNECTED;
     }
 
     return this.networksWithWarning.length !== 0;
   }
 
   get disconnectedNetworks() {
-    return this.networks.filter(({ apiStatus }) => apiStatus === NETWORK_STATUS.DISCONNECTED);
+    return this.networks.filter(({ networkStatus }) => networkStatus === NETWORK_STATUS.DISCONNECTED);
   }
 
   get networksWithWarning() {
@@ -209,7 +189,13 @@ export default class Wallet extends Vue {
   }
 
   get summaryTransferableBalance() {
-    return getSummaryTransferableWalletBalance(this.balances, this.prices, this.selectedNetwork);
+    return getSummaryTransferableWalletBalance(
+      this.selectedWallet.address,
+      this.balances,
+      this.prices,
+      this.selectedNetwork,
+      this.networks
+    );
   }
 
   get changeWalletBalance() {
@@ -235,33 +221,39 @@ export default class Wallet extends Vue {
     });
   }
 
-  get showShimmers() {
-    if (this.selectedNetwork !== ALL_NETWORKS) {
-      const apiStatus = this.networks.find(
+  get showLoadingBalance() {
+    if (!isNetworkGroup(this.selectedNetwork)) {
+      const networkStatus = this.networks.find(
         ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
-      )?.apiStatus;
+      )?.networkStatus;
 
-      return apiStatus === NETWORK_STATUS.PENDING;
+      return networkStatus === NETWORK_STATUS.CONNECTING;
     }
 
-    const isPendingExists = this.networks.some(({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING);
+    //TODO добавить проверку по группам
+    const isPendingExists = this.networks.some(({ networkStatus }) => networkStatus === NETWORK_STATUS.CONNECTING);
 
     return !navigator.onLine || isPendingExists;
   }
 
   get filteredCurrencies() {
     const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
+    const baseFilter =
+      this.selectedWallet.ethereumAddress === ''
+        ? this.sortedCurrencies.filter((el) => !BaseApi.isEthereumNetwork(el.mainNetwork))
+        : this.sortedCurrencies;
+
     const filteredByNetwork = isAllNetworks
-      ? this.sortedCurrencies
-      : this.sortedCurrencies.filter(({ balances }) =>
-          balances.some(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase())
-        );
+      ? baseFilter
+      : baseFilter.filter(({ balances }) => {
+          return balances.some((balance) => filterBalanceItemsByNetwork(balance, this.selectedNetwork));
+        });
 
     if (this.showAssetsManagementForm) return filteredByNetwork;
 
     const filter = this.filterValue.trim().toLowerCase();
 
-    return filteredByNetwork.filter(({ symbol }) => symbol.includes(filter));
+    return filteredByNetwork.filter(({ symbol }) => symbol.toLowerCase().includes(filter));
   }
 
   get showCurrencies() {
@@ -277,10 +269,8 @@ export default class Wallet extends Vue {
     if (value.length === 0) this.showNetworkManagement = false;
   }
 
-  closeGoogleExportPopup() {
-    this.$router.replace('/').catch((e) => e);
-
-    this.$emit('closeSelectWalletPopup');
+  activated() {
+    fetchEvmBalance();
   }
 
   deactivated() {
@@ -291,14 +281,18 @@ export default class Wallet extends Vue {
     this.setNetworkUnavailable();
   }
 
+  closeGoogleExportPopup() {
+    this.$router.replace('/').catch((e) => e);
+
+    this.$emit('closeSelectWalletPopup');
+  }
+
   setNetworkUnavailable(network = '') {
     this.networkUnavailable = network;
   }
 
   toggleNetworkManagementVisible() {
     this.showNetworkManagement = !this.showNetworkManagement;
-
-    this.toggleSelectNetworkPopupVisible(false);
   }
 
   toggleAssetsManagementFormVisible(value = true) {
@@ -312,29 +306,31 @@ export default class Wallet extends Vue {
       return;
     }
 
+    const nonZeroBalanceCb = ({ transferable }: BalanceItem) => transferable && +transferable > 0;
+
     this.balances.forEach(({ assetId, balances }) => {
-      const index = balances.findIndex(({ transferable }) => transferable && transferable !== '0');
+      const index = balances.findIndex(nonZeroBalanceCb);
       const isZeroBalance = index === -1;
 
       if (isZeroBalance) this.setHiddenAssets({ assetId, value: false });
     });
 
     const assetsVisibleWithBalance = this.balances.filter(({ balances, assetId }) => {
-      const haveAssets = balances.findIndex(({ transferable }) => transferable && transferable !== '0') !== -1;
+      const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
       const isVisibleAsset = !this.hiddenAssets.includes(assetId);
 
       return isVisibleAsset && haveAssets;
     });
 
     const assetsInvisibleWithBalance = this.balances.filter(({ balances, assetId }) => {
-      const haveAssets = balances.findIndex(({ transferable }) => transferable && transferable !== '0') !== -1;
+      const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
       const isHiddenAsset = this.hiddenAssets.includes(assetId);
 
       return isHiddenAsset && haveAssets;
     });
 
     const assetsInvisibleWithoutBalance = this.balances.filter(({ balances, assetId }) => {
-      const notHaveAssets = balances.findIndex(({ transferable }) => transferable && transferable !== '0') === -1;
+      const notHaveAssets = balances.findIndex(nonZeroBalanceCb) === -1;
       const isHiddenAsset = this.hiddenAssets.includes(assetId);
 
       return isHiddenAsset && notHaveAssets;
@@ -349,33 +345,13 @@ export default class Wallet extends Vue {
 
   toggleVisibleActivityForm(
     field: 'showSendForm' | 'showReceiveForm',
-    value = true,
-    currency: { mainNetwork?: string; assetId?: string }
+    currency: { mainNetwork?: string; assetId?: string },
+    value = true
   ) {
     this.selectedCurrency = currency;
     this[field] = value;
 
-    if (this.selectedNetwork !== ALL_NETWORKS) this.selectedCurrency.mainNetwork = this.selectedNetwork;
-  }
-
-  toggleSelectedNetwork(network: string) {
-    if (this.selectedNetwork === network) return;
-
-    const prepNetwork: HexString | null = network === ALL_NETWORKS ? null : `0x${this.getNetwork(network).chainId}`;
-
-    this.setSelectedNetwork(network);
-
-    tieAccount(this.selectedWallet.address, prepNetwork);
-
-    this.toggleSelectNetworkPopupVisible();
-  }
-
-  toggleSelectNetworkPopupVisible(value?: boolean) {
-    const targetElement = (this.$refs[this.selectNetworkButtonRef] as Vue).$el as HTMLElement;
-
-    this.showSelectNetworkPopup = value ?? !this.showSelectNetworkPopup;
-
-    targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
+    if (!isNetworkGroup(this.selectedNetwork)) this.selectedCurrency.mainNetwork = this.selectedNetwork;
   }
 
   updateFilterValue(value: string) {

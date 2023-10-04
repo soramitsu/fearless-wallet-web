@@ -1,22 +1,19 @@
 import { Api, FPNumber } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
-import { state } from '@extension-base/background/handlers';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
+import State from '@extension-base/background/handlers/State';
 import type { Asset } from '@sora-substrate/util/build/assets/types';
-import type { ExtrinsicSwapOptions, CreateSwapResult, BaseExchangeProps } from '@extension-base/api/types/swaps';
+import type { CreateSwapResult, BaseExchangeProps } from '@extension-base/api/types/swaps';
 import type { SwapOptions } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
+import { SORA_NETWORK_NAME } from '@/consts/networks';
 
-async function createExchangeB(props: BaseExchangeProps, api: Api<void>): Promise<CreateSwapResult> {
-  const { expectedAmount, isDexXor, providerFee, route, assetA, assetB, amountB, slippage, swapOptions } = props;
+async function createExchangeB(
+  props: BaseExchangeProps,
+  api: Api<void>
+): Promise<Omit<CreateSwapResult, 'swapOptions'>> {
+  const { expectedAmount, providerFee, route, assetA, assetB, amountB, slippage } = props;
   const minMaxValue = api.swap.getMinMaxValue(assetA, assetB, expectedAmount.toString(), amountB!, true, slippage!);
-  const extrinsicOptions: ExtrinsicSwapOptions = {
-    ...swapOptions,
-    amountA: expectedAmount.toString(),
-    amountB: amountB!,
-    swapOptions,
-    swapDexId: isDexXor ? DexId.XOR : DexId.XSTUSD,
-  };
 
   return {
     amountA: expectedAmount.toString(),
@@ -25,21 +22,16 @@ async function createExchangeB(props: BaseExchangeProps, api: Api<void>): Promis
     BToA: new FPNumber(amountB!).div(expectedAmount).toString(),
     minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
     providerFee: FPNumber.fromCodecValue(providerFee).toString(),
-    extrinsicOptions,
     route,
   };
 }
 
-async function createExchangeA(props: BaseExchangeProps, api: Api<void>): Promise<CreateSwapResult> {
-  const { expectedAmount, isDexXor, providerFee, route, assetA, assetB, amountA, slippage, swapOptions } = props;
+async function createExchangeA(
+  props: BaseExchangeProps,
+  api: Api<void>
+): Promise<Omit<CreateSwapResult, 'swapOptions'>> {
+  const { expectedAmount, providerFee, route, assetA, assetB, amountA, slippage } = props;
   const minMaxValue = api.swap.getMinMaxValue(assetA, assetB, amountA!, expectedAmount.toString(), false, slippage!);
-  const extrinsicOptions: ExtrinsicSwapOptions = {
-    ...swapOptions,
-    swapOptions,
-    amountA: amountA!,
-    amountB: expectedAmount.toString(),
-    swapDexId: isDexXor ? DexId.XOR : DexId.XSTUSD,
-  };
 
   return {
     amountA,
@@ -48,7 +40,6 @@ async function createExchangeA(props: BaseExchangeProps, api: Api<void>): Promis
     BToA: expectedAmount.div(new FPNumber(amountA!)).toString(),
     minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
     providerFee: FPNumber.fromCodecValue(providerFee).toString(),
-    extrinsicOptions,
     route,
   };
 }
@@ -58,10 +49,22 @@ async function createExchangeA(props: BaseExchangeProps, api: Api<void>): Promis
  * @param {Partial<SwapOptions>} options
  * @returns {Promise<CreateSwapResult>}
  */
-export async function createSwap(options: Partial<SwapOptions>, api: Api<void>): Promise<CreateSwapResult> {
+export async function createSwap(
+  options: Partial<SwapOptions>,
+  api: Api<void>,
+  state: State
+): Promise<CreateSwapResult> {
   const { assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage, marketType } = options;
-  const assetAAddress = getAssetOptions(assetAId!) as string;
-  const assetBAddress = getAssetOptions(assetBId!) as string;
+  const currentAccount = await state.currentAccount;
+
+  const tokenBalanceA = state.balanceMap[currentAccount!.address].find(({ assetId }) => assetId === assetAId);
+  const aId = tokenBalanceA?.balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
+
+  const tokenBalanceB = state.balanceMap[currentAccount!.address].find(({ assetId }) => assetId === assetBId);
+  const aIB = tokenBalanceB?.balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
+
+  const assetAAddress = getAssetOptions(aId!.id, state.assetsMap) as string;
+  const assetBAddress = getAssetOptions(aIB!.id, state.assetsMap) as string;
   const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
   const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
   const assetA: Asset = { address: assetAAddress, decimals: 18, name: symbolA!, symbol: symbolA! };
@@ -76,12 +79,13 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
     amount: amountDexIdXOR,
     fee: providerFeeDexIdXOR,
     route: routeDexIdXOR,
-  } = await api.swap.getResultFromBackend(
+  } = await api.swap.getResultFromDexRpc(
     assetAAddress,
     assetBAddress,
     amountWithDirection,
     isExchangeB,
     liquiditySource,
+    true,
     DexId.XOR
   );
 
@@ -89,16 +93,16 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
     amount: amountDexIdXSTUSD,
     fee: providerFeeDexIdXSTUSD,
     route: routeDexIdXSTUSD,
-  } = await api.swap.getResultFromBackend(
+  } = await api.swap.getResultFromDexRpc(
     assetAAddress,
     assetBAddress,
     amountWithDirection,
     isExchangeB,
     liquiditySource,
+    true,
     DexId.XSTUSD
   );
 
-  const swapOptions = { ...options, assetA, assetB } as SwapOptions;
   const amountDexIdXORFP = FPNumber.fromCodecValue(amountDexIdXOR);
   const amountDexIdXSTUSDFP = FPNumber.fromCodecValue(amountDexIdXSTUSD);
 
@@ -135,8 +139,14 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
       })
       .join(' > ') ?? '';
 
+  const swapOptions = {
+    ...options,
+    assetA,
+    assetB,
+    swapDexId: isDexXor ? DexId.XOR : DexId.XSTUSD,
+  } as SwapOptions;
+
   const baseOptions: BaseExchangeProps = {
-    swapOptions,
     expectedAmount,
     providerFee,
     isDexXor,
@@ -148,5 +158,14 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
     amountB: amountB ?? '0',
   };
 
-  return isExchangeB ? createExchangeB(baseOptions, api) : createExchangeA(baseOptions, api);
+  const swapResult = isExchangeB ? await createExchangeB(baseOptions, api) : await createExchangeA(baseOptions, api);
+
+  return {
+    ...swapResult,
+    swapOptions: {
+      ...swapOptions,
+      amountA: swapResult.amountA,
+      amountB: swapResult.amountB,
+    },
+  };
 }

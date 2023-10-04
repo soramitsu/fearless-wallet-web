@@ -1,12 +1,17 @@
 import axios from 'axios';
+// import { ethers } from 'ethers';
 import type {
   SubqueryHistory,
   GiantsquidHistoryItem,
   HistoryElement,
   HistoryServiceType,
   NetworkName,
+  EthereumHistoryResponse,
+  EthereumTokenHistoryData,
+  EthereumHistoryData,
 } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
+import { getEthereumExplorerApiKey } from '@/helpers/history';
 
 async function fetchSubqueryHistory(
   url: string,
@@ -132,11 +137,111 @@ async function fetchSubsquidHistory(url: string, address: string): Promise<Histo
   return data?.historyElements;
 }
 
-async function fetchHistory(url: string, address: string, type: HistoryServiceType, networkName: NetworkName) {
+async function fetchEthereumTokenHistory(
+  url: string,
+  address: string,
+  contractAddress: string
+): Promise<HistoryElement[]> {
+  const abort = new AbortController();
+  const signal = abort.signal;
+  const apikey = getEthereumExplorerApiKey(url);
+
+  const res = await axios.get<EthereumHistoryResponse<EthereumTokenHistoryData>>(url, {
+    params: {
+      module: 'account',
+      action: 'tokentx',
+      contractAddress,
+      address,
+      page: 1,
+      offset: 300,
+      sort: 'desc',
+      apikey,
+    },
+    signal,
+  });
+
+  if (res.status !== 200) {
+    abort.abort();
+
+    return [];
+  }
+
+  return res.data.result.map(({ timeStamp, value, gasPrice, gasUsed, from, to, hash }, index) => ({
+    address,
+    id: String(index),
+    timestamp: (+timeStamp * 1000).toString(),
+    transfer: {
+      amount: value,
+      hash,
+      eventIdx: 0,
+      fee: (+gasPrice * +gasUsed).toString(),
+      from: from,
+      success: true,
+      to,
+    },
+  }));
+}
+
+async function fetchEthereumHistory(url: string, address: string): Promise<HistoryElement[]> {
+  const abort = new AbortController();
+  const signal = abort.signal;
+  const apikey = getEthereumExplorerApiKey(url);
+
+  const res = await axios.get<EthereumHistoryResponse<EthereumHistoryData>>(url, {
+    params: {
+      module: 'account',
+      action: 'txlist',
+      address,
+      page: 1,
+      offset: 300,
+      sort: 'desc',
+      apikey,
+    },
+    signal,
+  });
+
+  if (res.status !== 200) {
+    abort.abort();
+
+    return [];
+  }
+
+  return res.data.result.map(({ timeStamp, value, gasPrice, gasUsed, from, isError, to, hash }, index) => ({
+    address,
+    id: String(index),
+    timestamp: (+timeStamp * 1000).toString(),
+    transfer: {
+      amount: value,
+      hash,
+      eventIdx: 0,
+      fee: (+gasPrice * +gasUsed).toString(),
+      from: from,
+      success: isError === '0',
+      to,
+    },
+  }));
+}
+
+async function fetchHistory(
+  url: string,
+  address: string,
+  type: HistoryServiceType,
+  networkName: NetworkName,
+  assetId: string,
+  isUtility: boolean
+) {
   try {
+    if (type === 'etherscan') {
+      if (isUtility) return fetchEthereumHistory(url, address);
+
+      return fetchEthereumTokenHistory(url, address, assetId);
+    }
+
     if (type === 'subquery') return fetchSubqueryHistory(url, address);
-    else if (type === 'subsquid') return fetchSubsquidHistory(url, address);
-    else if (type === 'giantsquid') {
+
+    if (type === 'subsquid') return fetchSubsquidHistory(url, address);
+
+    if (type === 'giantsquid') {
       const formattedAddress = BaseApi.isEthereumNetwork(networkName) ? address.toLowerCase() : address;
 
       return fetchGiantsquidHistory(url, formattedAddress);

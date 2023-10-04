@@ -1,23 +1,19 @@
 import { AssetName } from './assets';
 import { NetworkName, RelayChainName } from './networks';
 
-type Interior = any[];
+type XcmVersion = 'v1' | 'v2' | 'v3';
 
-type Interiors = {
-  v1: Interior;
-  v2?: Interior;
-  v3?: Interior;
-};
+type Interiors = any[];
 
 type XcmLocations = {
   name: RelayChainName;
   chainId: string;
   assets: [
     {
-      nativeParachainIds: number[];
       symbol: string;
-      parents: number;
+      id: string;
       interiors: Interiors;
+      versions: XcmVersion[];
     }
   ];
 }[];
@@ -33,4 +29,4 @@ type XcmFees = {
   weight: string;
 }[];
 
-export { XcmLocations, Interior, XcmFees };
+export { XcmLocations, Interiors, XcmFees, XcmVersion };

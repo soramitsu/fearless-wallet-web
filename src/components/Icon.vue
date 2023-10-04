@@ -1,44 +1,54 @@
 <template>
-  <svg :class="getSvgClasses" aria-hidden="true" v-on="$listeners">
-    <use :xlink:href="getIconName" :style="styles" :class="getUseClasses" />
+  <svg :class="getSvgClasses" aria-hidden="true" @click="click">
+    <use :xlink:href="getIconName" :style="styles" :class="getUseClasses" @click="click" />
   </svg>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 
-@Component
-export default class Icon extends Vue {
-  @Prop(String) icon!: string;
-  @Prop(String) iconColor?: string;
-  @Prop({ type: String, default: '32px' }) width!: string;
-  @Prop({ type: String, default: '32px' }) height!: string;
-  @Prop({ default: '' }) className!: string[] | string;
+type Props = {
+  icon: string;
+  iconColor?: string;
+  className?: string[] | string;
+  isHoverable?: boolean;
+  width?: string;
+  height?: string;
+};
 
-  get getIconColor() {
-    return `icon--${this.iconColor}`;
-  }
+const props = withDefaults(defineProps<Props>(), { width: '32px', height: '32px', className: '' });
+const emit = defineEmits(['click']);
 
-  get styles() {
-    return `width:${this.width}; height:${this.height};`;
-  }
+const getIconColor = computed(() => `icon--${props.iconColor}`);
+const getUseClasses = computed(() => ['icon__inner', props.icon]);
+const getIconName = computed(() => `#icon-${props.icon}`);
+const styles = computed(() => `width:${props.width}; height:${props.height};`);
 
-  get getSvgClasses() {
-    const classes = ['svg-icon', ...[this.className].flat()];
+const getSvgClasses = computed(() => {
+  const prepClasses = Array.isArray(props.className) ? props.className.flat() : [props.className];
 
-    if (this.iconColor) classes.push(this.getIconColor);
+  const classes = [...prepClasses];
 
-    return classes;
-  }
+  if (props.isHoverable) classes.push('svg-icon--hover');
 
-  get getUseClasses() {
-    return ['icon__inner', this.icon];
-  }
+  if (props.iconColor) classes.push(getIconColor.value);
 
-  get getIconName() {
-    return `#icon-${this.icon}`;
-  }
-}
+  return classes;
+});
+
+let clickLock = false;
+
+const click = () => {
+  if (clickLock) return;
+
+  clickLock = true;
+
+  emit('click');
+
+  // setTimeout нужен чтобы предотвратить всплытие при клике
+  // чтобы он вызывался только 1 раз
+  setTimeout(() => (clickLock = false), 0);
+};
 </script>
 
 <style lang="scss" scoped>
@@ -49,12 +59,24 @@ export default class Icon extends Vue {
   outline: none;
 }
 
+.svg-icon--hover:hover {
+  opacity: 0.5;
+}
+
 .icon__inner {
   outline: none;
 }
 
 .icon--success {
   color: $success-color;
+}
+
+.icon--purple {
+  color: #7700ee;
+}
+
+.icon--purple:hover {
+  color: #7700ee50;
 }
 
 .icon--default {

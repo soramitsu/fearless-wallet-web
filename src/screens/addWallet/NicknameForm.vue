@@ -1,6 +1,6 @@
 <template>
   <div class="nickname">
-    <Input
+    <FInput
       v-model="syncedNickname"
       ref="nicknameInput"
       placeholder="addWallet.walletNickname"
@@ -25,6 +25,8 @@ export default class NicknameForm extends Vue {
   @PropSync('nickname', { type: String }) syncedNickname!: string;
 
   mounted() {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     this.nicknameInputComponent.input.focus();
   }
 }

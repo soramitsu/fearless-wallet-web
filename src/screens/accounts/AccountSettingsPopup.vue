@@ -7,7 +7,7 @@
     :left="-17"
     :showBorder="true"
     :showHeader="false"
-    :handlerClose="handlerClose"
+    @handlerClose="$emit('handlerClose')"
   >
     <div class="account-settings">
       <div v-if="showExport" class="row" @click="openNotificationPopup">
@@ -16,22 +16,22 @@
         <div class="label">{{ $t('accounts.export') }}</div>
       </div>
 
-      <div v-if="!isNodesRoute" class="row" @click="openNetwork">
+      <div v-if="showNodeSwitch" class="row" @click="openNetwork">
         <Icon icon="currency-switch" className="icon" />
 
         <div class="label">{{ $t('accounts.switchNode') }}</div>
       </div>
 
-      <div v-if="!isNodesRoute" class="row" @click="copyAddress">
+      <div v-if="showCopyAddress" class="row" @click="copyAddress">
         <Icon icon="copy-2" className="icon" />
 
         <div class="label">{{ $t('accounts.copyAddress') }}</div>
       </div>
 
-      <div class="row" @click="openSubscan">
+      <div class="row" @click="openExplorer">
         <Icon icon="globus" className="icon" />
 
-        <div class="label">{{ $t('accounts.subscan') }}</div>
+        <div class="label">{{ buttonText }}</div>
       </div>
     </div>
   </Popup>
@@ -40,21 +40,38 @@
 <script lang="ts">
 import { Getter } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { SelectedWallet } from '@/store';
-
+import type { GetNetwork, SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { EXPLORERS_BASE_URLS } from '@/consts/networks';
 @Component
 export default class AccountSettingsPopup extends Vue {
   @Prop(String) selectedNetwork!: string;
-  @Prop(Boolean) isNodesRoute!: boolean;
+  @Prop(Boolean) showNodeSwitch!: boolean;
+  @Prop(Boolean) showCopyAddress!: boolean;
   @Prop(Boolean) showExport!: boolean;
   @Prop(Number) buttonTopClick!: number;
-  @Prop(Function) handlerClose!: VoidFunction;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+
+  get explorerType() {
+    return this.getNetwork(this.selectedNetwork)?.externalApi?.history?.type;
+  }
+
+  get explorerUrl() {
+    const network = this.getNetwork(this.selectedNetwork);
+
+    if (network.externalApi?.explorers) return network?.externalApi?.explorers[0].url;
+
+    return '';
+  }
+
+  get buttonText() {
+    return this.$t(this.explorerType === 'etherscan' ? 'accounts.etherscan' : 'accounts.subscan');
+  }
 
   get top() {
     if (this.buttonTopClick === undefined) return 110;
@@ -74,8 +91,27 @@ export default class AccountSettingsPopup extends Vue {
     this.close();
   }
 
+  get lowerCaseSelectedNetwork() {
+    return this.selectedNetwork.toLowerCase();
+  }
+
+  get substrateExplorerByNetwork() {
+    return EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] ?? this.selectedNetwork;
+  }
+
+  openEvmExplorer() {
+    const hostname = new URL(this.explorerUrl).hostname;
+
+    window.open(`https://${hostname}/address/${this.addressByNetwork}`);
+  }
+
   openSubscan() {
-    window.open(`https://${this.selectedNetwork}.subscan.io/account/${this.addressByNetwork}`);
+    window.open(`https://${this.substrateExplorerByNetwork}.subscan.io/account/${this.addressByNetwork}`);
+  }
+
+  openExplorer() {
+    if (this.explorerType === 'etherscan') return this.openEvmExplorer();
+    else this.openSubscan();
 
     this.close();
   }
@@ -96,7 +132,7 @@ export default class AccountSettingsPopup extends Vue {
   }
 
   close() {
-    this.handlerClose();
+    this.$emit('handlerClose');
   }
 }
 </script>

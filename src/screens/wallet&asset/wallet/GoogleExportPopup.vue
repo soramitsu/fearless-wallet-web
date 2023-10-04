@@ -3,9 +3,9 @@
     headerType="success"
     sizeWidth="big"
     :headerText="statusMessagesHeader"
-    :handlerClose="closePopup"
     :zIndex="399"
     :showBorder="true"
+    @handlerClose="$emit('closePopup')"
   >
     <div class="popup-content">
       <template v-if="isAwaiting">
@@ -36,7 +36,7 @@
         <span class="descriptions">{{ $t('wallet.googleExportSuccess') }}</span>
       </div>
 
-      <Button
+      <FButton
         v-if="!isUploading"
         text="common.confirm"
         width="100%"
@@ -52,13 +52,13 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { AccountJson } from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import { createGoogleFile, exportAccount, validatePassword } from '@/extension/messaging';
 import { ICreateFile } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
 @Component
 export default class GoogleExportPopup extends Vue {
@@ -66,7 +66,6 @@ export default class GoogleExportPopup extends Vue {
   isErrorPassword = false;
   status: 'prepare' | 'upload' | 'uploaded' | 'await' = 'await';
 
-  @Prop(Function) closePopup!: VoidFunction;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get selectedWalletAddress() {
@@ -115,7 +114,7 @@ export default class GoogleExportPopup extends Vue {
 
   async onConfirm() {
     if (this.isFinishedUpload) {
-      this.closePopup();
+      this.$emit('closePopup');
 
       return;
     }
@@ -223,7 +222,7 @@ export default class GoogleExportPopup extends Vue {
     max-width: 350px;
 
     .s-icon-arrows-arrow-right-24 {
-      color: rgba(255, 255, 255, 0.3);
+      color: $gray-2-color;
       font-size: 30px !important;
       margin: 0 10px;
     }

@@ -5,7 +5,6 @@ import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
-import { SORA_CARD_VISIBILITY } from '@/consts/global';
 
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Staking = () => import('@/screens/staking/Staking.vue');
@@ -17,7 +16,11 @@ const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue')
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 const Export = () => import('@/screens/accounts/Export.vue');
+const Onboarding = () => import('@/screens/onboarding/Onboarding.vue');
 
+const AssetNetworks = () =>
+  import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetNetworks.vue');
+const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetHistory.vue');
 const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
 const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/Disclaimer.vue');
@@ -51,6 +54,9 @@ export enum Components {
   SoraSwap = 'SoraSwap',
   SoraCard = 'SoraCard',
   NoFound = 'NoFound',
+  AssetHistory = 'AssetHistory',
+  AssetNetworks = 'AssetNetworks',
+  Onboarding = 'Onboarding',
 }
 
 const haveSelectedWallet = () => {
@@ -60,17 +66,32 @@ const haveSelectedWallet = () => {
 const haveAuthRequests = () => store.getters.authList.length;
 const haveSignRequests = () => store.getters.signList.length;
 const haveMetaRequests = () => store.getters.metaRequests.length;
+const showSoraCard = () => store.getters.features?.fiat?.soraCard;
 
 const routes: Array<RouteConfig> = [
   {
     path: '/welcome',
     name: Components.Welcome,
     component: Welcome,
+    meta: {
+      title: 'welcome',
+    },
+  },
+  {
+    path: '/onboarding',
+    name: Components.Onboarding,
+    component: Onboarding,
+    meta: {
+      title: 'onboarding',
+    },
   },
   {
     path: '/google/:access_token',
     name: Components.AddFromGoogle,
     component: AddFromGoogle,
+    meta: {
+      title: 'google',
+    },
   },
   {
     path: '/google-create/:access_token',
@@ -81,53 +102,80 @@ const routes: Array<RouteConfig> = [
     path: '/add-wallet/:type',
     name: Components.AddWallet,
     component: AddWallet,
+    meta: {
+      title: 'addWallet',
+    },
   },
   {
     path: '/add-mobile-wallet',
     name: Components.MobileConnect,
     component: MobileConnect,
+    meta: {
+      title: 'addMobileWallet',
+    },
   },
   {
     path: '/authorize',
     name: Components.Authorize,
     component: Authorize,
+    meta: {
+      title: 'authorize',
+    },
   },
   {
     path: '/meta',
     name: Components.MetaRequest,
     component: MetaRequest,
+    meta: {
+      title: 'meta',
+    },
   },
   {
     path: '/transaction',
     name: Components.Transaction,
     component: Transaction,
+    meta: {
+      title: 'transaction',
+    },
   },
   {
     path: '/sora-card',
     name: Components.SoraCard,
     component: SoraCard,
     beforeEnter: (to, from, next) => {
-      if (SORA_CARD_VISIBILITY) next();
+      if (showSoraCard()) next();
       else next({ name: Components.Wallet });
+    },
+    meta: {
+      title: 'soraCard',
     },
   },
   {
     path: '/sora-swap',
     name: Components.SoraSwap,
     component: SoraSwap,
+    meta: {
+      title: 'soraSwap',
+    },
   },
   {
     path: '/polkaswap-disclaimer',
     name: Components.PolkaswapDisclaimer,
     component: PolkaswapDisclaimer,
+    meta: {
+      title: 'polkaswapDisclaimer',
+    },
   },
   {
     path: '/fearless',
     component: Main,
     children: [
       {
-        path: '',
+        path: '/',
         redirect: { name: Components.Wallet },
+        meta: {
+          title: 'wallet',
+        },
       },
       {
         path: 'wallet/:access_token?',
@@ -140,6 +188,9 @@ const routes: Array<RouteConfig> = [
           else if (haveMetaRequests()) next({ name: Components.MetaRequest });
           else next();
         },
+        meta: {
+          title: 'wallet',
+        },
       },
       {
         path: 'accounts',
@@ -149,38 +200,67 @@ const routes: Array<RouteConfig> = [
             path: '/',
             name: Components.Accounts,
             component: Accounts,
+            meta: {
+              title: 'accounts',
+            },
           },
           {
             path: ':network',
             name: Components.Nodes,
             component: Nodes,
+            meta: {
+              title: 'nodes',
+            },
           },
           {
             path: ':network/export',
             name: Components.Export,
             component: Export,
+            meta: {
+              title: 'export',
+            },
           },
         ],
       },
       {
-        path: ':network/:assetId',
-        name: Components.Asset,
+        path: 'asset/:assetId',
         component: Asset,
+        children: [
+          {
+            path: '/',
+            name: Components.AssetNetworks,
+            component: AssetNetworks,
+          },
+          {
+            path: ':selectedNetwork',
+            name: Components.AssetHistory,
+            component: AssetHistory,
+          },
+        ],
       },
       {
         path: 'crowdloans',
         name: Components.Crowdloans,
         component: Crowdloans,
+        meta: {
+          title: 'crowdloans',
+        },
       },
       {
         path: 'staking',
         name: Components.Staking,
         component: Staking,
+        meta: {
+          title: 'staking',
+        },
       },
       {
         path: 'polkaswap',
         name: Components.Polkaswap,
         component: Polkaswap,
+        meta: {
+          title: 'polkaswap',
+        },
       },
       {
         path: 'history',
@@ -195,7 +275,6 @@ const routes: Array<RouteConfig> = [
   },
   {
     path: '*',
-    name: Components.NoFound,
     component: Welcome,
     beforeEnter: (to, from, next) => {
       if (haveSelectedWallet()) next({ name: Components.Wallet });

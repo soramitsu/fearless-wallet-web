@@ -1,10 +1,10 @@
 <template>
-  <AboveForm header="accounts.exportJson" :blur="true" :closeHandler="closeForm">
+  <AboveForm header="accounts.exportJson" :fullScreen="true" @closeHandler="closeForm">
     <div class="export-form">
       <Loader v-if="isLoading" />
       <template v-else>
         <div class="export-content">
-          <Input
+          <FInput
             v-model="exportType"
             placeholder="common.sourceType"
             size="big"
@@ -12,10 +12,10 @@
             :readonly="true"
           />
 
-          <Input v-model="substrateAddress" class="row" size="big" placeholder="Substrate" :readonly="true" />
+          <FInput v-model="substrateAddress" class="row" size="big" placeholder="Substrate" :readonly="true" />
         </div>
 
-        <Button size="big" fontSize="big" width="100%" text="Export" @click="proceed" />
+        <FButton size="big" fontSize="big" width="100%" text="Export" @click="proceed" />
       </template>
     </div>
   </AboveForm>
@@ -39,7 +39,6 @@ export default class ExportForm extends Vue {
   json: KeyringPair$Json = {} as KeyringPair$Json;
   isLoading = true;
   @Prop(String) password!: string;
-  @Prop(Function) closeHandler!: (password: string) => void;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) networks!: Networks;
 
@@ -71,7 +70,7 @@ export default class ExportForm extends Vue {
   }
 
   closeForm() {
-    this.closeHandler('');
+    this.$emit('closeHandler', '');
   }
 
   proceed() {

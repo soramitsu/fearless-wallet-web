@@ -1,5 +1,3 @@
-require('@rushstack/eslint-patch/modern-module-resolution');
-
 module.exports = {
   root: true,
   env: {
@@ -32,12 +30,15 @@ module.exports = {
         multiline: 'always',
       },
     ],
+    'vue/define-props-declaration': 'off',
+    'vue/valid-define-props': 'off',
     'vue/html-indent': ['warn', 2],
     'vue/block-spacing': 1,
     '@typescript-eslint/explicit-function-return-type': ['off'],
     '@typescript-eslint/no-use-before-define': ['off'],
     '@typescript-eslint/no-var-requires': ['off'],
     '@typescript-eslint/no-non-null-assertion': ['off'],
+    '@typescript-eslint/no-explicit-any': ['warn', { ignoreRestArgs: true }],
     'prettier/prettier': [
       'error',
       {
@@ -52,15 +53,19 @@ module.exports = {
       { blankLine: 'always', prev: 'block', next: '*' },
       { blankLine: 'always', prev: '*', next: 'block' },
     ],
+    'vue/multi-word-component-names': ['warn'],
   },
   overrides: [
+    {
+      files: ['*.vue'],
+      rules: require('@typescript-eslint/eslint-plugin').configs['eslint-recommended'].overrides[0].rules,
+    },
     {
       files: ['**/__tests__/*.{j,t}s?(x)', '**/tests/unit/**/*.spec.{j,t}s?(x)'],
       env: {
         jest: true,
       },
     },
-    // https://github.com/typescript-eslint/typescript-eslint/blob/master/docs/getting-started/linting/FAQ.md#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
     {
       files: ['*.vue'],
       rules: {

@@ -9,7 +9,7 @@
 
     <SelectWalletPopup
       v-if="showSelectWalletPopup"
-      @close="setSelectWalletPopupVisible(false)"
+      @close="setSelectWalletPopupVisible"
       @toggleWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible"
     />
 
@@ -18,30 +18,30 @@
       :buttonTopClick="buttonTopClick"
       :selectedWalletAddress="selectedWalletAddress"
       @close="toggleWalletDetailsPopupVisible"
-      @closeSelectWalletPopup="setSelectWalletPopupVisible(false)"
+      @closeSelectWalletPopup="setSelectWalletPopupVisible"
     />
 
     <SettingsPopup
       v-if="showSettings"
-      :handlerClose="toggleSettingsVisible"
+      @handlerClose="toggleSettingsVisible"
       @openFiatsPopup="toggleFiatsPopupVisible"
       @openLanguagePopup="toggleLanguagePopupVisible"
       @openAboutPopup="toggleAboutPopupVisible"
       @openManageAuths="toggleManageAuthsVisible"
     />
 
-    <FiatsPopup v-if="showFiatsPopup" :showAnimation="showFiatPopupAnimation" :handlerClose="toggleFiatsPopupVisible" />
+    <FiatsPopup v-if="showFiatsPopup" :showAnimation="showFiatPopupAnimation" @handlerClose="toggleFiatsPopupVisible" />
 
-    <LanguagePopup v-if="showLanguagePopup" :handlerClose="toggleLanguagePopupVisible" />
+    <LanguagePopup v-if="showLanguagePopup" @handlerClose="toggleLanguagePopupVisible" />
 
-    <AboutPopup v-if="showAboutPopup" :handlerClose="toggleAboutPopupVisible" />
+    <AboutPopup v-if="showAboutPopup" @handlerClose="toggleAboutPopupVisible" />
 
     <ManageAuths v-if="showManageAuthsVisible" :handlerClose="toggleManageAuthsVisible" />
 
     <router-view
       class="main-child"
       @openFiatsPopup="toggleFiatsPopupVisible"
-      @closeSelectWalletPopup="setSelectWalletPopupVisible(false)"
+      @closeSelectWalletPopup="setSelectWalletPopupVisible"
     />
 
     <!-- <Menu /> -->
@@ -131,7 +131,7 @@ export default class Main extends Vue {
     this.showSettings = !this.showSettings;
   }
 
-  setSelectWalletPopupVisible(value: boolean) {
+  setSelectWalletPopupVisible(value = false) {
     this.showSelectWalletPopup = value;
     this.showWalletDetailsPopup = false;
   }

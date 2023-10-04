@@ -7,16 +7,16 @@ import {
   isEthereumAddress,
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
+import type { AccountJson } from '@extension-base/background/types/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { isDerivationPathValid, isJsonValid, jsonRestore } from '@/extension/messaging';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import { NetworksController } from '@/controllers';
 import store from '@/store';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import { IS_EXTENSION } from '@/consts/global';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
@@ -96,8 +96,20 @@ export default class BaseApi {
     );
   }
 
+  public static isSubstrateEthereumNetwork(network: string): boolean {
+    if (!network) return false;
+
+    return SUBSTRATE_ETHEREUM_NETWORKS.includes(network.toLowerCase());
+  }
+
   public static isEthereumNetwork(network: string): boolean {
+    if (!network) return false;
+
     return ETHEREUM_NETWORKS.includes(network.toLowerCase());
+  }
+
+  public static isEthereumNativeNetwork(network: string): boolean {
+    return NATIVE_ETHEREUM_NETWORKS.includes(network.toLowerCase());
   }
 
   public static parseJson(jsonString: string): KeyringPair$Json {

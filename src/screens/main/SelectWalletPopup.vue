@@ -5,7 +5,7 @@
     sizeWidth="small"
     :showHeader="false"
     :showBorder="true"
-    :handlerClose="close"
+    @handlerClose="close"
     :top="55"
     :maxHeight="391"
     @click.native="walletPopupClick"
@@ -34,15 +34,12 @@ import { Getter, Mutation } from 'vuex-class';
 import WalletInfo from './WalletInfo.vue';
 import type { SelectedWallet } from '@/store';
 import type { Fn, CustomEvent } from '@/interfaces';
-import type {
-  AccountJson,
-  ResponseTotalBalances,
-} from '@/extension/background/extension-base/src/background/types/types';
+import type { AccountJson } from '@extension-base/background/types/types';
 import type { CurrentAccountInfo } from '@/extension/background/extension-base/src/stores/CurrentAccountStore';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { Components } from '@/router/routes';
-import { getTotalBalances, updateCurrentAccountAddress } from '@/extension/messaging';
+import { updateCurrentAccount } from '@/extension/messaging';
 
 @Component({
   components: { WalletInfo },
@@ -51,12 +48,6 @@ export default class SelectWalletPopup extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: Fn<CurrentAccountInfo>;
-
-  totalBalances: ResponseTotalBalances[] = [];
-
-  async mounted() {
-    this.totalBalances = await getTotalBalances();
-  }
 
   addWallet() {
     this.$router.push({ name: Components.Welcome });
@@ -75,7 +66,7 @@ export default class SelectWalletPopup extends Vue {
   }
 
   updateSelectedWallet(address: string) {
-    updateCurrentAccountAddress(address);
+    updateCurrentAccount(address);
 
     this.close();
   }

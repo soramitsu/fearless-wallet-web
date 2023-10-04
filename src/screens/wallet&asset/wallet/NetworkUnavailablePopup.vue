@@ -7,8 +7,8 @@
     :showWarningIcon="showWarningIcon"
     :showAcceptButton="haveMoreOneNodes"
     :showRejectButton="true"
-    :handlerAccept="openSwitchNode"
-    :handlerClose="close"
+    @handlerAccept="openSwitchNode"
+    @handlerClose="close"
     :zIndex="500"
   >
     <Checkbox v-model="isDontShowAgain" size="big" :label="$t('common.dontShowAgain')" class="dont-show-again" />
@@ -18,16 +18,15 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
+import type { NetworkJson } from '@extension-base/types';
 import type { Fn } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component
 export default class NetworkUnavailablePopup extends Vue {
   isDontShowAgain = false;
 
-  @Prop(Function) closePopup!: VoidFunction;
   @Prop(Array) networks!: NetworkJson[];
   @Prop(String) network!: string;
   @Mutation(AccountsMutationTypes.HIDE_NETWORK_WARNING) hideNetworkWarning!: Fn<string>;
@@ -58,7 +57,7 @@ export default class NetworkUnavailablePopup extends Vue {
   close() {
     if (this.isDontShowAgain) this.hideNetworkWarning(this.network);
 
-    this.closePopup();
+    this.$emit('closePopup');
   }
 }
 </script>

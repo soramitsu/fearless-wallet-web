@@ -1,5 +1,5 @@
 <template>
-  <div class="wallet-balance">
+  <div :class="containerClasses">
     <div class="fiat-balance">{{ fiatSymbol }}{{ $n(balance, 'price') }}</div>
 
     <div :class="percentClasses">{{ percentString }}</div>
@@ -16,7 +16,19 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 export default class WalletBalance extends Vue {
   @Prop(Object) changeWalletBalance!: ChangeWalletBalance;
   @Prop(Number) balance!: number;
+  @Prop({ default: true }) staticWidth!: boolean;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+
+  get containerClasses() {
+    const array = [
+      'wallet-balance',
+      {
+        'wallet-balance--static': this.staticWidth,
+      },
+    ];
+
+    return array;
+  }
 
   get percentString() {
     const { percent, amount } = this.changeWalletBalance;
@@ -43,9 +55,17 @@ export default class WalletBalance extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.wallet-balance {
+.wallet-balance--static {
   max-width: 170px;
+
+  .percent {
+    max-width: 175px;
+  }
+}
+
+.wallet-balance {
   text-align: left;
+  max-width: 300px;
 
   &:hover {
     cursor: pointer;
@@ -54,7 +74,6 @@ export default class WalletBalance extends Vue {
   .percent {
     font-size: 12px;
     line-height: 18px;
-    max-width: 175px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

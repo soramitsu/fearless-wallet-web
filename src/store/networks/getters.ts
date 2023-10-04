@@ -1,8 +1,8 @@
+import type { NetworkJson } from '@extension-base/types';
 import type { AssetsPrice, FiatJson, GetHistory } from '@/interfaces';
 import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetActiveNodesByNetwork } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import BaseApi from '@/util/BaseApi';
 
 export enum GettersTypes {
@@ -16,12 +16,17 @@ export enum GettersTypes {
   getFiats = 'getFiats',
   getHistory = 'getHistory',
   getActiveNodesByNetwork = 'getActiveNodesByNetwork',
-  getAllNetworksIsReadyToUse = 'getAllNetworksIsReadyToUse',
   getAssetsPriceInterval = 'getAssetsPriceInterval',
+  getFavoriteNetworksNames = 'getFavoriteNetworksNames',
 }
 
 export type Getters = {
   [GettersTypes.networks](state: State, getters?: GetterTree<State, State> & Getters, rootState?: any): NetworkJson[];
+  [GettersTypes.getFavoriteNetworksNames](
+    state: State,
+    getters?: GetterTree<State, State> & Getters,
+    rootState?: any
+  ): { name: string; favorite: string[] }[];
   [GettersTypes.allNetworks](
     state: State,
     getters?: GetterTree<State, State> & Getters,
@@ -30,12 +35,10 @@ export type Getters = {
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
-
   [GettersTypes.getActiveNodesByNetwork](
     state: State,
     getters?: GetterTree<State, State> & Getters
   ): GetActiveNodesByNetwork;
-  [GettersTypes.getAllNetworksIsReadyToUse](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getNetworkGenesisHash](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -55,6 +58,9 @@ const getters: GetterTree<State, State> & Getters = {
 
     return haveEthereumAccount ? state.networks : state.networks.filter(({ name }) => !BaseApi.isEthereumNetwork(name));
   },
+  [GettersTypes.getFavoriteNetworksNames]({ networks }): { name: string; favorite: string[] }[] {
+    return networks.filter((el) => el.favorite.length).map(({ name, favorite }) => ({ name, favorite }));
+  },
 
   [GettersTypes.allNetworks]({ networks }): NetworkJson[] {
     return networks;
@@ -63,9 +69,9 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getNetwork]:
     ({ networks }) =>
     (networkNameOrChainId: string) => {
-      const value = networkNameOrChainId?.toLowerCase();
+      const value = networkNameOrChainId.toLowerCase();
 
-      return networks.find(({ name, chainId }) => name.toLowerCase() === value || chainId.toLowerCase() === value);
+      return networks.find(({ name, chainId }) => name.toLowerCase() === value || chainId.toLowerCase() === value)!;
     },
 
   [GettersTypes.getNetworkGenesisHash]:
@@ -110,10 +116,6 @@ const getters: GetterTree<State, State> & Getters = {
 
       return !node ? nodes[0] : node;
     },
-
-  [GettersTypes.getAllNetworksIsReadyToUse]({ networks }): boolean {
-    return !networks.some(({ apiStatus }) => apiStatus === 'pending' || apiStatus === 'connected');
-  },
 };
 
 export default getters;

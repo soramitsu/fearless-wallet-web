@@ -262,10 +262,12 @@ export default class AccountsLayout extends Vue {
     const customNodes = network.customNodes.filter(
       (node) => node.name !== this.selectedNodeName && node.url !== this.selectedNodeUrl
     );
+
     upsertNetworkMap({
       ...network,
       customNodes,
     });
+
     this.childUpdatedNode(true);
     this.closeNotificationPopup();
   }

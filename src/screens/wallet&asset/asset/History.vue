@@ -116,12 +116,17 @@ export default class History extends Vue {
     );
   }
 
+  @Watch('isMainNetwork')
+  watchNetwork() {
+    this.fetchHistory();
+  }
+
   mounted() {
     this.fetchHistory();
   }
 
-  get isEvmNetworks() {
-    return BaseApi.isEthereumNetwork(this.selectedNetwork);
+  get isSubstrateEthereumNetwork() {
+    return BaseApi.isSubstrateEthereumNetwork(this.selectedNetwork);
   }
 
   async fetchHistory() {
@@ -129,7 +134,7 @@ export default class History extends Vue {
 
     if (this.history.length !== 0) return;
 
-    if (!this.isMainNetwork && !this.isEvmNetworks) return;
+    if (!this.isMainNetwork && this.isSubstrateEthereumNetwork) return;
 
     this.isLoadingHistory = true;
 

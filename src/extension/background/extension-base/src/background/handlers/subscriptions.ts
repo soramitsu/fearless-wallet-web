@@ -1,3 +1,4 @@
+import { FWCron } from '@extension-base/background/cron';
 import { logger as createLogger } from '@polkadot/util';
 import { Subscription } from 'rxjs';
 import { subscribeBalance } from '@extension-base/api/substrate/balance';
@@ -9,116 +10,159 @@ import type {
   SubscriptionMessageTypes,
   Subscriptions,
 } from '@extension-base/background/types/types';
+import { NetworkName } from '@/interfaces';
+import { SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 
-type SubscriptionName = 'balance' | 'xorTotalBalance';
-type UpdateSub =
-  | {
-      name: 'balance';
-      func: () => void;
-      address: string;
-    }
-  | {
-      name: 'xorTotalBalance';
-      func: () => void;
-    };
-const subscriptions: Subscriptions = {};
-type SubscriptionMap = {
-  balance: Record<string, () => void>;
-  xorTotalBalance: (() => void) | undefined;
+type SubscriptionName = 'xorTotalBalance' | NetworkName;
+
+type UpdateSub = {
+  name: SubscriptionName;
+  func: () => void;
 };
+
+const subscriptions: Subscriptions = {};
+
+type SubscriptionMap = {
+  [key in string]: (() => void) | undefined;
+};
+
 export class FWSubscription {
   private serviceSubscription: Subscription | undefined;
-  private state: State;
-  private subscriptionMap: SubscriptionMap = {
-    balance: {},
-    xorTotalBalance: undefined,
+  private serviceInfo: {
+    networks: { substrate: NetworkName[]; evm: NetworkName[] };
+    address: string;
+    ethereumAddress: string;
+  } = {
+    address: '',
+    ethereumAddress: '',
+    networks: { evm: [], substrate: [] },
   };
-
+  private subscriptionMap: SubscriptionMap = {};
   private logger: Logger;
 
-  constructor(state: State) {
+  constructor(private state: State, private cron: FWCron) {
     this.logger = createLogger('Subscription');
-    this.state = state;
     this.init();
   }
 
-  getSubscriptionMap() {
-    return this.subscriptionMap;
-  }
-
-  getSubscription(name: SubscriptionName, address?: string): (() => void) | undefined {
-    if (name === 'balance' && address) return this.subscriptionMap[name][address];
-
-    if (name === 'xorTotalBalance') return this.subscriptionMap[name];
-
-    return undefined;
+  getSubscription(name: SubscriptionName): (() => void) | undefined {
+    return this.subscriptionMap[name];
   }
 
   updateSubscription(payload: UpdateSub) {
-    if (payload.name === 'balance') {
-      const { name, address, func } = payload;
-      const oldSub = this.subscriptionMap[name][address];
-
-      if (oldSub) oldSub();
-
-      this.subscriptionMap[name][address] = func;
-
-      return;
-    }
-
     const { name, func } = payload;
-    const oldSub = this.subscriptionMap[name];
 
-    if (oldSub) oldSub();
+    const oldSub = this.getSubscription(name);
 
-    if (func) this.subscriptionMap[name] = func;
+    oldSub?.();
+
+    this.subscriptionMap[name] = func;
   }
 
-  stopAllSubscription() {
-    if (this.subscriptionMap.balance) {
-      Object.keys(this.subscriptionMap.balance).forEach((address) => {
-        const unsub = this.subscriptionMap.balance[address];
-        unsub();
+  stopAllSubscription(names?: string[]) {
+    if (names?.length === 0) return;
+
+    Object.entries(this.subscriptionMap)
+      .filter(([name]) => names?.includes(name) ?? true)
+      .forEach(([name, unsub]) => {
+        unsub?.();
+
+        this.subscriptionMap[name] = undefined;
       });
 
-      if (this.subscriptionMap.xorTotalBalance) {
-        this.subscriptionMap.xorTotalBalance();
-        this.subscriptionMap.xorTotalBalance = undefined;
-      }
-
-      this.subscriptionMap.balance = {};
-    }
+    if (names === undefined) this.subscriptionMap = {};
   }
 
   async start() {
     this.logger.log('Starting subscription');
+
     const currentAccount = await this.state.currentAccount;
-    const getAccountsExeptCurrent = this.state
+    const accountsExceptCurrent = this.state
       .getSubstrateAccounts()
       .filter((el) => el.address !== currentAccount?.address);
 
-    getAccountsExeptCurrent.forEach((account) => {
+    accountsExceptCurrent.forEach((account) => {
       const ethAddress = (account.meta.ethereumAddress as string) ?? '';
 
-      this.subscribeBalances(account.address, ethAddress, true);
+      this.subscribeBalances(account.address, ethAddress, null, null, true);
     });
 
-    !this.serviceSubscription &&
-      (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
+    if (!this.serviceSubscription)
+      this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
           console.info('serviceInfo', serviceInfo);
+
+          this.cron.updateCron(serviceInfo);
 
           if (!serviceInfo.currentAccountInfo) return;
 
           const { address, ethereumAddress } = serviceInfo.currentAccountInfo;
 
-          this.subscribeBalances(address, ethereumAddress);
+          const allNewSubstrateNetworks = Object.keys(serviceInfo?.apiMap.substrate ?? {});
+          const newSubstrateNetworksWithoutSubscribe = allNewSubstrateNetworks.filter(
+            (network) => !this.serviceInfo?.networks.substrate.includes(network)
+          );
+
+          const allNewEvmNetworks = Object.keys(serviceInfo?.apiMap.evm ?? {});
+          const newEvmNetworksWithoutSubscribe = allNewEvmNetworks.filter(
+            (network) => !this.serviceInfo?.networks.evm.includes(network)
+          );
+
+          const addressHasChanged = this.serviceInfo.address !== address;
+          const thereIsEthereumAddress = this.serviceInfo.ethereumAddress === '' && ethereumAddress !== '';
+
+          // если изменился адрес или появились новые сети на которые мы сейчас не подписаны, то подписываемся
+          if (
+            addressHasChanged ||
+            thereIsEthereumAddress ||
+            newSubstrateNetworksWithoutSubscribe.length !== 0 ||
+            newEvmNetworksWithoutSubscribe.length !== 0
+          ) {
+            if (addressHasChanged) {
+              // если адрес изменился, то подписываемся на все сети
+              this.subscribeBalances(address, ethereumAddress, null, null);
+            } else if (thereIsEthereumAddress) {
+              this.subscribeBalances(address, ethereumAddress, SUBSTRATE_ETHEREUM_NETWORKS, null);
+            } else {
+              // если адрес не менялся, подписываемся только на новые сети(которые только что включили)
+              if (newSubstrateNetworksWithoutSubscribe.length) {
+                this.subscribeBalances(
+                  address,
+                  ethereumAddress,
+                  newSubstrateNetworksWithoutSubscribe,
+                  newEvmNetworksWithoutSubscribe
+                );
+              }
+
+              if (newEvmNetworksWithoutSubscribe.length) this.state.fetchEvmBalance(newEvmNetworksWithoutSubscribe);
+            }
+
+            this.serviceInfo.address = address;
+            this.serviceInfo.ethereumAddress = address;
+          }
+
+          // если сетей нет в списке сетей на балансы которых нужно быть подписанными
+          // то удаляем ее подписку
+          // P.S этого можно не делать, тк api сети уже disconnect, но все же удалим подписку
+          const networkUnsub = this.serviceInfo?.networks.substrate.filter(
+            (name) => !allNewSubstrateNetworks.includes(name)
+          );
+
+          this.stopAllSubscription(networkUnsub);
+
+          // обновляем список сетей на балансы которых мы подписаны
+          this.serviceInfo.networks.substrate = allNewSubstrateNetworks;
+          this.serviceInfo.networks.evm = allNewEvmNetworks;
+
+          // кейс, когда было [sora, polkadot, kusama]
+          // стало [sora], обрабатывать и отписываться от подписок на балансы не нужно,
+          // тк мы полностью отклюачемся от api, следовательно подписки умирают сами
         },
-      }));
+      });
   }
 
   stop() {
-    this.logger.log('Stopping subscription');
+    this.logger.log('Stop subscription');
 
     if (this.serviceSubscription) {
       this.serviceSubscription.unsubscribe();
@@ -147,33 +191,40 @@ export class FWSubscription {
     });
   }
 
-  subscribeBalances(address: string, ethereumAddress: string, onlyRunOnFirstTime?: boolean) {
-    this.logger.log('Start balance sub for:', address);
+  async subscribeBalances(
+    address: string,
+    ethereumAddress: string,
+    newNetworks: NetworkName[] | null,
+    newEvmNetworks: NetworkName[] | null,
+    isFirstRun?: boolean
+  ) {
+    console.info(`Start balance sub for: ${address}${isFirstRun ? `; isFirstRun: ${true}` : ''}`);
 
-    this.state
-      .resetBalanceMap()
-      .then(() => {
-        const unsub = this.initBalanceSubscription(address, ethereumAddress, onlyRunOnFirstTime);
+    if (isFirstRun) this.state.generateDefaultBalance(address);
 
-        if (unsub) this.updateSubscription({ name: 'balance', func: unsub, address });
-      })
-      .catch((err) => console.warn('Unable to subscribe', err));
-  }
+    this.state.fetchEvmBalance(newEvmNetworks);
 
-  initBalanceSubscription(address: string, ethereumAddress: string, onlyRunOnFirstTime?: boolean) {
-    this.state.generateDefaultBalance(address);
+    const unsubList = subscribeBalance(address, ethereumAddress, newNetworks, this.state);
 
-    const unsub = subscribeBalance(address, ethereumAddress);
+    if (isFirstRun) {
+      // ждем 20 секунд, потом отписываемся, за это время ответят большинство сетей
+      // можно было бы дожидаться и await`ить все подписки разом, но некоторые сети очень долго отвечают
+      setTimeout(() => {
+        unsubList.forEach(async (item) => {
+          const value = await item;
 
-    if (onlyRunOnFirstTime) {
-      unsub && unsub();
+          value.unsub();
+        });
+      }, 20000);
+    } else
+      unsubList.forEach(async (item) => {
+        const value = await item;
 
-      return () => {};
-    }
-
-    return () => {
-      unsub();
-    };
+        this.updateSubscription({
+          name: value.networkName,
+          func: value.unsub,
+        });
+      });
   }
 }
 

@@ -21,15 +21,25 @@ import { getSummaryTransferableBalance, getTransferableBalanceInNetwork, isNetwo
 function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }: AssetsPrice, network: NetworkName) {
   const relayChains = [];
 
-  const currenciesWithAssetsAndWithFiatBalance = currencies.filter(
+  const currenciesThatReady = currencies.filter(({ balances }) =>
+    balances.some(({ state }) => state === APIItemState.READY)
+  );
+
+  const currenciesPending = currencies.filter(({ balances }) =>
+    balances.every(({ state }) => state === APIItemState.PENDING)
+  );
+
+  const currenciesWithAssetsAndWithFiatBalance = currenciesThatReady.filter(
     ({ balances, priceId }) => balances.some(({ total }) => total !== '0') && tokenPriceMap[priceId ?? ''] !== 0
   );
 
-  const currenciesWithAssetsAndWithoutFiatBalance = currencies.filter(
+  const currenciesWithAssetsAndWithoutFiatBalance = currenciesThatReady.filter(
     ({ balances, priceId }) => balances.some(({ total }) => total !== '0') && tokenPriceMap[priceId ?? ''] === 0
   );
 
-  const currenciesWithoutAssets = currencies.filter(({ balances }) => balances.every(({ total }) => total === '0'));
+  const currenciesWithoutAssets = currenciesThatReady.filter(({ balances }) =>
+    balances.every(({ total }) => total === '0')
+  );
 
   const dotIndex = currenciesWithoutAssets.findIndex(({ symbol }) => symbol === 'dot');
 
@@ -71,6 +81,7 @@ function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }:
     ...currenciesWithAssetsAndWithoutFiatBalance,
     ...relayChains,
     ...currenciesWithoutAssets,
+    ...currenciesPending,
   ];
 }
 
@@ -126,7 +137,10 @@ function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: stri
   return balance.name.toLowerCase() === selectedNetwork.toLowerCase();
 }
 
-export function getSummaryTransferableBalanceFilteredByActiveNetworks(token: TokenBalance, network = ALL_NETWORKS) {
+export function getSummaryTransferableBalanceFilteredByActiveNetworks(
+  token: TokenBalance,
+  network: string = ALL_NETWORKS
+) {
   if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
 
   return (

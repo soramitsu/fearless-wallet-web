@@ -9,15 +9,13 @@ import {
   makeERC20Transfer,
   makeEVMTransfer,
 } from '@extension-base/api/evm/transfer';
-import { checkMainToken } from '@extension-base/api/helpers';
+import { checkMainToken, getAssetInfo } from '@extension-base/api/helpers';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
-import { getAssetInfo } from '@extension-base/api/substrate/registry';
 import { createSwap } from '@extension-base/api/substrate/swaps';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import State, { registry } from '@extension-base/background/handlers/State';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
-import { state } from '@extension-base/background/handlers';
 import {
   createCrossChainExtrinsic,
   makeCrossChain,
@@ -25,13 +23,17 @@ import {
 } from '@extension-base/api/substrate/crossChain';
 import { RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
 import { ethers } from 'ethers';
-import { balanceItemByNetwork, getSubstrateAddress, isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import {
+  balanceItemByNetwork,
+  getEthereumAddress,
+  getSubstrateAddress,
+  isRequireEvmAPI,
+} from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { storage } from '@extension-base/stores/Storage';
 import { MetadataDef } from '@polkadot/extension-inject/types';
 import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import { fetchEvmAssetBalance } from '../../api/evm/balance';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -104,7 +106,7 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
   return (value as SignerPayloadJSON).genesisHash !== undefined;
 }
 
-async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
+async function transformAccounts(accounts: SubjectInfo, state: State): Promise<AccountJson[]> {
   const currentAccount = await state.currentAccount;
 
   const transformedAccounts = Object.values(accounts)
@@ -137,15 +139,13 @@ export default class Extension extends FWExtensionBase {
   }
 
   public updateNetworkForNewWallet(address: string) {
-    this.state.setActiveNetworks(this.state.selectedNetworks[address] ?? ALL_NETWORKS);
+    this.setActiveNetworks(this.state.selectedNetworks[address] ?? ALL_NETWORKS);
   }
 
   accountsCreate({ password, suri, type, meta }: RequestAccountCreateSuri): string {
     const address = this.state.keyringService.addAccount(suri, password, { ...meta, isMobile: false }, type);
 
-    if (!isEthereumAddress(address)) {
-      this.updateCurrentAccount(address);
-    }
+    if (!isEthereumAddress(address)) this.updateCurrentAccount(address);
 
     return address;
   }
@@ -188,23 +188,17 @@ export default class Extension extends FWExtensionBase {
     const accounts = this.state.keyringService.getAccounts();
     const addresses = this.state.keyringService.getAddresses();
 
-    const currentAcc = await this.state.currentAccount;
+    const currentAccount = await this.state.currentAccount;
 
-    const shouldUpdate =
-      !accounts.some(({ address }) => address === currentAcc?.address) ||
-      !addresses.some(({ address }) => address === currentAcc?.address);
+    const isWasCurrentAccount = address === currentAccount?.address;
 
-    const isNoAccounts = !accounts.length && !addresses.length;
-
-    if (shouldUpdate || isNoAccounts) {
+    if (isWasCurrentAccount) {
       let account;
 
       if (accounts.length) account = accounts.find(({ address }) => !isEthereumAddress(address))!;
-      else if (addresses.length) {
-        account = addresses[0];
-      }
+      else if (addresses.length) account = addresses[0];
 
-      this.updateCurrentAccount(account ? account.address : '');
+      this.updateCurrentAccount(account?.address ?? '');
     }
 
     this.cleanupDeletedAccount(address);
@@ -219,13 +213,7 @@ export default class Extension extends FWExtensionBase {
       storage.set({ selectedNetworks: this.state.selectedNetworks });
     }
 
-    if (this.state.balanceMap[address]) {
-      delete this.state.balanceMap[address];
-
-      const subs = this.state.subscription.getSubscription('balance', address);
-
-      if (subs) subs();
-    }
+    if (this.state.balanceMap[address]) delete this.state.balanceMap[address];
   }
 
   accountsValidatePassword({ address, password }: RequestAccountValidate): boolean {
@@ -241,10 +229,10 @@ export default class Extension extends FWExtensionBase {
   async addressesSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(addresses.subscribe)'>(id, port);
 
-    const transformedAddresses = transformAccounts(addressesObservable.subject.value);
+    const transformedAddresses = transformAccounts(addressesObservable.subject.value, this.state);
 
     const subscription = addressesObservable.subject.subscribe((addresses: SubjectInfo): void => {
-      transformAccounts(addresses).then(cb);
+      transformAccounts(addresses, this.state).then(cb);
     });
 
     port.onDisconnect.addListener((): void => {
@@ -258,10 +246,10 @@ export default class Extension extends FWExtensionBase {
   async accountsSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
 
-    const transformedAccounts = transformAccounts(accountsObservable.subject.value);
+    const transformedAccounts = transformAccounts(accountsObservable.subject.value, this.state);
 
     const subscription = accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
-      transformAccounts(accounts).then(cb);
+      transformAccounts(accounts, this.state).then(cb);
     });
 
     port.onDisconnect.addListener((): void => {
@@ -425,8 +413,8 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  private async enableNetworkType(type: string): Promise<void> {
-    this.state.enableNetworkType(type);
+  private async setActiveNetworks(type: string): Promise<void> {
+    this.state.setActiveNetworks(type);
   }
 
   private async toggleNetworkFavorite(networkKey: string): Promise<void> {
@@ -435,7 +423,7 @@ export default class Extension extends FWExtensionBase {
 
   private async upsertNetworkMap(data: NetworkJson): Promise<boolean> {
     try {
-      return await this.state.upsertNetworkMap(data);
+      return this.state.upsertNetworkMap(data);
     } catch (e) {
       console.error(e);
 
@@ -461,9 +449,7 @@ export default class Extension extends FWExtensionBase {
       ethereumAddress: (ethereumAddress as string) ?? '',
     };
 
-    this.state.setCurrentAccount(accountInfo, () => {
-      callback && callback(accountInfo);
-    });
+    this.state.setCurrentAccount(accountInfo, () => callback?.(accountInfo));
   }
 
   private triggerWalletsSubscription(): boolean {
@@ -483,6 +469,7 @@ export default class Extension extends FWExtensionBase {
 
     this._saveCurrentAccountAddress(address, () => {
       this.triggerWalletsSubscription();
+
       if (isNew) this.updateNetworkForNewWallet(address);
     });
 
@@ -636,10 +623,6 @@ export default class Extension extends FWExtensionBase {
     this.state.updateCurrentTabsUrl(tabs);
   }
 
-  createAddress({ address, meta }: RequestAddressCreate) {
-    this.state.keyringService.saveAddress(address, meta, 'address');
-  }
-
   initAuth({ type, wallet }: GoogleAuthTypes): void {
     googleManage.authExtension(type, wallet);
   }
@@ -689,19 +672,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async fetchEvmBalance() {
-    const currentAccount = await this.state.currentAccount;
-
-    if (!currentAccount || currentAccount?.ethereumAddress === '') return;
-
-    if (Date.now() - this.state.getTimespan('evmBalances', currentAccount.ethereumAddress) < 1000 * 30) return;
-
-    const networks = Object.values(this.state.networkMap).filter(({ name, active }) => isRequireEvmAPI(name) && active);
-
-    for (const network of networks) {
-      network.assets.forEach(({ id }) => fetchEvmAssetBalance(currentAccount.ethereumAddress, network.name, id));
-    }
-
-    this.state.saveTimespan('evmBalances', currentAccount.ethereumAddress, Date.now());
+    this.state.fetchEvmBalance(null);
   }
 
   private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {
@@ -772,7 +743,8 @@ export default class Extension extends FWExtensionBase {
   private async validateSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
     const { AToB, BToA, amountA, amountB, minMaxValue, providerFee, route, swapOptions } = await createSwap(
       options,
-      apiSora
+      apiSora,
+      this.state
     );
 
     return {
@@ -788,7 +760,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async makeSwap(options: RequestSwap): Promise<ResponseMakeSwap> {
-    const { swapOptions } = await createSwap(options, apiSora);
+    const { swapOptions } = await createSwap(options, apiSora, this.state);
     const { password, isSavePass } = options;
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = swapOptions!;
     const errors: Array<BasicTxError> = [];
@@ -841,14 +813,13 @@ export default class Extension extends FWExtensionBase {
         estimateFee: '0',
       };
 
-    const tokenInfo = getAssetInfo(assetId);
+    const tokenInfo = getAssetInfo(assetId, this.state);
+    const isMainToken = checkMainToken(networkKey, tokenInfo.id, this.state);
+    const substrateAddress = getSubstrateAddress(from, this.state);
 
-    const isMainToken = checkMainToken(networkKey, tokenInfo.id);
-
-    const address = getSubstrateAddress(from);
     let fee = 0;
 
-    const tokenBalance = this.state.balanceMap[address].find(
+    const tokenBalance = this.state.balanceMap[substrateAddress].find(
       (balance) =>
         balance.balances.some((el) => el.id === assetId) &&
         balance.relayChain?.toLowerCase() === relayChain?.toLowerCase()
@@ -863,18 +834,25 @@ export default class Extension extends FWExtensionBase {
 
       // Estimate with EVM API
       if (!isMainToken && tokenInfo.id) {
-        const { fee: feeValue } = await getERC20TransactionObject(tokenInfo.id, networkKey, from, to, txVal);
+        const { fee: feeValue } = await getERC20TransactionObject(
+          tokenInfo.id,
+          networkKey,
+          from,
+          to,
+          txVal,
+          this.state
+        );
 
         fee = +ethers.formatUnits(feeValue, 18);
       } else {
-        const { fee: feeValue } = await getEVMTransactionObject(networkKey, to, txVal);
+        const { fee: feeValue } = await getEVMTransactionObject(networkKey, to, txVal, this.state);
 
         fee = +ethers.formatUnits(feeValue, 18);
       }
     } else {
       // Estimate with DotSama API
 
-      fee = await estimateFee(networkKey, to, amount, tokenBalance);
+      fee = await estimateFee(networkKey, to, amount, tokenBalance, this.state);
     }
 
     return {
@@ -889,10 +867,9 @@ export default class Extension extends FWExtensionBase {
     { from, networkKey: givenNetwork, password, to, assetId, amount, isSavePass, isMobile }: RequestTransfer
   ): Promise<BasicTxResponse | undefined> {
     const networkKey = this.state.getNetworkByKey(givenNetwork)?.name ?? '';
-    const tokenInfo = getAssetInfo(assetId);
+    const tokenInfo = getAssetInfo(assetId, this.state);
 
     const pair = this.state.keyringService.getPair(from);
-    const isEthereum = isEthereumAddress(from);
 
     if (pair?.isLocked) {
       const isUnlock = this.state.keyringService.unlockPair(pair, password);
@@ -906,12 +883,10 @@ export default class Extension extends FWExtensionBase {
 
     const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
 
-    const ethereumAddress = pair ? (pair.meta.ethereumAddress as string | undefined) : '';
-    const substrateAddress = getSubstrateAddress(from);
+    const substrateAddress = getSubstrateAddress(from, this.state);
+    const ethereumAddress = getEthereumAddress(from, this.state);
 
-    const savePass = () => {
-      this.savePass(substrateAddress, isEthereum ? from : ethereumAddress, !!isSavePass, !!isMobile);
-    };
+    const savePass = () => this.savePass(substrateAddress, ethereumAddress, !!isSavePass, !!isMobile);
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
 
@@ -920,26 +895,38 @@ export default class Extension extends FWExtensionBase {
     if (isEthereumAddress(from) && isEthereumAddress(to) && isRequireEvmAPI(networkKey)) {
       // Make transfer with EVM API
       const { privateKey } = this.accountExportPrivateKey({ address: from, password });
-      const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
+      const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id, this.state) : false;
 
       if (tokenInfo && !isMainToken && tokenInfo.id) {
-        transferProm = makeERC20Transfer(tokenInfo.id, networkKey, from, to, privateKey, amount || '0', callback);
+        transferProm = makeERC20Transfer(
+          tokenInfo.id,
+          networkKey,
+          from,
+          to,
+          privateKey,
+          amount || '0',
+          callback,
+          this.state
+        );
       } else {
-        transferProm = makeEVMTransfer(assetId, networkKey, to, privateKey, amount || '0', callback);
+        transferProm = makeEVMTransfer(assetId, networkKey, to, privateKey, amount || '0', callback, this.state);
       }
     } else {
       // Make transfer with Dotsama API
-      transferProm = makeTransfer({
-        networkKey,
-        assetId,
-        amount: amount ?? '0',
-        from,
-        to,
-        password,
-        isSavePass,
-        callback,
-        isMobile: !!isMobile,
-      });
+      transferProm = makeTransfer(
+        {
+          networkKey,
+          assetId,
+          amount: amount ?? '0',
+          from,
+          to,
+          password,
+          isSavePass,
+          callback,
+          isMobile: !!isMobile,
+        },
+        this.state
+      );
     }
 
     await transferProm
@@ -995,18 +982,32 @@ export default class Extension extends FWExtensionBase {
     if (destinationNet === '') return { estimateFee: '0', destEstimateFee: '0' };
 
     const originNet = this.state.getNetworkByKey(originNetKey)?.name ?? '';
-    const address = getSubstrateAddress(from);
-    const tokenBalance = this.state.balanceMap[address].find(
+    const substrateAddress = getSubstrateAddress(from, this.state);
+    const tokenBalance = this.state.balanceMap[substrateAddress].find(
       (balance) =>
         balance.balances.some((el) => el.id === assetId) &&
         balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
-    const extrinsic = await createCrossChainExtrinsic(assetId, originNet, destinationNet, to, amount!, tokenBalance);
+    const extrinsic = await createCrossChainExtrinsic(
+      assetId,
+      originNet,
+      destinationNet,
+      to,
+      amount!,
+      tokenBalance,
+      this.state
+    );
 
     if (!IS_PRODUCTION) console.info('CrossChain', extrinsic);
 
-    const [fee, crossChainFee] = await estimateCrossChainFee(originNet, destinationNet, tokenBalance, extrinsic);
+    const [fee, crossChainFee] = await estimateCrossChainFee(
+      originNet,
+      destinationNet,
+      tokenBalance,
+      this.state,
+      extrinsic
+    );
 
     return {
       estimateFee: fee.toString(),
@@ -1045,25 +1046,27 @@ export default class Extension extends FWExtensionBase {
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
 
-    const address = getSubstrateAddress(from);
-    const substratePair = this.state.keyringService.getPair(address)!;
-    const ethereumAddress = substratePair.meta.ethereumAddress as string;
+    const address = getSubstrateAddress(from, this.state);
+    const ethereumAddress = getEthereumAddress(from, this.state);
 
     const savePass = () => this.savePass(address, ethereumAddress, !!isSavePass, !!isMobile);
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
 
-    const transferProm: Promise<void> | undefined = makeCrossChain({
-      assetId,
-      originNet,
-      destinationNet,
-      amount: amount ?? '0',
-      from,
-      to,
-      password,
-      isSavePass,
-      callback,
-    });
+    const transferProm: Promise<void> | undefined = makeCrossChain(
+      {
+        assetId,
+        originNet,
+        destinationNet,
+        amount: amount ?? '0',
+        from,
+        to,
+        password,
+        isSavePass,
+        callback,
+      },
+      this.state
+    );
 
     await transferProm
       .then(() =>
@@ -1094,10 +1097,10 @@ export default class Extension extends FWExtensionBase {
     return this.state.networkMap;
   }
 
-  private createMobileWallet(wallet: RequestAddressCreate) {
-    this.createAddress(wallet);
+  private createMobileWallet({ address, meta }: RequestAddressCreate) {
+    this.state.keyringService.saveAddress(address, meta, 'address');
 
-    this.updateCurrentAccount(wallet.address);
+    this.updateCurrentAccount(address);
   }
 
   private subscribeNetworkMap(id: string, port: Port): Record<string, NetworkJson> {
@@ -1200,7 +1203,7 @@ export default class Extension extends FWExtensionBase {
         return this.updateCurrentAccount(request as string, false);
 
       case 'pri(accounts.update.currentNetwork)':
-        return this.enableNetworkType(request as string);
+        return this.setActiveNetworks(request as string);
 
       case 'pri(accounts.update.meta)':
         return this.updatePairMeta(request as RequestUpdateMeta);

@@ -1,6 +1,8 @@
 <template>
   <Scroll>
-    <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText()) }}</div>
+    <Loader v-if="isEmptyBalances" class="asset-loader" />
+
+    <div v-else-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText()) }}</div>
 
     <Draggable v-else v-model="filteredBalances" handle=".handle" :key="selectedWallet.address">
       <CurrencyItem
@@ -44,6 +46,7 @@ export default class Currencies extends Vue {
   timeout: NodeJS.Timeout | null = null;
 
   @Prop(Array) balances!: TokenBalance[];
+  @Prop(Boolean) isEmptyBalances!: boolean;
   @Prop(String) selectedNetwork!: string;
   @Prop(String) filterValue!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
@@ -64,6 +67,7 @@ export default class Currencies extends Vue {
 
   get showAllAssetsHiddenText() {
     if (!this.isOnline) return true;
+
     if (this.showAssetsManagementForm) return false;
 
     const allHidden = this.balances.every(({ assetId }) => this.hiddenAssets.includes(assetId));
@@ -117,5 +121,13 @@ export default class Currencies extends Vue {
   align-items: center;
   justify-content: center;
   margin-top: -16px;
+}
+
+.asset-loader {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 </style>

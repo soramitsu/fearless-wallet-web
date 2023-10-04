@@ -1,4 +1,4 @@
-<template functional>
+<template>
   <div class="loader">
     <div class="circle">
       <Icon icon="fw-logo" :className="['logo']" />

@@ -66,7 +66,7 @@ export default class ImportWallet extends Vue {
   @Prop(String) substrateJson!: string;
   @Prop(String) ethereumJson!: string;
   @Prop(Number) step!: number;
-  @Prop(Boolean) isOnlyEthereumAccountFlow!: boolean;
+  @Prop(Boolean) isOnlyEthereumAccount!: boolean;
   @PropSync('passwordJson', { type: String }) syncedPasswordJson!: string;
   @Ref('valueInput') readonly valueInputComponent!: Input;
 
@@ -82,15 +82,13 @@ export default class ImportWallet extends Vue {
     if (this.typeImport === 'mnemonic') return 'mnemonic';
 
     if (this.typeImport === 'rawSeed') {
-      if (this.isOnlyEthereumAccountFlow) {
-        return 'ethereumRawSeed';
-      }
+      if (this.isOnlyEthereumAccount) return 'ethereumRawSeed';
 
       return this.step === 1 ? 'substrateRawSeed' : 'ethereumRawSeed';
     }
 
     // typeImport === 'json'
-    if (this.isOnlyEthereumAccountFlow) {
+    if (this.isOnlyEthereumAccount) {
       return 'ethereumJson';
     }
 
@@ -111,7 +109,7 @@ export default class ImportWallet extends Vue {
 
   get placeholderTypeImportValue() {
     if (this.typeImport === 'rawSeed') {
-      if (this.isOnlyEthereumAccountFlow) {
+      if (this.isOnlyEthereumAccount) {
         return this.t('rawSeed', { type: 'ETH' });
       }
 

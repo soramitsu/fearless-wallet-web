@@ -715,10 +715,6 @@ export default class State {
     return true;
   }
 
-  public getNetworkByKey(key: string): NetworkJson | undefined {
-    return Object.values(this.networkMap).find((network) => network.name.toLowerCase() === key.toLowerCase());
-  }
-
   private saveCurrentAuthList() {
     return storage.set({ authUrls: this.authUrls });
   }

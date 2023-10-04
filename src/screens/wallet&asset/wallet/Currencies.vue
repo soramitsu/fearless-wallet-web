@@ -67,6 +67,7 @@ export default class Currencies extends Vue {
 
   get showAllAssetsHiddenText() {
     if (!this.isOnline) return true;
+
     if (this.showAssetsManagementForm) return false;
 
     const allHidden = this.balances.every(({ assetId }) => this.hiddenAssets.includes(assetId));

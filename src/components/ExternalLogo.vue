@@ -12,10 +12,6 @@ export default class ExternalLogo extends Vue {
   @Prop(String) alt?: string;
   @Prop({ default: 32 }) width!: number;
 
-  get altName() {
-    return this.alt ?? this.name;
-  }
-
   get style() {
     const styles: Record<string, string> = {};
 

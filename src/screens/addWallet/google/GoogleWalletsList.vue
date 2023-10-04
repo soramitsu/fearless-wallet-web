@@ -89,6 +89,7 @@ export default class GoogleWalletsList extends Vue {
     if (this.items[index].isError) this.setItemValue(index, { isError: false });
 
     if (ethJson) await jsonRestore(ethJson, password);
+
     const address = await jsonRestore(json, password);
 
     await this.setSelectedWallet(address || this.selectedWallet.address);

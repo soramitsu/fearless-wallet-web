@@ -4,7 +4,7 @@
     sizeWidth="big"
     :showBorder="true"
     :showAnimation="false"
-    :handlerClose="handlerClose"
+    @handlerClose="$emit('handlerClose')"
   >
     <div class="add-ethereum-account">
       <BorderButton
@@ -21,19 +21,17 @@
         @click="openAddWalletPage('import')"
       />
 
-      <BorderButton borderRadius="mini" text="accounts.dontNeedAccount" class="button" @click="handlerClose" />
+      <BorderButton borderRadius="mini" text="accounts.dontNeedAccount" class="button" @click="$emit('handlerClose')" />
     </div>
   </Popup>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
 
 @Component
 export default class AddEthereumAccountPopup extends Vue {
-  @Prop(Function) handlerClose!: VoidFunction;
-
   openAddWalletPage(type: string) {
     this.$router.push({
       name: Components.AddWallet,

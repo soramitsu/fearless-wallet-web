@@ -42,7 +42,7 @@
       </div>
     </div>
 
-    <Button
+    <FButton
       text="common.iAmReady"
       width="100%"
       size="big"

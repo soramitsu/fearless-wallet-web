@@ -16,7 +16,7 @@
         :readonly="noEthereumAccount"
       />
 
-      <Button
+      <FButton
         class="want-export"
         size="big"
         fontSize="big"

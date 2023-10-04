@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="common.disclaimer" :fullScreen="true" :closeHandler="closeForm">
+  <AboveForm header="common.disclaimer" :fullScreen="true" @closeHandler="closeForm">
     <div class="disclaimer">
       <Scroll>
         <div>
@@ -15,7 +15,7 @@
 
           <span> {{ $t('common.and') }} </span>
 
-          <span class="highlight" @click="open(urls.POLKASWAP_POLICY)">{{ $t('common.privacyPolicy') }}.</span>
+          <span class="highlight" @click="open(urls.POLKASWAP_POLICY)">{{ $t('disclaimers.privacyPolicy') }}.</span>
         </div>
 
         <div class="row">
@@ -42,7 +42,7 @@
 
           <span> {{ $t('common.and') }} </span>
 
-          <span class="highlight" @click="open(urls.POLKASWAP_POLICY)">{{ $t('common.privacyPolicy') }}!</span>
+          <span class="highlight" @click="open(urls.POLKASWAP_POLICY)">{{ $t('disclaimers.privacyPolicy') }}!</span>
         </div>
 
         <div v-if="showSwitcher" class="important-wrapper">
@@ -55,7 +55,7 @@
         </div>
       </Scroll>
 
-      <Button v-if="showSwitcher" size="big" text="common.continue" :disabled="buttonDisabled" @click="agree" />
+      <FButton v-if="showSwitcher" size="big" text="common.continue" :disabled="buttonDisabled" @click="agree" />
     </div>
   </AboveForm>
 </template>

@@ -1,15 +1,26 @@
 import { IS_PRODUCTION } from '@/consts/global';
 
+const BASE_URL = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils';
+
 const CHAINS = IS_PRODUCTION
-  ? 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/chains/v1/chains.json'
-  : 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/chains/v1/chains_dev.json';
+  ? `${BASE_URL}/master/chains/v4/chains.json`
+  : `${BASE_URL}/develop-free/chains/v3/chains_dev.json`;
 
-const FIATS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
+const FIATS = `${BASE_URL}/master/fiat/fiats.json`;
 
-const XCM_LOCATIONS =
-  'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/xcm/xcm_token_locations.json';
+const FEATURES = IS_PRODUCTION
+  ? `${BASE_URL}/master/appConfigs/web_config.json`
+  : `${BASE_URL}/develop-free/appConfigs/web_config.json`;
 
-const XCM_FEES = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/xcm/xcm_fees.json';
+const XCM_LOCATIONS = IS_PRODUCTION
+  ? `${BASE_URL}/master/xcm/v2/xcm_token_locations.json`
+  : `${BASE_URL}/develop-free/xcm/v2/xcm_token_locations.json`;
+
+const XCM_FEES = IS_PRODUCTION ? `${BASE_URL}/master/xcm/xcm_fees.json` : `${BASE_URL}/develop-free/xcm/xcm_fees.json`;
+
+export const ONBOARDING_URL = IS_PRODUCTION
+  ? `${BASE_URL}/master/appConfigs/onboarding/web.json`
+  : `${BASE_URL}/develop-free/appConfigs/onboarding/web.json`;
 
 const BASE_URLS_PREFIX = {
   MOONPAY: 'https://buy.moonpay.com',
@@ -36,13 +47,15 @@ const YOUTUBE = 'https://www.youtube.com/fearlesswallet';
 const ANNOUNCEMENTS = 'https://t.me/fearless_announcements';
 const FEARLESS_HAPPINESS = 'https://t.me/fearlesshappiness';
 const EMAIL = 'fearless@soramitsu.co.jp';
-const POLKASWAP_FAQ = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/polkaswap-faq';
-const POLKASWAP_MEMORANDUM = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/terms';
-const POLKASWAP_POLICY = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/privacy';
+const POLKASWAP_FAQ = 'https://wiki.sora.org/polkaswap/polkaswap-faq';
+const POLKASWAP_MEMORANDUM = 'https://wiki.sora.org/polkaswap/terms';
+const POLKASWAP_POLICY = 'https://wiki.sora.org/polkaswap/privacy';
 const POLKASWAP = IS_PRODUCTION ? 'https://polkaswap.io' : 'https://exchange.dev.sora2.tachi.soramitsu.co.jp/'; // https://test.polkaswap.io
 
 const URLS = {
+  BASE_URL,
   FIATS,
+  FEATURES,
   CHAINS,
   FEARLESS_TERMS,
   FEARLESS_PRIVACY,
@@ -65,6 +78,7 @@ const URLS = {
   POLKASWAP,
   XCM_LOCATIONS,
   XCM_FEES,
+  ONBOARDING_URL,
 };
 
 function isSafeForExternalOpen(url: string): boolean {

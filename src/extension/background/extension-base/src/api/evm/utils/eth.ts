@@ -1,13 +1,13 @@
 import BigN from 'bignumber.js';
-import { BN, hexStripPrefix, numberToHex, u8aToHex } from '@polkadot/util';
+import { u8aToHex } from '@polkadot/util';
 import BNEther from 'bn.js';
 import RLP from 'rlp';
-import { ethers } from 'ethers';
+import { Contract } from 'ethers';
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import EthProvider from '@extension-base/api/evm/ethProvider';
 import ERC20Contract from '@extension-base/api/evm/helpers/ERC20Contract.json';
-import { NetworkJson } from '@extension-base/types';
-import type { CustomTokenJson } from '@extension-base/api/evm/types/ether';
+import State from '@extension-base/background/handlers/State';
+
+export const REFRESH_TIME = 30000;
 
 export function isEqualContractAddress(address1: string, address2: string) {
   if (isEthereumAddress(address1) && isEthereumAddress(address2)) {
@@ -92,63 +92,16 @@ export const createTransactionFromRLP = (rlp: string): Transaction | null => {
   }
 };
 
-export const signatureToHex = (sig: ethers.Transaction): string => {
-  const v = sig.v;
-  const r = hexStripPrefix(sig.r);
-  const s = hexStripPrefix(sig.s);
-  const hexR = r.length % 2 === 1 ? `0${r}` : r;
-  const hexS = s.length % 2 === 1 ? `0${s}` : s;
-  const hexV = hexStripPrefix(numberToHex(v));
+export const getERC20Contract = async (network: string, contractAddress: string, state: State): Promise<Contract> => {
+  const createContract = () => new Contract(contractAddress, ERC20Contract.abi, state.getEvmApiMap[network]);
 
-  return hexR + hexS + hexV;
-};
+  if (state.getEvmApiMap[network]) return createContract();
 
-export function sumBN(inputArr: BN[]) {
-  let rs = new BN(0);
+  return new Promise((res) => {
+    setTimeout(() => {
+      const contract = createContract();
 
-  inputArr.forEach((input) => {
-    rs = rs.add(input);
+      res(contract);
+    }, 3000);
   });
-
-  return rs;
-}
-
-export function initEvmTokenState(customTokenState: CustomTokenJson, networkMap: Record<string, NetworkJson>) {
-  const evmTokenState = { erc20: customTokenState.erc20 };
-
-  //TODO refactoring for eth default tokens
-  for (const defaultToken of { erc20: [] }.erc20) {
-    const exist = false;
-
-    if (!exist) {
-      evmTokenState.erc20.push(defaultToken);
-    }
-  }
-
-  // Update networkKey in case networkMap change
-  for (const token of evmTokenState.erc20) {
-    if (!(token.chain in networkMap) && token.chain.startsWith('custom_')) {
-      let newKey = '';
-      const genesisHash = token.chain.split('custom_')[1]; // token from custom network has key with prefix custom_
-
-      for (const [key, network] of Object.entries(networkMap)) {
-        if (network.genesisHash.toLowerCase() === genesisHash.toLowerCase()) {
-          newKey = key;
-          break;
-        }
-      }
-
-      token.chain = newKey;
-    }
-  }
-
-  return evmTokenState;
-}
-
-export const getERC20Contract = (
-  networkKey: string,
-  assetAddress: string,
-  web3ApiMap: Record<string, EthProvider>
-): ethers.Contract => {
-  return new ethers.Contract(assetAddress, ERC20Contract.abi, web3ApiMap[networkKey].provider);
 };

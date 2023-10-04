@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="assets.receiveFunds" :fullScreen="true" :closeHandler="closeForm">
+  <AboveForm header="assets.receiveFunds" :fullScreen="true" @closeHandler="$emit('closeForm')">
     <div class="receive-form">
       <div>
         <InputWithIcon
@@ -38,7 +38,14 @@
           @click="saveQR"
         />
 
-        <Button size="big" class="button copy-qr" width="260px" text="assets.copyQR" iconName="share" @click="copyQR" />
+        <FButton
+          size="big"
+          class="button copy-qr"
+          width="260px"
+          text="assets.copyQR"
+          iconName="share"
+          @click="copyQR"
+        />
 
         <Tooltip :text="copyQRTooltip" target=".copy-qr" placement="bottom" trigger="click" />
       </div>
@@ -57,9 +64,9 @@
       :left="-160"
       :height="360"
       :options="assetNetworks"
-      :handlerFilter="handlerFilter"
-      :toggleValue="toggleSelectedNetwork"
-      :handlerClose="toggleSelectNetworkPopupVisible"
+      @handlerFilter="handlerFilter"
+      @toggleValue="toggleSelectedNetwork"
+      @handlerClose="toggleSelectNetworkPopupVisible"
     />
   </AboveForm>
 </template>
@@ -68,14 +75,12 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import InputWithIcon from '@/screens/wallet&asset/InputWithIcon.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { cut } from '@/helpers/common';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import { cut } from '@/helpers/';
 
 @Component({
   components: { InputWithIcon },
@@ -88,11 +93,9 @@ export default class ReceiveForm extends Vue {
   showSelectNetworkPopup = false;
 
   @Prop(String) _selectedNetwork!: string;
-  @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
   get assetNetworks() {
     const currency = this.balances.find(({ assetId }) => assetId === this.selectedAssetId)!;
@@ -104,17 +107,10 @@ export default class ReceiveForm extends Vue {
     );
   }
 
-  get decimals() {
-    return this.networks?.find((network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase())
-      ?.addressPrefix;
-  }
-
   get address() {
     if (this.selectedWallet.address === '') return '';
 
-    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
-
-    return BaseApi.encodeAddress(this.selectedWallet.address, this.decimals);
+    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
   }
 
   get cutAddress() {

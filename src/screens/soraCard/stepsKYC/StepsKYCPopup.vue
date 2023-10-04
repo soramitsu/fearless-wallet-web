@@ -1,5 +1,5 @@
 <template>
-  <Popup headerText="soraCard.completeKYC" sizeWidth="big" :showBorder="true" :handlerClose="handlerClose">
+  <Popup headerText="soraCard.completeKYC" sizeWidth="big" :showBorder="true" @handlerClose="$emit('handlerClose')">
     <div class="steps">
       <div class="row">
         <Icon icon="email" class="icon" />
@@ -46,9 +46,9 @@
         </div>
       </div>
 
-      <Button width="100%" text="common.start" class="proceed-button" @click="proceed" />
+      <FButton width="100%" text="common.start" class="proceed-button" @click="$emit('proceed')" />
 
-      <BorderButton width="100%" text="common.cancel" @click="handlerClose" />
+      <BorderButton width="100%" text="common.cancel" @click="$emit('handlerClose')" />
     </div>
   </Popup>
 </template>
@@ -58,8 +58,6 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component
 export default class StepsKYCPopup extends Vue {
-  @Prop(Function) handlerClose!: VoidFunction;
-  @Prop(Function) proceed!: VoidFunction;
   @Prop(Array) fillSteps!: number[];
 
   getCircleClasses(step: number) {

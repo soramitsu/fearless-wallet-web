@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :fullScreen="true" header="metadata.text" :closeHandler="onReject">
+  <AboveForm :fullScreen="true" header="metadata.text" @closeHandler="onReject">
     <div class="meta-content">
       <div>
         <InfoList>
@@ -21,7 +21,7 @@
         </div>
       </div>
 
-      <Button width="100%" text="metadata.appAccess" size="big" fontSize="big" @click="onApprove" />
+      <FButton width="100%" text="metadata.appAccess" size="big" fontSize="big" @click="onApprove" />
     </div>
   </AboveForm>
 </template>
@@ -29,7 +29,7 @@
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Action, Getter } from 'vuex-class';
-import { MetadataRequest } from '@/extension/background/extension-base/src/background/types/types';
+import { MetadataRequest } from '@extension-base/background/types/types';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import Hint from '@/components/Hint.vue';
 import { Components } from '@/router/routes';

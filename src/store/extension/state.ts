@@ -4,7 +4,8 @@ import {
   AuthUrlInfo,
   MetadataRequest,
   SigningRequest,
-} from '@/extension/background/extension-base/src/background/types/types';
+} from '@extension-base/background/types/types';
+import type { Features } from '@/store/extension/types';
 
 export type State = {
   requests: {
@@ -14,6 +15,8 @@ export type State = {
   };
   authList: Record<string, AuthUrlInfo>;
   tabStatus: ActiveTabAuthorizeStatus | null;
+  features: Nullable<Features>;
+  onboarding: boolean;
 };
 
 const state = (): State => {
@@ -25,6 +28,8 @@ const state = (): State => {
     },
     authList: {},
     tabStatus: null,
+    features: null,
+    onboarding: false,
   };
 };
 

@@ -2,7 +2,7 @@
   <div class="phone-confirmation">
     <div>
       <div class="phone-input">
-        <Input
+        <FInput
           v-model="countryCode"
           ref="countryCode"
           size="big"
@@ -41,7 +41,7 @@
       <Disclaimer />
     </div>
 
-    <Button
+    <FButton
       :text="verifyBtnText"
       width="100%"
       size="big"
@@ -62,7 +62,8 @@ import type ValidatedInput from '@/components/ValidatedInput.vue';
 import type Input from '@/components/Input.vue';
 import type { AsyncFn, Fn } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
-import { validatePhoneNumber } from '@/helpers/common';
+import type { TokenBalance } from '@extension-base/background/types/types';
+import { validatePhoneNumber } from '@/helpers';
 import { RESEND_INTERVAL, OTP_CODE_LENGTH, VerificationStatus, StepsKyc } from '@/consts/soraCard';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
@@ -71,7 +72,6 @@ import { soraCardController } from '@/controllers';
 import { MutationTypes as SoraCardMutationTypes } from '@/store/soraCard/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SORA_UTILITY_ASSET, SORA_NETWORK_NAME } from '@/consts/networks';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { calculateXOREuroBalance, isValidEuroBalanceXor } from '@/util/soraCard';
 import { getXORCurrency } from '@/helpers/currencies';
 
@@ -179,6 +179,8 @@ export default class Phone extends Vue {
   }
 
   set phoneNumber(value: string) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     if (value.length === 0) this.countryCodeComponent.input.focus();
 
     const isDeleteSymbol = value.length < this.phoneNumberInternal.length;
@@ -235,6 +237,8 @@ export default class Phone extends Vue {
   }
 
   async mounted() {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     this.countryCodeComponent.input.focus();
     soraCardController.removePWEmail();
 

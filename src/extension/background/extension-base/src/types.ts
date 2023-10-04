@@ -3,7 +3,7 @@
 
 import { CustomTokenType, NetWorkGroup } from '@extension-base/api/evm/types/ether';
 import { NETWORK_STATUS } from './api/types/networks';
-import type { AssetType } from '@/interfaces';
+import type { AssetType, BuyProvider, XcmVersion } from '@/interfaces';
 import { ExternalApi } from '@/interfaces';
 
 import { ContractType } from '@/interfaces/ether';
@@ -18,28 +18,6 @@ export interface Message extends MessageEvent {
   };
 }
 
-export interface TransactionHistoryItemType {
-  time: number | string;
-  networkKey: string;
-  change: string;
-  changeSymbol?: string; // if undefined => main token
-  fee?: string;
-  feeSymbol?: string;
-  // if undefined => main token, sometime "fee" uses different token than "change"
-  // ex: sub token (DOT, AUSD, KSM, ...) of Acala, Karaura uses main token to pay fee
-  isSuccess: boolean;
-  action: 'send' | 'received';
-  extrinsicHash: string;
-  origin?: 'app' | 'network';
-  eventIdx?: number | null;
-}
-
-export interface RequestTransactionHistoryAdd {
-  address: string;
-  networkKey: string;
-  item: TransactionHistoryItemType;
-}
-
 export interface RequestTransactionHistoryGet {
   address: string;
   networkKey: string;
@@ -47,7 +25,7 @@ export interface RequestTransactionHistoryGet {
 }
 
 export interface DeleteCustomTokenParams {
-  smartContract: string;
+  id: string;
   chain: string;
   type: CustomTokenType;
 }
@@ -100,11 +78,15 @@ export type Asset = {
   icon: string;
   color: string;
   staking: string;
-  purchaseProviders?: string[];
+  purchaseProviders?: BuyProvider[];
   isUtility?: true;
   isNative?: true;
   existentialDeposit?: string;
-  contractAddress?: string;
+};
+
+type XcmAssets = {
+  id: string;
+  symbol: string;
 };
 
 export interface NetworkJson {
@@ -141,7 +123,7 @@ export interface NetworkJson {
   // getStakingOnChain?: boolean; // support get bonded on chain
   // supportBonding?: boolean;
   supportSmartContract?: ContractType[]; // if network supports PSP smart contracts
-  apiStatus?: NETWORK_STATUS;
+  networkStatus?: NETWORK_STATUS;
   requestId?: string;
   // from json
   chainId: string;
@@ -156,12 +138,14 @@ export interface NetworkJson {
   addressPrefix: number;
   types: TypesForMobile;
   options?: string[];
+  rank?: number;
+  favorite: string[];
   xcm?: {
-    xcmVersion: 'v1' | 'v2' | 'v3';
-    availableAssets: string[];
+    xcmVersion: XcmVersion;
+    availableAssets: XcmAssets[];
     availableDestinations: {
       chainId: string;
-      assets: string[];
+      assets: XcmAssets[];
     }[];
   };
 }

@@ -37,16 +37,16 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { loadScript, unloadScript } from 'vue-plugin-load-script';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { X1Api } from '@/util/x1';
-import { SORA_NETWORK_NAME } from '@/consts/networks';
+import { SORA_NETWORK_NAME, SORA_TEST } from '@/consts/networks';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { calculateXOREuroBalance } from '@/util/soraCard';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { getXORCurrency } from '@/helpers/currencies';
@@ -56,7 +56,6 @@ export default class X1Form extends Vue {
   X1Widget = X1Api.getWidget();
   loadingX1 = true;
 
-  @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;
@@ -91,14 +90,14 @@ export default class X1Form extends Vue {
   }
 
   get isTestnet() {
-    return SORA_NETWORK_NAME === 'sora test';
+    return SORA_NETWORK_NAME === SORA_TEST;
   }
 
   async mounted() {
     this.loadX1();
   }
 
-  beforeUnmount() {
+  beforeDestroy() {
     this.unloadX1();
   }
 
@@ -121,6 +120,7 @@ export default class X1Form extends Vue {
   margin: -10px -20px -20px;
   height: 450px;
 }
+
 .testnet-1x-disclaimer {
   display: flex;
   flex-direction: column;
@@ -131,11 +131,13 @@ export default class X1Form extends Vue {
   margin-bottom: 10px;
   text-align: left;
   font-size: 14px;
+
   .triangle {
     width: 50px;
     height: 50px;
     margin-bottom: 10px;
   }
+
   ul {
     padding: $default-padding;
   }
@@ -148,9 +150,11 @@ export default class X1Form extends Vue {
   flex-direction: column;
   justify-content: center;
   height: 100%;
+
   .scroll {
     height: 675px;
   }
+
   .scroll-collapse {
     height: 0;
   }

@@ -9,9 +9,7 @@
 
     <div class="descriptions-column">
       <div class="row first-row">
-        <div>
-          {{ tokenName }}
-        </div>
+        <div>{{ tokenName }}</div>
 
         <template>
           <Shimmer v-if="showShimmers" height="14px" width="60px" />
@@ -61,14 +59,16 @@
         <Tooltip text="common.networkDisconnected" target=".warning-img" placement="left" />
       </template>
 
-      <template v-else-if="!showAssetsManagementForm">
+      <Switcher v-if="showAssetsManagementForm" v-model="currencyVisible" />
+
+      <template v-else-if="!showWarning">
         <CircleButton
           iconName="send-white"
           backgroundColor="black"
           class="button send"
           tooltipText="assets.sendButtonText"
           target=".send"
-          @click="toggleVisibleActivityForm('showSendForm', true, { mainNetwork, assetId })"
+          @click="$emit('toggleVisibleActivityForm', 'showSendForm', { mainNetwork, assetId })"
         />
 
         <CircleButton
@@ -77,7 +77,7 @@
           class="button receive"
           tooltipText="assets.receiveButtonText"
           target=".receive"
-          @click="toggleVisibleActivityForm('showReceiveForm', true, { mainNetwork, assetId })"
+          @click="$emit('toggleVisibleActivityForm', 'showReceiveForm', { mainNetwork, assetId })"
         />
 
         <CircleButton
@@ -89,8 +89,6 @@
           target=".details"
         />
       </template>
-
-      <Switcher v-else v-model="currencyVisible" />
     </div>
   </Lazy>
 </template>
@@ -98,18 +96,21 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import type { CustomEvent, Fn, ToggleFnProp } from '@/interfaces';
+import type { CustomEvent, Fn } from '@/interfaces';
 import type { SetHiddenAsset, SelectedWallet } from '@/store';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
-import { ALL_NETWORKS } from '@/consts/networks';
 import { GetAssetPrice, GetNetwork } from '@/store/networks/types';
-import { getSummaryTransferableBalance } from '@/helpers/currencies';
+import {
+  filterBalanceItemsByNetwork,
+  getSummaryTransferableBalanceFilteredByActiveNetworks,
+} from '@/helpers/currencies';
 import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
-import BaseApi from '@/util/BaseApi';
+import { isNetworkGroup } from '@/helpers/common';
+import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 
 @Component
 export default class CurrencyItem extends Vue {
@@ -119,7 +120,6 @@ export default class CurrencyItem extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
-  @Prop(Function) toggleVisibleActivityForm!: ToggleFnProp;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
@@ -154,10 +154,18 @@ export default class CurrencyItem extends Vue {
   }
 
   get mainNetwork() {
+    if (this.assetData.relayChain === 'ethereum' && !isNetworkGroup(this.selectedNetwork))
+      return this.assetData.balances
+        .find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase())
+        ?.name?.toLowerCase();
+
     return this.assetData.mainNetwork?.toLowerCase();
   }
 
   get assetId() {
+    if (this.assetData.relayChain === 'ethereum' && !isNetworkGroup(this.selectedNetwork))
+      return this.assetData.balances.find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase())?.id;
+
     return this.assetData.assetId;
   }
 
@@ -179,9 +187,9 @@ export default class CurrencyItem extends Vue {
 
   get networkBadges() {
     if (this.isCurrentNetwork) {
-      const { icon, name } = this.assetData.balances.find(
-        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
-      )!;
+      const { icon, name } = this.assetData.balances.find((balance) => {
+        return filterBalanceItemsByNetwork(balance, this.selectedNetwork);
+      })!;
 
       return [{ icon, name }];
     }
@@ -196,14 +204,27 @@ export default class CurrencyItem extends Vue {
   }
 
   get showShimmers() {
+    if (this.showWarning) return false;
+
     // Убираем шимммер если баланс загружен хотя бы в одной сети
     return !this.assetData.balances.some(({ state }) => state === APIItemState.READY);
   }
 
   get showWarning() {
+    if (!isNetworkGroup(this.selectedNetwork)) return this.networkJson?.networkStatus === NETWORK_STATUS.DISCONNECTED;
+
+    // Если все сети токена в статусе DISCONNECTED, то показываем ошибку
+    const allNetworksDisconnected = this.assetData.balances.some(({ name }) => {
+      const network = this.getNetwork(name);
+
+      return network.networkStatus === NETWORK_STATUS.DISCONNECTED;
+    });
+
+    if (allNetworksDisconnected) return true;
+
     return (
-      this.assetData.balances.some((el) => el.state === APIItemState.ERROR) ||
-      this.networkJson?.apiStatus === NETWORK_STATUS.DISCONNECTED
+      this.assetData.balances.some((el) => el.state === APIItemState.ERROR && el.name === this.selectedNetwork) ||
+      this.assetData.balances.every((el) => el.state === APIItemState.ERROR)
     );
   }
 
@@ -226,7 +247,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get transferableAssetBalance() {
-    return +getSummaryTransferableBalance(this.assetData, this.selectedNetwork);
+    return +getSummaryTransferableBalanceFilteredByActiveNetworks(this.assetData, this.selectedNetwork);
   }
 
   get transferableFiatBalance() {
@@ -243,22 +264,23 @@ export default class CurrencyItem extends Vue {
   }
 
   get isCurrentNetwork() {
-    return this.selectedNetwork !== ALL_NETWORKS;
+    return !isNetworkGroup(this.selectedNetwork);
   }
 
   get redirectNetwork(): string {
-    const networks = this.assetData.balances;
-    const haveEthereumAccount = this.selectedWallet.ethereumAddress !== '';
+    return this.isCurrentNetwork ? this.selectedNetwork : '';
+  }
 
-    if (this.isCurrentNetwork) return this.selectedNetwork;
+  get computeActiveNetworks() {
+    return this.assetData.balances.filter(({ name }) => {
+      const network = this.getNetwork(name);
 
-    if (this.mainNetwork !== undefined && this.mainNetwork !== '') {
-      const isToMainNetwork = !haveEthereumAccount ? !BaseApi.isEthereumNetwork(this.mainNetwork) : true;
+      if (this.selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
+      if (this.selectedNetwork === FAVORITE_NETWORKS)
+        return network.favorite.some((address) => address === this.selectedWallet.address);
 
-      if (isToMainNetwork) return this.mainNetwork;
-    }
-
-    return networks[0].name;
+      return this.getNetwork(name).active;
+    });
   }
 
   openAssetPage(event: CustomEvent) {
@@ -274,11 +296,22 @@ export default class CurrencyItem extends Vue {
     )
       return;
 
+    if (this.isCurrentNetwork || this.computeActiveNetworks.length === 1) {
+      this.$router.push({
+        name: Components.AssetHistory,
+        params: {
+          assetId: this.assetId ?? this.assetData.assetId,
+          selectedNetwork: this.redirectNetwork === '' ? this.computeActiveNetworks[0].name : this.redirectNetwork,
+        },
+      });
+
+      return;
+    }
+
     this.$router.push({
-      name: Components.Asset,
+      name: Components.AssetNetworks,
       params: {
         assetId: this.assetData.assetId,
-        network: this.redirectNetwork,
       },
     });
   }
@@ -373,14 +406,6 @@ export default class CurrencyItem extends Vue {
         margin-left: 2px;
       }
 
-      .up-price {
-        color: rgba(126, 222, 155, 0.75);
-      }
-
-      .down-price {
-        color: #d0021b;
-      }
-
       .total-balance {
         max-width: 200px;
       }
@@ -411,6 +436,7 @@ export default class CurrencyItem extends Vue {
     width: 28px;
     height: 28px;
     opacity: 0.9;
+    margin-right: 10px;
 
     &:hover {
       opacity: 1;

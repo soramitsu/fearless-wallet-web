@@ -9,8 +9,8 @@
           :tooltipText="tooltipText"
           :target="target"
           :class="classes"
-          :text="label"
-          :isActive="activeTabName === tabName"
+          :label="label"
+          :isActive="syncedActiveTabName === tabName"
           @click="openTab(tabName)"
         />
       </template>
@@ -21,14 +21,14 @@
         class="hide-zero"
         target=".hide-zero"
         placementTooltip="right"
-        :text="toggleButtonText"
+        :label="toggleButtonText"
         @click="$emit('toggleCurrenciesVisible', allCurrenciesHidden)"
       />
     </div>
 
     <div v-if="isCurrenciesTab" class="settings-part">
       <SearchInput
-        v-if="!showAssetsManagementForm"
+        v-if="!syncedShowAssetsManagementForm"
         v-model="syncedFilterValue"
         placeholder="common.search"
         width="185px"
@@ -52,8 +52,8 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { TabWallet } from '@/interfaces/common';
 import type { SelectedWallet } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 interface TabsOptions {
   label: string;
@@ -87,7 +87,7 @@ export default class ContentSettings extends Vue {
   }
 
   get allCurrenciesHidden() {
-    return this.hiddenAssets.length === this.balances.length;
+    return this.balances.every(({ assetId }) => this.hiddenAssets.includes(assetId));
   }
 
   get toggleButtonText() {

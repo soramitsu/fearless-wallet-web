@@ -1,141 +1,87 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { TypeRegistry } from '@polkadot/types/create';
-import { api as apiSora, connection as soraConnection } from '@sora-substrate/util';
+import { api as apiSora } from '@sora-substrate/util';
+import { connection as soraConnection } from '@sora-substrate/connection';
 import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
-import { state } from '@extension-base/background/handlers';
+import State from '@extension-base/background/handlers/State';
+import { NETWORK_STATUS } from '../types/networks';
 import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import type { ApiProps } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
-import { isSora } from '@/helpers/common';
+import { isSora } from '@/helpers';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 
 function createApiObject(): ApiProps {
   return {
-    apiDefaultTx: undefined,
-    apiDefaultTxSudo: undefined,
-    apiError: undefined,
-    defaultFormatBalance: undefined,
-    isApiConnected: false,
-    isApiReady: false,
-    isApiInitialized: false,
     isEthereum: false,
-    isEthereumOnly: false,
-    registry: new TypeRegistry(), // TODO это нужно?
-    specName: '',
-    specVersion: '',
-    systemChain: '',
-    systemName: '',
-    systemVersion: '',
+    apiStatus: NETWORK_STATUS.CONNECTING,
     apiRetry: 0,
     nodeIndex: 0,
-  } as unknown as ApiProps;
+  };
 }
 
-function generateEvmHttpApi(): ApiProps {
-  return {
-    api: undefined,
-    provider: undefined,
-    apiDefaultTx: undefined,
-    apiDefaultTxSudo: undefined,
-    apiError: undefined,
-    nodeIndex: 0,
-    defaultFormatBalance: undefined,
-    isApiConnected: true,
-    isApiReady: true,
-    isApiInitialized: true,
-    isEthereum: true,
-    tryAnotherNode: true,
-    isEthereumOnly: true,
-    registry: new TypeRegistry(), // TODO это нужно?
-    specName: '',
-    specVersion: '',
-    systemChain: '',
-    systemName: '',
-    systemVersion: '',
-    apiRetry: 0,
-    recoverConnect: () => {
-      // console.info('Reconnect http API', apiUrl);
-    },
-    get isReady() {
-      return Promise.resolve(this);
-    },
-  } as unknown as ApiProps;
-}
-
-function onConnected(networkName: string) {
+function onConnected(networkName: string, state: State) {
   if (isSora(networkName)) {
     state.apis.substrate[networkName].api = soraConnection.api!;
   }
 
   state.apis.substrate[networkName].apiRetry = 0;
-  state.apis.substrate[networkName].isApiConnected = true;
-  state.apis.substrate[networkName].isApiReady = false; // todo ??? apiObject.isApiInitialized;
+  state.apis.substrate[networkName].apiStatus = NETWORK_STATUS.CONNECTED;
 }
 
-function onDisconnect(networkName: string) {
-  // возможно лишнее
-  const api = state.apis.substrate[networkName];
+async function onDisconnect(networkName: string, state: State) {
+  const api = state.getSubstrateApiMap[networkName];
+
+  if (!state.networkMap[networkName].active) return;
 
   if (api === undefined) return;
 
   api.apiRetry += 1;
-  api.isApiConnected = false;
-  api.isApiReady = false;
 
   if (api.apiRetry < MAX_CONTINUE_RETRY) return;
+
   const network = state.networkMap[networkName];
 
-  api.provider?.disconnect();
+  api.api?.disconnect();
+
   api.nodeIndex += 1;
 
   if (api.nodeIndex <= network.nodes.length - 1) {
     api.apiRetry = 0;
     api.provider = undefined;
     api.api = undefined;
-    api.apiUrl = '';
 
-    // eslint-disable-next-line no-use-before-define
-    if (navigator.onLine) initApi(network);
+    if (navigator.onLine) initApi(network, state);
+    else api.apiStatus = NETWORK_STATUS.DISCONNECTED;
+  } else {
+    api.apiStatus = NETWORK_STATUS.DISCONNECTED; // попробовали все ноды, не смогил подключиться, ставим статус дисконнект
 
-    return;
+    state.disableNetworkMap(networkName);
   }
-
-  state.disableNetworkMap(networkName);
 }
 
-function onReady(networkName: string) {
+function onReady(networkName: string, state: State) {
   if (isSora(networkName)) {
     apiSora.initialize(false);
     apiSora.calcStaticNetworkFees();
 
     state.subscribeTotalXorBalance();
   }
-
-  state.apis.substrate[networkName].isApiReady = true;
 }
 
-export async function initApi(network: NetworkJson, retry = false): Promise<void> {
-  const { name: networkName, nodes, isEthereum } = network;
+export async function initApi(network: NetworkJson, state: State): Promise<void> {
+  const { name: networkName, nodes } = network;
 
-  if (state.apis.substrate[networkName] === undefined) {
-    // return EVM HTTP Placeholder
-    state.apis.substrate[networkName] = isEthereum ? generateEvmHttpApi() : createApiObject();
-  }
+  if (state.getSubstrateApiMap[networkName] === undefined) state.getSubstrateApiMap[networkName] = createApiObject();
 
-  if (retry) {
-    state.apis.substrate[networkName].nodeIndex = 0;
-    state.apis.substrate[networkName].apiRetry = 0;
-  }
-
-  const { nodeIndex } = state.apis.substrate[networkName];
+  const { nodeIndex } = state.getSubstrateApiMap[networkName];
 
   const autoSelectNode = network.isManual ? null : nodes[nodeIndex].url;
   const currentProvider = autoSelectNode ?? network.currentProvider;
   const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [
-    ['connected', () => onConnected(networkName)],
-    ['disconnected', () => onDisconnect(networkName)],
-    ['ready', () => onReady(networkName)],
+    ['connected', () => onConnected(networkName, state)],
+    ['disconnected', () => onDisconnect(networkName, state)],
+    ['ready', () => onReady(networkName, state)],
     ['error', () => null],
   ];
 

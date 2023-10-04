@@ -1,9 +1,7 @@
-// Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
 import { BasicTxErrorCode } from '@extension-base/background/types/types';
 import { sendExtrinsic } from '@extension-base/api/substrate/shared/sendExtrinsic';
 import { signExtrinsic } from '@extension-base/api/substrate/shared/signExtrinsic';
+import State from '@extension-base/background/handlers/State';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { EventRecord } from '@polkadot/types/interfaces';
 import type { HandleBasicTx } from '@extension-base/api/evm/transfer';
@@ -36,18 +34,11 @@ interface ExternalSignAndSendExtrinsicProps extends AbstractSignAndSendExtrinsic
 
 type SignAndSendExtrinsicProps = ExternalSignAndSendExtrinsicProps | PasswordSignAndSendExtrinsicProps;
 
-export const signAndSendExtrinsic = async ({
-  address,
-  apiProps,
-  callback,
-  errorMessage,
-  extrinsic,
-  password,
-  txState,
-  type,
-}: SignAndSendExtrinsicProps) => {
+export const signAndSendExtrinsic = async (
+  { address, apiProps, callback, errorMessage, extrinsic, password, txState, type }: SignAndSendExtrinsicProps,
+  state: State
+) => {
   if (!extrinsic) {
-    txState.txError = true;
     txState.status = false;
 
     callback(txState);
@@ -55,34 +46,17 @@ export const signAndSendExtrinsic = async ({
     return;
   }
 
-  try {
-    const passwordError = await signExtrinsic({
+  await signExtrinsic(
+    {
       address,
       apiProps,
       callback,
       extrinsic,
       password,
       type,
-    });
-
-    if (passwordError) {
-      txState.passwordError = passwordError;
-
-      callback(txState);
-
-      return;
-    }
-  } catch (e: unknown) {
-    if (e) {
-      console.error(errorMessage, e);
-      txState.errors = [{ code: BasicTxErrorCode.KEYRING_ERROR, message: (e as Error).message }];
-      txState.txError = true;
-      txState.status = false;
-      callback(txState);
-    }
-
-    return;
-  }
+    },
+    state
+  );
 
   try {
     await sendExtrinsic({
@@ -98,7 +72,6 @@ export const signAndSendExtrinsic = async ({
       txState.errors = [{ code: BasicTxErrorCode.BALANCE_TO_LOW, message: (e as Error).message }];
     else txState.errors = [{ code: BasicTxErrorCode.INVALID_PARAM, message: (e as Error).message }];
 
-    txState.txError = true;
     txState.status = false;
 
     callback(txState);

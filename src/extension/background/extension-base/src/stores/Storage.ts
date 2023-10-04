@@ -15,7 +15,11 @@ class Storage {
 export const storage = new Storage();
 
 export async function initStorage() {
-  const { authUrls, addressBook } = await storage.get(['authUrls', 'addressBook']);
+  const { authUrls, addressBook, selectedNetworks } = await storage.get([
+    'authUrls',
+    'addressBook',
+    'selectedNetworks',
+  ]);
 
   const obj: Record<string, any> = {
     defaultAuthAccountSelection: [],
@@ -25,7 +29,7 @@ export async function initStorage() {
   };
 
   if (authUrls === undefined) obj.authUrls = {};
-
+  if (selectedNetworks === undefined) obj.selectedNetworks = {};
   if (addressBook === undefined) obj.addressBook = {};
 
   await storage.set(obj);

@@ -1,13 +1,14 @@
-import { State } from './state';
-import type { GetterTree } from 'vuex';
-import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
   AuthUrlInfo,
   MetadataRequest,
   SigningRequest,
-} from '@/extension/background/extension-base/src/background/types/types';
+} from '@extension-base/background/types/types';
+import { State } from './state';
+import type { GetterTree } from 'vuex';
+import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import type { Features } from '@/store/extension/types';
 
 export enum GettersTypes {
   authRequests = 'authRequests',
@@ -16,18 +17,25 @@ export enum GettersTypes {
   signRequestPayload = 'signRequestPayload',
   signList = 'signList',
   tabStatus = 'tabStatus',
+  features = 'features',
+  onboarding = 'onboarding',
 }
 
 export type Getters = {
   [GettersTypes.authRequests](state: State, getters?: GetterTree<State, State> & Getters): AuthorizeRequest[];
   [GettersTypes.authList](state: State, getters?: GetterTree<State, State> & Getters): Record<string, AuthUrlInfo>;
-  [GettersTypes.tabStatus](state: State, getters?: GetterTree<State, State> & Getters): ActiveTabAuthorizeStatus | null;
+  [GettersTypes.tabStatus](
+    state: State,
+    getters?: GetterTree<State, State> & Getters
+  ): Nullable<ActiveTabAuthorizeStatus>;
+  [GettersTypes.features](state: State, getters?: GetterTree<State, State> & Getters): Nullable<Features>;
   [GettersTypes.metaRequests](state: State, getters?: GetterTree<State, State> & Getters): MetadataRequest[];
   [GettersTypes.signRequestPayload](
     state: State,
     getters?: GetterTree<State, State> & Getters
   ): SignerPayloadJSON | SignerPayloadRaw;
   [GettersTypes.signList](state: State, getters?: GetterTree<State, State> & Getters): SigningRequest[];
+  [GettersTypes.onboarding](state: State, getters?: GetterTree<State, State> & Getters): boolean;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -39,26 +47,33 @@ const getters: GetterTree<State, State> & Getters = {
     return authList;
   },
 
-  [GettersTypes.metaRequests](state): MetadataRequest[] {
-    return state.requests.meta;
+  [GettersTypes.metaRequests]({ requests }): MetadataRequest[] {
+    return requests.meta;
   },
 
-  [GettersTypes.signRequestPayload](state): SignerPayloadJSON | SignerPayloadRaw {
+  [GettersTypes.signRequestPayload]({ requests }): SignerPayloadJSON | SignerPayloadRaw {
     const [
       {
         request: { payload },
       },
-    ] = state.requests.sign;
+    ] = requests.sign;
 
     return payload;
   },
 
-  [GettersTypes.signList](state): SigningRequest[] {
-    return state.requests.sign;
+  [GettersTypes.signList]({ requests }): SigningRequest[] {
+    return requests.sign;
   },
 
   [GettersTypes.tabStatus]({ tabStatus }): ActiveTabAuthorizeStatus | null {
     return tabStatus;
+  },
+
+  [GettersTypes.features]({ features }): Nullable<Features> {
+    return features;
+  },
+  [GettersTypes.onboarding]({ onboarding }): boolean {
+    return onboarding;
   },
 };
 

@@ -1,6 +1,21 @@
-import EthProvider from '@extension-base/api/evm/ethProvider';
-import { EvmNetworkType } from '@/interfaces/ether';
+import { JsonRpcProvider, WebSocketProvider } from 'ethers';
+import { EvmProvider } from '@extension-base/background/types/types';
+import { getEvmApiKey } from '@extension-base/const/networks';
 
-export const initWeb3Api = (provider: string): EthProvider => {
-  return new EthProvider(provider as EvmNetworkType);
+const initListeners = (provider: EvmProvider) => {
+  provider.on('error', () => {
+    provider.removeAllListeners();
+    provider.destroy();
+  });
+};
+
+export const initWeb3Api = (url: string): EvmProvider => {
+  const apiKey = getEvmApiKey(url);
+  const providerUrl = `${url}${apiKey ?? ''}`;
+
+  const provider = url.startsWith('http') ? new JsonRpcProvider(providerUrl) : new WebSocketProvider(providerUrl);
+
+  initListeners(provider);
+
+  return provider;
 };

@@ -1,12 +1,21 @@
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
-import type { SetFiatsJsonProps, SetHistoryProps, SetNetworksStatusProps, SetAssetsPriceProps } from './types';
+import type {
+  SetFiatsJsonProps,
+  SetHistoryProps,
+  SetNetworksStatusProps,
+  SetAssetsPriceProps,
+  SetNetworkFavoriteProps,
+  RemoveNetworkFavoriteProps,
+} from './types';
 import { getFormattedHistory } from '@/helpers/history';
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
   SET_FIATS_JSON = 'SET_FIATS_JSON',
   SET_ASSETS_PRICE = 'SET_ASSETS_PRICE',
   SET_HISTORY = 'SET_HISTORY',
+  SET_FAVORITE_NETWORK = 'SET_FAVORITE_NETWORK',
+  REMOVE_FAVORITE_NETWORK = 'REMOVE_FAVORITE_NETWORK',
 }
 
 export type Mutations = {
@@ -14,6 +23,8 @@ export type Mutations = {
   [MutationTypes.SET_FIATS_JSON](state: State, props: SetFiatsJsonProps): void;
   [MutationTypes.SET_ASSETS_PRICE](state: State, props: SetAssetsPriceProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
+  [MutationTypes.SET_FAVORITE_NETWORK](state: State, props: SetNetworkFavoriteProps): void;
+  [MutationTypes.REMOVE_FAVORITE_NETWORK](state: State, props: RemoveNetworkFavoriteProps): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -106,6 +117,20 @@ const mutations: MutationTree<State> & Mutations = {
     };
 
     state.history = { ...state.history, [assetId]: historyForAssetId };
+  },
+
+  [MutationTypes.SET_FAVORITE_NETWORK](state, { address, networksName }): void {
+    const index = state.networks.findIndex((el) => el.name === networksName);
+    const network = state.networks[index];
+
+    network.favorite.push(address);
+  },
+
+  [MutationTypes.REMOVE_FAVORITE_NETWORK](state, { networksName, index }): void {
+    const networkIndex = state.networks.findIndex((el) => el.name === networksName);
+    const network = state.networks[networkIndex];
+
+    network.favorite.splice(index, 1);
   },
 };
 

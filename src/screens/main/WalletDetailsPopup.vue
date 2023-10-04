@@ -5,7 +5,7 @@
     :showHeader="false"
     :showBlur="false"
     :showBackground="false"
-    :handlerClose="close"
+    @handlerClose="close"
     :top="top"
     :left="300"
   >
@@ -26,12 +26,12 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
+import type { AccountJson } from '@extension-base/background/types/types';
 import type { Fn } from '@/interfaces/common';
 import { Components } from '@/router/routes';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { forgetAccount, initGoogleAuth } from '@/extension/messaging';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import { beaconController } from '@/controllers';
 
 @Component
@@ -62,7 +62,8 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   async deleteWallet() {
-    forgetAccount(this.selectedWalletAddress, this.isMobileWallet ? 'mobile' : 'native');
+    await forgetAccount(this.selectedWalletAddress, this.isMobileWallet ? 'mobile' : 'native');
+
     if (this.isMobileWallet) beaconController.resetConnection();
     if (this.accounts.length === 0) this.$router.push({ name: Components.Welcome });
     else this.close();

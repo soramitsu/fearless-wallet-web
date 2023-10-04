@@ -1,16 +1,15 @@
 <template>
-  <!-- IMPORTANT: if <Menu /> showed use 306 -->
-  <ContentForm :height="366">
+  <ContentForm :height="284">
     <div class="history">
       <div class="history-settings">
         <div class="history-label">{{ $t('assets.history') }}:</div>
 
-        <Dropdown :value="filterHistoryValue" :options="historyDropdownOption" :handler="filterHistoryValueUpdate" />
+        <Dropdown :value="filterHistoryValue" :options="historyDropdownOption" @handler="filterHistoryValueUpdate" />
       </div>
 
       <Scroll>
         <div :class="historyContainerClasses">
-          <Loader v-if="showLoader" />
+          <Loader v-if="isLoadingHistory" />
 
           <template v-else-if="!isEmptyHistory">
             <HistoryItem
@@ -19,7 +18,8 @@
               :historyElement="historyElement"
               :token="currency"
               :network="selectedNetwork"
-              @click.native="$emit('openHistoryDetailsForm', historyElement)"
+              :address="selectedWallet.address"
+              @click.native="openHistoryDetails(historyElement)"
             />
           </template>
 
@@ -34,16 +34,15 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import HistoryItem from './HistoryItem.vue';
-import type { FilterHistory, GetHistory } from '@/interfaces';
-import type { SelectedWallet } from '@/store';
+import type { FilterHistory, GetHistory, HistoryElement } from '@/interfaces';
+import type { GetNetwork, SelectedWallet } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworksController } from '@/controllers';
+import BaseApi from '@/util/BaseApi';
 
-@Component({
-  components: { HistoryItem },
-})
+@Component({ components: { HistoryItem } })
 export default class History extends Vue {
   readonly historyDropdownOption = [
     { label: 'assets.all', value: 'all' },
@@ -53,14 +52,20 @@ export default class History extends Vue {
   ];
 
   filterHistoryValue: FilterHistory = 'all';
-  showLoader = false;
+  isLoadingHistory = false;
 
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get selectedNetwork() {
-    return this.$route.params.network;
+    return this.$route.params.selectedNetwork;
+  }
+
+  get assetId() {
+    return this.$route.params.assetId;
   }
 
   get isEmptyHistory() {
@@ -76,20 +81,24 @@ export default class History extends Vue {
     ];
   }
 
+  get address() {
+    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
+    const network = this.getNetwork(this.selectedNetwork);
+
+    return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
+  }
+
   get history() {
     if (!this.selectedNetwork) return [];
 
-    return (
-      this.getHistory(this.currency?.assetId, this.selectedWallet.address, this.selectedNetwork.toLowerCase())?.nodes ??
-      []
-    );
+    return this.getHistory(this.assetId, this.selectedWallet.address, this.selectedNetwork.toLowerCase())?.nodes ?? [];
   }
 
   get filteredHistory() {
     if (this.filterHistoryValue === 'all') return this.history;
 
     const field = this.filterHistoryValue as 'transfer' | 'reward' | 'extrinsic';
-    const filteredHistory = this.history.filter((historyItem) => historyItem[field] !== null);
+    const filteredHistory = this.history.filter((historyItem) => historyItem[field]);
 
     return filteredHistory;
   }
@@ -101,28 +110,45 @@ export default class History extends Vue {
   }
 
   get isMainNetwork() {
-    return !!this.currency.balances?.find(
+    return this.currency.balances?.some(
       ({ name, isUtility, isNative }) =>
         name.toLowerCase() === this.selectedNetwork?.toLowerCase() && (isUtility || isNative)
     );
   }
 
+  @Watch('isMainNetwork')
+  watchNetwork() {
+    this.fetchHistory();
+  }
+
   mounted() {
-    setTimeout(() => this.fetchHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
+    this.fetchHistory();
+  }
+
+  get isSubstrateEthereumNetwork() {
+    return BaseApi.isSubstrateEthereumNetwork(this.selectedNetwork);
   }
 
   async fetchHistory() {
-    if (this.history.length !== 0 || !this.isMainNetwork) return;
+    if (this.isLoadingHistory) return;
 
-    this.showLoader = true;
+    if (this.history.length !== 0) return;
 
-    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.currency.assetId);
+    if (!this.isMainNetwork && this.isSubstrateEthereumNetwork) return;
 
-    this.showLoader = false;
+    this.isLoadingHistory = true;
+
+    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.assetId, false, 0.3); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
+
+    this.isLoadingHistory = false;
   }
 
   filterHistoryValueUpdate(name: FilterHistory) {
     this.filterHistoryValue = name;
+  }
+
+  openHistoryDetails(history: HistoryElement) {
+    this.$emit('openHistoryDetailsForm', history);
   }
 }
 </script>

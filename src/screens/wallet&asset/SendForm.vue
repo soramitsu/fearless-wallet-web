@@ -8,7 +8,7 @@
     :value="value"
     :partialFee="partialFee"
     :recipient="recipient"
-    :closeForm="closeForm"
+    @closeForm="$emit('closeForm')"
     @update:assetId="updateAssetId"
     @update:selectedNetwork="updateSelectedNetwork"
     @update:amount="updateAmount"
@@ -18,11 +18,11 @@
   >
     <div>
       <div class="row direction-column">
-        <Input v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
+        <FInput v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
 
         <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
 
-        <Input v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
+        <FInput v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
       </div>
 
       <Corners size="big" class="row">
@@ -64,10 +64,10 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { SelectedWallet } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { addNumbers } from '@/helpers/numbers';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { getUtilityAsset } from '@/helpers/currencies';
 
 @Component({
@@ -81,7 +81,6 @@ export default class SendForm extends Vue {
   amount = '';
   value = '';
 
-  @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) _selectedNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -89,7 +88,9 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get currency() {
-    return this.balances.find(({ assetId }) => assetId.toLowerCase() === this.assetId.toLowerCase());
+    return this.balances.find(({ balances }) =>
+      balances.some((el) => el.id.toLowerCase() === this.assetId.toLowerCase())
+    )!;
   }
 
   get isUtilityAsset() {
@@ -119,10 +120,9 @@ export default class SendForm extends Vue {
   }
 
   get selectedAsset() {
-    return this.balances.find(
+    return this.currency.balances.find(
       (el) =>
-        el.symbol.toLowerCase() === this.assetId.toLowerCase() ||
-        el.assetId.toLowerCase() === this.assetId.toLowerCase()
+        el.symbol.toLowerCase() === this.assetId.toLowerCase() || el.id.toLowerCase() === this.assetId.toLowerCase()
     )!;
   }
 

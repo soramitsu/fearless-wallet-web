@@ -1,5 +1,10 @@
 <template>
-  <AboveForm header="assets.networkIssues" class="network-management" :fullScreen="true" :closeHandler="closeForm">
+  <AboveForm
+    header="assets.networkIssues"
+    class="network-management"
+    :fullScreen="true"
+    @closeHandler="$emit('closeForm')"
+  >
     <div class="management-content">
       <Scroll>
         <Corners v-for="{ name, icon } in networks" :key="name" size="big" class="network-corners">
@@ -12,7 +17,7 @@
               <div class="unavailable">Network is unavailable</div>
             </div>
 
-            <Button
+            <FButton
               size="mini"
               class="switch-button"
               text="common.resolve"
@@ -28,14 +33,13 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { NetworkJson } from '@extension-base/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component
 export default class NetworkManagement extends Vue {
   @Prop(Array) networks!: NetworkJson[];
-  @Prop(Function) closeForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 }
 </script>

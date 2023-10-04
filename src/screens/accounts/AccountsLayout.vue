@@ -1,6 +1,5 @@
 <template>
   <div class="layout">
-    <!-- IMPORTANT: if <Menu /> showed use 453 -->
     <ContentForm :height="513">
       <div class="accounts-layout">
         <div class="navigation">
@@ -38,11 +37,12 @@
     <AccountSettingsPopup
       v-if="showAccountSettingsPopup"
       :selectedNetwork="selectedNetwork"
-      :handlerClose="closeAccountSettings"
-      :isNodesRoute="isNodesRoute"
+      :showNodeSwitch="!isNodesRoute"
+      :showCopyAddress="!isNodesRoute"
       :showExport="!isExportRoute"
       :showReplaceAccount="showReplaceAccount"
       :buttonTopClick="buttonTopClick"
+      @handlerClose="closeAccountSettings"
       @openNotificationPopup="openNotificationPopup"
     />
 
@@ -52,13 +52,13 @@
       :_url="selectedNodeUrl"
       :network="selectedNetwork"
       :isActive="selectedNodeIsActive"
-      :closeForm="closeEditNodeForm"
+      @closeForm="closeEditNodeForm"
     />
 
     <NodeSettingsPopup
       v-if="showNodeSettingsPopup"
-      :handlerClose="closeNodeSettings"
       :buttonTopClick="buttonTopClick"
+      @handlerClose="closeNodeSettings"
       @openEditNodeForm="openEditNodeForm"
       @openNotificationPopup="openNotificationPopup"
     />
@@ -72,13 +72,13 @@
       :showRejectButton="true"
       :showWarningIcon="showWarningIcon"
       :headers="headers"
-      :handlerClose="closeNotificationPopup"
-      :handlerAccept="handlerAccept"
+      @handlerClose="closeNotificationPopup"
+      @handlerAccept="handlerAccept"
     />
 
-    <AddEthereumAccountPopup v-if="showAddEthereumAccountPopup" :handlerClose="closeAddEthereumAccountPopup" />
+    <AddEthereumAccountPopup v-if="showAddEthereumAccountPopup" @handlerClose="closeAddEthereumAccountPopup" />
 
-    <ExportForm v-if="showExportForm" :password="password" :closeHandler="setPassword" />
+    <ExportForm v-if="showExportForm" :password="password" @closeHandler="setPassword" />
   </div>
 </template>
 
@@ -91,12 +91,12 @@ import NodeSettingsPopup from './NodeSettingsPopup.vue';
 import AddEthereumAccountPopup from './AddEthereumAccountPopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import Nodes from './Nodes.vue';
-import type { SelectedWallet } from '@/store';
+import type { NetworkJson } from '@extension-base/types';
+import type { GetNetwork, SelectedWallet } from '@/store';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { upsertNetworkMap } from '@/extension/messaging';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 type NotificationType = 'delete' | 'export' | '';
 
@@ -127,6 +127,7 @@ export default class AccountsLayout extends Vue {
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get headers() {
     return this.notificationType === 'delete'
@@ -137,10 +138,6 @@ export default class AccountsLayout extends Vue {
           subtext: 'accounts.exportWarning',
         }
       : '';
-  }
-
-  get networkJson() {
-    return this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase())!;
   }
 
   get showExportForm() {
@@ -222,7 +219,7 @@ export default class AccountsLayout extends Vue {
     this.closeNotificationPopup();
   }
 
-  openAccountSettingsPopup(network = '', buttonTop: number) {
+  openAccountSettingsPopup(network = '', buttonTop = 0) {
     this.showAccountSettingsPopup = true;
     this.selectedNetwork = network;
     this.buttonTopClick = buttonTop;
@@ -261,13 +258,16 @@ export default class AccountsLayout extends Vue {
   }
 
   deleteNode() {
-    const customNodes = this.networkJson.customNodes.filter(
+    const network = this.getNetwork(this.selectedNetwork);
+    const customNodes = network.customNodes.filter(
       (node) => node.name !== this.selectedNodeName && node.url !== this.selectedNodeUrl
     );
+
     upsertNetworkMap({
-      ...this.networkJson,
+      ...network,
       customNodes,
     });
+
     this.childUpdatedNode(true);
     this.closeNotificationPopup();
   }

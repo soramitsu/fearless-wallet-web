@@ -1,9 +1,9 @@
 <template>
-  <AboveForm :fullScreen="true" :closeHandler="closeForm">
+  <AboveForm :fullScreen="true" @closeHandler="closeForm">
     <template v-slot:header>
       <div class="header-content">
-        <div :class="classesBackIcon">
-          <Icon v-show="showBackIcon" icon="chevron-left" class="img" @click="back" />
+        <div :class="classesBackIcon" @click="back">
+          <Icon v-show="showBackIcon" icon="chevron-left" class="img" />
         </div>
 
         <div class="header">
@@ -42,7 +42,7 @@
           <template v-else-if="step === 1">
             <SelectInput
               text="assets.sendButtonText"
-              :transferableAmount="transferableSendAmount"
+              :totalAmount="transferableSendAmount"
               :value="sendValue"
               :asset="sendAssetName"
               :assetId="sendAssetId"
@@ -50,20 +50,20 @@
               :isRotate="isSendAssetType"
               @update:amount="updateSendAmount"
               @setMax="setMax"
-              @toggleSelectAssetPopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'send')"
+              @togglePopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'send')"
             />
 
             <SelectInput
               class="receive-input"
               text="assets.receiveButtonText"
-              :transferableAmount="transferableReceiveAmount"
+              :totalAmount="transferableReceiveAmount"
               :value="receiveValue"
               :asset="receiveAssetName"
               :assetId="receiveAssetId"
               :amount="receiveAmount"
               :isRotate="isReceiveAssetType"
               @update:amount="updateReceiveAmount"
-              @toggleSelectAssetPopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'receive')"
+              @togglePopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'receive')"
             />
 
             <div :class="classesSwapIcon" @click="swapAssets">
@@ -135,7 +135,7 @@
             <div class="alert-content">
               {{ $t('common.readPolkaswapDisclaimer') }}
 
-              <Button
+              <FButton
                 width="85px"
                 size="mini"
                 fontSize="small"
@@ -148,7 +148,7 @@
           </Alert>
 
           <div class="buttons">
-            <Button
+            <FButton
               v-if="showSettings"
               size="big"
               text="assets.resetToDefault"
@@ -158,7 +158,7 @@
               @click="resetSettings"
             />
 
-            <Button
+            <FButton
               size="big"
               :text="buttonText"
               :disabled="buttonPreviewDisabled"
@@ -181,9 +181,9 @@
       :left="160"
       :height="285"
       :options="optionsCurrency"
-      :handlerFilter="handlerFilter"
-      :toggleValue="toggleSelectedAsset"
-      :handlerClose="toggleSelectAssetPopupVisibility.bind(null, '')"
+      @handlerFilter="handlerFilter"
+      @toggleValue="toggleSelectedAsset"
+      @handlerClose="toggleSelectAssetPopupVisibility('')"
     />
 
     <ConfirmationPasswordPopup
@@ -206,6 +206,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet, GetNetwork, GetAssetPrice } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
 import SwapSettings from '@/screens/polkaswap/swap/SwapSettings.vue';
@@ -215,7 +216,6 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID } from '@/consts/networks';
 import { Components } from '@/router/routes';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { checkSwap, getSoraFees } from '@/extension/messaging';
 import { getCurrencyOptions, getXORCurrency } from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
@@ -532,14 +532,28 @@ export default class SwapForm extends Vue {
     return this.receiveAssetPrice * amount;
   }
 
-  activated() {
-    const { reset } = this.$route.params;
+  updateComponentParams() {
+    const { reset, restPriceXOR, assetId } = this.$route.params;
 
     if (reset !== undefined) {
       this.receiveAssetId = '';
       this.sendAmount = '';
       this.receiveAmount = '';
     }
+
+    if (restPriceXOR) {
+      this.receiveAssetId = SORA_XOR_ASSET_ID;
+      this.receiveAmount = restPriceXOR;
+      this.isExchangeB = true;
+    }
+
+    this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
+
+    this.getSoraFees();
+  }
+
+  activated() {
+    this.updateComponentParams();
   }
 
   deactivated() {
@@ -548,15 +562,7 @@ export default class SwapForm extends Vue {
   }
 
   async created() {
-    const { assetId, restPriceXOR } = this.$route.params;
-
-    if (restPriceXOR) {
-      this.receiveAssetId = SORA_XOR_ASSET_ID;
-      this.receiveAmount = restPriceXOR;
-      this.isExchangeB = true;
-    } else this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
-
-    this.getSoraFees();
+    this.updateComponentParams();
   }
 
   async getSoraFees() {
@@ -593,7 +599,6 @@ export default class SwapForm extends Vue {
         isExchangeB: this.isExchangeB,
         marketType: this.marketType,
       });
-
       if (this.isExchangeB) this.sendAmount = amountA;
       else this.receiveAmount = amountB;
 
@@ -610,7 +615,6 @@ export default class SwapForm extends Vue {
 
     createSwap();
   }
-
   clearSwapInterval() {
     clearInterval(this.swapInterval);
   }
@@ -672,7 +676,7 @@ export default class SwapForm extends Vue {
       this.slippage = this.temporarySlippage;
       this.showSettings = false;
 
-      this.checkSwap();
+      await this.checkSwap();
     } else if (this.step === 1) this.step += 1;
     else this.showConfirmationPasswordPopup = true;
   }
@@ -732,7 +736,7 @@ export default class SwapForm extends Vue {
     const balance = this.sendCurrency.balances.find(
       ({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase()
     )!;
-    const transferable = balance.transferable ? +balance.transferable : 0;
+    const transferable = balance.transferable ?? '0';
 
     if (this.sendCurrency?.symbol === SORA_UTILITY_ASSET) {
       const result = new FPNumber(transferable).sub(new FPNumber(this.fee));
@@ -740,7 +744,7 @@ export default class SwapForm extends Vue {
       return FPNumber.lt(result, FPNumber.ZERO) ? '0' : result.toString();
     }
 
-    return transferable.toString();
+    return transferable;
   }
 
   setMax() {
@@ -854,7 +858,7 @@ export default class SwapForm extends Vue {
   color: $default-white;
 
   .receive-input {
-    margin: 7px 0 32px;
+    margin: 7px 0 14px;
   }
 
   .swap-icon {
@@ -869,7 +873,7 @@ export default class SwapForm extends Vue {
     border: 1px solid $secondary-background-color;
     opacity: 1;
     position: relative;
-    top: -110px;
+    top: -92px;
     cursor: pointer;
 
     &:hover {

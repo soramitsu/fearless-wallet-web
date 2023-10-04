@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="Details" :blur="true" :closeHandler="handlerClose">
+  <AboveForm header="Details" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="details">
       <div class="descriptions">
         <div v-if="isExtrinsic" class="item">
@@ -17,7 +17,7 @@
             From
 
             <div class="item-value item-icon">
-              <Identicon class="identicon" :size="24" theme="polkadot" :value="fromAddress" />
+              <Identicon :address="fromAddress" />
 
               {{ displayFromAddress }}
 
@@ -28,7 +28,7 @@
             To
 
             <div class="item-value item-icon">
-              <Identicon class="identicon" :size="24" theme="polkadot" :value="toAddress" />
+              <Identicon :address="toAddress" />
 
               {{ displayToAddress }}
 
@@ -41,7 +41,7 @@
           Validator
 
           <div class="item-value item-icon">
-            <Identicon class="identicon" :size="24" theme="polkadot" :value="validator" />
+            <Identicon :address="validator" />
 
             {{ displayValidator }}
 
@@ -94,7 +94,7 @@
         </div>
       </div>
 
-      <Button size="big" :text="$t('accounts.subscan')" @click="openSubscan" />
+      <FButton size="big" :text="buttonText" @click="openExplorer" />
     </div>
 
     <Tooltip text="common.copied" target=".copy" placement="bottom" trigger="click" />
@@ -103,28 +103,55 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Identicon } from '@polkadot/vue-identicon';
+
 import { Getter } from 'vuex-class';
+import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
-import type { SelectedWallet } from '@/store';
+import type { GetNetwork, SelectedWallet } from '@/store';
 import { getType, getSignTransfer, getHistoryValue, getFormattedDate, getHumanTransferFee } from '@/helpers/history';
-import { cut } from '@/helpers/common';
+import { cut } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
-@Component({
-  components: {
-    Identicon,
-  },
-})
+@Component({})
 export default class HistoryDetailsForm extends Vue {
   @Prop(String) assetId!: string;
+
+  @Prop(String) historyType!: string;
   @Prop(Object) historyElement!: HistoryElement;
-  @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get isTransfer() {
     return this.type === 'transfer';
+  }
+
+  get address() {
+    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
+    const network = this.getNetwork(this.selectedNetwork);
+
+    return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
+  }
+
+  get selectedNetworkJson() {
+    return this.networks.find((network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase());
+  }
+
+  get explorerType() {
+    return this.selectedNetworkJson?.externalApi?.history?.type;
+  }
+
+  get explorerUrl() {
+    if (this.selectedNetworkJson?.externalApi?.explorers)
+      return this.selectedNetworkJson?.externalApi?.explorers[0].url;
+
+    return '';
+  }
+
+  get buttonText() {
+    return this.$t(this.explorerType === 'etherscan' ? 'accounts.etherscan' : 'accounts.subscan');
   }
 
   get isExtrinsic() {
@@ -156,15 +183,17 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get validator() {
-    return this.historyElement.reward!.validator;
+    return this.historyElement.reward?.validator;
   }
 
   get displayValidator() {
+    if (!this.validator) return 'no validator info';
+
     return cut(this.validator, 10);
   }
 
   get era() {
-    return this.historyElement.reward!.era;
+    return this.historyElement.reward?.era;
   }
 
   get statusClasses() {
@@ -213,7 +242,9 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get transferFee() {
-    return getHumanTransferFee(this.historyElement, this.assetId, this.selectedNetwork);
+    const fees = getHumanTransferFee(this.historyElement, this.selectedNetwork);
+
+    return this.$n(fees, 'decimalPrecise');
   }
 
   get date() {
@@ -221,9 +252,9 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get value() {
-    const { signTransfer, value } = getHistoryValue(this.historyElement, this.assetId, this.selectedNetwork);
+    const { value } = getHistoryValue(this.historyElement, this.assetId, this.selectedNetwork, this.address);
 
-    return `${signTransfer}${this.$n(value, 'decimalPrecise')}`;
+    return this.$n(value, 'decimalPrecise');
   }
 
   get type() {
@@ -231,7 +262,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get signTransfer() {
-    return getSignTransfer(this.historyElement);
+    return getSignTransfer(this.historyElement, this.address);
   }
 
   get hash() {
@@ -243,18 +274,31 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get selectedNetwork() {
-    return this.$route.params.network;
+    return this.$route.params.selectedNetwork;
   }
 
-  copy(value: string) {
+  copy(value?: string) {
+    if (!value) return;
+
     navigator.clipboard.writeText(value);
   }
 
-  openSubscan() {
-    const addressByNetwork = BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
-    const url = this.isExtrinsic
-      ? `https://${this.selectedNetwork}.subscan.io/extrinsic/${this.hash}`
-      : `https://${this.selectedNetwork}.subscan.io/account/${addressByNetwork}`;
+  openExplorer() {
+    if (this.explorerType === 'etherscan') {
+      if (this.explorerUrl) {
+        const url = this.explorerUrl
+          .replace('{type}', 'tx')
+          .replace('{value}', this.historyElement?.transfer?.hash ?? '');
+
+        window.open(url);
+      }
+
+      return;
+    }
+
+    const url = this.explorerUrl
+      .replace('{type}', 'extrinsic')
+      .replace('{value}', this.historyElement?.transfer?.hash ?? '');
 
     window.open(url);
   }
@@ -284,6 +328,7 @@ export default class HistoryDetailsForm extends Vue {
         display: flex;
         flex-direction: column;
         align-items: center;
+        gap: 4px;
       }
 
       .item-icon {

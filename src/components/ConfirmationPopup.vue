@@ -1,5 +1,5 @@
 <template>
-  <Popup :showBorder="true" :handlerClose="handlerClose">
+  <Popup :showBorder="true" @handlerClose="$emit('handlerClose')">
     <div class="confirmation-popup">
       <slot></slot>
 
@@ -8,31 +8,24 @@
       </div>
 
       <div class="activity-bock">
-        <Button
+        <FButton
           text="common.no"
           width="48%"
           size="big"
           fontSize="big"
           type="secondary"
           :border="false"
-          @click="handlerClose"
+          @click="$emit('handlerClose')"
         />
 
-        <Button width="48%" size="big" fontSize="big" text="common.yes" @click="handlerAgree" />
+        <FButton width="48%" size="big" fontSize="big" text="common.yes" @click="$emit('handlerAgree')" />
       </div>
     </div>
   </Popup>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-
-@Component
-export default class ConfirmationPopup extends Vue {
-  @Prop(String) text!: string;
-  @Prop(Function) handlerClose!: VoidFunction;
-  @Prop(Function) handlerAgree!: VoidFunction;
-}
+<script lang="ts" setup>
+defineProps<{ text: string }>();
 </script>
 
 <style lang="scss" scoped>

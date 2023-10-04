@@ -123,6 +123,7 @@ export default class History extends Vue {
 
   mounted() {
     setTimeout(() => this.fetchHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
+    this.fetchHistory();
   }
 
   get isSubstrateEthereumNetwork() {

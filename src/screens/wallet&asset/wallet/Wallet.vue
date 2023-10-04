@@ -11,7 +11,7 @@
         />
 
         <div class="wallet-balance__loading">
-          <Loading v-if="showLoadingBalance" :width="28" />
+          <Loading :width="28" v-if="showLoadingBalance" />
         </div>
       </div>
     </header>

@@ -7,6 +7,8 @@ import { isEthereumAddress } from '@polkadot/util-crypto';
 import ERC20Contract from '@extension-base/api/evm/helpers/ERC20Contract.json';
 import State from '@extension-base/background/handlers/State';
 
+export const REFRESH_TIME = 30000;
+
 export function isEqualContractAddress(address1: string, address2: string) {
   if (isEthereumAddress(address1) && isEthereumAddress(address2)) {
     return address1.toLowerCase() === address2.toLowerCase(); // EVM address is case-insensitive
@@ -90,6 +92,16 @@ export const createTransactionFromRLP = (rlp: string): Transaction | null => {
   }
 };
 
-export const getERC20Contract = (network: string, contractAddress: string, state: State): Contract => {
-  return new Contract(contractAddress, ERC20Contract.abi, state.getEvmApiMap[network]);
+export const getERC20Contract = async (network: string, contractAddress: string, state: State): Promise<Contract> => {
+  const createContract = () => new Contract(contractAddress, ERC20Contract.abi, state.getEvmApiMap[network]);
+
+  if (state.getEvmApiMap[network]) return createContract();
+
+  return new Promise((res) => {
+    setTimeout(() => {
+      const contract = createContract();
+
+      res(contract);
+    }, 3000);
+  });
 };

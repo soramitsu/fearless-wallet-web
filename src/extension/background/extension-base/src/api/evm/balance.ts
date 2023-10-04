@@ -20,7 +20,7 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
 
   if (!asset) return;
 
-  const contract = getERC20Contract(networkKey, contractAddress, state);
+  const contract = await getERC20Contract(networkKey, contractAddress, state);
   const { symbol, precision, icon, id } = asset;
 
   const balanceItem = {

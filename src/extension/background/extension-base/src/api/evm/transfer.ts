@@ -106,7 +106,7 @@ export async function getERC20TransactionObject(
   state: State
 ): Promise<{ tx: TransactionRequest; value: string; fee: bigint }> {
   const web3Api = state.getEvmApiMap[networkKey];
-  const erc20Contract = getERC20Contract(networkKey, assetId, state);
+  const erc20Contract = await getERC20Contract(networkKey, assetId, state);
 
   function generateTransferData(to: string, transferValue: string): string {
     const tokenInfo = getAssetInfo(assetId, state);

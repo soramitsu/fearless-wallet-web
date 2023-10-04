@@ -37,6 +37,7 @@ import { KeyringAddress } from '@polkadot/ui-keyring/types';
 
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
 import { fetchEvmAssetBalance } from '../../api/evm/balance';
+import { REFRESH_TIME } from '../../api/evm/utils/eth';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -145,6 +146,7 @@ export default class State {
   public notification = 'popup';
   public cron: FWCron;
   public timespans: Timespans = {};
+  public evmTimeout: NodeJS.Timer | null = null;
   public windows: number[] = [];
   public prices: Prices = {
     json: {
@@ -681,7 +683,7 @@ export default class State {
       }
     });
 
-    await this.initNetworkStates(true);
+    await this.initNetworkStates();
     this.updateServiceInfo();
 
     this.networkMapSubject.next(this.networkMap);
@@ -1159,6 +1161,7 @@ export default class State {
     await this.prepNetworkJson();
     await this.initNetworkStates();
 
+    this.onReady();
     this.updateServiceInfo();
   }
 
@@ -1169,7 +1172,7 @@ export default class State {
     });
   }
 
-  public async initNetworkStates(reset?: boolean) {
+  public async initNetworkStates() {
     const activeNetworks = Object.values(this.networkMap).filter(({ active }) => active);
 
     activeNetworks.forEach(async (network) => {
@@ -1184,13 +1187,11 @@ export default class State {
           if (isReady) return;
         }
 
-        if (reset) this.resetApiRetries();
+        this.resetApiRetries();
 
         initApi(network, this);
       }
     });
-
-    if (!reset) this.onReady();
   }
 
   public getWallets(): KeyringAddress[] {
@@ -1448,22 +1449,34 @@ export default class State {
 
     if (!currentAccount || currentAccount?.ethereumAddress === '') return;
 
-    if (Date.now() - this.getTimespan('evmBalances', currentAccount.ethereumAddress) < 1000 * 30) return;
+    const fetchBalances = () => {
+      const networks = Object.values(this.networkMap).filter(({ name, active }) => {
+        if (_networks !== null && !_networks.includes(name)) return false;
 
-    const networks = Object.values(this.networkMap).filter(({ name, active }) => {
-      if (_networks !== null && !_networks.includes(name)) return false;
+        if (!active) return false;
 
-      if (!active) return false;
+        if (!isRequireEvmAPI(name)) return false;
 
-      if (!isRequireEvmAPI(name)) return false;
+        return true;
+      });
 
-      return true;
-    });
+      networks.forEach(({ assets, name }) =>
+        assets.forEach(({ id }) => fetchEvmAssetBalance(currentAccount.ethereumAddress, name, id, this))
+      );
 
-    networks.forEach(({ assets, name }) =>
-      assets.forEach(({ id }) => fetchEvmAssetBalance(currentAccount.ethereumAddress, name, id, this))
-    );
+      this.saveTimespan('evmBalances', currentAccount.ethereumAddress, Date.now());
+    };
 
-    this.saveTimespan('evmBalances', currentAccount.ethereumAddress, Date.now());
+    const timespan = Date.now() - this.getTimespan('evmBalances', currentAccount.ethereumAddress);
+
+    if (timespan < REFRESH_TIME) {
+      if (this.evmTimeout !== null) clearTimeout(this.evmTimeout);
+
+      this.evmTimeout = setTimeout(() => {
+        fetchBalances();
+
+        this.evmTimeout = null;
+      }, REFRESH_TIME - timespan);
+    } else fetchBalances();
   }
 }

@@ -873,7 +873,7 @@ export default class Extension extends FWExtensionBase {
     };
 
     if (isRequireEvmAPI(networkKey)) {
-      const { privateKey } = this.accountExportPrivateKey({ address: from, password });
+      const { privateKey } = this.state.accountExportPrivateKey({ address: from, password });
 
       transferProm = makeEVMTransfer({
         ...params,
@@ -923,11 +923,13 @@ export default class Extension extends FWExtensionBase {
       this.cachedUnlocks[address] = 0;
 
       this.state.keyringService.lockPair(address);
+      this.state.passwords[address] = undefined;
 
       if (ethereumAddress) {
         this.cachedUnlocks[ethereumAddress] = 0;
 
         this.state.keyringService.lockPair(ethereumAddress);
+        this.state.passwords[ethereumAddress] = undefined;
       }
     }
   }

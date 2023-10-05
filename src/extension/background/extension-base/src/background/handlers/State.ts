@@ -139,6 +139,10 @@ type EvmTimeouts = {
   [address in string]: NodeJS.Timer | null;
 };
 
+export type Passwords = {
+  [address in string]: string | undefined;
+};
+
 export type Prices = {
   json: PriceJson;
   timestamp: number;
@@ -151,6 +155,7 @@ export default class State {
   public cron: FWCron;
   public timespans: Timespans = {};
   public evmTimeouts: EvmTimeouts = {};
+  public passwords: Passwords = {};
   public windows: number[] = [];
   public prices: Prices = {
     json: {
@@ -1103,7 +1108,8 @@ export default class State {
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
-    this.networksJson = networks.filter((el) => !el.disabled);
+    // TODO REMOVE
+    this.networksJson = networks;
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
 
@@ -1360,12 +1366,18 @@ export default class State {
     address,
     password,
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    const json = this.keyringService.getPair(address)!.toJson(password);
-    const decoded = decodePair(password, base64Decode(json.encoded), json.encoding.type);
+    const pass = this.passwords[address] ?? password;
+    const json = this.keyringService.getPair(address)!.toJson(pass);
+    const decoded = decodePair(pass, base64Decode(json.encoded), json.encoding.type);
+
+    const privateKey = u8aToHex(decoded.secretKey);
+    const publicKey = u8aToHex(decoded.publicKey);
+
+    this.passwords[address] = password;
 
     return {
-      privateKey: u8aToHex(decoded.secretKey),
-      publicKey: u8aToHex(decoded.publicKey),
+      privateKey,
+      publicKey,
     };
   }
 

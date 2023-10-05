@@ -38,8 +38,6 @@ export async function handleTransfer({ callback, networkKey, privateKey, tx, sta
   const signer = new Wallet(privateKey, web3Api);
 
   try {
-    console.log('handleTransfer', tx);
-
     await signer.sendTransaction(tx);
 
     callback({ status: true });

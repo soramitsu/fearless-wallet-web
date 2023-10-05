@@ -3,12 +3,10 @@ import { isRequireEvmAPI } from '../utils/utils';
 import type {
   CachedUnlocks,
   RequestAccountExport,
-  RequestAccountExportPrivateKey,
   RequestAccountName,
   RequestJsonValidate,
   RequestSigningIsLocked,
   ResponseAccountExport,
-  ResponseAccountExportPrivateKey,
   ResponseSigningIsLocked,
   ValidateJsonResult,
   RequestUpdateMeta,
@@ -146,12 +144,5 @@ export default class FWExtensionBase {
 
       return { value: false, errorType };
     }
-  }
-
-  protected accountExportPrivateKey({
-    address,
-    password,
-  }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    return this.state.accountExportPrivateKey({ address, password });
   }
 }

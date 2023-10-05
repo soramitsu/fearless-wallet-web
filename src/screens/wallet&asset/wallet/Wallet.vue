@@ -11,7 +11,7 @@
         />
 
         <div class="wallet-balance__loading">
-          <Loading :width="28" v-if="showLoadingBalance" />
+          <Loading v-if="showLoadingBalance" :width="28" />
         </div>
       </div>
     </header>
@@ -348,6 +348,8 @@ export default class Wallet extends Vue {
     currency: { mainNetwork?: string; assetId?: string },
     value = true
   ) {
+    console.log('currency', currency);
+
     this.selectedCurrency = currency;
     this[field] = value;
 

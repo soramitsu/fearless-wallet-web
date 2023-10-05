@@ -39,8 +39,7 @@
       :selectedNetwork="selectedNetwork"
       :showNodeSwitch="!isNodesRoute"
       :showCopyAddress="!isNodesRoute"
-      :showExport="!isExportRoute"
-      :showReplaceAccount="showReplaceAccount"
+      :showExport="showExport"
       :buttonTopClick="buttonTopClick"
       @handlerClose="closeAccountSettings"
       @openNotificationPopup="openNotificationPopup"
@@ -118,7 +117,6 @@ export default class AccountsLayout extends Vue {
   selectedNodeUrl = '';
   selectedNodeIsActive = false;
   buttonTopClick = 0;
-  showReplaceAccount = true;
   showAddEthereumAccountPopup = false;
   showAccountSettingsPopup = false;
   showEditNodeForm = false;
@@ -182,6 +180,10 @@ export default class AccountsLayout extends Vue {
 
   get isExportRoute() {
     return this.routeName === Components.Export;
+  }
+
+  get showExport() {
+    return !this.isExportRoute && !this.selectedWallet.isMobile;
   }
 
   get routeName() {

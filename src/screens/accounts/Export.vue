@@ -56,6 +56,10 @@ export default class Export extends Vue {
     return this.noEthereumAccount ? 'accounts.notEthereumAccount' : 'accounts.exportWarning';
   }
 
+  mounted() {
+    if (this.selectedWallet.isMobile) this.$router.back();
+  }
+
   @Watch('password')
   filter() {
     this.isWrongPassword = false;

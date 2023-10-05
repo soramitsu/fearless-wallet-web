@@ -203,6 +203,14 @@ export default class CurrencyItem extends Vue {
   get showShimmers() {
     if (this.showWarning) return false;
 
+    if (!isNetworkGroup(this.selectedNetwork)) {
+      const balance = this.assetData.balances.find(
+        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
+      )!;
+
+      return balance.state === APIItemState.PENDING;
+    }
+
     // Убираем шимммер если баланс загружен хотя бы в одной сети
     return !this.assetData.balances.some(({ state }) => state === APIItemState.READY);
   }

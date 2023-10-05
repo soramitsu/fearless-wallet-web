@@ -348,8 +348,6 @@ export default class Wallet extends Vue {
     currency: { mainNetwork?: string; assetId?: string },
     value = true
   ) {
-    console.log('currency', currency);
-
     this.selectedCurrency = currency;
     this[field] = value;
 

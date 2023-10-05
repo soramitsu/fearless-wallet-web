@@ -135,6 +135,10 @@ type Timespans = {
   evmBalances?: Record<string, number>;
 };
 
+type EvmTimeouts = {
+  [address in string]: NodeJS.Timer | null;
+};
+
 export type Prices = {
   json: PriceJson;
   timestamp: number;
@@ -146,7 +150,7 @@ export default class State {
   public notification = 'popup';
   public cron: FWCron;
   public timespans: Timespans = {};
-  public evmTimeout: NodeJS.Timer | null = null;
+  public evmTimeouts: EvmTimeouts = {};
   public windows: number[] = [];
   public prices: Prices = {
     json: {
@@ -615,8 +619,8 @@ export default class State {
     initApi(this.networkMap[key], this);
   }
 
-  public getNetworkByKey(key: string): NetworkJson | undefined {
-    return Object.values(this.networkMap).find((network) => network.name.toLowerCase() === key.toLowerCase());
+  public getNetworkByKey(key: string): NetworkJson {
+    return Object.values(this.networkMap).find((network) => network.name.toLowerCase() === key.toLowerCase())!;
   }
 
   public getNetworkGroupType() {
@@ -1087,12 +1091,10 @@ export default class State {
       .catch((err) => console.info(err));
   }
 
-  public publishBalance(reset?: boolean) {
-    return this.getBalance(reset).then((balance) => this.balanceSubject.next(balance));
-  }
+  public async publishBalance() {
+    const balance = await this.getBalance();
 
-  public resetBalanceMap() {
-    return this.publishBalance(true);
+    return this.balanceSubject.next(balance);
   }
 
   public async prepNetworkJson() {
@@ -1395,15 +1397,15 @@ export default class State {
     );
   }
 
-  public async getBalance(reset = false): Promise<BalanceJson> {
+  public async getBalance(): Promise<BalanceJson> {
     const account = await this.currentAccount;
 
     if (account)
       return new Promise((resolve) => {
-        resolve({ details: this.balanceMap[account.address] ?? [], reset });
+        resolve({ details: this.balanceMap[account.address] ?? [] });
       });
 
-    return { details: [], reset };
+    return { details: [] };
   }
 
   private lazyNext = (key: string, callback: () => void) => {
@@ -1444,10 +1446,19 @@ export default class State {
     this.timespans[name]![address] = value;
   }
 
-  async fetchEvmBalance(_networks: NetworkName[] | null) {
-    const currentAccount = await this.currentAccount;
+  getEvmTimeout(address: string) {
+    return this.evmTimeouts[address] ?? 0;
+  }
 
-    if (!currentAccount || currentAccount?.ethereumAddress === '') return;
+  saveEvmTimeout(address: string, value: NodeJS.Timer | null = null) {
+    this.evmTimeouts[address] = value;
+  }
+
+  async fetchEvmBalance(_networks: NetworkName[] | null, _ethereumAddress?: string) {
+    const currentAccount = await this.currentAccount;
+    const ethereumAddress = _ethereumAddress ?? currentAccount?.ethereumAddress ?? '';
+
+    if (ethereumAddress === '') return;
 
     const fetchBalances = () => {
       const networks = Object.values(this.networkMap).filter(({ name, active }) => {
@@ -1461,22 +1472,24 @@ export default class State {
       });
 
       networks.forEach(({ assets, name }) =>
-        assets.forEach(({ id }) => fetchEvmAssetBalance(currentAccount.ethereumAddress, name, id, this))
+        assets.forEach(({ id }) => fetchEvmAssetBalance(ethereumAddress, name, id, this))
       );
 
-      this.saveTimespan('evmBalances', currentAccount.ethereumAddress, Date.now());
+      this.saveTimespan('evmBalances', ethereumAddress, Date.now());
     };
 
-    const timespan = Date.now() - this.getTimespan('evmBalances', currentAccount.ethereumAddress);
+    const timespan = Date.now() - this.getTimespan('evmBalances', ethereumAddress);
 
     if (timespan < REFRESH_TIME) {
-      if (this.evmTimeout !== null) clearTimeout(this.evmTimeout);
+      if (this.getEvmTimeout(ethereumAddress) !== null) clearTimeout(this.getEvmTimeout(ethereumAddress));
 
-      this.evmTimeout = setTimeout(() => {
+      const timeout = setTimeout(() => {
         fetchBalances();
 
-        this.evmTimeout = null;
+        this.saveEvmTimeout(ethereumAddress);
       }, REFRESH_TIME - timespan);
+
+      this.saveEvmTimeout(ethereumAddress, timeout);
     } else fetchBalances();
   }
 }

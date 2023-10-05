@@ -40,14 +40,14 @@
       />
 
       <NetworkManagementButton
-        class="background-ellipse"
+        class="background-ellipse network-management"
         :isGroupIcon="isGroup"
         :icon="selectedNetworkIcon"
         :selectedNetwork="networkManagementButtonText"
         @onToggle="toggleSelectNetworkPopupVisible"
       />
 
-      <div v-if="isPopup" class="background-ellipse" @click="toggleConnectionPopup">
+      <div v-if="isPopup" class="background-ellipse connection" @click="toggleConnectionPopup">
         <Loading v-if="!tabStatus" :width="16" />
 
         <template v-else>
@@ -57,7 +57,8 @@
 
       <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" @handlerClose="toggleConnectionPopup" />
 
-      <Tooltip text="header.connectionStatus" target=".background-ellipse" placement="top" />
+      <Tooltip text="header.connectionStatus" target=".connection" placement="top" />
+      <Tooltip :text="selectedNetwork" target=".network-management" placement="top" />
 
       <CircleButton
         :ref="settingsNameRef"

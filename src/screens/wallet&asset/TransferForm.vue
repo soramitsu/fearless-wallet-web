@@ -524,24 +524,24 @@ export default class TransferForm extends Vue {
   get optionsNetworks() {
     // used only for transfer
     const walletBalance = this.currency?.balances ?? [];
-    const networks: {
-      name: string;
-      value: string;
-      icon: string;
-    }[] = [];
-    walletBalance.forEach(({ name, icon }) => {
-      const network = this.getNetwork(name);
 
-      if (network.active) {
-        networks.push({
-          name: firstCharToUp(name),
-          value: name,
-          icon,
-        });
-      }
-    });
-
-    return networks;
+    return walletBalance.reduce(
+      (result, { name, icon }) => {
+        return [
+          ...result,
+          {
+            name: firstCharToUp(name),
+            value: name.toLowerCase(),
+            icon,
+          },
+        ];
+      },
+      [] as {
+        name: string;
+        value: string;
+        icon: string;
+      }[]
+    );
   }
 
   get originNet() {
@@ -561,7 +561,7 @@ export default class TransferForm extends Vue {
 
         return {
           name: firstCharToUp(name),
-          value: name,
+          value: name.toLowerCase(),
           icon,
         };
       });
@@ -597,24 +597,24 @@ export default class TransferForm extends Vue {
   }
 
   get tx() {
+    const baseRequest = {
+      to: this.syncedRecipient,
+      from: this.transactionAddress,
+      relayChain: this.currency?.relayChain,
+      assetId: this.syncedAssetId,
+      amount: this.syncedAmount,
+    };
+
     if (this.isTransfer)
       return {
+        ...baseRequest,
         networkKey: this.syncedNetwork,
-        from: this.transactionAddress,
-        to: this.syncedRecipient,
-        relayChain: this.currency?.relayChain,
-        amount: this.syncedAmount,
-        assetId: this.syncedAssetId,
       } as RequestCheckTransfer;
 
     return {
+      ...baseRequest,
       originNet: this.syncedNetwork,
       destinationNet: this.syncedDestNet,
-      amount: this.syncedAmount,
-      from: this.transactionAddress,
-      to: this.syncedRecipient,
-      relayChain: this.currency?.relayChain,
-      assetId: this.syncedAssetId,
     } as RequestCheckCrossChain;
   }
 

@@ -38,7 +38,7 @@ export class OnboardingService {
   getStories(lang: string): OnboardingStories {
     const localizeStories = this.stories[lang] ?? this.stories[this.defaultLocale];
 
-    return localizeStories[this.userType];
+    return localizeStories?.[this.userType] ?? [];
   }
 
   changeUserType(type: UserType) {

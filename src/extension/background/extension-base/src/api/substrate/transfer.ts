@@ -56,7 +56,7 @@ export function getUnsupportedResponse(): BasicTxResponse {
   };
 }
 
-export interface MakeTransferProps {
+export interface MakeTransferParams {
   networkKey: NetworkName;
   to: string;
   from: string;
@@ -66,12 +66,21 @@ export interface MakeTransferProps {
   isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;
   isMobile: boolean;
+  state: State;
 }
 
-export async function makeTransfer(
-  { from, networkKey, to, assetId, isSavePass, password, amount, callback, isMobile }: MakeTransferProps,
-  state: State
-): Promise<void> {
+export async function makeTransfer({
+  from,
+  networkKey,
+  to,
+  assetId,
+  isSavePass,
+  password,
+  amount,
+  callback,
+  isMobile,
+  state,
+}: MakeTransferParams): Promise<void> {
   const txState: BasicTxResponse = {};
   const apiProps = state.getSubstrateApiMap[networkKey];
   const api = apiProps.api;

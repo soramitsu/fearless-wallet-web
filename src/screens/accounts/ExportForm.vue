@@ -37,7 +37,8 @@ import { exportAccount } from '@/extension/messaging';
 export default class ExportForm extends Vue {
   exportType = 'Restore JSON';
   json: KeyringPair$Json = {} as KeyringPair$Json;
-  isLoading = true;
+  isLoading = false;
+
   @Prop(String) password!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) networks!: Networks;
@@ -59,6 +60,8 @@ export default class ExportForm extends Vue {
   }
 
   async mounted() {
+    this.isLoading = true;
+
     const { exportedJson: json } = await this.keyringPairJson();
     this.json = json;
 

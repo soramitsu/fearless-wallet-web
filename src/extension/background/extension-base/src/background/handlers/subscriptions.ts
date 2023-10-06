@@ -119,6 +119,8 @@ export class FWSubscription {
             newEvmNetworksWithoutSubscribe.length !== 0
           ) {
             if (addressHasChanged) {
+              this.state.publishBalance();
+
               // если адрес изменился, то подписываемся на все сети
               this.subscribeBalances(address, ethereumAddress, null, null);
             } else if (thereIsEthereumAddress) {
@@ -202,7 +204,7 @@ export class FWSubscription {
 
     if (isFirstRun) this.state.generateDefaultBalance(address);
 
-    this.state.fetchEvmBalance(newEvmNetworks);
+    this.state.fetchEvmBalance(newEvmNetworks, ethereumAddress);
 
     const unsubList = subscribeBalance(address, ethereumAddress, newNetworks, this.state);
 

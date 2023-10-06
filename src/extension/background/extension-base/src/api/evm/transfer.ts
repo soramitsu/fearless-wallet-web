@@ -1,8 +1,7 @@
 import { type TransactionRequest, Wallet, parseEther, parseUnits } from 'ethers';
 import { BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
 import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
-import { getAssetInfo } from '@extension-base/api/helpers';
-import { fetchEvmAssetBalance } from './balance';
+import { BalanceItem } from './types/ether';
 import type State from '@extension-base/background/handlers/State';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
@@ -11,14 +10,30 @@ export type HandleTransferProps = {
   tx: TransactionRequest;
   networkKey: string;
   privateKey: string;
-  assetId: string;
   callback: (data: BasicTxResponse) => void;
+  state: State;
 };
 
-export async function handleTransfer(
-  { assetId, callback, networkKey, privateKey, tx }: HandleTransferProps,
-  state: State
-) {
+interface TransferParams {
+  balance: BalanceItem;
+  networkKey: string;
+  from: string;
+  to: string;
+  amount: string;
+  state: State;
+}
+
+interface TransactionObject {
+  tx: TransactionRequest;
+  fee: bigint;
+}
+
+interface MakeTransferParams extends TransferParams {
+  privateKey: string;
+  callback: (data: BasicTxResponse) => void;
+}
+
+export async function handleTransfer({ callback, networkKey, privateKey, tx, state }: HandleTransferProps) {
   const web3Api = state.getEvmApiMap[networkKey];
   const signer = new Wallet(privateKey, web3Api);
 
@@ -40,19 +55,11 @@ export async function handleTransfer(
     });
   }
 
-  setTimeout(() => {
-    const address = tx.from as string;
-
-    fetchEvmAssetBalance(address, networkKey, assetId, state);
-  }, 15000);
+  setTimeout(() => state.fetchEvmBalance([networkKey]), 15000);
 }
 
-export async function getEVMTransactionObject(
-  networkKey: string,
-  to: string,
-  value: string,
-  state: State
-): Promise<{ tx: TransactionRequest; value: string; fee: bigint }> {
+async function getUtilityTransactionObject(params: TransferParams): Promise<TransactionObject> {
+  const { networkKey, state, to, amount } = params;
   const web3Api = state.getEvmApiMap[networkKey];
   const { maxFeePerGas, maxPriorityFeePerGas, gasPrice } = await web3Api.getFeeData();
 
@@ -60,65 +67,34 @@ export async function getEVMTransactionObject(
     maxFeePerGas,
     maxPriorityFeePerGas,
     to,
-    value: parseEther(value),
+    value: parseEther(amount),
   } as TransactionRequest;
 
   const gasLimit = await web3Api.provider.estimateGas(transactionObject);
   const block = await web3Api.provider.getBlock('latest');
-  const baseFeePerGas = block?.baseFeePerGas ?? BigInt(0);
-  transactionObject.gasLimit = gasLimit;
 
+  const baseFeePerGas = block?.baseFeePerGas ?? BigInt(0);
   const prepGasPrice = (maxPriorityFeePerGas ? maxPriorityFeePerGas : gasPrice ?? BigInt(0)) + baseFeePerGas;
   const estimateFee = prepGasPrice * gasLimit;
 
-  transactionObject.value = parseEther(value);
+  transactionObject.gasLimit = gasLimit;
+  transactionObject.value = parseEther(amount);
 
-  return { tx: transactionObject, value: BigInt(0).toString(), fee: estimateFee };
+  return { tx: transactionObject, fee: estimateFee };
 }
 
-export async function makeEVMTransfer(
-  assetId: string,
-  networkKey: string,
-  to: string,
-  privateKey: string,
-  value: string,
-  callback: (data: BasicTxResponse) => void,
-  state: State
-): Promise<void> {
-  const { tx } = await getEVMTransactionObject(networkKey, to, value, state);
-  const props: HandleTransferProps = {
-    assetId,
-    callback,
-    networkKey,
-    privateKey,
-    tx,
-  };
-
-  await handleTransfer(props, state);
-}
-
-export async function getERC20TransactionObject(
-  assetId: string,
-  networkKey: string,
-  from: string,
-  to: string,
-  value: string,
-  state: State
-): Promise<{ tx: TransactionRequest; value: string; fee: bigint }> {
+async function getERC20TransactionObject(params: TransferParams): Promise<TransactionObject> {
+  const { balance, networkKey, state, to, from, amount } = params;
+  const contractAddress = balance.id;
   const web3Api = state.getEvmApiMap[networkKey];
-  const erc20Contract = getERC20Contract(networkKey, assetId, state);
 
-  function generateTransferData(to: string, transferValue: string): string {
-    const tokenInfo = getAssetInfo(assetId, state);
-    const parsedValue = parseUnits(transferValue, tokenInfo.precision);
+  const erc20Contract = await getERC20Contract(networkKey, contractAddress, state);
 
-    return erc20Contract.interface.encodeFunctionData('transfer', [to, parsedValue]);
-  }
-
-  const data = generateTransferData(to, value);
+  const parsedValue = parseUnits(amount, balance.precision);
+  const data = erc20Contract.interface.encodeFunctionData('transfer', [to, parsedValue]);
 
   const transactionObject: TransactionRequest = {
-    to: erc20Contract.target,
+    to: contractAddress,
     from,
     data,
     value: parseEther('0.0'),
@@ -126,34 +102,55 @@ export async function getERC20TransactionObject(
 
   const gasLimit = await web3Api.estimateGas(transactionObject);
   const block = await web3Api.provider.getBlock('latest');
-  const baseFeePerGas = block?.baseFeePerGas ?? BigInt(0);
-  transactionObject.gasLimit = gasLimit;
   const { maxPriorityFeePerGas, gasPrice } = await web3Api.getFeeData();
 
+  const baseFeePerGas = block?.baseFeePerGas ?? BigInt(0);
   const prepGasPrice = maxPriorityFeePerGas ? maxPriorityFeePerGas : gasPrice ?? BigInt(0) + baseFeePerGas;
   const estimateFee = prepGasPrice * gasLimit;
 
-  return { tx: transactionObject, value, fee: estimateFee };
+  transactionObject.gasLimit = gasLimit;
+
+  return { tx: transactionObject, fee: estimateFee };
 }
 
-export async function makeERC20Transfer(
-  assetId: string,
-  networkKey: string,
-  from: string,
-  to: string,
-  privateKey: string,
-  value: string,
-  callback: (data: BasicTxResponse) => void,
-  state: State
-) {
-  const { tx } = await getERC20TransactionObject(assetId, networkKey, from, to, value, state);
+async function makeUtilityTransfer(params: MakeTransferParams): Promise<void> {
+  const { callback, networkKey, privateKey, state } = params;
+  const { tx } = await getUtilityTransactionObject(params);
+
   const props: HandleTransferProps = {
-    assetId,
     callback,
     networkKey,
     privateKey,
     tx,
+    state,
   };
 
-  await handleTransfer(props, state);
+  await handleTransfer(props);
+}
+
+async function makeERC20Transfer(params: MakeTransferParams) {
+  const { callback, networkKey, privateKey, state } = params;
+  const { tx } = await getERC20TransactionObject(params);
+
+  const props: HandleTransferProps = {
+    callback,
+    networkKey,
+    privateKey,
+    tx,
+    state,
+  };
+
+  await handleTransfer(props);
+}
+
+export async function getEVMTransactionObject(params: TransferParams): Promise<TransactionObject> {
+  if (params.balance.isUtility) return await getUtilityTransactionObject(params);
+
+  return await getERC20TransactionObject(params);
+}
+
+export function makeEVMTransfer(params: MakeTransferParams): Promise<void> {
+  if (params.balance.isUtility) return makeUtilityTransfer(params);
+
+  return makeERC20Transfer(params);
 }

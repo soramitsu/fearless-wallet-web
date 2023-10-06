@@ -33,7 +33,7 @@ import {
   subscribePrice,
 } from '@/extension/messaging';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
-import { IS_EXTENSION } from '@/consts/global';
+import { IS_EXTENSION, IS_PRODUCTION } from '@/consts/global';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 
 @Component({})
@@ -82,9 +82,11 @@ export default class App extends Vue {
   async mounted() {
     this.mobileWalletListeners();
 
-    const isRequired = await isOnboardingRequired();
+    if (IS_PRODUCTION) {
+      const isRequired = await isOnboardingRequired();
 
-    if (isRequired) this.$router.push({ name: Components.Onboarding });
+      if (isRequired) this.$router.push({ name: Components.Onboarding });
+    }
   }
 
   mobileWalletListeners() {

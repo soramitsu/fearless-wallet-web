@@ -1,19 +1,21 @@
 import { NetworkJson } from '@extension-base/types';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
-import { isSameString } from '.';
-import { ALL_NETWORKS } from '@/consts/networks';
+import { isNetworkGroup } from './common';
 import { NetworkName } from '@/interfaces';
 
 function networksIsPending(networks: NetworkJson[], selectedNetwork: NetworkName = 'all') {
-  if (selectedNetwork === ALL_NETWORKS) {
-    const isPendingExists = networks.some(({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING);
+  if (isNetworkGroup(selectedNetwork)) {
+    //TODO добавить проверку по группам
+    const isPendingExists = networks.some(({ networkStatus }) => networkStatus === NETWORK_STATUS.CONNECTING);
 
-    return isPendingExists;
+    return !navigator.onLine || isPendingExists;
   }
 
-  const apiStatus = networks.find(({ name }) => isSameString(name, selectedNetwork))?.apiStatus;
+  const networkStatus = networks.find(
+    ({ name }) => name.toLowerCase() === selectedNetwork.toLowerCase()
+  )?.networkStatus;
 
-  return apiStatus === NETWORK_STATUS.PENDING;
+  return networkStatus === NETWORK_STATUS.CONNECTING;
 }
 
 export { networksIsPending };

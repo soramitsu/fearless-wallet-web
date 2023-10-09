@@ -60,7 +60,6 @@ import type { NetworkParams, SelectedWallet } from '@/store';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { networksIsPending } from '@/helpers/shimmers';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
-import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import StakingSettings from '@/screens/staking/StakingSettings.vue';
 import StakingItem from '@/screens/staking/StakingItem.vue';
 import MyStakingItem from '@/screens/staking/MyStakingItem.vue';
@@ -80,7 +79,6 @@ import { getCostOfAssets } from '@/controllers/transferHelpers';
     MyStakingItem,
     WalletBalance,
     StakingSettings,
-    SelectNetworkButton,
   },
 })
 export default class StakingPage extends Vue {

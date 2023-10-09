@@ -1,18 +1,14 @@
-// Copyright 2019-2022 @subwallet/extension-koni authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-import { state } from '@extension-base/background/handlers';
 import { REFRESH_PRICE_INTERVAL } from '@extension-base/const/intervals';
 import { axios } from '@extension-base/utils/axios';
+import type { Prices } from '@extension-base/background/handlers/State';
 import type { PriceJson } from '@extension-base/background/types/types';
 
-export async function getTokenPrice(assets: Array<string>, currency = 'usd'): Promise<PriceJson> {
+export async function getTokenPrice(assets: Array<string>, currency = 'usd', prices: Prices): Promise<PriceJson> {
   try {
     const now = new Date().getTime();
-    const { currency: currentCurrency } = state.prices.json;
+    const { currency: currentCurrency } = prices.json;
 
-    if (Math.abs(state.prices.timestamp - now) <= REFRESH_PRICE_INTERVAL && currentCurrency === currency) {
-      return state.prices.json;
-    }
+    if (Math.abs(prices.timestamp - now) <= REFRESH_PRICE_INTERVAL && currentCurrency === currency) return prices.json;
 
     const assetsStr = assets.join(',');
     const coingeckoUrl = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${currency}&include_24hr_change=true&ids=${assetsStr}`;
@@ -41,7 +37,7 @@ export async function getTokenPrice(assets: Array<string>, currency = 'usd'): Pr
       tokenPriceMap[token] = responseData[token][currency];
     });
 
-    state.prices = {
+    prices = {
       json: {
         currency,
         tokenPriceChange,

@@ -6,12 +6,12 @@
       </div>
       <div class="description">
         <div class="network-name">{{ getUpperValue(network) }}</div>
-        <div class="address">{{ address }}</div>
+        <div v-if="addressExist" class="address">{{ address }}</div>
       </div>
     </div>
 
     <CircleButton
-      v-if="showSettingsIcon"
+      v-if="addressExist"
       :ref="circleButtonRef"
       iconName="dots-horizontal"
       backgroundColor="light-black"
@@ -38,7 +38,7 @@ export default class AccountsItem extends Vue {
   @Prop(Boolean) isMobile!: boolean;
   @Prop(String) address!: string;
 
-  get showSettingsIcon() {
+  get addressExist() {
     return this.address !== '';
   }
 
@@ -95,6 +95,7 @@ export default class AccountsItem extends Vue {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    justify-content: center;
     width: 395px;
 
     .network-name {
@@ -114,8 +115,8 @@ export default class AccountsItem extends Vue {
 
     .address {
       color: rgba(255, 255, 255, 1);
-      margin-top: 10px;
       font-size: 13px;
+      margin-top: 10px;
       width: 100%;
       text-align: left;
       overflow: hidden;

@@ -1,13 +1,12 @@
 import assert from 'assert';
+import { isRequireEvmAPI } from '../utils/utils';
 import type {
   CachedUnlocks,
   RequestAccountExport,
-  RequestAccountExportPrivateKey,
   RequestAccountName,
   RequestJsonValidate,
   RequestSigningIsLocked,
   ResponseAccountExport,
-  ResponseAccountExportPrivateKey,
   ResponseSigningIsLocked,
   ValidateJsonResult,
   RequestUpdateMeta,
@@ -52,6 +51,26 @@ export default class FWExtensionBase {
 
   updatePairMeta({ address, meta }: RequestUpdateMeta) {
     this.state.keyringService.saveAccountMeta(address, meta);
+
+    // если передали ethereumAddress, нужно сохранить ethereumAddress для аккаунта
+    if (meta.ethereumAddress) {
+      const cb = () =>
+        Object.keys(this.state.networkMap).forEach((network) => {
+          if (isRequireEvmAPI(network)) this.state.refreshWeb3Api(network);
+        });
+
+      this.state.getCurrentAccount((account) =>
+        this.state.setCurrentAccount(
+          {
+            ...account!,
+            ethereumAddress: meta.ethereumAddress,
+          },
+          cb
+        )
+      );
+
+      this.state.updateServiceInfo();
+    }
 
     return true;
   }
@@ -125,12 +144,5 @@ export default class FWExtensionBase {
 
       return { value: false, errorType };
     }
-  }
-
-  protected accountExportPrivateKey({
-    address,
-    password,
-  }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    return this.state.accountExportPrivateKey({ address, password });
   }
 }

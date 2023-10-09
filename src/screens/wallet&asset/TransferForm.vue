@@ -127,9 +127,9 @@
             size="big"
             class="button"
             :disabled="buttonDisabled"
-            :iconName="buttonLoading ? 'loader' : ''"
-            :iconType="buttonLoading ? 'loading' : ''"
-            :text="buttonLoading ? '' : buttonText"
+            :iconName="isFetchingFees ? 'loader' : ''"
+            :iconType="isFetchingFees ? 'loading' : ''"
+            :text="isFetchingFees ? '' : buttonText"
             @click="handlerContinueButton"
           />
         </div>
@@ -231,6 +231,7 @@ import { isNetworkGroup } from '@/helpers/common';
 export default class TransferForm extends Vue {
   readonly isPopup = BaseApi.useIsPopup();
 
+  timeoutSubscription: NodeJS.Timeout | undefined;
   showSelectedAssetPopup = false;
   showSelectNetworkPopup = false;
   showDestNetPopup = false;
@@ -238,7 +239,6 @@ export default class TransferForm extends Vue {
   showConfirmationPasswordPopup = false;
   showMyWallets = false;
   showHistoryBook = false;
-  buttonLoading = false;
   newAddress = '';
   filterValue = '';
   isFetchingFees = false;
@@ -409,7 +409,7 @@ export default class TransferForm extends Vue {
   }
 
   get buttonDisabled() {
-    if (this.buttonLoading) return true;
+    if (this.isFetchingFees) return true;
 
     if (!navigator.onLine) return true;
 
@@ -449,7 +449,9 @@ export default class TransferForm extends Vue {
   }
 
   get currency() {
-    return this.balances.find(({ symbol, assetId }) => symbol === this.syncedAssetId || assetId === this.syncedAssetId); // TODO проверить нужны ли оба условия
+    return this.balances.find(({ balances }) => {
+      return balances.some((el) => el.id.toLowerCase() === this.syncedAssetId.toLowerCase());
+    })!;
   }
 
   get currencyBalance() {
@@ -477,7 +479,9 @@ export default class TransferForm extends Vue {
 
   get assetWithActiveNetworks() {
     const result = this.balances.filter(({ balances }) => {
-      return balances.some(({ name }) => {
+      const prepBalances = balances ?? [];
+
+      return prepBalances.some(({ name }) => {
         const { active, rank, favorite } = this.getNetwork(name);
 
         if (!active) return false;
@@ -519,24 +523,24 @@ export default class TransferForm extends Vue {
   get optionsNetworks() {
     // used only for transfer
     const walletBalance = this.currency?.balances ?? [];
-    const networks: {
-      name: string;
-      value: string;
-      icon: string;
-    }[] = [];
-    walletBalance.forEach(({ name, icon }) => {
-      const network = this.getNetwork(name);
 
-      if (network.active) {
-        networks.push({
-          name: firstCharToUp(name),
-          value: name,
-          icon,
-        });
-      }
-    });
-
-    return networks;
+    return walletBalance.reduce(
+      (result, { name, icon }) => {
+        return [
+          ...result,
+          {
+            name: firstCharToUp(name),
+            value: name.toLowerCase(),
+            icon,
+          },
+        ];
+      },
+      [] as {
+        name: string;
+        value: string;
+        icon: string;
+      }[]
+    );
   }
 
   get originNet() {
@@ -556,7 +560,7 @@ export default class TransferForm extends Vue {
 
         return {
           name: firstCharToUp(name),
-          value: name,
+          value: name.toLowerCase(),
           icon,
         };
       });
@@ -585,24 +589,24 @@ export default class TransferForm extends Vue {
   }
 
   get tx() {
+    const baseRequest = {
+      to: this.syncedRecipient,
+      from: this.transactionAddress,
+      relayChain: this.currency?.relayChain,
+      assetId: this.syncedAssetId,
+      amount: this.syncedAmount,
+    };
+
     if (this.isTransfer)
       return {
+        ...baseRequest,
         networkKey: this.syncedNetwork,
-        from: this.transactionAddress,
-        to: this.syncedRecipient,
-        relayChain: this.currency?.relayChain,
-        amount: this.syncedAmount,
-        assetId: this.syncedAssetId,
       } as RequestCheckTransfer;
 
     return {
+      ...baseRequest,
       originNet: this.syncedNetwork,
       destinationNet: this.syncedDestNet,
-      amount: this.syncedAmount,
-      from: this.transactionAddress,
-      to: this.syncedRecipient,
-      relayChain: this.currency?.relayChain,
-      assetId: this.syncedAssetId,
     } as RequestCheckCrossChain;
   }
 
@@ -662,10 +666,14 @@ export default class TransferForm extends Vue {
   @Watch('syncedRecipient')
   @Watch('syncedAmount')
   async calculateEstimates() {
-    const { estimateFee, destEstimateFee } = await this.verifyTx();
+    clearTimeout(this.timeoutSubscription);
 
-    this.syncedFee = estimateFee ?? '0';
-    this.syncedDestNetFee = destEstimateFee ?? '0';
+    this.timeoutSubscription = setTimeout(async () => {
+      const { estimateFee, destEstimateFee } = await this.verifyTx();
+
+      this.syncedFee = estimateFee ?? '0';
+      this.syncedDestNetFee = destEstimateFee ?? '0';
+    }, 2000);
   }
 
   created() {
@@ -731,9 +739,11 @@ export default class TransferForm extends Vue {
   }
 
   calcTransferableUtility() {
-    const balance = this.utilityAsset!.balances.find(({ isUtility }) => isUtility)!;
+    const balance = this.utilityAsset.balances.find(
+      ({ isUtility, name }) => isUtility && name.toLowerCase() === this.syncedNetwork.toLowerCase()
+    )!;
 
-    return balance.transferable?.toString() ?? '';
+    return balance?.transferable?.toString() ?? '0';
   }
 
   calcTransferableSendMinusFee(fee: string) {
@@ -752,7 +762,6 @@ export default class TransferForm extends Vue {
   }
 
   toggleLoading(value = true) {
-    this.buttonLoading = value;
     this.isFetchingFees = value;
   }
 

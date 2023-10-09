@@ -11,7 +11,7 @@
         />
 
         <div class="wallet-balance__loading">
-          <Loading v-if="showShimmers" :width="28" />
+          <Loading v-if="showLoadingBalance" :width="28" />
         </div>
       </div>
     </header>
@@ -33,6 +33,7 @@
 
         <Currencies
           v-if="showCurrencies"
+          :isEmptyBalances="isEmptyBalances"
           :balances="filteredCurrencies"
           :selectedNetwork="selectedNetwork"
           :showAssetsManagementForm="showAssetsManagementForm"
@@ -82,15 +83,14 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation, Action } from 'vuex-class';
 import { BalanceJson, TokenBalance } from '@extension-base/background/types/types';
-import { NETWORK_STATUS } from '@extension-base//api/types/networks';
-import { BalanceItem } from '@extension-base//api/evm/types/ether';
+import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset, GetNetwork } from '@/store';
 import type { AsyncFn, Fn, TabWallet } from '@/interfaces';
+import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
-import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import { accountController } from '@/controllers/accountController';
@@ -110,6 +110,8 @@ import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 import { networksIsPending } from '@/helpers/shimmers';
+import BaseApi from '@/util/BaseApi';
+import { fetchEvmBalance } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -121,13 +123,11 @@ import { networksIsPending } from '@/helpers/shimmers';
     SoraCardBanner,
     WalletSettings,
     NetworkManagement,
-    SelectNetworkButton,
     NetworkUnavailablePopup,
     GoogleExportPopup,
   },
 })
 export default class Wallet extends Vue {
-  readonly selectNetworkButtonRef = 'selectNetworkButton';
   showNetworkManagement = false;
   showAssetsManagementForm = false;
   showSendForm = false;
@@ -166,20 +166,24 @@ export default class Wallet extends Vue {
     return this.networkUnavailable !== '';
   }
 
+  get isEmptyBalances() {
+    return this.balances.length === 0;
+  }
+
   get showWarningIcon() {
     if (this.selectedNetwork !== ALL_NETWORKS) {
-      const apiStatus = this.networks.find(
+      const networkStatus = this.networks.find(
         ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
-      )?.apiStatus;
+      )?.networkStatus;
 
-      return apiStatus === NETWORK_STATUS.DISCONNECTED;
+      return networkStatus === NETWORK_STATUS.DISCONNECTED;
     }
 
     return this.networksWithWarning.length !== 0;
   }
 
   get disconnectedNetworks() {
-    return this.networks.filter(({ apiStatus }) => apiStatus === NETWORK_STATUS.DISCONNECTED);
+    return this.networks.filter(({ networkStatus }) => networkStatus === NETWORK_STATUS.DISCONNECTED);
   }
 
   get networksWithWarning() {
@@ -187,7 +191,13 @@ export default class Wallet extends Vue {
   }
 
   get summaryTransferableBalance() {
-    return getSummaryTransferableWalletBalance(this.balances, this.prices, this.selectedNetwork);
+    return getSummaryTransferableWalletBalance(
+      this.selectedWallet.address,
+      this.balances,
+      this.prices,
+      this.selectedNetwork,
+      this.networks
+    );
   }
 
   get changeWalletBalance() {
@@ -217,12 +227,31 @@ export default class Wallet extends Vue {
     return networksIsPending(this.networks, this.selectedNetwork);
   }
 
+  get showLoadingBalance() {
+    if (!isNetworkGroup(this.selectedNetwork)) {
+      const networkStatus = this.networks.find(
+        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
+      )?.networkStatus;
+
+      return networkStatus === NETWORK_STATUS.CONNECTING;
+    }
+
+    //TODO добавить проверку по группам
+    const isPendingExists = this.networks.some(({ networkStatus }) => networkStatus === NETWORK_STATUS.CONNECTING);
+
+    return !navigator.onLine || isPendingExists;
+  }
+
   get filteredCurrencies() {
     const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
+    const baseFilter =
+      this.selectedWallet.ethereumAddress === ''
+        ? this.sortedCurrencies.filter((el) => !BaseApi.isEthereumNetwork(el.mainNetwork))
+        : this.sortedCurrencies;
 
     const filteredByNetwork = isAllNetworks
-      ? this.sortedCurrencies
-      : this.sortedCurrencies.filter(({ balances }) => {
+      ? baseFilter
+      : baseFilter.filter(({ balances }) => {
           return balances.some((balance) => filterBalanceItemsByNetwork(balance, this.selectedNetwork));
         });
 
@@ -230,7 +259,7 @@ export default class Wallet extends Vue {
 
     const filter = this.filterValue.trim().toLowerCase();
 
-    return filteredByNetwork.filter(({ symbol }) => symbol.includes(filter));
+    return filteredByNetwork.filter(({ symbol }) => symbol.toLowerCase().includes(filter));
   }
 
   get showCurrencies() {
@@ -250,6 +279,10 @@ export default class Wallet extends Vue {
     this.$router.replace('/').catch((e) => e);
 
     this.$emit('closeSelectWalletPopup');
+  }
+
+  activated() {
+    fetchEvmBalance();
   }
 
   deactivated() {

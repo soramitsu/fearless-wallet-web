@@ -8,7 +8,7 @@
     :showBorder="showBorder"
     :height="height"
     :maxHeight="maxHeight"
-    @handlerFilter="$emit('handlerFilter', $event)"
+    @handlerFilter="$emit('handlerFilter', ...arguments)"
     @handlerClose="$emit('handlerClose')"
     :horizontalPlacement="horizontalPlacement"
     :verticalPlacement="verticalPlacement"
@@ -87,7 +87,7 @@ export default class SelectPopup extends Vue {
     return this.options.length === 0;
   }
 
-  beforeMount() {
+  created() {
     const index = this.options.findIndex(({ value }) => value === this.value);
 
     if (index === -1) return;

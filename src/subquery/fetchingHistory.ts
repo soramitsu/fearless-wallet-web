@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ethers } from 'ethers';
+// import { ethers } from 'ethers';
 import type {
   SubqueryHistory,
   GiantsquidHistoryItem,
@@ -146,13 +146,15 @@ async function fetchEthereumTokenHistory(
   const abort = new AbortController();
   const signal = abort.signal;
   const apikey = getEthereumExplorerApiKey(url);
+
   const res = await axios.get<EthereumHistoryResponse<EthereumTokenHistoryData>>(url, {
     params: {
       module: 'account',
       action: 'tokentx',
       contractAddress: contractAddress,
+      address: address,
       page: 1,
-      offset: 50,
+      offset: 300,
       sort: 'desc',
       apikey,
     },
@@ -165,14 +167,12 @@ async function fetchEthereumTokenHistory(
     return [];
   }
 
-  const decimal = +res.data.result[0].tokenDecimal;
-
   return res.data.result.map(({ timeStamp, value, gasUsed, from, to, hash }, index) => ({
     address,
     id: String(index),
     timestamp: (+timeStamp * SEC1).toString(),
     transfer: {
-      amount: ethers.formatUnits(value, decimal),
+      amount: value,
       hash,
       eventIdx: 0,
       fee: gasUsed,
@@ -194,7 +194,7 @@ async function fetchEthereumHistory(url: string, address: string): Promise<Histo
       action: 'txlist',
       address,
       page: 1,
-      offset: 50,
+      offset: 300,
       sort: 'desc',
       apikey,
     },

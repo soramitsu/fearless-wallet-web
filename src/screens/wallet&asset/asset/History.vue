@@ -63,6 +63,10 @@ export default class History extends Vue {
     return this.$route.params.selectedNetwork;
   }
 
+  get assetId() {
+    return this.$route.params.assetId;
+  }
+
   get isEmptyHistory() {
     return this.filteredHistory?.length === 0;
   }
@@ -86,10 +90,7 @@ export default class History extends Vue {
   get history() {
     if (!this.selectedNetwork) return [];
 
-    return (
-      this.getHistory(this.currency?.assetId, this.selectedWallet.address, this.selectedNetwork.toLowerCase())?.nodes ??
-      []
-    );
+    return this.getHistory(this.assetId, this.selectedWallet.address, this.selectedNetwork.toLowerCase())?.nodes ?? [];
   }
 
   get filteredHistory() {
@@ -108,30 +109,34 @@ export default class History extends Vue {
   }
 
   get isMainNetwork() {
-    return !!this.currency.balances?.find(
+    return this.currency.balances?.some(
       ({ name, isUtility, isNative }) =>
         name.toLowerCase() === this.selectedNetwork?.toLowerCase() && (isUtility || isNative)
     );
   }
 
-  mounted() {
-    setTimeout(() => this.fetchHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
+  @Watch('isMainNetwork')
+  watchNetwork() {
+    this.fetchHistory();
   }
 
-  get isEvmNetworks() {
-    return BaseApi.isEthereumNetwork(this.selectedNetwork);
+  mounted() {
+    setTimeout(() => this.fetchHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
+    this.fetchHistory();
+  }
+
+  get isSubstrateEthereumNetwork() {
+    return BaseApi.isSubstrateEthereumNetwork(this.selectedNetwork);
   }
 
   async fetchHistory() {
-    if (
-      this.history.length !== 0 ||
-      (!this.isMainNetwork && this.selectedNetwork !== 'Ethereum' && this.selectedNetwork !== 'Ethereum Goerli')
-    )
-      return;
+    if (this.history.length !== 0) return;
+
+    if (!this.isMainNetwork && this.isSubstrateEthereumNetwork) return;
 
     this.showLoader = true;
 
-    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.currency.assetId);
+    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.assetId);
 
     this.showLoader = false;
   }

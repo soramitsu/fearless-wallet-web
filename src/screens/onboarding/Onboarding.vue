@@ -68,6 +68,8 @@ export default class Onboarding extends Vue {
     const stories = await getOnboardingStories(this.$i18n.locale);
 
     this.stories = stories;
+
+    if (stories.length === 0) this.$router.back();
   }
 
   onSkip() {
@@ -75,19 +77,9 @@ export default class Onboarding extends Vue {
   }
 
   onContinue() {
-    if (this.showStartingScreen) {
-      this.showStartingScreen = false;
-
-      return;
-    }
-
-    if (this.storiesLength === this.activeStory) {
-      this.completeOnboarding();
-
-      return;
-    }
-
-    this.activeStory += 1;
+    if (this.showStartingScreen) this.showStartingScreen = false;
+    else if (this.storiesLength === this.activeStory) this.completeOnboarding();
+    else this.activeStory += 1;
   }
 
   completeOnboarding() {

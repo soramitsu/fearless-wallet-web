@@ -32,6 +32,7 @@ export default class WalletInfo extends Vue {
   readonly dotsHorizontalRef = 'dotsHorizontal';
   showWalletMenu = false;
   totalBalances: ResponseTotalBalances[] = [];
+  interval: NodeJS.Timer | undefined;
 
   $refs!: {
     dotsHorizontal: HTMLDivElement;
@@ -65,8 +66,14 @@ export default class WalletInfo extends Vue {
     ];
   }
 
-  async mounted() {
+  async created() {
     this.totalBalances = await getTotalBalances();
+
+    this.interval = setInterval(async () => (this.totalBalances = await getTotalBalances()), 5000);
+  }
+
+  beforeDestroy() {
+    clearInterval(this.interval);
   }
 
   setWallet({ target: { classList } }: CustomEvent) {

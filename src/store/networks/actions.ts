@@ -9,6 +9,7 @@ import { fetchHistory } from '@/subquery/fetchingHistory';
 import { URLS } from '@/consts/urls';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { toggleFavoriteNetwork } from '@/extension/messaging';
+import { isRequireEvmAPI } from '@/extension/background/extension-base/src/background/utils/utils';
 
 export enum ActionTypes {
   FETCH_FIATS = 'FETCH_FIATS',
@@ -39,9 +40,12 @@ const actions: ActionTree<State, State> & Actions = {
     const { type, url } = externalApi.history;
     const formattedAddress = BaseApi.formatAddress(wallet, networkName);
 
-    const { assetId: utilityAssetId } = getUtilityAsset(rootState.account.balances, networkName)!;
-    const isUtility = utilityAssetId === assetId;
+    const asset = getUtilityAsset(rootState.account.balances, networkName)!;
 
+    const utilityId = isRequireEvmAPI(networkName)
+      ? asset.balances.find((el) => el.name.toLowerCase() === networkName.toLowerCase() && el.isUtility)?.id
+      : asset.assetId;
+    const isUtility = assetId === utilityId;
     // сейчас эндпоинт истории парсит только историю утилити токена
     // TODO: когда появится история других токенов отрефаткорить данную логику
 

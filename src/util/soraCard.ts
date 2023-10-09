@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { loadScript, unloadScript } from 'vue-plugin-load-script';
 import { v4 as uuidv4 } from 'uuid';
-import { balanceItemByNetwork } from '@extension-base/background/utils/utils';
+import { getBalanceItem } from '@extension-base/background/utils/utils';
 import jwtDecode from 'jwt-decode';
 import { FPNumber } from '@sora-substrate/util';
 import type { JwtPayload } from 'jwt-decode';
@@ -349,7 +349,7 @@ const subscribeCardToken = async (checkStatus: () => Promise<void>) => {
 };
 
 const calculateXOREuroBalance = ({ balances }: TokenBalance, xorPerEuroRatio: FPNumber): number => {
-  const balance = balanceItemByNetwork(balances, SORA_NETWORK_NAME);
+  const balance = getBalanceItem(balances, SORA_NETWORK_NAME);
   const xorTotalBalance = balance?.muchTotal ?? FPNumber.ZERO;
   const xorBalanceInEuros = new FPNumber(xorTotalBalance).mul(xorPerEuroRatio).toNumber();
 
@@ -357,7 +357,7 @@ const calculateXOREuroBalance = ({ balances }: TokenBalance, xorPerEuroRatio: FP
 };
 
 const calculateXorRestPrice = ({ balances }: TokenBalance, xorPerEuroRatio: FPNumber): XorRestPrice => {
-  const balance = balanceItemByNetwork(balances, SORA_NETWORK_NAME);
+  const balance = getBalanceItem(balances, SORA_NETWORK_NAME);
   const xorTotalBalance = new FPNumber(balance?.total ?? 0);
 
   const euroToPay = FPNumber.HUNDRED.add(FPNumber.ONE).sub(xorTotalBalance.mul(xorPerEuroRatio));

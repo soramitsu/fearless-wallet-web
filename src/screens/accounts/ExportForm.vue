@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="accounts.exportJson" :blur="true" @closeHandler="closeForm">
+  <AboveForm header="accounts.exportJson" :fullScreen="true" @closeHandler="closeForm">
     <div class="export-form">
       <Loader v-if="isLoading" />
 
@@ -38,7 +38,8 @@ import { exportAccount } from '@/extension/messaging';
 export default class ExportForm extends Vue {
   exportType = 'Restore JSON';
   json: KeyringPair$Json = {} as KeyringPair$Json;
-  isLoading = true;
+  isLoading = false;
+
   @Prop(String) password!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) networks!: Networks;
@@ -60,6 +61,8 @@ export default class ExportForm extends Vue {
   }
 
   async mounted() {
+    this.isLoading = true;
+
     const { exportedJson: json } = await this.keyringPairJson();
     this.json = json;
 

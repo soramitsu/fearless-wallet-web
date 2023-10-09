@@ -45,8 +45,8 @@ export default class LockedDetailsPopup extends Vue {
       return [
         { name: 'reserved', value: 0 },
         { name: 'frozen', value: 0 },
-        { name: 'locked', value: 0 },
         { name: 'transferable', value: 0 },
+        { name: 'totalLocked', value: 0 },
         { name: 'total', value: 0 },
       ];
 
@@ -82,7 +82,7 @@ export default class LockedDetailsPopup extends Vue {
       { name: 'reserved', value: reserved, fiat: reserved * +this.assetPrice.price },
       { name: 'frozen', value: frozen, fiat: frozen * +this.assetPrice.price },
       { name: 'transferable', value: transferable, fiat: transferable * +this.assetPrice.price },
-      { name: 'locked', value: locked, fiat: locked * +this.assetPrice.price },
+      { name: 'totalLocked', value: locked, fiat: locked * +this.assetPrice.price },
       { name: 'total', value: total, fiat: total * +this.assetPrice.price },
     ];
   }

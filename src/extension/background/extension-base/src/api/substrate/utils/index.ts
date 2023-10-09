@@ -1,8 +1,8 @@
 import { FPNumber } from '@sora-substrate/math';
-import { state } from '@extension-base/background/handlers';
+import { Asset } from '../../../types';
 
-export function getAssetOptions(assetId: string) {
-  const { currencyId, symbol, type } = state.assetsMap.find(({ id }) => id === assetId)!;
+export function getAssetOptions(assetId: string, assetsMap: Asset[]) {
+  const { currencyId, symbol, type } = assetsMap.find(({ id }) => id === assetId)!;
 
   if (type === 'stable') return { Stable: currencyId!.toUpperCase() };
   if (type === 'vsToken') return { VSToken: currencyId!.toUpperCase() };
@@ -14,9 +14,10 @@ export function getAssetOptions(assetId: string) {
   if (type === 'soraAsset') return currencyId;
   if (type === 'equilibrium') return currencyId;
   if (type === 'assets') return currencyId;
-
-  // TODO
   if (type === 'assetId') return currencyId;
+
+  // TODO AUSD
+  if (assetId === '91a69026-0ab7-4db0-af53-8d571fd33ac4') return { Token: currencyId!.toUpperCase() };
 
   return { Token: symbol.toUpperCase() };
 }

@@ -5,6 +5,7 @@ import { ALLOWED_PATH } from '@extension-base/defaults';
 import MetadataStore from '@extension-base/stores/Metadata';
 import { JsonRpcProvider, WebSocketProvider } from 'ethers';
 import { UserType } from '@extension-base/services/onboarding-service/types';
+import { NETWORK_STATUS } from '../../api/types/networks';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
@@ -57,15 +58,12 @@ export interface AccountJson extends KeyringPair$Meta {
   ethereumAddress: string;
   genesisHash?: HexString | null;
   network?: string;
-  isExternal?: boolean;
-  isHardware?: boolean;
-  isHidden?: boolean;
   active?: boolean;
   name: string;
-  parentAddress?: string;
   suri?: string;
   type?: KeypairType;
   whenCreated?: number;
+  isMobile?: boolean;
 }
 
 export interface ApproveAuthRequest {
@@ -237,7 +235,7 @@ export type BasicTxError = {
 export interface ApiProps {
   api?: ApiPromise;
   provider?: WsProvider;
-  isApiConnected: boolean;
+  apiStatus: NETWORK_STATUS;
   apiRetry: number;
   nodeIndex: number;
   isEthereum: boolean;
@@ -266,13 +264,11 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
 }
 
 export interface ResponseCheckTransfer {
-  errors?: Array<BasicTxError>;
   estimateFee?: string;
   destEstimateFee: '0';
 }
 
 export interface ResponseCheckCrossChain {
-  errors?: Array<BasicTxError>;
   estimateFee?: string;
   destEstimateFee?: string;
 }
@@ -356,8 +352,10 @@ export interface RequestAccountForget {
 
 export interface RequestUpdateMeta {
   address: string;
-  meta: KeyringPair$Meta;
+  meta: Meta;
 }
+
+export type Meta = KeyringPair$Meta & { ethereumAddress: string };
 
 export interface RequestAccountName {
   address: string;
@@ -386,7 +384,6 @@ export interface ApiMap {
 export interface ServiceInfo {
   networkMap: Record<string, NetworkJson>;
   apiMap: ApiMap;
-  isLock?: boolean;
   currentAccountInfo: CurrentAccountState;
 }
 
@@ -643,7 +640,6 @@ export interface IState {
   onboarding: {
     user: UserType;
     isRequired: boolean;
-    seen: boolean;
   };
 }
 

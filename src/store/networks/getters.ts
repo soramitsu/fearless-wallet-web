@@ -16,7 +16,6 @@ export enum GettersTypes {
   getFiats = 'getFiats',
   getHistory = 'getHistory',
   getActiveNodesByNetwork = 'getActiveNodesByNetwork',
-  getAllNetworksIsReadyToUse = 'getAllNetworksIsReadyToUse',
   getAssetsPriceInterval = 'getAssetsPriceInterval',
   getFavoriteNetworksNames = 'getFavoriteNetworksNames',
 }
@@ -29,7 +28,6 @@ export type Getters = {
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
   [GettersTypes.getActiveNodesByNetwork](state: State): GetActiveNodesByNetwork;
-  [GettersTypes.getAllNetworksIsReadyToUse](state: State): boolean;
   [GettersTypes.getNetworkGenesisHash](state: State): GetNetworkGenesisHash;
   [GettersTypes.getAssetPrice](state: State): GetAssetPrice;
   [GettersTypes.getPrice](state: State): AssetsPrice;
@@ -100,10 +98,6 @@ const getters: GetterTree<State, State> & Getters = {
 
       return !node ? nodes[0] : node;
     },
-
-  [GettersTypes.getAllNetworksIsReadyToUse]({ networks }): boolean {
-    return !networks.some(({ apiStatus }) => apiStatus === 'pending' || apiStatus === 'connected');
-  },
 };
 
 export default getters;

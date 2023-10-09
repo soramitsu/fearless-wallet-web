@@ -123,7 +123,7 @@ export interface NetworkJson {
   // getStakingOnChain?: boolean; // support get bonded on chain
   // supportBonding?: boolean;
   supportSmartContract?: ContractType[]; // if network supports PSP smart contracts
-  apiStatus?: NETWORK_STATUS;
+  networkStatus?: NETWORK_STATUS;
   requestId?: string;
   // from json
   chainId: string;

@@ -1,6 +1,8 @@
 <template>
   <Scroll>
-    <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText()) }}</div>
+    <Loader v-if="isEmptyBalances" class="asset-loader" />
+
+    <div v-else-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText()) }}</div>
 
     <Draggable v-else v-model="filteredBalances" handle=".handle" :key="selectedWallet.address">
       <CurrencyItem
@@ -13,7 +15,7 @@
         :showAssetsManagementForm="showAssetsManagementForm"
         :timeoutCallback="timeoutCallback"
         @toggleVisibleActivityForm="$emit('toggleVisibleActivityForm', ...arguments)"
-        @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible', ...arguments)"
+        @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
       />
     </Draggable>
   </Scroll>
@@ -46,6 +48,7 @@ export default class Currencies extends Vue {
   timeoutSubscriptions: TimeoutSubscription[] = [];
 
   @Prop(Array) balances!: TokenBalance[];
+  @Prop(Boolean) isEmptyBalances!: boolean;
   @Prop(String) selectedNetwork!: string;
   @Prop(String) filterValue!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
@@ -122,5 +125,13 @@ export default class Currencies extends Vue {
   align-items: center;
   justify-content: center;
   margin-top: -16px;
+}
+
+.asset-loader {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 </style>

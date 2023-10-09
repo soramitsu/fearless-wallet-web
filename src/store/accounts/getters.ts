@@ -107,6 +107,7 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.getWallets]({ accounts }): WalletInfo[] {
     const wallets: WalletInfo[] = [];
+
     accounts.forEach((account) => {
       wallets.push({
         name: account.name,

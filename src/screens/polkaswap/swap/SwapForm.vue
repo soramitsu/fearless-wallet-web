@@ -597,7 +597,6 @@ export default class SwapForm extends Vue {
         isExchangeB: this.isExchangeB,
         marketType: this.marketType,
       });
-
       if (this.isExchangeB) this.sendAmount = amountA;
       else this.receiveAmount = amountB;
 
@@ -614,7 +613,6 @@ export default class SwapForm extends Vue {
 
     createSwap();
   }
-
   clearSwapInterval() {
     clearInterval(this.swapInterval);
   }
@@ -676,7 +674,7 @@ export default class SwapForm extends Vue {
       this.slippage = this.temporarySlippage;
       this.showSettings = false;
 
-      this.checkSwap();
+      await this.checkSwap();
     } else if (this.step === 1) this.step += 1;
     else this.showConfirmationPasswordPopup = true;
   }

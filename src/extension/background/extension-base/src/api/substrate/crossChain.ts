@@ -1,18 +1,13 @@
 import { BN, isFunction } from '@polkadot/util';
 import { FPNumber } from '@sora-substrate/util';
 import { decodeAddress } from '@polkadot/util-crypto';
-import { state } from '@extension-base/background/handlers';
-import {
-  isEthereumNetwork,
-  getUtilityProps,
-  getNativeAssetName,
-  getSubstrateAddress,
-} from '@extension-base/background/utils/utils';
+import { isEthereumNetwork, getUtilityProps, getNativeAssetName } from '@extension-base/background/utils/utils';
 import { SignerType } from '@extension-base/background/types/types';
+import { getAssetInfo } from '@extension-base/api/helpers';
+import State from '@extension-base/background/handlers/State';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
 import { Extrinsic } from './utils/types';
 import { getPrecisionValue } from './utils';
-import { getAssetInfo } from './registry';
 import type { TokenBalance, BasicTxResponse } from '@extension-base/background/types/types';
 import type { AssetId, Interiors } from '@/interfaces';
 import {
@@ -25,10 +20,25 @@ import {
 } from '@/consts/networks';
 import { NetworkName, RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers';
+import { IS_PRODUCTION } from '@/consts/global';
 
 enum XcmVersions {
   V1 = 'V1',
   V3 = 'V3',
+}
+
+export interface MakeCrossChainProps {
+  assetId: string;
+  originNet: NetworkName;
+  destinationNet: NetworkName;
+  to: string;
+  from: string;
+  amount: string;
+  password: string;
+  isSavePass?: boolean;
+  callback: (data: BasicTxResponse) => void;
+  relayChain?: RelayChainName;
+  tokenBalance: TokenBalance;
 }
 
 const XCM_NATIVE_PALLETS = ['xcmPallet', 'polkadotXcm'];
@@ -57,7 +67,13 @@ function interiorHelper(interiors: Interiors) {
   return array.length === 1 ? (array[0] as Record<string, string>) : (array as Record<string, string>[]);
 }
 
-function getConcreteAsset(originNet: NetworkName, isToRelayChain: boolean, xcmAssetId: AssetId, isNative = false) {
+function getConcreteAsset(
+  originNet: NetworkName,
+  isToRelayChain: boolean,
+  xcmAssetId: AssetId,
+  isNative: boolean,
+  state: State
+) {
   const { parentId } = state.networkMap[originNet];
 
   // This Polkadot or Kusama
@@ -97,7 +113,8 @@ function getNativeTeleportParams(
   destNet: NetworkName,
   toAddress: string,
   amount: string,
-  xcmAssetId: AssetId
+  xcmAssetId: AssetId,
+  state: State
 ) {
   const isFromRelayChain = isRelayChain(originNet);
   const isToRelayChain = isRelayChain(destNet);
@@ -142,7 +159,7 @@ function getNativeTeleportParams(
     [xcmVersion]: [
       {
         fun: { Fungible: value },
-        id: { Concrete: getConcreteAsset(originNet, isToRelayChain, xcmAssetId, true) },
+        id: { Concrete: getConcreteAsset(originNet, isToRelayChain, xcmAssetId, true, state) },
       },
     ],
   };
@@ -157,7 +174,8 @@ function getOrmlTeleportParams(
   destNet: string,
   toAddress: string,
   amount: string,
-  xcmAssetId: AssetId
+  xcmAssetId: AssetId,
+  state: State
 ) {
   const isToRelayChain = isRelayChain(destNet);
   const { xcm, parentId, name } = state.networkMap[originNet];
@@ -187,7 +205,7 @@ function getOrmlTeleportParams(
   const asset = {
     [xcmVersion]: {
       fun: { Fungible: value },
-      id: { Concrete: getConcreteAsset(originNet, isToRelayChain, xcmAssetId) },
+      id: { Concrete: getConcreteAsset(originNet, isToRelayChain, xcmAssetId, false, state) },
     },
   };
 
@@ -213,7 +231,8 @@ async function createNativeTeleportExtrinsic(
   destNet: NetworkName,
   toAddress: string,
   amount: string,
-  tokenBalance: TokenBalance
+  tokenBalance: TokenBalance,
+  state: State
 ): Promise<Extrinsic> {
   const api = state.getSubstrateApiMap[originNet]?.api;
 
@@ -227,7 +246,7 @@ async function createNativeTeleportExtrinsic(
   const module = isNativeNetwork(destNet) ? 'limitedTeleportAssets' : 'limitedReserveTransferAssets';
   const pallet = XCM_NATIVE_PALLETS.find((pallet) => api!.tx[pallet] && isFunction(api!.tx[pallet][module]))!;
   const tx = api!.tx[pallet][module];
-  const params = getNativeTeleportParams(originNet, destNet, toAddress, precisionAmount, xcmAssetId);
+  const params = getNativeTeleportParams(originNet, destNet, toAddress, precisionAmount, xcmAssetId, state);
 
   return tx(...params);
 }
@@ -238,7 +257,8 @@ async function createOrmlTeleportExtrinsic(
   destNet: NetworkName,
   toAddress: string,
   amount: string,
-  tokenBalance: TokenBalance
+  tokenBalance: TokenBalance,
+  state: State
 ): Promise<Extrinsic> {
   const api = state.getSubstrateApiMap[originNet].api;
 
@@ -252,24 +272,74 @@ async function createOrmlTeleportExtrinsic(
 
   // В большинстве случаев используется xTokens, но он есть не всегда
   if (api.tx?.xTokens?.transferMultiasset) {
-    const params = getOrmlTeleportParams(originNet, destNet, toAddress, precisionAmount, xcmAssetId);
+    const params = getOrmlTeleportParams(originNet, destNet, toAddress, precisionAmount, xcmAssetId, state);
 
     return api.tx?.xTokens?.transferMultiasset(...params);
   }
 
   const module = isRelayChain(destNet) ? 'limitedReserveWithdrawAssets' : 'limitedReserveTransferAssets';
-  const params = getNativeTeleportParams(originNet, destNet, toAddress, precisionAmount, xcmAssetId);
+  const params = getNativeTeleportParams(originNet, destNet, toAddress, precisionAmount, xcmAssetId, state);
 
   // Если нет xTokens используется polkadotXcm, с соответствующим модулем
   return api.tx?.polkadotXcm[module](...params);
 }
 
+async function createCrossChainExtrinsic(
+  assetId: string,
+  originNet: NetworkName,
+  destNet: NetworkName,
+  toAddress: string,
+  amount: string,
+  tokenBalance: TokenBalance,
+  state: State
+): Promise<Extrinsic> {
+  const { symbol } = getAssetInfo(assetId, state);
+  const { xcm } = state.networkMap[originNet];
+
+  // Структура assets в availableDestinations всегда одинаковая
+  // id у конкретного токена(например DOT), для всех сетей внутри availableDestinations одинаковый
+  // Поэтому просто берем первый попавшийся элемент из массива availableDestinations, берем его assets и ищем нужный токен внутри assets
+  const { chainId: destChainId } = state.networkMap[destNet];
+  const { assets } = xcm!.availableDestinations.find(({ chainId }) => chainId === destChainId)!;
+  const { id: xcmAssetId } = assets.find(
+    ({ symbol: _symbol }) => _symbol.toLowerCase() === getNativeAssetName(symbol)
+  )!;
+
+  if (isNativeNetwork(originNet)) {
+    // Case RelayChain -> Nonnative ParaChain (polkadot -> acala, etc; kusama -> bifrost, etc) pallet = xcmPallet, module = limitedReserveTransferAssets
+    // Case RelayChain -> Native ParaChain (polkadot -> statemint; kusama -> statemine, encointer) pallet = xcmPallet, module = limitedTeleportAssets
+    // Case Native ParaChain -> RelayChain (statemint -> polkadot; statemine, encointer -> kusama) pallet = polkadotXcm, module = limitedTeleportAssets
+    // TODO: add case: Native ParaChain -> Nonnative ParaChain
+    // TODO: add case: Native ParaChain -> Native ParaChain
+    return createNativeTeleportExtrinsic(xcmAssetId, originNet, destNet, toAddress, amount, tokenBalance, state);
+  } else {
+    // Case Nonnative ParaChain -> Nonnative ParaChain (karura, etc -> bifrost, etc)
+    // Case Nonnative ParaChain -> RelayChain (karura, etc -> kusama, etc; acala, etc -> polkadot)
+    return createOrmlTeleportExtrinsic(xcmAssetId, originNet, destNet, toAddress, amount, tokenBalance, state);
+  }
+}
+
 async function estimateCrossChainFee(
+  assetId: string,
   originNet: NetworkName,
   destinationNet: NetworkName,
+  to: string,
+  amount: string,
   tokenBalance: TokenBalance,
-  extrinsic?: Extrinsic
+  state: State
 ): Promise<[FPNumber, FPNumber]> {
+  const extrinsic = await createCrossChainExtrinsic(
+    assetId,
+    originNet,
+    destinationNet,
+    to,
+    amount!,
+    tokenBalance,
+    state
+  );
+
+  if (!IS_PRODUCTION) console.info('CrossChain', extrinsic);
+
   // Рассчет cross chain fee
   const destFees = state.xcmFees.find(({ destChain }) => {
     const destChainLower = destChain.toLowerCase();
@@ -297,7 +367,7 @@ async function estimateCrossChainFee(
   // Далее рассчет origin fee
   if (!extrinsic) return [FPNumber.ZERO, crossChainFee];
 
-  const { precision: utilityPrecision } = getUtilityProps(originNet)!;
+  const { precision: utilityPrecision } = getUtilityProps(originNet, state)!;
 
   try {
     const address = isEthereumNetwork(originNet) ? VALID_ETHEREUM_ADDRESS : VALID_SUBSTRATE_ADDRESS;
@@ -312,69 +382,35 @@ async function estimateCrossChainFee(
   }
 }
 
-async function createCrossChainExtrinsic(
-  assetId: string,
-  originNet: NetworkName,
-  destNet: NetworkName,
-  toAddress: string,
-  amount: string,
-  tokenBalance: TokenBalance
-): Promise<Extrinsic> {
-  const { symbol } = getAssetInfo(assetId);
-  const { xcm } = state.networkMap[originNet];
-
-  // Структура assets в availableDestinations всегда одинаковая
-  // id у конкретного токена(например DOT), для всех сетей внутри availableDestinations одинаковый
-  // Поэтому просто берем первый попавшийся элемент из массива availableDestinations, берем его assets и ищем нужный токен внутри assets
-  const { chainId: destChainId } = state.networkMap[destNet];
-  const { assets } = xcm!.availableDestinations.find(({ chainId }) => chainId === destChainId)!;
-  const { id: xcmAssetId } = assets.find(({ symbol: _symbol }) => _symbol.toLowerCase() === symbol.toLowerCase())!;
-
-  if (isNativeNetwork(originNet)) {
-    // Case RelayChain -> Nonnative ParaChain (polkadot -> acala, etc; kusama -> bifrost, etc) pallet = xcmPallet, module = limitedReserveTransferAssets
-    // Case RelayChain -> Native ParaChain (polkadot -> statemint; kusama -> statemine, encointer) pallet = xcmPallet, module = limitedTeleportAssets
-    // Case Native ParaChain -> RelayChain (statemint -> polkadot; statemine, encointer -> kusama) pallet = polkadotXcm, module = limitedTeleportAssets
-    // TODO: add case: Native ParaChain -> Nonnative ParaChain
-    // TODO: add case: Native ParaChain -> Native ParaChain
-    return createNativeTeleportExtrinsic(xcmAssetId, originNet, destNet, toAddress, amount, tokenBalance);
-  } else {
-    // Case Nonnative ParaChain -> Nonnative ParaChain (karura, etc -> bifrost, etc)
-    // Case Nonnative ParaChain -> RelayChain (karura, etc -> kusama, etc; acala, etc -> polkadot)
-    return createOrmlTeleportExtrinsic(xcmAssetId, originNet, destNet, toAddress, amount, tokenBalance);
-  }
-}
-
-export interface MakeCrossChainProps {
-  assetId: string;
-  originNet: NetworkName;
-  destinationNet: NetworkName;
-  to: string;
-  from: string;
-  amount: string;
-  password: string;
-  isSavePass?: boolean;
-  callback: (data: BasicTxResponse) => void;
-  relayChain?: RelayChainName;
-}
-
-async function makeCrossChain({
-  assetId,
-  originNet,
-  destinationNet,
-  from,
-  to,
-  isSavePass,
-  password,
-  amount,
-  callback,
-}: MakeCrossChainProps): Promise<void> {
+async function makeCrossChain(
+  {
+    assetId,
+    originNet,
+    destinationNet,
+    from,
+    to,
+    isSavePass,
+    password,
+    amount,
+    tokenBalance,
+    callback,
+  }: MakeCrossChainProps,
+  state: State
+): Promise<void> {
+  const txState: BasicTxResponse = {};
   const apiProps = state.getSubstrateApiMap[originNet];
 
   await apiProps.api?.isReady;
 
-  const address = getSubstrateAddress(from);
-  const tokenBalance = state.balanceMap[address].find(({ assetId: _assetId }) => _assetId === assetId)!;
-  const [, crossChainFee] = await estimateCrossChainFee(originNet, destinationNet, tokenBalance);
+  const [, crossChainFee] = await estimateCrossChainFee(
+    assetId,
+    originNet,
+    destinationNet,
+    to,
+    amount,
+    tokenBalance,
+    state
+  );
 
   const amountWithCrossChain = new FPNumber(amount).add(crossChainFee).toString();
 
@@ -384,19 +420,24 @@ async function makeCrossChain({
     destinationNet,
     to,
     amountWithCrossChain!,
-    tokenBalance
+    tokenBalance,
+    state
   );
 
-  await signAndSendExtrinsic({
-    type: SignerType.PASSWORD,
-    apiProps,
-    callback,
-    extrinsic,
-    password,
-    isSavePass,
-    address: from,
-    errorMessage: 'CrossChain error',
-  });
+  await signAndSendExtrinsic(
+    {
+      type: SignerType.PASSWORD,
+      apiProps,
+      callback,
+      extrinsic,
+      txState,
+      password,
+      isSavePass,
+      address: from,
+      errorMessage: 'CrossChain error',
+    },
+    state
+  );
 }
 
 export { estimateCrossChainFee, makeCrossChain, createCrossChainExtrinsic };

@@ -44,12 +44,6 @@
       :providers="providers"
       @closePopup="toggleVisible('showBuyPopup', false)"
     />
-
-    <NetworkManagement
-      v-if="showSelectNetworkPopup"
-      :type="selectedNetwork"
-      @handlerClose="toggleSelectNetworkPopupVisible"
-    />
   </div>
 </template>
 
@@ -61,7 +55,6 @@ import type { HistoryElement } from '@/interfaces/history';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import HistoryDetailsForm from '@/screens/wallet&asset/asset/HistoryDetailsForm.vue';
-import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
@@ -72,7 +65,7 @@ import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NETWORK_GROUP } from '@/consts/networks';
+import { NETWORKS_GROUPS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common/index';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
@@ -85,21 +78,17 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'sh
     ReceiveForm,
     CrossChainForm,
     HistoryDetailsForm,
-    SelectNetworkButton,
     NetworkManagementButton,
     NetworkManagement,
   },
 })
 export default class Asset extends Vue {
-  readonly selectNetworkButtonRef = 'selectNetworkButton';
-
   historyElement: HistoryElement | Record<string, string> | null = null;
   showSendForm = false;
   showReceiveForm = false;
   showCrossChainForm = false;
   showBuyPopup = false;
   showTipPopup = false;
-  showSelectNetworkPopup = false;
   filterValue = '';
 
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
@@ -130,7 +119,7 @@ export default class Asset extends Vue {
   }
 
   get isSelectedNetworkHistory() {
-    if (!NETWORK_GROUP.includes(this.selectedNetwork)) return false;
+    if (!NETWORKS_GROUPS.includes(this.selectedNetwork)) return false;
 
     return this.selectedAssetNetwork === '';
   }
@@ -146,7 +135,13 @@ export default class Asset extends Vue {
   }
 
   get currentCurrency() {
-    return this.balances.find(({ assetId: id }) => id === this.selectedAssetId)! ?? {};
+    return (
+      this.balances.find(
+        ({ assetId: id, balances }) =>
+          id === this.selectedAssetId ||
+          balances.some((el) => el.id.toLowerCase() === this.selectedAssetId.toLowerCase())
+      )! ?? {}
+    );
   }
 
   get displayAddressByNetwork() {
@@ -191,10 +186,6 @@ export default class Asset extends Vue {
 
   closeHistoryDetailsForm() {
     this.historyElement = null;
-  }
-
-  toggleSelectNetworkPopupVisible() {
-    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
   }
 }
 </script>

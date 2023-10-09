@@ -118,7 +118,7 @@ export class StakingService {
   }
 
   public async getValidators(network: NetworkName): Promise<FWValidatorInfoFull[]> {
-    const { precision } = getUtilityProps(network);
+    const { precision } = getUtilityProps(network, this.state);
 
     const validators: FWValidatorInfoFull[] = (await apiSora.staking.getValidatorsInfo()).map((validator) => {
       const info = validator.identity?.info;

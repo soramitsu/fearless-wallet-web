@@ -31,6 +31,7 @@
           <div class="asset__locked" @click="toggleBalanceDetailsPopup">
             <div class="asset__locked-content">
               <span class="asset__locked-title">{{ $t('assets.locked') }}</span>
+
               <Shimmer v-if="showShimmers" height="14px" width="60px" />
 
               <span v-else>{{ lockedBalanceString }}</span>
@@ -56,7 +57,6 @@
       :showNodeSwitch="true"
       :showCopyAddress="false"
       :showExport="false"
-      :showReplaceAccount="false"
       @handlerClose="toggleDetailsPopup"
     />
   </Fragment>
@@ -97,7 +97,7 @@ export default class AssetInfo extends Vue {
   }
 
   get showShimmers() {
-    return !navigator.onLine || !this.currency.balances.some(({ state }) => state === APIItemState.READY);
+    return !navigator.onLine || !this.currency.balances?.some(({ state }) => state === APIItemState.READY);
   }
 
   get icon() {
@@ -136,7 +136,7 @@ export default class AssetInfo extends Vue {
   get lockedBalanceString() {
     const lockedBalance = getSummaryLockedBalance(this.currency);
 
-    return `${this.$n(lockedBalance, 'price')} ${this.selectedAssetUpper}`;
+    return `${this.$n(lockedBalance, 'decimal')} ${this.selectedAssetUpper}`;
   }
 
   get transferableFiatBalance() {

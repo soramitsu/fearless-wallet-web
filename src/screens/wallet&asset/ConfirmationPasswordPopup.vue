@@ -265,13 +265,11 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.isErrorPassword = false;
   }
 
-  created() {
-    this.resetTxStatus();
-  }
-
   async mounted() {
     if (!IS_EXTENSION || this.isSignMobile) return;
+
     this.passInputComponent.input.focus();
+    this.resetTxStatus();
 
     const { isLocked } = await isSignLocked(this.transactionAddress);
 

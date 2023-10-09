@@ -76,17 +76,19 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
 import type { TokenBalance } from '@extension-base/background/types/types';
-import type { NetworkJson } from '@extension-base/types';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { cut } from '@/helpers';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class ReceiveForm extends Vue {
   readonly selectNetworkInputRef = 'selectNetworkInput';
-  readonly copyQRTooltip = { text: 'common.copiedValue', localeProps: { value: 'QR' } };
+  readonly copyQRTooltip = {
+    text: 'common.copiedValue',
+    localeProps: { value: 'QR' },
+  };
+
   filterValue = '';
   selectedNetwork = 'polkadot';
   showSelectNetworkPopup = false;
@@ -95,7 +97,6 @@ export default class ReceiveForm extends Vue {
   @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
   get assetNetworks() {
     const currency = this.balances.find(({ assetId }) => assetId === this.selectedAssetId)!;
@@ -107,17 +108,10 @@ export default class ReceiveForm extends Vue {
     );
   }
 
-  get decimals() {
-    return this.networks?.find((network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase())
-      ?.addressPrefix;
-  }
-
   get address() {
     if (this.selectedWallet.address === '') return '';
 
-    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
-
-    return BaseApi.encodeAddress(this.selectedWallet.address, this.decimals);
+    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
   }
 
   get cutAddress() {

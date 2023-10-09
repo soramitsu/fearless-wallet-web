@@ -15,10 +15,13 @@
             <SIcon name="chevron-bottom-16" />
           </Rotate>
         </div>
-        <div v-if="!isGroup && isAddressExists" class="copy-adress" @click.stop="copyAddress">
+
+        <div v-if="isAddressExists" class="copy-address" @click.stop="copyAddress">
           <span>{{ cutAddress }}</span>
+
           <Icon icon="copy" className="copy" />
-          <Tooltip text="common.copied" target=".copy" placement="top" trigger="click" />
+
+          <Tooltip text="common.copied" target=".copy-address" placement="top-end" trigger="click" />
         </div>
       </div>
 
@@ -37,14 +40,14 @@
       />
 
       <NetworkManagementButton
-        class="background-ellipse"
+        class="background-ellipse network-management"
         :isGroupIcon="isGroup"
         :icon="selectedNetworkIcon"
         :selectedNetwork="networkManagementButtonText"
         @onToggle="toggleSelectNetworkPopupVisible"
       />
 
-      <div v-if="isPopup" class="background-ellipse" @click="toggleConnectionPopup">
+      <div v-if="isPopup" class="background-ellipse connection" @click="toggleConnectionPopup">
         <Loading v-if="!tabStatus" :width="16" />
 
         <template v-else>
@@ -54,7 +57,8 @@
 
       <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" @handlerClose="toggleConnectionPopup" />
 
-      <Tooltip text="header.connectionStatus" target=".background-ellipse" placement="top" />
+      <Tooltip text="header.connectionStatus" target=".connection" placement="top" />
+      <Tooltip :text="selectedNetwork" target=".network-management" placement="top" />
 
       <CircleButton
         :ref="settingsNameRef"
@@ -79,7 +83,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
-import { ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
+import { ActiveTabAuthorizeStatus, TokenBalance } from '@extension-base/background/types/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import type { NetworkJson } from '@extension-base/types';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
@@ -108,7 +112,6 @@ export default class Header extends Vue {
   readonly walletNameRef = 'walletName';
   readonly settingsNameRef = 'settingsName';
   readonly isPopup = BaseApi.useIsPopup();
-  readonly selectNetworkButtonRef = 'selectNetworkButton';
   readonly allNetworksIcon = 'all-networks';
   showConnectionPopup = false;
   showSelectNetworkPopup = false;
@@ -121,6 +124,7 @@ export default class Header extends Vue {
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get showBackIcon() {
@@ -130,14 +134,49 @@ export default class Header extends Vue {
   }
 
   get isAddressExists() {
-    return this.address !== '';
+    if (this.isGroup) return this.routeName === Components.AssetHistory;
+
+    return true;
+  }
+
+  get routeName() {
+    return this.$route.name;
+  }
+
+  get routeParams() {
+    return this.$route.params;
   }
 
   get isGroup() {
     return isNetworkGroup(this.selectedNetwork);
   }
 
+  get selectedAssetId() {
+    return this.$route.params.assetId ?? '';
+  }
+
+  get currentCurrency(): TokenBalance | undefined {
+    return this.balances.find(
+      ({ assetId: id, balances }) =>
+        id === this.selectedAssetId || balances.some((el) => el.id === this.selectedAssetId)
+    );
+  }
+
+  get computeActiveNetworks() {
+    if (!this.currentCurrency) return [];
+
+    return this.currentCurrency.balances.filter((network) => {
+      return this.getNetwork(network.name).active;
+    });
+  }
+
   get networkManagementButtonText() {
+    if (this.$route.name === Components.AssetHistory) {
+      if (this.computeActiveNetworks.length === 1) return this.computeActiveNetworks[0]?.name;
+
+      return this.getNetwork(this.$route.params.selectedNetwork)?.name;
+    }
+
     if (this.isGroup) {
       return this.$t(`header.networkManagement.${this.selectedNetwork}`);
     }
@@ -147,6 +186,13 @@ export default class Header extends Vue {
 
   get selectedNetworkIcon() {
     if (this.isGroup) return this.allNetworksIcon;
+
+    if (this.$route.name === Components.AssetHistory) {
+      const asset = this.currentCurrency?.balances.find((el) => el.id === this.selectedAssetId);
+      if (!asset) return '';
+
+      return this.getNetwork(asset?.name).icon;
+    }
 
     const network = this.getNetwork(this.selectedNetwork);
 
@@ -164,11 +210,13 @@ export default class Header extends Vue {
   }
 
   get address() {
+    if (!this.isAddressExists) return '';
+
     if (this.selectedWallet.address === '') return '';
 
-    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
+    const selectedNetwork = this.isGroup ? this.routeParams.selectedNetwork : this.selectedNetwork;
 
-    return BaseApi.encodeAddress(this.selectedWallet.address, this.decimals);
+    return BaseApi.formatAddress(this.selectedWallet, selectedNetwork);
   }
 
   get name() {
@@ -286,7 +334,6 @@ export default class Header extends Vue {
       display: flex;
       align-items: flex-start;
       flex-direction: column;
-      gap: 5px;
 
       .name {
         display: flex;
@@ -304,8 +351,7 @@ export default class Header extends Vue {
           white-space: nowrap;
         }
       }
-
-      .copy-adress {
+      .copy-address {
         display: flex;
         flex-flow: row nowrap;
         align-items: center;

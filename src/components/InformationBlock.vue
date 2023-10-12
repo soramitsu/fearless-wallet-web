@@ -8,13 +8,12 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+type Props = {
+  text: string;
+};
 
-@Component
-export default class InformationBlock extends Vue {
-  @Prop(String) text!: string;
-}
+defineProps<Props>();
 </script>
 
 <style lang="scss" scoped>

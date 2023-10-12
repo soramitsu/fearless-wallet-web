@@ -1,5 +1,5 @@
 <template>
-  <Corners :hover="hover" :size="size" :topLeftCorner="topLeftCorner" :bottomRightCorner="bottomRightCorner">
+  <FCorners :hover="hover" :size="size" :topLeftCorner="topLeftCorner" :bottomRightCorner="bottomRightCorner">
     <FButton
       type="secondary"
       :border="true"
@@ -15,7 +15,7 @@
       :loading="loading"
       @click="$emit('click')"
     />
-  </Corners>
+  </FCorners>
 </template>
 
 <script lang="ts" setup>

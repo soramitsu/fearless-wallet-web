@@ -72,9 +72,7 @@ export class RequestService {
 
     if (popupList && popupList.length > 0) {
       chrome.windows.update(popupList[0], { focused: true })?.catch(console.error);
-    } else {
-      this.popupHandler.popupOpen();
-    }
+    } else this.popupHandler.popupOpen();
   }
 
   // Metadata

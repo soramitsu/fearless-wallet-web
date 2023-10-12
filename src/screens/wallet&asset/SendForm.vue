@@ -25,7 +25,7 @@
         <FInput v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
       </div>
 
-      <Corners size="big" class="row">
+      <FCorners size="big" class="row">
         <div class="summary">
           <div class="summary-label">{{ $t('assets.summary') }}</div>
 
@@ -55,7 +55,7 @@
             </div>
           </div>
         </div>
-      </Corners>
+      </FCorners>
     </div>
   </TransferForm>
 </template>

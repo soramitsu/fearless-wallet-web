@@ -1,10 +1,10 @@
 <template>
   <div>
-    <Corners>
+    <FCorners>
       <div :class="tabButtonClasses" :title="title" @click="$emit('click')">
         {{ $t(label) }}
       </div>
-    </Corners>
+    </FCorners>
 
     <Tooltip v-if="tooltipText" :text="tooltipText" :target="target" :placement="placementTooltip" />
   </div>

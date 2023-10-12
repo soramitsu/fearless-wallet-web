@@ -37,7 +37,7 @@
         <ExternalLogo :name="destNetIcon" :width="42" />
       </div>
 
-      <Corners size="big" class="row">
+      <FCorners size="big" class="row">
         <div class="summary">
           <InfoRow text="assets.direction" :value="directionText" />
 
@@ -62,7 +62,7 @@
 
         <Tooltip text="assets.feeDescription" target=".origin-fee" placement="right" />
         <Tooltip text="assets.feeDescription" target=".cross-chain-fee" placement="right" />
-      </Corners>
+      </FCorners>
     </div>
   </TransferForm>
 </template>

@@ -1,5 +1,5 @@
 <template>
-  <Corners :isError="isError" :size="size" :class="wrapperClasses">
+  <FCorners :isError="isError" :size="size" :class="wrapperClasses">
     <div :class="containerInputClasses" spellcheck="false">
       <SInput
         v-model="vModel"
@@ -18,7 +18,7 @@
         @input="$emit('change', $event)"
       />
     </div>
-  </Corners>
+  </FCorners>
 </template>
 
 <script lang="ts">

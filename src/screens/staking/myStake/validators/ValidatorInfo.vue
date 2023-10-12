@@ -6,15 +6,15 @@
       <ContentForm :height="validatorFormHeight" :isStaticHeight="true" :bottomRightCorner="true" class="about-staking">
         <div class="label">{{ $t('staking.staking') }}</div>
 
-        <InfoRow text="common.status" :value="status" :showBorder="false" />
+        <InfoRow text="common.status" :value="status" :showBorder="!showSlashedWarning" />
 
-        <Hint iconName="warning" text="staking.validatorSlashed" class="hint" />
+        <Hint v-if="showSlashedWarning" iconName="warning" text="staking.validatorSlashed" class="hint" />
 
         <InfoRow
           text="staking.nominators"
           :value="`${nominatorsCount} (${$t('common.max')} ${maxNominatorRewardedPerValidator})`"
           borderType="default"
-          :showBorder="false"
+          :showBorder="!showOversubscribedWarning"
         />
 
         <Hint v-if="showOversubscribedWarning" iconName="warning" text="staking.oversubscribed" />
@@ -67,9 +67,10 @@ export default class ValidatorInfo extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get validatorFormHeight() {
-    const sub = !this.showOversubscribedWarning ? 55 : 0;
+    const sub = this.showOversubscribedWarning ? 0 : 55;
+    const sub2 = this.showSlashedWarning ? 0 : 55;
 
-    return 355 - sub;
+    return 355 - sub - sub2;
   }
 
   get stakingAssetName() {
@@ -78,6 +79,12 @@ export default class ValidatorInfo extends Vue {
 
   get showOversubscribedWarning() {
     return this.validator.isOversubscribed;
+  }
+
+  get showSlashedWarning() {
+    // TODO staking
+    return false;
+    // return this.validator.isSlashed;
   }
 
   get address() {

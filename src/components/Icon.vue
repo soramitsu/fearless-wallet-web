@@ -62,6 +62,8 @@ const click = () => {
 }
 
 .svg-icon--hover {
+  cursor: pointer;
+
   &:hover {
     opacity: 0.5;
   }

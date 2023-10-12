@@ -26,6 +26,7 @@ import type {
 import { NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
 import { cut, isSameString } from '@/helpers';
+export * from '@sora-substrate/util/build/staking/types';
 
 export class StakingService {
   constructor(private state: State) {}
@@ -71,9 +72,16 @@ export class StakingService {
     )?.name;
     const payee = myAccountName ?? addressBookName ?? stakingInfo.payee;
 
+    const nameController = this.state.keyringService.getAccountName(stakingInfo.controller);
+    const addressBookNameController = addressBook[network]?.find(({ address: _address }) =>
+      isSameString(_address, stakingInfo.controller)
+    )?.name;
+    const controller = nameController ?? addressBookNameController ?? stakingInfo.controller;
+
     return {
       ...stakingInfo,
       payee,
+      controller,
       myValidators: this.getValidatorsInformation(stakingInfo.myValidators, validators),
     };
   }

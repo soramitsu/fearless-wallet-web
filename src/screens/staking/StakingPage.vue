@@ -1,15 +1,13 @@
 <template>
   <div class="staking">
     <header class="staking-header">
-      <div class="balance-container">
-        <div class="staking-balance">
-          <span class="label"> {{ $t('staking.stakingBalance') }} </span>
+      <div class="staking-balance">
+        <span class="label"> {{ $t('staking.stakingBalance') }} </span>
 
-          <WalletBalance class="balance" :balance="stakingBalance" />
-        </div>
+        <div class="balance">
+          <WalletBalance class="wallet-balance" :balance="stakingBalance" />
 
-        <div class="balance-loading">
-          <Loading v-if="showLoading" :width="28" />
+          <Loading v-if="showLoading" :width="28" class="balance-loading" />
         </div>
       </div>
     </header>
@@ -137,11 +135,14 @@ export default class StakingPage extends Vue {
     return this.activeTabName === 'all';
   }
 
-  created() {
-    // Добавлено чтобы не было видно переключений с all tab на my tab при отсутствующих stakingItems
-    setTimeout(() => this.updateActiveTabName(this.showStakingItems ? 'all' : 'my'), 500);
+  async created() {
+    const updateTab = () => this.updateActiveTabName(this.showStakingItems ? 'all' : 'my');
 
-    this.getStakingParams();
+    if (this.showMyStakingItems && !this.showStakingItems) updateTab();
+
+    await this.getStakingParams();
+
+    if (this.activeTabName === '') updateTab();
   }
 
   @Watch('showStakingItems')
@@ -182,31 +183,28 @@ export default class StakingPage extends Vue {
     margin-bottom: 10px;
   }
 
-  .balance-container {
+  .balance {
     display: flex;
-    flex-flow: row;
-    gap: 5px;
 
-    .balance {
+    .wallet-balance {
       font-size: 22px;
       line-height: 28px;
-      max-width: 245px;
     }
 
     .balance-loading {
-      height: 46px;
+      margin-left: 10px;
     }
+  }
 
-    .staking-balance {
-      display: flex;
-      flex-direction: column;
-      text-transform: uppercase;
+  .staking-balance {
+    display: flex;
+    flex-direction: column;
+    text-transform: uppercase;
 
-      .label {
-        color: $gray-color;
-        font-weight: 500;
-        margin-bottom: 7px;
-      }
+    .label {
+      color: $gray-color;
+      font-weight: 500;
+      margin-bottom: 7px;
     }
   }
 

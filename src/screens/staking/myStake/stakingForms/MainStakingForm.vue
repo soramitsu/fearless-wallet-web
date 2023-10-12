@@ -2,11 +2,17 @@
   <AboveForm :fullScreen="true" :header="header" @closeHandler="closeForm">
     <div class="staking-management">
       <Scroll>
-        <div v-if="isControllerAccount" class="controller-description row">
+        <div v-if="showWalletName" class="controller-description row">
           {{ $t('staking.separateAccountController') }}
         </div>
 
-        <FInput v-if="step === 1" v-model="accountName" placeholder="accounts.account" size="big" :readonly="true" />
+        <FInput
+          v-if="showWalletName"
+          v-model="accountName"
+          placeholder="accounts.account"
+          size="big"
+          :readonly="true"
+        />
 
         <SelectInput
           v-if="showAmountInput"
@@ -31,8 +37,10 @@
 
         <ControllerAccount
           v-else-if="isControllerAccount"
+          :step="step"
           :fee="fee"
           :network="network"
+          :stakingNetwork="stakingNetwork"
           :stakingCurrency="stakingCurrency"
           :controllerAddress="controllerAddress"
           @update:controllerAddress="updateControllerAddress"
@@ -40,8 +48,10 @@
 
         <Payee
           v-else-if="isPayee"
+          :step="step"
           :fee="fee"
           :network="network"
+          :stakingNetwork="stakingNetwork"
           :stakingCurrency="stakingCurrency"
           :payoutAddress="payoutAddress"
           @update:payoutAddress="updatePayoutAddress"
@@ -125,7 +135,8 @@ export default class MainStakingForm extends Vue {
 
   get btnText() {
     if (this.isControllerAccount || this.isPayee) {
-      if (
+      if (this.step === 1) return 'common.edit';
+      else if (
         (this.controllerAddress !== '' && !this.isValidControllerAddress) ||
         (this.payoutAddress !== '' && !this.isValidPayoutAddress)
       )
@@ -165,6 +176,12 @@ export default class MainStakingForm extends Vue {
     return this.type === 'setControllerAccount';
   }
 
+  get showWalletName() {
+    if (this.isControllerAccount || this.isPayee) return this.step === 2;
+
+    return this.step === 1;
+  }
+
   get isPayee() {
     return this.type === 'setPayee';
   }
@@ -182,9 +199,17 @@ export default class MainStakingForm extends Vue {
   }
 
   get confirmBtnDisabled() {
-    if (this.isControllerAccount) return !this.isValidControllerAddress;
+    if (this.isControllerAccount) {
+      if (this.step === 1) return false;
 
-    if (this.isPayee) return !this.isValidPayoutAddress;
+      return !this.isValidControllerAddress;
+    }
+
+    if (this.isPayee) {
+      if (this.step === 1) return false;
+
+      return !this.isValidPayoutAddress;
+    }
 
     return this.amount === '' || +this.amount === 0 || !this.isValidAmountAsset;
   }
@@ -288,7 +313,9 @@ export default class MainStakingForm extends Vue {
   }
 
   confirm() {
-    this.showConfirmationPasswordPopup = true;
+    if (this.isControllerAccount && this.step === 1) this.step += 1;
+    if (this.isPayee && this.step === 1) this.step += 1;
+    else this.showConfirmationPasswordPopup = true;
   }
 
   confirmationPasswordPopupClose(closeForm: boolean) {
@@ -319,13 +346,6 @@ export default class MainStakingForm extends Vue {
     if (this.isRebond) this.amount = this.stakingNetwork.unbond.sum;
 
     if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
-  }
-
-  handlerBack() {
-    if (this.step === 6 && this.isSuggested) this.step -= 1;
-    else if (this.step === 5) this.step -= 2;
-
-    this.step -= 1;
   }
 }
 </script>

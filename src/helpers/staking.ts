@@ -15,6 +15,7 @@ const getDefaultStakingParams = (network: NetworkName): StakingParams => ({
   payee: '',
   activeStake: '0',
   totalStake: '0',
+  controller: '',
 });
 
 export { getDefaultStakingParams };

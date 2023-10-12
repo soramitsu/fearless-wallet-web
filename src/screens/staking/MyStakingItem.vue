@@ -11,11 +11,13 @@
         </div>
 
         <div class="description-part right-part">
-          <!-- <div class="change">{{ changeBalance }}</div> -->
+          <Loading v-if="isLoading" :width="28" />
 
-          <div class="fiat">{{ fiatSymbol }}{{ fiatValue }}</div>
+          <template v-else>
+            <div class="fiat">{{ fiatSymbol }}{{ fiatValue }}</div>
 
-          <Icon icon="chevron-right" class="chevron" />
+            <Icon icon="chevron-right" class="chevron" />
+          </template>
         </div>
       </div>
 

@@ -1,4 +1,9 @@
-import { ValidatorInfoFull, Payouts } from '@sora-substrate/util/build/staking/types';
+import {
+  ValidatorInfoFull,
+  Payouts,
+  MyStakingInfo as SoraMyStakingInfo,
+  Unlocking,
+} from '@sora-substrate/util/build/staking/types';
 import { PasswordRequestSign } from '../../background/types/types';
 import { NetworkName, StakingOperation } from '@/interfaces';
 
@@ -115,12 +120,6 @@ export interface FWValidatorInfoFull extends ValidatorInfoFull {
   description: string;
 }
 
-type Unlocking = {
-  value: string;
-  remainingEras: string;
-  remainingDays: string;
-};
-
 export type StakingParams = {
   network: NetworkName;
   unbondPeriod: number;
@@ -135,6 +134,7 @@ export type StakingParams = {
   payee: string;
   activeStake: string;
   totalStake: string;
+  controller: string;
   redeemAmount: string;
   unbond: {
     unlocking: Unlocking[];
@@ -142,18 +142,9 @@ export type StakingParams = {
   };
 };
 
-export type MyStakingInfo = {
+export interface MyStakingInfo extends Omit<SoraMyStakingInfo, 'myValidators'> {
   myValidators: FWValidatorInfoFull[];
-  payee: string;
-  controller: string;
-  redeemAmount: string;
-  activeStake: string;
-  totalStake: string;
-  unbond: {
-    unlocking: Unlocking[];
-    sum: string;
-  };
-};
+}
 
 export type StakingParamsRequest = {
   networks: NetworkName[];

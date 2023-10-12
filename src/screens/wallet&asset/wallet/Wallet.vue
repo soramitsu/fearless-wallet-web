@@ -1,19 +1,15 @@
 <template>
   <div class="wallet">
     <header class="wallet-header">
-      <div class="balance-container">
-        <WalletBalance
-          class="balance"
-          :balance="summaryTransferableBalance"
-          :changeWalletBalance="changeWalletBalance"
-          :staticWidth="false"
-          @click.native="$emit('openFiatsPopup', true)"
-        />
+      <WalletBalance
+        class="wallet-balance"
+        :balance="summaryTransferableBalance"
+        :changeWalletBalance="changeWalletBalance"
+        :staticWidth="false"
+        @click.native="$emit('openFiatsPopup', true)"
+      />
 
-        <div class="wallet-balance__loading">
-          <Loading v-if="showLoadingBalance" :width="28" />
-        </div>
-      </div>
+      <Loading v-if="showLoadingBalance" :width="28" class="balance-loading" />
     </header>
 
     <SoraCardBanner />
@@ -384,24 +380,16 @@ export default class Wallet extends Vue {
   .wallet-header {
     min-height: 46px;
     display: flex;
-    justify-content: space-between;
     margin-bottom: 10px;
   }
 
-  .balance-container {
-    display: flex;
-    flex-flow: row;
-    gap: 5px;
+  .balance-loading {
+    margin-left: 10px;
   }
 
-  .wallet-balance__loading {
-    height: 46px;
-  }
-
-  .balance {
+  .wallet-balance {
     font-size: 22px;
     line-height: 28px;
-    max-width: 245px;
   }
 
   .balance-shimmers {

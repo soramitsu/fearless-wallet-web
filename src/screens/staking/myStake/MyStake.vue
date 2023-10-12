@@ -151,8 +151,8 @@ export default class MyStake extends Vue {
   get actionOptions() {
     return [
       { label: 'staking.yourValidators', value: 'showYourValidatorsForm', visibility: !this.showValidatorsBtn },
-      { label: 'staking.controllerAccount', value: 'showControllerAccountForm' },
-      { label: 'staking.payee', value: 'showPayeeForm' },
+      { label: 'staking.setControllerAccount', value: 'showControllerAccountForm' },
+      { label: 'staking.setPayee', value: 'showPayeeForm' },
       { label: 'staking.pendingRewards', value: 'showPendingRewardForm' },
     ];
   }

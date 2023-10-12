@@ -1,40 +1,54 @@
 <template>
   <div class="controller-account">
-    <InputWithIcon
-      v-model="addressCut"
-      icon="close"
-      placeholder="staking.payoutAccount"
-      class="payout-account"
-      @click="setPayoutAddress"
-    />
+    <template v-if="step === 1">
+      <InfoRow
+        text="accounts.account"
+        borderType="default"
+        :value="accountName"
+        :price="addressCut"
+        :hideLastBorder="false"
+      />
 
-    <div class="activity-buttons">
-      <BadgeButton text="common.paste" @click="paste" />
-    </div>
+      <InfoRow text="staking.payoutAccount" borderType="default" :value="payeeCut" :hideLastBorder="false" />
+    </template>
 
-    <Hint text="staking.defaultPayout" iconName="notification" class="hint row" />
+    <template v-else>
+      <InputWithIcon
+        v-model="addressCut"
+        icon="close"
+        placeholder="staking.payoutAccount"
+        class="payout-account"
+        @click="setPayoutAddress"
+      />
 
-    <InfoRow
-      class="info-fee"
-      text="assets.networkFee"
-      borderType="default"
-      icon="info"
-      :value="`${fee} ${asset}`"
-      :price="valueString"
-      :hideLastBorder="false"
-      :iconClasses="['network-fee']"
-    />
+      <div class="activity-buttons">
+        <BadgeButton text="common.paste" @click="paste" />
+      </div>
 
-    <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
+      <Hint text="staking.defaultPayout" iconName="notification" class="hint row" />
 
-    <FLink text="staking.learnAboutRewards" class="about-controllers row" @click="openAboutRewards" />
+      <InfoRow
+        class="info-fee"
+        text="assets.networkFee"
+        borderType="default"
+        icon="info"
+        :value="`${fee} ${asset}`"
+        :price="valueString"
+        :hideLastBorder="false"
+        :iconClasses="['network-fee']"
+      />
+
+      <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
+
+      <FLink text="staking.learnAboutRewards" class="about-controllers row" @click="openAboutRewards" />
+    </template>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { SelectedWallet, GetAssetPrice } from '@/store';
+import type { SelectedWallet, GetAssetPrice, NetworkParams } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { cut, getClipboard } from '@/helpers';
@@ -42,12 +56,22 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class Payee extends Vue {
+  @Prop({ type: Number }) step!: number;
   @Prop({ type: String }) fee!: string;
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
+  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @PropSync('payoutAddress', { type: String }) syncedPayoutAddress!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
+
+  get payee() {
+    return this.stakingNetwork.payee;
+  }
+
+  get payeeCut() {
+    return cut(this.payee);
+  }
 
   get asset() {
     return this.stakingCurrency.symbol;

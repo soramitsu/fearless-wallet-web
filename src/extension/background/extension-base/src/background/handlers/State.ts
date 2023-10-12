@@ -698,7 +698,7 @@ export default class State {
       }
     });
 
-    await this.initNetworkStates(true);
+    this.initNetworkStates();
     this.updateServiceInfo();
 
     this.networkMapSubject.next(this.networkMap);
@@ -1178,8 +1178,9 @@ export default class State {
   public async init() {
     await this.eventService.waitCryptoReady;
     await this.prepNetworkJson();
-    await this.initNetworkStates();
 
+    this.initNetworkStates();
+    this.onReady();
     this.updateServiceInfo();
   }
 
@@ -1190,7 +1191,7 @@ export default class State {
     });
   }
 
-  public async initNetworkStates(reset?: boolean) {
+  public initNetworkStates() {
     const activeNetworks = Object.values(this.networkMap).filter(({ active }) => active);
 
     activeNetworks.forEach(async (network) => {
@@ -1205,13 +1206,11 @@ export default class State {
           if (isReady) return;
         }
 
-        if (reset) this.resetApiRetries();
+        this.resetApiRetries();
 
         initApi(network, this);
       }
     });
-
-    this.onReady();
   }
 
   public getWallets(): KeyringAddress[] {
@@ -1247,7 +1246,7 @@ export default class State {
   }
 
   public subscribePrice() {
-    return this.priceStore.getSubject();
+    return this.priceStore.subject;
   }
 
   public async updateXorTotalBalance(muchTotal: FPNumber): Promise<void> {
@@ -1324,6 +1323,7 @@ export default class State {
 
           apiSora.account = { json: null as any, pair };
 
+          // TODO добавить фича тогл
           this.subscribeTotalXorBalance();
         }
       } else this.updateServiceInfo();
@@ -1453,7 +1453,7 @@ export default class State {
   }
 
   public subscribeNetworkMap() {
-    return this.networkMapStore.getSubject();
+    return this.networkMapStore.subject;
   }
 
   async getCurrentAddress(network: NetworkName, _currentAccount?: CurrentAccountState) {

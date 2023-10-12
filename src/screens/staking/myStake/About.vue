@@ -10,13 +10,25 @@
 
         <div class="two block">
           <div class="label">{{ $t('staking.rewarded') }}</div>
-          <div class="amount">{{ rewardAmount }} {{ rewardedAsset }}</div>
+
+          <Loading v-if="isLoading" class="loading" />
+
+          <div v-else class="amount">{{ rewardAmount }} {{ rewardedAsset }}</div>
+
           <div class="value">{{ fiatSymbol }}{{ rewardedValue }}</div>
         </div>
 
         <div class="three block">
           <div class="label">{{ $t('staking.unstaking') }}</div>
-          <div class="amount">{{ unbondAmount }} {{ stakingAssetName }}</div>
+          <div class="amount">
+            {{ unbondAmount }} {{ stakingAssetName }}
+
+            <template v-if="showUnbondDetails">
+              <Icon icon="info" class="info-unbond" />
+
+              <Tooltip :text="unbondDetails" target=".info-unbond" />
+            </template>
+          </div>
           <div class="value">{{ fiatSymbol }}{{ unbondValue }}</div>
         </div>
 
@@ -47,11 +59,15 @@ import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
+import { getRewards } from '@/extension/messaging';
+import { RewardsResponse } from '@/extension/background/extension-base/src/services/staking-service/types';
 
 @Component
 export default class About extends Vue {
   readonly dotsVerticalRef = 'dotsVertical';
   activeTabName: MyStakingTab = 'about';
+  rewards: RewardsResponse = { validators: [], payouts: [], sum: '0' };
+  isLoading = false;
 
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
@@ -61,25 +77,41 @@ export default class About extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
 
+  get unbondDetails() {
+    const unbond = this.stakingNetwork.unbond;
+    const asset = this.stakingNetwork.asset.toUpperCase();
+    const base = `${this.$t('staking.unbond')} ${unbond.sum} ${asset}:`;
+
+    return unbond.unlocking.reduce((result, { value, remainingDays }) => {
+      return `
+        ${result}
+          <p>- ${value} ${asset} ${remainingDays} ${this.$t('staking.daysLeft')}</p>
+      `;
+    }, base);
+  }
+
   get stakingNetwork() {
     return this.getStakingNetwork(this.network);
   }
 
   get activeStake() {
-    return this.stakingNetwork.activeStake;
+    return this.$n(+this.stakingNetwork.activeStake, 'decimal');
   }
 
   get rewardAmount() {
-    // TODO staking
-    return '0.001';
+    return this.$n(+this.rewards.sum, 'decimal');
+  }
+
+  get showUnbondDetails() {
+    return this.stakingNetwork.unbond.unlocking.length !== 0;
   }
 
   get unbondAmount() {
-    return this.stakingNetwork.unbond.sum;
+    return this.$n(+this.stakingNetwork.unbond.sum, 'decimal');
   }
 
   get redeemAmount() {
-    return this.stakingNetwork.redeemAmount;
+    return this.$n(+this.stakingNetwork.redeemAmount, 'decimal');
   }
 
   get stakingAssetName() {
@@ -103,7 +135,7 @@ export default class About extends Vue {
   }
 
   get activeStakeValue() {
-    const value = +this.activeStake * this.stakingAssetPrice;
+    const value = +this.stakingNetwork.activeStake * this.stakingAssetPrice;
 
     return this.$n(value, 'price');
   }
@@ -115,15 +147,23 @@ export default class About extends Vue {
   }
 
   get unbondValue() {
-    const value = +this.unbondAmount * this.stakingAssetPrice;
+    const value = +this.stakingNetwork.unbond.sum * this.stakingAssetPrice;
 
     return this.$n(value, 'price');
   }
 
   get redeemableValue() {
-    const value = +this.redeemAmount * this.stakingAssetPrice;
+    const value = +this.stakingNetwork.redeemAmount * this.stakingAssetPrice;
 
     return this.$n(value, 'price');
+  }
+
+  async created() {
+    this.isLoading = true;
+
+    this.rewards = await getRewards(this.stakingNetwork.network);
+
+    this.isLoading = false;
   }
 }
 </script>
@@ -173,6 +213,7 @@ export default class About extends Vue {
       font-size: 20px;
       font-weight: 600;
       margin-bottom: 5px;
+      height: 23px;
     }
 
     .value {
@@ -202,6 +243,17 @@ export default class About extends Vue {
     .four {
       grid-column: 2;
       grid-row: 2;
+    }
+
+    .info-unbond {
+      height: 18px;
+      width: 18px;
+      margin-left: 10px;
+    }
+
+    .loading {
+      height: 23px;
+      margin-bottom: 5px;
     }
   }
 }

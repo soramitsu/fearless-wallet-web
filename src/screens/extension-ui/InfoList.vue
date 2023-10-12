@@ -1,11 +1,11 @@
 <template>
-  <Corners size="big">
+  <FCorners size="big">
     <div class="info">
       <dl class="info__list">
         <slot></slot>
       </dl>
     </div>
-  </Corners>
+  </FCorners>
 </template>
 
 <script lang="ts" setup></script>

@@ -1,9 +1,9 @@
 <template>
-  <Corners size="big" :bottomRightCorner="bottomRightCorner">
+  <FCorners size="big" :bottomRightCorner="bottomRightCorner">
     <div :class="contentClasses" :style="contentFormStyle">
       <slot></slot>
     </div>
-  </Corners>
+  </FCorners>
 </template>
 
 <script lang="ts">

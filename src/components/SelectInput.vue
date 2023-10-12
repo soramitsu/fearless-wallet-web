@@ -1,5 +1,5 @@
 <template>
-  <Corners size="big" :isSelected="isSelected">
+  <FCorners size="big" :isSelected="isSelected">
     <div :class="selectClasses">
       <div class="column left-column">
         <div class="header">{{ header }}</div>
@@ -17,7 +17,7 @@
       </div>
 
       <div class="column right-column">
-        <Corners class="corners-button" @click.native="click">
+        <FCorners class="FCorners-button" @click.native="click">
           <button :class="selectButtonClasses">
             <template v-if="asset !== ''">
               <ExternalLogo class="asset-icon" :name="assetIcon" :width="32" />
@@ -31,7 +31,7 @@
               <SIcon name="chevron-bottom-16" />
             </Rotate>
           </button>
-        </Corners>
+        </FCorners>
 
         <div v-if="showBalance" class="balance">
           {{ $t('assets.balance') }}
@@ -40,7 +40,7 @@
         </div>
       </div>
     </div>
-  </Corners>
+  </FCorners>
 </template>
 
 <script lang="ts">
@@ -249,7 +249,7 @@ export default class SelectInput extends Vue {
     align-items: flex-end;
     justify-content: center;
 
-    .corners-button {
+    .FCorners-button {
       width: fit-content;
     }
 

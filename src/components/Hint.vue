@@ -6,45 +6,45 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Prop, Component } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n-composable';
 import type { ComponentText } from '@/interfaces';
 
-type IconNameType = 'notification' | 'warning';
+type Props = {
+  iconName: 'notification' | 'warning';
+  size: 'big' | 'medium';
+  text: ComponentText;
+};
 
-type Size = 'big' | 'medium';
-@Component
-export default class Hint extends Vue {
-  baseClass = 'notifications-icon';
+const baseClass = 'notifications-icon';
+const props = withDefaults(defineProps<Props>(), { size: 'medium' });
+const { t, tc } = useI18n();
 
-  @Prop(String) iconName!: IconNameType;
-  @Prop({ default: '' }) text!: ComponentText;
-  @Prop({ default: 'medium' }) size!: Size;
+const getClasses = computed(() => {
+  return [
+    baseClass,
+    {
+      'warning--orange': props.iconName === 'warning',
+    },
+  ];
+});
 
-  get tText() {
-    if (typeof this.text === 'string') return this.$t(this.text);
+const tText = computed(() => {
+  if (typeof props.text === 'string') return t(props.text);
 
-    const { text, localeProps } = this.text;
+  const { text, localeProps } = props.text;
 
-    if (localeProps) {
-      const { tc } = localeProps;
+  if (localeProps) {
+    const { tc: tcProps } = localeProps;
 
-      if (tc) return this.$tc(text, tc, localeProps);
-    }
-
-    return this.$t(text, localeProps);
+    if (tcProps) return tc(text, tcProps, localeProps);
   }
 
-  get getClasses() {
-    if (this.iconName === 'warning') return [`${this.baseClass} warning--orange`];
+  return t(text, localeProps);
+});
 
-    return [this.baseClass];
-  }
-
-  get getSize() {
-    return this.size === 'big' ? 'info-text--big' : 'info-text';
-  }
-}
+const getSize = computed(() => (props.size === 'big' ? 'info-text--big' : 'info-text'));
 </script>
 
 <style lang="scss" scoped>

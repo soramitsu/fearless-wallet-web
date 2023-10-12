@@ -1,5 +1,5 @@
 <template>
-  <Corners :topLeftCorner="showCorners" :bottomRightCorner="showCorners">
+  <FCorners :topLeftCorner="showCorners" :bottomRightCorner="showCorners">
     <SDropdown
       :type="type"
       buttonType="secondary"
@@ -17,7 +17,7 @@
         </SDropdownItem>
       </template>
     </SDropdown>
-  </Corners>
+  </FCorners>
 </template>
 
 <script lang="ts">

@@ -9,64 +9,56 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
+type Props = {
+  isError: boolean;
+  isSelected: boolean;
+  hover: boolean;
+  topLeftCorner: boolean;
+  bottomRightCorner: boolean;
+  size: Size;
+};
 
-@Component
-export default class Corners extends Vue {
-  @Prop({ default: false }) isError!: boolean;
-  @Prop({ default: false }) isSelected!: boolean;
-  @Prop({ default: false }) hover!: boolean;
-  @Prop({ default: true }) topLeftCorner!: boolean;
-  @Prop({ default: true }) bottomRightCorner!: boolean;
-  @Prop({ default: 'medium' }) size!: Size;
+const props = withDefaults(defineProps<Props>(), {
+  isError: false,
+  isSelected: false,
+  hover: false,
+  topLeftCorner: true,
+  bottomRightCorner: true,
+  size: 'medium',
+});
 
-  get cornersClasses() {
-    return [
-      {
-        corners: this.topLeftCorner || this.bottomRightCorner,
-      },
-    ];
-  }
+const cornerClasses = computed(() => {
+  // for "small" and "mini" sizes also medium
+  const sizeName = props.size === 'big' ? 'big' : 'medium';
 
-  get slotContainerClasses() {
-    return [
-      {
-        hover: this.hover,
-      },
-    ];
-  }
+  const classes = [
+    `corner-size-${sizeName}`,
+    {
+      'corner-border-error': props.isError,
+      'corner-border-selected': props.isSelected && !props.isError,
+      'corner-border': !props.isError && !props.isSelected,
+    },
+  ];
 
-  get topLeftCornerClasses() {
-    return [...this.cornerClasses, 'top-left'];
-  }
+  return classes;
+});
 
-  get bottomRightCornerClasses() {
-    return [...this.cornerClasses, 'bottom-right'];
-  }
-
-  get cornerClasses() {
-    // for "small" and "mini" sizes also medium
-    const sizeName = this.size === 'big' ? 'big' : 'medium';
-
-    const classes = [
-      `corner-size-${sizeName}`,
-      {
-        'corner-border-error': this.isError,
-        'corner-border-selected': this.isSelected && !this.isError,
-        'corner-border': !this.isError && !this.isSelected,
-      },
-    ];
-
-    return classes;
-  }
-}
+const slotContainerClasses = computed(() => [{ hover: props.hover }]);
+const topLeftCornerClasses = computed(() => [...cornerClasses.value, 'top-left']);
+const bottomRightCornerClasses = computed(() => [...cornerClasses.value, 'bottom-right']);
+const cornersClasses = computed(() => [
+  {
+    FCorners: props.topLeftCorner || props.bottomRightCorner,
+  },
+]);
 </script>
 
 <style lang="scss" scoped>
-.corners {
+.FCorners {
   position: relative;
   margin-bottom: 3px;
   height: fit-content;

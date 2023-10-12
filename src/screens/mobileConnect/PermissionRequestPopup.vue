@@ -135,7 +135,7 @@ export default class PermissionRequestPopup extends Vue {
   padding: 16px;
 }
 
-.corners__container {
+.FCorners__container {
   display: flex;
   justify-content: space-between;
   align-items: center;

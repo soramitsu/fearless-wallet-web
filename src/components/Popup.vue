@@ -1,6 +1,6 @@
 <template>
   <div :class="popupBackgroundClasses" :style="popupBackgroundStyles" @click="backgroundClick">
-    <Corners size="big" :topLeftCorner="showBorder" :bottomRightCorner="showBorder" :style="popupContainerStyle">
+    <FCorners size="big" :topLeftCorner="showBorder" :bottomRightCorner="showBorder" :style="popupContainerStyle">
       <div :class="popupContainerClasses" :style="popupContainerStyles">
         <div v-if="showHeader" class="header" :class="headerCentered">
           <SearchInput v-if="showSearch" v-model="filterValue" :placeholder="placeholder" width="235px" />
@@ -25,7 +25,7 @@
           </div>
         </Scroll>
       </div>
-    </Corners>
+    </FCorners>
   </div>
 </template>
 

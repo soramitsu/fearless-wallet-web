@@ -285,4 +285,3 @@ export default class AssetInfo extends Vue {
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types

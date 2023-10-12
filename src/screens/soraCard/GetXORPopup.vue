@@ -74,4 +74,3 @@ export default class GetXORPopup extends Vue {
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types

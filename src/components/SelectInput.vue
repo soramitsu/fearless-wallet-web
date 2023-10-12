@@ -311,4 +311,3 @@ export default class SelectInput extends Vue {
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types

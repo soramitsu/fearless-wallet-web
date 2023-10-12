@@ -361,4 +361,3 @@ export default class SoraCardPage extends Vue {
   height: 100%;
 }
 </style>
-@/extension/background/extension-base/src/background/types

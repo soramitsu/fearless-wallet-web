@@ -61,4 +61,3 @@ export default class ConnectionPopup extends Vue {
   width: 300px;
 }
 </style>
-@/extension/background/extension-base/src/background/types

@@ -131,4 +131,3 @@ export default class WalletDetailsPopup extends Vue {
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types

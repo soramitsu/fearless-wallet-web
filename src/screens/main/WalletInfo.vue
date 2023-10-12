@@ -167,4 +167,3 @@ export default class WalletInfo extends Vue {
   background: $pink-purple-color;
 }
 </style>
-@/extension/background/extension-base/src/background/types

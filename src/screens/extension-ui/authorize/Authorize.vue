@@ -141,4 +141,3 @@ const onReject = () => store.dispatch('REJECT_AUTH_REQUEST', request.value.id);
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types

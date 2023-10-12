@@ -912,4 +912,3 @@ export default class SwapForm extends Vue {
   cursor: default;
 }
 </style>
-@/extension/background/extension-base/src/background/types

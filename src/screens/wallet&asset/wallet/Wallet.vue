@@ -408,4 +408,3 @@ export default class Wallet extends Vue {
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types

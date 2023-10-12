@@ -91,4 +91,3 @@ export default class SelectWalletPopup extends Vue {
   margin-bottom: 12px !important;
 }
 </style>
-@/extension/background/extension-base/src/background/types

@@ -153,4 +153,3 @@ export default class AssetActionButtons extends Vue {
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types

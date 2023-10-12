@@ -969,4 +969,3 @@ export default class TransferForm extends Vue {
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types@/extension/background/extension-base/src/background/types

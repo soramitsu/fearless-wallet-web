@@ -278,4 +278,3 @@ export default class CrossChainForm extends Vue {
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types

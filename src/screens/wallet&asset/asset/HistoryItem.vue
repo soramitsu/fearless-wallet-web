@@ -136,4 +136,3 @@ export default class HistoryItem extends Vue {
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types

@@ -193,4 +193,3 @@ body {
   background-size: cover;
 }
 </style>
-@/extension/background/extension-base/src/background/types

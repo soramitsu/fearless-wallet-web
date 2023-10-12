@@ -135,4 +135,3 @@ export default class Currencies extends Vue {
   align-items: center;
 }
 </style>
-@/extension/background/extension-base/src/background/types

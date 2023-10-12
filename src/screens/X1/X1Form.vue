@@ -160,4 +160,3 @@ export default class X1Form extends Vue {
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types

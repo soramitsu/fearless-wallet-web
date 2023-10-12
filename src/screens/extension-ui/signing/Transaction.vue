@@ -195,4 +195,3 @@ export default class Auth extends Vue {
   flex-flow: column;
 }
 </style>
-@/extension/background/extension-base/src/background/types

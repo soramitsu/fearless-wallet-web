@@ -99,4 +99,3 @@ const updateAuths = async () => {
   margin-top: 16px;
 }
 </style>
-@/extension/background/extension-base/src/background/types

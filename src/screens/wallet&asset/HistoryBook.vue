@@ -254,4 +254,3 @@ export default class HistoryBook extends Vue {
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types

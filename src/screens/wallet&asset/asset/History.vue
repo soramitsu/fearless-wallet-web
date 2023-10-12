@@ -182,4 +182,3 @@ export default class History extends Vue {
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types

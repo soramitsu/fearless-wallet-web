@@ -151,4 +151,3 @@ export default class ContentSettings extends Vue {
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types

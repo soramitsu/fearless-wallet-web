@@ -196,4 +196,3 @@ export default class Welcome extends Vue {
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types

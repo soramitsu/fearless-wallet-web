@@ -814,4 +814,3 @@ export default class AddWallet extends Vue {
   width: 100%;
 }
 </style>
-@/extension/background/extension-base/src/background/types

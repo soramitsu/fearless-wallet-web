@@ -409,4 +409,3 @@ export default class Header extends Vue {
   }
 }
 </style>
-@/extension/background/extension-base/src/background/types

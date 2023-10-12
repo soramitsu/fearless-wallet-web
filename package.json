@@ -1,6 +1,6 @@
 {
   "name": "fearless-wallet",
-  "version": "1.3.1",
+  "version": "2.0.1",
   "private": true,
   "author": {
     "email": "fearless.web@soramitsu.co.jp",
@@ -42,7 +42,7 @@
     "@polkadot/util": "^12.3.2",
     "@polkadot/vue-identicon": "^2.9.8",
     "@sora-substrate/util": "1.23.4",
-    "@soramitsu/soramitsu-js-ui": "^1.0.46",
+    "@soramitsu-ui/ui-vue2": "^1.1.0",
     "@vespaiach/axios-fetch-adapter": "^0.3.1",
     "axios": "^0.27.2",
     "bignumber.js": "^9.0.2",

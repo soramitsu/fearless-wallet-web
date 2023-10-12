@@ -3181,89 +3181,89 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sora-substrate/api@npm:1.22.12":
-  version: 1.22.12
-  resolution: "@sora-substrate/api@npm:1.22.12"
+"@sora-substrate/api@npm:1.23.4":
+  version: 1.23.4
+  resolution: "@sora-substrate/api@npm:1.23.4"
   dependencies:
     "@open-web3/orml-api-derive": 1.1.4
     "@polkadot/api": 9.14.2
-    "@sora-substrate/types": 1.22.12
-  checksum: ad16abc3643344a7e8582c8f67cf4527c214318876a02e97955839f0b124a8c53755522cf83ef2305c26a1c03cc50748cd5fd817fcfa5530d854f62cc0d3a901
+    "@sora-substrate/types": 1.23.4
+  checksum: 1849f748b285ddd5202cf5ac1326e0942a97b8f6bc4b285d8c3a6558f45559f030093e3cf3f7de7836404a60462f3a1a98a311181782987da1f2725e5b3aeed4
   languageName: node
   linkType: hard
 
-"@sora-substrate/connection@npm:1.22.12":
-  version: 1.22.12
-  resolution: "@sora-substrate/connection@npm:1.22.12"
+"@sora-substrate/connection@npm:1.23.4":
+  version: 1.23.4
+  resolution: "@sora-substrate/connection@npm:1.23.4"
   dependencies:
-    "@sora-substrate/api": 1.22.12
-  checksum: 357d82c96a62a7e8ad4282f8042e0923fc8f398c08c955e4850dc76cc65456fb761cd3ead1dd4a69bfb45c809a4aab417910388202844953211afc88cc2f5b8c
+    "@sora-substrate/api": 1.23.4
+  checksum: 72c7f87f575fcf188a498ba37cc5720d657da245239f092d8b6aff160c34448e2193722c4feb4cacdb9009b6778ee5e00b1a569e3f72db0ad7356bbfaca70ac8
   languageName: node
   linkType: hard
 
-"@sora-substrate/liquidity-proxy@npm:1.22.12":
-  version: 1.22.12
-  resolution: "@sora-substrate/liquidity-proxy@npm:1.22.12"
+"@sora-substrate/liquidity-proxy@npm:1.23.4":
+  version: 1.23.4
+  resolution: "@sora-substrate/liquidity-proxy@npm:1.23.4"
   dependencies:
-    "@sora-substrate/math": 1.22.12
-  checksum: 6e4285811909b8038e4b5c6fb067eb640a21d0aca012cfe834c31b81804a3523291cca98ea066bf1e6723c62775542687b7a5489c92b1ad364177cd6486011b7
+    "@sora-substrate/math": 1.23.4
+  checksum: b3195f36024930fff0462ab8dcd5f9740287ea9326a919c89f32bf83574c1d47ee0b5ecf04e044975d78ac0fead30368794658e7e712008b8dee9a1a275a0406
   languageName: node
   linkType: hard
 
-"@sora-substrate/math@npm:1.22.12":
-  version: 1.22.12
-  resolution: "@sora-substrate/math@npm:1.22.12"
+"@sora-substrate/math@npm:1.23.4":
+  version: 1.23.4
+  resolution: "@sora-substrate/math@npm:1.23.4"
   dependencies:
     "@polkadot/types": 9.14.2
     bignumber.js: ^9.0.1
     lodash: ^4.17.15
-  checksum: c354ec4dbeff9b352d5194a25ff14b417a0b3d8d168a4ef8c098dccb3e8cfe2186b800b5421a2020875110b85619e8573ee8e97abb93ab80f79427634bd1300d
+  checksum: e923cfe55fab324fcf439dcd8ad8025ca2365dc4484d849f6adc358d4d5854802f5dff96ebfea26e4f44fec2a5042ab92771812dc73ddde35760a2aca4d88c6a
   languageName: node
   linkType: hard
 
-"@sora-substrate/type-definitions@npm:1.22.12":
-  version: 1.22.12
-  resolution: "@sora-substrate/type-definitions@npm:1.22.12"
+"@sora-substrate/type-definitions@npm:1.23.4":
+  version: 1.23.4
+  resolution: "@sora-substrate/type-definitions@npm:1.23.4"
   dependencies:
     "@open-web3/orml-type-definitions": 1.1.4
-  checksum: d7e5f4c781cfd4bc6879b01949607e8d3cb0d22bfceaf14d0659d62fd19cc2b8bc3ac63c4050ed6bd160af7b70b8708d2ed4bff828fa6c0a35bef8ae66124f6e
+  checksum: b40a059ccc57d1b9d150901b5f43e0ce0a0033b86db625c68ac40ee821f169e458062508b3ee10590e7ec10c59a95be0309a6c9bc7bc526d431fc4c66e5de1a2
   languageName: node
   linkType: hard
 
-"@sora-substrate/types@npm:1.22.12":
-  version: 1.22.12
-  resolution: "@sora-substrate/types@npm:1.22.12"
+"@sora-substrate/types@npm:1.23.4":
+  version: 1.23.4
+  resolution: "@sora-substrate/types@npm:1.23.4"
   dependencies:
     "@open-web3/api-mobx": 0.9.4-26
     "@open-web3/orml-types": 1.1.4
     "@polkadot/api": 9.14.2
     "@polkadot/typegen": 9.14.2
     "@polkadot/types": 9.14.2
-    "@sora-substrate/type-definitions": 1.22.12
-  checksum: e7bab24419c29da59044fd948f4f9ac1779ef1c8fb10f3bae807731516b5dcff96c45dc1d24421a36cc68da04f7f0700e4c9a841bf59c34604b8566df0a76d49
+    "@sora-substrate/type-definitions": 1.23.4
+  checksum: cc276298e82b36ae8148fae2eff2566249b91cf9159879c0055ace2247ddde70d5f756abe3d22b5674fd782988c5c6314eff547e430822b484da9f4d94d6d7b1
   languageName: node
   linkType: hard
 
-"@sora-substrate/util@npm:1.22.12":
-  version: 1.22.12
-  resolution: "@sora-substrate/util@npm:1.22.12"
+"@sora-substrate/util@npm:1.23.4":
+  version: 1.23.4
+  resolution: "@sora-substrate/util@npm:1.23.4"
   dependencies:
     "@polkadot/ui-keyring": 2.12.1
-    "@sora-substrate/api": 1.22.12
-    "@sora-substrate/connection": 1.22.12
-    "@sora-substrate/liquidity-proxy": 1.22.12
-    "@sora-substrate/math": 1.22.12
-    "@sora-substrate/types": 1.22.12
+    "@sora-substrate/api": 1.23.4
+    "@sora-substrate/connection": 1.23.4
+    "@sora-substrate/liquidity-proxy": 1.23.4
+    "@sora-substrate/math": 1.23.4
+    "@sora-substrate/types": 1.23.4
     axios: ^0.21.1
     crypto-js: ^4.0.0
     lodash: ^4.17.15
-  checksum: 8ba1f0cc4741a1d74b834bf556b9b591bf2e75271b26a82b01a654a7096ce91c3820282900249bc3705c8788903cd2641fe6583062300488457114810c969b5a
+  checksum: e723b9290cc6f9a8465c18d8e647d9c9a026b0477c1969faca0b375679a45a1faae6826b33dbe17b1fe2ae9e66fed6f5f09b59dd982cd227585615cdbdcb2572
   languageName: node
   linkType: hard
 
-"@soramitsu/soramitsu-js-ui@npm:^1.0.46":
-  version: 1.0.46
-  resolution: "@soramitsu/soramitsu-js-ui@npm:1.0.46"
+"@soramitsu-ui/ui-vue2@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@soramitsu-ui/ui-vue2@npm:1.1.0"
   dependencies:
     core-js: ^3.26.1
     element-resize-detector: ^1.2.4
@@ -3276,7 +3276,7 @@ __metadata:
     vue-i18n: ^8.28.2
     vue-property-decorator: ^9.1.2
     vuex: ^3.6.2
-  checksum: 3b8f7ba7def816773216d24d57556d54dd8855a9bca2e0de87fb13861f6ab0a48db53318b3aaa7bf14ce4a9a2b4b41a47de4d155c11082ebb54f24493c03dbd9
+  checksum: 30c2a2f669fe80a7faa6397f674321d4164ebff54ea7bbca166540434ee8b91226f8a53868475261bede8d9b251233b0b9e290dca0f9cff09ee6d7134b65bf42
   languageName: node
   linkType: hard
 
@@ -5165,10 +5165,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ace-builds@npm:^1.20.0":
-  version: 1.24.0
-  resolution: "ace-builds@npm:1.24.0"
-  checksum: ffb19f6cd2d86c17d2275f3d0f8a42fbd02435fe932983cc4ebbf512589819c0c376e4bd53476d80dbec8219ada21208db33728641c6157a0571249f2f52f3e9
+"ace-builds@npm:^1.27.0":
+  version: 1.29.0
+  resolution: "ace-builds@npm:1.29.0"
+  checksum: c8357ac2427dacf4d67e613505e36846b5df71dc35a5a083709ebada64efbbcdf7f346547e9c39cb568d7aae69c7215feaf94ba02c6e9a064e8a1f28e34f8e3c
   languageName: node
   linkType: hard
 
@@ -7501,10 +7501,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"core-js@npm:^3.1.4, core-js@npm:^3.26.1, core-js@npm:^3.8.3":
+"core-js@npm:^3.1.4, core-js@npm:^3.8.3":
   version: 3.32.0
   resolution: "core-js@npm:3.32.0"
   checksum: 52921395028550e4c9d21d47b9836439bb5b6b9eefc34d45a3948a68d81fdd093acc0fadf69f9cf632b82f01f95f22f484408a93dd9e940b19119ac204cd2925
+  languageName: node
+  linkType: hard
+
+"core-js@npm:^3.26.1":
+  version: 3.33.0
+  resolution: "core-js@npm:3.33.0"
+  checksum: dd62217935ac281faf6f833bb306fb891162919fcf9c1f0c975b1b91e82ac09a940f5deb5950bbb582739ceef716e8bd7e4f9eab8328932fb029d3bc2ecb2881
   languageName: node
   linkType: hard
 
@@ -8827,7 +8834,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"element-ui@npm:^2.15.12, element-ui@npm:^2.15.13":
+"element-ui@npm:^2.15.12":
+  version: 2.15.14
+  resolution: "element-ui@npm:2.15.14"
+  dependencies:
+    async-validator: ~1.8.1
+    babel-helper-vue-jsx-merge-props: ^2.0.0
+    deepmerge: ^1.2.0
+    normalize-wheel: ^1.0.1
+    resize-observer-polyfill: ^1.5.0
+    throttle-debounce: ^1.0.1
+  peerDependencies:
+    vue: ^2.5.17
+  checksum: 937b211ce3437ce3627fe07a098800805d6c6babc527edfff711dcc160d3c52cbaadd25663d8a03408200d996d7c745afdd60339804537fbf2875554a6edeb2f
+  languageName: node
+  linkType: hard
+
+"element-ui@npm:^2.15.13":
   version: 2.15.13
   resolution: "element-ui@npm:2.15.13"
   dependencies:
@@ -10003,8 +10026,8 @@ __metadata:
     "@polkadot/ui-keyring": ^3.5.1
     "@polkadot/util": ^12.3.2
     "@polkadot/vue-identicon": ^2.9.8
-    "@sora-substrate/util": 1.22.12
-    "@soramitsu/soramitsu-js-ui": ^1.0.46
+    "@sora-substrate/util": 1.23.4
+    "@soramitsu-ui/ui-vue2": ^1.1.0
     "@types/chrome": ^0.0.200
     "@types/electron-devtools-installer": ^2.2.2
     "@types/file-saver": ^2.0.5
@@ -13121,19 +13144,19 @@ __metadata:
   linkType: hard
 
 "jsoneditor@npm:^9.5.3":
-  version: 9.10.2
-  resolution: "jsoneditor@npm:9.10.2"
+  version: 9.10.3
+  resolution: "jsoneditor@npm:9.10.3"
   dependencies:
-    ace-builds: ^1.20.0
+    ace-builds: ^1.27.0
     ajv: ^6.12.6
     javascript-natural-sort: ^0.7.1
     jmespath: ^0.16.0
     json-source-map: ^0.6.1
-    jsonrepair: ^3.1.0
+    jsonrepair: ^3.2.1
     mobius1-selectr: ^2.4.13
     picomodal: ^3.0.0
-    vanilla-picker: ^2.12.1
-  checksum: bc4579ad93f575c8a24b122baec7fdecd2ca829662210550d41da8a29e46b51573193dafb49805b81974360dd0b1c551b43121dce133685407b4038da676bd7a
+    vanilla-picker: ^2.12.2
+  checksum: f8c4f6e3a8e0e4458d6577ec18ee88508e2e84c49045f699b64c4b6dd3790892d137116e4ff26396e880bef14116aeb89c1f3512eb50bde7c957fff059951844
   languageName: node
   linkType: hard
 
@@ -13162,12 +13185,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jsonrepair@npm:^3.1.0":
-  version: 3.2.0
-  resolution: "jsonrepair@npm:3.2.0"
+"jsonrepair@npm:^3.2.1":
+  version: 3.2.4
+  resolution: "jsonrepair@npm:3.2.4"
   bin:
     jsonrepair: bin/cli.js
-  checksum: a3acb1ceec44c8fb5a3cb993734c6ca71b71f5e3b29cd69e023c94e2ae0c12472fc0263c535df457e86a52dce2199a854b48d931298e9bc7f0102fa1f844ed46
+  checksum: 59fc3610687cf158f96f7d8a15fa65eecc35909f6fc247608fce28e63cf4eb50f579e20da38113537c837ea63b60b5dc31405255a9f05fb0e4646be301d642b8
   languageName: node
   linkType: hard
 
@@ -18922,12 +18945,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vanilla-picker@npm:^2.12.1":
-  version: 2.12.1
-  resolution: "vanilla-picker@npm:2.12.1"
+"vanilla-picker@npm:^2.12.2":
+  version: 2.12.2
+  resolution: "vanilla-picker@npm:2.12.2"
   dependencies:
     "@sphinxxxx/color-conversion": ^2.2.2
-  checksum: 92cedd11869a7b9b2e1c1476f07c64d942bd3de625063618ff4a3758fc51371c3b9ef7e175f22634b702416df5a5a02e7ab62395ab9b159b36be44c3c43895fc
+  checksum: 3712edfb53e9bc698a339a6f40f38e04f125bf0d0ebddb69155f755480f49425c26690f729baae8800c9f511b0242287eb7ce28f4303427979dd7db37068e1c5
   languageName: node
   linkType: hard
 

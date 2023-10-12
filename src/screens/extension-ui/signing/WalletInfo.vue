@@ -1,5 +1,5 @@
 <template>
-  <Corners size="big">
+  <FCorners size="big">
     <div class="transaction__header">
       <Icon icon="wallet-logo-transaction" className="wallet__logo" />
 
@@ -13,7 +13,7 @@
 
       <Icon icon="clipboard" className="wallet-info__clipboard" @click="saveToClipboard" />
     </div>
-  </Corners>
+  </FCorners>
 </template>
 
 <script lang="ts">

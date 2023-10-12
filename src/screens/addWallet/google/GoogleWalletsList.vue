@@ -4,7 +4,7 @@
 
     <Scroll>
       <ul class="wallets__list">
-        <Corners v-for="(file, index) in items" size="big" v-bind:key="file.id">
+        <FCorners v-for="(file, index) in items" size="big" v-bind:key="file.id">
           <li class="wallets__item">
             <div class="json__info" @click.self="onSelect(!file.active, index)">
               <Checkbox
@@ -45,7 +45,7 @@
               </div>
             </transition>
           </li>
-        </Corners>
+        </FCorners>
       </ul>
     </Scroll>
   </div>

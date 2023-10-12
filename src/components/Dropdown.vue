@@ -1,5 +1,5 @@
 <template>
-  <Corners>
+  <FCorners>
     <SDropdown
       type="button"
       buttonType="secondary"
@@ -16,7 +16,7 @@
         </SDropdownItem>
       </template>
     </SDropdown>
-  </Corners>
+  </FCorners>
 </template>
 
 <script lang="ts">

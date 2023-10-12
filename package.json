@@ -43,7 +43,7 @@
     "@polkadot/util": "^12.3.2",
     "@polkadot/vue-identicon": "^2.9.8",
     "@sora-substrate/util": "1.22.7",
-    "@soramitsu/soramitsu-js-ui": "^1.0.46",
+    "@soramitsu-ui/ui-vue2": "^1.1.0",
     "@vespaiach/axios-fetch-adapter": "^0.3.1",
     "@walletconnect/encoding": "^1.0.2",
     "@walletconnect/sign-client": "^2.9.2",

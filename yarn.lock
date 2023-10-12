@@ -3287,9 +3287,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@soramitsu/soramitsu-js-ui@npm:^1.0.46":
-  version: 1.0.46
-  resolution: "@soramitsu/soramitsu-js-ui@npm:1.0.46"
+"@soramitsu-ui/ui-vue2@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@soramitsu-ui/ui-vue2@npm:1.1.0"
   dependencies:
     core-js: ^3.26.1
     element-resize-detector: ^1.2.4
@@ -3302,7 +3302,7 @@ __metadata:
     vue-i18n: ^8.28.2
     vue-property-decorator: ^9.1.2
     vuex: ^3.6.2
-  checksum: 3b8f7ba7def816773216d24d57556d54dd8855a9bca2e0de87fb13861f6ab0a48db53318b3aaa7bf14ce4a9a2b4b41a47de4d155c11082ebb54f24493c03dbd9
+  checksum: 30c2a2f669fe80a7faa6397f674321d4164ebff54ea7bbca166540434ee8b91226f8a53868475261bede8d9b251233b0b9e290dca0f9cff09ee6d7134b65bf42
   languageName: node
   linkType: hard
 
@@ -5507,10 +5507,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ace-builds@npm:^1.20.0":
-  version: 1.24.0
-  resolution: "ace-builds@npm:1.24.0"
-  checksum: ffb19f6cd2d86c17d2275f3d0f8a42fbd02435fe932983cc4ebbf512589819c0c376e4bd53476d80dbec8219ada21208db33728641c6157a0571249f2f52f3e9
+"ace-builds@npm:^1.27.0":
+  version: 1.29.0
+  resolution: "ace-builds@npm:1.29.0"
+  checksum: c8357ac2427dacf4d67e613505e36846b5df71dc35a5a083709ebada64efbbcdf7f346547e9c39cb568d7aae69c7215feaf94ba02c6e9a064e8a1f28e34f8e3c
   languageName: node
   linkType: hard
 
@@ -7850,10 +7850,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"core-js@npm:^3.1.4, core-js@npm:^3.26.1, core-js@npm:^3.8.3":
+"core-js@npm:^3.1.4, core-js@npm:^3.8.3":
   version: 3.32.0
   resolution: "core-js@npm:3.32.0"
   checksum: 52921395028550e4c9d21d47b9836439bb5b6b9eefc34d45a3948a68d81fdd093acc0fadf69f9cf632b82f01f95f22f484408a93dd9e940b19119ac204cd2925
+  languageName: node
+  linkType: hard
+
+"core-js@npm:^3.26.1":
+  version: 3.33.0
+  resolution: "core-js@npm:3.33.0"
+  checksum: dd62217935ac281faf6f833bb306fb891162919fcf9c1f0c975b1b91e82ac09a940f5deb5950bbb582739ceef716e8bd7e4f9eab8328932fb029d3bc2ecb2881
   languageName: node
   linkType: hard
 
@@ -9195,7 +9202,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"element-ui@npm:^2.15.12, element-ui@npm:^2.15.13":
+"element-ui@npm:^2.15.12":
+  version: 2.15.14
+  resolution: "element-ui@npm:2.15.14"
+  dependencies:
+    async-validator: ~1.8.1
+    babel-helper-vue-jsx-merge-props: ^2.0.0
+    deepmerge: ^1.2.0
+    normalize-wheel: ^1.0.1
+    resize-observer-polyfill: ^1.5.0
+    throttle-debounce: ^1.0.1
+  peerDependencies:
+    vue: ^2.5.17
+  checksum: 937b211ce3437ce3627fe07a098800805d6c6babc527edfff711dcc160d3c52cbaadd25663d8a03408200d996d7c745afdd60339804537fbf2875554a6edeb2f
+  languageName: node
+  linkType: hard
+
+"element-ui@npm:^2.15.13":
   version: 2.15.13
   resolution: "element-ui@npm:2.15.13"
   dependencies:
@@ -10380,7 +10403,7 @@ __metadata:
     "@polkadot/util": ^12.3.2
     "@polkadot/vue-identicon": ^2.9.8
     "@sora-substrate/util": 1.22.7
-    "@soramitsu/soramitsu-js-ui": ^1.0.46
+    "@soramitsu-ui/ui-vue2": ^1.1.0
     "@types/chrome": ^0.0.200
     "@types/electron-devtools-installer": ^2.2.2
     "@types/file-saver": ^2.0.5
@@ -13508,19 +13531,19 @@ __metadata:
   linkType: hard
 
 "jsoneditor@npm:^9.5.3":
-  version: 9.10.2
-  resolution: "jsoneditor@npm:9.10.2"
+  version: 9.10.3
+  resolution: "jsoneditor@npm:9.10.3"
   dependencies:
-    ace-builds: ^1.20.0
+    ace-builds: ^1.27.0
     ajv: ^6.12.6
     javascript-natural-sort: ^0.7.1
     jmespath: ^0.16.0
     json-source-map: ^0.6.1
-    jsonrepair: ^3.1.0
+    jsonrepair: ^3.2.1
     mobius1-selectr: ^2.4.13
     picomodal: ^3.0.0
-    vanilla-picker: ^2.12.1
-  checksum: bc4579ad93f575c8a24b122baec7fdecd2ca829662210550d41da8a29e46b51573193dafb49805b81974360dd0b1c551b43121dce133685407b4038da676bd7a
+    vanilla-picker: ^2.12.2
+  checksum: f8c4f6e3a8e0e4458d6577ec18ee88508e2e84c49045f699b64c4b6dd3790892d137116e4ff26396e880bef14116aeb89c1f3512eb50bde7c957fff059951844
   languageName: node
   linkType: hard
 
@@ -13549,12 +13572,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jsonrepair@npm:^3.1.0":
-  version: 3.2.0
-  resolution: "jsonrepair@npm:3.2.0"
+"jsonrepair@npm:^3.2.1":
+  version: 3.2.4
+  resolution: "jsonrepair@npm:3.2.4"
   bin:
     jsonrepair: bin/cli.js
-  checksum: a3acb1ceec44c8fb5a3cb993734c6ca71b71f5e3b29cd69e023c94e2ae0c12472fc0263c535df457e86a52dce2199a854b48d931298e9bc7f0102fa1f844ed46
+  checksum: 59fc3610687cf158f96f7d8a15fa65eecc35909f6fc247608fce28e63cf4eb50f579e20da38113537c837ea63b60b5dc31405255a9f05fb0e4646be301d642b8
   languageName: node
   linkType: hard
 
@@ -19477,12 +19500,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vanilla-picker@npm:^2.12.1":
-  version: 2.12.1
-  resolution: "vanilla-picker@npm:2.12.1"
+"vanilla-picker@npm:^2.12.2":
+  version: 2.12.2
+  resolution: "vanilla-picker@npm:2.12.2"
   dependencies:
     "@sphinxxxx/color-conversion": ^2.2.2
-  checksum: 92cedd11869a7b9b2e1c1476f07c64d942bd3de625063618ff4a3758fc51371c3b9ef7e175f22634b702416df5a5a02e7ab62395ab9b159b36be44c3c43895fc
+  checksum: 3712edfb53e9bc698a339a6f40f38e04f125bf0d0ebddb69155f755480f49425c26690f729baae8800c9f511b0242287eb7ce28f4303427979dd7db37068e1c5
   languageName: node
   linkType: hard
 

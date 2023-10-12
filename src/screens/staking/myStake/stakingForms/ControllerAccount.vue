@@ -23,7 +23,7 @@
       <InputWithIcon
         v-model="addressCut"
         icon="close"
-        placeholder="staking.controllerAccount"
+        placeholder="staking.setControllerAccount"
         @click="setControllerAddress"
       />
 

@@ -1,16 +1,17 @@
 <template>
   <div class="link" @click="$emit('click')">
-    {{ $t(text) }}
+    {{ $t(props.text) }}
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+type Props = {
+  text: string;
+};
 
-@Component
-export default class FLink extends Vue {
-  @Prop({ default: 0 }) text!: number;
-}
+const props = withDefaults(defineProps<Props>(), {
+  text: '',
+});
 </script>
 
 <style lang="scss" scoped>

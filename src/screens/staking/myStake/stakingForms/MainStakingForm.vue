@@ -314,7 +314,7 @@ export default class MainStakingForm extends Vue {
 
   confirm() {
     if (this.isControllerAccount && this.step === 1) this.step += 1;
-    if (this.isPayee && this.step === 1) this.step += 1;
+    else if (this.isPayee && this.step === 1) this.step += 1;
     else this.showConfirmationPasswordPopup = true;
   }
 

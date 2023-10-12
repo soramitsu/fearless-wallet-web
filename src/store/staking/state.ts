@@ -1,4 +1,4 @@
-import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID } from '@/consts/sora';
+import { SORA_ICON, SORA_NETWORK_NAME, SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID } from '@/consts/sora';
 import { NetworkParams } from '@/store/staking/types';
 import { getDefaultStakingParams } from '@/helpers/staking';
 
@@ -15,17 +15,19 @@ const getDefaultNetworkParams = (networkParams: Partial<NetworkParams>) => {
   } as Omit<NetworkParams, 'bondAmount'>;
 };
 
+const STAKING_ITEMS: Partial<NetworkParams>[] = [
+  {
+    network: SORA_NETWORK_NAME,
+    asset: SORA_UTILITY_ASSET,
+    assetId: SORA_XOR_ASSET_ID,
+    icon: SORA_ICON,
+    type: 'regular',
+  },
+];
+
 const state = (): State => {
   return {
-    allStakingNetworks: [
-      getDefaultNetworkParams({
-        network: SORA_NETWORK_NAME,
-        asset: SORA_UTILITY_ASSET,
-        assetId: SORA_XOR_ASSET_ID,
-        type: 'regular',
-        icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg',
-      }),
-    ],
+    allStakingNetworks: STAKING_ITEMS.map((params) => getDefaultNetworkParams(params)),
   };
 };
 

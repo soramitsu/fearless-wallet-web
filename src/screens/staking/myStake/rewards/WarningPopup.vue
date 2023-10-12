@@ -12,17 +12,22 @@
   />
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+type Props = {
+  handlerAccept: () => void;
+  handlerClose?: () => void;
+};
 
-@Component
-export default class WarningAddressPopup extends Vue {
-  readonly headers = {
-    text: 'common.areYouSure',
-    subtext: 'staking.rewardLess',
-  };
+const headers = {
+  text: 'common.areYouSure',
+  subtext: 'staking.rewardLess',
+};
 
-  @Prop(Function) handlerClose!: VoidFunction;
-  @Prop(Function) handlerAccept!: VoidFunction;
-}
+const props = withDefaults(defineProps<Props>(), {
+  handlerClose: () => null,
+  handlerAccept: () => null,
+});
+
+const handlerAccept = props.handlerAccept;
+const handlerClose = props.handlerClose;
 </script>

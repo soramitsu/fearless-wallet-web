@@ -32,7 +32,7 @@
           <SelectInput
             class="amount-input"
             text="assets.amount"
-            :value="amountValue"
+            :value="summaryRewardsValue"
             :asset="rewardedAssetName"
             :assetId="rewardedAssetId"
             :amount="summaryRewards"
@@ -64,7 +64,7 @@
       v-if="showConfirmationPasswordPopup"
       :currency="stakingCurrency"
       :amount="summaryRewards"
-      :value="amountValue"
+      :value="summaryRewardsValue"
       :fee="fee"
       :feeValue="feeValue"
       :firstIcon="stakingAssetId"
@@ -78,6 +78,7 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { FPNumber } from '@sora-substrate/util';
 import type { GetAssetPrice, NetworkParams, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -184,7 +185,7 @@ export default class StakingManagement extends Vue {
   }
 
   get rewardedAssetPrice() {
-    const priceId = this.stakingCurrency?.priceId ?? '';
+    const priceId = this.rewardedCurrency?.priceId ?? '';
 
     return this.getAssetPrice(priceId).price;
   }
@@ -193,7 +194,7 @@ export default class StakingManagement extends Vue {
     return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
   }
 
-  get amountValue() {
+  get summaryRewardsValue() {
     return getCostOfAssets(this.summaryRewards, this.rewardedAssetPrice).toString();
   }
 
@@ -246,8 +247,12 @@ export default class StakingManagement extends Vue {
   }
 
   confirm() {
-    if (this.step === 2) this.showConfirmationPasswordPopup = true;
-    else this.step += 1;
+    if (this.step === 2) {
+      const rewardLessFee = FPNumber.lte(new FPNumber(this.summaryRewardsValue), new FPNumber(this.feeValue));
+
+      if (rewardLessFee) this.showWarningPopup = true;
+      else this.showConfirmationPasswordPopup = true;
+    } else this.step += 1;
   }
 }
 </script>

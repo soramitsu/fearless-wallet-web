@@ -8,5 +8,15 @@ const SORA_XOR_ASSET_ID = IS_PRODUCTION
   : 'b5a44630-920e-43ee-809f-61890d0888b0';
 const SORA_UTILITY_ASSET = 'xor';
 const SORA_REWARD_ASSET = 'val';
+const SORA_ICON =
+  'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg';
 
-export { SORA_NETWORK_NAME, SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID, SORA_MAINNET, SORA_TEST, SORA_REWARD_ASSET };
+export {
+  SORA_NETWORK_NAME,
+  SORA_UTILITY_ASSET,
+  SORA_XOR_ASSET_ID,
+  SORA_MAINNET,
+  SORA_TEST,
+  SORA_REWARD_ASSET,
+  SORA_ICON,
+};

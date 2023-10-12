@@ -31,6 +31,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import type { CustomEvent } from '@/interfaces';
 
 type HorizontalPlacement = 'left' | 'center' | 'right';
 type VerticalPlacement = 'top' | 'center' | 'bottom';
@@ -148,9 +149,8 @@ export default class Popup extends Vue {
     this.$emit('handlerFilter', value);
   }
 
-  backgroundClick(event: Event) {
-    if (this.closeByBackground && (event.target as HTMLDivElement)?.classList.contains('popup-background'))
-      this.close();
+  backgroundClick(event: CustomEvent) {
+    if (this.closeByBackground && event.target?.classList.contains('popup-background')) this.close();
   }
 
   close() {

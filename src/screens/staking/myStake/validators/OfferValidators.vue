@@ -65,15 +65,10 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+const emit = defineEmits(['openValidatorList']);
 
-@Component
-export default class OfferValidators extends Vue {
-  openValidatorList(isSuggested = false) {
-    this.$emit('openValidatorList', isSuggested);
-  }
-}
+const openValidatorList = (isSuggested: boolean) => emit('openValidatorList', isSuggested);
 </script>
 
 <style lang="scss" scoped>

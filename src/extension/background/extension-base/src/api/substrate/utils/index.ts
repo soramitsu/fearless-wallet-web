@@ -1,5 +1,6 @@
 import { FPNumber } from '@sora-substrate/math';
-import { state } from '@extension-base/background/handlers';
+import { ApiPromise } from '@polkadot/api';
+import { Asset } from '../../../types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { NetworkName } from '@/interfaces';
@@ -9,10 +10,12 @@ type ExtrinsicTransferProps = {
   amount: string | undefined;
   networkKey: NetworkName;
   tokenBalance: TokenBalance;
+  api: ApiPromise;
+  assetsMap: Asset[];
 };
 
-export function getAssetOptions(assetId: string) {
-  const { currencyId, symbol, type } = state.assetsMap.find(({ id }) => id === assetId)!;
+export function getAssetOptions(assetId: string, assetsMap: Asset[]) {
+  const { currencyId, symbol, type } = assetsMap.find(({ id }) => id === assetId)!;
 
   if (type === 'stable') return { Stable: currencyId!.toUpperCase() };
   if (type === 'vsToken') return { VSToken: currencyId!.toUpperCase() };
@@ -24,9 +27,10 @@ export function getAssetOptions(assetId: string) {
   if (type === 'soraAsset') return currencyId;
   if (type === 'equilibrium') return currencyId;
   if (type === 'assets') return currencyId;
-
-  // TODO
   if (type === 'assetId') return currencyId;
+
+  // TODO AUSD
+  if (assetId === '91a69026-0ab7-4db0-af53-8d571fd33ac4') return { Token: currencyId!.toUpperCase() };
 
   return { Token: symbol.toUpperCase() };
 }
@@ -43,15 +47,12 @@ export function getPrecisionValue(
 }
 
 export function createExtrinsicTransfer(props: ExtrinsicTransferProps): SubmittableExtrinsic<'promise'> | null {
-  const { amount, tokenBalance, to, networkKey } = props;
-  const api = state.getSubstrateApiMap[networkKey].api;
-
-  if (!api) return null;
+  const { amount, tokenBalance, to, networkKey, api, assetsMap } = props;
 
   const { precision, type, id } = tokenBalance.balances.find(
     ({ name }) => name.toLowerCase() === networkKey.toLowerCase()
   )!;
-  const ormlOptions = getAssetOptions(id);
+  const ormlOptions = getAssetOptions(id, assetsMap);
   const precisionAmount = getPrecisionValue(amount, precision) as string;
 
   try {

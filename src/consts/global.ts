@@ -13,6 +13,7 @@ const MOONPAY_API_KEY = IS_PRODUCTION ? process.env.MOONPAY_PROD_API_KEY : proce
 const IS_EXTENSION = chrome.extension !== undefined;
 const APP_VERSION = packages.version;
 const FEARLESS_TITLE = 'FEARLESS';
+const EXTENSION_ID = 'nhlnehondigmgckngjomcpcefcdplmgc';
 
 export {
   FEARLESS_TITLE,
@@ -28,4 +29,5 @@ export {
   MOONPAY_API_KEY,
   IS_EXTENSION,
   APP_VERSION,
+  EXTENSION_ID,
 };

@@ -1,6 +1,3 @@
-// Copyright 2019-2022 @subwallet/extension-koni authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
 import { BN } from '@polkadot/util';
 import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import { isEthereumAddress, decodeAddress, encodeAddress, ethereumEncode } from '@polkadot/util-crypto';
@@ -29,9 +26,7 @@ export function canDerive(type?: KeypairType): boolean {
 }
 
 export const getCurrentProvider = (data: NetworkJson): string | undefined => {
-  if (!data?.currentProvider) {
-    return undefined;
-  }
+  if (!data?.currentProvider) return undefined;
 
   if (data.currentProvider.startsWith('custom') && data.customNodes.length) {
     return data.customNodes.find((value) => value.url === data.currentProvider)?.url;

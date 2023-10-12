@@ -55,7 +55,6 @@ import type { HistoryElement } from '@/interfaces/history';
 import type { TokenBalance } from '@extension-base/background/types';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import HistoryDetailsForm from '@/screens/wallet&asset/asset/HistoryDetailsForm.vue';
-import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
@@ -66,7 +65,7 @@ import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NETWORK_GROUP } from '@/consts/networks';
+import { NETWORKS_GROUPS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common/index';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
@@ -79,14 +78,11 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'sh
     ReceiveForm,
     CrossChainForm,
     HistoryDetailsForm,
-    SelectNetworkButton,
     NetworkManagementButton,
     NetworkManagement,
   },
 })
 export default class Asset extends Vue {
-  readonly selectNetworkButtonRef = 'selectNetworkButton';
-
   historyElement: HistoryElement | Record<string, string> | null = null;
   showSendForm = false;
   showReceiveForm = false;
@@ -123,7 +119,7 @@ export default class Asset extends Vue {
   }
 
   get isSelectedNetworkHistory() {
-    if (!NETWORK_GROUP.includes(this.selectedNetwork)) return false;
+    if (!NETWORKS_GROUPS.includes(this.selectedNetwork)) return false;
 
     return this.selectedAssetNetwork === '';
   }

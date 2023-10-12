@@ -42,7 +42,7 @@
           <template v-else-if="step === 1">
             <SelectInput
               text="assets.sendButtonText"
-              :transferableAmount="transferableSendAmount"
+              :totalAmount="transferableSendAmount"
               :value="sendValue"
               :asset="sendAssetName"
               :assetId="sendAssetId"
@@ -50,20 +50,20 @@
               :isRotate="isSendAssetType"
               @update:amount="updateSendAmount"
               @setMax="setMax"
-              @toggleSelectAssetPopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'send')"
+              @togglePopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'send')"
             />
 
             <SelectInput
               class="receive-input"
               text="assets.receiveButtonText"
-              :transferableAmount="transferableReceiveAmount"
+              :totalAmount="transferableReceiveAmount"
               :value="receiveValue"
               :asset="receiveAssetName"
               :assetId="receiveAssetId"
               :amount="receiveAmount"
               :isRotate="isReceiveAssetType"
               @update:amount="updateReceiveAmount"
-              @toggleSelectAssetPopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'receive')"
+              @togglePopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'receive')"
             />
 
             <div :class="classesSwapIcon" @click="swapAssets">

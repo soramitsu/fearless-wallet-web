@@ -159,6 +159,7 @@ export interface RequestSignatures {
 
   //ether
   'pri(balance)': [null, BalanceJson];
+  'pri(fetch.evm.balance)': [null, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
 
   'pri(price.update.currency)': [string, void];

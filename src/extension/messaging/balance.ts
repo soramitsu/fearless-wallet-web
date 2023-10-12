@@ -6,6 +6,10 @@ export function getBalance(): Promise<BalanceJson> {
   return sendMessage('pri(balance)');
 }
 
+export function fetchEvmBalance(): Promise<void> {
+  return sendMessage('pri(fetch.evm.balance)');
+}
+
 export function updateFiatSymbol(symbol: string): Promise<void> {
   return sendMessage('pri(price.update.currency)', symbol);
 }

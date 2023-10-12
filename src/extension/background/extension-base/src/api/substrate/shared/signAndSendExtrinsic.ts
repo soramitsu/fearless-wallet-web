@@ -1,10 +1,8 @@
-// Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
+import { type BasicTxResponse, ApiProps } from '@extension-base/background/types/types';
 import { sendExtrinsic } from '@extension-base/api/substrate/shared/sendExtrinsic';
 import { signExtrinsic } from '@extension-base/api/substrate/shared/signExtrinsic';
 import { BasicTxErrorCode } from '@extension-base/background/types';
-import { BasicTxResponse, ApiProps } from '@extension-base/background/types/types';
+import State from '@extension-base/background/handlers/State';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { EventRecord } from '@polkadot/types/interfaces';
 import type { HandleBasicTx } from '@extension-base/api/evm/transfer';
@@ -32,16 +30,10 @@ interface ExternalSignAndSendExtrinsicProps extends AbstractSignAndSendExtrinsic
 
 type SignAndSendExtrinsicProps = ExternalSignAndSendExtrinsicProps | PasswordSignAndSendExtrinsicProps;
 
-export const signAndSendExtrinsic = async ({
-  address,
-  apiProps,
-  callback,
-  errorMessage,
-  extrinsic,
-  password,
-  txState,
-  type,
-}: SignAndSendExtrinsicProps) => {
+export const signAndSendExtrinsic = async (
+  { address, apiProps, callback, errorMessage, extrinsic, password, txState, type }: SignAndSendExtrinsicProps,
+  state: State
+) => {
   if (!extrinsic) {
     txState.status = false;
 
@@ -50,14 +42,17 @@ export const signAndSendExtrinsic = async ({
     return;
   }
 
-  await signExtrinsic({
-    address,
-    apiProps,
-    callback,
-    extrinsic,
-    password,
-    type,
-  });
+  await signExtrinsic(
+    {
+      address,
+      apiProps,
+      callback,
+      extrinsic,
+      password,
+      type,
+    },
+    state
+  );
 
   try {
     await sendExtrinsic({

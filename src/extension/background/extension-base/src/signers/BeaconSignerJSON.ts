@@ -1,19 +1,13 @@
-// Copyright 2019-2022 @polkadot/extension authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
-import { state } from '@extension-base/background/handlers';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type { RequestSign } from '@/extension/background/extension-base/src/background/types';
 
 export default class BeaconSignerJSON implements RequestSign {
-  public readonly payload: SignerPayloadJSON;
-
-  constructor(payload: SignerPayloadJSON) {
-    this.payload = payload;
-  }
+  constructor(readonly payload: SignerPayloadJSON, readonly signature: HexString) {}
 
   sign(): { signature: HexString } {
-    return { signature: state.signature as HexString };
+    return {
+      signature: this.signature,
+    };
   }
 }

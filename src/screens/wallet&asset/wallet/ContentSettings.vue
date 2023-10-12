@@ -87,7 +87,7 @@ export default class ContentSettings extends Vue {
   }
 
   get allCurrenciesHidden() {
-    return this.hiddenAssets.length === this.balances.length;
+    return this.balances.every(({ assetId }) => this.hiddenAssets.includes(assetId));
   }
 
   get toggleButtonText() {

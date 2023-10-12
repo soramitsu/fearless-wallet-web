@@ -198,6 +198,7 @@
   "assets": {
     "all": "All",
     "locked": "Locked",
+    "totalLocked": "Total locked",
     "myNetworks": "My networks",
     "availableNetworks": "Available networks",
     "networkAssets": "Assets on networks",

@@ -1,5 +1,5 @@
 <template>
-  <Corners size="big" :isSelected="inputIsFocused">
+  <Corners size="big" :isSelected="isSelected">
     <div :class="selectClasses">
       <div class="column left-column">
         <div class="header">{{ header }}</div>
@@ -7,6 +7,7 @@
         <input
           v-model="amountInternal"
           placeholder="0.00"
+          :readonly="readonly"
           @focus="setFocusValue(true)"
           @blur="setFocusValue(false)"
           @keypress="IsNumber"
@@ -16,8 +17,8 @@
       </div>
 
       <div class="column right-column">
-        <Corners class="corners-button" @click.native="$emit('toggleSelectAssetPopupVisibility')">
-          <button class="select-button">
+        <Corners class="corners-button" @click.native="click">
+          <button :class="selectButtonClasses">
             <template v-if="asset !== ''">
               <ExternalLogo class="asset-icon" :name="assetIcon" :width="32" />
 
@@ -32,10 +33,10 @@
           </button>
         </Corners>
 
-        <div class="balance">
+        <div v-if="showBalance" class="balance">
           {{ $t('assets.balance') }}
 
-          <div class="balance-value" @click="setMax">&nbsp;{{ $n(transferableAmount, 'decimal') }}</div>
+          <div :class="balanceValueClasses" @click="setMax">&nbsp;{{ $n(totalAmount, 'decimal') }}</div>
         </div>
       </div>
     </div>
@@ -52,15 +53,22 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 @Component
 export default class SelectInput extends Vue {
   inputIsFocused = false;
+
   @Prop({ default: '' }) text!: string;
   @Prop({ default: '' }) asset!: string;
   @Prop({ default: '' }) assetId!: string;
   @Prop({ default: '' }) value!: string;
-  @Prop({ default: 0 }) transferableAmount!: number;
+  @Prop({ default: 0 }) totalAmount!: number;
+  @Prop({ default: true }) showBalance!: boolean;
+  @Prop({ default: false }) readonly!: boolean;
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+
+  get isSelected() {
+    return this.inputIsFocused && !this.readonly;
+  }
 
   get amountInternal() {
     if (this.syncedAmount === '') return '';
@@ -88,6 +96,14 @@ export default class SelectInput extends Vue {
     if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN') {
       const string = FPNumber.fromCodecValue(value || 0, 0).toString();
 
+      if (value.endsWith('0') && value.includes('.')) {
+        const zeros = value.match(/[0]*$/)!;
+
+        this.syncedAmount = `${string}.${zeros}`;
+
+        return;
+      }
+
       if (value.endsWith('.')) {
         this.syncedAmount = this.syncedAmount = `${string}.`;
 
@@ -103,27 +119,41 @@ export default class SelectInput extends Vue {
   }
 
   get assetIcon() {
-    return this.balances.find(
-      ({ assetId, balances }) => assetId === this.assetId || balances.some((el) => el.id === this.assetId)
-    )?.icon;
+    return this.balances.find(({ assetId }) => assetId === this.assetId)?.icon;
   }
 
   get valueCut() {
     return this.$n(+this.value, 'price');
   }
 
+  get balanceValueClasses() {
+    return [
+      'balance-value',
+      {
+        'balance-value-readonly': this.readonly,
+      },
+    ];
+  }
+
+  get selectButtonClasses() {
+    return [
+      'select-button',
+      {
+        'select-button-readonly': this.readonly,
+      },
+    ];
+  }
+
   get selectClasses() {
     return [
       'select',
       {
-        'select-focused': this.inputIsFocused,
+        'select-focused': this.inputIsFocused && !this.readonly,
       },
     ];
   }
 
   IsNumber(event: KeyboardEvent) {
-    if (this.amountInternal.includes('.') && event.key === '.') return event.preventDefault();
-
     if (!/\d/.test(event.key) && event.key !== '.') return event.preventDefault();
   }
 
@@ -134,7 +164,15 @@ export default class SelectInput extends Vue {
   }
 
   setMax() {
+    if (this.readonly) return;
+
     this.$emit('setMax');
+  }
+
+  click() {
+    if (this.readonly) return;
+
+    this.$emit('togglePopupVisibility');
   }
 }
 </script>
@@ -169,6 +207,7 @@ export default class SelectInput extends Vue {
     .header {
       font-weight: 700;
       font-size: 12px;
+      text-transform: uppercase;
     }
 
     .price {
@@ -208,6 +247,7 @@ export default class SelectInput extends Vue {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    justify-content: center;
 
     .corners-button {
       width: fit-content;
@@ -244,6 +284,11 @@ export default class SelectInput extends Vue {
       }
     }
 
+    .select-button-readonly {
+      cursor: default;
+      opacity: 0.5;
+    }
+
     .balance {
       display: flex;
       font-size: 12px;
@@ -252,10 +297,15 @@ export default class SelectInput extends Vue {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      margin-top: 5px;
 
       .balance-value {
         cursor: pointer;
         color: $pink-lavender-color;
+      }
+
+      .balance-value-readonly {
+        cursor: default;
       }
     }
   }

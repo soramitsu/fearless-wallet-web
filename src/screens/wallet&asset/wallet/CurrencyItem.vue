@@ -59,7 +59,9 @@
         <Tooltip text="common.networkDisconnected" target=".warning-img" placement="left" />
       </template>
 
-      <template v-else-if="!showAssetsManagementForm">
+      <Switcher v-if="showAssetsManagementForm" v-model="currencyVisible" />
+
+      <template v-else-if="!showWarning">
         <CircleButton
           iconName="send-white"
           backgroundColor="black"
@@ -87,8 +89,6 @@
           target=".details"
         />
       </template>
-
-      <Switcher v-else v-model="currencyVisible" />
     </div>
   </Lazy>
 </template>
@@ -163,9 +163,6 @@ export default class CurrencyItem extends Vue {
   }
 
   get assetId() {
-    if (this.assetData.relayChain === 'ethereum' && !isNetworkGroup(this.selectedNetwork))
-      return this.assetData.balances.find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase())?.id;
-
     return this.assetData.assetId;
   }
 
@@ -204,14 +201,35 @@ export default class CurrencyItem extends Vue {
   }
 
   get showShimmers() {
+    if (this.showWarning) return false;
+
+    if (!isNetworkGroup(this.selectedNetwork)) {
+      const balance = this.assetData.balances.find(
+        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
+      )!;
+
+      return balance.state === APIItemState.PENDING;
+    }
+
     // Убираем шимммер если баланс загружен хотя бы в одной сети
     return !this.assetData.balances.some(({ state }) => state === APIItemState.READY);
   }
 
   get showWarning() {
+    if (!isNetworkGroup(this.selectedNetwork)) return this.networkJson?.networkStatus === NETWORK_STATUS.DISCONNECTED;
+
+    // Если все сети токена в статусе DISCONNECTED, то показываем ошибку
+    const allNetworksDisconnected = this.assetData.balances.some(({ name }) => {
+      const network = this.getNetwork(name);
+
+      return network.networkStatus === NETWORK_STATUS.DISCONNECTED;
+    });
+
+    if (allNetworksDisconnected) return true;
+
     return (
-      this.assetData.balances.some((el) => el.state === APIItemState.ERROR) ||
-      this.networkJson?.apiStatus === NETWORK_STATUS.DISCONNECTED
+      this.assetData.balances.some((el) => el.state === APIItemState.ERROR && el.name === this.selectedNetwork) ||
+      this.assetData.balances.every((el) => el.state === APIItemState.ERROR)
     );
   }
 
@@ -283,24 +301,21 @@ export default class CurrencyItem extends Vue {
     )
       return;
 
-    if (this.isCurrentNetwork || this.computeActiveNetworks.length === 1) {
+    if (this.isCurrentNetwork || this.computeActiveNetworks.length === 1)
       this.$router.push({
         name: Components.AssetHistory,
         params: {
-          assetId: this.assetId ?? this.assetData.assetId,
+          assetId: this.assetId,
           selectedNetwork: this.redirectNetwork === '' ? this.computeActiveNetworks[0].name : this.redirectNetwork,
         },
       });
-
-      return;
-    }
-
-    this.$router.push({
-      name: Components.AssetNetworks,
-      params: {
-        assetId: this.assetData.assetId,
-      },
-    });
+    else
+      this.$router.push({
+        name: Components.AssetNetworks,
+        params: {
+          assetId: this.assetId,
+        },
+      });
   }
 }
 </script>
@@ -423,6 +438,7 @@ export default class CurrencyItem extends Vue {
     width: 28px;
     height: 28px;
     opacity: 0.9;
+    margin-right: 10px;
 
     &:hover {
       opacity: 1;

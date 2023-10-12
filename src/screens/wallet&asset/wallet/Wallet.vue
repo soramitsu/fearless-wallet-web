@@ -11,7 +11,7 @@
         />
 
         <div class="wallet-balance__loading">
-          <Loading :width="28" v-if="showShimmers" />
+          <Loading :width="28" v-if="showLoadingBalance" />
         </div>
       </div>
     </header>
@@ -33,6 +33,7 @@
 
         <Currencies
           v-if="showCurrencies"
+          :isEmptyBalances="isEmptyBalances"
           :balances="filteredCurrencies"
           :selectedNetwork="selectedNetwork"
           :showAssetsManagementForm="showAssetsManagementForm"
@@ -90,7 +91,6 @@ import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import ContentSettings from '@/screens/wallet&asset/wallet/ContentSettings.vue';
-import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import { accountController } from '@/controllers/accountController';
@@ -109,6 +109,7 @@ import { getChangeWalletBalance, getSummaryTransferableWalletBalance, isNetworkG
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 import BaseApi from '@/util/BaseApi';
+import { fetchEvmBalance } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -120,13 +121,11 @@ import BaseApi from '@/util/BaseApi';
     SoraCardBanner,
     ContentSettings,
     NetworkManagement,
-    SelectNetworkButton,
     NetworkUnavailablePopup,
     GoogleExportPopup,
   },
 })
 export default class Wallet extends Vue {
-  readonly selectNetworkButtonRef = 'selectNetworkButton';
   showNetworkManagement = false;
   showAssetsManagementForm = false;
   showSendForm = false;
@@ -165,20 +164,24 @@ export default class Wallet extends Vue {
     return this.networkUnavailable !== '';
   }
 
+  get isEmptyBalances() {
+    return this.balances.length === 0;
+  }
+
   get showWarningIcon() {
     if (this.selectedNetwork !== ALL_NETWORKS) {
-      const apiStatus = this.networks.find(
+      const networkStatus = this.networks.find(
         ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
-      )?.apiStatus;
+      )?.networkStatus;
 
-      return apiStatus === NETWORK_STATUS.DISCONNECTED;
+      return networkStatus === NETWORK_STATUS.DISCONNECTED;
     }
 
     return this.networksWithWarning.length !== 0;
   }
 
   get disconnectedNetworks() {
-    return this.networks.filter(({ apiStatus }) => apiStatus === NETWORK_STATUS.DISCONNECTED);
+    return this.networks.filter(({ networkStatus }) => networkStatus === NETWORK_STATUS.DISCONNECTED);
   }
 
   get networksWithWarning() {
@@ -186,7 +189,13 @@ export default class Wallet extends Vue {
   }
 
   get summaryTransferableBalance() {
-    return getSummaryTransferableWalletBalance(this.balances, this.prices, this.selectedNetwork);
+    return getSummaryTransferableWalletBalance(
+      this.selectedWallet.address,
+      this.balances,
+      this.prices,
+      this.selectedNetwork,
+      this.networks
+    );
   }
 
   get changeWalletBalance() {
@@ -212,16 +221,17 @@ export default class Wallet extends Vue {
     });
   }
 
-  get showShimmers() {
-    if (this.selectedNetwork !== ALL_NETWORKS) {
-      const apiStatus = this.networks.find(
+  get showLoadingBalance() {
+    if (!isNetworkGroup(this.selectedNetwork)) {
+      const networkStatus = this.networks.find(
         ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
-      )?.apiStatus;
+      )?.networkStatus;
 
-      return apiStatus === NETWORK_STATUS.PENDING;
+      return networkStatus === NETWORK_STATUS.CONNECTING;
     }
 
-    const isPendingExists = this.networks.some(({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING);
+    //TODO добавить проверку по группам
+    const isPendingExists = this.networks.some(({ networkStatus }) => networkStatus === NETWORK_STATUS.CONNECTING);
 
     return !navigator.onLine || isPendingExists;
   }
@@ -263,6 +273,10 @@ export default class Wallet extends Vue {
     this.$router.replace('/').catch((e) => e);
 
     this.$emit('closeSelectWalletPopup');
+  }
+
+  activated() {
+    fetchEvmBalance();
   }
 
   deactivated() {

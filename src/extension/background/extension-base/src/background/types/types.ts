@@ -9,6 +9,7 @@ import { ProviderInterface } from '@polkadot/rpc-provider/types';
 import { HexString } from '@polkadot/util/types';
 import { UserType } from '../../services/onboarding-service/types';
 import MetadataStore from '../../stores/Metadata';
+import { NETWORK_STATUS } from '../../api/types/networks';
 import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -208,7 +209,7 @@ export type BasicTxError = {
 export interface ApiProps {
   api?: ApiPromise;
   provider?: WsProvider;
-  isApiConnected: boolean;
+  apiStatus: NETWORK_STATUS;
   apiRetry: number;
   nodeIndex: number;
   isEthereum: boolean;
@@ -239,13 +240,11 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
 }
 
 export interface ResponseCheckTransfer {
-  errors?: Array<BasicTxError>;
   estimateFee?: string;
   destEstimateFee: '0';
 }
 
 export interface ResponseCheckCrossChain {
-  errors?: Array<BasicTxError>;
   estimateFee?: string;
   destEstimateFee?: string;
 }
@@ -327,8 +326,10 @@ export interface RequestAccountForget {
 
 export interface RequestUpdateMeta {
   address: string;
-  meta: KeyringPair$Meta;
+  meta: Meta;
 }
+
+export type Meta = KeyringPair$Meta & { ethereumAddress: string };
 
 export interface RequestAccountName {
   address: string;
@@ -577,7 +578,6 @@ export interface IState {
   onboarding: {
     user: UserType;
     isRequired: boolean;
-    seen: boolean;
   };
   'wc@2:client:0.3//session': Array<unknown>;
   'wc@2:core:0.3//pairing': Array<unknown>;

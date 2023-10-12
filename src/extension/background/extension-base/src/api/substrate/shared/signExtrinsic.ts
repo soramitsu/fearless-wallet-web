@@ -1,8 +1,8 @@
 import { assert } from '@polkadot/util';
 import KeyringSigner from '@extension-base/signers/KeyringSigner';
 import { SignerType } from '@extension-base/background/types';
-import { state } from '@extension-base/background/handlers';
 import { BeaconSigner } from '@extension-base/signers/BeaconSigner';
+import State from '@extension-base/background/handlers/State';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { ApiProps, ExternalRequestPromise } from '@extension-base/background/types/types';
 import type { HandleBasicTx } from '@extension-base/api/evm/transfer';
@@ -28,7 +28,10 @@ interface ExternalSignExtrinsicProps extends AbstractSignExtrinsicProps {
 
 type SignExtrinsicProps = PasswordSignExtrinsicProps | ExternalSignExtrinsicProps;
 
-export const signExtrinsic = async ({ address, apiProps, extrinsic, type }: SignExtrinsicProps): Promise<void> => {
+export const signExtrinsic = async (
+  { address, apiProps, extrinsic, type }: SignExtrinsicProps,
+  state: State
+): Promise<void> => {
   const isMobile = type === SignerType.MOBILE;
   const pair = state.keyringService.getPair(address);
 
@@ -36,7 +39,7 @@ export const signExtrinsic = async ({ address, apiProps, extrinsic, type }: Sign
 
   const nonce = (await apiProps.api?.rpc.system.accountNextIndex(address)) as unknown as number;
   const registry = apiProps.api!.registry;
-  const signer = pair ? new KeyringSigner({ registry, keyPair: pair }) : new BeaconSigner();
+  const signer = pair ? new KeyringSigner({ registry, keyPair: pair }) : new BeaconSigner(state);
 
   await extrinsic.signAsync(address, { signer, nonce });
 };

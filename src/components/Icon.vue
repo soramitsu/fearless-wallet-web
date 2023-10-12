@@ -1,6 +1,6 @@
 <template>
-  <svg :class="getSvgClasses" aria-hidden="true">
-    <use :xlink:href="getIconName" :style="styles" :class="getUseClasses" v-on="$listeners" />
+  <svg :class="getSvgClasses" aria-hidden="true" @click="click">
+    <use :xlink:href="getIconName" :style="styles" :class="getUseClasses" @click="click" />
   </svg>
 </template>
 
@@ -17,6 +17,7 @@ type Props = {
 };
 
 const props = withDefaults(defineProps<Props>(), { width: '32px', height: '32px', className: '' });
+const emit = defineEmits(['click']);
 
 const getIconColor = computed(() => `icon--${props.iconColor}`);
 const getUseClasses = computed(() => ['icon__inner', props.icon]);
@@ -34,6 +35,20 @@ const getSvgClasses = computed(() => {
 
   return classes;
 });
+
+let clickLock = false;
+
+const click = () => {
+  if (clickLock) return;
+
+  clickLock = true;
+
+  emit('click');
+
+  // setTimeout нужен чтобы предотвратить всплытие при клике
+  // чтобы он вызывался только 1 раз
+  setTimeout(() => (clickLock = false), 0);
+};
 </script>
 
 <style lang="scss" scoped>

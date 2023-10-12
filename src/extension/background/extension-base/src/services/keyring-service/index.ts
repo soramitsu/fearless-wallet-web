@@ -3,9 +3,12 @@ import { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyri
 import { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-keyring/types';
 import { keyring } from '@polkadot/ui-keyring';
 import { isEthereumAddress } from '@polkadot/util-crypto';
+import State from '@extension-base/background/handlers/State';
 import { getSubstrateAddress } from '../../background/utils/utils';
 
 export class KeyringService {
+  constructor(readonly state: State) {}
+
   get addressesSubjectValue() {
     return keyring.addresses.subject.value;
   }
@@ -15,6 +18,10 @@ export class KeyringService {
       store,
       type,
     });
+  }
+
+  getAllAccounts() {
+    return [...this.getAccounts(), ...this.getAddresses()];
   }
 
   getAccounts() {
@@ -45,9 +52,11 @@ export class KeyringService {
     return keyring.backupAccount(pair, password);
   }
 
-  getPair(address: string) {
+  getPair(addressOrPair: string | KeyringPair) {
+    if (typeof addressOrPair !== 'string') return addressOrPair;
+
     try {
-      return keyring.getPair(address);
+      return keyring.getPair(addressOrPair);
     } catch {
       return null;
     }
@@ -75,43 +84,37 @@ export class KeyringService {
   }
 
   unlockPair(addressOrPair: string | KeyringPair, password: string) {
-    const pair = typeof addressOrPair === 'string' ? this.getPair(addressOrPair) : addressOrPair;
+    const pair = this.getPair(addressOrPair);
 
     if (!pair) return false;
 
     const { address } = pair;
     const isEthereum = isEthereumAddress(address);
-    const substrateAddress = getSubstrateAddress(address);
+    const substrateAddress = getSubstrateAddress(address, this.state);
+
     const substratePair = isEthereum ? this.getPair(substrateAddress) : pair;
     const ethereumAddress = isEthereum ? address : (substratePair?.meta.ethereumAddress as string | undefined);
+    const ethereumPair = isEthereum ? pair : ethereumAddress ? this.getPair(ethereumAddress) : undefined;
 
     if (!substratePair) return false;
 
     try {
       substratePair.unlock(password);
-
-      if (ethereumAddress) {
-        const ethereumPair = this.getPair(ethereumAddress);
-
-        ethereumPair?.unlock(password);
-      }
+      ethereumPair?.unlock(password);
 
       return true;
-    } catch (e: any) {
+    } catch {
       substratePair.lock();
-
-      if (ethereumAddress) {
-        const ethereumPair = this.getPair(ethereumAddress);
-
-        ethereumPair?.lock();
-      }
+      ethereumPair?.lock();
 
       return false;
     }
   }
 
   lockPair(addressOrPair: string | KeyringPair | undefined) {
-    const pair = typeof addressOrPair === 'string' ? this.getPair(addressOrPair) : addressOrPair;
+    if (addressOrPair === undefined) return;
+
+    const pair = this.getPair(addressOrPair);
 
     if (!pair) return;
 

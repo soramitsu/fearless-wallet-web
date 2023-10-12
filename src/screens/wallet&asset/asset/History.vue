@@ -116,18 +116,24 @@ export default class History extends Vue {
     );
   }
 
-  mounted() {
-    setTimeout(() => this.fetchHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
+  @Watch('isMainNetwork')
+  watchNetwork() {
+    this.fetchHistory();
   }
 
-  get isEvmNetworks() {
-    return BaseApi.isEthereumNetwork(this.selectedNetwork);
+  mounted() {
+    setTimeout(() => this.fetchHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
+    this.fetchHistory();
+  }
+
+  get isSubstrateEthereumNetwork() {
+    return BaseApi.isSubstrateEthereumNetwork(this.selectedNetwork);
   }
 
   async fetchHistory() {
     if (this.history.length !== 0) return;
 
-    if (!this.isMainNetwork && !this.isEvmNetworks) return;
+    if (!this.isMainNetwork && this.isSubstrateEthereumNetwork) return;
 
     this.showLoader = true;
 

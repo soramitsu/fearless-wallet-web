@@ -136,7 +136,7 @@ export default class Preview extends Vue {
   get networkIsReady() {
     const network = this.getNetwork(this.soraNetworkName);
 
-    return network?.apiStatus === NETWORK_STATUS.CONNECTED;
+    return network?.networkStatus === NETWORK_STATUS.CONNECTED;
   }
 
   get fillFactorBar() {

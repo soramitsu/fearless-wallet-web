@@ -1,7 +1,11 @@
-import type { AccountJson } from '@extension-base/background/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
-import type { ValidateJsonResult, ResponseTotalBalances } from '@extension-base/background/types/types';
+import type {
+  ValidateJsonResult,
+  AccountJson,
+  ResponseTotalBalances,
+  Meta,
+} from '@extension-base/background/types/types';
 import type { DerivationPath } from '@/interfaces';
 import { sendMessage } from '@/extension/messaging/index';
 
@@ -62,7 +66,7 @@ export function updateCurrentAccount(address: string): Promise<boolean> {
   return sendMessage('pri(accounts.update.current)', address);
 }
 
-export function updatePairMeta(address: string, meta: KeyringPair$Meta): Promise<boolean> {
+export function updatePairMeta(address: string, meta: Meta): Promise<boolean> {
   return sendMessage('pri(accounts.update.meta)', { address, meta });
 }
 

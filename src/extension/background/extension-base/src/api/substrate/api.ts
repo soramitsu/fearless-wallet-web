@@ -2,7 +2,8 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { api as apiSora } from '@sora-substrate/util';
 import { connection as soraConnection } from '@sora-substrate/connection';
 import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
-import { state } from '@extension-base/background/handlers';
+import State from '@extension-base/background/handlers/State';
+import { NETWORK_STATUS } from '../types/networks';
 import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import type { ApiProps } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -13,23 +14,18 @@ import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 function createApiObject(): ApiProps {
   return {
     isEthereum: false,
-    isApiConnected: false,
-    isApiReady: false,
+    apiStatus: NETWORK_STATUS.CONNECTING,
     apiRetry: 0,
     nodeIndex: 0,
-  } as unknown as ApiProps;
+  };
 }
 
-function onConnected(networkName: string) {
-  if (isSora(networkName)) {
-    state.apis.substrate[networkName].api = soraConnection.api!;
-  }
-
+function onConnected(networkName: string, state: State) {
   state.apis.substrate[networkName].apiRetry = 0;
-  state.apis.substrate[networkName].isApiConnected = true;
+  state.apis.substrate[networkName].apiStatus = NETWORK_STATUS.CONNECTED;
 }
 
-async function onDisconnect(networkName: string) {
+async function onDisconnect(networkName: string, state: State) {
   const api = state.getSubstrateApiMap[networkName];
 
   if (!state.networkMap[networkName].active) return;
@@ -37,7 +33,6 @@ async function onDisconnect(networkName: string) {
   if (api === undefined) return;
 
   api.apiRetry += 1;
-  api.isApiConnected = false;
 
   if (api.apiRetry < MAX_CONTINUE_RETRY) return;
 
@@ -52,15 +47,16 @@ async function onDisconnect(networkName: string) {
     api.provider = undefined;
     api.api = undefined;
 
-    if (navigator.onLine) initApi(network);
+    if (navigator.onLine) initApi(network, state);
+    else api.apiStatus = NETWORK_STATUS.DISCONNECTED;
+  } else {
+    api.apiStatus = NETWORK_STATUS.DISCONNECTED; // попробовали все ноды, не смогил подключиться, ставим статус дисконнект
 
-    return;
+    state.disableNetworkMap(networkName);
   }
-
-  state.disableNetworkMap(networkName);
 }
 
-function onReady(networkName: string) {
+function onReady(networkName: string, state: State) {
   if (isSora(networkName)) {
     apiSora.initialize(false);
     apiSora.calcStaticNetworkFees();
@@ -69,31 +65,27 @@ function onReady(networkName: string) {
   }
 }
 
-export async function initApi(network: NetworkJson, retry = false): Promise<void> {
+export async function initApi(network: NetworkJson, state: State): Promise<void> {
   const { name: networkName, nodes } = network;
 
-  if (state.getSubstrateApiMap[networkName] === undefined) {
-    state.getSubstrateApiMap[networkName] = createApiObject();
-  }
-
-  if (retry) {
-    state.apis.substrate[networkName].nodeIndex = 0;
-    state.apis.substrate[networkName].apiRetry = 0;
-  }
+  if (state.getSubstrateApiMap[networkName] === undefined) state.getSubstrateApiMap[networkName] = createApiObject();
 
   const { nodeIndex } = state.getSubstrateApiMap[networkName];
 
   const autoSelectNode = network.isManual ? null : nodes[nodeIndex].url;
   const currentProvider = autoSelectNode ?? network.currentProvider;
   const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [
-    ['connected', () => onConnected(networkName)],
-    ['disconnected', () => onDisconnect(networkName)],
-    ['ready', () => onReady(networkName)],
+    ['connected', () => onConnected(networkName, state)],
+    ['disconnected', () => onDisconnect(networkName, state)],
+    ['ready', () => onReady(networkName, state)],
     ['error', () => null],
   ];
 
-  if (isSora(networkName)) soraConnection.open(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
-  else {
+  if (isSora(networkName)) {
+    soraConnection.open(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
+
+    state.apis.substrate[networkName].api = soraConnection.api!;
+  } else {
     try {
       const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS, undefined, 10000);
 

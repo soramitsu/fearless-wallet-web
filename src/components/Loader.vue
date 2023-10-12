@@ -1,4 +1,4 @@
-<template functional>
+<template>
   <div class="loader">
     <div class="circle">
       <Icon icon="fw-logo" :className="['logo']" />
@@ -23,7 +23,7 @@
     top: 0;
     left: 0;
     display: block;
-    margin: -74px -8px 0;
+    margin: -76px -8px 0;
     width: 96px;
     height: 96px;
     border-radius: 50%;

@@ -135,7 +135,7 @@ export class AuthRequestHandler {
   public async authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<boolean> {
     let authList = await this.getAuthList();
 
-    const accountAuthType = request.accountAuthType || 'substrate';
+    const accountAuthType = request.accountAuthType ?? 'substrate';
 
     request.accountAuthType = accountAuthType;
 
@@ -156,7 +156,7 @@ export class AuthRequestHandler {
 
     // Reconfirm if check auth for empty list
     if (existedAuth) {
-      const inBlackList = existedAuth && !existedAuth.isAllowed;
+      const inBlackList = !existedAuth.isAllowed;
 
       if (inBlackList) {
         throw new Error(`The source ${url} is not allowed to interact with this extension`);

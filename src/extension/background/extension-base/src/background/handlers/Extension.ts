@@ -32,6 +32,7 @@ import { HexString } from '@polkadot/util/types';
 import { storage } from '@extension-base/stores/Storage';
 import { MetadataDef } from '@polkadot/extension-inject/types';
 import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types';
 import { WALLET_CONNECT_EIP155_NAMESPACE } from '../../services/wallet-connect-service/consts';
 import {
   RequestConnectWalletConnect,
@@ -104,11 +105,6 @@ import type { NetworkJson } from '@extension-base/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import {
-  BasicTxErrorCode,
-  RequestUpdateMeta,
-  TransferErrorCode,
-} from '@/extension/background/extension-base/src/background/types';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { googleManage } from '@/controllers/googleController';

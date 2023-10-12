@@ -7,7 +7,7 @@ import {
   isEthereumAddress,
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
-import type { AccountJson } from '@/extension/background/extension-base/src/background/types';
+import type { AccountJson } from '@extension-base/background/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { ValidateJsonResult, DerivationPath } from '@/interfaces';

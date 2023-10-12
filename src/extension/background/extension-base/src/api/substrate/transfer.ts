@@ -3,12 +3,8 @@ import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signA
 import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
 import { getUtilityProps, getSubstrateAddress } from '@extension-base/background/utils/utils';
 import State from '@extension-base/background/handlers/State';
+import { TransferErrorCode, SignerType, TokenBalance } from '@extension-base/background/types';
 import type { BasicTxResponse } from '@extension-base/background/types/types';
-import {
-  TransferErrorCode,
-  SignerType,
-  TokenBalance,
-} from '@/extension/background/extension-base/src/background/types';
 import { NetworkName } from '@/interfaces';
 
 export async function estimateFee(

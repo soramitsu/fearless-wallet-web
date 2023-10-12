@@ -2,7 +2,7 @@ import { FPNumber } from '@sora-substrate/math';
 import { ApiPromise } from '@polkadot/api';
 import { Asset } from '../../../types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
-import type { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import { NetworkName } from '@/interfaces';
 
 type ExtrinsicTransferProps = {

@@ -36,11 +36,11 @@ import {
   EIP155_SIGNING_METHODS,
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
+import { TransferErrorCode, BasicTxErrorCode } from '@extension-base/background/types';
 import WalletConnectRequestData from './WalletConnectRequestData.vue';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import { walletConnectRequestReject, walletConnectRequestApprove } from '@/extension/messaging';
 import { useStore } from '@/store';
-import { TransferErrorCode, BasicTxErrorCode } from '@/extension/background/extension-base/src/background/types';
 import { useNotify } from '@/plugins/soramitsuUI';
 type Error = { message: TransferErrorCode.UNSUPPORTED | BasicTxErrorCode.KEYRING_ERROR };
 

@@ -7,7 +7,7 @@ import type {
   HistoryServiceType,
   NetworkName,
 } from '@/interfaces';
-import type { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import { TransactionType, TransferType } from '@/interfaces';
 import { firstCharToUp } from '@/helpers';
 import store from '@/store';

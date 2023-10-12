@@ -1,6 +1,6 @@
+import { AccountJson, TokenBalance } from '@extension-base/background/types';
 import type { SelectedWallet, SelectedNetworks, AutoSelectNode } from './types';
 import type { NetworkName, WalletAddress } from '@/interfaces';
-import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { accountController } from '@/controllers';
 import { SORA_CARD_BANNER_RERUN } from '@/consts/soraCard';
 

@@ -4,7 +4,7 @@ import { isEthereumAddress } from '@polkadot/util-crypto';
 import State from '../handlers/State';
 import type { NetworkJson } from '@extension-base/types';
 import type { AssetName, NetworkName } from '@/interfaces';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import { MAIN_NETWORKS, ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import { RelayChainName } from '@/interfaces';
 import { ETHEREUM_UTILITY_ASSETS } from '@/consts/currencies';

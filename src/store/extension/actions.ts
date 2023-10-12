@@ -7,11 +7,7 @@ import type {
   WalletConnectSessions,
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
-import type {
-  AuthorizeRequest,
-  ApproveAuthRequest,
-  MetadataRequest,
-} from '@/extension/background/extension-base/src/background/types';
+import type { AuthorizeRequest, ApproveAuthRequest, MetadataRequest } from '@extension-base/background/types';
 import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from '@/store/extension/state';
 import type { Features } from '@/store/extension/types';

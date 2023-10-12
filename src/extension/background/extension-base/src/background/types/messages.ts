@@ -60,7 +60,7 @@ import type {
   ResponseTotalBalances,
   MobileSigningRequest,
   RequestSigningSubscribe,
-} from '@/extension/background/extension-base/src/background/types';
+} from '@extension-base/background/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
   DerivationPath,

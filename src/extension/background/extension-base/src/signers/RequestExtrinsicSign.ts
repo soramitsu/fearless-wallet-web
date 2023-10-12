@@ -5,7 +5,7 @@ import { TypeRegistry } from '@polkadot/types';
 import type { KeyringPair } from '@polkadot/keyring/types';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
-import type { RequestSign } from '@/extension/background/extension-base/src/background/types';
+import type { RequestSign } from '@extension-base/background/types';
 
 export default class RequestExtrinsicSign implements RequestSign {
   public readonly payload: SignerPayloadJSON;

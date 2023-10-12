@@ -3,7 +3,7 @@
 
 import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import SubscribableStore from '@extension-base/stores/SubscribableStore';
-import type { AuthUrls } from '@/extension/background/extension-base/src/background/types';
+import type { AuthUrls } from '@extension-base/background/types';
 
 export default class AuthorizeStore extends SubscribableStore<AuthUrls> {
   constructor() {

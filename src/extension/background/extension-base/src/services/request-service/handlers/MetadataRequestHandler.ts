@@ -5,8 +5,7 @@ import MetadataStore from '@extension-base/stores/Metadata';
 import { getId } from '@extension-base/utils';
 import { RequestService } from '@extension-base/services';
 import { extractMetadata } from '@extension-base/services/request-service/helper';
-import type { MetaRequest, Resolver } from '@extension-base/background/types';
-import type { MetadataRequest } from '@/extension/background/extension-base/src/background/types';
+import type { MetaRequest, Resolver, MetadataRequest } from '@extension-base/background/types';
 
 export class MetadataRequestHandler {
   readonly requestService: RequestService;

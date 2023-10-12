@@ -10,7 +10,7 @@ import type {
   AuthorizeRequest,
   MetadataRequest,
   ResponseAuthorizeList,
-} from '@/extension/background/extension-base/src/background/types';
+} from '@extension-base/background/types';
 import type { SigningRequest } from '@extension-base/background/types/types';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';

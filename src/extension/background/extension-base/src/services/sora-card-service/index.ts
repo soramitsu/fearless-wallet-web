@@ -3,7 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
 import { getId } from '@extension-base/utils/utils';
 import { RequestService } from '../request-service';
-import type { Port } from '@/extension/background/extension-base/src/background/types';
+import type { Port } from '@extension-base/background/types';
 import { IS_PRODUCTION } from '@/consts/global';
 import { URLS } from '@/consts/urls';
 

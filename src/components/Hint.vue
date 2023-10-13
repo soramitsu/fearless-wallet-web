@@ -14,7 +14,7 @@ type Size = 'big' | 'medium';
 type Props = {
   iconName: IconNameType;
   text: string;
-  size: Size;
+  size?: Size;
 };
 const baseClass = 'notifications-icon';
 const props = withDefaults(defineProps<Props>(), { size: 'medium' });

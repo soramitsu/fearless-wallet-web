@@ -18,8 +18,8 @@ import { computed } from 'vue';
 type SizeTextType = 'small' | 'medium' | 'big';
 type Props = {
   message: string;
-  sizeText: SizeTextType;
-  headerText: string;
+  sizeText?: SizeTextType;
+  headerText?: string;
 };
 
 const props = withDefaults(defineProps<Props>(), { sizeText: 'medium', headerText: 'common.attention' });

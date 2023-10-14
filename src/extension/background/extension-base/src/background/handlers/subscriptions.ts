@@ -127,16 +127,12 @@ export class FWSubscription {
               this.subscribeBalances(address, ethereumAddress, SUBSTRATE_ETHEREUM_NETWORKS, null);
             } else {
               // если адрес не менялся, подписываемся только на новые сети(которые только что включили)
-              if (newSubstrateNetworksWithoutSubscribe.length) {
-                this.subscribeBalances(
-                  address,
-                  ethereumAddress,
-                  newSubstrateNetworksWithoutSubscribe,
-                  newEvmNetworksWithoutSubscribe
-                );
-              }
-
-              if (newEvmNetworksWithoutSubscribe.length) this.state.fetchEvmBalance(newEvmNetworksWithoutSubscribe);
+              this.subscribeBalances(
+                address,
+                ethereumAddress,
+                newSubstrateNetworksWithoutSubscribe,
+                newEvmNetworksWithoutSubscribe
+              );
             }
 
             this.serviceInfo.address = address;

@@ -12,9 +12,11 @@
       </div>
     </header>
 
-    <ContentForm :height="375">
+    <ContentForm :height="382">
       <div class="content">
-        <Loader v-if="showLoader" />
+        <div v-if="noStakingItems" class="no-staking">{{ $t('staking.noStaking') }}</div>
+
+        <Loader v-else-if="showLoader" />
 
         <template v-else>
           <StakingSettings
@@ -95,6 +97,10 @@ export default class StakingPage extends Vue {
 
   get showLoader() {
     return this.activeTabName === '';
+  }
+
+  get noStakingItems() {
+    return !this.showMyStakingItems && !this.showMyStakingItems;
   }
 
   get showStakingItems() {
@@ -180,7 +186,7 @@ export default class StakingPage extends Vue {
     min-height: 46px;
     display: flex;
     justify-content: space-between;
-    margin-bottom: 10px;
+    margin-bottom: 3px;
   }
 
   .balance {
@@ -213,6 +219,13 @@ export default class StakingPage extends Vue {
     height: 100%;
     display: flex;
     flex-direction: column;
+
+    .no-staking {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+    }
   }
 }
 </style>

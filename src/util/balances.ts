@@ -11,16 +11,14 @@ export function formatBalance(data: AccountData | OrmlAccountData | u128, assetD
 
   const miscFrozen = new FPNumber((data as AccountData).miscFrozen ?? 0, assetDecimals);
   const feeFrozen = new FPNumber((data as AccountData).feeFrozen ?? 0, assetDecimals);
-  const frozen = new FPNumber((data as OrmlAccountData).frozen ?? 0, assetDecimals);
+  const _frozen = new FPNumber((data as OrmlAccountData).frozen ?? 0, assetDecimals);
 
-  const staking = FPNumber.max(miscFrozen, feeFrozen, frozen)!;
-  const locked = staking.add(reserved);
+  const frozen = FPNumber.max(miscFrozen, feeFrozen, _frozen)!;
+  const locked = frozen.add(reserved);
   const freeAndReserved = free.add(reserved);
 
-  // console.log('data', data?.toHuman());
-
   return {
-    frozen: staking.toString(),
+    frozen: frozen.toString(),
     reserved: reserved.toString(),
     locked: locked.toString(),
     transferable: free.sub(locked).toString(),

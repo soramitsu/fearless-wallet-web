@@ -27,16 +27,16 @@ function onConnected(networkName: string, state: State) {
 
 async function onDisconnect(networkName: string, state: State) {
   const api = state.getSubstrateApiMap[networkName];
+  const netName = state.getNetworkByKey(networkName).name;
+  const network = state.networkMap[netName];
 
-  if (!state.networkMap[networkName].active) return;
+  if (!network.active) return;
 
   if (api === undefined) return;
 
   api.apiRetry += 1;
 
   if (api.apiRetry < MAX_CONTINUE_RETRY) return;
-
-  const network = state.networkMap[networkName];
 
   api.api?.disconnect();
 

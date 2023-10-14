@@ -9,7 +9,7 @@ import { NetworksController } from '@/controllers';
 type Props = {
   name: string;
   alt?: string;
-  width: number;
+  width?: number | string;
 };
 
 const props = withDefaults(defineProps<Props>(), {

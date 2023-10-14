@@ -14,12 +14,12 @@ import { computed } from 'vue';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type Props = {
-  isError: boolean;
-  isSelected: boolean;
-  hover: boolean;
-  topLeftCorner: boolean;
-  bottomRightCorner: boolean;
-  size: Size;
+  isError?: boolean;
+  isSelected?: boolean;
+  hover?: boolean;
+  topLeftCorner?: boolean;
+  bottomRightCorner?: boolean;
+  size?: Size;
 };
 
 const props = withDefaults(defineProps<Props>(), {

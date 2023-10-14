@@ -81,7 +81,7 @@ export default class NetworkManagement extends Vue {
   value = '';
 
   @Prop(String) type!: keyof Tabs | string;
-  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(AccountGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountGettersTypes.selectedWallet) selectedWallet!: Wallet;
   @Action(NetworksActionsTypes.TOGGLE_FAVORITE_NETWORK) setFavorite!: (props: SetFavoriteNetwork) => Promise<boolean>;
@@ -100,14 +100,9 @@ export default class NetworkManagement extends Vue {
   }
 
   get filterNetworks() {
-    const baseFilter =
-      this.selectedWallet.ethereumAddress === ''
-        ? this.networks.filter((network) => !BaseApi.isEthereumNetwork(network.name))
-        : this.networks;
+    if (this.activeTab === ALL_NETWORKS) return this.networks;
 
-    if (this.activeTab === ALL_NETWORKS) return baseFilter;
-
-    const networks = baseFilter.filter(({ favorite, rank }) => {
+    const networks = this.networks.filter(({ favorite, rank }) => {
       if (this.activeTab === POPULAR_NETWORKS) return rank !== undefined;
 
       if (this.activeTab === FAVORITE_NETWORKS)
@@ -117,9 +112,8 @@ export default class NetworkManagement extends Vue {
     if (this.activeTab === POPULAR_NETWORKS) {
       return networks.sort((a, b) => {
         if (a.rank === undefined || b.rank === undefined) return 0;
-        if (a.rank > b.rank) return 1;
 
-        return -1;
+        return a.rank > b.rank ? 1 : -1;
       });
     }
 
@@ -129,9 +123,7 @@ export default class NetworkManagement extends Vue {
   get filteredOptionsNetworks() {
     const filter = this.filterValue.trim().toLowerCase();
 
-    return this.filterNetworks.filter(({ name }) => {
-      return name.toLowerCase().includes(filter);
-    });
+    return this.filterNetworks.filter(({ name }) => name.toLowerCase().includes(filter));
   }
 
   get showTabs() {
@@ -222,54 +214,50 @@ export default class NetworkManagement extends Vue {
   }
 }
 
+.button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 5px 15px;
+  height: 30px;
+  background: $secondary-background-color;
+  border-radius: 30px;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: $plain-white;
+  margin: 5px 14px 0 0;
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    background: $default-background-color;
+  }
+}
+
 .container {
   height: 350px;
   overflow-y: hidden;
 
-  .button {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 5px 15px;
-    height: 30px;
-    background: $secondary-background-color;
-    border-radius: 30px;
-    font-weight: 700;
-    font-size: 12px;
-    text-transform: uppercase;
-    color: $plain-white;
-    margin: 5px 14px 0 0;
-    border: none;
-    cursor: pointer;
-
-    &:hover {
-      background: $default-background-color;
-    }
+  &--fullscreen {
+    height: calc(100vh - 270px);
   }
-  .container {
-    height: 350px;
-    overflow-y: hidden;
+}
 
-    &--fullscreen {
-      height: calc(100vh - 270px);
-    }
-  }
+.network__list {
+  display: flex;
+  flex-flow: column nowrap;
+  padding: 0;
+  height: 100%;
+}
 
-  .network__list {
-    display: flex;
-    flex-flow: column nowrap;
-    padding: 0;
-    height: 100%;
-  }
-
-  .network__list-no-found {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    font-size: 14px;
-    font-weight: 600;
-    color: $gray-2-color;
-  }
+.network__list-no-found {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 14px;
+  font-weight: 600;
+  color: $gray-2-color;
 }
 </style>

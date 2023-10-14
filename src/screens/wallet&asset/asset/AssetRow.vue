@@ -43,5 +43,6 @@ export default class AssetRow extends Vue {
 .asset-row {
   cursor: pointer;
   min-height: 56px;
+  text-transform: capitalize;
 }
 </style>

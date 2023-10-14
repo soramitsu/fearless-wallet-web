@@ -250,7 +250,7 @@
     "assetsAmount": "Сумма активов",
     "summary": "Итог",
     "reserved": "Зарезервировано",
-    "frozen": "Стейкинг",
+    "frozen": "Заморожено",
     "transferable": "Доступно",
     "fee": "Комиссия",
     "total": "Общий баланс",
@@ -437,6 +437,7 @@
     "importantText": "I confirm that I have read all of the documents mentioned and pressing 'Сontinue' I accept them."
   },
   "staking": {
+    "noStaking": "В выбранных сетях нет стейкинга",
     "daysLeft": "Дней осталось",
     "stakingBalance": "Баланс стейкинга",
     "stakingActiveBalance": "Баланс активного стейкинга",

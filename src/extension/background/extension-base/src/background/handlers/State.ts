@@ -87,11 +87,12 @@ import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
-import { isSora } from '@/helpers';
+// import { isSora } from '@/helpers';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
 import { EXTENSION_ID } from '@/consts/global';
+import { isSameString } from '@/helpers';
 
 function extractMetadata(store: MetadataStore): void {
   store.allMap((map): void => {
@@ -517,8 +518,7 @@ export default class State {
 
     this.lockNetworkMap = true;
 
-    const { name, currentProvider, chain, blockExplorer, paraId, nativeToken, decimals, customNodes, isEthereum } =
-      data;
+    const { name, currentProvider, chain, paraId, decimals, customNodes, isEthereum } = data;
 
     if (name in this.networkMap) {
       const network = this.networkMap[name];
@@ -531,12 +531,9 @@ export default class State {
 
       network.chain = chain;
 
-      if (nativeToken) network.nativeToken = nativeToken;
-
       if (decimals) network.decimals = decimals;
 
       network.paraId = paraId;
-      network.blockExplorer = blockExplorer;
     } else {
       // insert
       this.networkMap[name] = data;
@@ -573,7 +570,7 @@ export default class State {
 
     this.lockNetworkMap = true;
 
-    if (this.networkMap[networkKey].isEthereum) delete this.apis.evm[networkKey];
+    if (this.networkMap[networkKey]?.isEthereum) delete this.apis.evm[networkKey];
     else delete this.apis.substrate[networkKey];
 
     this.networkMap[networkKey].active = false;
@@ -1117,10 +1114,10 @@ export default class State {
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
-    this.networksJson = networks.filter((el) => isSora(el.name));
+    // this.networksJson = networks.filter((el) => isSora(el.name));
     // this.networksJson = networks.filter((el) => el.name.toLowerCase() === 'kusama');
 
-    // this.networksJson = networks.filter((el) => !el.disabled);
+    this.networksJson = networks.filter((el) => !el.disabled);
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
 
@@ -1266,9 +1263,9 @@ export default class State {
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
     const { reserved, free, locked, frozen, total, transferable, state, id, relayChain, symbol } = item;
-
     const accountAddress = getSubstrateAddress(address, this);
     const balancesByAddress = this.balanceMap[accountAddress];
+
     const currencyIndex = balancesByAddress.findIndex(
       ({ assetId: _assetId, symbol: _symbol, relayChain: _relayChain }) => {
         const isExistingAssetId = _assetId === id;
@@ -1279,12 +1276,14 @@ export default class State {
       }
     );
 
+    if (currencyIndex === -1) throw new Error(`Failed to find ${symbol} on ${networkKey}`);
+
     const asset = balancesByAddress[currencyIndex];
 
     const assetIndex = asset.balances.findIndex(({ name }) => {
       const key = PREP_NETWORKS_NAME[name] ?? name;
 
-      return key === networkKey;
+      return isSameString(key, networkKey);
     });
 
     const balanceItem = asset.balances[assetIndex];

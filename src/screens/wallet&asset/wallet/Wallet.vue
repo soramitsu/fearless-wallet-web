@@ -108,6 +108,7 @@ import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 import { networksIsPending } from '@/helpers/shimmers';
 import BaseApi from '@/util/BaseApi';
 import { fetchEvmBalance } from '@/extension/messaging';
+import { isSameString } from '@/helpers';
 
 @Component({
   components: {
@@ -203,15 +204,20 @@ export default class Wallet extends Vue {
   }
 
   get sortedCurrencies() {
+    const balances =
+      this.selectedWallet.ethereumAddress === ''
+        ? this.balances.filter((el) => !BaseApi.isEthereumNetwork(el.mainNetwork))
+        : this.balances;
+
     const { address } = this.selectedWallet;
 
     if (address === '') return [];
 
-    if (!this.isCustomSort(address)) return defaultSortingCurrencies(this.balances, this.prices, this.selectedNetwork);
+    if (!this.isCustomSort(address)) return defaultSortingCurrencies(balances, this.prices, this.selectedNetwork);
 
     const sequence = accountController.getSequenceAssetsByAddress(address);
 
-    return this.balances.sort((currency1, currency2) => {
+    return balances.sort((currency1, currency2) => {
       const index1 = sequence.indexOf(currency1.assetId);
       const index2 = sequence.indexOf(currency2.assetId);
 
@@ -239,15 +245,11 @@ export default class Wallet extends Vue {
   }
 
   get filteredCurrencies() {
-    const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
-    const baseFilter =
-      this.selectedWallet.ethereumAddress === ''
-        ? this.sortedCurrencies.filter((el) => !BaseApi.isEthereumNetwork(el.mainNetwork))
-        : this.sortedCurrencies;
+    const isAllNetworks = isSameString(this.selectedNetwork, ALL_NETWORKS);
 
     const filteredByNetwork = isAllNetworks
-      ? baseFilter
-      : baseFilter.filter(({ balances }) => {
+      ? this.sortedCurrencies
+      : this.sortedCurrencies.filter(({ balances }) => {
           return balances.some((balance) => filterBalanceItemsByNetwork(balance, this.selectedNetwork));
         });
 

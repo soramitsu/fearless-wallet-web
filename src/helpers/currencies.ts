@@ -171,11 +171,11 @@ function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: stri
 
   if (selectedNetwork === FAVORITE_NETWORKS) {
     return favoriteNetworks.some(
-      ({ name, favorite }) => name.toLowerCase() === balance.name.toLowerCase() && favorite.includes(address)
+      ({ name, favorite }) => isSameString(name, balance.name) && favorite.includes(address)
     );
   }
 
-  return balance.name.toLowerCase() === selectedNetwork.toLowerCase();
+  return isSameString(balance.name, selectedNetwork);
 }
 
 export function getSummaryTransferableBalanceFilteredByActiveNetworks(

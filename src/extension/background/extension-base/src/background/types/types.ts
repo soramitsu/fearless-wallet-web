@@ -89,6 +89,7 @@ export interface SigningRequest {
   request: RequestSign;
   url: string;
 }
+
 export interface MobileSigningRequest {
   id: string;
   request: SignerPayloadRaw;
@@ -98,30 +99,6 @@ export interface RequestAddressCreate {
   address: string;
   meta: KeyringPair$Meta;
 }
-
-export interface SubscribeBalanceRequest {
-  id: string;
-  port: Port;
-}
-
-export enum NETWORK_ERROR {
-  INVALID_INFO_TYPE = 'invalidInfoType',
-  INJECT_SCRIPT_DETECTED = 'injectScriptDetected',
-  EXISTED_NETWORK = 'existedNetwork',
-  EXISTED_PROVIDER = 'existedProvider',
-  INVALID_PROVIDER = 'invalidProvider',
-  NONE = 'none',
-  CONNECTION_FAILURE = 'connectionFailure',
-  PROVIDER_NOT_SAME_NETWORK = 'providerNotSameNetwork',
-}
-
-export type NetWorkGroup =
-  | 'RELAY_CHAIN'
-  | 'POLKADOT_PARACHAIN'
-  | 'KUSAMA_PARACHAIN'
-  | 'MAIN_NET'
-  | 'TEST_NET'
-  | 'UNKNOWN';
 
 export interface DisableNetworkResponse {
   success: boolean;

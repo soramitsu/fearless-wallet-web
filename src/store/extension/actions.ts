@@ -85,7 +85,7 @@ type AugmentedExtensionContext = {
 export type Actions = {
   [ActionTypes.SUBSCRIBE_AUTH_REQUESTS](context: AugmentedExtensionContext): Promise<boolean>;
   [ActionTypes.APPROVE_AUTH_REQUEST](context: AugmentedExtensionContext, props: ApproveAuthRequest): Promise<void>;
-  [ActionTypes.REJECT_AUTH_REQUEST](context: AugmentedExtensionContext, props: AuthorizeRequest): Promise<void>;
+  [ActionTypes.REJECT_AUTH_REQUEST](context: AugmentedExtensionContext, props: string): Promise<void>;
   [ActionTypes.DELETE_AUTH_CONNECTION](context: AugmentedExtensionContext, props: string): Promise<void>;
 
   [ActionTypes.SUBSCRIBE_META_REQUESTS](context: AugmentedExtensionContext): Promise<boolean>;
@@ -137,7 +137,7 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.REJECT_AUTH_REQUEST]({ commit, dispatch }, payload) {
-    await deleteAuthRequest(payload.id);
+    await deleteAuthRequest(payload);
 
     commit(MutationTypes.DELETE_REQUEST, 'authRequests');
 

@@ -9,7 +9,7 @@
         :errorDescriptions="$t('walletConnect.pairingErrorMessage')"
       />
 
-      <FButton text="walletConnect.newConnection" size="big" fontSize="big" :border="false" @click="onSubmit" />
+      <FButton text="walletConnect.connect" size="big" fontSize="big" :border="false" @click="onSubmit" />
     </div>
   </AboveForm>
 </template>

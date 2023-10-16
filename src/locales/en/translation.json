@@ -334,7 +334,7 @@
   "walletConnect": {
     "approve": "Approve",
     "reject": "Reject",
-    "newConnection": "New Connection",
+    "connect": "Connect",
     "noNetworkSupport": "0 network supported",
     "pairingErrorMessage": "Invalid url! Copy url from Wallet Connect and try again",
     "insertUrl": "Insert Wallet Connect url",

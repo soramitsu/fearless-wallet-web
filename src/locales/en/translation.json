@@ -357,6 +357,10 @@
       "sessionExpired": {
         "title": "Session is expired",
         "message": "Session proposal is expired, please, try again!"
+      },
+      "sessionApproved": {
+        "title": "Wallet is connected",
+        "message": ""
       }
     }
   },

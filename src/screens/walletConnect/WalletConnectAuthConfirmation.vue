@@ -127,6 +127,13 @@ const onApprove = async () => {
       title: t('walletConnect.notifications.sessionExpired.title').toString(),
       type: 'warn',
     });
+  else {
+    notify({
+      message: '',
+      title: t('walletConnect.notifications.sessionApproved.title').toString(),
+      type: 'success',
+    });
+  }
 
   router.back();
 };

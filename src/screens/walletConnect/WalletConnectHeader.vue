@@ -1,6 +1,6 @@
 <template>
   <Fragment>
-    <Favicon :url="url" width="80" class="auth-favicon" />
+    <Favicon :url="url" :width="80" class="auth-favicon" />
     <div class="header">{{ title }}</div>
   </Fragment>
 </template>

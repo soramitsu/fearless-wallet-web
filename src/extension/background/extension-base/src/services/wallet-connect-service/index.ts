@@ -8,14 +8,22 @@ import { RequestService } from '..';
 import { storage } from '../../stores/Storage';
 import WalletConnectStorage from './storage';
 import { ALL_WALLET_CONNECT_EVENT, DEFAULT_WALLET_CONNECT_OPTIONS, WALLET_CONNECT_SUPPORTED_METHODS } from './consts';
-import { EIP155_SIGNING_METHODS, ResultApproveWalletConnectSession, WalletConnectSigningMethod } from './types';
+import {
+  EIP155_SIGNING_METHODS,
+  POLKADOT_SIGNING_METHODS,
+  ResultApproveWalletConnectSession,
+  WalletConnectSigningMethod,
+} from './types';
 import { convertConnectRequest, convertNotSupportRequest } from './utils';
 import Eip155Handler from './requestHandlers/Eip155Handler';
+import PolkadotHandler from './requestHandlers/PolkadotHandler';
 
 export class WalletConnectService {
   readonly state: State;
   readonly requestService: RequestService;
   readonly eip155RequestHandler: Eip155Handler;
+  readonly polkadotRequestHandler: PolkadotHandler;
+
   private client: WalletConnect | undefined;
   public readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]> = new BehaviorSubject<SessionTypes.Struct[]>(
     []
@@ -25,7 +33,7 @@ export class WalletConnectService {
     this.state = state;
     this.requestService = requestService;
     this.eip155RequestHandler = new Eip155Handler(this.state, this, requestService);
-
+    this.polkadotRequestHandler = new PolkadotHandler(this.state, this, requestService);
     this.initClient().catch(console.error);
   }
 
@@ -172,6 +180,10 @@ export class WalletConnectService {
       }
 
       switch (method) {
+        case POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_MESSAGE:
+        case POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_TRANSACTION:
+          this.polkadotRequestHandler.handleRequest(requestEvent);
+          break;
         case EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION:
         case EIP155_SIGNING_METHODS.PERSONAL_SIGN:
         case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA:

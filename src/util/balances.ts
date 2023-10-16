@@ -17,8 +17,6 @@ export function formatBalance(data: AccountData | OrmlAccountData | u128, assetD
   const locked = staking.add(reserved);
   const freeAndReserved = free.add(reserved);
 
-  // console.log('data', data?.toHuman());
-
   return {
     frozen: staking.toString(),
     reserved: reserved.toString(),

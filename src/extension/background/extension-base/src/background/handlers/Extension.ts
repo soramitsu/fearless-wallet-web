@@ -33,7 +33,10 @@ import { storage } from '@extension-base/stores/Storage';
 import { MetadataDef } from '@polkadot/extension-inject/types';
 import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types';
-import { WALLET_CONNECT_EIP155_NAMESPACE } from '../../services/wallet-connect-service/consts';
+import {
+  WALLET_CONNECT_EIP155_NAMESPACE,
+  WALLET_CONNECT_POLKADOT_NAMESPACE,
+} from '../../services/wallet-connect-service/consts';
 import {
   RequestConnectWalletConnect,
   WalletConnectSessionRequest,
@@ -1261,13 +1264,14 @@ export default class Extension extends FWExtensionBase {
         const accounts: string[] = [];
 
         const chains = uniqueStringArray(namespace.chains);
+        const substrateAddress = getSubstrateAddress(selectedAccounts[0], this.state);
 
         chains.forEach((chain) => {
-          accounts.push(
-            ...selectedAccounts
-              .filter((address) => isEthereumAddress(address) === (key === WALLET_CONNECT_EIP155_NAMESPACE))
-              .map((address) => `${chain}:${address}`)
-          );
+          if (key === WALLET_CONNECT_EIP155_NAMESPACE) {
+            accounts.push(`${chain}:${selectedAccounts[0]}`);
+          } else if (key === WALLET_CONNECT_POLKADOT_NAMESPACE) {
+            accounts.push(`${chain}:${substrateAddress}`);
+          }
         });
 
         namespaces[key] = {
@@ -1284,7 +1288,6 @@ export default class Extension extends FWExtensionBase {
       namespaces,
       relayProtocol: params.relays[0].protocol,
     };
-
     await this.state.walletConnectService.approveSession(result);
     request.resolve();
 

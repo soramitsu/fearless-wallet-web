@@ -43,7 +43,7 @@ export default class Eip155RequestHandler {
 
   public handleRequest(requestEvent: SignClientTypes.EventArguments['session_request']) {
     const { id, params, topic } = requestEvent;
-    const { request } = params;
+    const { chainId: _chainId, request } = params;
     const method = request.method as EIP155_SIGNING_METHODS;
     const requestSession = this.walletConnectService.getSession(topic);
 
@@ -83,15 +83,15 @@ export default class Eip155RequestHandler {
 
       this.checkAccount(address, sessionAccounts);
 
-      // const chainId = _chainId.split(':')[1];
+      const chainId = _chainId.split(':')[1];
 
-      // const [networkKey, chainInfo] = this.state.findNetworkKeyByChainId(chainId);
+      const [networkKey, chainInfo] = this.state.findNetworkKeyByChainId(chainId);
 
-      // if (!networkKey || !chainInfo) {
-      //   throw new Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + address);
-      // }
+      if (!networkKey || !chainInfo) {
+        throw new Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + address);
+      }
 
-      // const chainState = this.state.getNetworkMap[networkKey];
+      const chainState = this.state.networkMap[networkKey];
 
       const createRequest = () => {
         this.requestService.evmRequestHandler
@@ -107,16 +107,16 @@ export default class Eip155RequestHandler {
           });
       };
 
-      // if (!chainState.active) {
-      //   this.state
-      //     .setActiveNetworks(networkKey)
-      //     .then(createRequest)
-      //     .catch(() => {
-      //       throw new Error(getSdkError('USER_REJECTED').message + ' Can not active chain: ' + chainInfo.name);
-      //     });
-      // } else {
-      createRequest();
-      // }
+      if (!chainState.active) {
+        this.state
+          .setActiveNetworks(networkKey)
+          .then(createRequest)
+          .catch(() => {
+            throw new Error(getSdkError('USER_REJECTED').message + ' Can not active chain: ' + chainInfo.name);
+          });
+      } else {
+        createRequest();
+      }
     } else {
       throw Error(getSdkError('INVALID_METHOD').message + ' ' + method);
     }

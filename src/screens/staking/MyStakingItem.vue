@@ -28,17 +28,14 @@
 
         <Loading v-if="isLoading" :width="28" />
 
-        <div v-else class="value">
-          <!-- <div class="change">{{ changeStakingAmount }}</div> -->
-
-          {{ totalStake }} {{ asset }}
-        </div>
+        <div v-else class="value">{{ totalStake }} {{ asset }}</div>
       </div>
 
       <div class="row">
         <div>
           {{ $t('staking.unstaking') }}
         </div>
+
         <Loading v-if="isLoading" :width="28" />
 
         <div v-else class="value">{{ unbondAmount }} {{ asset }}</div>
@@ -119,7 +116,7 @@ export default class MyStakingItem extends Vue {
   }
 
   get apy() {
-    return `${this.networkParams.apy}%`;
+    return `${this.$n(this.networkParams.apy, 'price')}%`;
   }
 
   get changeBalance() {

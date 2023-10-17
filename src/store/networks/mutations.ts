@@ -40,67 +40,12 @@ const mutations: MutationTree<State> & Mutations = {
     state.fiats = fiats.map((fiat) => ({ ...fiat }));
   },
 
-  [MutationTypes.SET_HISTORY](
-    state,
-    { history, networkName, walletAddress, isPreviously, assetId, serviceType, isMock }
-  ) {
+  [MutationTypes.SET_HISTORY](state, { history, networkName, walletAddress, assetId, serviceType }) {
     const { nodes, pageInfo } = getFormattedHistory(history, serviceType);
     const { startCursor: startCursorProp, endCursor: endCursorProp } = pageInfo;
     const oldHistory = state.history[assetId]?.[walletAddress]?.[networkName];
     const oldPageInfo = oldHistory?.pageInfo;
     const oldStartCursor = oldPageInfo?.startCursor;
-    const oldEndCursor = oldPageInfo?.endCursor;
-
-    if (isMock) {
-      const historyForAssetId = {
-        ...(state.history[assetId] ?? []),
-        [walletAddress]: {
-          ...state.history[assetId]?.[walletAddress],
-          [networkName]: {
-            nodes: [...nodes, ...(oldHistory?.nodes ?? [])],
-            pageInfo: {
-              startCursor: oldStartCursor,
-              endCursor: oldEndCursor,
-            },
-          },
-        },
-      };
-
-      state.history = { ...state.history, [assetId]: historyForAssetId };
-
-      return;
-    }
-
-    // loading history after sending assets or teleporting assets
-    if (isPreviously && !!oldEndCursor) {
-      const oldHistoryNodesWithoutMock = oldHistory?.nodes.filter(({ isMock }) => !isMock) ?? [];
-
-      const filteredNodes = nodes.filter(({ timestamp }) => {
-        const oldFirstTimespan = +oldHistoryNodesWithoutMock[0].timestamp ?? 0;
-
-        return +timestamp > oldFirstTimespan;
-      });
-
-      if (filteredNodes.length === 0) return;
-
-      const historyForAssetId = {
-        ...(state.history[assetId] ?? []),
-        [walletAddress]: {
-          ...state.history[assetId]?.[walletAddress],
-          [networkName]: {
-            nodes: [...(filteredNodes ?? []), ...oldHistoryNodesWithoutMock],
-            pageInfo: {
-              startCursor: startCursorProp,
-              endCursor: oldEndCursor,
-            },
-          },
-        },
-      };
-
-      state.history = { ...state.history, [assetId]: historyForAssetId };
-
-      return;
-    }
 
     const historyForAssetId = {
       ...(state.history[assetId] ?? []),

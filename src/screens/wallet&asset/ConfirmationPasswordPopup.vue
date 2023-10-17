@@ -254,7 +254,7 @@ export default class ConfirmationPasswordPopup extends Vue {
       this.extrinsicType === 'rebond' ||
       this.extrinsicType === 'redeem' ||
       this.extrinsicType === 'nominate' ||
-      this.extrinsicType === 'setControllerAccount' ||
+      this.extrinsicType === 'setController' ||
       this.extrinsicType === 'setPayee' ||
       this.extrinsicType === 'payoutRewards'
     );

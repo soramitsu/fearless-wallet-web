@@ -1,9 +1,9 @@
-import { MutationTypes } from './mutations';
 import type { State } from '@/store/staking/state';
 import type { ActionTree } from 'vuex';
 import type { AugmentedStakingContext, GetStakingNetworkProps } from './types';
 import { getStakingParams, getMyStakingInfo } from '@/extension/messaging';
 import { SEC1 } from '@/consts/time';
+import { MutationTypes } from '@/store/staking/mutations';
 
 export enum ActionTypes {
   GET_STAKING_PARAMS = 'GET_STAKING_PARAMS',

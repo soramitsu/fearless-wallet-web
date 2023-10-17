@@ -10,6 +10,7 @@ import { URLS } from '@/consts/urls';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { toggleFavoriteNetwork } from '@/extension/messaging';
 import { isRequireEvmAPI } from '@/extension/background/extension-base/src/background/utils/utils';
+import { isSora } from '@/helpers';
 
 export enum ActionTypes {
   FETCH_FIATS = 'FETCH_FIATS',
@@ -32,11 +33,31 @@ const actions: ActionTree<State, State> & Actions = {
     }
   },
 
-  async [ActionTypes.FETCH_HISTORY]({ commit, getters, rootState }, { networkName, wallet, assetId, isPreviously }) {
+  async [ActionTypes.FETCH_HISTORY]({ commit, getters, rootState, rootGetters }, { networkName, assetId }) {
     const { externalApi } = getters.getNetwork(networkName) as Network;
+
+    // TODO удалить, когда в json добавят url
+    if (isSora(networkName)) {
+      const wallet = rootGetters.selectedWallet;
+      const formattedAddress = BaseApi.formatAddress(wallet, networkName);
+
+      const history = await fetchHistory('', formattedAddress, 'sora', networkName, assetId, false);
+
+      if (history)
+        commit(MutationTypes.SET_HISTORY, {
+          networkName: networkName.toLowerCase(),
+          walletAddress: wallet.address,
+          history,
+          assetId,
+          serviceType: 'sora',
+        });
+
+      return;
+    }
 
     if (!externalApi || !externalApi.history) return;
 
+    const wallet = rootGetters.selectedWallet;
     const { type, url } = externalApi.history;
     const formattedAddress = BaseApi.formatAddress(wallet, networkName);
 
@@ -45,11 +66,13 @@ const actions: ActionTree<State, State> & Actions = {
     const utilityId = isRequireEvmAPI(networkName)
       ? asset.balances.find((el) => el.name.toLowerCase() === networkName.toLowerCase() && el.isUtility)?.id
       : asset.assetId;
+
     const isUtility = assetId === utilityId;
+
     // сейчас эндпоинт истории парсит только историю утилити токена
     // TODO: когда появится история других токенов отрефаткорить данную логику
-
     if (isUtility && type !== 'etherscan') return;
+
     const history = await fetchHistory(url, formattedAddress, type, networkName, assetId, isUtility);
 
     if (history)
@@ -57,7 +80,6 @@ const actions: ActionTree<State, State> & Actions = {
         networkName: networkName.toLowerCase(),
         walletAddress: wallet.address,
         history,
-        isPreviously,
         assetId,
         serviceType: type,
       });

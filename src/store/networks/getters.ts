@@ -1,3 +1,4 @@
+import { SelectedWallet } from '../accounts/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { AssetsPrice, FiatJson, GetHistory } from '@/interfaces';
 import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetActiveNodesByNetwork } from './types';
@@ -12,7 +13,6 @@ export enum GettersTypes {
   getNetworkGenesisHash = 'getNetworkGenesisHash',
   getPrice = 'getPrice',
   getAssetPrice = 'getAssetPrice',
-  getAssetIcon = 'getAssetIcon',
   getFiats = 'getFiats',
   getHistory = 'getHistory',
   getActiveNodesByNetwork = 'getActiveNodesByNetwork',
@@ -21,12 +21,22 @@ export enum GettersTypes {
 }
 
 export type Getters = {
-  [GettersTypes.networks](state: State, getters?: GetterTree<State, State> & Getters, rootState?: any): NetworkJson[];
+  [GettersTypes.networks](
+    state: State,
+    getters?: GetterTree<State, State> & Getters,
+    rootState?: any,
+    rootGetters?: any
+  ): NetworkJson[];
   [GettersTypes.getFavoriteNetworksNames](state: State): { name: string; favorite: string[] }[];
   [GettersTypes.allNetworks](state: State): NetworkJson[];
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
-  [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
+  [GettersTypes.getHistory](
+    state: State,
+    getters?: GetterTree<State, State> & Getters,
+    rootState?: any,
+    rootGetters?: any
+  ): GetHistory;
   [GettersTypes.getActiveNodesByNetwork](state: State): GetActiveNodesByNetwork;
   [GettersTypes.getNetworkGenesisHash](state: State): GetNetworkGenesisHash;
   [GettersTypes.getAssetPrice](state: State): GetAssetPrice;
@@ -34,8 +44,8 @@ export type Getters = {
 };
 
 const getters: GetterTree<State, State> & Getters = {
-  [GettersTypes.networks](state, getters, rootState): NetworkJson[] {
-    const haveEthereumAccount = rootState.account.selectedWallet.ethereumAddress !== '';
+  [GettersTypes.networks](state, getters, rootState, rootGetters): NetworkJson[] {
+    const haveEthereumAccount = rootGetters.selectedWallet.ethereumAddress !== '';
 
     return haveEthereumAccount ? state.networks : state.networks.filter(({ name }) => !BaseApi.isEthereumNetwork(name));
   },
@@ -84,9 +94,11 @@ const getters: GetterTree<State, State> & Getters = {
     },
 
   [GettersTypes.getHistory]:
-    ({ history }) =>
-    (assetId: string, walletAddress: string, networkName: string) => {
-      return history[assetId]?.[walletAddress]?.[networkName.toLowerCase()];
+    ({ history }, getters, rootState, rootGetters) =>
+    (assetId: string, networkName: string) => {
+      const wallet: SelectedWallet = rootGetters.selectedWallet;
+
+      return history[assetId]?.[wallet.address]?.[networkName.toLowerCase()];
     },
 
   [GettersTypes.getActiveNodesByNetwork]:

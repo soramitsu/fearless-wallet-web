@@ -53,19 +53,18 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Getter, Action } from 'vuex-class';
 import { storage } from '@extension-base/stores/Storage';
 import { toSvg } from 'jdenticon';
-import type { GetHistory } from '@/interfaces';
-import type { SelectedWallet, GetNetwork } from '@/store';
+import type { AsyncFn, GetHistory } from '@/interfaces';
+import type { FetchHistory, GetNetwork } from '@/store';
 import type { AddressBook } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { cut } from '@/helpers/';
-import { NetworksController } from '@/controllers';
 import { getType } from '@/helpers/history';
 import { TransactionType } from '@/interfaces/history';
+import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 
 @Component
 export default class HistoryBook extends Vue {
@@ -74,8 +73,8 @@ export default class HistoryBook extends Vue {
   @Prop(String) network!: string;
   @Prop(String) assetId!: string;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+  @Action(NetworksActionTypes.FETCH_HISTORY) fetchHistory!: AsyncFn<FetchHistory>;
 
   get showHistoryAndBook() {
     return this.showHistory || this.book.length !== 0;
@@ -103,7 +102,7 @@ export default class HistoryBook extends Vue {
     if (!this.network) return [];
 
     const addresses =
-      this.getHistory(this.assetId, this.selectedWallet.address, this.network.toLowerCase())
+      this.getHistory(this.assetId, this.network.toLowerCase())
         ?.nodes.filter((item) => getType(item) === TransactionType.transfer)
         .map(({ transfer }) => BaseApi.encodeAddress(transfer?.to ?? '', this.addressPrefix)) ?? [];
 
@@ -136,21 +135,24 @@ export default class HistoryBook extends Vue {
   @Watch('assetId')
   @Watch('selectedNetwork')
   async networkWatcher() {
-    this.fetchHistory();
+    this.loadHistory();
   }
 
   async mounted() {
-    this.fetchHistory();
+    this.loadHistory();
 
     const { addressBook } = await storage.get(['addressBook']);
 
     this.addressBook = addressBook;
   }
 
-  async fetchHistory() {
+  async loadHistory() {
     if (this.historyAddresses.length !== 0) return;
 
-    await NetworksController.fetchHistory(this.network, this.selectedWallet, this.assetId);
+    await this.fetchHistory({
+      networkName: this.network,
+      assetId: this.assetId,
+    });
   }
 
   getJdenticon(address: string) {

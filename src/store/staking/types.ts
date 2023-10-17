@@ -2,7 +2,7 @@ import { StakingParams, StakingParamsResponse, MyStakingInfo } from '@extension-
 import type { Mutations } from '@/store/staking/mutations';
 import type { ActionContext } from 'vuex';
 import type { State } from '@/store/staking/state';
-import { NetworkName } from '@/interfaces';
+import { HistoryElement, NetworkName, SoraHistoryElement } from '@/interfaces';
 
 export interface NetworkParams extends StakingParams {
   transferableAmount: string;
@@ -13,7 +13,11 @@ export interface NetworkParams extends StakingParams {
   type?: 'regular';
 }
 
+export type StakingHistory = HistoryElement | SoraHistoryElement; // TODO
+
 export type GetStakingNetwork = (networkName: NetworkName) => NetworkParams;
+
+export type GetStakingHistory = (networkName: NetworkName, assetId: string) => StakingHistory[];
 
 export type SetAllStakingItems = StakingParamsResponse;
 

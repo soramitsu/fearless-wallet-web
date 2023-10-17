@@ -27,7 +27,7 @@ export type StakingOperation =
   | 'rebond'
   | 'redeem'
   | 'nominate'
-  | 'setControllerAccount'
+  | 'setController'
   | 'setPayee'
   | 'payoutRewards';
 

@@ -1,18 +1,20 @@
 import { TokenBalance } from '@extension-base/background/types/types';
 import { SelectedWallet } from '../accounts/types';
-import { GetStakingNetwork, NetworkParams } from './types';
+import { GetStakingHistory, GetStakingNetwork, NetworkParams } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import type { NetworkJson } from '@extension-base/types';
-import { isSameString } from '@/helpers';
+import { isSameString, isSora } from '@/helpers';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common';
+import { SoraHistoryElement, SubqueryHistory } from '@/interfaces';
 
 export enum GettersTypes {
   allStakingItems = 'allStakingItems',
   stakingItems = 'stakingItems',
   myStakingItems = 'myStakingItems',
   getStakingNetwork = 'getStakingNetwork',
+  getStakingHistory = 'getStakingHistory',
 }
 
 export type Getters = {
@@ -25,6 +27,12 @@ export type Getters = {
   [GettersTypes.stakingItems](state: State, getters?: GetterTree<State, State> & Getters): NetworkParams[];
   [GettersTypes.myStakingItems](state: State, getters?: GetterTree<State, State> & Getters): NetworkParams[];
   [GettersTypes.getStakingNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetStakingNetwork | any;
+  [GettersTypes.getStakingHistory](
+    state: State,
+    getters?: GetterTree<State, State> & Getters,
+    rootState?: any,
+    rootGetters?: any
+  ): GetStakingHistory;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -77,6 +85,20 @@ const getters: GetterTree<State, State> & Getters = {
 
     return allStakingItems.find(({ network }) => isSameString(network, networkName))!;
   },
+
+  [GettersTypes.getStakingHistory]:
+    (state, getters, rootState, rootGetters) => (networkName: string, assetId: string) => {
+      const history: SubqueryHistory = rootGetters.getHistory(assetId, networkName);
+
+      if (isSora(networkName)) {
+        const nodes = history.nodes as unknown as SoraHistoryElement[];
+
+        return nodes.filter(({ module }) => module === 'staking');
+      }
+
+      // TODO staking доделать для новых сетей
+      return history.nodes;
+    },
 };
 
 export default getters;

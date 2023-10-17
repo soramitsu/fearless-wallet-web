@@ -32,15 +32,16 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Getter, Action } from 'vuex-class';
 import HistoryItem from './HistoryItem.vue';
-import type { FilterHistory, GetHistory, HistoryElement } from '@/interfaces';
-import type { GetNetwork, SelectedWallet } from '@/store';
+import type { AsyncFn, FilterHistory, GetHistory, HistoryElement } from '@/interfaces';
+import type { FetchHistory, GetNetwork, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { NetworksController } from '@/controllers';
 import BaseApi from '@/util/BaseApi';
+import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
+import { getUtilityAsset } from '@/helpers/currencies';
 
 @Component({ components: { HistoryItem } })
 export default class History extends Vue {
@@ -58,6 +59,8 @@ export default class History extends Vue {
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Action(NetworksActionTypes.FETCH_HISTORY) fetchHistory!: AsyncFn<FetchHistory>;
 
   get selectedNetwork() {
     return this.$route.params.selectedNetwork;
@@ -82,6 +85,7 @@ export default class History extends Vue {
 
   get address() {
     if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
+
     const network = this.getNetwork(this.selectedNetwork);
 
     return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
@@ -90,7 +94,7 @@ export default class History extends Vue {
   get history() {
     if (!this.selectedNetwork) return [];
 
-    return this.getHistory(this.assetId, this.selectedWallet.address, this.selectedNetwork.toLowerCase())?.nodes ?? [];
+    return this.getHistory(this.assetId, this.selectedNetwork.toLowerCase())?.nodes ?? [];
   }
 
   get filteredHistory() {
@@ -105,38 +109,41 @@ export default class History extends Vue {
   @Watch('selectedNetwork')
   @Watch('selectedWallet')
   async watchSelectedNetwork() {
-    this.fetchHistory();
+    this.loadHistory();
   }
 
   get isMainNetwork() {
-    return this.currency.balances?.some(
-      ({ name, isUtility, isNative }) =>
-        name.toLowerCase() === this.selectedNetwork?.toLowerCase() && (isUtility || isNative)
-    );
+    if (this.balances.length === 0) return false;
+
+    const { assetId } = getUtilityAsset(this.balances, this.selectedNetwork);
+
+    return this.assetId === assetId;
   }
 
   @Watch('isMainNetwork')
   watchNetwork() {
-    this.fetchHistory();
+    this.loadHistory();
   }
 
   mounted() {
-    setTimeout(() => this.fetchHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
-    this.fetchHistory();
+    setTimeout(() => this.loadHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
   }
 
-  get isSubstrateEthereumNetwork() {
-    return BaseApi.isSubstrateEthereumNetwork(this.selectedNetwork);
+  get isEthereumNativeNetwork() {
+    return BaseApi.isEthereumNativeNetwork(this.selectedNetwork);
   }
 
-  async fetchHistory() {
+  async loadHistory() {
     if (this.history.length !== 0) return;
 
-    if (!this.isMainNetwork && this.isSubstrateEthereumNetwork) return;
+    if (!this.isEthereumNativeNetwork && !this.isMainNetwork) return;
 
     this.showLoader = true;
 
-    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.assetId);
+    await this.fetchHistory({
+      networkName: this.selectedNetwork,
+      assetId: this.assetId,
+    });
 
     this.showLoader = false;
   }

@@ -60,7 +60,7 @@
 
             <Alerts v-else-if="isAlerts" :alerts="alerts" />
 
-            <History v-else-if="isHistory" :history="history" />
+            <History v-else-if="isHistory" :network="network" :assetId="stakingAssetId" />
           </div>
         </Scroll>
       </ContentForm>
@@ -95,7 +95,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import type { MyStakingTab, AsyncFn } from '@/interfaces';
+import type { MyStakingTab, AsyncFn, GetHistory } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import MyStakeSettings from '@/screens/staking/myStake/MyStakeSettings.vue';
 import About from '@/screens/staking/myStake/About.vue';
@@ -109,9 +109,11 @@ import YourValidatorsManagement from '@/screens/staking/myStake/validators/YourV
 import PendingRewardForm from '@/screens/staking/myStake/rewards/PendingRewardForm.vue';
 import { isSora } from '@/helpers';
 import { Components } from '@/router/routes';
-import { GetStakingNetwork } from '@/store';
+import { FetchHistory, GetStakingNetwork } from '@/store';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 
 type ShowField =
   | 'showBondExtraForm'
@@ -146,12 +148,14 @@ export default class MyStake extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
+  @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Action(StakingActionTypes.GET_STAKING_PARAMS) getStakingParams!: AsyncFn;
+  @Action(NetworksActionTypes.FETCH_HISTORY) fetchHistory!: AsyncFn<FetchHistory>;
 
   get actionOptions() {
     return [
       { label: 'staking.yourValidators', value: 'showYourValidatorsForm', visibility: !this.showValidatorsBtn },
-      { label: 'staking.setControllerAccount', value: 'showControllerAccountForm' },
+      { label: 'staking.setController', value: 'showControllerAccountForm' },
       { label: 'staking.setPayee', value: 'showPayeeForm' },
       { label: 'staking.pendingRewards', value: 'showPendingRewardForm' },
     ];
@@ -177,7 +181,7 @@ export default class MyStake extends Vue {
 
     if (this.showRedeemForm) return 'redeem';
 
-    if (this.showControllerAccountForm) return 'setControllerAccount';
+    if (this.showControllerAccountForm) return 'setController';
 
     if (this.showPayeeForm) return 'setPayee';
 
@@ -234,40 +238,6 @@ export default class MyStake extends Vue {
     ];
   }
 
-  get history() {
-    // TODO staking
-    return [
-      {
-        name: 'Reward',
-        amount: '154.51',
-        asset: 'val',
-        timespan: Date.now(),
-        assetId: '24d0809e-0a4c-42ea-bdd8-dc7a518f389c',
-      },
-      {
-        name: 'Stake more tokens',
-        amount: '5.3811',
-        asset: 'xor',
-        timespan: Date.now() - 10000000,
-        assetId: 'b774c386-5cce-454a-a845-1ec0381538ec',
-      },
-      {
-        name: 'Unstake',
-        amount: '1.26',
-        asset: 'xor',
-        timespan: Date.now() - 1000000000,
-        assetId: 'b774c386-5cce-454a-a845-1ec0381538ec',
-      },
-      {
-        name: 'Start staking',
-        amount: '11',
-        asset: 'xor',
-        timespan: Date.now() - 2000000000,
-        assetId: 'b774c386-5cce-454a-a845-1ec0381538ec',
-      },
-    ];
-  }
-
   get network() {
     return this.$route.params.network;
   }
@@ -299,8 +269,25 @@ export default class MyStake extends Vue {
     return this.balances.find(({ assetId }) => assetId === this.rewardedAssetId);
   }
 
+  get history() {
+    if (!this.network) return [];
+
+    return this.getHistory(this.stakingAssetId, this.network.toLowerCase())?.nodes ?? [];
+  }
+
   created() {
     if (this.$route.params.paramsLoaded !== 'true') this.getStakingParams();
+
+    this.loadHistory();
+  }
+
+  async loadHistory() {
+    if (this.history.length !== 0) return;
+
+    await this.fetchHistory({
+      networkName: this.network,
+      assetId: this.stakingAssetId,
+    });
   }
 
   updateActiveTabName(name: MyStakingTab) {

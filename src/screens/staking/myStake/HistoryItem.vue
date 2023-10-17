@@ -2,7 +2,7 @@
   <div class="history-item">
     <div class="column left">
       <span class="name">
-        {{ name }}
+        {{ operationName }}
       </span>
 
       <span class="date">
@@ -12,12 +12,12 @@
 
     <div class="column right">
       <div>
-        <div class="amount">{{ amount }} {{ asset }}</div>
+        <div class="amount">-{{ $n(amount, 'decimal') }} {{ symbol }}</div>
 
         <div class="value">{{ value }}</div>
       </div>
 
-      <Icon icon="dots-horizontal" className="dots" @click="dostClick" />
+      <Icon icon="chevron-right" className="chevron" @click="dostClick" />
     </div>
   </div>
 </template>
@@ -30,20 +30,52 @@ import type { TokenBalance } from '@extension-base/background/types/types';
 import { getFormattedDate } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { SoraHistoryElement } from '@/interfaces';
 
 @Component
 export default class HistoryItem extends Vue {
-  @Prop({ type: String }) name!: string;
-  @Prop({ type: String }) amount!: string;
-  @Prop({ type: String }) asset!: string;
-  @Prop({ type: Number }) timespan!: number;
+  @Prop({ type: Object }) history!: SoraHistoryElement;
   @Prop({ type: String }) assetId!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
+  get operationName() {
+    return this.$t(`staking.${this.history.method}`);
+  }
+
+  get method() {
+    return this.history.method;
+  }
+
+  get amount() {
+    const data = this.history.data;
+
+    if (this.method === 'unbond') {
+      const value = +data.value;
+
+      return +this.networkFee + value;
+    }
+
+    if (this.method === 'bondExtra') {
+      const value = +data.maxAdditional;
+
+      return +this.networkFee + value;
+    }
+
+    return +this.networkFee;
+  }
+
+  get networkFee() {
+    return this.history.networkFee;
+  }
+
+  get symbol() {
+    return this.currency?.symbol;
+  }
+
   get date() {
-    return getFormattedDate(this.timespan, 'ms');
+    return getFormattedDate(this.history.timestamp);
   }
 
   get currency() {
@@ -57,7 +89,7 @@ export default class HistoryItem extends Vue {
   }
 
   get value() {
-    const value = +this.amount * this.assetPrice;
+    const value = this.amount * this.assetPrice;
 
     return `${this.fiatSymbol}${this.$n(value, 'price')}`;
   }
@@ -80,6 +112,8 @@ export default class HistoryItem extends Vue {
   }
 
   .column {
+    display: flex;
+
     .name {
       font-size: 16px;
       color: $default-white;
@@ -95,18 +129,20 @@ export default class HistoryItem extends Vue {
 
   .left {
     text-align: left;
-    display: flex;
     flex-direction: column;
   }
 
   .right {
-    display: flex;
+    text-align: right;
     align-items: center;
+    height: 38px;
+    max-width: 325px;
 
-    .dots {
+    .chevron {
       width: 20px;
       height: 20px;
       margin-left: 10px;
+      color: $gray-color;
     }
 
     .amount {

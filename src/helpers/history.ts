@@ -5,10 +5,11 @@ import type {
   SubqueryHistory,
   HistoryServiceType,
   NetworkName,
+  SoraHistoryElement,
 } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { TransactionType, TransferType } from '@/interfaces';
-import { firstCharToUp } from '@/helpers';
+import { firstCharToUp, isSora } from '@/helpers';
 import store from '@/store';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
@@ -33,12 +34,18 @@ function getSignTransfer(historyElement: HistoryElement, address: string) {
   return '';
 }
 
-function getTypeFormatted(historyElement: HistoryElement, address: string) {
+function getTypeFormatted(historyElement: HistoryElement, address: string, networkName: NetworkName) {
+  if (isSora(networkName)) {
+    const element = historyElement as SoraHistoryElement;
+
+    return element.module;
+  }
+
   const type = getType(historyElement);
   const signTransfer = getSignTransfer(historyElement, address);
 
   if (type === TransactionType.transfer) {
-    return signTransfer === '+' ? TransferType.incoming : TransferType.outgoing;
+    return signTransfer === '+' ? `${TransferType.incoming} transfer` : `${TransferType.outgoing} transfer`;
   }
 
   if (type === TransactionType.extrinsic) {
@@ -62,7 +69,7 @@ function getHumanFeeValue(value: string, networkName: NetworkName) {
   return FPNumber.fromCodecValue(value, precision).toNumber();
 }
 
-function getHumanValue(value: string, assetId: string, networkName: NetworkName) {
+function getHumanValue(value: string | number, assetId: string, networkName: NetworkName) {
   const tokenBalances: TokenBalance[] = store.getters.getBalances;
   const { balances } = tokenBalances.find(({ assetId: id }) => id === assetId)!;
   const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
@@ -71,6 +78,22 @@ function getHumanValue(value: string, assetId: string, networkName: NetworkName)
 }
 
 function getHistoryValue(historyElement: HistoryElement, assetId: string, networkName: NetworkName, address: string) {
+  if (isSora(networkName)) {
+    const element = historyElement as SoraHistoryElement;
+
+    const _value = element.data?.value ?? element.data?.maxAdditional ?? 0;
+    const value = getHumanValue(_value, assetId, networkName);
+
+    return { signTransfer: '-', value: value + +element.networkFee };
+
+    // TODO вернуть когда Саша переделает индексер
+
+    // const feeAmount = +element.networkFee + +(_value);
+    // const value = getHumanValue(feeAmount, assetId, networkName);
+
+    // return { signTransfer: '-', value };
+  }
+
   const { transfer, reward, extrinsic } = historyElement;
   const type = getType(historyElement);
   const signTransfer = getSignTransfer(historyElement, address);
@@ -149,6 +172,17 @@ function getFormattedHistory(
       return {
         ...historyElement,
         timestamp: (+historyElement.timestamp / 1000).toString(),
+      };
+    });
+
+    return { nodes, pageInfo: { endCursor: '', startCursor: '' } };
+  }
+
+  if (serviceType === 'sora') {
+    const nodes: HistoryElement[] = (history as SoraHistoryElement[]).map((historyElement) => {
+      return {
+        ...historyElement,
+        timestamp: historyElement.timestamp.toString(),
       };
     });
 

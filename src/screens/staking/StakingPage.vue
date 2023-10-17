@@ -14,9 +14,9 @@
 
     <ContentForm :height="382">
       <div class="content">
-        <div v-if="noStakingItems" class="no-staking">{{ $t('staking.noStaking') }}</div>
+        <Loader v-if="showLoader" />
 
-        <Loader v-else-if="showLoader" />
+        <div v-else-if="noStakingItems" class="no-staking">{{ $t('staking.noStaking') }}</div>
 
         <template v-else>
           <StakingSettings

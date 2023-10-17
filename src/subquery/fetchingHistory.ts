@@ -1,5 +1,4 @@
 import axios from 'axios';
-// import { ethers } from 'ethers';
 import type {
   SubqueryHistory,
   GiantsquidHistoryItem,
@@ -13,6 +12,7 @@ import type {
 import BaseApi from '@/util/BaseApi';
 import { getEthereumExplorerApiKey } from '@/helpers/history';
 import { SEC1 } from '@/consts/time';
+import { SORA_HISTORY_URL } from '@/consts/sora';
 
 async function fetchSubqueryHistory(
   url: string,
@@ -223,6 +223,36 @@ async function fetchEthereumHistory(url: string, address: string): Promise<Histo
   }));
 }
 
+async function fetchSoraHistory(url: string, address: string) {
+  const {
+    data: { data },
+  } = await axios.post(url, {
+    query: `{
+        historyElements(
+          orderBy: id_DESC
+          where: {
+            address_eq: "${address}"
+          }
+        ) {
+          timestamp
+          id
+          address
+          blockHash
+          blockHeight
+          updatedAtBlock
+          networkFee
+          module
+          method
+          dataTo
+          dataFrom
+          data
+        }
+      }`,
+  });
+
+  return data?.historyElements;
+}
+
 async function fetchHistory(
   url: string,
   address: string,
@@ -232,6 +262,9 @@ async function fetchHistory(
   isUtility: boolean
 ) {
   try {
+    // TODO когда добавят в json юзать url
+    if (type === 'sora') return fetchSoraHistory(SORA_HISTORY_URL, address);
+
     if (type === 'etherscan') {
       if (isUtility) return fetchEthereumHistory(url, address);
 
@@ -252,4 +285,4 @@ async function fetchHistory(
   }
 }
 
-export { fetchHistory };
+export { fetchHistory, fetchSoraHistory };

@@ -189,7 +189,7 @@ export class StakingService {
 
     if (type === 'nominate') return this.nominate(params as RequestNominate);
 
-    if (type === 'setControllerAccount') return this.setControllerAccount(params as RequestSetControllerAccount);
+    if (type === 'setController') return this.setControllerAccount(params as RequestSetControllerAccount);
 
     if (type === 'setPayee') return this.setPayee(params as RequestSetPayee);
 

@@ -1,12 +1,9 @@
 <template>
   <div class="history">
     <HistoryItem
-      v-for="{ name, amount, asset, timespan, assetId } in history"
-      :key="timespan"
-      :name="name"
-      :amount="amount"
-      :asset="asset"
-      :timespan="timespan"
+      v-for="historyItem in history"
+      :key="historyItem.timestamp + historyItem.method"
+      :history="historyItem"
       :assetId="assetId"
     />
   </div>
@@ -14,20 +11,22 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
 import HistoryItem from '@/screens/staking/myStake/HistoryItem.vue';
-
-type StakingHistory = {
-  name: string;
-  amount: string;
-  asset: string;
-  timespan: number;
-  assetId: string;
-};
+import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
+import { GetStakingHistory } from '@/store';
+import { NetworkName } from '@/interfaces';
 
 @Component({
   components: { HistoryItem },
 })
 export default class History extends Vue {
-  @Prop({ type: Array }) history!: StakingHistory[];
+  @Prop({ type: String }) network!: NetworkName;
+  @Prop({ type: String }) assetId!: string;
+  @Getter(StakingGettersTypes.getStakingHistory) getStakingNetwork!: GetStakingHistory;
+
+  get history() {
+    return this.getStakingNetwork(this.network, this.assetId);
+  }
 }
 </script>

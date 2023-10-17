@@ -25,8 +25,8 @@ import type { HistoryElement, NetworkName } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import { getType, getTypeFormatted, getHistoryValue, getSignTransfer } from '@/helpers/history';
-import { getFormattedDate, cut } from '@/helpers';
-import { TransactionType } from '@/interfaces/history';
+import { getFormattedDate, cut, isSora } from '@/helpers';
+import { SoraHistoryElement, TransactionType } from '@/interfaces/history';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -76,6 +76,12 @@ export default class HistoryItem extends Vue {
   }
 
   get hash() {
+    if (isSora(this.network)) {
+      const element = this.historyElement as SoraHistoryElement;
+
+      return this.$t(`staking.${element.method}`);
+    }
+
     const { transfer, reward, extrinsic } = this.historyElement;
 
     if (this.type === TransactionType.transfer) {
@@ -93,7 +99,7 @@ export default class HistoryItem extends Vue {
   }
 
   get typeFormatted() {
-    return getTypeFormatted(this.historyElement, this.address);
+    return getTypeFormatted(this.historyElement, this.address, this.network);
   }
 }
 </script>

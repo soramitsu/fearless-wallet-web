@@ -9,12 +9,7 @@
         :hideLastBorder="false"
       />
 
-      <InfoRow
-        text="staking.setControllerAccount"
-        borderType="default"
-        :value="controllerCut"
-        :hideLastBorder="false"
-      />
+      <InfoRow text="staking.setController" borderType="default" :value="controllerCut" :hideLastBorder="false" />
     </template>
 
     <template v-else>
@@ -23,7 +18,7 @@
       <InputWithIcon
         v-model="addressCut"
         icon="close"
-        placeholder="staking.setControllerAccount"
+        placeholder="staking.setController"
         @click="setControllerAddress"
       />
 

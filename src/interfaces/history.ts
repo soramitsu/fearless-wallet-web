@@ -34,7 +34,18 @@ type HistoryElement = {
   extrinsic?: HistoryExtrinsic;
   reward?: Reward;
   transfer?: Transfer;
-  isMock?: true;
+};
+
+type SoraHistoryElement = {
+  id: string;
+  address: string;
+  timestamp: string;
+  blockHash: string;
+  blockHeight: string;
+  networkFee: string;
+  module: 'staking' | 'liquidityProxy' | string; // TODO
+  method: 'setPayee' | 'unbond' | 'nominate' | 'bondExtra' | 'bond' | 'payoutStakers' | 'swap' | 'transfer'; // TODO
+  data: Record<string, any>; // TODO
 };
 
 interface GiantsquidHistoryItem {
@@ -57,7 +68,7 @@ interface GiantsquidHistoryItem {
 }
 
 interface SubqueryHistory {
-  nodes: HistoryElement[];
+  nodes: HistoryElement[]; // | SoraHistoryElement[]
   pageInfo: {
     startCursor: string;
     endCursor: string;
@@ -70,7 +81,7 @@ type HistoryForAssetId = Record<WalletAddress, HistoryForWalletAddress>;
 
 type History = Record<AssetName, HistoryForAssetId>;
 
-type GetHistory = (assetId: AssetName, walletAddress: WalletAddress, networkName: NetworkName) => SubqueryHistory;
+type GetHistory = (assetId: AssetName, networkName: NetworkName) => SubqueryHistory;
 
 enum TransferType {
   incoming = 'Incoming',
@@ -95,4 +106,5 @@ export {
   Reward,
   HistoryElement,
   Transfer,
+  SoraHistoryElement,
 };

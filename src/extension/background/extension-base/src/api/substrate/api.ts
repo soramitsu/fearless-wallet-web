@@ -59,7 +59,6 @@ async function onDisconnect(networkName: string, state: State) {
 function onReady(networkName: string, state: State) {
   if (isSora(networkName)) {
     apiSora.initialize(false);
-
     apiSora.calcStaticNetworkFees();
 
     state.subscribeTotalXorBalance();

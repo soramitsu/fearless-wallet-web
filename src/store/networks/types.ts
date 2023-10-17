@@ -20,7 +20,6 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ActionContext } from 'vuex';
 import type { State } from '@/store/networks/state';
 import type { Mutations } from '@/store/networks/mutations';
-import type { Wallet } from '@/store/accounts/types';
 
 // getters
 export type GetNetwork = (networkName: string) => NetworkJson;
@@ -60,9 +59,7 @@ export type SetHistoryProps = {
   history: SubqueryHistory | GiantsquidHistoryItem[] | HistoryElement[];
   walletAddress: string;
   networkName: NetworkName;
-  isPreviously: boolean;
   assetId: string;
-  isMock?: true;
   serviceType: HistoryServiceType;
 };
 
@@ -97,12 +94,9 @@ export type SetSoraFee = {
 };
 
 // Actions
-
 export type FetchHistory = {
   networkName: NetworkName;
-  wallet: Wallet;
   assetId: string;
-  isPreviously: boolean;
 };
 
 export type ToggleFavorite = {

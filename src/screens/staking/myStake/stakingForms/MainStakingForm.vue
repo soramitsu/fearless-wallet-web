@@ -23,6 +23,7 @@
           :asset="stakingAssetName"
           :assetId="stakingAssetId"
           :amount="amount"
+          :readonly="isRedeem"
           @update:amount="updateAmount"
           @setMax="setMax"
         />
@@ -173,7 +174,7 @@ export default class MainStakingForm extends Vue {
   }
 
   get isControllerAccount() {
-    return this.type === 'setControllerAccount';
+    return this.type === 'setController';
   }
 
   get showWalletName() {
@@ -277,7 +278,7 @@ export default class MainStakingForm extends Vue {
       const lastUnbond = unlocking[unlocking.length - 1].value;
 
       this.amount = lastUnbond;
-    }
+    } else if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
 
     this.getSoraFees();
   }

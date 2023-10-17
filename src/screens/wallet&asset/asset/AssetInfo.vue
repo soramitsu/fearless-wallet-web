@@ -101,7 +101,7 @@ export default class AssetInfo extends Vue {
   }
 
   get icon() {
-    return this.currency.icon;
+    return this.currency?.icon ?? '';
   }
 
   get showSettingsPopup() {

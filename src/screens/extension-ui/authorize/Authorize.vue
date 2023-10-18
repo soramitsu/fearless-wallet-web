@@ -71,16 +71,18 @@ export default class Authorize extends Vue {
     return this.requests[0];
   }
 
-  @Watch('requests')
-  updateRoute(value: AuthorizeRequest[]) {
-    if (value.length === 0) this.$router.push({ name: Components.Wallet });
-  }
   get message() {
     return this.$t('authorize.authWarningMessage', {
       name: `<span class="authorize__content--name">${this.request.request.origin}</span>`,
       link: `<span class="authorize__content--link">${this.request.url}</span>`,
     });
   }
+
+  @Watch('requests')
+  updateRoute(value: AuthorizeRequest[]) {
+    if (value.length === 0) this.$router.push({ name: Components.Wallet });
+  }
+
   mounted() {
     this.accounts.forEach(({ name, address, isMobile }) =>
       Vue.set(this.state, name, {

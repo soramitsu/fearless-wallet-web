@@ -5,7 +5,7 @@
         <Hint class="alert__header" size="big" iconName="warning" :text="headerText" />
 
         <p :class="messageClasses">
-          <slot>{{ $t(message) }}</slot>
+          <slot>{{ $t(prepMessage) }}</slot>
         </p>
       </div>
     </div>
@@ -17,13 +17,13 @@ import { computed } from 'vue';
 
 type SizeTextType = 'small' | 'medium' | 'big';
 type Props = {
-  message: string;
+  message?: string;
   sizeText?: SizeTextType;
   headerText?: string;
 };
 
 const props = withDefaults(defineProps<Props>(), { sizeText: 'medium', headerText: 'common.attention' });
-
+const prepMessage = props.message ?? '';
 const messageClasses = computed(() => {
   const classes = ['alert__message'];
 

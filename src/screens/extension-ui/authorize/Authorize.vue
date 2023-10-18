@@ -4,12 +4,7 @@
       <template v-if="isAccountsExists">
         <div>
           <Alert>
-            <p class="authorize__content">
-              {{ $t('authorize.selfIdentifyOne') }}
-              <span class="authorize__content--name">{{ request.request.origin }}</span>
-              {{ $t('authorize.selfIdentifyTwo') }}
-              <span class="authorize__content--link">{{ request.url }}</span>
-            </p>
+            <p class="authorize__content" v-html="message"></p>
           </Alert>
 
           <div class="authorize-account-list">
@@ -80,7 +75,12 @@ export default class Authorize extends Vue {
   updateRoute(value: AuthorizeRequest[]) {
     if (value.length === 0) this.$router.push({ name: Components.Wallet });
   }
-
+  get message() {
+    return this.$t('authorize.authWarningMessage', {
+      name: `<span class="authorize__content--name">${this.request.request.origin}</span>`,
+      link: `<span class="authorize__content--link">${this.request.url}</span>`,
+    });
+  }
   mounted() {
     this.accounts.forEach(({ name, address, isMobile }) =>
       Vue.set(this.state, name, {
@@ -133,7 +133,7 @@ export default class Authorize extends Vue {
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .authorize {
   display: flex;
   flex-flow: column;
@@ -143,16 +143,16 @@ export default class Authorize extends Vue {
   .authorize__content {
     font-size: 14px;
     line-height: 21px;
-    font-weight: 400px;
-  }
+    font-weight: 400;
 
-  .authorize__content--name {
-    color: #bb77ff;
-  }
+    .authorize__content--name {
+      color: $pink-lavender-color;
+    }
 
-  .authorize__content--link {
-    color: #bb77ff;
-    cursor: pointer;
+    .authorize__content--link {
+      color: $pink-lavender-color;
+      cursor: pointer;
+    }
   }
 
   .authorize__control {

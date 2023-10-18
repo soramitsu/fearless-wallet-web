@@ -7,7 +7,6 @@ const makeManifest = (browser) => {
 
   const firefoxBase = {
     manifest_version: 2,
-
     permissions: ['storage', 'tabs', 'identity', '*://www.googleapis.com/*', 'clipboardRead'],
     background: {
       scripts: ['background.js'],

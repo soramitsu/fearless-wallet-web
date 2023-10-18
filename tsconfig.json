@@ -15,16 +15,41 @@
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
-    "types": ["webpack-env", "jest", "node", "element-ui", "chrome", "network-information-types"],
+    "types": [
+      "webpack-env",
+      "jest",
+      "node",
+      "element-ui",
+      "chrome",
+      "network-information-types"
+    ],
     "paths": {
-      "@/*": ["src/*"],
-      "@extension-base/*": ["src/extension/background/extension-base/src/*"]
+      "@/*": [
+        "src/*"
+      ],
+      "@extension-base/*": [
+        "src/extension/background/extension-base/src/*"
+      ]
     },
-    "lib": ["esnext", "dom", "dom.iterable", "scripthost"]
+    "lib": [
+      "esnext",
+      "dom",
+      "dom.iterable",
+      "scripthost"
+    ]
   },
   "vueCompilerOptions": {
     "target": 2.7
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "tests/**/*.ts", "tests/**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "src/extension/makeManifest.js"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

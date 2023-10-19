@@ -17,12 +17,12 @@ import { computed } from 'vue';
 
 type SizeTextType = 'small' | 'medium' | 'big';
 type Props = {
-  message: string;
+  message?: string;
   sizeText?: SizeTextType;
   headerText?: string;
 };
 
-const props = withDefaults(defineProps<Props>(), { sizeText: 'medium', headerText: 'common.attention' });
+const props = withDefaults(defineProps<Props>(), { sizeText: 'medium', headerText: 'common.attention', message: '' });
 
 const messageClasses = computed(() => {
   const classes = ['alert__message'];

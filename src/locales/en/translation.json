@@ -122,8 +122,7 @@
     "alertMessage": "This approval will add the metadata to your extension instance, allowing future requests to be decoded using this metadata"
   },
   "authorize": {
-    "selfIdentifyOne": "An application, self-identifying as",
-    "selfIdentifyTwo": "is requesting access from my",
+    "authWarningMessage": "An application, self-identifying as {name} is requesting access from my {link}",
     "accountsConnected": "Accounts connected to {url}",
     "mobile": "mobile",
     "connectCountAccounts": "Connect 1 account | Connect {count} accounts"

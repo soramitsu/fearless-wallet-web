@@ -5,7 +5,7 @@
         <Hint class="alert__header" size="big" iconName="warning" :text="headerText" />
 
         <p :class="messageClasses">
-          <slot>{{ $t(prepMessage) }}</slot>
+          <slot>{{ $t(message) }}</slot>
         </p>
       </div>
     </div>
@@ -22,8 +22,8 @@ type Props = {
   headerText?: string;
 };
 
-const props = withDefaults(defineProps<Props>(), { sizeText: 'medium', headerText: 'common.attention' });
-const prepMessage = props.message ?? '';
+const props = withDefaults(defineProps<Props>(), { sizeText: 'medium', headerText: 'common.attention', message: '' });
+
 const messageClasses = computed(() => {
   const classes = ['alert__message'];
 

@@ -4,7 +4,7 @@ import { Components } from '@/router/routes';
 import { setTitle } from '@/helpers/common';
 import { FEARLESS_TITLE } from '@/consts/global';
 import { useStore } from '@/store';
-import i18n from '@/locales';
+import { i18n } from '@/locales';
 
 const updateTitle = (to: Route) => {
   const { name, meta, params } = to;

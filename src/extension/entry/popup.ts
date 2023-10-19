@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import { Plugin } from 'vue-fragment';
 import router from '@/router';
-import i18n from '@/locales';
+import { i18n } from '@/locales';
 import store from '@/store';
 import App from '@/App.vue';
 import '@/styles';

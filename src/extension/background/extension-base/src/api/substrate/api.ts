@@ -21,6 +21,8 @@ function createApiObject(): ApiProps {
 }
 
 function onConnected(networkName: string, state: State) {
+  if (isSora(networkName)) state.apis.substrate[networkName].api = soraConnection.api!;
+
   state.apis.substrate[networkName].apiRetry = 0;
   state.apis.substrate[networkName].apiStatus = NETWORK_STATUS.CONNECTED;
 }
@@ -81,11 +83,8 @@ export async function initApi(network: NetworkJson, state: State): Promise<void>
     ['error', () => null],
   ];
 
-  if (isSora(networkName)) {
-    soraConnection.open(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
-
-    state.apis.substrate[networkName].api = soraConnection.api!;
-  } else {
+  if (isSora(networkName)) soraConnection.open(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
+  else {
     try {
       const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS, undefined, 10000);
 

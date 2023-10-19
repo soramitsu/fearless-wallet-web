@@ -1,5 +1,6 @@
 import Vue from 'vue';
 import VueI18n from 'vue-i18n';
+import { createI18n } from 'vue-i18n-composable';
 import * as en from './en/translation.json';
 import * as ru from './ru/translation.json';
 import { accountController } from '@/controllers';
@@ -11,9 +12,9 @@ const messages = {
   'ru-RU': ru,
 };
 
-type Lang = keyof typeof messages;
+export type Lang = keyof typeof messages;
 
-export default new VueI18n({
+export const i18n = createI18n({
   locale: accountController.getLang(),
   fallbackLocale: 'en-EN',
   messages,
@@ -74,5 +75,3 @@ export default new VueI18n({
     },
   },
 });
-
-export { Lang };

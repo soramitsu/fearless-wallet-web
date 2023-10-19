@@ -14,32 +14,33 @@
   />
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n-composable';
 import type { Lang } from '@/locales';
 import { accountController } from '@/controllers';
 
-@Component
-export default class LanguagePopup extends Vue {
-  readonly options = [
-    { name: 'English', value: 'en-EN' },
-    { name: 'Русский', value: 'ru-RU' },
-  ];
+const options = [
+  { name: 'English', value: 'en-EN' },
+  { name: 'Русский', value: 'ru-RU' },
+];
+const i18n = useI18n();
+const emit = defineEmits(['handlerClose']);
 
-  get language() {
-    return this.$root.$i18n.locale as Lang;
-  }
-
-  set language(language: Lang) {
-    this.$root.$i18n.locale = language;
+const language = computed({
+  get: () => {
+    return i18n.locale.value as Lang;
+  },
+  set: (language: Lang) => {
+    i18n.locale.value = language;
 
     accountController.setLang(language);
-  }
+  },
+});
 
-  toggleLanguage(language: Lang) {
-    this.language = language;
+const toggleLanguage = (lang: Lang) => {
+  language.value = lang;
 
-    this.$emit('handlerClose');
-  }
-}
+  emit('handlerClose');
+};
 </script>

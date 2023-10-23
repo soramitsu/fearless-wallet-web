@@ -79,15 +79,10 @@ import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types
 import type { HexString } from '@polkadot/util/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
 import { URLS } from '@/consts/urls';
-import {
-  ALL_NETWORKS,
-  FAVORITE_NETWORKS,
-  POPULAR_NETWORKS,
-  SORA_NETWORK_NAME,
-  SORA_XOR_ASSET_ID,
-} from '@/consts/networks';
+import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
 import { EXTENSION_ID } from '@/consts/global';
+import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
 
 function extractMetadata(store: MetadataStore): void {
   store.allMap((map): void => {

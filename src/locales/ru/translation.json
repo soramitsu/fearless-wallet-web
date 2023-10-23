@@ -434,6 +434,20 @@
     "privacyPolicy": "Privacy Policy",
     "importantText": "I confirm that I have read all of the documents mentioned and pressing 'Сontinue' I accept them."
   },
+  "history": {
+    "transfer": "Трансфер",
+    "swap": "Своп",
+    "bond": "Стейк",
+    "unbond": "Анстейк",
+    "bondExtra": "Добавить стейк",
+    "rebond": "Ребонд",
+    "setController": "Контроллер аккаунт",
+    "setPayee": "Назначение наград",
+    "nominate": "Назначение валидаторов",
+    "payoutStakers": "Выплаты стейкерам",
+    "withdrawUnbonded": "Выкупить",
+    "batchAll": "batchAll"
+  },
   "browserTabs": {
     "welcome": "Добро пожаловать",
     "onboarding": "Онбординг",

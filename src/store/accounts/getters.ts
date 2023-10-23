@@ -10,8 +10,8 @@ import { ALL_NETWORKS } from '@/consts/networks';
 
 export enum GettersTypes {
   selectedWallet = 'selectedWallet',
-  getSelectedFiat = 'getSelectedFiat',
-  getSelectedNetwork = 'getSelectedNetwork',
+  selectedFiat = 'selectedFiat',
+  selectedNetwork = 'selectedNetwork',
   fiatSymbol = 'fiatSymbol',
   getFiatId = 'getFiatId',
   getAccounts = 'getAccounts',
@@ -24,14 +24,13 @@ export enum GettersTypes {
   showPolkaswapAlert = 'showPolkaswapAlert',
   getShowWarningNetwork = 'getShowWarningNetwork',
   showSoraCardBanner = 'showSoraCardBanner',
-  isNetworkFavorite = 'isNetworkFavorite',
 }
 
 export type Getters = {
   [GettersTypes.selectedWallet](state: State, getters?: GetterTree<State, State> & Getters): SelectedWallet;
   [GettersTypes.getBalances](state: State, getters?: GetterTree<State, State> & Getters): TokenBalance[];
-  [GettersTypes.getSelectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
-  [GettersTypes.getSelectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
+  [GettersTypes.selectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
+  [GettersTypes.selectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.fiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getFiatId](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.hiddenAssets](state: State, getters?: GetterTree<State, State> & Getters): string[];
@@ -69,11 +68,11 @@ const getters: GetterTree<State, State> & Getters = {
     return hiddenAssets[address] ?? [];
   },
 
-  [GettersTypes.getSelectedFiat]({ selectedFiat }): string {
+  [GettersTypes.selectedFiat]({ selectedFiat }): string {
     return selectedFiat;
   },
 
-  [GettersTypes.getSelectedNetwork]({ selectedNetworks, selectedWallet: { address } }): string {
+  [GettersTypes.selectedNetwork]({ selectedNetworks, selectedWallet: { address } }): string {
     return selectedNetworks[address] ?? ALL_NETWORKS;
   },
 
@@ -82,14 +81,14 @@ const getters: GetterTree<State, State> & Getters = {
   },
 
   [GettersTypes.fiatSymbol]({ selectedFiat }): string {
-    const fiats: FiatJson[] = store.getters[NetworksGettersTypes.getFiats];
+    const fiats: FiatJson[] = store.getters[NetworksGettersTypes.fiats];
     const fiat = fiats.find(({ id }) => id === selectedFiat);
 
     return fiat?.symbol ?? '';
   },
 
   [GettersTypes.getFiatId]({ selectedFiat }): string {
-    const fiats: FiatJson[] = store.getters[NetworksGettersTypes.getFiats];
+    const fiats: FiatJson[] = store.getters[NetworksGettersTypes.fiats];
     const fiat = fiats.find(({ id }) => id === selectedFiat);
 
     return fiat?.id ?? '';

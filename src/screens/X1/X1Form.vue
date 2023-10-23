@@ -44,12 +44,12 @@ import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { X1Api } from '@/util/x1';
-import { SORA_NETWORK_NAME, SORA_TEST } from '@/consts/networks';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { calculateXOREuroBalance } from '@/util/soraCard';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { getXORCurrency } from '@/helpers/currencies';
+import { SORA_NETWORK_NAME, SORA_TEST } from '@/consts/sora';
 
 @Component({})
 export default class X1Form extends Vue {

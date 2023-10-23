@@ -56,8 +56,10 @@ export type SetAssetsPriceIntervalProps = {
   interval: NodeJS.Timer;
 };
 
+export type History = SubqueryHistory | GiantsquidHistoryItem[] | HistoryElement[];
+
 export type SetHistoryProps = {
-  history: SubqueryHistory | GiantsquidHistoryItem[] | HistoryElement[];
+  history: History;
   walletAddress: string;
   networkName: NetworkName;
   isPreviously: boolean;

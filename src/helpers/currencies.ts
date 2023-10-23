@@ -4,18 +4,13 @@ import type { NetworkJson } from '@extension-base/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import type { NetworkName, AssetsPrice, BuyProvider } from '@/interfaces';
-import {
-  SORA_UTILITY_ASSET,
-  SORA_NETWORK_NAME,
-  FAVORITE_NETWORKS,
-  POPULAR_NETWORKS,
-  ALL_NETWORKS,
-} from '@/consts/networks';
+import { FAVORITE_NETWORKS, POPULAR_NETWORKS, ALL_NETWORKS } from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
 import { isSora } from '@/helpers';
 import store from '@/store';
 import { getSummaryTransferableBalance, getTransferableBalanceInNetwork, isNetworkGroup } from '@/helpers/common';
+import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
 
 function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }: AssetsPrice, network: NetworkName) {
   const relayChains = [];

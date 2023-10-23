@@ -72,6 +72,7 @@ import { Components } from '@/router/routes';
 import { NetworksController } from '@/controllers';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
+import { GetHistory } from '@/interfaces';
 
 interface TabsOptions {
   label: string;
@@ -113,6 +114,7 @@ export default class AssetNetworks extends Vue {
   showSelectFilterPopup = false;
 
   @Prop(Object) currency!: TokenBalance;
+  @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;

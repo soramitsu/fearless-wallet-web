@@ -35,10 +35,6 @@ export default class GetXORPopup extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;
 
-  get selectedNetwork() {
-    return SORA_NETWORK_NAME as string;
-  }
-
   get currencyXOR() {
     return getXORCurrency(this.balances);
   }

@@ -3,13 +3,7 @@ const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 const WebpackExtensionManifestPlugin = require('webpack-extension-manifest-plugin');
 const { defineConfig } = require('@vue/cli-service');
 const baseConfig = require('./vue.config.base');
-
-const manifestExtend = {
-  key: env.EXTENSION_PUBLIC_KEY.replace(/ /g, ''),
-  oauth2: {
-    client_id: env.OAUTH_CLIENT_ID,
-  },
-};
+const makeManifest = require('./src/extension/makeManifest');
 
 const pages = {
   popup: {
@@ -57,10 +51,8 @@ module.exports = defineConfig({
     config.plugins.push(
       new WebpackExtensionManifestPlugin({
         config: {
-          base: `./src/extension/manifest.base${env.EXTENSION_TYPE === 'chrome' ? '' : '.firefox'}.json`,
-          extend: env.EXTENSION_TYPE === 'chrome' ? manifestExtend : {},
+          base: makeManifest(env.EXTENSION_TYPE),
         },
-        pkgJsonProps: ['version', 'description'],
       })
     );
 

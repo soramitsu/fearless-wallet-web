@@ -11,13 +11,13 @@ export enum GettersTypes {
   allNetworks = 'allNetworks',
   getNetwork = 'getNetwork',
   getNetworkGenesisHash = 'getNetworkGenesisHash',
-  getPrice = 'getPrice',
+  prices = 'prices',
   getAssetPrice = 'getAssetPrice',
-  getFiats = 'getFiats',
+  getAssetIcon = 'getAssetIcon',
+  fiats = 'fiats',
   getHistory = 'getHistory',
   getActiveNodesByNetwork = 'getActiveNodesByNetwork',
-  getAssetsPriceInterval = 'getAssetsPriceInterval',
-  getFavoriteNetworksNames = 'getFavoriteNetworksNames',
+  favoriteNetworksNames = 'favoriteNetworksNames',
 }
 
 export type Getters = {
@@ -27,10 +27,10 @@ export type Getters = {
     rootState?: any,
     rootGetters?: any
   ): NetworkJson[];
-  [GettersTypes.getFavoriteNetworksNames](state: State): { name: string; favorite: string[] }[];
+  [GettersTypes.favoriteNetworksNames](state: State): { name: string; favorite: string[] }[];
   [GettersTypes.allNetworks](state: State): NetworkJson[];
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
-  [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
+  [GettersTypes.fiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](
     state: State,
     getters?: GetterTree<State, State> & Getters,
@@ -40,7 +40,7 @@ export type Getters = {
   [GettersTypes.getActiveNodesByNetwork](state: State): GetActiveNodesByNetwork;
   [GettersTypes.getNetworkGenesisHash](state: State): GetNetworkGenesisHash;
   [GettersTypes.getAssetPrice](state: State): GetAssetPrice;
-  [GettersTypes.getPrice](state: State): AssetsPrice;
+  [GettersTypes.prices](state: State): AssetsPrice;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -50,7 +50,7 @@ const getters: GetterTree<State, State> & Getters = {
     return haveEthereumAccount ? state.networks : state.networks.filter(({ name }) => !BaseApi.isEthereumNetwork(name));
   },
 
-  [GettersTypes.getFavoriteNetworksNames]({ networks }): { name: string; favorite: string[] }[] {
+  [GettersTypes.favoriteNetworksNames]({ networks }): { name: string; favorite: string[] }[] {
     return networks.filter((el) => el.favorite.length).map(({ name, favorite }) => ({ name, favorite }));
   },
 
@@ -74,11 +74,11 @@ const getters: GetterTree<State, State> & Getters = {
       return `0x${network.chainId}`;
     },
 
-  [GettersTypes.getFiats]({ fiats }): FiatJson[] {
+  [GettersTypes.fiats]({ fiats }): FiatJson[] {
     return fiats;
   },
 
-  [GettersTypes.getPrice]: ({ assetsPrice }) => {
+  [GettersTypes.prices]: ({ assetsPrice }) => {
     return assetsPrice;
   },
 

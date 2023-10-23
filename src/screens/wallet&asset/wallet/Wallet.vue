@@ -141,11 +141,11 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getShowWarningNetwork) getShowWarningNetwork!: GetShowWarningNetworks;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
+  @Getter(AccountsGettersTypes.getIsCustomSort) getIsCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
+  @Getter(NetworksGettersTypes.prices) prices!: AssetsPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
@@ -213,7 +213,8 @@ export default class Wallet extends Vue {
 
     if (address === '') return [];
 
-    if (!this.isCustomSort(address)) return defaultSortingCurrencies(balances, this.prices, this.selectedNetwork);
+    if (!this.getIsCustomSort(address))
+      return defaultSortingCurrencies(this.balances, this.prices, this.selectedNetwork);
 
     const sequence = accountController.getSequenceAssetsByAddress(address);
 

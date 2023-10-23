@@ -22,7 +22,6 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import {
   isOnboardingRequired,
   pingServiceWorker,
@@ -40,7 +39,6 @@ import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 export default class App extends Vue {
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
-  @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
   @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: Fn<SetNetworksStatusProps>;
   @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: Fn<SetAssetsPriceProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: Fn<SetAccountsProps>;
@@ -157,14 +155,6 @@ export default class App extends Vue {
     subscribeAddresses((accounts) => {
       this.onAccountUpdate(accounts, true);
     });
-  }
-
-  unsubscribe() {
-    clearInterval(this.assetsPriceInterval!);
-  }
-
-  beforeDestroy() {
-    this.unsubscribe();
   }
 }
 </script>

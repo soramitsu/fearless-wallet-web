@@ -146,6 +146,7 @@ export default class Authorize extends Vue {
     font-size: 14px;
     line-height: 21px;
     font-weight: 400;
+  }
 
   .authorize__content--name {
     color: $pink-lavender-color;

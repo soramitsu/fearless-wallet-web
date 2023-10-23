@@ -69,39 +69,6 @@ type SoraHistoryElement = {
   };
 };
 
-type SoraHistoryElement = {
-  id: string;
-  address: string;
-  timestamp: string;
-  blockHash: string;
-  blockHeight: string;
-  networkFee: string;
-  execution: {
-    success: boolean;
-  };
-  module: 'staking' | 'liquidityProxy' | 'demeterFarmingPlatform' | 'utility' | string;
-  method:
-    | 'setPayee'
-    | 'unbond'
-    | 'nominate'
-    | 'bondExtra'
-    | 'bond'
-    | 'payoutStakers'
-    | 'swap'
-    | 'transfer'
-    | 'batchAll'; // TODO
-  data: {
-    baseAssetId?: string;
-    targetAssetId?: string;
-    selectedMarket?: string;
-    baseAssetAmount?: string;
-    targetAssetAmount?: string;
-    liquidityProviderFee?: string;
-    maxAdditional?: string;
-    value?: string;
-  };
-};
-
 interface GiantsquidHistoryItem {
   direction: 'To' | 'From';
   id: string;

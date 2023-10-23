@@ -5,6 +5,8 @@
       :key="historyItem.timestamp + historyItem.method"
       :history="historyItem"
       :assetId="assetId"
+      :network="network"
+      @openHistoryDetailsForm="$emit('openHistoryDetailsForm', ...arguments)"
     />
   </div>
 </template>

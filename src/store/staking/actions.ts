@@ -30,7 +30,7 @@ const actions: ActionTree<State, State> & Actions = {
       const stakingInfo = await getMyStakingInfo({ network });
 
       commit(MutationTypes.UPDATE_MY_STAKING_INFO, { network, stakingInfo });
-    }, SEC1 * 5);
+    }, SEC1 * 10);
   },
 };
 

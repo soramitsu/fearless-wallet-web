@@ -41,8 +41,9 @@ export class StakingService {
 
       if (!isReady) return getDefaultStakingParams(network);
 
+      const minBond = await this.getMinNominatorBond();
       const validators = await this.getValidators(network);
-      const myStakingInfo = await this.getMyStakingInfo(network, validators);
+      const myStakingInfo = await this.getMyStakingInfo(network, validators, minBond);
       const apy = validators.reduce((result, { apy }) => result + +apy, 0) / validators.length;
 
       return {
@@ -53,14 +54,18 @@ export class StakingService {
         unbondPeriod: this.getUnbondPeriod(),
         maxNominations: this.getMaxNominations(),
         maxNominatorRewardedPerValidator: this.maxNominatorRewardedPerValidator(),
-        minBond: await this.getMinNominatorBond(),
+        minBond,
       };
     });
 
     return Promise.all(promises);
   }
 
-  public async getMyStakingInfo(network: NetworkName, validators: FWValidatorInfoFull[]): Promise<MyStakingInfo> {
+  public async getMyStakingInfo(
+    network: NetworkName,
+    validators: FWValidatorInfoFull[],
+    _minBond?: number
+  ): Promise<MyStakingInfo> {
     const address = await this.state.getCurrentAddress(network);
 
     const stakingInfo = await apiSora.staking.getMyStakingInfo(address);
@@ -78,12 +83,17 @@ export class StakingService {
     )?.name;
     const controller = nameController ?? addressBookNameController ?? stakingInfo.controller;
 
-    return {
+    const result = {
       ...stakingInfo,
       payee,
       controller,
       myValidators: this.getValidatorsInformation(stakingInfo.myValidators, validators),
     };
+
+    const minBond = _minBond ?? (await this.getMinNominatorBond());
+    const alerts = this.getALerts(result, minBond);
+
+    return { ...result, alerts };
   }
 
   public async getRewards(network: NetworkName, address: string): Promise<RewardsResponse> {
@@ -128,7 +138,8 @@ export class StakingService {
   public async getValidators(network: NetworkName): Promise<FWValidatorInfoFull[]> {
     const { precision } = getUtilityProps(network, this.state);
 
-    const validators: FWValidatorInfoFull[] = (await apiSora.staking.getValidatorsInfo()).map((validator) => {
+    const validatorsInfo = await apiSora.staking.getValidatorsInfo();
+    const validators: FWValidatorInfoFull[] = validatorsInfo.map((validator) => {
       const info = validator.identity?.info;
 
       const name = info?.display || info?.legal || cut(validator.address);
@@ -145,6 +156,35 @@ export class StakingService {
     });
 
     return validators;
+  }
+
+  public getALerts(myStakingInfo: Omit<MyStakingInfo, 'alerts'>, minBond: number) {
+    const alerts = [];
+    const { redeemAmount, myValidators, totalStake } = myStakingInfo;
+    const isRedeem = redeemAmount !== '0';
+    const isNeedBondExtra = +totalStake < minBond;
+    const electedValidators = myValidators.filter(({ isElected }) => isElected);
+    const waitingValidators = myValidators.filter(({ isWaiting }) => isWaiting);
+
+    const isEmptyValidators = myValidators.length === 0;
+    const isEmptyElectedValidators = electedValidators.length === 0;
+    const isWaitingValidators = waitingValidators.length !== 0;
+
+    if (isRedeem) alerts.push({ name: 'redeem', timespan: Date.now() });
+
+    if (isNeedBondExtra) alerts.push({ name: 'bondMoreTokens', timespan: Date.now() });
+
+    // Если нет избранных валидаторов
+    if (isEmptyValidators) alerts.push({ name: 'emptyValidators', timespan: Date.now() });
+    else {
+      // Если нет активных валидаторов и нет валидаторов в режиме ожидания(то есть все валидаторы неактивны)
+      if (isEmptyElectedValidators && !isWaitingValidators)
+        alerts.push({ name: 'emptyElectedValidators', timespan: Date.now() });
+      // Если есть валидаторы в режиме ожидания
+      else if (isWaitingValidators) alerts.push({ name: 'waitingForNextEra', timespan: Date.now() });
+    }
+
+    return alerts;
   }
 
   public async getMinNominatorBond() {

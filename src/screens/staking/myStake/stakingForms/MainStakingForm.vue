@@ -200,6 +200,8 @@ export default class MainStakingForm extends Vue {
   }
 
   get confirmBtnDisabled() {
+    if (!this.isValidAmountAsset) return false;
+
     if (this.isControllerAccount) {
       if (this.step === 1) return false;
 
@@ -212,7 +214,7 @@ export default class MainStakingForm extends Vue {
       return !this.isValidPayoutAddress;
     }
 
-    return this.amount === '' || +this.amount === 0 || !this.isValidAmountAsset;
+    return this.amount === '' || +this.amount === 0;
   }
 
   get isValidAmountAsset() {

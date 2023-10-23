@@ -34,6 +34,7 @@
       v-if="showHistoryDetailsForm"
       :historyElement="historyElement"
       :assetId="selectedAssetId"
+      :selectedNetwork="selectedAssetNetwork"
       @handlerClose="closeHistoryDetailsForm"
     />
 

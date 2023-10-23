@@ -35,13 +35,13 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.FETCH_HISTORY]({ commit, getters, rootState, rootGetters }, { networkName, assetId }) {
     const { externalApi } = getters.getNetwork(networkName) as Network;
+    const wallet = rootGetters.selectedWallet;
+    const formattedAddress = BaseApi.formatAddress(wallet, networkName);
 
-    // TODO удалить, когда в json добавят url
+    // TODO staking обновить, когда обновят json
     if (isSora(networkName)) {
-      const wallet = rootGetters.selectedWallet;
-      const formattedAddress = BaseApi.formatAddress(wallet, networkName);
-
-      const history = await fetchHistory('', formattedAddress, 'sora', networkName, assetId, false);
+      const { url } = externalApi.staking!;
+      const history = await fetchHistory(url, formattedAddress, 'sora', networkName, assetId, false);
 
       if (history)
         commit(MutationTypes.SET_HISTORY, {
@@ -57,10 +57,7 @@ const actions: ActionTree<State, State> & Actions = {
 
     if (!externalApi || !externalApi.history) return;
 
-    const wallet = rootGetters.selectedWallet;
     const { type, url } = externalApi.history;
-    const formattedAddress = BaseApi.formatAddress(wallet, networkName);
-
     const asset = getUtilityAsset(rootState.account.balances, networkName)!;
 
     const utilityId = isRequireEvmAPI(networkName)

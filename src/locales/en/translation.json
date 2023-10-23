@@ -529,7 +529,29 @@
     "tokensUnstaking": "Tokens in unstaking period generate no rewards",
     "afterUnstaking": "After unstaking period you will need to redeem your tokens",
     "validatorsPayoutRewards": "Validators payout the rewards every 2-5 days. However, you can payout them by yourself, especially if rewards are close to expiring, but you will pay the fee.",
-    "noValidators": "You have not selected any validators."
+    "noValidators": "You have not selected any validators.",
+    "alertsList": {
+      "redeem": {
+        "name": "Redeem unstaked tokens.",
+        "text": "Redeem unstaked tokens."
+      },
+      "emptyValidators": {
+        "name": "Validators are not selected",
+        "text": "Select validators to start staking. Validators are not selected"
+      },
+      "emptyElectedValidators": {
+        "name": "Change your validators",
+        "text": "Change your validators. None of your validators have been elected by the network."
+      },
+      "waitingForNextEra": {
+        "name": "Waiting for next era",
+        "text": "Your staking will start in the next era. Please wait for the next era to start."
+      },
+      "bondMoreTokens": {
+        "name": "Stake more tokens",
+        "text": "Stake more tokens. Staking is currently inactive. Current minimum stake is low"
+      }
+    }
   },
   "browserTabs": {
     "welcome": "Welcome",

@@ -1,12 +1,6 @@
 <template>
   <div class="alerts">
-    <AlertItem
-      v-for="{ name, descriptions, timespan } in alerts"
-      :key="name"
-      :name="name"
-      :descriptions="descriptions"
-      :timespan="timespan"
-    />
+    <AlertItem v-for="{ name, timespan } in alerts" :key="name" :name="name" :timespan="timespan" />
   </div>
 </template>
 

@@ -67,7 +67,7 @@
           <div class="item-value">{{ era }}</div>
         </div>
 
-        <div v-if="isTransfer" class="item">
+        <div v-if="showAmount" class="item">
           Amount
 
           <div class="item-value">{{ value }}</div>
@@ -87,10 +87,10 @@
           </div>
         </template>
 
-        <div v-if="showTransferFee" class="item">
-          Transfer fee
+        <div v-if="showFee" class="item">
+          Fee
 
-          <div class="item-value">{{ transferFee }}</div>
+          <div class="item-value">{{ fee }}</div>
         </div>
       </div>
 
@@ -105,10 +105,10 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
-import type { HistoryElement } from '@/interfaces/history';
+import type { HistoryElement, SoraHistoryElement } from '@/interfaces/history';
 import type { SelectedWallet, GetNetwork } from '@/store';
 import { getType, getSignTransfer, getHistoryValue, getHumanTransferFee } from '@/helpers/history';
-import { getFormattedDate, cut } from '@/helpers';
+import { getFormattedDate, cut, isSora } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -116,12 +116,17 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 @Component({})
 export default class HistoryDetailsForm extends Vue {
   @Prop(String) assetId!: string;
-
-  @Prop(String) historyType!: string;
+  @Prop(String) selectedNetwork!: string;
   @Prop(Object) historyElement!: HistoryElement;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+
+  get showAmount() {
+    if (this.isSora) return true;
+
+    return this.isTransfer;
+  }
 
   get isTransfer() {
     return this.type === 'transfer';
@@ -161,11 +166,15 @@ export default class HistoryDetailsForm extends Vue {
     return this.type === 'reward';
   }
 
-  get showTransferFee() {
+  get showFee() {
+    if (this.isSora) return true;
+
     return this.isTransfer && this.signTransfer === '-';
   }
 
   get statusIsSuccess() {
+    if (this.isSora) return true;
+
     if (this.isTransfer) {
       const { success } = this.historyElement.transfer!;
 
@@ -200,6 +209,8 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get statusText() {
+    if (isSora(this.selectedNetwork)) return 'Completed';
+
     if (this.isTransfer) {
       const { success } = this.historyElement.transfer!;
 
@@ -220,6 +231,10 @@ export default class HistoryDetailsForm extends Vue {
     return this.historyElement.transfer!.from;
   }
 
+  get isSora() {
+    return isSora(this.selectedNetwork);
+  }
+
   get displayFromAddress() {
     return cut(this.fromAddress, 10);
   }
@@ -233,14 +248,18 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get moduleType() {
+    if (this.isSora) return (this.historyElement as SoraHistoryElement).module;
+
     return this.historyElement.extrinsic!.module;
   }
 
   get call() {
+    if (this.isSora) return (this.historyElement as SoraHistoryElement).method;
+
     return this.historyElement.extrinsic!.call;
   }
 
-  get transferFee() {
+  get fee() {
     const fees = getHumanTransferFee(this.historyElement, this.selectedNetwork);
 
     return this.$n(fees, 'decimalPrecise');
@@ -265,15 +284,13 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get hash() {
+    if (this.isSora) return (this.historyElement as SoraHistoryElement).blockHash;
+
     return this.historyElement.extrinsic!.hash;
   }
 
   get displayHash() {
     return cut(this.hash);
-  }
-
-  get selectedNetwork() {
-    return this.$route.params.selectedNetwork;
   }
 
   copy(value?: string) {

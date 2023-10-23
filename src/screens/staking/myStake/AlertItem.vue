@@ -1,10 +1,10 @@
 <template>
   <div class="alert-item">
-    <Icon icon="info-triangle" className="img" />
+    <Icon icon="info-triangle" className="img" :hover="false" />
 
     <div class="full-descriptions">
-      <div class="name">{{ name }}</div>
-      <div class="descriptions">{{ descriptions }}</div>
+      <div class="name">{{ tName }}</div>
+      <div class="descriptions">{{ tDescriptions }}</div>
       <div class="date">{{ date }}</div>
     </div>
 
@@ -19,11 +19,18 @@ import { getFormattedDate } from '@/helpers';
 @Component
 export default class AlertItem extends Vue {
   @Prop({ type: String }) name!: string;
-  @Prop({ type: String }) descriptions!: string;
   @Prop({ type: Number }) timespan!: number;
 
   get date() {
     return getFormattedDate(this.timespan, 'ms');
+  }
+
+  get tName() {
+    return this.$t(`staking.alertsList.${this.name}.name`);
+  }
+
+  get tDescriptions() {
+    return this.$t(`staking.alertsList.${this.name}.text`);
   }
 }
 </script>

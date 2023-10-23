@@ -60,7 +60,12 @@
 
             <Alerts v-else-if="isAlerts" :alerts="alerts" />
 
-            <History v-else-if="isHistory" :network="network" :assetId="stakingAssetId" />
+            <History
+              v-else-if="isHistory"
+              :network="network"
+              :assetId="stakingAssetId"
+              @openHistoryDetailsForm="openHistoryDetailsForm"
+            />
           </div>
         </Scroll>
       </ContentForm>
@@ -88,6 +93,14 @@
         :stakingNetwork="stakingNetwork"
         @closeForm="toggleVisible('showPendingRewardForm', false)"
       />
+
+      <HistoryDetailsForm
+        v-if="showHistoryDetailsForm"
+        :historyElement="historyElement"
+        :assetId="stakingAssetId"
+        :selectedNetwork="network"
+        @handlerClose="closeHistoryDetailsForm"
+      />
     </div>
   </AboveForm>
 </template>
@@ -95,7 +108,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import type { MyStakingTab, AsyncFn, GetHistory } from '@/interfaces';
+import type { MyStakingTab, AsyncFn, GetHistory, HistoryElement } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import MyStakeSettings from '@/screens/staking/myStake/MyStakeSettings.vue';
 import About from '@/screens/staking/myStake/About.vue';
@@ -114,6 +127,7 @@ import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
+import HistoryDetailsForm from '@/screens/wallet&asset/asset/HistoryDetailsForm.vue';
 
 type ShowField =
   | 'showBondExtraForm'
@@ -131,6 +145,7 @@ type ShowField =
     MyStakeSettings,
     MainStakingForm,
     PendingRewardForm,
+    HistoryDetailsForm,
     YourValidatorsManagement,
   },
 })
@@ -144,6 +159,7 @@ export default class MyStake extends Vue {
   showYourValidatorsForm = false;
   showPayeeForm = false;
   showPendingRewardForm = false;
+  historyElement: HistoryElement | Record<string, string> | null = null;
 
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
@@ -188,6 +204,10 @@ export default class MyStake extends Vue {
     return '';
   }
 
+  get showHistoryDetailsForm() {
+    return this.historyElement !== null;
+  }
+
   get stakingNetwork() {
     return this.getStakingNetwork(this.network);
   }
@@ -221,21 +241,7 @@ export default class MyStake extends Vue {
   }
 
   get alerts() {
-    // TODO staking
-    return [
-      {
-        name: 'Change your validators',
-        descriptions:
-          'Staking was inactive. None of your validators were elected by network. One of your validators was slashed.',
-        timespan: Date.now(),
-      },
-
-      {
-        name: 'Stake more tokens',
-        descriptions: 'Staking was inactive. Current minimum stake is 0.00003 KSM ($0.01)',
-        timespan: Date.now() - 100000,
-      },
-    ];
+    return this.stakingNetwork.alerts;
   }
 
   get network() {
@@ -313,6 +319,14 @@ export default class MyStake extends Vue {
 
   closeStake() {
     this.$router.push({ name: Components.Staking });
+  }
+
+  openHistoryDetailsForm(historyElement: HistoryElement) {
+    this.historyElement = historyElement;
+  }
+
+  closeHistoryDetailsForm() {
+    this.historyElement = null;
   }
 }
 </script>

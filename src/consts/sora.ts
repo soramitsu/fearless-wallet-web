@@ -11,10 +11,6 @@ const SORA_REWARD_ASSET = 'val';
 const SORA_ICON =
   'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg';
 
-const SORA_HISTORY_URL = IS_PRODUCTION
-  ? 'https://squid.subsquid.io/sora/v/v2/graphql'
-  : 'https://squid.subsquid.io/sora-stage/v/v2/graphql';
-
 export {
   SORA_NETWORK_NAME,
   SORA_UTILITY_ASSET,
@@ -23,5 +19,4 @@ export {
   SORA_TEST,
   SORA_REWARD_ASSET,
   SORA_ICON,
-  SORA_HISTORY_URL,
 };

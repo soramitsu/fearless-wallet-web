@@ -12,7 +12,6 @@ import type {
 import BaseApi from '@/util/BaseApi';
 import { getEthereumExplorerApiKey } from '@/helpers/history';
 import { SEC1 } from '@/consts/time';
-import { SORA_HISTORY_URL } from '@/consts/sora';
 
 async function fetchSubqueryHistory(
   url: string,
@@ -262,8 +261,7 @@ async function fetchHistory(
   isUtility: boolean
 ) {
   try {
-    // TODO когда добавят в json юзать url
-    if (type === 'sora') return fetchSoraHistory(SORA_HISTORY_URL, address);
+    if (type === 'sora') return fetchSoraHistory(url, address);
 
     if (type === 'etherscan') {
       if (isUtility) return fetchEthereumHistory(url, address);

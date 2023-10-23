@@ -118,7 +118,11 @@ export type MakeStakingRequest = {
 export interface FWValidatorInfoFull extends ValidatorInfoFull {
   name: string;
   description: string;
+  isElected: boolean;
+  isWaiting: boolean;
 }
+
+export type Alert = { name: string; timespan: number };
 
 export type StakingParams = {
   network: NetworkName;
@@ -140,10 +144,12 @@ export type StakingParams = {
     unlocking: Unlocking[];
     sum: string;
   };
+  alerts: Alert[];
 };
 
 export interface MyStakingInfo extends Omit<SoraMyStakingInfo, 'myValidators'> {
   myValidators: FWValidatorInfoFull[];
+  alerts: Alert[];
 }
 
 export type StakingParamsRequest = {

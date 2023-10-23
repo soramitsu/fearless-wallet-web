@@ -800,8 +800,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
-    const { from, networkKey: givenNetwork, to, assetId, relayChain, amount } = request;
-    const networkKey = this.state.getNetworkByKey(givenNetwork).name;
+    const { from, networkKey, to, assetId, relayChain, amount } = request;
     const substrateAddress = getSubstrateAddress(from, this.state);
 
     const tokenBalance = getTokenBalance(this.state, substrateAddress, assetId, relayChain);
@@ -834,18 +833,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async makeTransfer(id: string, port: Port, request: RequestTransfer): Promise<BasicTxResponse | undefined> {
-    const {
-      networkKey: givenNetwork,
-      from,
-      to,
-      password,
-      assetId,
-      isSavePass,
-      isMobile,
-      relayChain,
-      amount = '0',
-    } = request;
-    const networkKey = this.state.getNetworkByKey(givenNetwork).name;
+    const { networkKey, from, to, password, assetId, isSavePass, isMobile, relayChain, amount = '0' } = request;
     const pair = this.state.keyringService.getPair(from);
 
     if (pair?.isLocked) {
@@ -946,11 +934,10 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async checkCrossChain(request: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
-    const { from, originNet: originNetKey, destinationNet, to, assetId, relayChain, amount } = request;
+    const { from, originNet, destinationNet, to, assetId, relayChain, amount } = request;
 
     if (destinationNet === '') return { estimateFee: '0', destEstimateFee: '0' };
 
-    const originNet = this.state.getNetworkByKey(originNetKey).name;
     const substrateAddress = getSubstrateAddress(from, this.state);
     const tokenBalance = getTokenBalance(this.state, substrateAddress, assetId, relayChain);
 
@@ -973,7 +960,7 @@ export default class Extension extends FWExtensionBase {
   private async makeCrossChain(id: string, port: Port, request: RequestCrossChain): Promise<BasicTxResponse> {
     const {
       from,
-      originNet: originNetKey,
+      originNet,
       destinationNet,
       password,
       to,
@@ -984,7 +971,6 @@ export default class Extension extends FWExtensionBase {
       amount = '0',
     } = request;
 
-    const originNet = this.state.getNetworkByKey(originNetKey).name;
     const pair = this.state.keyringService.getPair(from);
 
     if (pair?.isLocked) {

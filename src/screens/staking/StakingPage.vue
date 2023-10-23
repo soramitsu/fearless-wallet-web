@@ -100,7 +100,7 @@ export default class StakingPage extends Vue {
   }
 
   get noStakingItems() {
-    return !this.showMyStakingItems && !this.showMyStakingItems;
+    return !this.showStakingItems && !this.showMyStakingItems;
   }
 
   get showStakingItems() {

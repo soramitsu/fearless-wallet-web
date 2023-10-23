@@ -77,6 +77,32 @@ function getHumanValue(value: string | number, assetId: string, networkName: Net
   return +FPNumber.fromCodecValue(value, precision);
 }
 
+function getHumanTransferFee(historyElement: HistoryElement, networkName: NetworkName) {
+  if (isSora(networkName)) {
+    const element = historyElement as SoraHistoryElement;
+
+    // TODO переделать, когда Саша пофиксит индексер
+    return +element.networkFee;
+  }
+
+  const { transfer, extrinsic } = historyElement;
+  const type = getType(historyElement);
+
+  if (type === TransactionType.transfer) {
+    const { fee } = transfer!;
+
+    return getHumanFeeValue(fee, networkName);
+  }
+
+  if (type === TransactionType.extrinsic) {
+    const { fee } = extrinsic!;
+
+    return getHumanFeeValue(fee, networkName);
+  }
+
+  return 0;
+}
+
 function getHistoryValue(historyElement: HistoryElement, assetId: string, networkName: NetworkName, address: string) {
   if (isSora(networkName)) {
     const element = historyElement as SoraHistoryElement;
@@ -84,14 +110,9 @@ function getHistoryValue(historyElement: HistoryElement, assetId: string, networ
     const _value = element.data?.value ?? element.data?.maxAdditional ?? 0;
     const value = getHumanValue(_value, assetId, networkName);
 
-    return { signTransfer: '-', value: value + +element.networkFee };
+    const fee = getHumanTransferFee(historyElement, networkName);
 
-    // TODO вернуть когда Саша переделает индексер
-
-    // const feeAmount = +element.networkFee + +(_value);
-    // const value = getHumanValue(feeAmount, assetId, networkName);
-
-    // return { signTransfer: '-', value };
+    return { signTransfer: '-', value: value !== 0 ? value : fee };
   }
 
   const { transfer, reward, extrinsic } = historyElement;
@@ -118,25 +139,6 @@ function getHistoryValue(historyElement: HistoryElement, assetId: string, networ
   const value = getHumanValue(fee, assetId, networkName);
 
   return { signTransfer: '-', value };
-}
-
-function getHumanTransferFee(historyElement: HistoryElement, networkName: NetworkName) {
-  const { transfer, extrinsic } = historyElement;
-  const type = getType(historyElement);
-
-  if (type === TransactionType.transfer) {
-    const { fee } = transfer!;
-
-    return getHumanFeeValue(fee, networkName);
-  }
-
-  if (type === TransactionType.extrinsic) {
-    const { fee } = extrinsic!;
-
-    return getHumanFeeValue(fee, networkName);
-  }
-
-  return 0;
 }
 
 // temporary function, remove after complete transition to subsquid

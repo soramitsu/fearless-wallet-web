@@ -19,25 +19,21 @@ import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types';
 import { Components } from '@/router/routes';
-import { SORA_NETWORK_NAME } from '@/consts/networks';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { IS_EXTENSION } from '@/consts/global';
 import { calculateXorRestPrice } from '@/util/soraCard';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { getXORCurrency } from '@/helpers/currencies';
+import { SORA_NETWORK_NAME } from '@/consts/sora';
 
 @Component
 export default class GetXORPopup extends Vue {
   readonly soraNetworkName = SORA_NETWORK_NAME;
   readonly isExtension = IS_EXTENSION;
 
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;
-
-  get selectedNetwork() {
-    return SORA_NETWORK_NAME as string;
-  }
 
   get currencyXOR() {
     return getXORCurrency(this.balances);

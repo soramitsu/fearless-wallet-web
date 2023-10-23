@@ -122,9 +122,7 @@
     "alertMessage": "This approval will add the metadata to your extension instance, allowing future requests to be decoded using this metadata"
   },
   "authorize": {
-    "substrate": "Substrate",
-    "selfIdentifyOne": "An application, self-identifying as",
-    "selfIdentifyTwo": "is requesting access from my",
+    "authWarningMessage": "An application, self-identifying as {name} is requesting access from my {link}",
     "accountsConnected": "Accounts connected to {url}",
     "mobile": "mobile",
     "connectCountAccounts": "Connect 1 account | Connect {count} accounts",
@@ -469,6 +467,20 @@
     "polkaswapMemorandum": "Polkaswap Memorandum and Terms of Services",
     "privacyPolicy": "Privacy Policy",
     "importantText": "I confirm that I have read all of the documents mentioned and pressing 'Сontinue' I accept them."
+  },
+  "history": {
+    "transfer": "Transfer",
+    "swap": "Swap",
+    "bond": "Stake",
+    "unbond": "Unstake",
+    "bondExtra": "Stake more",
+    "rebond": "Rebond",
+    "setController": "Controller Account",
+    "setPayee": "Rewards destination",
+    "nominate": "Nominate validators",
+    "payoutStakers": "Payout stakers",
+    "withdrawUnbonded": "Redeem",
+    "batchAll": "batchAll"
   },
   "browserTabs": {
     "welcome": "Welcome",

@@ -49,7 +49,7 @@ type SettingsItemType = 'Accounts' | 'SoraCard' | 'PolkaswapDisclaimer' | 'Walle
 export default class SettingsPopup extends Vue {
   readonly isExtension = IS_EXTENSION;
 
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(ExtensionGettersTypes.features) features!: Nullable<Features>;
 
   get showSoraCard() {

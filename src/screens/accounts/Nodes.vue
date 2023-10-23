@@ -83,7 +83,7 @@ import { upsertNetworkMap } from '@/extension/messaging';
   components: { NodeItem },
 })
 export default class Nodes extends Vue {
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getAutoSelectNodesValueByNetwork)
   getAutoSelectNodesValueByNetwork!: GetAutoSelectNodesValueByNetwork;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;

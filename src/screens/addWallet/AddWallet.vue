@@ -191,7 +191,7 @@ export default class AddWallet extends Vue {
   address: string | null = null;
   isLoading = false;
 
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<AccountJson>;
 
   get confirmMnemonicStep() {

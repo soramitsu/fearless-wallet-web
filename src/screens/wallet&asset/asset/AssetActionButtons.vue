@@ -85,7 +85,7 @@ export default class AssetActionButtons extends Vue {
   @Prop(Object) currency!: TokenBalance;
   @Prop(Boolean) showBuyButton!: boolean;
   @Prop(String) assetId!: string;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
 
   get selectedNetwork() {

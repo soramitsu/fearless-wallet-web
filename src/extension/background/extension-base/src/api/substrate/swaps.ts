@@ -6,7 +6,7 @@ import type { Asset } from '@sora-substrate/util/build/assets/types';
 import type { CreateSwapResult, BaseExchangeProps } from '@extension-base/api/types/swaps';
 import type { SwapOptions } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
-import { SORA_NETWORK_NAME } from '@/consts/networks';
+import { SORA_NETWORK_NAME } from '@/consts/sora';
 
 async function createExchangeB(
   props: BaseExchangeProps,

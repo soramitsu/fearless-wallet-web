@@ -4,12 +4,7 @@
       <template v-if="isAccountsExists">
         <div>
           <Alert>
-            <p class="authorize__content">
-              {{ $t('authorize.selfIdentifyOne') }}
-              <span class="authorize__content--name">{{ request.request.origin }}</span>
-              {{ $t('authorize.selfIdentifyTwo') }}
-              <span class="authorize__content--link">{{ request.url }}</span>
-            </p>
+            <p class="authorize__content" v-html="message"></p>
           </Alert>
 
           <div class="authorize-account-list">
@@ -40,6 +35,7 @@
 import { AuthorizeRequest, AccountJson } from '@extension-base/background/types';
 import { computed, ref, set, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router/composables';
+import { useI18n } from 'vue-i18n-composable';
 import { Components } from '@/router/routes';
 import { WalletInfo, useStore } from '@/store';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
@@ -51,7 +47,7 @@ const selectAll = ref(true);
 
 const store = useStore();
 const router = useRouter();
-
+const { t } = useI18n();
 const accounts = computed<AccountJson[]>(() => store.getters.getAccounts);
 const requests = computed<AuthorizeRequest[]>(() => store.getters.authRequests);
 const request = computed<AuthorizeRequest>(() => requests.value[0]);
@@ -95,6 +91,13 @@ const onSelectAll = (value: boolean) => {
   selectAll.value = value;
 };
 
+const message = computed(() =>
+  t('authorize.authWarningMessage', {
+    name: `<span class="authorize__content--name">${request.value.request.origin}</span>`,
+    link: `<span class="authorize__content--link">${request.value.url}</span>`,
+  })
+);
+
 const redirect = () => {
   if (BaseApi.useIsPopup()) setTimeout(() => router.push({ name: Components.Wallet }), 100); // don`t removed setTimeout
 };
@@ -108,7 +111,7 @@ const onApprove = () => {
 const onReject = () => store.dispatch('REJECT_AUTH_REQUEST', request.value.id);
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .authorize {
   display: flex;
   flex-flow: column;
@@ -118,16 +121,16 @@ const onReject = () => store.dispatch('REJECT_AUTH_REQUEST', request.value.id);
   .authorize__content {
     font-size: 14px;
     line-height: 21px;
-    font-weight: 400px;
-  }
+    font-weight: 400;
 
-  .authorize__content--name {
-    color: #bb77ff;
-  }
+    .authorize__content--name {
+      color: $pink-lavender-color;
+    }
 
-  .authorize__content--link {
-    color: #bb77ff;
-    cursor: pointer;
+    .authorize__content--link {
+      color: $pink-lavender-color;
+      cursor: pointer;
+    }
   }
 
   .authorize__control {

@@ -1,5 +1,6 @@
 import EmailValidator from 'email-validator';
-import { SORA_NETWORK_NAME, SORA_TEST } from '@/consts/networks';
+import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
+import { SORA_NETWORK_NAME, SORA_TEST } from '@/consts/sora';
 
 const MIN_PHONE_LENGTH_WITH_CODE = 8;
 
@@ -55,4 +56,18 @@ function getClipboard() {
   return paste;
 }
 
-export { firstCharToUp, isSora, validatePhoneNumber, validateEmail, cut, getClipboard, isSoraTest };
+function getFormattedDate(timestamp: string | number, type: 's' | 'ms' = 's') {
+  const date = type === 's' ? new Date(secondsToMilliseconds(+timestamp)) : +timestamp;
+
+  if (isToday(date)) {
+    return format(date, 'HH:mm');
+  }
+
+  if (isThisYear(date)) {
+    return format(date, 'dd MMMM HH:mm');
+  }
+
+  return format(date, 'dd MMMM yyyy HH:mm');
+}
+
+export { firstCharToUp, isSora, validatePhoneNumber, validateEmail, cut, getClipboard, isSoraTest, getFormattedDate };

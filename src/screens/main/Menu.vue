@@ -28,7 +28,7 @@ export default class Menu extends Vue {
   walletItems = [Components.Accounts, Components.Export, Components.Nodes];
   menuItems: MenuItemType[] = ['wallet', 'crowdloans', 'staking', 'polkaswap', 'history'];
 
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   get currentRouteName() {
     const route = this.$route.path.split('/')[2];

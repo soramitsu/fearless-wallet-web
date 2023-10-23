@@ -71,9 +71,9 @@ import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
 import { soraCardController } from '@/controllers';
 import { MutationTypes as SoraCardMutationTypes } from '@/store/soraCard/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SORA_UTILITY_ASSET, SORA_NETWORK_NAME } from '@/consts/networks';
 import { calculateXOREuroBalance, isValidEuroBalanceXor } from '@/util/soraCard';
 import { getXORCurrency } from '@/helpers/currencies';
+import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
 
 @Component({
   components: { Disclaimer },
@@ -95,7 +95,7 @@ export default class Phone extends Vue {
   @Ref('countryCode') readonly countryCodeComponent!: Input;
   @Ref('phoneNumber') readonly phoneNumberComponent!: ValidatedInput;
   @Ref('verificationCode') private readonly otpComponent!: ValidatedInput;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(SoraCardGettersTypes.authLogin) authLogin!: any;
   @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;

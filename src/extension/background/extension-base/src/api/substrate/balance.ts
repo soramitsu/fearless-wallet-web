@@ -9,7 +9,9 @@ import { setBalance } from '../helpers';
 import type { RelayChainName, NetworkName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
-import { CHAIN_IDS, SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/networks';
+import { CHAIN_IDS } from '@/consts/networks';
+import { isSora } from '@/helpers';
+import { SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/sora';
 
 function subscribeTokensBalance(address: string, networkKey: string, api: ApiPromise, state: State) {
   const {
@@ -172,7 +174,28 @@ export function subscribeBalance(
       return newNetworks.includes(networkName);
     })
     .map(async ([networkName, apiProps]) => {
-      const isReady = await apiProps.api?.isReadyOrError;
+      const isReady = isSora(networkName)
+        ? await new Promise((res) => {
+            // Sora сеть проверяем через setInterval
+            // потому, что instance api сохраняется в state.apis только, когда подключились к сети(см api.ts, onConnected)
+            // у остальных сетей такой проблемы нет, потому что api мы сохраняем сразу при создании
+            // если прошло 60 сек и api не появилось, отписываемся и резолвим false
+
+            const timespan = Date.now();
+
+            const interval = setInterval(async () => {
+              const isReady = await apiProps.api?.isReadyOrError;
+
+              if (isReady) {
+                clearInterval(interval);
+                res(isReady);
+              } else if (Date.now() - timespan > 60000) {
+                clearInterval(interval);
+                res(false);
+              }
+            }, 1000);
+          })
+        : await apiProps.api?.isReadyOrError;
 
       if (!isReady)
         return {

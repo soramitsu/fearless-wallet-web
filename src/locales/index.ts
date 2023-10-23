@@ -11,7 +11,7 @@ const messages = {
   'ru-RU': ru,
 };
 
-type Lang = keyof typeof messages;
+export type Lang = keyof typeof messages;
 
 Vue.use(VueI18n);
 
@@ -76,5 +76,3 @@ export const i18n = createI18n({
     },
   },
 });
-
-export { Lang };

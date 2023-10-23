@@ -11,7 +11,7 @@ import { IS_PRODUCTION } from '@/consts/global';
 import { soraCardController } from '@/controllers';
 import { VerificationStatus, KycStatus } from '@/consts/soraCard';
 import { subscribeSoraCardToken } from '@/extension/messaging';
-import { SORA_NETWORK_NAME } from '@/consts/networks';
+import { SORA_NETWORK_NAME } from '@/consts/sora';
 
 type XorRestPrice = {
   euroToPay: string;

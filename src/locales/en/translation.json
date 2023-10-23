@@ -332,8 +332,6 @@
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
   },
   "walletConnect": {
-    "approve": "Approve",
-    "reject": "Reject",
     "connect": "Connect",
     "noNetworkSupport": "0 network supported",
     "pairingErrorMessage": "Invalid url! Copy url from Wallet Connect and try again",
@@ -497,6 +495,8 @@
     "polkaswap": "Polkaswap"
   },
   "common": {
+    "approve": "Approve",
+    "reject": "Reject",
     "privacyPolicy": "Privacy Policy",
     "termsConditions": "Terms and Conditions",
     "disclaimer": "Disclaimer",

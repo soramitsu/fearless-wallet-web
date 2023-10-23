@@ -21,9 +21,9 @@
       />
 
       <div class="controls">
-        <FButton text="walletConnect.reject" type="secondary" :border="false" width="100%" @click="onReject" />
+        <FButton text="common.reject" type="secondary" :border="false" width="100%" @click="onReject" />
 
-        <FButton text="walletConnect.approve" width="100%" @click="onApprove" />
+        <FButton text="common.approve" width="100%" @click="onApprove" />
       </div>
     </div>
   </AboveForm>

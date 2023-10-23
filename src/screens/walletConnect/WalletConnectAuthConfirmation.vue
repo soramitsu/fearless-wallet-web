@@ -25,7 +25,7 @@
 
             <ContentForm class="namespaces-form" :bottomRightCorner="true">
               <div class="namespaces">
-                <span>{{ $t('walletConnect.networks') }}</span>
+                <span>{{ $t('common.networks') }}</span>
                 <div class="namespaces__icons">
                   <div v-if="!isSupportNetwork">{{ $t('walletConnect.noNetworkSupport') }}</div>
                   <template v-else>
@@ -44,13 +44,13 @@
       </div>
       <div class="controls">
         <FButton
-          text="walletConnect.reject"
+          text="common.reject"
           :type="isSupportNetwork ? 'secondary' : 'primary'"
           :border="false"
           width="100%"
           @click="onReject"
         />
-        <FButton v-if="isSupportNetwork" text="walletConnect.approve" width="100%" @click="onApprove" />
+        <FButton v-if="isSupportNetwork" text="common.approve" width="100%" @click="onApprove" />
       </div>
     </AboveForm>
 

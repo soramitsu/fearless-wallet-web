@@ -48,7 +48,7 @@ const tabs = {
     name: 'substrate',
   },
   wc: {
-    label: 'authorize.wc',
+    label: 'common.wc',
     name: 'wc',
   },
 };

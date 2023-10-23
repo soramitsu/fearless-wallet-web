@@ -5,7 +5,7 @@
 
       <ContentForm class="namespaces-form" :bottomRightCorner="true">
         <div class="namespaces">
-          <span>{{ $t('walletConnect.networks') }}</span>
+          <span>{{ $t('common.networks') }}</span>
           <div class="namespaces__icons">{{ $t('walletConnect.noNetworkSupport') }}</div>
         </div>
       </ContentForm>

@@ -123,7 +123,6 @@
   },
   "authorize": {
     "substrate": "Substrate",
-    "wc": "Wallet Connect",
     "selfIdentifyOne": "An application, self-identifying as",
     "selfIdentifyTwo": "is requesting access from my",
     "accountsConnected": "Accounts connected to {url}",
@@ -143,7 +142,6 @@
     "walletManagement": "Wallet management",
     "settingsAndManagement": "Settings and account management",
     "settings": {
-      "wc": "Wallet Connect",
       "accounts": "Accounts",
       "currency": "Currency",
       "polkaswapDisclaimer": "Polkaswap disclaimer",
@@ -332,11 +330,9 @@
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
   },
   "walletConnect": {
-    "connect": "Connect",
     "noNetworkSupport": "0 network supported",
     "pairingErrorMessage": "Invalid url! Copy url from Wallet Connect and try again",
     "insertUrl": "Insert Wallet Connect url",
-    "networks": "Networks",
     "requestFields": {
       "networkError": "Trouble to recognize the network",
       "amount": "Amount",
@@ -496,6 +492,8 @@
   },
   "common": {
     "approve": "Approve",
+    "wc": "Wallet Connect",
+    "connect": "Connect",
     "reject": "Reject",
     "privacyPolicy": "Privacy Policy",
     "termsConditions": "Terms and Conditions",
@@ -560,6 +558,7 @@
     "resolveOption": "Resolve Option",
     "dontShowAgain": "Don't show me again",
     "iAmReady": "OK, I am ready",
-    "name": "Name"
+    "name": "Name",
+    "networks": "Networks"
   }
 }

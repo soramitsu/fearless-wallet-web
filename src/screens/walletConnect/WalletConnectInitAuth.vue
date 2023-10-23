@@ -4,6 +4,7 @@
       <ValidatedInput
         v-model="uri"
         :placeholder="$t('walletConnect.insertUrl')"
+        :maxlength="500"
         size="big"
         :isError="isError"
         :errorDescriptions="$t('walletConnect.pairingErrorMessage')"

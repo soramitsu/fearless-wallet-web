@@ -9,8 +9,9 @@ import { setBalance } from '../helpers';
 import type { RelayChainName, NetworkName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
-import { CHAIN_IDS, SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/networks';
+import { CHAIN_IDS } from '@/consts/networks';
 import { isSora } from '@/helpers';
+import { SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/sora';
 
 function subscribeTokensBalance(address: string, networkKey: string, api: ApiPromise, state: State) {
   const {

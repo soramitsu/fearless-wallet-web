@@ -108,8 +108,8 @@ import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
 import type { GetNetwork, SelectedWallet } from '@/store';
-import { getType, getSignTransfer, getHistoryValue, getFormattedDate, getHumanTransferFee } from '@/helpers/history';
-import { cut } from '@/helpers';
+import { getType, getSignTransfer, getHistoryValue, getHumanTransferFee } from '@/helpers/history';
+import { cut, getFormattedDate } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -248,7 +248,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get date() {
-    return getFormattedDate(this.historyElement);
+    return getFormattedDate(this.historyElement.timestamp);
   }
 
   get value() {

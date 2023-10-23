@@ -1,4 +1,3 @@
-import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 import { FPNumber } from '@sora-substrate/util';
 import type {
   HistoryElement,
@@ -6,10 +5,11 @@ import type {
   SubqueryHistory,
   HistoryServiceType,
   NetworkName,
+  SoraHistoryElement,
 } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { TransactionType, TransferType } from '@/interfaces';
-import { firstCharToUp } from '@/helpers';
+import { firstCharToUp, isSora } from '@/helpers';
 import store from '@/store';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
@@ -34,12 +34,18 @@ function getSignTransfer(historyElement: HistoryElement, address: string) {
   return '';
 }
 
-function getTypeFormatted(historyElement: HistoryElement, address: string) {
+function getTypeFormatted(historyElement: HistoryElement, address: string, networkName: NetworkName) {
+  if (isSora(networkName)) {
+    const element = historyElement as SoraHistoryElement;
+
+    return element.module;
+  }
+
   const type = getType(historyElement);
   const signTransfer = getSignTransfer(historyElement, address);
 
   if (type === TransactionType.transfer) {
-    return signTransfer === '+' ? TransferType.incoming : TransferType.outgoing;
+    return signTransfer === '+' ? `${TransferType.incoming} transfer` : `${TransferType.outgoing} transfer`;
   }
 
   if (type === TransactionType.extrinsic) {
@@ -50,20 +56,6 @@ function getTypeFormatted(historyElement: HistoryElement, address: string) {
 
   // reward
   return firstCharToUp(type);
-}
-
-function getFormattedDate({ timestamp }: HistoryElement) {
-  const date = new Date(secondsToMilliseconds(+timestamp));
-
-  if (isToday(date)) {
-    return format(date, 'HH:mm');
-  }
-
-  if (isThisYear(date)) {
-    return format(date, 'dd MMMM HH:mm');
-  }
-
-  return format(date, 'dd MMMM yyyy HH:mm');
 }
 
 function getHumanFeeValue(value: string, networkName: NetworkName) {
@@ -190,7 +182,6 @@ export {
   getHumanTransferFee,
   getHistoryValue,
   getHumanFeeValue,
-  getFormattedDate,
   getSignTransfer,
   getFormattedHistory,
 };

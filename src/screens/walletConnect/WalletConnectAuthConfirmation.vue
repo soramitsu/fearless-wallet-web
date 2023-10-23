@@ -85,7 +85,7 @@ const store = useStore();
 const notify = useNotify();
 const { t } = useI18n();
 
-const selectedAddress = ref<string>(store.getters.getSelectedWallet.ethereumAddress);
+const selectedAddress = ref<string>(store.getters.selectedWallet.ethereumAddress);
 const wallets = ref<AccountJson[]>(store.getters.getAccounts);
 const cutAddress = computed(() => cut(selectedAddress.value));
 const selectedWalletName = computed(

@@ -7,6 +7,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+
 import { Fragment } from 'vue-fragment';
 import Favicon from '@/components/Favicon.vue';
 

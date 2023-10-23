@@ -40,7 +40,7 @@ export default class ExportForm extends Vue {
   isLoading = false;
 
   @Prop(String) password!: string;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) networks!: Networks;
 
   get network() {

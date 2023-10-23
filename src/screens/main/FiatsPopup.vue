@@ -28,8 +28,8 @@ export default class FiatsPopup extends Vue {
   filterValue = '';
 
   @Prop(Boolean) showAnimation!: boolean;
-  @Getter(NetworksGettersTypes.getFiats) fiats!: FiatJson[];
-  @Getter(AccountsGettersTypes.getSelectedFiat) selectedFiat!: string;
+  @Getter(NetworksGettersTypes.fiats) fiats!: FiatJson[];
+  @Getter(AccountsGettersTypes.selectedFiat) selectedFiat!: string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: Fn<string>;
 
   get filteredOptionsFiats() {

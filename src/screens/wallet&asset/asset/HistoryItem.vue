@@ -36,7 +36,8 @@ export default class HistoryItem extends Vue {
   @Prop(Object) historyElement!: HistoryElement;
   @Prop(Object) token!: TokenBalance;
   @Prop(String) network!: NetworkName;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get signTransfer() {

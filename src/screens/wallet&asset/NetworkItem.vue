@@ -26,7 +26,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
-import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 
 @Component({})
@@ -34,7 +34,7 @@ export default class NetworkItem extends Vue {
   @Prop(Object) network!: NetworkJson;
   @Prop(Boolean) isSelected!: boolean;
   @Prop({ default: false }) isNetworkGroup!: boolean;
-  @Getter(AccountGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   get iconColor() {
     return this.isSelected ? 'purple' : '';

@@ -42,7 +42,7 @@ export default class Export extends Vue {
   password = '';
   isWrongPassword = false;
 
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   get network() {
     return this.$route.params.network;

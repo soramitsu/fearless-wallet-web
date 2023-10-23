@@ -134,7 +134,7 @@ export default class CreateGoogle extends Vue {
   warningValueName: WarningValueName = '';
   isLoading = false;
 
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
 
   get invalidMessages() {

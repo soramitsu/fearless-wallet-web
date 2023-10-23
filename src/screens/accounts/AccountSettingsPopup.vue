@@ -54,7 +54,7 @@ export default class AccountSettingsPopup extends Vue {
   @Prop(Boolean) showExport!: boolean;
   @Prop(Number) buttonTopClick!: number;
 
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get explorerType() {

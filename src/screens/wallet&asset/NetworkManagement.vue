@@ -40,7 +40,7 @@ import NetworkItem from './NetworkItem.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { Tab } from '@/interfaces/ui';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as NetworksActionsTypes } from '@/store/networks/actions';
 import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
 import { isNetworkGroup } from '@/helpers/common';
@@ -81,8 +81,8 @@ export default class NetworkManagement extends Vue {
   };
   @Prop(String) type!: keyof Tabs | string;
   @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
-  @Getter(AccountGettersTypes.getSelectedNetwork) selectedNetwork!: string;
-  @Getter(AccountGettersTypes.getSelectedWallet) selectedWallet!: Wallet;
+  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: Wallet;
 
   @Action(NetworksActionsTypes.TOGGLE_FAVORITE_NETWORK) setFavorite!: (props: SetFavoriteNetwork) => Promise<boolean>;
   @Mutation(AccountMutationsTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;

@@ -3,7 +3,13 @@ import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
-import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
+import { ethers, Wallet } from 'ethers';
+import { getSdkError } from '@walletconnect/utils';
+import {
+  getEVMTransactionObject,
+  // handleTransfer,
+  makeEVMTransfer,
+} from '@extension-base/api/evm/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/swaps';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
@@ -11,27 +17,53 @@ import State, { registry } from '@extension-base/background/handlers/State';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
-import { RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
-import { ethers } from 'ethers';
 import {
+  getSubstrateAddress,
+  isRequireEvmAPI,
+  uniqueStringArray,
   getBalanceItem,
   getTokenBalance,
   getEthereumAddress,
-  getSubstrateAddress,
-  isRequireEvmAPI,
 } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
+import { ProposalTypes, SessionTypes } from '@walletconnect/types';
+import { HexString } from '@polkadot/util/types';
 import { storage } from '@extension-base/stores/Storage';
 import { MetadataDef } from '@polkadot/extension-inject/types';
 import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types';
+import {
+  WALLET_CONNECT_EIP155_NAMESPACE,
+  WALLET_CONNECT_POLKADOT_NAMESPACE,
+} from '../../services/wallet-connect-service/consts';
+import {
+  RequestConnectWalletConnect,
+  WalletConnectSessionRequest,
+  RequestApproveConnectWalletSession,
+  ResultApproveWalletConnectSession,
+  RequestRejectConnectWalletSession,
+  RequestDisconnectWalletConnectSession,
+  WalletConnectTransactionRequest,
+  RequestApproveWalletConnect,
+  WalletConnectNotSupportRequest,
+  RequestApproveWalletConnectNotSupport,
+  RequestRejectWalletConnectNotSupport,
+  EIP155_SIGNING_METHODS,
+} from '../../services/wallet-connect-service/types';
+import {
+  isProposalExpired,
+  isSupportWalletConnectNamespace,
+  isSupportWalletConnectChain,
+  convertHexToUtf8,
+} from '../../services/wallet-connect-service/utils';
+import type { BasicTxResponse, ResponseCheckTransfer, SigningRequest } from '@extension-base/background/types/types';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
   ActiveTabAuthorizeStatus,
   BalanceJson,
   BasicTxError,
-  BasicTxResponse,
   Port,
   PriceJson,
   RequestCheckSwap,
@@ -41,7 +73,6 @@ import type {
   RequestTransfer,
   RequestCrossChain,
   ResponseCheckSwap,
-  ResponseCheckTransfer,
   ResponseCheckCrossChain,
   ResponseMakeSwap,
   AccountJson,
@@ -70,8 +101,7 @@ import type {
   RequestUpdateAuthorizedAccounts,
   ResponseAuthorizeList,
   ResponseType,
-  SigningRequest,
-} from '@extension-base/background/types/types';
+} from '@extension-base/background/types';
 
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type { NetworkJson } from '@extension-base/types';
@@ -144,15 +174,17 @@ export default class Extension extends FWExtensionBase {
     const authorizedAccountsDiff: AuthorizedAccountsDiff = [];
 
     // cycle through authUrls and prepare the array of diff
-    Object.entries(this.state.authUrls).forEach(([url, urlInfo]) => {
-      if (!urlInfo.authorizedAccounts.includes(address)) {
-        return;
-      }
+    this.state.requestService.getAuthorize((authUrls) => {
+      Object.entries(authUrls).forEach(([url, urlInfo]) => {
+        if (!urlInfo.authorizedAccounts.includes(address)) {
+          return;
+        }
 
-      authorizedAccountsDiff.push([
-        url,
-        urlInfo.authorizedAccounts.filter((previousAddress) => previousAddress !== address),
-      ]);
+        authorizedAccountsDiff.push([
+          url,
+          urlInfo.authorizedAccounts.filter((previousAddress) => previousAddress !== address),
+        ]);
+      });
     });
 
     this.state.updateAuthorizedAccounts(authorizedAccountsDiff);
@@ -251,7 +283,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): boolean {
-    const queued = this.state.getAuthRequest(id);
+    const queued = this.state.requestService.getAuthRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -277,7 +309,9 @@ export default class Extension extends FWExtensionBase {
   }
 
   async getAuthList(): Promise<ResponseAuthorizeList> {
-    return { list: this.state.authUrls };
+    const list = await this.state.requestService.getAuthList();
+
+    return { list };
   }
 
   async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
@@ -292,13 +326,15 @@ export default class Extension extends FWExtensionBase {
         }
 
         const tabHostName = new URL(tab.url).hostname;
-        const authorizeUrl = Object.keys(this.state.authUrls).filter((url) => url === tabHostName);
-        const isAuthorize = authorizeUrl.length !== 0;
+        this.state.requestService.getAuthorize((authUrls) => {
+          const authorizeUrl = Object.keys(authUrls).filter((url) => url === tabHostName);
+          const isAuthorize = authorizeUrl.length !== 0;
 
-        resolve({
-          isAuthorize,
-          authorizeAccountsCount: isAuthorize ? this.state.authUrls[tabHostName].authorizedAccounts.length : 0,
-          dAppName: tabHostName,
+          resolve({
+            isAuthorize,
+            authorizeAccountsCount: isAuthorize ? authUrls[tabHostName].authorizedAccounts.length : 0,
+            dAppName: tabHostName,
+          });
         });
       });
     });
@@ -307,7 +343,9 @@ export default class Extension extends FWExtensionBase {
   authorizeSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(authorize.requests)'>(id, port);
 
-    const subscription = this.state.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
+    const subscription = this.state.requestService.authSubject.subscribe((requests: AuthorizeRequest[]): void =>
+      cb(requests)
+    );
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -318,7 +356,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async metadataApprove({ id }: RequestMetadataApprove): Promise<boolean> {
-    const queued = this.state.getMetaRequest(id);
+    const queued = this.state.requestService.getMetaRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -331,7 +369,7 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
   metadataReject({ id }: RequestMetadataReject): boolean {
-    const queued = this.state.getMetaRequest(id);
+    const queued = this.state.requestService.getMetaRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -345,7 +383,9 @@ export default class Extension extends FWExtensionBase {
   metadataSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(metadata.requests)'>(id, port);
 
-    const subscription = this.state.metaSubject.subscribe((requests: MetadataRequest[]): void => cb(requests));
+    const subscription = this.state.requestService.metaSubject.subscribe((requests: MetadataRequest[]): void =>
+      cb(requests)
+    );
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -467,7 +507,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): boolean {
-    const queued = this.state.getSignRequest(id);
+    const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -522,7 +562,7 @@ export default class Extension extends FWExtensionBase {
   signingApproveSignature({ id, signature }: RequestSigningApproveSignature): boolean {
     this.state.signature = signature;
 
-    const queued = this.state.getSignRequest(id);
+    const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -532,7 +572,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   signingCancel({ id }: RequestSigningCancel): boolean {
-    const queued = this.state.getSignRequest(id);
+    const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -554,7 +594,9 @@ export default class Extension extends FWExtensionBase {
   signingSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(signing.requests)'>(id, port);
 
-    const subscription = this.state.signSubject.subscribe((requests: SigningRequest[]): void => cb(requests));
+    const subscription = this.state.requestService.signSubject.subscribe((requests: SigningRequest[]): void =>
+      cb(requests)
+    );
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -600,13 +642,16 @@ export default class Extension extends FWExtensionBase {
   }
 
   async removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
-    const list = await this.state.removeAuthorization(url);
+    const auths = await this.state.requestService.getAuthList();
+    delete auths[url];
+    await this.state.requestService.setAuthorize(auths);
+    const newList = await this.state.requestService.getAuthList();
 
-    return { list };
+    return { list: newList };
   }
 
   async deleteAuthRequest(requestId: string): Promise<void> {
-    return this.state.deleteAuthRequest(requestId);
+    this.state.authorizeCancel({ id: requestId });
   }
 
   updateCurrentTabs({ tabs }: RequestActiveTabsUrlUpdate) {
@@ -762,7 +807,8 @@ export default class Extension extends FWExtensionBase {
     if (pair?.isLocked) {
       const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
-      if (!isUnlock) return { status: false, errors: [{ message: 'Invalid password' }] };
+      if (!isUnlock)
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.KEYRING_ERROR }] };
     }
 
     apiSora.shouldPairBeLocked = !isSavePass;
@@ -786,6 +832,42 @@ export default class Extension extends FWExtensionBase {
       status: true,
       errors,
     };
+  }
+
+  validatePairPassword(address: string, password: string | undefined) {
+    const substrateAddress = getSubstrateAddress(address, this.state);
+    const errors = [] as Array<BasicTxError>;
+
+    if (password) {
+      try {
+        const substratePair = this.state.keyringService.getPair(substrateAddress);
+
+        if (substratePair) {
+          substratePair.unlock(password);
+
+          const { meta } = substratePair;
+          const ethereumAddress = meta.ethereumAddress as string | undefined;
+
+          if (ethereumAddress) {
+            const pair = this.state.keyringService.getPair(ethereumAddress);
+
+            if (pair) pair.unlock(password);
+          }
+        }
+      } catch (e: any) {
+        errors.push({
+          code: BasicTxErrorCode.KEYRING_ERROR,
+          message: String(e.message),
+        });
+      }
+    } else {
+      errors.push({
+        code: BasicTxErrorCode.KEYRING_ERROR,
+        message: String('Password required to decode encrypted data'),
+      });
+    }
+
+    return errors;
   }
 
   private async checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
@@ -1089,6 +1171,262 @@ export default class Extension extends FWExtensionBase {
     return this.state.onboardingService.getStories(lang);
   }
 
+  async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<boolean> {
+    return this.state.walletConnectService
+      .connect(uri)
+      .then(() => true)
+      .catch(() => false);
+  }
+
+  private connectWCSubscribe(id: string, port: chrome.runtime.Port): WalletConnectSessionRequest[] {
+    const cb = createSubscription<'pri(walletConnect.requests.connect.subscribe)'>(id, port);
+    const subscription = this.state.requestService.connectWCSubject.subscribe(
+      (requests: WalletConnectSessionRequest[]): void => cb(requests)
+    );
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+      subscription.unsubscribe();
+    });
+
+    return this.state.requestService.allConnectWCRequests;
+  }
+
+  private async approveWalletConnectSession({
+    accounts: selectedAccounts,
+    id,
+  }: RequestApproveConnectWalletSession): Promise<boolean> {
+    const request = this.state.requestService.getConnectWCRequest(id);
+
+    if (isProposalExpired(request.request.params)) {
+      request.reject(new Error('The proposal has been expired'));
+
+      return false;
+    }
+
+    const { id: wcId, params } = request.request;
+    const { requiredNamespaces, optionalNamespaces } = params;
+
+    const availableNamespaces: ProposalTypes.RequiredNamespaces = {};
+
+    const namespaces: SessionTypes.Namespaces = {};
+    const chainInfoMap = this.state.networkMap;
+
+    Object.entries(requiredNamespaces).forEach(([key, namespace]) => {
+      if (isSupportWalletConnectNamespace(key)) {
+        if (namespace.chains) {
+          const unSupportChains = namespace.chains.filter((chain) => !isSupportWalletConnectChain(chain, chainInfoMap));
+
+          if (unSupportChains.length) {
+            throw new Error(`${getSdkError('UNSUPPORTED_CHAINS').message} ${unSupportChains.toString()}`);
+          }
+
+          availableNamespaces[key] = namespace;
+        }
+      } else {
+        throw new Error(`${getSdkError('UNSUPPORTED_NAMESPACE_KEY').message} ${key}`);
+      }
+    });
+
+    Object.entries(optionalNamespaces).forEach(([key, namespace]) => {
+      if (isSupportWalletConnectNamespace(key)) {
+        if (namespace.chains) {
+          const supportChains =
+            namespace.chains.filter((chain) => isSupportWalletConnectChain(chain, chainInfoMap)) || [];
+
+          const requiredNameSpace = availableNamespaces[key];
+          const defaultChains: string[] = [];
+
+          if (requiredNameSpace) {
+            const chains = [...(requiredNameSpace.chains || defaultChains), ...(supportChains || defaultChains)];
+            availableNamespaces[key] = {
+              chains,
+              events: requiredNameSpace.events,
+              methods: requiredNameSpace.methods,
+            };
+          } else {
+            if (supportChains.length) {
+              availableNamespaces[key] = {
+                chains: supportChains,
+                events: namespace.events,
+                methods: namespace.methods,
+              };
+            }
+          }
+        }
+      }
+    });
+
+    Object.entries(availableNamespaces).forEach(([key, namespace]) => {
+      if (namespace.chains) {
+        const accounts: string[] = [];
+
+        const chains = uniqueStringArray(namespace.chains);
+        const substrateAddress = getSubstrateAddress(selectedAccounts[0], this.state);
+
+        chains.forEach((chain) => {
+          if (key === WALLET_CONNECT_EIP155_NAMESPACE) {
+            accounts.push(`${chain}:${selectedAccounts[0]}`);
+          } else if (key === WALLET_CONNECT_POLKADOT_NAMESPACE) {
+            accounts.push(`${chain}:${substrateAddress}`);
+          }
+        });
+
+        namespaces[key] = {
+          accounts,
+          methods: namespace.methods,
+          events: namespace.events,
+          chains: chains,
+        };
+      }
+    });
+
+    const result: ResultApproveWalletConnectSession = {
+      id: wcId,
+      namespaces,
+      relayProtocol: params.relays[0].protocol,
+    };
+    await this.state.walletConnectService.approveSession(result);
+    request.resolve();
+
+    return true;
+  }
+
+  private async rejectWalletConnectSession({ id }: RequestRejectConnectWalletSession): Promise<boolean> {
+    const request = this.state.requestService.getConnectWCRequest(id);
+
+    const wcId = request.request.id;
+
+    if (isProposalExpired(request.request.params)) {
+      request.reject(new Error('The proposal has been expired'));
+
+      return true;
+    }
+
+    await this.state.walletConnectService.rejectSession(wcId);
+    request.reject(new Error('USER_REJECTED'));
+
+    return true;
+  }
+
+  private subscribeWalletConnectSessions(id: string, port: chrome.runtime.Port): SessionTypes.Struct[] {
+    const cb = createSubscription<'pri(walletConnect.session.subscribe)'>(id, port);
+
+    const subscription = this.state.walletConnectService.sessionSubject.subscribe((rs) => {
+      cb(rs);
+    });
+
+    port.onDisconnect.addListener((): void => {
+      subscription.unsubscribe();
+      this.cancelSubscription(id);
+    });
+
+    return this.state.walletConnectService.sessions;
+  }
+
+  private async disconnectWalletConnectSession({ topic }: RequestDisconnectWalletConnectSession): Promise<boolean> {
+    await this.state.walletConnectService.disconnect(topic);
+
+    return true;
+  }
+
+  wcSigningSubscribe(id: string, port: Port): boolean {
+    const cb = createSubscription<'pri(walletConnect.signing.requests.subscribe)'>(id, port);
+
+    const subscription = this.state.requestService.signWcSubject.subscribe(
+      (requests: WalletConnectTransactionRequest[]): void => cb(requests)
+    );
+
+    port.onDisconnect.addListener((): void => {
+      unsubscribe(id);
+      subscription.unsubscribe();
+    });
+
+    return true;
+  }
+
+  async wcRequestApprove({ address, password, topic }: RequestApproveWalletConnect) {
+    const errors = this.validatePairPassword(address, password);
+
+    if (errors.length) throw new Error(BasicTxErrorCode.KEYRING_ERROR);
+    const request = this.state.requestService.signWcRequest(topic);
+
+    const method = request.request.params.request.method;
+    const [, chainId] = request.request.params.chainId.split(':');
+    const network = Object.values(this.state.networkMap).find((el) => el.chainId === chainId);
+
+    if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
+
+    const privateKey = this.state.accountExportPrivateKey({ address, password });
+    const signer = new Wallet(privateKey.privateKey, this.state.getEvmApiMap[network.name]);
+
+    if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
+      const txData = request.request.params.request.params[0] as { to: string; value: string };
+
+      const { hash } = await signer.sendTransaction(txData);
+      request.resolve({ id: request.request.topic, signature: hash as HexString });
+    } else {
+      const params = request.request.params.request.params;
+
+      if (
+        [
+          'eth_sign',
+          'personal_sign',
+          'eth_signTypedData',
+          'eth_signTypedData_v1',
+          'eth_signTypedData_v3',
+          'eth_signTypedData_v4',
+        ].indexOf(method) < 0
+      ) {
+        throw new Error('Not found sign method');
+      }
+
+      const signature = await signer.signMessage(convertHexToUtf8(params[0]));
+
+      request.resolve({ id: request.request.topic, signature: signature as HexString });
+    }
+
+    return true;
+  }
+
+  wcRequestReject({ topic }: RequestDisconnectWalletConnectSession) {
+    const request = this.state.requestService.signWcRequest(topic);
+
+    request?.reject(new Error('USER_REJECTED'));
+
+    return true;
+  }
+
+  private WCNotSupportSubscribe(id: string, port: chrome.runtime.Port): WalletConnectNotSupportRequest[] {
+    const cb = createSubscription<'pri(walletConnect.requests.notSupport.subscribe)'>(id, port);
+    const subscription = this.state.requestService.notSupportWCSubject.subscribe(
+      (requests: WalletConnectNotSupportRequest[]): void => cb(requests)
+    );
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+      subscription.unsubscribe();
+    });
+
+    return this.state.requestService.allNotSupportWCRequests;
+  }
+
+  private approveWalletConnectNotSupport({ id }: RequestApproveWalletConnectNotSupport): boolean {
+    const request = this.state.requestService.getNotSupportWCRequest(id);
+
+    request.resolve();
+
+    return true;
+  }
+
+  private rejectWalletConnectNotSupport({ id }: RequestRejectWalletConnectNotSupport): boolean {
+    const request = this.state.requestService.getNotSupportWCRequest(id);
+
+    request.reject(new Error('USER_REJECTED'));
+
+    return true;
+  }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -1277,6 +1615,44 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(balance.subscription)':
         return this.subscribeBalance(id, port);
+
+      //Wallet Connect
+      case 'pri(walletConnect.connect)':
+        return this.connectWalletConnect(request as RequestConnectWalletConnect);
+
+      case 'pri(walletConnect.requests.connect.subscribe)':
+        return this.connectWCSubscribe(id, port);
+
+      case 'pri(walletConnect.session.approve)':
+        return this.approveWalletConnectSession(request as RequestApproveConnectWalletSession);
+
+      case 'pri(walletConnect.session.reject)':
+        return this.rejectWalletConnectSession(request as RequestRejectConnectWalletSession);
+
+      case 'pri(walletConnect.session.subscribe)':
+        return this.subscribeWalletConnectSessions(id, port);
+
+      case 'pri(walletConnect.session.disconnect)':
+        return this.disconnectWalletConnectSession(request as RequestDisconnectWalletConnectSession);
+
+      case 'pri(walletConnect.request.approve)':
+        return this.wcRequestApprove(request as RequestApproveWalletConnect);
+
+      case 'pri(walletConnect.request.reject)':
+        return this.wcRequestReject(request as RequestDisconnectWalletConnectSession);
+
+      case 'pri(walletConnect.signing.requests.subscribe)':
+        return this.wcSigningSubscribe(id, port);
+
+      // Not support
+      case 'pri(walletConnect.requests.notSupport.subscribe)':
+        return this.WCNotSupportSubscribe(id, port);
+
+      case 'pri(walletConnect.notSupport.approve)':
+        return this.approveWalletConnectNotSupport(request as RequestApproveWalletConnectNotSupport);
+
+      case 'pri(walletConnect.notSupport.reject)':
+        return this.rejectWalletConnectNotSupport(request as RequestRejectWalletConnectNotSupport);
 
       //OnBoarding
       case 'pri(onboarding.get.stories)':

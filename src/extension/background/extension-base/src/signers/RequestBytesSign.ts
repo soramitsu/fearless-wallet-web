@@ -7,7 +7,7 @@ import { u8aToHex } from '@polkadot/util';
 import type { KeyringPair } from '@polkadot/keyring/types';
 import type { SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
-import type { RequestSign } from '@extension-base/background/types/types';
+import type { RequestSign } from '@extension-base/background/types';
 
 export default class RequestBytesSign implements RequestSign {
   public readonly payload: SignerPayloadRaw;

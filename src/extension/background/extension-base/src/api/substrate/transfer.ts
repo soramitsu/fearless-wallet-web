@@ -2,8 +2,9 @@ import { FPNumber } from '@sora-substrate/util';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
 import { getUtilityProps, getSubstrateAddress } from '@extension-base/background/utils/utils';
-import { BasicTxResponse, TransferErrorCode, SignerType, TokenBalance } from '@extension-base/background/types/types';
 import State from '@extension-base/background/handlers/State';
+import { TransferErrorCode, SignerType, TokenBalance } from '@extension-base/background/types';
+import type { BasicTxResponse } from '@extension-base/background/types/types';
 import { NetworkName } from '@/interfaces';
 
 export async function estimateFee(

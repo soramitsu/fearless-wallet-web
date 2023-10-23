@@ -1,3 +1,5 @@
+import type { SessionTypes } from '@walletconnect/types';
+import type { BasicTxResponse, ResponseCheckTransfer, SigningRequest } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
   InjectedAccount,
@@ -32,17 +34,14 @@ import type {
   RequestSigningCancel,
   RequestSigningIsLocked,
   ResponseSigningIsLocked,
-  SigningRequest,
   AllowedPath,
   GoogleFileId,
   ActiveTabAuthorizeStatus,
   RequestCheckTransfer,
   RequestCheckCrossChain,
-  ResponseCheckTransfer,
   ResponseCheckCrossChain,
   RequestTransfer,
   RequestCrossChain,
-  BasicTxResponse,
   BalanceJson,
   PriceJson,
   RequestSubscribePrice,
@@ -60,7 +59,8 @@ import type {
   RequestUpdateMeta,
   ResponseTotalBalances,
   MobileSigningRequest,
-} from '@extension-base/background/types/types';
+  RequestSigningSubscribe,
+} from '@extension-base/background/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
   DerivationPath,
@@ -74,6 +74,18 @@ import type {
   SignerPayloadRaw,
   OnboardingStories,
 } from '@/interfaces';
+import type {
+  RequestApproveConnectWalletSession,
+  RequestApproveWalletConnectNotSupport,
+  RequestConnectWalletConnect,
+  RequestDisconnectWalletConnectSession,
+  RequestReconnectConnectWalletSession,
+  RequestRejectConnectWalletSession,
+  RequestRejectWalletConnectNotSupport,
+  WalletConnectNotSupportRequest,
+  WalletConnectSessionRequest,
+  WalletConnectTransactionRequest,
+} from '@extension-base/services/wallet-connect-service/types';
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
 export interface RequestSignatures {
@@ -140,7 +152,7 @@ export interface RequestSignatures {
   'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
   'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
   'pri(accounts.checkCrossChain)': [RequestCheckCrossChain, ResponseCheckCrossChain];
-  'pri(accounts.crossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse]; // TODO
+  'pri(accounts.crossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse];
   'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
   'pri(accounts.swap)': [RequestSwap, ResponseMakeSwap];
   'pri(accounts.soraFees)': [null, SoraFees];
@@ -175,4 +187,28 @@ export interface RequestSignatures {
   'pub(rpc.startProvider)': [string, ProviderMeta];
   'pub(rpc.subscribe)': [RequestRpcSubscribe, number, JsonRpcResponse<unknown>];
   'pub(rpc.subscribeConnected)': [null, boolean, boolean];
+
+  //Wallet Connect
+  'pri(walletConnect.connect)': [RequestConnectWalletConnect, boolean];
+  'pri(walletConnect.requests.connect.subscribe)': [null, WalletConnectSessionRequest[], WalletConnectSessionRequest[]];
+  'pri(walletConnect.session.approve)': [RequestApproveConnectWalletSession, boolean];
+  'pri(walletConnect.session.reject)': [RequestRejectConnectWalletSession, boolean];
+  'pri(walletConnect.session.reconnect)': [RequestReconnectConnectWalletSession, boolean];
+  'pri(walletConnect.session.subscribe)': [null, SessionTypes.Struct[], SessionTypes.Struct[]];
+  'pri(walletConnect.session.disconnect)': [RequestDisconnectWalletConnectSession, boolean];
+  'pri(walletConnect.requests.notSupport.subscribe)': [
+    null,
+    WalletConnectNotSupportRequest[],
+    WalletConnectNotSupportRequest[]
+  ];
+  'pri(walletConnect.notSupport.approve)': [RequestApproveWalletConnectNotSupport, boolean];
+  'pri(walletConnect.notSupport.reject)': [RequestRejectWalletConnectNotSupport, boolean];
+
+  'pri(walletConnect.signing.requests.subscribe)': [
+    RequestSigningSubscribe,
+    WalletConnectTransactionRequest[],
+    WalletConnectTransactionRequest[]
+  ];
+  'pri(walletConnect.request.approve)': [{ address: string; password: string; topic: string }, boolean];
+  'pri(walletConnect.request.reject)': [{ topic: string }, boolean];
 }

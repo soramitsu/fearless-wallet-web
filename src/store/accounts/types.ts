@@ -1,4 +1,4 @@
-import type { AccountJson } from '@extension-base/background/types/types';
+import type { AccountJson } from '@extension-base/background/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { WalletAddress, NetworkName } from '@/interfaces';
 

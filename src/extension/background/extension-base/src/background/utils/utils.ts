@@ -1,10 +1,10 @@
 import { BalanceItem } from '@extension-base/api/evm/types/ether';
 import { APIItemState } from '@extension-base/api/types/networks';
-import { TokenBalance } from '@extension-base/background/types/types';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import State from '../handlers/State';
 import type { NetworkJson } from '@extension-base/types';
 import type { AssetName, NetworkName } from '@/interfaces';
+import type { TokenBalance } from '@extension-base/background/types';
 import { MAIN_NETWORKS, ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import { RelayChainName } from '@/interfaces';
 import { ETHEREUM_UTILITY_ASSETS } from '@/consts/currencies';
@@ -146,3 +146,13 @@ export function getEthereumAddress(address: string, state: State) {
 
   return account?.address ?? address;
 }
+
+export const uniqueStringArray = (array: string[]): string[] => {
+  const map: Record<string, string> = {};
+
+  array.forEach((v) => {
+    map[v] = v;
+  });
+
+  return Object.keys(map);
+};

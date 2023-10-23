@@ -13,9 +13,18 @@ const Accounts = () => import('@/screens/accounts/Accounts.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
 const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
 const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue');
+const AuthManagment = () => import('@/screens/extension-ui/AuthManagment.vue');
+const ManageAuths = () => import('@/screens/extension-ui/ManageAuths.vue');
+const UpdateAuths = () => import('@/screens/extension-ui/authorize/UpdateAuths.vue');
+
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 const Export = () => import('@/screens/accounts/Export.vue');
+const WalletConnectAuthDetails = () => import('@/screens/walletConnect/WalletConnectAuthDetails.vue');
+const WalletConnectInitAuth = () => import('@/screens/walletConnect/WalletConnectInitAuth.vue');
+const WalletConnectAuthConfirmation = () => import('@/screens/walletConnect/WalletConnectAuthConfirmation.vue');
+const WalletConnectSignConfirmation = () => import('@/screens/walletConnect/WalletConnectSignConfirmation.vue');
+const WalletConnectNotSupportedRequest = () => import('@/screens/walletConnect/WalletConnectNotSupportedRequest.vue');
 const Onboarding = () => import('@/screens/onboarding/Onboarding.vue');
 
 const AssetNetworks = () =>
@@ -46,6 +55,8 @@ export enum Components {
   Nodes = 'Nodes',
   Export = 'Export',
   Authorize = 'Authorize',
+  ManageAuths = 'ManageAuths',
+  UpdateAuths = 'UpdateAuths',
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
   CreateGoogle = 'CreateGoogle',
@@ -56,6 +67,13 @@ export enum Components {
   NoFound = 'NoFound',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
+  WalletConnectInitAuth = 'WalletConnectInitAuth',
+  WalletConnectAuthConfirmation = 'WalletConnectAuthConfirmation',
+  WalletConnectAuthDetails = 'WalletConnectAuthDetails',
+  WalletConnectSessionDetails = 'WalletConnectSessionDetails',
+  WalletConnectSessionRequest = 'WalletConnectSessionRequest',
+  WalletConnectSignConfirmation = 'WalletConnectSignConfirmation',
+  WalletConnectNotSupportedRequest = 'WalletConnectNotSupportedRequest',
   Onboarding = 'Onboarding',
 }
 
@@ -123,6 +141,31 @@ const routes: Array<RouteConfig> = [
     },
   },
   {
+    path: '/wc-authorize',
+    name: Components.WalletConnectAuthConfirmation,
+    component: WalletConnectAuthConfirmation,
+  },
+  {
+    path: '/wc-transaction',
+    name: Components.WalletConnectSignConfirmation,
+    component: WalletConnectSignConfirmation,
+  },
+  {
+    path: '/wc-not-supported',
+    name: Components.WalletConnectNotSupportedRequest,
+    component: WalletConnectNotSupportedRequest,
+  },
+  {
+    path: '/wallet-connect',
+    name: Components.WalletConnectInitAuth,
+    component: WalletConnectInitAuth,
+  },
+  {
+    path: '/wc-sign',
+    name: Components.WalletConnectSessionRequest,
+    component: WalletConnectInitAuth,
+  },
+  {
     path: '/meta',
     name: Components.MetaRequest,
     component: MetaRequest,
@@ -137,6 +180,27 @@ const routes: Array<RouteConfig> = [
     meta: {
       title: 'transaction',
     },
+  },
+  {
+    path: '/auth-management',
+    component: AuthManagment,
+    children: [
+      {
+        path: '/',
+        name: Components.ManageAuths,
+        component: ManageAuths,
+      },
+      {
+        path: '/dotsama/:id',
+        name: Components.UpdateAuths,
+        component: UpdateAuths,
+      },
+      {
+        path: 'wc/:topic',
+        name: Components.WalletConnectAuthDetails,
+        component: WalletConnectAuthDetails,
+      },
+    ],
   },
   {
     path: '/sora-card',

@@ -2,61 +2,50 @@
   <div class="auth-accounts">
     <Checkbox
       v-if="showAllCheckbox"
-      v-model.lazy="syncSelectAll"
+      :value="props.selectAll"
       size="big"
       label="Select all"
-      @change="(value) => $emit('onSelectAll', value)"
+      @change="(value) => emit('onSelectAll', value)"
     />
 
     <Scroll>
-      <ul class="account__list">
-        <li v-for="(account, index) in accounts" class="auth-account" v-bind:key="index">
+      <ul v-if="showCheckboxes" class="account__list">
+        <li v-for="(account, index) in props.accounts" class="auth-account" :key="index">
           <div class="checkbox">
             <Checkbox
               class="account__checkbox"
               size="big"
               :name="account.address"
               :label="$t(account.name)"
-              v-model.lazy="account.active"
-              @change="(value) => $emit('onSelect', value, account.name)"
+              :value="account.active"
+              @change="(value) => emit('onSelect', value, account.name)"
             />
 
             <div v-if="account.isMobile" class="account__checkbox--mobile-icon">{{ $t('mobile') }}</div>
           </div>
-          <div :ref="index" class="account__address">
-            <span>{{ cutAddress(account.address) }}</span>
 
-            <Icon className="clipboard" icon="clipboard" @click="saveToClipboard(account.address)" />
-            <Tooltip text="Сopied" target=".clipboard" placement="bottom" trigger="click" />
-          </div>
+          <span :ref="index" class="account__address">{{ cutAddress(account.address) }}</span>
         </li>
       </ul>
     </Scroll>
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
-import { WalletInfo } from '@/store';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import type { WalletInfo } from '@/store';
 import { cut } from '@/helpers';
 
-@Component
-export default class SelectAuthAccount extends Vue {
-  @PropSync('selectAll', { type: Boolean }) syncSelectAll!: boolean;
-  @Prop(Object) accounts!: WalletInfo[];
+type Props = { selectAll?: boolean; accounts: Record<string, WalletInfo>; showSelectAll?: boolean; height?: string };
 
-  get showAllCheckbox() {
-    return this.accounts.length !== 0;
-  }
+const props = withDefaults(defineProps<Props>(), { showSelectAll: true });
+const emit = defineEmits(['onSelectAll', 'onSelect']);
 
-  cutAddress(address: string) {
-    return cut(address);
-  }
+const showAllCheckbox = computed(() => Object.keys(props.accounts).length && props.showSelectAll);
+const showCheckboxes = computed(() => Object.keys(props.accounts).length);
 
-  saveToClipboard(value: string) {
-    navigator.clipboard.writeText(value);
-  }
-}
+const cutAddress = (address: string) => cut(address);
+const prepHeight = computed(() => (props.height ? `${props.height}px` : 'fit-content'));
 </script>
 
 <style lang="scss" scoped>
@@ -65,7 +54,7 @@ export default class SelectAuthAccount extends Vue {
   flex-flow: column;
   align-items: flex-start;
   overflow-y: hidden;
-  height: 100%;
+  height: v-bind(prepHeight);
 }
 
 .auth-account {
@@ -101,12 +90,9 @@ export default class SelectAuthAccount extends Vue {
 }
 
 .account__address {
-  position: relative;
-  width: 230px;
   overflow-x: hidden;
   text-overflow: ellipsis;
-  margin-right: 10px;
-  height: 24px;
+  line-height: 25.2px;
 }
 
 .clipboard {

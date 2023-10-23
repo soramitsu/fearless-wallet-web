@@ -63,7 +63,7 @@ import { storage } from '@extension-base/stores/Storage';
 import { toSvg } from 'jdenticon';
 import type { GetHistory } from '@/interfaces';
 import type { SelectedWallet, GetNetwork } from '@/store';
-import type { AddressBook } from '@extension-base/background/types/types';
+import type { AddressBook } from '@extension-base/background/types';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';

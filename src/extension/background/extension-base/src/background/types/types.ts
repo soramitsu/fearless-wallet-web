@@ -1,43 +1,35 @@
 /* eslint-disable no-use-before-define */
 import { Subscription } from 'rxjs';
-import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '@extension-base/defaults';
-import MetadataStore from '@extension-base/stores/Metadata';
+
 import { JsonRpcProvider, WebSocketProvider } from 'ethers';
+import { ApiPromise } from '@polkadot/api';
+import { WsProvider } from '@polkadot/rpc-provider';
+import { ProviderInterface } from '@polkadot/rpc-provider/types';
+import { HexString } from '@polkadot/util/types';
 import { UserType } from '../../services/onboarding-service/types';
+import MetadataStore from '../../stores/Metadata';
 import { NETWORK_STATUS } from '../../api/types/networks';
+import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
+import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
-import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type { TypeRegistry } from '@polkadot/types';
 import type { SignerResult } from '@polkadot/types/types/extrinsic';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
-import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
-import type { ProviderInterface } from '@polkadot/rpc-provider/types';
-import type { HexString } from '@polkadot/util/types';
-import type { KeypairType } from '@polkadot/util-crypto/types';
-import type {
-  RelayChainName,
-  SwapOptions,
-  MarketType,
-  WalletAddress,
-  ChangeWalletBalance,
+import type { AccountAuthType, AddressBook, AuthUrlInfo, ResponseSigning } from '@extension-base/background/types';
+import {
   NetworkName,
+  WalletAddress,
   AssetName,
+  ChangeWalletBalance,
+  RelayChainName,
   BuyProvider,
+  MarketType,
+  SwapOptions,
 } from '@/interfaces';
-
-export interface PrepareExternalRequest {
-  id: string;
-  setState: (promise: ExternalRequestPromise) => void;
-  updateState: (promise: Partial<ExternalRequestPromise>) => void;
-}
-export enum SignerType {
-  PASSWORD = 'PASSWORD',
-  MOBILE = 'MOBILE',
-}
 
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
@@ -93,10 +85,6 @@ export interface SigningRequest {
   request: RequestSign;
   url: string;
 }
-export interface MobileSigningRequest {
-  id: string;
-  request: SignerPayloadRaw;
-}
 
 export interface RequestAddressCreate {
   address: string;
@@ -108,16 +96,7 @@ export interface SubscribeBalanceRequest {
   port: Port;
 }
 
-export enum NETWORK_ERROR {
-  INVALID_INFO_TYPE = 'invalidInfoType',
-  INJECT_SCRIPT_DETECTED = 'injectScriptDetected',
-  EXISTED_NETWORK = 'existedNetwork',
-  EXISTED_PROVIDER = 'existedProvider',
-  INVALID_PROVIDER = 'invalidProvider',
-  NONE = 'none',
-  CONNECTION_FAILURE = 'connectionFailure',
-  PROVIDER_NOT_SAME_NETWORK = 'providerNotSameNetwork',
-}
+export type ConnectedTabsUrlResponse = string[];
 
 export type NetWorkGroup =
   | 'RELAY_CHAIN'
@@ -139,6 +118,7 @@ export interface RequestCurrentAccountAddress {
 export type MessageTypes = keyof RequestSignatures;
 
 // Requests
+
 export type RequestTypes = {
   [MessageType in keyof RequestSignatures]: RequestSignatures[MessageType][0];
 };
@@ -154,16 +134,14 @@ export interface TransportRequestMessage<TMessageType extends MessageTypes> {
 
 export interface RequestAuthorizeTab {
   origin: string;
+  accountAuthType?: AccountAuthType;
+  allowedAccounts?: string[];
+  reConfirm?: boolean;
 }
 
 export interface RequestAuthorizeApprove {
   id: string;
   authorizedAccounts: string[];
-}
-
-export interface RequestMobileSign {
-  signature: `0x${string}`;
-  id: string;
 }
 
 export interface RequestUpdateAuthorizedAccounts {
@@ -180,18 +158,10 @@ export interface RequestMetadataReject {
 }
 
 export interface RequestAccountCreateSuri {
-  suri: string;
   password: string;
+  suri: string;
   type?: KeypairType;
-  meta?: Record<string, unknown>;
-}
-
-export interface PriceJson {
-  ready?: boolean;
-  currency: string;
-  priceMap: Record<string, number>;
-  tokenPriceMap: Record<string, number>;
-  tokenPriceChange: Record<string, number>;
+  meta: KeyringPair$Meta;
 }
 
 export interface BalanceJson {
@@ -385,12 +355,6 @@ export interface ApiMap {
   evm: EvmApiMap;
 }
 
-export interface ServiceInfo {
-  networkMap: Record<string, NetworkJson>;
-  apiMap: ApiMap;
-  currentAccountInfo: CurrentAccountState;
-}
-
 export interface RequestAccountList {
   anyType?: boolean;
 }
@@ -434,7 +398,7 @@ export interface RequestSigningCancel {
 }
 
 export interface RequestSigningIsLocked {
-  address: string;
+  id: string;
 }
 
 export interface ResponseSigningIsLocked {
@@ -469,11 +433,6 @@ export type TransportResponseMessage<TMessageType extends MessageTypes> =
     : TMessageType extends MessageTypesWithSubscriptions
     ? TransportResponseMessageSub<TMessageType>
     : never;
-
-export interface ResponseSigning {
-  id: string;
-  signature: HexString;
-}
 
 export interface ResponseAccountExport {
   exportedJson: KeyringPair$Json;
@@ -525,32 +484,12 @@ export interface AuthRequest extends Resolver<AuthResponse> {
   idStr: string;
   request: RequestAuthorizeTab;
   url: string;
+  accountAuthType?: AccountAuthType;
 }
 
 export type AuthUrls = Record<string, AuthUrlInfo>;
 
-export type Address = {
-  name: string;
-  address: string;
-}[];
-
-export type AddressBook = Record<NetworkName, Address>;
-
 export type AuthorizedAccountsDiff = [url: string, authorizedAccounts: AuthUrlInfo['authorizedAccounts']][];
-
-export type AccountAuthType = 'substrate' | 'evm' | 'both';
-
-export interface AuthUrlInfo {
-  count: number;
-  id: string;
-  isAllowed: boolean;
-  origin: string;
-  url: string;
-  accountAuthType?: AccountAuthType;
-  authorizedAccounts: string[];
-  isAllowedMap: Record<string, boolean>;
-  currentEvmNetworkKey?: string;
-}
 
 export interface MetaRequest extends Resolver<boolean> {
   id: string;
@@ -562,7 +501,6 @@ export interface AuthResponse {
   result: boolean;
   authorizedAccounts: string[];
 }
-
 export type ActiveTabAuthorizeStatus = {
   isAuthorize: boolean;
   authorizeAccountsCount: number;
@@ -587,12 +525,8 @@ export interface SignRequest extends Resolver<ResponseSigning> {
   request: RequestSign;
   url: string;
 }
-export interface MobileSignRequest extends Resolver<ResponseSigning> {
-  id: string;
-  request: SignerPayloadRaw;
-}
 
-export const NOTIFICATION_URL = chrome.runtime.getURL('popup.html#/');
+export const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
 
 export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
   focused: true,
@@ -626,7 +560,7 @@ export interface IState {
   metaStore: MetadataStore;
   authUrls: AuthUrls;
   addresses: Record<string, string>;
-  selectedNetworks: Record<string, NetworkName>;
+  selectedNetworks: Record<string, string>;
   defaultAuthAccountSelection: string[];
   injectedProviders: Map<Port, ProviderInterface>;
   notification: string;
@@ -645,6 +579,11 @@ export interface IState {
     user: UserType;
     isRequired: boolean;
   };
+  'wc@2:client:0.3//session': Array<unknown>;
+  'wc@2:core:0.3//pairing': Array<unknown>;
+  'wc@2:core:0.3//subscription': Array<unknown>;
+  'wc@2:client:0.3//request': Array<unknown>;
+  'wc@2:core:0.3//history': Array<unknown>;
 }
 
 export interface GoogleFileId {

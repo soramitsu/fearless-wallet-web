@@ -26,7 +26,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import type { AccountJson } from '@extension-base/background/types/types';
+import type { AccountJson } from '@extension-base/background/types';
 import type { Fn } from '@/interfaces/common';
 import { Components } from '@/router/routes';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';

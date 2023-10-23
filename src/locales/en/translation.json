@@ -125,7 +125,10 @@
     "authWarningMessage": "An application, self-identifying as {name} is requesting access from my {link}",
     "accountsConnected": "Accounts connected to {url}",
     "mobile": "mobile",
-    "connectCountAccounts": "Connect 1 account | Connect {count} accounts"
+    "connectCountAccounts": "Connect 1 account | Connect {count} accounts",
+    "noconnections": "There are no connections",
+    "connected": "Connected",
+    "disconnect": "Disconnect"
   },
   "header": {
     "connected": "Connected",
@@ -324,6 +327,35 @@
   "auth": {
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
   },
+  "walletConnect": {
+    "noNetworkSupport": "0 network supported",
+    "pairingErrorMessage": "Invalid url! Copy url from Wallet Connect and try again",
+    "insertUrl": "Insert Wallet Connect url",
+    "requestFields": {
+      "networkError": "Trouble to recognize the network",
+      "amount": "Amount",
+      "network": "Network",
+      "gasFee": "Gas fee",
+      "method": "Sign Method",
+      "message": "Message"
+    },
+    "permissions": {
+      "title": "App permissions",
+      "viewAddress": "View your wallet address",
+      "viewBalances": "View your token balances",
+      "transferAssets": "Transfer your tokens without approval"
+    },
+    "notifications": {
+      "sessionExpired": {
+        "title": "Session is expired",
+        "message": "Session proposal is expired, please, try again!"
+      },
+      "sessionApproved": {
+        "title": "Wallet is connected",
+        "message": ""
+      }
+    }
+  },
   "soraCard": {
     "getCard": "Get SORA Card",
     "title": "SORA Card",
@@ -471,6 +503,10 @@
     "polkaswap": "Polkaswap"
   },
   "common": {
+    "approve": "Approve",
+    "wc": "Wallet Connect",
+    "connect": "Connect",
+    "reject": "Reject",
     "privacyPolicy": "Privacy Policy",
     "termsConditions": "Terms and Conditions",
     "disclaimer": "Disclaimer",
@@ -534,6 +570,7 @@
     "resolveOption": "Resolve Option",
     "dontShowAgain": "Don't show me again",
     "iAmReady": "OK, I am ready",
-    "name": "Name"
+    "name": "Name",
+    "networks": "Networks"
   }
 }

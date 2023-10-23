@@ -69,7 +69,7 @@ import {
   RequestTransfer,
   RequestCrossChain,
   TokenBalance,
-} from '@extension-base/background/types/types';
+} from '@extension-base/background/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
 import type { GetNetwork, GetNetworkGenesisHash, SelectedWallet } from '@/store';
@@ -317,7 +317,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.extrinsicType === 'crossChain') return await makeCrossChain(this.requestCrossChain, callback);
   }
 
-  async keypress({ key }: KeyboardEvent) {
+  keypress({ key }: KeyboardEvent) {
     if (key === 'Enter') this.sendExtrinsic();
   }
 

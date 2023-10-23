@@ -58,7 +58,7 @@ export default class History extends Vue {
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   get selectedNetwork() {
     return this.$route.params.selectedNetwork;

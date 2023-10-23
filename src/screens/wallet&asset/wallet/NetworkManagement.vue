@@ -40,7 +40,7 @@ import { SelectedWallet } from '@/store';
 @Component
 export default class NetworkManagement extends Vue {
   @Prop(Array) networks!: NetworkJson[];
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 }
 </script>
 

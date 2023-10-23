@@ -64,7 +64,7 @@ import { isJsonValid, jsonRestore } from '@/extension/messaging';
 @Component
 export default class GoogleWalletsList extends Vue {
   @Prop(Array) items!: FilesState[];
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
 
   setItemValue(index: number, data: Record<string, string | boolean>) {

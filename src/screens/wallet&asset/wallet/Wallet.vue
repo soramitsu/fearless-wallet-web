@@ -138,7 +138,7 @@ export default class Wallet extends Vue {
     assetId?: string;
   };
 
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getShowWarningNetwork) getShowWarningNetwork!: GetShowWarningNetworks;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;

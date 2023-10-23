@@ -120,7 +120,7 @@ export default class HistoryDetailsForm extends Vue {
 
   @Prop(String) historyType!: string;
   @Prop(Object) historyElement!: HistoryElement;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 

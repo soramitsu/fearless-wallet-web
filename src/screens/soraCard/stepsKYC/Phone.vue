@@ -95,7 +95,7 @@ export default class Phone extends Vue {
   @Ref('countryCode') readonly countryCodeComponent!: Input;
   @Ref('phoneNumber') readonly phoneNumberComponent!: ValidatedInput;
   @Ref('verificationCode') private readonly otpComponent!: ValidatedInput;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(SoraCardGettersTypes.authLogin) authLogin!: any;
   @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;

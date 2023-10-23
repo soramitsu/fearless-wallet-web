@@ -9,7 +9,7 @@ import store from '@/store';
 import { ALL_NETWORKS } from '@/consts/networks';
 
 export enum GettersTypes {
-  getSelectedWallet = 'getSelectedWallet',
+  selectedWallet = 'selectedWallet',
   getSelectedFiat = 'getSelectedFiat',
   getSelectedNetwork = 'getSelectedNetwork',
   fiatSymbol = 'fiatSymbol',
@@ -28,7 +28,7 @@ export enum GettersTypes {
 }
 
 export type Getters = {
-  [GettersTypes.getSelectedWallet](state: State, getters?: GetterTree<State, State> & Getters): SelectedWallet;
+  [GettersTypes.selectedWallet](state: State, getters?: GetterTree<State, State> & Getters): SelectedWallet;
   [GettersTypes.getBalances](state: State, getters?: GetterTree<State, State> & Getters): TokenBalance[];
   [GettersTypes.getSelectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getSelectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
@@ -55,7 +55,7 @@ export type Getters = {
 };
 
 const getters: GetterTree<State, State> & Getters = {
-  [GettersTypes.getSelectedWallet]({ selectedWallet }): SelectedWallet {
+  [GettersTypes.selectedWallet]({ selectedWallet }): SelectedWallet {
     return selectedWallet;
   },
 

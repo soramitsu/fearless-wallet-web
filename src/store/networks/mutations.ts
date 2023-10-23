@@ -3,12 +3,17 @@ import type { State } from './state';
 import type {
   SetFiatsJsonProps,
   SetHistoryProps,
+  History,
   SetNetworksStatusProps,
   SetAssetsPriceProps,
   SetNetworkFavoriteProps,
   RemoveNetworkFavoriteProps,
 } from './types';
 import { getFormattedHistory } from '@/helpers/history';
+import { AssetId, SoraHistoryElement } from '@/interfaces';
+import { isSora } from '@/helpers';
+import { SORA_XOR_ASSET_ID } from '@/consts/sora';
+
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
   SET_FIATS_JSON = 'SET_FIATS_JSON',
@@ -41,27 +46,48 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.SET_HISTORY](state, { history, networkName, walletAddress, assetId, serviceType }) {
-    const { nodes, pageInfo } = getFormattedHistory(history, serviceType);
-    const { startCursor: startCursorProp, endCursor: endCursorProp } = pageInfo;
-    const oldHistory = state.history[assetId]?.[walletAddress]?.[networkName];
-    const oldPageInfo = oldHistory?.pageInfo;
-    const oldStartCursor = oldPageInfo?.startCursor;
+    const saveHistory = (assetId: AssetId, history: History) => {
+      const { nodes, pageInfo } = getFormattedHistory(history, serviceType);
+      const { startCursor: startCursorProp, endCursor: endCursorProp } = pageInfo;
+      const oldHistory = state.history[assetId]?.[walletAddress]?.[networkName];
+      const oldPageInfo = oldHistory?.pageInfo;
+      const oldStartCursor = oldPageInfo?.startCursor;
 
-    const historyForAssetId = {
-      ...(state.history[assetId] ?? []),
-      [walletAddress]: {
-        ...(state.history[assetId]?.[walletAddress] ?? []),
-        [networkName]: {
-          nodes: [...(nodes ?? []), ...(oldHistory?.nodes ?? [])],
-          pageInfo: {
-            startCursor: oldStartCursor ?? startCursorProp,
-            endCursor: endCursorProp,
+      const historyForAssetId = {
+        ...(state.history[assetId] ?? []),
+        [walletAddress]: {
+          ...(state.history[assetId]?.[walletAddress] ?? []),
+          [networkName]: {
+            nodes: [...(nodes ?? []), ...(oldHistory?.nodes ?? [])],
+            pageInfo: {
+              startCursor: oldStartCursor ?? startCursorProp,
+              endCursor: endCursorProp,
+            },
           },
         },
-      },
+      };
+
+      state.history = { ...state.history, [assetId]: historyForAssetId };
     };
 
-    state.history = { ...state.history, [assetId]: historyForAssetId };
+    if (serviceType === 'sora') {
+      const typedHistory = history as SoraHistoryElement[];
+      const historyAssets = typedHistory.reduce((result, item) => {
+        const baseAssetId = item.data?.baseAssetId;
+
+        const networkJson = state.networks.find(({ name }) => isSora(name));
+        const asset = networkJson?.assets.find(({ currencyId }) => currencyId === baseAssetId);
+        const id = asset?.id ?? SORA_XOR_ASSET_ID;
+
+        if (result[id] === undefined) result[id] = [];
+
+        result[id].push(item);
+
+        return result;
+      }, {} as Record<string, SoraHistoryElement[]>);
+
+      Object.entries(historyAssets).forEach(([id, history]) => saveHistory(id, history));
+    } else saveHistory(assetId, history);
   },
 
   [MutationTypes.SET_FAVORITE_NETWORK](state, { address, networksName }): void {

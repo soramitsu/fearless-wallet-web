@@ -79,7 +79,7 @@ export default class HistoryItem extends Vue {
     if (isSora(this.network)) {
       const element = this.historyElement as SoraHistoryElement;
 
-      return this.$t(`staking.${element.method}`);
+      return this.$t(`history.${element.method}`);
     }
 
     const { transfer, reward, extrinsic } = this.historyElement;

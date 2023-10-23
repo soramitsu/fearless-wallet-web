@@ -245,6 +245,9 @@ async function fetchSoraHistory(url: string, address: string) {
           dataTo
           dataFrom
           data
+          execution {
+            success
+          }
         }
       }`,
   });

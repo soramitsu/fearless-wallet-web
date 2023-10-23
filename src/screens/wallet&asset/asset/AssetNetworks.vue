@@ -64,7 +64,6 @@ import { Getter } from 'vuex-class';
 import { TokenBalance } from '@extension-base/background/types/types';
 import HistoryItem from './HistoryItem.vue';
 import type { NetworkJson } from '@extension-base/types';
-import type { GetHistory } from '@/interfaces';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -114,7 +113,6 @@ export default class AssetNetworks extends Vue {
   showSelectFilterPopup = false;
 
   @Prop(Object) currency!: TokenBalance;
-  @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;

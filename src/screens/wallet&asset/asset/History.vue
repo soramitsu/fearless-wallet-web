@@ -42,6 +42,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { getUtilityAsset } from '@/helpers/currencies';
+import { isSora } from '@/helpers';
 
 @Component({ components: { HistoryItem } })
 export default class History extends Vue {
@@ -106,18 +107,22 @@ export default class History extends Vue {
     return filteredHistory;
   }
 
-  @Watch('selectedNetwork')
-  @Watch('selectedWallet')
-  async watchSelectedNetwork() {
-    this.loadHistory();
-  }
-
   get isMainNetwork() {
     if (this.balances.length === 0) return false;
 
     const { assetId } = getUtilityAsset(this.balances, this.selectedNetwork);
 
     return this.assetId === assetId;
+  }
+
+  get isEthereumNativeNetwork() {
+    return BaseApi.isEthereumNativeNetwork(this.selectedNetwork);
+  }
+
+  @Watch('selectedNetwork')
+  @Watch('selectedWallet')
+  async watchSelectedNetwork() {
+    this.loadHistory();
   }
 
   @Watch('isMainNetwork')
@@ -129,14 +134,10 @@ export default class History extends Vue {
     setTimeout(() => this.loadHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
   }
 
-  get isEthereumNativeNetwork() {
-    return BaseApi.isEthereumNativeNetwork(this.selectedNetwork);
-  }
-
   async loadHistory() {
     if (this.history.length !== 0) return;
 
-    if (!this.isEthereumNativeNetwork && !this.isMainNetwork) return;
+    if (!isSora(this.selectedNetwork) && !this.isEthereumNativeNetwork && !this.isMainNetwork) return;
 
     this.showLoader = true;
 

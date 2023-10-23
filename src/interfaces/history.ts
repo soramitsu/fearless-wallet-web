@@ -1,4 +1,4 @@
-import type { WalletAddress, NetworkName, AssetName } from '@/interfaces';
+import type { WalletAddress, NetworkName, AssetId } from '@/interfaces';
 
 type Reward = {
   amount: string;
@@ -43,9 +43,30 @@ type SoraHistoryElement = {
   blockHash: string;
   blockHeight: string;
   networkFee: string;
-  module: 'staking' | 'liquidityProxy' | string; // TODO
-  method: 'setPayee' | 'unbond' | 'nominate' | 'bondExtra' | 'bond' | 'payoutStakers' | 'swap' | 'transfer'; // TODO
-  data: Record<string, any>; // TODO
+  execution: {
+    success: boolean;
+  };
+  module: 'staking' | 'liquidityProxy' | 'demeterFarmingPlatform' | 'utility' | string;
+  method:
+    | 'setPayee'
+    | 'unbond'
+    | 'nominate'
+    | 'bondExtra'
+    | 'bond'
+    | 'payoutStakers'
+    | 'swap'
+    | 'transfer'
+    | 'batchAll'; // TODO
+  data: {
+    baseAssetId?: string;
+    targetAssetId?: string;
+    selectedMarket?: string;
+    baseAssetAmount?: string;
+    targetAssetAmount?: string;
+    liquidityProviderFee?: string;
+    maxAdditional?: string;
+    value?: string;
+  };
 };
 
 interface GiantsquidHistoryItem {
@@ -79,9 +100,9 @@ type HistoryForWalletAddress = Record<NetworkName, SubqueryHistory>;
 
 type HistoryForAssetId = Record<WalletAddress, HistoryForWalletAddress>;
 
-type History = Record<AssetName, HistoryForAssetId>;
+type History = Record<AssetId, HistoryForAssetId>;
 
-type GetHistory = (assetId: AssetName, networkName: NetworkName) => SubqueryHistory;
+type GetHistory = (assetId: AssetId, networkName: NetworkName) => SubqueryHistory;
 
 enum TransferType {
   incoming = 'Incoming',

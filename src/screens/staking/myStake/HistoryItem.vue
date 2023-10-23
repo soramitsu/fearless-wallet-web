@@ -47,7 +47,7 @@ export default class HistoryItem extends Vue {
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get operationName() {
-    return this.$t(`staking.${this.history.method}`);
+    return this.$t(`history.${this.history.method}`);
   }
 
   get method() {

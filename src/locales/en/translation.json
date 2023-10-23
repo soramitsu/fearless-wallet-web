@@ -438,6 +438,20 @@
     "privacyPolicy": "Privacy Policy",
     "importantText": "I confirm that I have read all of the documents mentioned and pressing 'Сontinue' I accept them."
   },
+  "history": {
+    "transfer": "Transfer",
+    "swap": "Swap",
+    "bond": "Stake",
+    "unbond": "Unstake",
+    "bondExtra": "Stake more",
+    "rebond": "Rebond",
+    "setController": "Controller Account",
+    "setPayee": "Rewards destination",
+    "nominate": "Nominate validators",
+    "payoutStakers": "Payout stakers",
+    "withdrawUnbonded": "Redeem",
+    "batchAll": "batchAll"
+  },
   "staking": {
     "noStaking": "Selected networks do not have staking",
     "daysLeft": "days left",
@@ -522,7 +536,6 @@
     "setPayee": "Rewards destination",
     "bondExtra": "Stake more",
     "nominate": "Nominate validators",
-    "payoutStakers": "Payout stakers",
     "rebond": "Rebond",
     "stakedTokens": "Staked tokens generate rewards each era  (6 hours).",
     "unstakeTokens": "If you want to unstake tokens, you will have to wait for the unstaking period ({value} days).",

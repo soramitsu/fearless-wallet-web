@@ -173,7 +173,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get statusIsSuccess() {
-    if (this.isSora) return true;
+    if (this.isSora) return (this.historyElement as SoraHistoryElement).execution.success;
 
     if (this.isTransfer) {
       const { success } = this.historyElement.transfer!;
@@ -209,22 +209,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get statusText() {
-    if (isSora(this.selectedNetwork)) return 'Completed';
-
-    if (this.isTransfer) {
-      const { success } = this.historyElement.transfer!;
-
-      return success ? 'Completed' : 'Reject';
-    }
-
-    if (this.isExtrinsic) {
-      const { success } = this.historyElement.extrinsic!;
-
-      return success ? 'Completed' : 'Reject';
-    }
-
-    //reward
-    return 'Completed';
+    return this.statusIsSuccess ? 'Completed' : 'Reject';
   }
 
   get fromAddress() {

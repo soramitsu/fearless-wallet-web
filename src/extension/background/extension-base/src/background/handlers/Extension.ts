@@ -1171,13 +1171,11 @@ export default class Extension extends FWExtensionBase {
     return this.state.onboardingService.getStories(lang);
   }
 
-  async connectWalletConnect({ uri }: RequestConnectWalletConnect) {
-    const pairing = await this.state.walletConnectService
+  async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<boolean> {
+    return this.state.walletConnectService
       .connect(uri)
       .then(() => true)
       .catch(() => false);
-
-    return pairing;
   }
 
   private connectWCSubscribe(id: string, port: chrome.runtime.Port): WalletConnectSessionRequest[] {

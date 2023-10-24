@@ -163,6 +163,7 @@ const onReject = () => {
     font-size: 16px;
     color: $default-white;
     line-height: 22px;
+    place-self: start;
   }
 
   &__address {

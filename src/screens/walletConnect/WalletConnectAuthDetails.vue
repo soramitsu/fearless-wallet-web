@@ -65,7 +65,7 @@ onBeforeMount(async () => {
 });
 
 const url = computed(() => request.value?.peer.metadata.url);
-const title = computed(() => `Connected to ${request.value?.peer.metadata.name}`);
+const title = computed(() => request.value?.peer.metadata.name ?? '');
 
 const namespaces = computed<ChainData[]>(() => {
   if (!request.value) return [];

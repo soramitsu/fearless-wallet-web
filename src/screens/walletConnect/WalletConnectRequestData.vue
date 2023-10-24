@@ -23,6 +23,7 @@ import {
   EIP155_SIGNING_METHODS,
   type WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
+import { formatEther } from 'ethers';
 import type { AccountJson } from '@extension-base/background/types';
 import { useStore } from '@/store';
 import { cut } from '@/helpers';
@@ -55,8 +56,8 @@ const requestData = computed(() => {
     const { value, gas } = params;
 
     data[`${baseKey}.network`] = network;
-    data[`${baseKey}.amount`] = value;
-    data[`${baseKey}.gasFee`] = gas;
+    data[`${baseKey}.amount`] = formatEther(BigInt(value).toString()).toString();
+    data[`${baseKey}.gasFee`] = formatEther(BigInt(gas).toString()).toString();
   }
 
   return data;
@@ -75,6 +76,9 @@ const txWallet = computed(() => {
 .tx-details {
   width: 100%;
   padding: 16px 16px 0 16px;
+  display: flex;
+  align-items: stretch;
+  flex-flow: column;
 }
 .wallet__logo {
   width: 24px;

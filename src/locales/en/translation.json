@@ -329,6 +329,7 @@
   },
   "walletConnect": {
     "noNetworkSupport": "0 network supported",
+    "personalSign": "Personal Sign",
     "pairingErrorMessage": "Invalid url! Copy url from Wallet Connect and try again",
     "insertUrl": "Insert Wallet Connect url",
     "requestFields": {

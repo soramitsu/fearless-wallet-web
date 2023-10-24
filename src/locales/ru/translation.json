@@ -328,6 +328,8 @@
   "walletConnect": {
     "noNetworkSupport": "0 поддерживаемых сетей",
     "personalSign": "Личная подпись",
+    "signRequestTitle": "Запрос подписи",
+    "txRequestTitle": "Запрос от {url}",
     "pairingErrorMessage": "Неправильная ссылка! Скопируйте ссылку из Wallet Connect и попробуйте снова",
     "insertUrl": "Вставьте ссылку из Wallet Connect",
     "requestFields": {

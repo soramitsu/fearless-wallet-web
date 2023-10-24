@@ -9,16 +9,17 @@
 import { computed } from 'vue';
 
 import { Fragment } from 'vue-fragment';
+import { useI18n } from 'vue-i18n-composable';
 import Favicon from '@/components/Favicon.vue';
-
+const { t } = useI18n();
 const props = withDefaults(defineProps<{ url: string; name: string; isTx: boolean }>(), {
   isTx: false,
 });
 
 const title = computed(() => {
-  if (props.isTx) return props.name;
+  if (props.isTx) return t('walletConnect.txRequestTitle', { url: name });
 
-  return `Connected to ${props.name}`;
+  return t('walletConnect.signRequestTitle');
 });
 </script>
 

@@ -4,7 +4,7 @@
       <div class="scroll__container">
         <Scroll>
           <div class="wc-request">
-            <WalletConnectHeader :name="title" :url="url" :isTx="true" />
+            <WalletConnectHeader :name="origin" :url="url" :isTx="!isSignatureRequest" />
 
             <WalletConnectRequestData :request="request" class="wc-request__details" />
           </div>
@@ -55,7 +55,6 @@ const [request]: WalletConnectTransactionRequest[] = store.getters.wcSignList;
 const method = computed(() => request.params.request.method as EIP155_SIGNING_METHODS);
 const isSignatureRequest = computed(() => method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN);
 const origin = request.verifyContext.verified.origin;
-const title = computed(() => (isSignatureRequest.value ? 'Signature request' : `Request from ${origin}`));
 
 const url = computed(() => request.verifyContext.verified.origin);
 const header = computed(() => {

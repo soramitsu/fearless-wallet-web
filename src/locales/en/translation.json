@@ -332,6 +332,8 @@
     "personalSign": "Personal Sign",
     "pairingErrorMessage": "Invalid url! Copy url from Wallet Connect and try again",
     "insertUrl": "Insert Wallet Connect url",
+    "signRequestTitle": "Signature request",
+    "txRequestTitle": "Request from {url}",
     "requestFields": {
       "networkError": "Trouble to recognize the network",
       "amount": "Amount",

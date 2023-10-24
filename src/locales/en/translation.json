@@ -350,6 +350,10 @@
         "title": "Session is expired",
         "message": "Session proposal is expired, please, try again!"
       },
+      "unsupportedProposal": {
+        "title": "Unsupported session proposal",
+        "message": "A network or method of this proposal isn’t supported"
+      },
       "sessionApproved": {
         "title": "Wallet is connected",
         "message": ""
@@ -505,6 +509,7 @@
   "common": {
     "approve": "Approve",
     "wc": "Wallet Connect",
+    "substrate": "Substrate",
     "connect": "Connect",
     "reject": "Reject",
     "privacyPolicy": "Privacy Policy",

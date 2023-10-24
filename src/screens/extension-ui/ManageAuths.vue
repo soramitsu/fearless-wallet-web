@@ -44,7 +44,7 @@ const router = useRouter();
 
 const tabs = {
   substrate: {
-    label: 'authorize.substrate',
+    label: 'common.substrate',
     name: 'substrate',
   },
   wc: {

@@ -334,6 +334,7 @@
     "insertUrl": "Insert Wallet Connect url",
     "signRequestTitle": "Signature request",
     "txRequestTitle": "Request from {url}",
+    "signWarning": "You are approving a request with the following account",
     "requestFields": {
       "networkError": "Trouble to recognize the network",
       "amount": "Amount",

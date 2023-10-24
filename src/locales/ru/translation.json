@@ -332,6 +332,7 @@
     "txRequestTitle": "Запрос от {url}",
     "pairingErrorMessage": "Неправильная ссылка! Скопируйте ссылку из Wallet Connect и попробуйте снова",
     "insertUrl": "Вставьте ссылку из Wallet Connect",
+    "signWarning": "Вы подтверждаете запрос с помощью следующего аккаунта",
     "requestFields": {
       "networkError": "Проблемы с распознаванием сети",
       "amount": "Количество",

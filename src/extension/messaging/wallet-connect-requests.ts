@@ -9,6 +9,7 @@ import {
   RequestRejectWalletConnectNotSupport,
   WalletConnectTransactionRequest,
 } from '../background/extension-base/src/services/wallet-connect-service/types';
+import { NotificationResponse } from '../background/extension-base/src/background/types/types';
 import { sendMessage } from '.';
 
 export function newConnection(request: RequestConnectWalletConnect): Promise<boolean> {
@@ -27,7 +28,9 @@ export function walletConnectSessionsSubscribe(
   return sendMessage('pri(walletConnect.session.subscribe)', null, callback);
 }
 
-export function approveWalletConnectSession(request: RequestApproveConnectWalletSession): Promise<boolean> {
+export function approveWalletConnectSession(
+  request: RequestApproveConnectWalletSession
+): Promise<NotificationResponse> {
   return sendMessage('pri(walletConnect.session.approve)', request);
 }
 

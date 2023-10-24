@@ -79,6 +79,7 @@ import { approveWalletConnectSession, rejectWalletConnectSession } from '@/exten
 import { useNotify } from '@/plugins/soramitsuUI';
 import { transformNamespaces } from '@/util/walletConnect';
 import { cut } from '@/helpers';
+import { Components } from '@/router/routes';
 
 const router = useRouter();
 const store = useStore();
@@ -119,23 +120,18 @@ const namespaces = computed<ChainData[]>(() => {
 const isSupportNetwork = computed(() => namespaces.value.length !== 0);
 
 const onApprove = async () => {
-  const result = await approveWalletConnectSession({ accounts: [selectedAddress.value], id: id.value });
+  const { message, title } = await approveWalletConnectSession({
+    accounts: [selectedAddress.value],
+    id: id.value,
+  });
 
-  if (!result)
-    notify({
-      message: t('walletConnect.notifications.sessionExpired.message').toString(),
-      title: t('walletConnect.notifications.sessionExpired.title').toString(),
-      type: 'warn',
-    });
-  else {
-    notify({
-      message: '',
-      title: t('walletConnect.notifications.sessionApproved.title').toString(),
-      type: 'success',
-    });
-  }
+  notify({
+    message: t(message).toString(),
+    title: t(title).toString(),
+    type: 'warn',
+  });
 
-  router.back();
+  router.push(Components.Wallet);
 };
 
 const onReject = () => {
@@ -163,6 +159,7 @@ const onReject = () => {
     font-size: 16px;
     color: $default-white;
     line-height: 22px;
+    place-self: start;
   }
 
   &__address {

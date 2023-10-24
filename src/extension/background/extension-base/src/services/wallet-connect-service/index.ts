@@ -40,12 +40,14 @@ export class WalletConnectService {
   async haveData(): Promise<boolean> {
     const data = await storage.get([
       'wc@2:client:0.3//session',
+      'wc@2:client:0.3//proposal',
       'wc@2:core:0.3//pairing',
       'wc@2:core:0.3//subscription',
       'wc@2:core:0.3//history',
     ]);
 
     const sessionStorage = data['wc@2:client:0.3//session'];
+    const proposalStorage = data['wc@2:client:0.3//proposal'];
     const historyStorage = data['wc@2:core:0.3//history'];
     const pairingStorage = data['wc@2:core:0.3//pairing'];
     const subscriptionStorage = data['wc@2:core:0.3//subscription'];
@@ -54,7 +56,9 @@ export class WalletConnectService {
     const subscriptions: Array<unknown> = subscriptionStorage ? subscriptionStorage : [];
     const history: Array<unknown> = historyStorage ? historyStorage : [];
 
-    return !!sessions.length || !!pairings.length || !!subscriptions.length || !!history.length;
+    return (
+      !!sessions.length || !!pairings.length || !!subscriptions.length || !!history.length || !!proposalStorage.length
+    );
   }
 
   public addConnection(uri: string) {

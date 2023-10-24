@@ -23,12 +23,14 @@ import {
   EIP155_SIGNING_METHODS,
   type WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
+import { formatEther } from 'ethers';
+import { useI18n } from 'vue-i18n-composable';
 import type { AccountJson } from '@extension-base/background/types';
 import { useStore } from '@/store';
 import { cut } from '@/helpers';
 
 const store = useStore();
-
+const { t } = useI18n();
 const props = defineProps<{ request: WalletConnectTransactionRequest }>();
 
 const params = props.request.params.request.params[0] as Record<string, string>;
@@ -43,8 +45,8 @@ const requestData = computed(() => {
   const baseKey = 'walletConnect.requestFields';
 
   if (isSignatureRequest.value) {
-    data[`${baseKey}.method`] = 'walletConnect.personalSign';
-    data[`${baseKey}.message`] = params.data as string;
+    data[`${baseKey}.method`] = t('walletConnect.personalSign').toString();
+    data[`${baseKey}.message`] = params as unknown as string;
 
     return data;
   }
@@ -55,8 +57,8 @@ const requestData = computed(() => {
     const { value, gas } = params;
 
     data[`${baseKey}.network`] = network;
-    data[`${baseKey}.amount`] = value;
-    data[`${baseKey}.gasFee`] = gas;
+    data[`${baseKey}.amount`] = formatEther(BigInt(value).toString()).toString();
+    data[`${baseKey}.gasFee`] = gas ? formatEther(BigInt(gas).toString()).toString() : '';
   }
 
   return data;
@@ -75,6 +77,9 @@ const txWallet = computed(() => {
 .tx-details {
   width: 100%;
   padding: 16px 16px 0 16px;
+  display: flex;
+  align-items: stretch;
+  flex-flow: column;
 }
 .wallet__logo {
   width: 24px;
@@ -108,6 +113,7 @@ const txWallet = computed(() => {
 .tx-details__row {
   border: 1px solid transparent;
   border-bottom-color: $default-background-color;
+  display: flex;
 }
 .tx-details__list:last-child {
   border-bottom-color: transparent;

@@ -1,5 +1,10 @@
 import type { SessionTypes } from '@walletconnect/types';
-import type { BasicTxResponse, ResponseCheckTransfer, SigningRequest } from '@extension-base/background/types/types';
+import type {
+  BasicTxResponse,
+  NotificationResponse,
+  ResponseCheckTransfer,
+  SigningRequest,
+} from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
   InjectedAccount,
@@ -191,7 +196,7 @@ export interface RequestSignatures {
   //Wallet Connect
   'pri(walletConnect.connect)': [RequestConnectWalletConnect, boolean];
   'pri(walletConnect.requests.connect.subscribe)': [null, WalletConnectSessionRequest[], WalletConnectSessionRequest[]];
-  'pri(walletConnect.session.approve)': [RequestApproveConnectWalletSession, boolean];
+  'pri(walletConnect.session.approve)': [RequestApproveConnectWalletSession, NotificationResponse];
   'pri(walletConnect.session.reject)': [RequestRejectConnectWalletSession, boolean];
   'pri(walletConnect.session.reconnect)': [RequestReconnectConnectWalletSession, boolean];
   'pri(walletConnect.session.subscribe)': [null, SessionTypes.Struct[], SessionTypes.Struct[]];

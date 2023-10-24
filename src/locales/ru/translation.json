@@ -327,6 +327,7 @@
   },
   "walletConnect": {
     "noNetworkSupport": "0 поддерживаемых сетей",
+    "personalSign": "Личная подпись",
     "pairingErrorMessage": "Неправильная ссылка! Скопируйте ссылку из Wallet Connect и попробуйте снова",
     "insertUrl": "Вставьте ссылку из Wallet Connect",
     "requestFields": {
@@ -505,6 +506,8 @@
     "connect": "Подключить",
     "approve": "Подтвердить",
     "reject": "Отменить",
+    "sign": "Подписать",
+    "enterAccountPass": "Пароль от этого аккаунта",
     "privacyPolicy": "Политика Конфиденциальности",
     "termsConditions": "Условия и положения",
     "disclaimer": "Отказ от ответственности",

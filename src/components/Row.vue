@@ -57,9 +57,11 @@ export default class Row extends Vue {
   align-items: center;
   border-bottom: 1px solid $secondary-background-color;
   color: $default-white;
+
   .value {
     text-align: right;
     display: flex;
+
     .price {
       color: $gray-color;
       margin-top: 3px;

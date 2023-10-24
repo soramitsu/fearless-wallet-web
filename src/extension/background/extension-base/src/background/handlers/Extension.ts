@@ -4,12 +4,7 @@ import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
 import { ethers, Wallet } from 'ethers';
-import { getSdkError } from '@walletconnect/utils';
-import {
-  getEVMTransactionObject,
-  // handleTransfer,
-  makeEVMTransfer,
-} from '@extension-base/api/evm/transfer';
+import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/swaps';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
@@ -57,7 +52,12 @@ import {
   isSupportWalletConnectChain,
   convertHexToUtf8,
 } from '../../services/wallet-connect-service/utils';
-import type { BasicTxResponse, ResponseCheckTransfer, SigningRequest } from '@extension-base/background/types/types';
+import type {
+  BasicTxResponse,
+  NotificationResponse,
+  ResponseCheckTransfer,
+  SigningRequest,
+} from '@extension-base/background/types/types';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -1195,13 +1195,16 @@ export default class Extension extends FWExtensionBase {
   private async approveWalletConnectSession({
     accounts: selectedAccounts,
     id,
-  }: RequestApproveConnectWalletSession): Promise<boolean> {
+  }: RequestApproveConnectWalletSession): Promise<NotificationResponse> {
     const request = this.state.requestService.getConnectWCRequest(id);
 
     if (isProposalExpired(request.request.params)) {
       request.reject(new Error('The proposal has been expired'));
 
-      return false;
+      return {
+        message: 'walletConnect.notifications.sessionExpired.message',
+        title: 'walletConnect.notifications.sessionExpired.title',
+      };
     }
 
     const { id: wcId, params } = request.request;
@@ -1211,85 +1214,101 @@ export default class Extension extends FWExtensionBase {
 
     const namespaces: SessionTypes.Namespaces = {};
     const chainInfoMap = this.state.networkMap;
+    const requiredEntries = Object.entries(requiredNamespaces);
+    const optionalEntries = Object.entries(optionalNamespaces);
 
-    Object.entries(requiredNamespaces).forEach(([key, namespace]) => {
+    for (const [key, namespace] of requiredEntries) {
       if (isSupportWalletConnectNamespace(key)) {
         if (namespace.chains) {
           const unSupportChains = namespace.chains.filter((chain) => !isSupportWalletConnectChain(chain, chainInfoMap));
 
           if (unSupportChains.length) {
-            throw new Error(`${getSdkError('UNSUPPORTED_CHAINS').message} ${unSupportChains.toString()}`);
+            request.reject(new Error('Unsupported chain'));
+
+            return {
+              message: 'walletConnect.notifications.unsupportedProposal.message',
+              title: 'walletConnect.notifications.unsupportedProposal.title',
+            };
           }
 
           availableNamespaces[key] = namespace;
         }
       } else {
-        throw new Error(`${getSdkError('UNSUPPORTED_NAMESPACE_KEY').message} ${key}`);
-      }
-    });
+        request.reject(new Error('Unsupported chain'));
 
-    Object.entries(optionalNamespaces).forEach(([key, namespace]) => {
-      if (isSupportWalletConnectNamespace(key)) {
-        if (namespace.chains) {
-          const supportChains =
-            namespace.chains.filter((chain) => isSupportWalletConnectChain(chain, chainInfoMap)) || [];
-
-          const requiredNameSpace = availableNamespaces[key];
-          const defaultChains: string[] = [];
-
-          if (requiredNameSpace) {
-            const chains = [...(requiredNameSpace.chains || defaultChains), ...(supportChains || defaultChains)];
-            availableNamespaces[key] = {
-              chains,
-              events: requiredNameSpace.events,
-              methods: requiredNameSpace.methods,
-            };
-          } else {
-            if (supportChains.length) {
-              availableNamespaces[key] = {
-                chains: supportChains,
-                events: namespace.events,
-                methods: namespace.methods,
-              };
-            }
-          }
-        }
-      }
-    });
-
-    Object.entries(availableNamespaces).forEach(([key, namespace]) => {
-      if (namespace.chains) {
-        const accounts: string[] = [];
-
-        const chains = uniqueStringArray(namespace.chains);
-        const substrateAddress = getSubstrateAddress(selectedAccounts[0], this.state);
-
-        chains.forEach((chain) => {
-          if (key === WALLET_CONNECT_EIP155_NAMESPACE) {
-            accounts.push(`${chain}:${selectedAccounts[0]}`);
-          } else if (key === WALLET_CONNECT_POLKADOT_NAMESPACE) {
-            accounts.push(`${chain}:${substrateAddress}`);
-          }
-        });
-
-        namespaces[key] = {
-          accounts,
-          methods: namespace.methods,
-          events: namespace.events,
-          chains: chains,
+        return {
+          message: 'walletConnect.notifications.unsupportedProposal.message',
+          title: 'walletConnect.notifications.unsupportedProposal.title',
         };
       }
-    });
+    }
+
+    for (const [key, namespace] of optionalEntries) {
+      if (isSupportWalletConnectNamespace(key)) continue;
+      if (!namespace.chains) continue;
+
+      const supportChains = namespace.chains.filter((chain) => isSupportWalletConnectChain(chain, chainInfoMap)) || [];
+
+      const requiredNameSpace = availableNamespaces[key];
+      const defaultChains: string[] = [];
+
+      if (requiredNameSpace) {
+        const chains = [...(requiredNameSpace.chains || defaultChains), ...(supportChains || defaultChains)];
+        availableNamespaces[key] = {
+          chains,
+          events: requiredNameSpace.events,
+          methods: requiredNameSpace.methods,
+        };
+      } else {
+        if (supportChains.length) {
+          availableNamespaces[key] = {
+            chains: supportChains,
+            events: namespace.events,
+            methods: namespace.methods,
+          };
+        }
+      }
+    }
+
+    const availableEntries = Object.entries(availableNamespaces);
+
+    for (const [key, namespace] of availableEntries) {
+      if (!namespace.chains) continue;
+
+      const accounts: string[] = [];
+
+      const chains = uniqueStringArray(namespace.chains);
+      const substrateAddress = getSubstrateAddress(selectedAccounts[0], this.state);
+
+      chains.forEach((chain) => {
+        if (key === WALLET_CONNECT_EIP155_NAMESPACE) {
+          accounts.push(`${chain}:${selectedAccounts[0]}`);
+        } else if (key === WALLET_CONNECT_POLKADOT_NAMESPACE) {
+          accounts.push(`${chain}:${substrateAddress}`);
+        }
+      });
+
+      namespaces[key] = {
+        accounts,
+        methods: namespace.methods,
+        events: namespace.events,
+        chains: chains,
+      };
+    }
 
     const result: ResultApproveWalletConnectSession = {
       id: wcId,
       namespaces,
       relayProtocol: params.relays[0].protocol,
     };
+
     await this.state.walletConnectService.approveSession(result);
     request.resolve();
 
-    return true;
+    return {
+      message: '',
+      title: 'walletConnect.notifications.sessionApproved.title',
+    };
   }
 
   private async rejectWalletConnectSession({ id }: RequestRejectConnectWalletSession): Promise<boolean> {

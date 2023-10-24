@@ -512,6 +512,7 @@
     "wc": "Wallet Connect",
     "substrate": "Substrate",
     "connect": "Connect",
+    "enterAccountPass": "Password for this account",
     "reject": "Reject",
     "privacyPolicy": "Privacy Policy",
     "termsConditions": "Terms and Conditions",

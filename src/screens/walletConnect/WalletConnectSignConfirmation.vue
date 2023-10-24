@@ -13,7 +13,7 @@
 
       <ValidatedInput
         v-model="password"
-        placeholder="addWallet.enterPassword"
+        placeholder="common.enterAccountPass"
         errorDescriptions="common.invalidPassword"
         :showPassword="true"
         class="wc-request__input"

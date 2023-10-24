@@ -42,6 +42,7 @@ import {
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 import { TransferErrorCode, BasicTxErrorCode } from '@extension-base/background/types';
+import { useI18n } from 'vue-i18n-composable';
 import WalletConnectRequestData from './WalletConnectRequestData.vue';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import { walletConnectRequestReject, walletConnectRequestApprove, isSignLocked } from '@/extension/messaging';
@@ -52,6 +53,7 @@ type Error = { message: TransferErrorCode.UNSUPPORTED | BasicTxErrorCode.KEYRING
 const store = useStore();
 const router = useRouter();
 const notify = useNotify();
+const { t } = useI18n();
 const isSavePass = ref(false);
 const password = ref('');
 const isPassValid = ref(false);
@@ -99,7 +101,11 @@ const onError = (error: Error) => {
   }
 
   if (error.message === TransferErrorCode.UNSUPPORTED) {
-    notify({ message: 'Unsupported network', title: 'Unsupported network', type: 'warn' });
+    notify({
+      message: '',
+      title: t('walletConnect.usupportedNetwork').toString(),
+      type: 'warn',
+    });
     onReject();
 
     router.back();

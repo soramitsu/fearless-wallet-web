@@ -21,9 +21,9 @@
       />
 
       <div class="controls">
-        <FButton text="common.reject" type="secondary" :border="false" width="100%" @click="onReject" />
+        <FButton text="common.cancel" type="secondary" :border="false" width="100%" @click="onReject" />
 
-        <FButton text="common.approve" width="100%" @click="onApprove" />
+        <FButton text="common.sign" width="100%" @click="onApprove" />
       </div>
     </div>
   </AboveForm>
@@ -72,7 +72,10 @@ const address = computed(() => {
   return request.params.request.params[1];
 });
 
-const onReject = () => walletConnectRequestReject(request.topic);
+const onReject = () => {
+  walletConnectRequestReject(request.topic);
+  router.back();
+};
 
 const onError = (error: Error) => {
   if (error.message === BasicTxErrorCode.KEYRING_ERROR) {

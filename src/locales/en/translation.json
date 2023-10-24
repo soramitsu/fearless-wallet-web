@@ -508,6 +508,7 @@
   },
   "common": {
     "approve": "Approve",
+    "sign": "Sign",
     "wc": "Wallet Connect",
     "substrate": "Substrate",
     "connect": "Connect",

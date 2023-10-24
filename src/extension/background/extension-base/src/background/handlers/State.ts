@@ -999,7 +999,7 @@ export default class State {
     password,
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
     const pass = this.passwords[address] ?? password;
-    const json = this.keyringService.getPair(address)!.toJson(pass);
+    const json = this.keyringService.getPair(address.toLowerCase())!.toJson(pass);
     const decoded = decodePair(pass, base64Decode(json.encoded), json.encoding.type);
 
     const privateKey = u8aToHex(decoded.secretKey);

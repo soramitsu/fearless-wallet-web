@@ -62,8 +62,13 @@ export function subscribeWalletConnectRequest(
   return sendMessage('pri(walletConnect.signing.requests.subscribe)', null, cb);
 }
 
-export function walletConnectRequestApprove(address: string, password: string, topic: string): Promise<boolean> {
-  return sendMessage('pri(walletConnect.request.approve)', { address, password, topic });
+export function walletConnectRequestApprove(
+  address: string,
+  password: string,
+  topic: string,
+  isSavePass: boolean
+): Promise<boolean> {
+  return sendMessage('pri(walletConnect.request.approve)', { address, password, topic, isSavePass });
 }
 
 export function walletConnectRequestReject(topic: string): Promise<boolean> {

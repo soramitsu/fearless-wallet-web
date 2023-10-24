@@ -837,11 +837,10 @@ export default class Extension extends FWExtensionBase {
   validatePairPassword(address: string, password: string | undefined) {
     const substrateAddress = getSubstrateAddress(address, this.state);
     const errors = [] as Array<BasicTxError>;
+    const substratePair = this.state.keyringService.getPair(substrateAddress);
 
     if (password) {
       try {
-        const substratePair = this.state.keyringService.getPair(substrateAddress);
-
         if (substratePair) {
           substratePair.unlock(password);
 
@@ -861,10 +860,11 @@ export default class Extension extends FWExtensionBase {
         });
       }
     } else {
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        message: String('Password required to decode encrypted data'),
-      });
+      if (substratePair?.isLocked)
+        errors.push({
+          code: BasicTxErrorCode.KEYRING_ERROR,
+          message: String('Password required to decode encrypted data'),
+        });
     }
 
     return errors;
@@ -995,6 +995,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   savePass(address: string, ethereumAddress: string | undefined, isSavePass: boolean, isMobile: boolean) {
+    console.error(address, ethereumAddress, this.cachedUnlocks, isSavePass);
     if (isMobile) return;
 
     if (isSavePass) {
@@ -1002,8 +1003,6 @@ export default class Extension extends FWExtensionBase {
 
       if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
     } else {
-      this.cachedUnlocks[address] = 0;
-
       this.state.keyringService.lockPair(address);
       this.state.passwords[address] = undefined;
 
@@ -1364,10 +1363,21 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async wcRequestApprove({ address, password, topic }: RequestApproveWalletConnect) {
-    const errors = this.validatePairPassword(address, password);
+  async wcRequestApprove({ address, password, topic, isSavePass }: RequestApproveWalletConnect) {
+    const substrateAddress = getSubstrateAddress(address, this.state);
 
-    if (errors.length) throw new Error(BasicTxErrorCode.KEYRING_ERROR);
+    if (password === '') {
+      const eth = this.state.keyringService.getPair(address);
+
+      if (eth?.isLocked) {
+        throw new Error(BasicTxErrorCode.KEYRING_ERROR);
+      }
+    } else {
+      const errors = this.validatePairPassword(address, password);
+
+      if (errors.length) throw new Error(BasicTxErrorCode.KEYRING_ERROR);
+    }
+
     const request = this.state.requestService.signWcRequest(topic);
 
     const method = request.request.params.request.method;
@@ -1404,6 +1414,16 @@ export default class Extension extends FWExtensionBase {
 
       request.resolve({ id: request.request.topic, signature: signature as HexString });
     }
+
+    if (password !== '') {
+      const subst = this.state.keyringService.getPair(substrateAddress);
+      subst?.unlock(password);
+
+      const eth = this.state.keyringService.getPair(address);
+      eth?.unlock(password);
+    }
+
+    this.savePass(substrateAddress, address, isSavePass, false);
 
     return true;
   }

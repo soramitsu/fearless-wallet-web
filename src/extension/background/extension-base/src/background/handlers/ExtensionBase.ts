@@ -86,7 +86,7 @@ export default class FWExtensionBase {
 
     const { address } = pair;
 
-    const savedExpiry = this.cachedUnlocks[address] || 0;
+    const savedExpiry = this.cachedUnlocks[address] || this.cachedUnlocks[address.toLowerCase()] || 0;
 
     const remainingTime = savedExpiry - Date.now();
 

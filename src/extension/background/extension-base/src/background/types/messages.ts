@@ -81,6 +81,7 @@ import type {
 } from '@/interfaces';
 import type {
   RequestApproveConnectWalletSession,
+  RequestApproveWalletConnect,
   RequestApproveWalletConnectNotSupport,
   RequestConnectWalletConnect,
   RequestDisconnectWalletConnectSession,
@@ -214,6 +215,6 @@ export interface RequestSignatures {
     WalletConnectTransactionRequest[],
     WalletConnectTransactionRequest[]
   ];
-  'pri(walletConnect.request.approve)': [{ address: string; password: string; topic: string }, boolean];
+  'pri(walletConnect.request.approve)': [RequestApproveWalletConnect, boolean];
   'pri(walletConnect.request.reject)': [{ topic: string }, boolean];
 }

@@ -1,6 +1,6 @@
 <template>
   <AboveForm :fullScreen="true" header="assets.transaction" @closeHandler="onReject">
-    <div v-if="isMobileSignRequired" class="transaction-mobile">
+    <div v-if="isSignMobile" class="transaction-mobile">
       <Loader />
 
       <FButton
@@ -21,30 +21,39 @@
         <InfoList>
           <InfoItem v-for="(value, key) in txInfo" :name="key" :value="value" :key="key" />
         </InfoList>
+      </div>
+      <div class="control-form">
+        <ValidatedInput
+          v-if="isLocked"
+          ref="passInput"
+          v-model="password"
+          placeholder="common.password"
+          size="big"
+          :class="classesInput"
+          errorDescriptions="common.invalidPassword"
+          :readonly="!isLocked"
+          :isError="isErrorPassword"
+          :showPassword="true"
+          class="input-form"
+          @keypress.native="keypress"
+        />
 
-        <template v-if="!isSignMobile">
-          <ValidatedInput
-            ref="passInput"
-            v-model="password"
-            placeholder="common.password"
+        <Checkbox v-model="isSavePass" size="medium" :label="$t(min15Label)" />
+
+        <div class="control-form-submit">
+          <FButton
             size="big"
-            :class="classesInput"
-            errorDescriptions="common.invalidPassword"
-            :readonly="!isLocked"
-            :isError="isErrorPassword"
-            :showPassword="true"
-            @keypress.native="keypress"
+            type="secondary"
+            class="button"
+            :disabled="isDisabled"
+            :border="false"
+            text="common.cancel"
+            @click="onReject"
           />
 
-          <div v-if="isExtension" class="remember-checkbox">
-            <Checkbox v-model="isSavePass" size="medium" :label="$t(min15Label)" />
-          </div>
-        </template>
+          <FButton size="big" :disabled="isDisabled" class="button" text="common.accept" @click="sendExtrinsic" />
+        </div>
       </div>
-
-      <FButton v-if="!isSignMobile" size="big" class="button" text="assets.signTransaction" @click="sendExtrinsic" />
-
-      <SignMobile v-else @onSign="onSignMobile" @onCancel="closeSignMobile" />
     </div>
   </AboveForm>
 </template>
@@ -88,6 +97,7 @@ export default class Transaction extends Vue {
   isErrorPassword = false;
   password = '';
   isSavePass = false;
+  isDisabled = false;
 
   @Ref('passInput') readonly passInputComponent!: ValidatedInput;
   @Getter(ExtensionGettersTypes.signRequestPayload) payload!: SignerPayloadJSON;
@@ -156,14 +166,6 @@ export default class Transaction extends Vue {
     return registry.createType('ExtrinsicPayload', this.payload, { version: this.payload.version });
   }
 
-  get isMobileSignRequired() {
-    if (!this.payload.address) return false;
-
-    const substrateAddress = BaseApi.encodeAddress(this.payload.address, 42);
-
-    return this.accounts.some((account) => account.address === substrateAddress && account.isMobile);
-  }
-
   get specVersion() {
     return this.typedPayload.specVersion.toNumber();
   }
@@ -189,7 +191,7 @@ export default class Transaction extends Vue {
   }
 
   async mounted() {
-    if (this.isMobileSignRequired) {
+    if (this.isSignMobile) {
       const payload: PayloadJSON = this.payload;
       delete payload.address;
       payload.type = 'json';
@@ -245,10 +247,6 @@ export default class Transaction extends Vue {
     this.signTransactionJSON(this.transactionId);
   }
 
-  async closeSignMobile() {
-    // TODO
-  }
-
   keypress({ key }: KeyboardEvent) {
     if (key === 'Enter') this.sendExtrinsic();
   }
@@ -270,12 +268,17 @@ export default class Transaction extends Vue {
   }
 
   async sendExtrinsic() {
-    const isValidPass = await validatePassword(this.address, this.password);
+    this.isDisabled = true;
 
-    if (!isValidPass) {
-      this.isErrorPassword = true;
+    if (this.isLocked) {
+      const isValidPass = await validatePassword(this.address, this.password);
 
-      return;
+      if (!isValidPass) {
+        this.isErrorPassword = true;
+        this.isDisabled = false;
+
+        return;
+      }
     }
 
     this.onSignApprove({
@@ -297,6 +300,9 @@ export default class Transaction extends Vue {
   .wallet-info {
     margin-bottom: 14px;
   }
+  .input-form {
+    flex-grow: 2;
+  }
 }
 
 .transaction-mobile {
@@ -305,12 +311,6 @@ export default class Transaction extends Vue {
   align-items: center;
   justify-content: space-between;
   flex-flow: column;
-}
-
-.remember-checkbox {
-  width: 100%;
-  display: flex;
-  align-items: flex-start;
 }
 
 .row {
@@ -323,5 +323,21 @@ export default class Transaction extends Vue {
 
 .password-input-margin {
   margin-bottom: 15px;
+}
+.control-form {
+  display: flex;
+  flex-flow: column;
+  align-items: flex-start;
+
+  &-submit {
+    display: flex;
+    flex-flow: row;
+    width: 100%;
+    gap: 6px;
+
+    .button {
+      width: 100%;
+    }
+  }
 }
 </style>

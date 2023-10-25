@@ -1,10 +1,7 @@
 <template>
-  <Row :value="value" :price="price" :icon="icon" :isLoading="isLoading">
-    <Icon v-if="icon && isIconPrepend" :icon="icon" class="icon-info" :class="iconClasses" />
-
+  <Row :value="value" :price="price" :icon="icon" :isLoading="isLoading" :isIconPrepend="isIconPrepend">
+    <Icon v-if="icon" :icon="icon" class="icon-info" :class="iconClasses" />
     {{ $t(text) }}
-
-    <Icon v-if="icon && !isIconPrepend" :icon="icon" class="icon-info--prepend" :class="classes" />
   </Row>
 </template>
 

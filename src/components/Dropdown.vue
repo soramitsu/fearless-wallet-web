@@ -19,18 +19,14 @@
   </FCorners>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-
-@Component
-export default class Dropdown extends Vue {
-  @Prop(String) value!: string;
-  @Prop(Array) options!: Record<string, string>[];
-
-  get label() {
-    return this.options.find(({ value }) => value === this.value)?.label ?? '';
-  }
-}
+<script lang="ts" setup>
+import { computed } from 'vue';
+type Props = {
+  value: string;
+  options: Record<string, string>[];
+};
+const props = defineProps<Props>();
+const label = computed(() => props.options.find(({ value }) => value === props.value)?.label ?? '');
 </script>
 
 <style lang="scss">

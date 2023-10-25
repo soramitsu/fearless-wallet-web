@@ -34,7 +34,6 @@
           :readonly="!isLocked"
           :isError="isErrorPassword"
           :showPassword="true"
-          class="input-form"
           @keypress.native="keypress"
         />
 
@@ -299,9 +298,6 @@ export default class Transaction extends Vue {
 
   .wallet-info {
     margin-bottom: 14px;
-  }
-  .input-form {
-    flex-grow: 2;
   }
 }
 

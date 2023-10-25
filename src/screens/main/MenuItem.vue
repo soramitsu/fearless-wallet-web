@@ -6,29 +6,20 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { ref } from 'vue';
 import type { MenuItem as TMenuItem } from '@/interfaces/common';
 
-@Component
-export default class MenuItem extends Vue {
-  iconClass = ['menu-icon'];
+type Props = {
+  name: TMenuItem;
+  isActive?: boolean;
+};
+const props = withDefaults(defineProps<Props>(), { isActive: false });
 
-  @Prop(String) name!: TMenuItem;
-  @Prop({ default: false }) isActive!: boolean;
-
-  get localeName() {
-    return `menu.${this.name}`;
-  }
-
-  get menuItemClasses() {
-    return ['menu-item', { active: this.isActive }];
-  }
-
-  get img() {
-    return this.name.toLowerCase();
-  }
-}
+const iconClass = ['menu-icon'];
+const localeName = ref(`menu.${props.name}`);
+const menuItemClasses = ref(['menu-item', { active: props.isActive }]);
+const img = ref(props.name.toLowerCase());
 </script>
 
 <style lang="scss" scoped>

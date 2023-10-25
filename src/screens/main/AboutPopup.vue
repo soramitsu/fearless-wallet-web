@@ -99,28 +99,24 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-
+<script lang="ts" setup>
+import { useI18n } from 'vue-i18n-composable';
 import { MAIN_ITEMS, COMMUNITY_ITEMS, SOCIAL_MEDIA_ITEMS, SUPPORT_ITEMS } from '@/consts/extensionInformation';
 
-@Component
-export default class AboutPopup extends Vue {
-  mainItems = MAIN_ITEMS;
-  communityItems = COMMUNITY_ITEMS;
-  socialMediaItems = SOCIAL_MEDIA_ITEMS;
-  supportItems = SUPPORT_ITEMS;
+const emit = defineEmits(['handlerClose']);
+const locale = useI18n();
+const mainItems = MAIN_ITEMS;
+const communityItems = COMMUNITY_ITEMS;
+const socialMediaItems = SOCIAL_MEDIA_ITEMS;
+const supportItems = SUPPORT_ITEMS;
 
-  open(url: string) {
-    window.open(url);
+const t = (value: string) => locale.t(`common.${value}`);
 
-    this.$emit('handlerClose');
-  }
+const open = (url: string) => {
+  window.open(url);
 
-  t(value: string) {
-    return this.$t(`common.${value}`);
-  }
-}
+  emit('handlerClose');
+};
 </script>
 
 <style lang="scss" scoped>

@@ -1,7 +1,6 @@
 <template>
   <div>
     <InfoRow text="assets.market" :value="marketTypeUP" />
-
     <InfoRow text="assets.slippage" :value="`${slippage}%`" />
 
     <template v-if="showSwapInfo">
@@ -38,63 +37,55 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+<script lang="ts" setup>
+import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n-composable';
 import { firstCharToUp } from '@/helpers';
 import { SORA_UTILITY_ASSET } from '@/consts/sora';
+import { useStore } from '@/store';
 
-@Component
-export default class SwapInfo extends Vue {
-  @Prop({ default: '' }) marketType!: string;
-  @Prop({ default: '' }) slippage!: string;
-  @Prop({ default: '' }) sendAmount!: string;
-  @Prop({ default: '' }) receiveAmount!: string;
-  @Prop({ default: '' }) sendValue!: string;
-  @Prop({ default: '' }) receiveValue!: string;
-  @Prop({ default: '' }) minMaxAmount!: string;
-  @Prop({ default: '' }) minMaxAmountPrice!: string;
-  @Prop({ default: '' }) fee!: string;
-  @Prop({ default: '' }) feePrice!: string;
-  @Prop({ default: '' }) providerFee!: string;
-  @Prop({ default: '' }) sendAssetUP!: string;
-  @Prop({ default: '' }) receiveAssetUP!: string;
-  @Prop({ default: '' }) route!: string;
-  @Prop({ default: true }) showSwapInfo!: boolean;
-  @Prop(Boolean) isExchangeB!: boolean;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+type Props = {
+  marketType?: string;
+  slippage?: string;
+  sendAmount?: string;
+  receiveAmount?: string;
+  sendValue?: string;
+  receiveValue?: string;
+  minMaxAmount?: string;
+  minMaxAmountPrice?: string;
+  fee?: string;
+  feePrice?: string;
+  providerFee?: string;
+  sendAssetUP?: string;
+  receiveAssetUP?: string;
+  route?: string;
+  showSwapInfo?: boolean;
+  isExchangeB?: boolean;
+};
+const props = withDefaults(defineProps<Props>(), {
+  marketType: '',
+  slippage: '',
+  sendAmount: '',
+  receiveAmount: '',
+  sendValue: '',
+  receiveValue: '',
+  minMaxAmount: '',
+  minMaxAmountPrice: '',
+  fee: '',
+  feePrice: '',
+  providerFee: '',
+  sendAssetUP: '',
+  receiveAssetUP: '',
+  route: '',
+  showSwapInfo: true,
+});
+const store = useStore();
+const { n } = useI18n();
 
-  get soraMainAsset() {
-    return SORA_UTILITY_ASSET.toUpperCase();
-  }
+const fiatSymbol = ref<string>(store.getters.fiatSymbol);
+const soraMainAsset = SORA_UTILITY_ASSET.toUpperCase();
 
-  get sendAmountCut() {
-    return `${this.$n(+this.sendAmount, 'decimal')} ${this.sendAssetUP}`;
-  }
-
-  get receiveAmountCut() {
-    return `${this.$n(+this.receiveAmount, 'decimal')} ${this.receiveAssetUP}`;
-  }
-
-  get providerFeeCut() {
-    return this.$n(+this.providerFee, 'decimal');
-  }
-
-  get sendValueCut() {
-    return `${this.fiatSymbol} ${this.$n(+this.sendValue, 'price')}`;
-  }
-
-  get receiveValueCut() {
-    return `${this.fiatSymbol} ${this.$n(+this.receiveValue, 'price')}`;
-  }
-
-  get minMaxLabel() {
-    return this.isExchangeB ? 'assets.maxSales' : 'assets.minReceived';
-  }
-
-  get marketTypeUP() {
-    return firstCharToUp(this.marketType);
-  }
-}
+const providerFeeCut = computed(() => n(+props.providerFee, 'decimal'));
+const minMaxLabel = computed(() => (props.isExchangeB ? 'assets.maxSales' : 'assets.minReceived'));
+const marketTypeUP = computed(() => firstCharToUp(props.marketType));
 </script>

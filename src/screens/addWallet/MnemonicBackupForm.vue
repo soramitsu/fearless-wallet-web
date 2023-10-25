@@ -8,16 +8,13 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
 import MnemonicColumns from './MnemonicColumns.vue';
+type Props = {
+  mnemonicArray: string[];
+};
 
-@Component({
-  components: { MnemonicColumns },
-})
-export default class MnemonicBackupForm extends Vue {
-  @Prop(Array) mnemonicArray!: string[];
-}
+defineProps<Props>();
 </script>
 
 <style lang="scss" scoped>

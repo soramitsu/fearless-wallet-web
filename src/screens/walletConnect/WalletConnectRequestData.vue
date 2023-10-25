@@ -33,9 +33,8 @@ import { cut } from '@/helpers';
 const store = useStore();
 const { t } = useI18n();
 const props = defineProps<{ request: WalletConnectTransactionRequest }>();
-
 const params = props.request.params.request.params[0] as Record<string, string>;
-const address = (params.from as string) ?? params[1];
+const address = (params.from as string) ?? props.request.params.request.params[1];
 
 const requestType = computed(() => props.request.params.request.method as EIP155_SIGNING_METHODS);
 const isSignatureRequest = computed(() => requestType.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN);

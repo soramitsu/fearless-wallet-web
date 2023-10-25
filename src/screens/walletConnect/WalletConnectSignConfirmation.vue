@@ -4,7 +4,7 @@
       <div class="scroll__container">
         <Scroll>
           <div class="wc-request">
-            <WalletConnectHeader :name="title" :url="url" :isTx="true" />
+            <WalletConnectHeader :name="origin" :subtext="subtext" :url="url" :isTx="!isSignatureRequest" />
             <Hint v-if="!isSignatureRequest" class="hint" iconName="warning" :text="$t('walletConnect.txHint')" />
             <WalletConnectRequestData :request="request" class="wc-request__details" />
           </div>
@@ -62,7 +62,6 @@ const [request]: WalletConnectTransactionRequest[] = store.getters.wcSignList;
 const method = computed(() => request.params.request.method as EIP155_SIGNING_METHODS);
 const isSignatureRequest = computed(() => method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN);
 const origin = request.verifyContext.verified.origin;
-const title = computed(() => (isSignatureRequest.value ? 'Signature request' : `Request from ${origin}`));
 const address = computed<string>(() => {
   if (method.value === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
     return (request.params.request.params[0].from as string).toLowerCase();
@@ -73,6 +72,7 @@ const address = computed<string>(() => {
 const isLocked = ref(false);
 const min15Label = computed(() => (isLocked.value ? 'assets.15min' : 'assets.15minExtend'));
 
+const subtext = isSignatureRequest.value ? 'walletConnect.signWarning' : undefined;
 const url = computed(() => request.verifyContext.verified.origin);
 const header = computed(() => {
   if (method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN) return 'assets.signature';

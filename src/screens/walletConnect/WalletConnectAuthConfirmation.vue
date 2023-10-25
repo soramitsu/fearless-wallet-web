@@ -111,9 +111,9 @@ const namespaces = computed<ChainData[]>(() => {
 
   const requiredNamespaces = request.value.request.params.requiredNamespaces;
   const optionalNamespaces = request.value.request.params.optionalNamespaces;
-  const transformedRequiredNamespaces = transformNamespaces(requiredNamespaces);
-  const transformedOptionalNamespaces = transformNamespaces(optionalNamespaces);
-
+  const transformedRequiredNamespaces = transformNamespaces(requiredNamespaces, true);
+  if (transformedRequiredNamespaces.length === 0) return [];
+  const transformedOptionalNamespaces = transformNamespaces(optionalNamespaces, false);
   const result = [...transformedRequiredNamespaces, ...transformedOptionalNamespaces];
   const arrSet = new Map();
 
@@ -203,10 +203,8 @@ const onReject = () => {
 .auth-confirmation {
   display: flex;
   align-items: center;
-
   justify-content: space-between;
   flex-direction: column;
-  padding: 6px;
   gap: 10px;
 }
 .namespaces-form {

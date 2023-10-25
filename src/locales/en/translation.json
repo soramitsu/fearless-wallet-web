@@ -328,7 +328,7 @@
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
   },
   "walletConnect": {
-    "noNetworkSupport": "0 network supported",
+    "noNetworkSupport": "There are unknown required networks",
     "personalSign": "Personal Sign",
     "pairingErrorMessage": "Invalid url! Copy url from Wallet Connect and try again",
     "insertUrl": "Insert Wallet Connect url",

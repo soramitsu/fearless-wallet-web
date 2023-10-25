@@ -171,8 +171,7 @@ export class FWSubscription {
   }
 
   init() {
-    this.state.getAuthorize((value) => {
-      const authUrls = this.state.authUrls;
+    this.state.requestService.getAuthorize((authUrls) => {
       const previousAuth = authUrls;
 
       if (previousAuth && Object.keys(previousAuth).length) {
@@ -183,9 +182,9 @@ export class FWSubscription {
         });
       }
 
-      const migrateValue = { ...previousAuth, ...value };
+      const migrateValue = { ...previousAuth, ...authUrls };
 
-      this.state.setAuthorize(migrateValue);
+      this.state.requestService.setAuthorize(migrateValue);
     });
   }
 

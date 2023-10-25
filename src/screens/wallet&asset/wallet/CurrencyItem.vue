@@ -99,7 +99,7 @@ import { Getter, Mutation } from 'vuex-class';
 import { APIItemState, NETWORK_STATUS } from '@extension-base//api/types/networks';
 import type { CustomEvent, Fn } from '@/interfaces';
 import type { SetHiddenAsset, SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';

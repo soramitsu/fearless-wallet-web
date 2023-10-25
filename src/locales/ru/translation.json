@@ -124,7 +124,10 @@
     "authWarningMessage": "Приложение, идентифицирующее себя как {name} запрашивает доступ с {link}",
     "accountsConnected": "Аккаунты, подключенны к {url}",
     "mobile": "мобильный",
-    "connectCountAccounts": "Подключить 1 аккаунт | Подключить {count} аккаунтов"
+    "connectCountAccounts": "Подключить 1 аккаунт | Подключить {count} аккаунтов",
+    "noconnections": "Соединения отсутствуют",
+    "connected": "Подключено",
+    "disconnect": "Отключить"
   },
   "header": {
     "connected": "Подключено",
@@ -322,6 +325,39 @@
   },
   "auth": {
     "noAccounts": "У вас нет аккаунта. Пожалуйста, создайте учетную запись и обновите страницу приложения."
+  },
+  "walletConnect": {
+    "noNetworkSupport": "0 поддерживаемых сетей",
+    "personalSign": "Личная подпись",
+    "signRequestTitle": "Запрос подписи",
+    "txRequestTitle": "Запрос от {url}",
+    "pairingErrorMessage": "Неправильная ссылка! Скопируйте ссылку из Wallet Connect и попробуйте снова",
+    "insertUrl": "Вставьте ссылку из Wallet Connect",
+    "signWarning": "Вы подтверждаете запрос с помощью следующего аккаунта",
+    "requestFields": {
+      "networkError": "Проблемы с распознаванием сети",
+      "amount": "Количество",
+      "network": "Сеть",
+      "gasFee": "Комиссия",
+      "method": "Метод подписания",
+      "message": "Сообщение"
+    },
+    "permissions": {
+      "title": "Доступы приложения",
+      "viewAddress": "Просматривать адрес вашего кошелька",
+      "viewBalances": "Просматривать баланс ваших токенов",
+      "transferAssets": "Отправлять токены без вашего разрешения"
+    },
+    "notifications": {
+      "sessionExpired": {
+        "title": "Срок сессии истек",
+        "message": "Срок сессии истек, пожалуйста, попробуйте снова!"
+      },
+      "sessionApproved": {
+        "title": "Кошелек присоединен",
+        "message": ""
+      }
+    }
   },
   "soraCard": {
     "getCard": "Получить карту СОРА",
@@ -585,6 +621,12 @@
     "polkaswap": "Polkaswap"
   },
   "common": {
+    "wc": "Wallet Connect",
+    "connect": "Подключить",
+    "approve": "Подтвердить",
+    "reject": "Отменить",
+    "sign": "Подписать",
+    "enterAccountPass": "Пароль от этого аккаунта",
     "privacyPolicy": "Политика Конфиденциальности",
     "termsConditions": "Условия и положения",
     "disclaimer": "Отказ от ответственности",
@@ -660,6 +702,7 @@
     "confirmation": "Подтверждение",
     "twitter": "Твиттер",
     "areYouSure": "Вы уверены?",
-    "searchByAddress": "Поиск по адресу или имени"
+    "searchByAddress": "Поиск по адресу или имени",
+    "networks": "Сети"
   }
 }

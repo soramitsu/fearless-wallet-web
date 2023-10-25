@@ -1,56 +1,49 @@
 <template>
-  <SCol class="auth-content" width="100%" v-bind:key="request.id" @click.native="onClick">
-    <SRow>
-      <SCol :span="9" class="s-flex s-justify-start">
-        <span class="auth-item-name">{{ request.origin }}</span>
-      </SCol>
+  <router-link :to="{ name: Components.UpdateAuths, params: { id: stripedUrl } }" v-slot="{ navigate }">
+    <div class="auth-content" width="100%">
+      <div class="row">
+        <div class="row-content" @click="navigate">
+          <div class="col">
+            <ExternalLogo :name="faviconURl" alt="favicon" />
 
-      <SCol :span="3">
-        <SRow flex justify="space-between">
-          <span class="authorized-account__count">
-            {{ authorizedAccounts }}
-          </span>
+            <span class="auth-item-name">{{ stripedUrl }}</span>
+          </div>
 
-          <Icon icon="trash" className="trash" @click="removeAuth" />
-        </SRow>
-      </SCol>
-    </SRow>
-  </SCol>
+          <span class="authorized-account__count">{{ authAccounts }}</span>
+        </div>
+
+        <Icon className="trash row-controls" icon="trash" @click="onRemoveAuth" />
+      </div>
+    </div>
+  </router-link>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
-import { Action } from 'vuex-class';
-import { AuthUrlInfo } from '@extension-base/background/types/types';
-import { stripUrl } from '@extension-base//background/handlers/helpers';
-import type { AsyncFn, CustomEvent } from '@/interfaces';
-import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { stripUrl } from '@extension-base/background/handlers/helpers';
+import { Components } from '@/router/routes';
 
-@Component
-export default class AuthItem extends Vue {
-  @Prop(Object) request!: AuthUrlInfo;
-  @Action(ExtensionActionTypes.DELETE_AUTH_CONNECTION) deleteAuthConnection!: AsyncFn<string>;
+const { authorizedAccounts, url } = defineProps<{
+  url: string;
+  authorizedAccounts: string[];
+}>();
+const emits = defineEmits(['openUpdateAuths', 'remove']);
 
-  get stripUrl() {
-    return stripUrl(this.request.url);
-  }
+const stripedUrl = computed(() => stripUrl(url));
 
-  get authorizedAccounts() {
-    const authListLength = this.request.authorizedAccounts.length;
+const faviconURl = computed(() => {
+  const host = new URL(url).host;
 
-    return `${authListLength} account${authListLength !== 1 ? 's' : ''}`;
-  }
+  return `https://icons.duckduckgo.com/ip3/${host}.ico`;
+});
 
-  removeAuth() {
-    this.deleteAuthConnection(this.stripUrl);
-  }
+const authAccounts = computed(() => {
+  const authListLength = authorizedAccounts.length;
 
-  onClick(event: CustomEvent) {
-    const classList = event.target?.classList;
+  return `${authListLength} account${authListLength !== 1 ? 's' : ''}`;
+});
 
-    if (!classList.contains('trash')) this.$emit('openUpdateAuths', this.stripUrl);
-  }
-}
+const onRemoveAuth = () => emits('remove', stripedUrl.value);
 </script>
 
 <style lang="scss" scoped>
@@ -58,7 +51,18 @@ export default class AuthItem extends Vue {
   background-color: $default-background-color;
   margin: 17px 0;
 }
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 
+  &-content {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
 .auth-item-name {
   font-size: 16px;
 }
@@ -77,5 +81,15 @@ export default class AuthItem extends Vue {
 .trash {
   height: 16px;
   width: 16px;
+}
+.icon-duck {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+}
+.col {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 </style>

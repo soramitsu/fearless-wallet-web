@@ -86,6 +86,8 @@ export default class Row extends Vue {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 1px solid $secondary-background-color;
+  color: $default-white;
 
   .value {
     text-align: right;
@@ -102,7 +104,22 @@ export default class Row extends Vue {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
+
+    .icon-info {
+      width: 18px;
+      height: 18px;
+      color: $grayish-white;
+      cursor: pointer;
+
+      &--prepend {
+        margin-left: 13px;
+      }
+
+      &:hover {
+        color: $default-white;
+      }
+    }
   }
 }
 </style>

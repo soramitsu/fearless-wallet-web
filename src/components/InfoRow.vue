@@ -9,9 +9,11 @@
     :hideLastBorder="hideLastBorder"
     :color="color"
   >
+    <Icon v-if="icon && isIconPrepend" :icon="icon" class="icon-info" :class="classesIcon" />
+
     {{ $t(text) }}
 
-    <Icon v-if="icon" :icon="icon" :class="classesIcon" />
+    <Icon v-if="icon && !isIconPrepend" :icon="icon" class="icon-info--prepend" :class="classesIcon" />
   </Row>
 </template>
 

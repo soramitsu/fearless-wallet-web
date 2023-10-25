@@ -76,6 +76,9 @@ const click = () => {
 .icon--success {
   color: $success-color;
 }
+.icon--error {
+  color: $reject-color;
+}
 
 .icon--purple {
   color: #7700ee;

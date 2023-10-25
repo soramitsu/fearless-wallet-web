@@ -1,5 +1,6 @@
 // components.d.ts
-declare module '@vue/runtime-dom' {
+
+declare module 'vue' {
   export interface GlobalComponents {
     Loading: typeof import('@/components/Loading.vue')['Loading'];
     AboveForm: typeof import('@/components/AboveForm.vue')['AboveForm'];

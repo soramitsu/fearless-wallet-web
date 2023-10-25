@@ -63,6 +63,8 @@ const notificationFn = ({ message, title, type }: SNotificationParams) => {
   });
 };
 
+export const useNotify = () => notificationFn;
+
 Vue.use(ElementUIPlugin)
   .use(SoramitsuUIStorePlugin, { store })
   .use(SButton)

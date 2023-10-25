@@ -34,7 +34,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import History from './History.vue';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import type { Features } from '@/store/extension/types';
 import AssetActionButtons from '@/screens/wallet&asset/asset/AssetActionButtons.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';

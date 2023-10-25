@@ -72,3 +72,14 @@ export type TokenInfo = {
   assetId?: string; // for moon assets
   assetIndex?: number | string;
 };
+
+export interface EvmSendTransactionParams {
+  from: string;
+  to?: string;
+  value?: string | number;
+  gasLimit?: string | number;
+  maxPriorityFeePerGas?: string | number;
+  maxFeePerGas?: string | number;
+  gasPrice?: string | number;
+  data?: string;
+}

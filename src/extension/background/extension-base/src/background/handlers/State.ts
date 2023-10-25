@@ -1,10 +1,10 @@
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
-import { knownGenesis } from '@polkadot/networks/defaults';
+import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
+
 import { assert, u8aToHex } from '@polkadot/util';
 import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
-import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import {
   EventService,
@@ -12,14 +12,15 @@ import {
   OnboardingService,
   KeyringService,
   StakingService,
+  NetworkService,
+  RequestService,
+  WalletConnectService,
 } from '@extension-base/services';
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
-import MetadataStore from '@extension-base/stores/Metadata';
 import { storage } from '@extension-base/stores/Storage';
 import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
 import BalanceService from '@extension-base/shared/balanceService';
-import AuthorizeStore from '@extension-base/stores/Authorize';
 import { initWeb3Api } from '@extension-base/api/evm';
 import PriceStore from '@extension-base/stores/Price';
 import { getTokenPrice } from '@extension-base/utils/coingecko';
@@ -35,46 +36,33 @@ import {
   isEthereumNetwork,
   isRequireEvmAPI,
 } from '@extension-base/background/utils/utils';
-import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
-import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
+import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
-import { SignerPayloadRaw } from '@polkadot/types/types';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
+import { SignerPayloadRaw } from '@polkadot/types/types';
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
+import { PriceJson, ServiceInfo, MobileSignRequest, MobileSigningRequest, ResponseSigning } from '../types';
 import { fetchEvmAssetBalance } from '../../api/evm/balance';
 import { REFRESH_TIME } from '../../api/evm/utils/eth';
 import type {
-  AuthorizeRequest,
-  AuthRequest,
-  AuthResponse,
   AuthUrls,
-  MetadataRequest,
-  MetaRequest,
-  ResponseSigning,
-  SigningRequest,
-  SignRequest,
   Resolver,
   AuthorizedAccountsDiff,
-  AccountJson,
-  RequestAuthorizeTab,
   RequestRpcSend,
   RequestRpcSubscribe,
   RequestRpcUnsubscribe,
-  RequestSign,
   ResponseRpcListProviders,
   Port,
-  RequestAuthorizeCancel,
   IState,
   ActiveTabAuthorizeStatus,
-  ApiProps,
-  BalanceJson,
-  PriceJson,
-  RequestAccountExportPrivateKey,
-  ResponseAccountExportPrivateKey,
-  ServiceInfo,
   BalanceMap,
   Providers,
   ResponseTotalBalances,
+  RequestAuthorizeCancel,
+  ApiProps,
+  BalanceJson,
+  RequestAccountExportPrivateKey,
+  ResponseAccountExportPrivateKey,
   EvmApiMap,
 } from '@extension-base/background/types/types';
 import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
@@ -91,41 +79,6 @@ export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
 import { EXTENSION_ID } from '@/consts/global';
 import { isSameString, isSora } from '@/helpers';
-
-function extractMetadata(store: MetadataStore): void {
-  store.allMap((map): void => {
-    const knownEntries = Object.entries(knownGenesis);
-    const defs: Record<string, { def: MetadataDef; index: number; key: string }> = {};
-    const removals: string[] = [];
-
-    Object.entries(map).forEach(([key, def]): void => {
-      const entry = knownEntries.find(([, hashes]) => hashes.includes(def.genesisHash));
-
-      if (entry) {
-        const [name, hashes] = entry;
-        const index = hashes.indexOf(def.genesisHash);
-
-        // flatten the known metadata based on the genesis index
-        // (lower is better/newer)
-        if (!defs[name] || defs[name].index > index) {
-          if (defs[name]) {
-            // remove the old version of the metadata
-            removals.push(defs[name].key);
-          }
-
-          defs[name] = { def, index, key };
-        }
-      } else {
-        // this is not a known entry, so we will just apply it
-        defs[key] = { def, index: 0, key };
-      }
-    });
-
-    removals.forEach((key) => store.remove(key));
-
-    Object.values(defs).forEach(({ def }) => addMetadata(def));
-  });
-}
 
 export const registry = new TypeRegistry();
 
@@ -151,15 +104,11 @@ export type Prices = {
   timestamp: number;
 };
 
-const metaStore = new MetadataStore();
-
 export default class State {
-  public notification = 'popup';
   public cron: FWCron;
   public timespans: Timespans = {};
   public evmTimeouts: EvmTimeouts = {};
   public passwords: Passwords = {};
-  public windows: number[] = [];
   public prices: Prices = {
     json: {
       tokenPriceMap: {},
@@ -175,12 +124,10 @@ export default class State {
   public chainRegistryMap: Record<string, ChainRegistry> = {};
   public chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
   public readonly unsubscriptionMap: Record<string, () => void> = {};
-  private readonly authorizeStore = new AuthorizeStore();
   private readonly currentAccountStore = new CurrentAccountStore();
   private readonly priceStore = new PriceStore();
   private readonly evmChainSubject = new Subject<AuthUrls>();
   private readonly authorizeUrlSubject = new Subject<AuthUrls>();
-  public authUrls: AuthUrls = {};
   public signature: HexString | null = null;
   public defaultAuthAccountSelection: string[] = [];
   private lockNetworkMap = false;
@@ -190,7 +137,6 @@ export default class State {
   };
   private priceStoreReady = false;
   public fiatSymbol = 'usd';
-  public authorizeCached: AuthUrls | undefined = undefined;
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
   public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
@@ -204,14 +150,8 @@ export default class State {
   public customTokenState: CustomTokenJson = { erc20: [] };
   public customTokenSubject = new Subject<CustomTokenJson>();
   public customTokenStore = new CustomTokenStore();
-  public authRequests: Record<string, AuthRequest> = {};
-  public metaRequests: Record<string, MetaRequest> = {};
-  public signRequests: Record<string, SignRequest> = {};
   public mobileSignRequests: Record<string, MobileSignRequest> = {};
-  public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
-  public readonly metaSubject = new BehaviorSubject<MetadataRequest[]>([]);
-  public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
-  public readonly mobileSignSubject = new BehaviorSubject<MobileSigningRequest[]>([]);
+  public readonly mobileSignSubject = new BehaviorSubject<MobileSigningRequest[]>([]); //TODO MOVE TO. IT's ON HANDLER
   public balanceService = new BalanceService();
   public lazyMap: Record<string, unknown> = {};
   public soraFees: SoraFees = {} as SoraFees;
@@ -223,7 +163,10 @@ export default class State {
   };
   public keyringService = new KeyringService(this);
   public eventService = new EventService();
-  public soraCardService = new SoraCardService();
+  public networkService = new NetworkService(this.eventService);
+  public requestService = new RequestService(this, this.networkService);
+  public walletConnectService = new WalletConnectService(this, this.requestService);
+  public soraCardService = new SoraCardService(this.requestService);
   public onboardingService = new OnboardingService();
   public stakingService = new StakingService(this);
 
@@ -261,15 +204,6 @@ export default class State {
     return this.apis;
   }
 
-  public setAuthorize(data: AuthUrls, callback?: () => void): void {
-    this.authorizeStore.set('authUrls', data, () => {
-      this.authorizeCached = data;
-      this.evmChainSubject.next(this.authorizeCached);
-      this.authorizeUrlSubject.next(this.authorizeCached);
-      callback && callback();
-    });
-  }
-
   public createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
     this.unsubscriptionMap[id] = unsubscribe;
   }
@@ -296,85 +230,26 @@ export default class State {
     return storage.get(key);
   }
 
-  private numAuthRequests() {
-    return Object.keys(this.authRequests).length;
-  }
-
-  private numMetaRequests() {
-    return Object.keys(this.metaRequests).length;
-  }
-
-  private numSignRequests() {
-    return Object.keys(this.signRequests).length;
-  }
-
   public isReady() {
     return this.ready;
-  }
-
-  public allAuthRequests(): AuthorizeRequest[] {
-    return Object.values(this.authRequests).map(({ id, request, url }): AuthorizeRequest => ({ id, request, url }));
-  }
-
-  public allMetaRequests(): MetadataRequest[] {
-    return Object.values(this.metaRequests).map(({ id, request, url }): MetadataRequest => ({ id, request, url }));
-  }
-
-  public allSignRequests(): SigningRequest[] {
-    return Object.values(this.signRequests).map(
-      ({ account, id, request, url }): SigningRequest => ({ account, id, request, url })
-    );
   }
 
   public allMobileSignRequests(): MobileSigningRequest[] {
     return Object.values(this.mobileSignRequests).map(({ id, request }): MobileSigningRequest => ({ id, request }));
   }
 
-  popupClose(): void {
-    this.windows.forEach((id: number) => withErrorLog(() => chrome.windows.remove(id)));
-
-    this.windows = [];
-  }
-
-  popupOpen(): void {
-    if (this.notification && this.notification !== 'extension')
-      chrome.windows.getCurrent((win) => {
-        const popupOptions = { ...POPUP_WINDOW_OPTS };
-
-        if (win) {
-          popupOptions.left = (win.left || 0) + (win.width || 0) - (POPUP_WINDOW_OPTS.width || 0) - 20;
-          popupOptions.top = (win.top || 0) + 75;
-        }
-
-        chrome.windows.create(popupOptions, (window): void => {
-          if (window) this.windows.push(window.id || 0);
-        });
-      });
-  }
-
   async injectFromStorage() {
-    extractMetadata(metaStore);
+    const { defaultAuthAccountSelection, fiatSymbol, injectedProviders, providers, selectedNetworks } =
+      await this.getFromStorage([
+        'fiatSymbol',
+        'authUrls',
+        'selectedNetworks',
+        'defaultAuthAccountSelection',
+        'injectedProviders',
+        'providers',
+        'windows',
+      ]);
 
-    const {
-      authUrls,
-      defaultAuthAccountSelection,
-      fiatSymbol,
-      injectedProviders,
-      providers,
-      windows,
-      selectedNetworks,
-    } = await this.getFromStorage([
-      'fiatSymbol',
-      'authUrls',
-      'selectedNetworks',
-      'defaultAuthAccountSelection',
-      'injectedProviders',
-      'selectedNetworks',
-      'providers',
-      'windows',
-    ]);
-    if (authUrls && Object.keys(authUrls).length) this.authUrls = authUrls;
-    if (windows && windows.length) this.windows = windows;
     if (fiatSymbol) this.setFiatSymbol(fiatSymbol);
     if (selectedNetworks) this.selectedNetworks = selectedNetworks;
     if (injectedProviders) this.injectedProviders = new Map(injectedProviders);
@@ -384,76 +259,10 @@ export default class State {
   }
 
   approvePolkaswap = async (authorizedAccounts: string[]): Promise<void> => {
-    this.soraCardService.approvePolkaswap(authorizedAccounts, this.authUrls);
-
-    await this.saveCurrentAuthList();
+    this.soraCardService.approvePolkaswap(authorizedAccounts);
 
     this.updateDefaultAuthAccounts(authorizedAccounts);
   };
-
-  authComplete = (
-    id: string,
-    resolve: (resValue: AuthResponse) => void,
-    reject: (error: Error) => void
-  ): Resolver<AuthResponse> => {
-    const complete = async (authorizedAccounts: string[] = [], isAllowed = true) => {
-      const {
-        id: idStr,
-        request: { origin },
-        url,
-      } = this.authRequests[id];
-
-      if (!isAllowed) {
-        delete this.authRequests[id];
-        this.updateIconAuth(true);
-
-        return;
-      }
-
-      const stripedUrl = stripUrl(url);
-
-      this.authUrls[stripedUrl] = {
-        authorizedAccounts,
-        count: 0,
-        isAllowed: true,
-        isAllowedMap: {},
-        id: idStr,
-        origin,
-        url,
-      };
-
-      await this.saveCurrentAuthList();
-
-      this.updateDefaultAuthAccounts(authorizedAccounts);
-
-      delete this.authRequests[id];
-
-      this.updateIconAuth(true);
-    };
-
-    return {
-      reject: (error: Error): void => {
-        complete([], false);
-        reject(error);
-      },
-      resolve: ({ authorizedAccounts, result }: AuthResponse): void => {
-        complete(authorizedAccounts);
-        resolve({ authorizedAccounts, result });
-      },
-    };
-  };
-
-  public getAuthorize(update: (value: AuthUrls) => void): void {
-    // This action can be use many by DApp interaction => caching it in memory
-    if (this.authorizeCached) {
-      update(this.authorizeCached);
-    } else {
-      this.authorizeStore.get('authUrls', (data) => {
-        this.authorizeCached = data;
-        update(this.authorizeCached);
-      });
-    }
-  }
 
   public updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
     if (!tab || !tab.url) {
@@ -472,14 +281,16 @@ export default class State {
         ? 'header.currentExtensionPage'
         : url.hostname;
 
-    const authorizeUrl = Object.keys(this.authUrls).filter((url) => url === tabHostName);
-    const isAuthorize = authorizeUrl.length !== 0;
+    this.requestService.getAuthorize((authUrls) => {
+      const authorizeUrl = Object.keys(authUrls).filter((url) => url === tabHostName);
+      const isAuthorize = authorizeUrl.length !== 0;
 
-    this.currentTabStatus = {
-      isAuthorize,
-      authorizeAccountsCount: isAuthorize ? this.authUrls[tabHostName].authorizedAccounts.length : 0,
-      dAppName: tabHostName,
-    };
+      this.currentTabStatus = {
+        isAuthorize,
+        authorizeAccountsCount: isAuthorize ? authUrls[tabHostName].authorizedAccounts.length : 0,
+        dAppName: tabHostName,
+      };
+    });
   }
 
   public async onInstall() {
@@ -580,7 +391,7 @@ export default class State {
 
     this.lockNetworkMap = false;
 
-    this.getAuthorize((data) => {
+    this.requestService.getAuthorize((data) => {
       if (this.networkMap[networkKey].isEthereum) this.evmChainSubject.next(data);
 
       this.authorizeUrlSubject.next(data);
@@ -709,14 +520,8 @@ export default class State {
     return this.currentTabStatus;
   }
 
-  deleteAuthRequest(requestId: string) {
-    delete this.authRequests[requestId];
-
-    this.updateIconAuth(true);
-  }
-
   async authorizeCancel({ id }: RequestAuthorizeCancel): Promise<boolean> {
-    const queued = await this.getAuthRequest(id);
+    const queued = await this.requestService.getAuthRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -726,10 +531,6 @@ export default class State {
     reject(new Error('Cancelled'));
 
     return true;
-  }
-
-  private saveCurrentAuthList() {
-    return storage.set({ authUrls: this.authUrls });
   }
 
   updateDefaultAuthAccounts(defaultAuthAccountSelection: string[]) {
@@ -752,51 +553,6 @@ export default class State {
     this.networkMapSubject.next(this.networkMap);
     this.networkMapStore.set('NetworkMap', this.networkMap);
   }
-
-  private metaComplete = (
-    id: string,
-    resolve: (result: boolean) => void,
-    reject: (error: Error) => void
-  ): Resolver<boolean> => {
-    const complete = (): void => {
-      delete this.metaRequests[id];
-
-      this.updateIconMeta(true);
-    };
-
-    return {
-      reject: (error: Error): void => {
-        complete();
-        reject(error);
-      },
-      resolve: (result: boolean): void => {
-        complete();
-        resolve(result);
-      },
-    };
-  };
-
-  private signComplete = (
-    id: string,
-    resolve: (result: ResponseSigning) => void,
-    reject: (error: Error) => void
-  ): Resolver<ResponseSigning> => {
-    const complete = (): void => {
-      delete this.signRequests[id];
-      this.updateIconSign(true);
-    };
-
-    return {
-      reject: (error: Error): void => {
-        complete();
-        reject(error);
-      },
-      resolve: (result: ResponseSigning): void => {
-        complete();
-        resolve(result);
-      },
-    };
-  };
 
   private signMobileComplete = (
     id: string,
@@ -822,140 +578,27 @@ export default class State {
     };
   };
 
-  async updateIcon(shouldClose?: boolean): Promise<void> {
-    const authCount = this.numAuthRequests();
-    const metaCount = this.numMetaRequests();
-    const signCount = this.numSignRequests();
-
-    const text = authCount ? 'Auth' : metaCount ? 'Meta' : signCount ? `${signCount}` : '';
-
-    withErrorLog(() => {
-      if (chrome.browserAction) chrome.browserAction.setBadgeText({ text });
-      else chrome.action.setBadgeText({ text });
-    });
-
-    if (shouldClose && text === '') {
-      this.popupClose();
-    }
-  }
-
   async removeAuthorization(url: string): Promise<AuthUrls> {
-    const entry = this.authUrls[url];
+    const entries = await this.requestService.getAuthList();
+    const entry = entries[url];
 
     assert(entry, `The source ${url} is not known`);
 
-    delete this.authUrls[url];
+    delete entries[url];
 
-    await this.saveCurrentAuthList();
+    this.requestService.setAuthorize(entries);
 
-    return this.authUrls;
+    return entries;
   }
 
-  updateIconAuth(shouldClose?: boolean): void {
-    const allAuthRequests = this.allAuthRequests();
+  async updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
+    const entries = await this.requestService.getAuthList();
 
-    this.authSubject.next(allAuthRequests);
-
-    this.updateIcon(shouldClose);
-  }
-
-  updateIconMeta(shouldClose?: boolean): void {
-    const allMetaRequests = this.allMetaRequests();
-
-    this.metaSubject.next(allMetaRequests);
-    this.updateIcon(shouldClose);
-  }
-
-  updateIconSign(shouldClose?: boolean): void {
-    const allSignRequests = this.allSignRequests();
-
-    this.signSubject.next(allSignRequests);
-    this.updateIcon(shouldClose);
-  }
-
-  updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
     authorizedAccountDiff.forEach(([url, authorizedAccountDiff]) => {
-      this.authUrls[url].authorizedAccounts = authorizedAccountDiff;
+      entries[url].authorizedAccounts = authorizedAccountDiff;
     });
 
-    return this.saveCurrentAuthList();
-  }
-
-  async authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<AuthResponse> {
-    const idStr = stripUrl(url);
-
-    // Do not enqueue duplicate authorization requests.
-    const isDuplicate = Object.values(this.authRequests).some((request) => request.idStr === idStr);
-
-    assert(!isDuplicate, `The source ${url} has a pending authorization request`);
-
-    if (this.authUrls[idStr]) {
-      // this url was seen in the past
-      assert(
-        this.authUrls[idStr].authorizedAccounts || this.authUrls[idStr].isAllowed,
-        `The source ${url} is not allowed to interact with this extension`
-      );
-
-      return {
-        authorizedAccounts: [],
-        result: false,
-      };
-    }
-
-    return new Promise((res, rej): void => {
-      const id = getId();
-
-      const { reject, resolve } = this.authComplete(id, res, rej);
-
-      this.authRequests[id] = {
-        reject,
-        resolve,
-        id,
-        idStr,
-        request,
-        url,
-      };
-
-      this.updateIconAuth();
-      this.popupOpen();
-    });
-  }
-
-  ensureUrlAuthorized(url: string): boolean {
-    const stripedUrl = stripUrl(url);
-    const entry = this.authUrls[stripedUrl];
-
-    assert(entry, `The source ${url} has not been enabled yet`);
-
-    return true;
-  }
-
-  injectMetadata(url: string, request: MetadataDef): Promise<boolean> {
-    return new Promise((resolve, reject): void => {
-      const id = getId();
-
-      this.metaRequests[id] = {
-        ...this.metaComplete(id, resolve, reject),
-        id,
-        request,
-        url,
-      };
-
-      this.updateIconMeta();
-      this.popupOpen();
-    });
-  }
-
-  getAuthRequest(id: string): AuthRequest {
-    return this.authRequests[id];
-  }
-
-  getMetaRequest(id: string): MetaRequest {
-    return this.metaRequests[id];
-  }
-
-  getSignRequest(id: string): SignRequest {
-    return this.signRequests[id];
+    return this.requestService.setAuthorize(entries);
   }
 
   getMobileSignRequest(id: string): MobileSignRequest {
@@ -1038,26 +681,19 @@ export default class State {
     return provider.unsubscribe(request.type, request.method, request.subscriptionId);
   }
 
-  saveMetadata(meta: MetadataDef): void {
-    metaStore.set(meta.genesisHash, meta);
+  findNetworkKeyByChainId(_chainId?: string | null): [string | undefined, NetworkJson | undefined] {
+    if (!_chainId) return [undefined, undefined];
 
-    addMetadata(meta);
+    const rs = Object.entries(this.networkMap).find(([, chainInfo]) => chainInfo.chainId === _chainId);
+
+    if (rs) return rs;
+    else return [undefined, undefined];
   }
 
-  sign(url: string, request: RequestSign, account: AccountJson): Promise<ResponseSigning> {
-    const id = getId();
+  saveMetadata(meta: MetadataDef): void {
+    this.requestService.saveMetadata(meta);
 
-    return new Promise((resolve, reject): void => {
-      this.signRequests[id] = {
-        ...this.signComplete(id, resolve, reject),
-        account,
-        id,
-        request,
-        url,
-      };
-      this.updateIconSign();
-      this.popupOpen();
-    });
+    addMetadata(meta);
   }
 
   signMobile(request: SignerPayloadRaw): Promise<ResponseSigning> {

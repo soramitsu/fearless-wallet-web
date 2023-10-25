@@ -39,9 +39,10 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { AccountJson, SigningRequest } from '@extension-base/background/types/types';
-import registry from '@extension-base//api/substrate/typeRegistry';
+import registry from '@extension-base/api/substrate/typeRegistry';
+import type { AccountJson } from '@extension-base/background/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
+import type { SigningRequest } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import Checkbox from '@/components/Checkbox.vue';
 import WalletInfo from '@/screens/extension-ui/signing/WalletInfo.vue';

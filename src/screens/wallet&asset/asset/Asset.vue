@@ -53,7 +53,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import HistoryDetailsForm from '@/screens/wallet&asset/asset/HistoryDetailsForm.vue';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';

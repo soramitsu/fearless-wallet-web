@@ -398,10 +398,6 @@ export default class Header extends Vue {
     width: 9px;
   }
 
-  .icon--network {
-    height: 16px;
-    width: 16px;
-  }
   .copy {
     filter: invert(0.5);
     width: 20px;

@@ -33,7 +33,13 @@ interface MakeTransferParams extends TransferParams {
   callback: (data: BasicTxResponse) => void;
 }
 
-export async function handleTransfer({ callback, networkKey, privateKey, tx, state }: HandleTransferProps) {
+export async function handleTransfer({
+  callback,
+  networkKey,
+  privateKey,
+  tx,
+  state,
+}: HandleTransferProps): Promise<void> {
   const web3Api = state.getEvmApiMap[networkKey];
   const signer = new Wallet(privateKey, web3Api);
 

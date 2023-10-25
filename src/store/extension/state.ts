@@ -3,16 +3,24 @@ import {
   AuthorizeRequest,
   AuthUrlInfo,
   MetadataRequest,
-  SigningRequest,
-} from '@extension-base/background/types/types';
+} from '@extension-base/background/types';
 import type { Features } from '@/store/extension/types';
+import type { SigningRequest } from '@extension-base/background/types/types';
+import type {
+  WalletConnectNotSupportRequest,
+  WalletConnectSessionRequest,
+  WalletConnectSessions,
+  WalletConnectTransactionRequest,
+} from '@extension-base/services/wallet-connect-service/types';
 
 export type State = {
-  requests: {
-    auth: AuthorizeRequest[];
-    sign: SigningRequest[];
-    meta: MetadataRequest[];
-  };
+  authRequests: AuthorizeRequest[];
+  signRequests: SigningRequest[];
+  metaRequests: MetadataRequest[];
+  wcConnectRequests: WalletConnectSessionRequest[];
+  wcNotSupportedRequests: WalletConnectNotSupportRequest[];
+  wcRequests: WalletConnectTransactionRequest[];
+  wcSessions: WalletConnectSessions;
   authList: Record<string, AuthUrlInfo>;
   tabStatus: ActiveTabAuthorizeStatus | null;
   features: Nullable<Features>;
@@ -21,11 +29,13 @@ export type State = {
 
 const state = (): State => {
   return {
-    requests: {
-      auth: [],
-      meta: [],
-      sign: [],
-    },
+    authRequests: [],
+    signRequests: [],
+    metaRequests: [],
+    wcConnectRequests: [],
+    wcNotSupportedRequests: [],
+    wcRequests: [],
+    wcSessions: [],
     authList: {},
     tabStatus: null,
     features: null,

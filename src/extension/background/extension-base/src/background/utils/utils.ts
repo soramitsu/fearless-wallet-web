@@ -147,3 +147,13 @@ export function getEthereumAddress(address: string, state: State) {
 
   return account?.address ?? address;
 }
+
+export const uniqueStringArray = (array: string[]): string[] => {
+  const map: Record<string, string> = {};
+
+  array.forEach((v) => {
+    map[v] = v;
+  });
+
+  return Object.keys(map);
+};

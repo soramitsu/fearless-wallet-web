@@ -10,7 +10,7 @@ import type {
   ResponseSigningIsLocked,
   ValidateJsonResult,
   RequestUpdateMeta,
-} from '@extension-base/background/types/types';
+} from '@extension-base/background/types';
 import type State from '@extension-base/background/handlers/State';
 import type { KeyringPair } from '@polkadot/keyring/types';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
@@ -63,7 +63,7 @@ export default class FWExtensionBase {
         this.state.setCurrentAccount(
           {
             ...account!,
-            ethereumAddress: meta.ethereumAddress,
+            ethereumAddress: (meta.ethereumAddress as string) ?? '',
           },
           cb
         )

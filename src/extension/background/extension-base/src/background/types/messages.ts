@@ -10,6 +10,9 @@ import {
 import type {
   BasicTxResponse,
   NotificationResponse,
+  RequestCrossChain,
+  RequestSwap,
+  RequestTransfer,
   ResponseCheckTransfer,
   SigningRequest,
 } from '@extension-base/background/types/types';
@@ -53,8 +56,6 @@ import type {
   RequestCheckTransfer,
   RequestCheckCrossChain,
   ResponseCheckCrossChain,
-  RequestTransfer,
-  RequestCrossChain,
   BalanceJson,
   PriceJson,
   RequestSubscribePrice,
@@ -67,7 +68,6 @@ import type {
   RequestRpcSubscribe,
   RequestCheckSwap,
   ResponseCheckSwap,
-  RequestSwap,
   ResponseMakeSwap,
   RequestUpdateMeta,
   ResponseTotalBalances,

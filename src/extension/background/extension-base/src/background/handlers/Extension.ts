@@ -13,7 +13,7 @@ import { createSubscription, unsubscribe } from '@extension-base/background/hand
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
 import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
-import { PriceJson, RequestMobileSign } from '@extension-base/background/types';
+import { PriceJson, RequestMobileSign, RequestSigningIsLocked } from '@extension-base/background/types';
 import {
   getSubstrateAddress,
   isRequireEvmAPI,
@@ -102,7 +102,6 @@ import type {
   RequestSigningApprovePassword,
   RequestSigningApproveSignature,
   RequestSigningCancel,
-  RequestSigningIsLocked,
   RequestTypes,
   RequestUpdateAuthorizedAccounts,
   ResponseAuthorizeList,

@@ -375,19 +375,17 @@ export interface ResponseMakeSwap {
   status: boolean;
 }
 
-export type PasswordRequestSign<T extends BaseRequestSign> = T & { password: string; isSavePass?: boolean };
+export type PasswordRequestSign<T extends BaseRequestSign> = T & {
+  password: string;
+  isSavePass?: boolean;
+  isMobile?: true;
+};
 
 export type ExternalRequestSign<T extends BaseRequestSign> = Omit<T, 'password'>;
-export interface RequestSwap extends PasswordRequestSign<RequestCheckSwap> {
-  feeSymbol?: string;
-}
+
 export interface BasicSwapResponse {
   feeSymbol?: string;
 }
-
-export type RequestTransfer = PasswordRequestSign<RequestCheckTransfer>;
-
-export type RequestCrossChain = PasswordRequestSign<RequestCheckCrossChain>;
 
 export interface RequestAccountExportPrivateKey {
   address: string;

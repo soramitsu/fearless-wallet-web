@@ -1242,7 +1242,7 @@ export default class Extension extends FWExtensionBase {
     }
 
     for (const [key, namespace] of optionalEntries) {
-      if (isSupportWalletConnectNamespace(key)) continue;
+      if (!isSupportWalletConnectNamespace(key)) continue;
       if (!namespace.chains) continue;
 
       const supportChains = namespace.chains.filter((chain) => isSupportWalletConnectChain(chain, chainInfoMap)) || [];

@@ -4,7 +4,7 @@
       <div class="scroll__container">
         <Scroll>
           <div class="auth-confirmation">
-            <WalletConnectHeader :name="title" :url="url" :isTx="false" />
+            <WalletConnectHeader :name="title" :url="url" />
             <AppPermissions />
 
             <ContentForm
@@ -111,12 +111,20 @@ const namespaces = computed<ChainData[]>(() => {
 
   const requiredNamespaces = request.value.request.params.requiredNamespaces;
   const optionalNamespaces = request.value.request.params.optionalNamespaces;
-
   const transformedRequiredNamespaces = transformNamespaces(requiredNamespaces);
   const transformedOptionalNamespaces = transformNamespaces(optionalNamespaces);
 
-  return [...transformedRequiredNamespaces, ...transformedOptionalNamespaces];
+  const result = [...transformedRequiredNamespaces, ...transformedOptionalNamespaces];
+  const arrSet = new Map();
+
+  result.forEach((el) => {
+    if (arrSet.has(el.name)) return;
+    arrSet.set(el.name, el);
+  });
+
+  return Array.from(arrSet.values()) as unknown as ChainData[];
 });
+
 const isSupportNetwork = computed(() => namespaces.value.length !== 0);
 
 const onApprove = async () => {
@@ -199,7 +207,7 @@ const onReject = () => {
   justify-content: space-between;
   flex-direction: column;
   padding: 6px;
-  gap: 5px;
+  gap: 10px;
 }
 .namespaces-form {
   width: 100%;

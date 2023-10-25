@@ -1,6 +1,6 @@
 <template>
   <AboveForm :fullScreen="true" header="assets.transaction" @closeHandler="onReject">
-    <div v-if="isMobileSignRequired" class="transaction-mobile">
+    <div v-if="isSignMobile" class="transaction-mobile">
       <Loader />
 
       <FButton
@@ -21,62 +21,123 @@
         <InfoList>
           <InfoItem v-for="(value, key) in txInfo" :name="key" :value="value" :key="key" />
         </InfoList>
-
-        <ConfirmationPasswordPopup
-          v-if="isSignPopupVisible"
-          sizeWidth="medium"
-          :address="payload.address"
-          :transactionId="request.id"
-          :payload="payload"
-          @close="onClose"
-        />
       </div>
+      <div class="control-form">
+        <ValidatedInput
+          v-if="isLocked"
+          ref="passInput"
+          v-model="password"
+          placeholder="common.password"
+          size="big"
+          :class="classesInput"
+          errorDescriptions="common.invalidPassword"
+          :readonly="!isLocked"
+          :isError="isErrorPassword"
+          :showPassword="true"
+          @keypress.native="keypress"
+        />
 
-      <FButton size="big" class="button" text="assets.signTransaction" @click="onSign" />
+        <Checkbox v-model="isSavePass" size="medium" :label="$t(min15Label)" />
+
+        <div class="control-form-submit">
+          <FButton
+            size="big"
+            type="secondary"
+            class="button"
+            :disabled="isDisabled"
+            :border="false"
+            text="common.cancel"
+            @click="onReject"
+          />
+
+          <FButton size="big" :disabled="isDisabled" class="button" text="common.accept" @click="sendExtrinsic" />
+        </div>
+      </div>
     </div>
   </AboveForm>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Component, Vue, Watch, Ref } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import registry from '@extension-base/api/substrate/typeRegistry';
-import type { AccountJson } from '@extension-base/background/types';
+import type { AccountJson, SigningRequest } from '@extension-base/background/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import type { SigningRequest } from '@extension-base/background/types/types';
+import type ValidatedInput from '@/components/ValidatedInput.vue';
 import BaseApi from '@/util/BaseApi';
 import Checkbox from '@/components/Checkbox.vue';
 import WalletInfo from '@/screens/extension-ui/signing/WalletInfo.vue';
 import InfoList from '@/screens/extension-ui/InfoList.vue';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
-import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
-import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
+import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
 import { AsyncFn, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import { beaconController, ExtensionController } from '@/controllers';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { SelectedWallet } from '@/store';
+import { IS_EXTENSION } from '@/consts/global';
+import { isSignLocked, validatePassword } from '@/extension/messaging';
+import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 
 @Component({
   components: {
     WalletInfo,
-    ConfirmationPasswordPopup,
     InfoItem,
     InfoList,
     Checkbox,
+    SignMobile,
   },
 })
-export default class Auth extends Vue {
-  isLocked = false;
+export default class Transaction extends Vue {
+  readonly isExtension = IS_EXTENSION;
+  isLocked = true;
   isSignPopupVisible = false;
+  isErrorPassword = false;
+  password = '';
+  isSavePass = false;
+  isDisabled = false;
 
+  @Ref('passInput') readonly passInputComponent!: ValidatedInput;
   @Getter(ExtensionGettersTypes.signRequestPayload) payload!: SignerPayloadJSON;
   @Getter(ExtensionGettersTypes.signList) requests!: SigningRequest[];
   @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: AsyncFn<string>;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+  @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: AsyncFn<ApprovePayload>;
+
+  get classesInput() {
+    return [
+      'row',
+      'password-input',
+      {
+        'password-input-margin': !this.isExtension,
+      },
+    ];
+  }
+
+  get transactionId() {
+    return this.request.id;
+  }
+
+  get disabledButton() {
+    if (!this.isLocked) return false;
+
+    return this.password === '' || this.isErrorPassword;
+  }
+
+  get transactionAddress() {
+    return this.payload?.address ?? this.selectedWallet.address;
+  }
 
   get request() {
     return this.requests[0];
+  }
+
+  get isSignMobile() {
+    const encodedAddress = BaseApi.encodeAddress(this.transactionAddress);
+
+    return this.accounts.some((account) => account.address === encodedAddress && account.isMobile);
   }
 
   get address() {
@@ -104,14 +165,6 @@ export default class Auth extends Vue {
     return registry.createType('ExtrinsicPayload', this.payload, { version: this.payload.version });
   }
 
-  get isMobileSignRequired() {
-    if (!this.payload.address) return false;
-
-    const substrateAddress = BaseApi.encodeAddress(this.payload.address, 42);
-
-    return this.accounts.some((account) => account.address === substrateAddress && account.isMobile);
-  }
-
   get specVersion() {
     return this.typedPayload.specVersion.toNumber();
   }
@@ -132,8 +185,12 @@ export default class Auth extends Vue {
     return this.mortalityAsString(this.typedPayload.era, this.payload.blockNumber);
   }
 
+  get min15Label() {
+    return this.isLocked ? 'assets.15min' : 'assets.15minExtend';
+  }
+
   async mounted() {
-    if (this.isMobileSignRequired) {
+    if (this.isSignMobile) {
       const payload: PayloadJSON = this.payload;
       delete payload.address;
       payload.type = 'json';
@@ -146,6 +203,22 @@ export default class Auth extends Vue {
 
       this.$router.push({ name: Components.Wallet });
     }
+
+    if (!IS_EXTENSION || this.isSignMobile) return;
+
+    this.passInputComponent.input.focus();
+
+    const { isLocked } = await isSignLocked(this.transactionAddress);
+
+    this.isLocked = isLocked;
+    this.isSavePass = !this.isLocked;
+
+    if (!isLocked) this.password = '000000';
+  }
+
+  @Watch('password')
+  async resetStatusError() {
+    this.isErrorPassword = false;
   }
 
   @Watch('requests')
@@ -161,16 +234,57 @@ export default class Auth extends Vue {
     return `mortal, valid from ${birth} to ${death}`;
   }
 
-  onSign() {
-    this.isSignPopupVisible = true;
-  }
-
   onClose() {
     this.isSignPopupVisible = false;
   }
 
   async onReject() {
     this.onSignCancel(this.request.id);
+  }
+
+  async onSignMobile() {
+    this.signTransactionJSON(this.transactionId);
+  }
+
+  keypress({ key }: KeyboardEvent) {
+    if (key === 'Enter') this.sendExtrinsic();
+  }
+
+  async signTransactionJSON(id: string) {
+    const payload: PayloadJSON = this.payload as SignerPayloadJSON;
+    delete payload.address;
+    payload.type = 'json';
+
+    const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
+
+    if (blockchainData.signature.length === 0) {
+      ExtensionController.cancelSign(id);
+
+      return;
+    }
+
+    ExtensionController.approveSignSignature(id, blockchainData.signature);
+  }
+
+  async sendExtrinsic() {
+    this.isDisabled = true;
+
+    if (this.isLocked) {
+      const isValidPass = await validatePassword(this.address, this.password);
+
+      if (!isValidPass) {
+        this.isErrorPassword = true;
+        this.isDisabled = false;
+
+        return;
+      }
+    }
+
+    this.onSignApprove({
+      id: this.transactionId,
+      isSavePass: this.isSavePass,
+      password: this.password,
+    });
   }
 }
 </script>
@@ -193,5 +307,33 @@ export default class Auth extends Vue {
   align-items: center;
   justify-content: space-between;
   flex-flow: column;
+}
+
+.row {
+  margin-top: 15px;
+}
+
+.password-input {
+  width: 100%;
+}
+
+.password-input-margin {
+  margin-bottom: 15px;
+}
+.control-form {
+  display: flex;
+  flex-flow: column;
+  align-items: flex-start;
+
+  &-submit {
+    display: flex;
+    flex-flow: row;
+    width: 100%;
+    gap: 6px;
+
+    .button {
+      width: 100%;
+    }
+  }
 }
 </style>

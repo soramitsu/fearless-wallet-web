@@ -995,7 +995,6 @@ export default class Extension extends FWExtensionBase {
   }
 
   savePass(address: string, ethereumAddress: string | undefined, isSavePass: boolean, isMobile: boolean) {
-    console.error(address, ethereumAddress, this.cachedUnlocks, isSavePass);
     if (isMobile) return;
 
     if (isSavePass) {

@@ -85,9 +85,10 @@ const router = useRouter();
 const store = useStore();
 const notify = useNotify();
 const { t } = useI18n();
-
-const selectedAddress = ref<string>(store.getters.selectedWallet.ethereumAddress);
-const wallets = ref<AccountJson[]>(store.getters.getAccounts);
+const wallets = ref<AccountJson[]>(
+  (store.getters.getAccounts as AccountJson[]).filter((el) => el.ethereumAddress && !el.isMobile)
+);
+const selectedAddress = ref<string>(wallets.value[0].ethereumAddress);
 const cutAddress = computed(() => cut(selectedAddress.value));
 const selectedWalletName = computed(
   () => wallets.value.find(({ ethereumAddress }) => ethereumAddress === selectedAddress.value)?.name ?? ''

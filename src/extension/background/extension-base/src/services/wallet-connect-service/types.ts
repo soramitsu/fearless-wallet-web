@@ -24,6 +24,7 @@ export type WalletConnectTransactionRequest = SignClientTypes.EventArguments['se
 export interface RequestApproveWalletConnect {
   address: string;
   password: string;
+  isSavePass: boolean;
   topic: string;
 }
 

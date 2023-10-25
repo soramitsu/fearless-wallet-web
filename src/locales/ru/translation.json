@@ -332,6 +332,8 @@
     "txRequestTitle": "Запрос от {url}",
     "pairingErrorMessage": "Неправильная ссылка! Скопируйте ссылку из Wallet Connect и попробуйте снова",
     "insertUrl": "Вставьте ссылку из Wallet Connect",
+    "txHint": "Внимание: эта операция может перевести ассеты",
+    "usupportedNetwork": "Сеть не поддерживается",
     "signWarning": "Вы подтверждаете запрос с помощью следующего аккаунта",
     "requestFields": {
       "networkError": "Проблемы с распознаванием сети",

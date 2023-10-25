@@ -8,6 +8,7 @@
             :text="txWallet.name"
             :value="cutAddress(txWallet.ethereumAddress)"
             icon="wallet-logo-transaction"
+            class="tx-details__row"
             :isIconPrepend="true"
           />
         </template>
@@ -113,6 +114,7 @@ const txWallet = computed(() => {
   border: 1px solid transparent;
   border-bottom-color: $default-background-color;
   display: flex;
+  margin: 0;
 }
 .tx-details__list:last-child {
   border-bottom-color: transparent;

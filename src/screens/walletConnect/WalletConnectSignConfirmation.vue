@@ -5,41 +5,47 @@
         <Scroll>
           <div class="wc-request">
             <WalletConnectHeader :name="origin" :subtext="subtext" :url="url" :isTx="!isSignatureRequest" />
-
+            <Hint v-if="!isSignatureRequest" class="hint" iconName="warning" :text="$t('walletConnect.txHint')" />
             <WalletConnectRequestData :request="request" class="wc-request__details" />
           </div>
         </Scroll>
       </div>
+      <div>
+        <div class="pass-form">
+          <ValidatedInput
+            v-if="isLocked"
+            v-model="password"
+            placeholder="common.enterAccountPass"
+            errorDescriptions="common.invalidPassword"
+            :showPassword="true"
+            class="wc-request__input"
+            :isError="isPassValid"
+          />
+          <Checkbox :value="isSavePass" @change="onSavePass" size="medium" :label="$t(min15Label)" />
+        </div>
 
-      <ValidatedInput
-        v-model="password"
-        placeholder="common.enterAccountPass"
-        errorDescriptions="common.invalidPassword"
-        :showPassword="true"
-        class="wc-request__input"
-        :isError="isPassValid"
-      />
+        <div class="controls">
+          <FButton text="common.cancel" type="secondary" :border="false" width="100%" @click="onReject" />
 
-      <div class="controls">
-        <FButton text="common.cancel" type="secondary" :border="false" width="100%" @click="onReject" />
-
-        <FButton text="common.sign" width="100%" @click="onApprove" />
+          <FButton text="common.sign" width="100%" @click="onApprove" />
+        </div>
       </div>
     </div>
   </AboveForm>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import {
   EIP155_SIGNING_METHODS,
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 import { TransferErrorCode, BasicTxErrorCode } from '@extension-base/background/types';
+import { useI18n } from 'vue-i18n-composable';
 import WalletConnectRequestData from './WalletConnectRequestData.vue';
 import WalletConnectHeader from './WalletConnectHeader.vue';
-import { walletConnectRequestReject, walletConnectRequestApprove } from '@/extension/messaging';
+import { walletConnectRequestReject, walletConnectRequestApprove, isSignLocked } from '@/extension/messaging';
 import { useStore } from '@/store';
 import { useNotify } from '@/plugins/soramitsuUI';
 type Error = { message: TransferErrorCode.UNSUPPORTED | BasicTxErrorCode.KEYRING_ERROR };
@@ -47,7 +53,8 @@ type Error = { message: TransferErrorCode.UNSUPPORTED | BasicTxErrorCode.KEYRING
 const store = useStore();
 const router = useRouter();
 const notify = useNotify();
-
+const { t } = useI18n();
+const isSavePass = ref(false);
 const password = ref('');
 const isPassValid = ref(false);
 const [request]: WalletConnectTransactionRequest[] = store.getters.wcSignList;
@@ -55,6 +62,16 @@ const [request]: WalletConnectTransactionRequest[] = store.getters.wcSignList;
 const method = computed(() => request.params.request.method as EIP155_SIGNING_METHODS);
 const isSignatureRequest = computed(() => method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN);
 const origin = request.verifyContext.verified.origin;
+const address = computed<string>(() => {
+  if (method.value === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
+    return (request.params.request.params[0].from as string).toLowerCase();
+  }
+
+  return request.params.request.params[1].toLowerCase();
+});
+const isLocked = ref(false);
+const min15Label = computed(() => (isLocked.value ? 'assets.15min' : 'assets.15minExtend'));
+
 const subtext = isSignatureRequest.value ? 'walletConnect.signWarning' : undefined;
 const url = computed(() => request.verifyContext.verified.origin);
 const header = computed(() => {
@@ -62,13 +79,13 @@ const header = computed(() => {
 
   return 'assets.transaction';
 });
+const onSavePass = (value: boolean) => (isSavePass.value = value);
 
-const address = computed(() => {
-  if (method.value === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
-    return request.params.request.params[0].from as string;
-  }
+onMounted(async () => {
+  const res = await isSignLocked(address.value);
+  isLocked.value = res.isLocked;
 
-  return request.params.request.params[1];
+  if (!res.isLocked) isSavePass.value = true;
 });
 
 const onReject = () => {
@@ -84,7 +101,11 @@ const onError = (error: Error) => {
   }
 
   if (error.message === TransferErrorCode.UNSUPPORTED) {
-    notify({ message: 'Unsupported network', title: 'Unsupported network', type: 'warn' });
+    notify({
+      message: '',
+      title: t('walletConnect.usupportedNetwork').toString(),
+      type: 'warn',
+    });
     onReject();
 
     router.back();
@@ -93,7 +114,9 @@ const onError = (error: Error) => {
 
 const onApprove = async () => {
   isPassValid.value = false;
-  const res = await walletConnectRequestApprove(address.value, password.value, request.topic).catch(onError);
+  const res = await walletConnectRequestApprove(address.value, password.value, request.topic, isSavePass.value).catch(
+    onError
+  );
 
   if (res) router.back();
 };
@@ -118,26 +141,32 @@ const onApprove = async () => {
   padding-left: 10px;
   padding-right: 10px;
   gap: 10px;
+  flex-shrink: 0;
 }
 .wc-request__input {
   width: 100%;
-  height: 96px;
-  padding-left: 10px;
-  padding-right: 10px;
 }
 .wc-request__details {
   width: 100%;
 }
 .scroll__container {
-  height: 460px;
   overflow-y: hidden;
 }
-
+.hint {
+  width: 470px;
+}
 .wc-request-content {
   display: flex;
   flex-flow: column;
   justify-content: space-between;
   height: 100%;
   gap: 10px;
+}
+
+.pass-form {
+  display: flex;
+  flex-flow: column;
+  align-items: self-start;
+  padding: 0 10px 0 10px;
 }
 </style>

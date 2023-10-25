@@ -332,6 +332,8 @@
     "personalSign": "Personal Sign",
     "pairingErrorMessage": "Invalid url! Copy url from Wallet Connect and try again",
     "insertUrl": "Insert Wallet Connect url",
+    "usupportedNetwork": "Unsupported network",
+    "txHint": "Be careful: this message may transfer assets",
     "signRequestTitle": "Signature request",
     "txRequestTitle": "Request from {url}",
     "signWarning": "You are approving a request with the following account",

@@ -69,7 +69,7 @@ export default class HistoryItem extends Vue {
   }
 
   get value() {
-    const values = getHistoryValue(this.historyElement, this.token.assetId, this.network, this.address);
+    const values = getHistoryValue(this.historyElement, this.token.assetId, this.network, this.address, true);
 
     if (!values) return 0;
 

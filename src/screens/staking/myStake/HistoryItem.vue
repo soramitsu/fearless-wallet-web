@@ -55,7 +55,7 @@ export default class HistoryItem extends Vue {
   }
 
   get historyValue() {
-    return getHistoryValue(this.history, this.assetId, this.network, this.address);
+    return getHistoryValue(this.history, this.assetId, this.network, this.address, true);
   }
 
   get amount() {

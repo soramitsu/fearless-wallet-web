@@ -66,6 +66,7 @@ type SoraHistoryElement = {
     liquidityProviderFee?: string;
     maxAdditional?: string;
     value?: string;
+    amount?: string;
   };
 };
 

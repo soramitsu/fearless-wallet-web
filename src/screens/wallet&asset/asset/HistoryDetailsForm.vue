@@ -73,6 +73,12 @@
           <div class="item-value">{{ value }}</div>
         </div>
 
+        <div v-if="showTargetAmount" class="item">
+          Target Amount
+
+          <div class="item-value">{{ targetValue }}</div>
+        </div>
+
         <template v-if="isExtrinsic">
           <div class="item">
             Module
@@ -126,6 +132,10 @@ export default class HistoryDetailsForm extends Vue {
     if (this.isSora) return true;
 
     return this.isTransfer;
+  }
+
+  get showTargetAmount() {
+    return this.isSora && (this.historyElement as SoraHistoryElement).method === 'swap';
   }
 
   get isTransfer() {
@@ -258,6 +268,12 @@ export default class HistoryDetailsForm extends Vue {
     const { value } = getHistoryValue(this.historyElement, this.assetId, this.selectedNetwork, this.address);
 
     return this.$n(value, 'decimalPrecise');
+  }
+
+  get targetValue() {
+    const { targetValue } = getHistoryValue(this.historyElement, this.assetId, this.selectedNetwork, this.address);
+
+    return this.$n(targetValue!, 'decimalPrecise');
   }
 
   get type() {

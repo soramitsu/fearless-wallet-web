@@ -85,7 +85,7 @@
 <script lang="ts">
 import { Getter, Action } from 'vuex-class';
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { TranslateResult } from 'vue-i18n';
+import type { TranslateResult } from 'vue-i18n';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
 import PasswordForm from '@/screens/addWallet/PasswordForm.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';

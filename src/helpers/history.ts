@@ -80,9 +80,9 @@ function getHumanValue(value: string | number, assetId: string, networkName: Net
 function getHumanTransferFee(historyElement: HistoryElement, networkName: NetworkName) {
   if (isSora(networkName)) {
     const element = historyElement as SoraHistoryElement;
+    const { networkFee } = element;
 
-    // TODO переделать, когда Саша пофиксит индексер
-    return +element.networkFee;
+    return getHumanFeeValue(networkFee, networkName);
   }
 
   const { transfer, extrinsic } = historyElement;
@@ -103,16 +103,27 @@ function getHumanTransferFee(historyElement: HistoryElement, networkName: Networ
   return 0;
 }
 
-function getHistoryValue(historyElement: HistoryElement, assetId: string, networkName: NetworkName, address: string) {
+function getHistoryValue(
+  historyElement: HistoryElement,
+  assetId: string,
+  networkName: NetworkName,
+  address: string,
+  withFee = false
+) {
   if (isSora(networkName)) {
     const element = historyElement as SoraHistoryElement;
 
-    const _value = element.data?.value ?? element.data?.maxAdditional ?? 0;
-    const value = getHumanValue(_value, assetId, networkName);
+    const dataValue =
+      element.data?.value ?? element.data?.amount ?? element.data?.baseAssetAmount ?? element.data?.maxAdditional ?? 0;
 
+    // TODO сейчас кривые значения, жем пока Саша исправит индексер
+    const value = getHumanValue(dataValue, assetId, networkName);
+    const targetValue = getHumanValue(element.data.targetAssetAmount ?? 0, assetId, networkName);
     const fee = getHumanTransferFee(historyElement, networkName);
 
-    return { signTransfer: '-', value: value !== 0 ? value : fee };
+    const result = withFee ? value + fee : value;
+
+    return { signTransfer: '-', value: result, targetValue };
   }
 
   const { transfer, reward, extrinsic } = historyElement;
@@ -123,8 +134,10 @@ function getHistoryValue(historyElement: HistoryElement, assetId: string, networ
     const { amount } = transfer;
 
     const value = getHumanValue(amount, assetId, networkName);
+    const fee = getHumanTransferFee(historyElement, networkName);
+    const result = withFee ? value + fee : value;
 
-    return { signTransfer, value };
+    return { signTransfer, value: result };
   }
 
   if (type === TransactionType.reward && reward) {

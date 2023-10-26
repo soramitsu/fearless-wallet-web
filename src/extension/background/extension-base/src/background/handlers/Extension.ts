@@ -204,8 +204,31 @@ export default class Extension extends FWExtensionBase {
       const pair = this.state.keyringService.getAccount(address);
       const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
 
-      if (ethereumAddress) this.state.keyringService.forgetAccount(ethereumAddress);
+      if (ethereumAddress) {
+        this.state.keyringService.forgetAccount(ethereumAddress);
+      }
 
+      this.state.walletConnectService.sessions.forEach((session) => {
+        const evm = session.namespaces['eip155'] ?? [];
+
+        if (evm) {
+          const [, , evmAddress] = evm.accounts[0].split(':');
+
+          if (ethereumAddress && ethereumAddress.toLowerCase() === evmAddress.toLowerCase()) {
+            return this.state.walletConnectService.disconnect(session.topic);
+          }
+        }
+
+        const polakdot = session.namespaces['polkadot'];
+
+        if (polakdot) {
+          const [, , substaddress] = polakdot.accounts[0].split(':');
+
+          if (substaddress.toLowerCase() === address.toLowerCase()) {
+            this.state.walletConnectService.disconnect(session.topic);
+          }
+        }
+      });
       this.state.keyringService.forgetAccount(address);
     } else this.state.keyringService.forgetAddress(address);
 

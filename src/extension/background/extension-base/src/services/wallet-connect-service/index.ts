@@ -94,6 +94,7 @@ export class WalletConnectService {
     }
 
     this.updateSessions();
+
     this.createListener();
   }
 

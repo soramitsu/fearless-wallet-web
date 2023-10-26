@@ -8,6 +8,7 @@
             :text="txWallet.name"
             :value="cutAddress(txWallet.ethereumAddress)"
             icon="wallet-logo-transaction"
+            iconAppend="check"
             class="tx-details__row"
             :isIconPrepend="true"
           />

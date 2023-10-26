@@ -77,7 +77,7 @@ const url = computed(() => request.verifyContext.verified.origin);
 const header = computed(() => {
   if (method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN) return 'walletConnect.signRequestTitle';
 
-  return 'common.wc';
+  return 'common.transaction';
 });
 const onSavePass = (value: boolean) => (isSavePass.value = value);
 

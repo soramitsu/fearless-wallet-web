@@ -9,7 +9,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, set, ref } from 'vue';
 import { useRoute } from 'vue-router/composables';
-import type { AuthUrls } from '@extension-base/background/types';
+import type { AuthUrls } from '@extension-base/background/types/types';
 import { updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import { type WalletInfo, useStore } from '@/store';

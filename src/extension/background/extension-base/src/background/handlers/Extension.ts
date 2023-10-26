@@ -12,8 +12,15 @@ import State, { registry } from '@extension-base/background/handlers/State';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
-import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
-import { PriceJson, RequestMobileSign, RequestSigningIsLocked } from '@extension-base/background/types';
+import {
+  BasicTxErrorCode,
+  RequestUpdateMeta,
+  TransferErrorCode,
+  PriceJson,
+  RequestMobileSign,
+  RequestSigningIsLocked,
+} from '@extension-base/background/types/types';
+
 import {
   getSubstrateAddress,
   isRequireEvmAPI,

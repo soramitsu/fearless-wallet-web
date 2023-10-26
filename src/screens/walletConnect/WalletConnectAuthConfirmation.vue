@@ -73,7 +73,7 @@ import AppPermissions from './AppPermissions.vue';
 import WalletChooseForm from './WalletChooseForm.vue';
 import type { ChainData } from './types';
 import type { WalletConnectSessionRequest } from '@extension-base/services/wallet-connect-service/types';
-import type { AccountJson } from '@extension-base/background/types';
+import type { AccountJson } from '@extension-base/background/types/types';
 import { useStore } from '@/store';
 import { approveWalletConnectSession, rejectWalletConnectSession } from '@/extension/messaging';
 import { useNotify } from '@/plugins/soramitsuUI';

@@ -32,7 +32,7 @@
 </template>
 
 <script lang="ts" setup>
-import { AuthorizeRequest, AccountJson } from '@extension-base/background/types';
+import { AuthorizeRequest, AccountJson } from '@extension-base/background/types/types';
 import { computed, ref, set, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';

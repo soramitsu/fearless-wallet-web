@@ -2,8 +2,13 @@ import { sendExtrinsic } from '@extension-base/api/substrate/shared/sendExtrinsi
 import { signExtrinsic } from '@extension-base/api/substrate/shared/signExtrinsic';
 import { BasicTxErrorCode } from '@extension-base/background/types/types';
 import State from '@extension-base/background/handlers/State';
-import type { ApiProps, BasicTxResponse } from '@extension-base/background/types/types';
-import type { PrepareExternalRequest, SignerType } from '@extension-base/background/types';
+import type {
+  ApiProps,
+  BasicTxResponse,
+  PrepareExternalRequest,
+  SignerType,
+} from '@extension-base/background/types/types';
+
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { EventRecord } from '@polkadot/types/interfaces';
 import type { HandleBasicTx } from '@extension-base/api/evm/transfer';

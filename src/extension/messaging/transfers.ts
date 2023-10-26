@@ -12,7 +12,7 @@ import type {
   RequestCheckSwap,
   ResponseCheckSwap,
   ResponseMakeSwap,
-} from '@extension-base/background/types';
+} from '@extension-base/background/types/types';
 import type { SoraFees } from '@/interfaces';
 import { sendMessage } from '@/extension/messaging/index';
 

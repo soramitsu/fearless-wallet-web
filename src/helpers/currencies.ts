@@ -4,7 +4,7 @@ import { APIItemState } from '@extension-base/api/types/networks';
 import type { NetworkName, AssetsPrice, BuyProvider } from '@/interfaces';
 import type { NetworkJson } from '@extension-base/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
-import type { TokenBalance } from '@extension-base/background/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS, ALL_NETWORKS } from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';

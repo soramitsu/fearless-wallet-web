@@ -1,8 +1,7 @@
 import { BehaviorSubject } from 'rxjs';
 import { RequestService } from '..';
 import { WalletConnectTransactionRequest } from '../../wallet-connect-service/types';
-import { Resolver, ResponseSigning } from '../../../background/types';
-// import { storage } from '../../../stores/Storage';
+import { Resolver, ResponseSigning } from '../../../background/types/types';
 import { WCSignRequest } from '../types';
 
 export default class EvmRequestHandler {

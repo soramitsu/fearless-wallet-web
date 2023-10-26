@@ -15,16 +15,6 @@ import type {
   RequestTransfer,
   ResponseCheckTransfer,
   SigningRequest,
-} from '@extension-base/background/types/types';
-import type { NetworkJson } from '@extension-base/types';
-import type {
-  InjectedAccount,
-  MetadataDef,
-  InjectedMetadataKnown,
-  ProviderMeta,
-} from '@polkadot/extension-inject/types';
-import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
-import type {
   RequestAccountCreateSuri,
   RequestAddressCreate,
   RequestAccountExport,
@@ -73,7 +63,16 @@ import type {
   ResponseTotalBalances,
   MobileSigningRequest,
   RequestSigningSubscribe,
-} from '@extension-base/background/types';
+} from '@extension-base/background/types/types';
+import type { NetworkJson } from '@extension-base/types';
+import type {
+  InjectedAccount,
+  MetadataDef,
+  InjectedMetadataKnown,
+  ProviderMeta,
+} from '@polkadot/extension-inject/types';
+import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
+
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
   DerivationPath,

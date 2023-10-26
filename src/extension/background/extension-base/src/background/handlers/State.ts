@@ -40,8 +40,14 @@ import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import { SignerPayloadRaw } from '@polkadot/types/types';
+import {
+  PriceJson,
+  ServiceInfo,
+  MobileSignRequest,
+  MobileSigningRequest,
+  ResponseSigning,
+} from '@extension-base/background/types/types';
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
-import { PriceJson, ServiceInfo, MobileSignRequest, MobileSigningRequest, ResponseSigning } from '../types';
 import { fetchEvmAssetBalance } from '../../api/evm/balance';
 import { REFRESH_TIME } from '../../api/evm/utils/eth';
 import type {

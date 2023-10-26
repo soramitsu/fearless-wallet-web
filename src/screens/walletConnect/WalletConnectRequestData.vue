@@ -25,7 +25,7 @@ import {
 } from '@extension-base/services/wallet-connect-service/types';
 import { formatEther } from 'ethers';
 import { useI18n } from 'vue-i18n-composable';
-import type { AccountJson } from '@extension-base/background/types';
+import type { AccountJson } from '@extension-base/background/types/types';
 import { useStore } from '@/store';
 import { cut } from '@/helpers';
 

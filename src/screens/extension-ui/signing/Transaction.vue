@@ -40,7 +40,7 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import registry from '@extension-base/api/substrate/typeRegistry';
-import type { AccountJson } from '@extension-base/background/types';
+import type { AccountJson } from '@extension-base/background/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import type { SigningRequest } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';

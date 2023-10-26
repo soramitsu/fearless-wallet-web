@@ -74,7 +74,7 @@ import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import TransferForm from './TransferForm.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetNetwork } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp, cut } from '@/helpers/';
 import { formattedNumber } from '@/helpers/numbers';

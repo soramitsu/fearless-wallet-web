@@ -9,6 +9,7 @@ import { ProviderInterface } from '@polkadot/rpc-provider/types';
 import { HexString } from '@polkadot/util/types';
 import MetadataStore from '../../stores/Metadata';
 import { NETWORK_STATUS } from '../../api/types/networks';
+import { CurrentAccountState } from '../../stores/CurrentAccountStore';
 import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -18,7 +19,6 @@ import type { SignerResult } from '@polkadot/types/types/extrinsic';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
-import type { AccountAuthType, AddressBook, AuthUrlInfo, ResponseSigning } from '@extension-base/background/types';
 import {
   NetworkName,
   WalletAddress,
@@ -58,7 +58,7 @@ export interface AccountJson extends KeyringPair$Meta {
 }
 
 export interface ApproveAuthRequest {
-  request: AuthorizeRequest;
+  id: string;
   accounts: string[];
 }
 
@@ -68,11 +68,20 @@ export interface AuthorizeRequest {
   url: string;
 }
 
+export interface ServiceInfo {
+  networkMap: Record<string, NetworkJson>;
+  apiMap: ApiMap;
+  isLock?: boolean;
+  currentAccountInfo: CurrentAccountState;
+}
+
 export interface MetadataRequest {
   id: string;
   request: MetadataDef;
   url: string;
 }
+
+export type AccountAuthType = 'substrate' | 'evm' | 'both';
 
 export interface SigningRequest {
   account: AccountJson;
@@ -85,6 +94,13 @@ export interface MobileSigningRequest {
   id: string;
   request: SignerPayloadRaw;
 }
+
+export interface MobileSignRequest extends Resolver<ResponseSigning> {
+  id: string;
+  request: SignerPayloadRaw;
+}
+
+export type RequestSigningSubscribe = null;
 
 export interface RequestAddressCreate {
   address: string;
@@ -170,6 +186,19 @@ export interface BalanceJson {
   saveSequence?: boolean;
 }
 
+export interface RequestMobileSign {
+  signature: `0x${string}`;
+  id: string;
+}
+
+export interface PriceJson {
+  ready?: boolean;
+  currency: string;
+  priceMap: Record<string, number>;
+  tokenPriceMap: Record<string, number>;
+  tokenPriceChange: Record<string, number>;
+}
+
 export enum TransferErrorCode {
   TRANSFER_ERROR = 'transferError',
   CROSSCHAIN_ERROR = 'crossChainError',
@@ -197,6 +226,17 @@ export interface BasicTxResponse {
   passwordError?: string | null;
   status?: boolean;
   errors?: BasicTxError[];
+}
+
+export enum SignerType {
+  PASSWORD = 'PASSWORD',
+  MOBILE = 'MOBILE',
+}
+
+export interface PrepareExternalRequest {
+  id: string;
+  setState: (promise: ExternalRequestPromise) => void;
+  updateState: (promise: Partial<ExternalRequestPromise>) => void;
 }
 
 export type TxErrorCode = TransferErrorCode | BasicTxErrorCode;
@@ -399,7 +439,7 @@ export interface RequestSigningCancel {
 }
 
 export interface RequestSigningIsLocked {
-  id: string;
+  address: string;
 }
 
 export interface ResponseSigningIsLocked {
@@ -488,6 +528,23 @@ export interface AuthRequest extends Resolver<AuthResponse> {
   accountAuthType?: AccountAuthType;
 }
 
+export interface ResponseSigning {
+  id: string;
+  signature: HexString;
+}
+
+export interface AuthUrlInfo {
+  count: number;
+  id: string;
+  isAllowed: boolean;
+  origin: string;
+  url: string;
+  accountAuthType?: AccountAuthType;
+  authorizedAccounts: string[];
+  isAllowedMap: Record<string, boolean>;
+  currentEvmNetworkKey?: string;
+}
+
 export type AuthUrls = Record<string, AuthUrlInfo>;
 
 export type AuthorizedAccountsDiff = [url: string, authorizedAccounts: AuthUrlInfo['authorizedAccounts']][];
@@ -555,6 +612,13 @@ export interface AccountSub {
   url: string;
 }
 export type Subscriptions = Record<string, Port>;
+
+export type Address = {
+  name: string;
+  address: string;
+}[];
+
+export type AddressBook = Record<NetworkName, Address>;
 
 export interface IState {
   registry: TypeRegistry;

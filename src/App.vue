@@ -12,7 +12,7 @@ import { Mutation, Getter, Action } from 'vuex-class';
 import { ALL_NETWORKS } from './consts/networks';
 import { beaconController } from './controllers/beaconController';
 import { setTitle } from './helpers/common';
-import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types';
+import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
 import { Components } from '@/router/routes';

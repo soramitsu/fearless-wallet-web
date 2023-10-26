@@ -8,7 +8,7 @@ import {
   CRON_UPDATE_JSON_INTERVAL,
 } from '@extension-base/const/intervals';
 import type FWState from '@extension-base/background/handlers/State';
-import type { ServiceInfo } from '@extension-base/background/types';
+import type { ServiceInfo } from '@extension-base/background/types/types';
 
 export class FWCron {
   public status: 'pending' | 'running' | 'stopped' = 'pending';

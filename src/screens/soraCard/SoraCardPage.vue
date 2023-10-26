@@ -53,7 +53,7 @@
 <script lang="ts">
 import { Component, Vue, Ref } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
-import { AuthUrlInfo } from '@extension-base/background/types';
+import { AuthUrlInfo } from '@extension-base/background/types/types';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
 import type { AsyncFn, Fn } from '@/interfaces';
 import type { SelectedWallet } from '@/store';

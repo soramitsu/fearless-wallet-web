@@ -1,6 +1,6 @@
 import { assert } from '@polkadot/util';
 import KeyringSigner from '@extension-base/signers/KeyringSigner';
-import { SignerType } from '@extension-base/background/types';
+import { SignerType } from '@extension-base/background/types/types';
 import { BeaconSigner } from '@extension-base/signers/BeaconSigner';
 import State from '@extension-base/background/handlers/State';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';

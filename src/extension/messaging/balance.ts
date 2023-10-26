@@ -1,4 +1,4 @@
-import type { BalanceJson, PriceJson } from '@extension-base/background/types';
+import type { BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import type { RequestSubscribePrice } from '@extension-base/background/types/types';
 import { sendMessage } from '@/extension/messaging/index';
 

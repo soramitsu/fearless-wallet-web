@@ -2,9 +2,9 @@ import { FPNumber } from '@sora-substrate/util';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { getAssetOptions, getPrecisionValue } from '@extension-base/api/substrate/utils';
 import { getUtilityProps, getSubstrateAddress } from '@extension-base/background/utils/utils';
-import { BasicTxResponse, TokenBalance } from '@extension-base/background/types/types';
+import { BasicTxResponse, TokenBalance, SignerType } from '@extension-base/background/types/types';
 import State from '@extension-base/background/handlers/State';
-import { SignerType } from '@extension-base/background/types';
+
 import { Extrinsic } from './crossChain';
 import { NetworkName } from '@/interfaces';
 

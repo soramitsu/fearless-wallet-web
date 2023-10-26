@@ -34,6 +34,7 @@ export default class InfoRow extends Vue {
   @Prop(String) icon?: string;
   @Prop(String) color!: Color;
   @Prop({ default: 'secondary' }) borderType!: BorderType;
+  @Prop({ default: true }) isIconPrepend!: boolean;
   @Prop({ default: true }) showBorder!: boolean;
   @Prop({ default: true }) hideLastBorder!: boolean;
   @Prop({ default: false }) isLoading!: boolean;

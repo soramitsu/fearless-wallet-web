@@ -7,7 +7,7 @@ import type {
   NetworkName,
   SoraHistoryElement,
 } from '@/interfaces';
-import type { TokenBalance } from '@extension-base/background/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { TransactionType, TransferType } from '@/interfaces';
 import { firstCharToUp, isSora } from '@/helpers';
 import store from '@/store';

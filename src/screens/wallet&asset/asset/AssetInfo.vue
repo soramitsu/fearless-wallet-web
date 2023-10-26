@@ -65,7 +65,7 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { APIItemState } from '@extension-base/api/types/networks';
-import type { TokenBalance } from '@extension-base/background/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import type { AssetPrice } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers/currencies';

@@ -1,11 +1,12 @@
-import type { SigningRequest } from '@extension-base/background/types/types';
 import type {
+  SigningRequest,
   ResponseSigningIsLocked,
   MobileSigningRequest,
   ResponseAuthorizeList,
   AuthorizeRequest,
   MetadataRequest,
-} from '@extension-base/background/types';
+} from '@extension-base/background/types/types';
+
 import type { HexString } from '@polkadot/util/types';
 import { sendMessage } from '@/extension/messaging/index';
 

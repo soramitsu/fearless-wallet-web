@@ -2,7 +2,7 @@ import { BN, isFunction } from '@polkadot/util';
 import { FPNumber } from '@sora-substrate/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 import { isEthereumNetwork, getUtilityProps, getNativeAssetName } from '@extension-base/background/utils/utils';
-import { SignerType } from '@extension-base/background/types';
+import { SignerType } from '@extension-base/background/types/types';
 import { getAssetInfo } from '@extension-base/api/helpers';
 import State from '@extension-base/background/handlers/State';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';

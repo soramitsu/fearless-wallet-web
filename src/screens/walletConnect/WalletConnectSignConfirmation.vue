@@ -36,7 +36,7 @@ import {
   EIP155_SIGNING_METHODS,
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
-import { TransferErrorCode, BasicTxErrorCode } from '@extension-base/background/types';
+import { TransferErrorCode, BasicTxErrorCode } from '@extension-base/background/types/types';
 import WalletConnectRequestData from './WalletConnectRequestData.vue';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import { walletConnectRequestReject, walletConnectRequestApprove } from '@/extension/messaging';

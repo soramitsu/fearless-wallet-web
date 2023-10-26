@@ -5,10 +5,10 @@ import { logger as createLogger } from '@polkadot/util/logger';
 import { Logger } from '@polkadot/util/types';
 import { keyring } from '@polkadot/ui-keyring';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
-import { Resolver } from '@extension-base/background/types';
+import { Resolver } from '@extension-base/background/types/types';
 import { getId, isInternalRequest } from '@extension-base/utils';
 import { RequestService } from '@extension-base/services';
-import type { SignRequest, ResponseSigning, RequestSign, AccountJson } from '@extension-base/background/types';
+import type { SignRequest, ResponseSigning, RequestSign, AccountJson } from '@extension-base/background/types/types';
 import type { SigningRequest } from '@extension-base/background/types/types';
 
 export class SubstrateRequestHandler {

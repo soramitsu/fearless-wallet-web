@@ -11,6 +11,8 @@ import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import State, { registry } from '@extension-base/background/handlers/State';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
+import { getInternalError } from '@walletconnect/utils';
+
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
 import {
   getSubstrateAddress,
@@ -1169,11 +1171,22 @@ export default class Extension extends FWExtensionBase {
     return this.state.onboardingService.getStories(lang);
   }
 
-  async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<boolean> {
+  async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
     return this.state.walletConnectService
       .connect(uri)
-      .then(() => true)
-      .catch(() => false);
+      .then(() => {
+        return true;
+      })
+      .catch((error) => {
+        if ((error.message as string).includes(getInternalError('MISSING_OR_INVALID').message))
+          return { message: 'walletConnect.pairingErrorMessage' };
+        if (error.message === getInternalError('UNKNOWN_TYPE').message)
+          return {
+            message: 'walletConnect.relayNotSupported',
+          };
+
+        return { message: 'Unknown error' };
+      });
   }
 
   private connectWCSubscribe(id: string, port: chrome.runtime.Port): WalletConnectSessionRequest[] {

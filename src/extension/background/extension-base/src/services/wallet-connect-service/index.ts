@@ -110,6 +110,10 @@ export class WalletConnectService {
   }
 
   public async connect(uri: string) {
+    if (uri.match('@1')) {
+      throw Error(getInternalError('UNKNOWN_TYPE').message);
+    }
+
     const haveData = await this.haveData();
 
     if (!haveData) await this.initClient(true);

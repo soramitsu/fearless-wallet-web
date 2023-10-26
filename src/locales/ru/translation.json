@@ -327,6 +327,7 @@
   },
   "walletConnect": {
     "noNetworkSupport": "Есть неизвестные обязательные сети",
+    "details": "Детали",
     "personalSign": "Личная подпись",
     "signRequestTitle": "Запрос подписи",
     "txRequestTitle": "Запрос от {url}",

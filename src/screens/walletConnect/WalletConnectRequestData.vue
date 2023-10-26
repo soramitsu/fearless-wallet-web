@@ -1,7 +1,7 @@
 <template>
   <ContentForm :bottomRightCorner="true">
     <div class="tx-details">
-      <span class="list-item__key">Details</span>
+      <span class="list-item__key">{{ $t('walletConnect.details') }}</span>
       <dl class="tx-details__list">
         <template v-if="txWallet">
           <InfoRow
@@ -76,6 +76,7 @@ const txWallet = computed(() => {
 <style lang="scss" scoped>
 .tx-details {
   width: 100%;
+  color: $default-white;
   padding: 16px 16px 0 16px;
   display: flex;
   align-items: stretch;

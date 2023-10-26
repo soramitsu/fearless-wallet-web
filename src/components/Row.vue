@@ -21,31 +21,25 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 
-@Component
-export default class Row extends Vue {
-  @Prop(String) value!: string;
-  @Prop(String) price!: string;
-  @Prop(String) icon?: string;
-  @Prop(String) rowClasses?: string;
-  @Prop(Boolean) isLoading!: boolean;
-  @Prop({ default: false }) isIconPrepend!: boolean;
-  @Prop({ default: () => [] }) iconClasses!: string[];
+type Props = {
+  value: string;
+  price: string;
+  icon?: string;
+  rowClasses?: string;
+  isLoading: boolean;
+  isIconPrepend: boolean;
+  iconClasses: string[];
+};
 
-  get classes() {
-    return ['icon-info', ...this.iconClasses];
-  }
+const props = withDefaults(defineProps<Props>(), {
+  isIconPrepend: false,
+  iconClasses: () => [],
+});
 
-  get isPrepend() {
-    return this.icon && this.isIconPrepend;
-  }
-
-  get isUppend() {
-    return this.icon && !this.isIconPrepend;
-  }
-}
+const direction = computed(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
 </script>
 
 <style lang="scss" scoped>
@@ -76,6 +70,7 @@ export default class Row extends Vue {
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-direction: v-bind(direction);
     gap: 6px;
 
     .icon-info {

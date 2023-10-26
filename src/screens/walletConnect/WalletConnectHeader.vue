@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<{ url: string; subtext?: string; name: st
 });
 const subtext = computed(() => (props.subtext ? t(props.subtext) : ''));
 const title = computed(() => {
-  if (!props.isTx) return t('walletConnect.txRequestTitle', { url: props.name });
+  if (props.isTx) return t('walletConnect.txRequestTitle', { url: props.name });
 
   return t('walletConnect.signRequestTitle');
 });

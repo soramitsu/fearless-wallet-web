@@ -75,9 +75,9 @@ const min15Label = computed(() => (isLocked.value ? 'assets.15min' : 'assets.15m
 const subtext = isSignatureRequest.value ? 'walletConnect.signWarning' : undefined;
 const url = computed(() => request.verifyContext.verified.origin);
 const header = computed(() => {
-  if (method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN) return 'assets.signature';
+  if (method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN) return 'walletConnect.signRequestTitle';
 
-  return 'assets.transaction';
+  return 'common.transaction';
 });
 const onSavePass = (value: boolean) => (isSavePass.value = value);
 
@@ -137,7 +137,6 @@ const onApprove = async () => {
   justify-content: space-between;
   align-items: center;
   flex-direction: column;
-  overflow-y: hidden;
   padding-left: 10px;
   padding-right: 10px;
   gap: 10px;

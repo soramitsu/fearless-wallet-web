@@ -24,7 +24,7 @@ import {
   EIP155_SIGNING_METHODS,
   type WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
-import { formatEther } from 'ethers';
+import { formatEther, formatUnits } from 'ethers';
 import { useI18n } from 'vue-i18n-composable';
 import type { AccountJson } from '@extension-base/background/types';
 import { useStore } from '@/store';
@@ -59,7 +59,7 @@ const requestData = computed(() => {
 
     data[`${baseKey}.network`] = network;
     data[`${baseKey}.amount`] = formatEther(BigInt(value).toString()).toString();
-    data[`${baseKey}.gasFee`] = gas ? formatEther(BigInt(gas).toString()).toString() : '';
+    data[`${baseKey}.gasFee`] = gas ? formatUnits(BigInt(gas).toString(), 'gwei').toString() : '';
   }
 
   return data;

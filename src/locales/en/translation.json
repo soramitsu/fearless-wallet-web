@@ -345,6 +345,10 @@
       "method": "Sign Method",
       "message": "Message"
     },
+    "requiredNetworkAlert": {
+      "header": "Unable to connect to wallet:",
+      "message": "The requested blockchain network is not supported or available"
+    },
     "permissions": {
       "title": "App permissions",
       "viewAddress": "View your wallet address",

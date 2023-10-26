@@ -1,6 +1,6 @@
 <template>
   <div class="update-accounts">
-    <WalletConnectHeader v-if="url" :name="title" :url="url" />
+    <WalletConnectHeader v-if="url" :name="title" :url="url" :isRequest="true" />
 
     <Scroll>
       <div v-for="(el, index) in namespaces" class="network" :key="index">
@@ -51,9 +51,7 @@ const topic = computed(() => route.params.topic);
 const request = computed(() => {
   const list: SessionTypes.Struct[] | null = store.getters.wcSessions;
 
-  const searchAuth = list?.find((request) => request.topic === topic.value);
-
-  return searchAuth;
+  return list?.find((request) => request.topic === topic.value);
 });
 
 const checkAuth = () => {
@@ -72,7 +70,7 @@ const namespaces = computed<ChainData[]>(() => {
 
   const namespaces = request.value.namespaces;
 
-  return transformNamespaces(namespaces);
+  return transformNamespaces(namespaces, true);
 });
 
 const getNetworkStatusClass = (status: boolean) => `network__status-indicator--${status ? 'active' : 'inactive'}`;

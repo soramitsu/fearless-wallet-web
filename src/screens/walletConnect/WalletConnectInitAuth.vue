@@ -8,6 +8,7 @@
         size="big"
         :isError="isError"
         :errorDescriptions="$t(errorDescriptions)"
+        :errorWithIcon="true"
       />
 
       <FButton text="common.connect" size="big" fontSize="big" :border="false" @click="onSubmit" />

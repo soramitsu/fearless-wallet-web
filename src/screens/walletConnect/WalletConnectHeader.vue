@@ -13,15 +13,10 @@ import { useI18n } from 'vue-i18n-composable';
 import Favicon from '@/components/Favicon.vue';
 
 const { t } = useI18n();
-const props = withDefaults(defineProps<{ url: string; subtext?: string; name: string; isRequest: boolean }>(), {
+const props = withDefaults(defineProps<{ url: string; subtext?: string; title: string; isRequest: boolean }>(), {
   isRequest: false,
 });
 const subtext = computed(() => (props.subtext ? t(props.subtext) : ''));
-const title = computed(() => {
-  if (props.isRequest) return t('walletConnect.txRequestTitle', { url: props.name });
-
-  return t('walletConnect.signRequestTitle');
-});
 </script>
 
 <style scoped lang="scss">

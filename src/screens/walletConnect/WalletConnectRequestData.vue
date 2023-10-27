@@ -59,7 +59,7 @@ const requestData = computed(() => {
     const { value, gas } = params;
 
     data[`${baseKey}.network`] = network;
-    data[`${baseKey}.amount`] = formatEther(BigInt(value).toString()).toString();
+    data[`${baseKey}.amount`] = value ? formatEther(BigInt(value).toString()).toString() : '';
     data[`${baseKey}.gasFee`] = gas ? formatUnits(BigInt(gas).toString(), 'gwei').toString() : '';
   }
 

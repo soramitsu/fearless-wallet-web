@@ -27,12 +27,12 @@ import { computed, ref } from 'vue';
 
 type Props = {
   value: string;
-  price: string;
+  price?: string;
   icon?: string;
   rowClasses?: string;
-  isLoading: boolean;
-  isIconPrepend: boolean;
-  iconClasses: string[];
+  isLoading?: boolean;
+  isIconPrepend?: boolean;
+  iconClasses?: string[];
 };
 
 const props = withDefaults(defineProps<Props>(), {

@@ -2,7 +2,7 @@ import { formatJsonRpcError } from '@json-rpc-tools/utils';
 import State from '@extension-base/background/handlers/State';
 import WalletConnect from '@walletconnect/sign-client';
 import { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
-import { getInternalError, getSdkError } from '@walletconnect/utils';
+import { getInternalError, getSdkError, isValidUrl } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
 import { RequestService } from '..';
 import { storage } from '../../stores/Storage';
@@ -111,9 +111,8 @@ export class WalletConnectService {
   }
 
   public async connect(uri: string) {
-    if (uri.match('@1')) {
-      throw Error(getInternalError('UNKNOWN_TYPE').message);
-    }
+    if (!isValidUrl(uri)) throw Error(getInternalError('MISSING_OR_INVALID').message);
+    if (uri.match('@1')) throw Error(getInternalError('UNKNOWN_TYPE').message);
 
     const haveData = await this.haveData();
 

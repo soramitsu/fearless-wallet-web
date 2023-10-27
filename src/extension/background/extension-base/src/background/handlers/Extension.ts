@@ -1432,16 +1432,7 @@ export default class Extension extends FWExtensionBase {
     } else {
       const params = request.request.params.request.params;
 
-      if (
-        [
-          'eth_sign',
-          'personal_sign',
-          'eth_signTypedData',
-          'eth_signTypedData_v1',
-          'eth_signTypedData_v3',
-          'eth_signTypedData_v4',
-        ].indexOf(method) < 0
-      ) {
+      if (['eth_sign', 'personal_sign', 'eth_signTypedData'].indexOf(method) < 0) {
         throw new Error('Not found sign method');
       }
 

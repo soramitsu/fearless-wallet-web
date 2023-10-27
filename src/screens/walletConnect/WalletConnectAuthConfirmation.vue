@@ -14,7 +14,7 @@
               />
             </div>
 
-            <ContentForm v-if="isSupportNetwork" class="width-100">
+            <ContentForm v-if="isSupportNetwork" class="width-100" @click.native="toggleWalletSelectForm">
               <div class="wallet">
                 <Icon icon="wallet-logo-transaction" class="wallet__logo" />
 

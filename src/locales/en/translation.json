@@ -334,7 +334,7 @@
     "relayNotSupported": "Our App only supports Wallet Connect SDK v2 and does not support the deprecated SDK v1. Please use the appropriate version for a successful connection.",
     "personalSign": "Personal Sign",
     "pairingErrorMessage": "Missing or invalid url, please try again",
-    "unsupportedMethod": "This requested requested is not currently supported by the application: {name}",
+    "unsupportedMethod": "Requested signing method is currently unsupported in the application: {name}",
     "unknownMethod": "Unknown method",
     "insertUrl": "Insert Wallet Connect url",
     "usupportedNetwork": "Unsupported network",

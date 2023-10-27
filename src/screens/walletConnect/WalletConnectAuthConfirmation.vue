@@ -4,7 +4,7 @@
       <div class="scroll__container">
         <Scroll>
           <div class="auth-confirmation">
-            <WalletConnectHeader :name="title" :url="url" :isRequest="true" />
+            <WalletConnectHeader :title="title" :url="url" />
             <AppPermissions v-if="isSupportNetwork" />
             <div v-else class="alert">
               <Alert

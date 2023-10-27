@@ -1,6 +1,6 @@
 <template>
   <div class="update-accounts">
-    <WalletConnectHeader v-if="url" :title="title" :url="url" :isRequest="true" />
+    <WalletConnectHeader v-if="url" :title="title" :url="url" />
 
     <Scroll>
       <div v-for="(el, index) in namespaces" class="network" :key="index">

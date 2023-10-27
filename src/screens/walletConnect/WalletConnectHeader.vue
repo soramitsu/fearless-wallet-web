@@ -11,11 +11,13 @@ import { computed } from 'vue';
 import { Fragment } from 'vue-fragment';
 import { useI18n } from 'vue-i18n-composable';
 import Favicon from '@/components/Favicon.vue';
-
+type Props = {
+  url: string;
+  subtext?: string;
+  title: string;
+};
 const { t } = useI18n();
-const props = withDefaults(defineProps<{ url: string; subtext?: string; title: string; isRequest: boolean }>(), {
-  isRequest: false,
-});
+const props = defineProps<Props>();
 const subtext = computed(() => (props.subtext ? t(props.subtext) : ''));
 </script>
 

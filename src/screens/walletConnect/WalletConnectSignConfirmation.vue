@@ -4,7 +4,7 @@
       <div class="scroll__container">
         <Scroll>
           <div class="wc-request">
-            <WalletConnectHeader :title="title" :subtext="subtext" :url="url" :isRequest="!isSignatureRequest" />
+            <WalletConnectHeader :title="title" :subtext="subtext" :url="url" />
             <Hint v-if="!isSignatureRequest" class="hint" iconName="warning" :text="$t('walletConnect.txHint')" />
             <WalletConnectRequestData :request="request" class="wc-request__details" />
           </div>

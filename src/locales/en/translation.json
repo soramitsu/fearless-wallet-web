@@ -124,6 +124,7 @@
   "authorize": {
     "authWarningMessage": "An application, self-identifying as {name} is requesting access from my {link}",
     "accountsConnected": "Accounts connected to {url}",
+    "connectedTo": "Connected to {url}",
     "mobile": "mobile",
     "connectCountAccounts": "Connect 1 account | Connect {count} accounts",
     "noconnections": "There are no connections",
@@ -332,7 +333,9 @@
     "details": "Details",
     "relayNotSupported": "Our App only supports Wallet Connect SDK v2 and does not support the deprecated SDK v1. Please use the appropriate version for a successful connection.",
     "personalSign": "Personal Sign",
-    "pairingErrorMessage": "Missing or invalid url, please try again or ce",
+    "pairingErrorMessage": "Missing or invalid url, please try again",
+    "unsupportedMethod": "This requested requested is not currently supported by the application: {name}",
+    "unknownMethod": "Unknown method",
     "insertUrl": "Insert Wallet Connect url",
     "usupportedNetwork": "Unsupported network",
     "txHint": "Be careful: this message may transfer assets",

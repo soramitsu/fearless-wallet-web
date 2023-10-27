@@ -162,8 +162,6 @@ export class WalletConnectService {
         .map((namespace) => namespace.methods)
         .flat();
 
-      // const chainInfoMap = this.state.getNetworkMap;
-
       const [requestNamespace] = chainId.split(':');
 
       if (!namespaces.includes(requestNamespace)) {
@@ -173,10 +171,6 @@ export class WalletConnectService {
       if (!chains.includes(chainId)) {
         throw Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + chainId);
       }
-
-      // if (!isSupportWalletConnectChain(chainId, chainInfoMap)) {
-      //   throw Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + chainId);
-      // }
 
       if (!methods.includes(method)) {
         throw Error(getSdkError('UNAUTHORIZED_METHOD').message + ' ' + method);

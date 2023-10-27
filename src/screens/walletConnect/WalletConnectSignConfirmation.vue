@@ -48,6 +48,7 @@ import WalletConnectHeader from './WalletConnectHeader.vue';
 import { walletConnectRequestReject, walletConnectRequestApprove, isSignLocked } from '@/extension/messaging';
 import { useStore } from '@/store';
 import { useNotify } from '@/plugins/soramitsuUI';
+import ValidatedInput from '@/components/ValidatedInput.vue';
 type Error = { message: TransferErrorCode.UNSUPPORTED | BasicTxErrorCode.KEYRING_ERROR };
 
 const store = useStore();
@@ -70,6 +71,13 @@ const title = computed<string>(() => {
 const address = computed<string>(() => {
   if (method.value === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
     return (request.params.request.params[0].from as string).toLowerCase();
+  }
+
+  if (
+    method.value === EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA ||
+    method.value === EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4
+  ) {
+    return (request.params.request.params[0] as string).toLowerCase();
   }
 
   return request.params.request.params[1].toLowerCase();

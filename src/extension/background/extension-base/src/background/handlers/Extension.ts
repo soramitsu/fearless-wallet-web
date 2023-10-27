@@ -47,6 +47,7 @@ import {
   RequestApproveWalletConnectNotSupport,
   RequestRejectWalletConnectNotSupport,
   EIP155_SIGNING_METHODS,
+  EIP155_METHODS,
 } from '../../services/wallet-connect-service/types';
 import {
   isProposalExpired,
@@ -1291,7 +1292,7 @@ export default class Extension extends FWExtensionBase {
         availableNamespaces[key] = {
           chains,
           events: requiredNameSpace.events,
-          methods: requiredNameSpace.methods,
+          methods: key === WALLET_CONNECT_EIP155_NAMESPACE ? EIP155_METHODS : requiredNameSpace.methods,
         };
       } else {
         if (supportChains.length) {
@@ -1432,11 +1433,41 @@ export default class Extension extends FWExtensionBase {
     } else {
       const params = request.request.params.request.params;
 
-      if (['eth_sign', 'personal_sign', 'eth_signTypedData'].indexOf(method) < 0) {
+      if (
+        [
+          'eth_sign',
+          'personal_sign',
+          'eth_signTypedData',
+          'eth_signTypedData_v1',
+          'eth_signTypedData_v3',
+          'eth_signTypedData_v4',
+        ].indexOf(method) < 0
+      ) {
         throw new Error('Not found sign method');
       }
 
-      const signature = await signer.signMessage(convertHexToUtf8(params[0]));
+      let payload;
+
+      if (typeof params[0] === 'string' && isEthereumAddress(params[0])) {
+        payload = params[1];
+      } else if (typeof params[1] === 'string' && isEthereumAddress(params[1])) {
+        payload = params[0];
+      }
+
+      if (address === '' || !payload) {
+        throw new Error('Not found address or payload to sign');
+      }
+
+      const message =
+        ['eth_sign', 'personal_sign'].indexOf(method) > -1 ? convertHexToUtf8(payload) : JSON.parse(payload);
+
+      const signature = await (['eth_sign', 'personal_sign'].indexOf(method) > -1
+        ? signer.signMessage(message)
+        : signer.signTypedData(
+            message.domain,
+            { Mail: message.types.Mail, Person: message.types.Person },
+            message.message
+          ));
 
       request.resolve({ id: request.request.topic, signature: signature as HexString });
     }
@@ -1712,9 +1743,6 @@ export default class Extension extends FWExtensionBase {
       // Not support
       case 'pri(walletConnect.requests.notSupport.subscribe)':
         return this.WCNotSupportSubscribe(id, port);
-
-      case 'pri(walletConnect.notSupport.approve)':
-        return this.approveWalletConnectNotSupport(request as RequestApproveWalletConnectNotSupport);
 
       case 'pri(walletConnect.notSupport.reject)':
         return this.rejectWalletConnectNotSupport(request as RequestRejectWalletConnectNotSupport);

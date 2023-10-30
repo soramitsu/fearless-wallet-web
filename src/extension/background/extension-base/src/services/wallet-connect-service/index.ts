@@ -55,10 +55,9 @@ export class WalletConnectService {
     const pairings: Array<unknown> = pairingStorage ? pairingStorage : [];
     const subscriptions: Array<unknown> = subscriptionStorage ? subscriptionStorage : [];
     const history: Array<unknown> = historyStorage ? historyStorage : [];
+    const proposals: Array<unknown> = proposalStorage ? proposalStorage : [];
 
-    return (
-      !!sessions.length || !!pairings.length || !!subscriptions.length || !!history.length || !!proposalStorage.length
-    );
+    return !!sessions.length || !!pairings.length || !!subscriptions.length || !!history.length || !!proposals.length;
   }
 
   public addConnection(uri: string) {

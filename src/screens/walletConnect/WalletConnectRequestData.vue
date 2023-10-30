@@ -39,6 +39,7 @@ const address = (params.from as string) ?? props.request.params.request.params[1
 const requestType = computed(() => props.request.params.request.method as EIP155_SIGNING_METHODS);
 const isSignatureRequest = computed(() => requestType.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN);
 const isEvmTxRequest = computed(() => requestType.value === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION);
+const cutAddress = (address: string) => cut(address, 5);
 
 const requestData = computed(() => {
   const data: Record<string, string> = {};
@@ -46,7 +47,7 @@ const requestData = computed(() => {
 
   if (isSignatureRequest.value) {
     data[`${baseKey}.method`] = t('walletConnect.personalSign').toString();
-    data[`${baseKey}.message`] = params as unknown as string;
+    data[`${baseKey}.message`] = cut(params as unknown as string, 10);
 
     return data;
   }
@@ -63,8 +64,6 @@ const requestData = computed(() => {
 
   return data;
 });
-
-const cutAddress = (address: string) => cut(address, 5);
 
 const txWallet = computed(() => {
   const accounts: AccountJson[] = store.getters.getAccounts;

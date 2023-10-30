@@ -1292,7 +1292,7 @@ export default class Extension extends FWExtensionBase {
         availableNamespaces[key] = {
           chains,
           events: requiredNameSpace.events,
-          methods: key === WALLET_CONNECT_EIP155_NAMESPACE ? EIP155_METHODS : requiredNameSpace.methods,
+          methods: requiredNameSpace.methods,
         };
       } else {
         if (supportChains.length) {
@@ -1325,7 +1325,7 @@ export default class Extension extends FWExtensionBase {
 
       namespaces[key] = {
         accounts,
-        methods: namespace.methods,
+        methods: key === WALLET_CONNECT_EIP155_NAMESPACE ? EIP155_METHODS : namespace.methods,
         events: namespace.events,
         chains: chains,
       };

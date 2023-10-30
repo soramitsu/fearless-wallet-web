@@ -43,6 +43,7 @@ import {
 } from '@extension-base/services/wallet-connect-service/types';
 import { TransferErrorCode, BasicTxErrorCode } from '@extension-base/background/types';
 import { useI18n } from 'vue-i18n-composable';
+import { isEthereumAddress } from '@polkadot/util-crypto';
 import WalletConnectRequestData from './WalletConnectRequestData.vue';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import { walletConnectRequestReject, walletConnectRequestApprove, isSignLocked } from '@/extension/messaging';
@@ -73,14 +74,13 @@ const address = computed<string>(() => {
     return (request.params.request.params[0].from as string).toLowerCase();
   }
 
-  if (
-    method.value === EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA ||
-    method.value === EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4
-  ) {
-    return (request.params.request.params[0] as string).toLowerCase();
+  if (Array.isArray(request.params.request.params)) {
+    return isEthereumAddress(request.params.request.params[0])
+      ? request.params.request.params[0]
+      : request.params.request.params[1];
   }
 
-  return request.params.request.params[1].toLowerCase();
+  return request.params.request.params.from as string;
 });
 const isLocked = ref(false);
 const min15Label = computed(() => (isLocked.value ? 'assets.15min' : 'assets.15minExtend'));
@@ -95,7 +95,7 @@ const header = computed(() => {
 const onSavePass = (value: boolean) => (isSavePass.value = value);
 
 onMounted(async () => {
-  const res = await isSignLocked(address.value);
+  const res = await isSignLocked(address.value.toLowerCase());
   isLocked.value = res.isLocked;
 
   if (!res.isLocked) isSavePass.value = true;

@@ -47,7 +47,6 @@ import {
   RequestApproveWalletConnectNotSupport,
   RequestRejectWalletConnectNotSupport,
   EIP155_SIGNING_METHODS,
-  EIP155_METHODS,
 } from '../../services/wallet-connect-service/types';
 import {
   isProposalExpired,
@@ -1325,7 +1324,7 @@ export default class Extension extends FWExtensionBase {
 
       namespaces[key] = {
         accounts,
-        methods: key === WALLET_CONNECT_EIP155_NAMESPACE ? EIP155_METHODS : namespace.methods,
+        methods: namespace.methods,
         events: namespace.events,
         chains: chains,
       };
@@ -1401,6 +1400,7 @@ export default class Extension extends FWExtensionBase {
 
   async wcRequestApprove({ address, password, topic, isSavePass }: RequestApproveWalletConnect) {
     const substrateAddress = getSubstrateAddress(address, this.state);
+    const ethereumAddress = getEthereumAddress(address, this.state);
 
     if (password === '') {
       const eth = this.state.keyringService.getPair(address);
@@ -1476,11 +1476,11 @@ export default class Extension extends FWExtensionBase {
       const subst = this.state.keyringService.getPair(substrateAddress);
       subst?.unlock(password);
 
-      const eth = this.state.keyringService.getPair(address);
+      const eth = this.state.keyringService.getPair(ethereumAddress);
       eth?.unlock(password);
     }
 
-    this.savePass(substrateAddress, address, isSavePass, false);
+    this.savePass(substrateAddress, ethereumAddress, isSavePass, false);
 
     return true;
   }

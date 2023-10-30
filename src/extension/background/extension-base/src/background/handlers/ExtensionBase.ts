@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { isRequireEvmAPI } from '../utils/utils';
+import { getSubstrateAddress, isRequireEvmAPI } from '../utils/utils';
 import type {
   CachedUnlocks,
   RequestAccountExport,
@@ -11,6 +11,7 @@ import type {
   ValidateJsonResult,
   RequestUpdateMeta,
 } from '@extension-base/background/types';
+
 import type State from '@extension-base/background/handlers/State';
 import type { KeyringPair } from '@polkadot/keyring/types';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
@@ -95,6 +96,7 @@ export default class FWExtensionBase {
 
   refreshAccountPasswordCache(pair: KeyringPair): number {
     const remainingTime = this.getRemainingTime(pair);
+
     const { address, meta } = pair;
 
     const ethereumAddress = meta.ethereumAddress as string;
@@ -117,7 +119,8 @@ export default class FWExtensionBase {
   }
 
   signingIsLocked({ address }: RequestSigningIsLocked): ResponseSigningIsLocked {
-    const pair = this.state.keyringService.getPair(address);
+    const substrateAddress = getSubstrateAddress(address, this.state);
+    const pair = this.state.keyringService.getPair(substrateAddress);
 
     assert(pair, 'Unable to find pair');
 

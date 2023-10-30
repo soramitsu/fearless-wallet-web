@@ -123,6 +123,7 @@
   "authorize": {
     "authWarningMessage": "Приложение, идентифицирующее себя как {name} запрашивает доступ с {link}",
     "accountsConnected": "Аккаунты, подключенны к {url}",
+    "connectedTo": "Подключен к {url}",
     "mobile": "мобильный",
     "connectCountAccounts": "Подключить 1 аккаунт | Подключить {count} аккаунтов",
     "noconnections": "Соединения отсутствуют",
@@ -327,6 +328,7 @@
   },
   "walletConnect": {
     "noNetworkSupport": "Есть неизвестные обязательные сети",
+    "details": "Детали",
     "personalSign": "Личная подпись",
     "signRequestTitle": "Запрос подписи",
     "txRequestTitle": "Запрос от {url}",
@@ -334,6 +336,8 @@
     "insertUrl": "Вставьте ссылку из Wallet Connect",
     "txHint": "Внимание: эта операция может перевести ассеты",
     "usupportedNetwork": "Сеть не поддерживается",
+    "unsupportedMethod": "Запрошенный метод подписания, пока, не поддерживается приложением: {name}",
+    "unknownMethod": "Неизвестный метод",
     "signWarning": "Вы подтверждаете запрос с помощью следующего аккаунта",
     "requestFields": {
       "networkError": "Проблемы с распознаванием сети",

@@ -503,7 +503,7 @@ export default class State {
       }
     });
 
-    await this.initNetworkStates(true);
+    if (this.ready) await this.initNetworkStates(true);
     this.updateServiceInfo();
 
     this.networkMapSubject.next(this.networkMap);
@@ -756,7 +756,7 @@ export default class State {
     });
 
     this.networksJson.forEach((network) => {
-      const currentProvider = network.nodes[0].url;
+      const [{ url: currentProvider }] = network.nodes;
       const providers: Record<string, string> = {};
 
       network.nodes.forEach(({ name, url }) => (providers[name] = url));
@@ -798,6 +798,7 @@ export default class State {
     });
 
     this.getSubstrateAccounts().forEach(({ address }) => this.generateDefaultBalance(address));
+    this.ready = true; //Set true if chain json is parsed and data is preped for init apis
   }
 
   public async init() {

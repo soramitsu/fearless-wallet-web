@@ -124,6 +124,7 @@
   "authorize": {
     "authWarningMessage": "An application, self-identifying as {name} is requesting access from my {link}",
     "accountsConnected": "Accounts connected to {url}",
+    "connectedTo": "Connected to {url}",
     "mobile": "mobile",
     "connectCountAccounts": "Connect 1 account | Connect {count} accounts",
     "noconnections": "There are no connections",
@@ -328,9 +329,13 @@
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
   },
   "walletConnect": {
-    "noNetworkSupport": "0 network supported",
+    "noNetworkSupport": "There are unknown required networks",
+    "details": "Details",
+    "relayNotSupported": "Our App only supports Wallet Connect SDK v2 and does not support the deprecated SDK v1. Please use the appropriate version for a successful connection.",
     "personalSign": "Personal Sign",
-    "pairingErrorMessage": "Invalid url! Copy url from Wallet Connect and try again",
+    "pairingErrorMessage": "Missing or invalid url, please try again",
+    "unsupportedMethod": "Requested signing method is currently unsupported in the application: {name}",
+    "unknownMethod": "Unknown method",
     "insertUrl": "Insert Wallet Connect url",
     "usupportedNetwork": "Unsupported network",
     "txHint": "Be careful: this message may transfer assets",
@@ -344,6 +349,11 @@
       "gasFee": "Gas fee",
       "method": "Sign Method",
       "message": "Message"
+    },
+    "unsupportedMethodsPopup": "Certain methods requested by Wallet Connect are not currently supported by the App. Although the connection can be established, certain functionalities of the dApp may not be available.",
+    "requiredNetworkAlert": {
+      "header": "Unable to connect to wallet:",
+      "message": "The requested blockchain network is not supported or available"
     },
     "permissions": {
       "title": "App permissions",

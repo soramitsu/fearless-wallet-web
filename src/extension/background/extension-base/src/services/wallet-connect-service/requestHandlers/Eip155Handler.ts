@@ -47,7 +47,6 @@ export default class Eip155RequestHandler {
     const method = request.method as EIP155_SIGNING_METHODS;
     const requestSession = this.walletConnectService.getSession(topic);
 
-    // const url = requestSession.peer.metadata.url;
     const sessionAccounts = requestSession.namespaces.eip155.accounts.map((account) => account.split(':')[2]);
 
     if (

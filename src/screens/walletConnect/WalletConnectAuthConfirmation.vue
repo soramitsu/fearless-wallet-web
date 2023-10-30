@@ -52,7 +52,15 @@
         <FButton v-if="isSupportNetwork" text="common.approve" width="100%" @click="onApprove" />
       </div>
     </AboveForm>
-
+    <NotificationPopup
+      v-if="showNotificationPopup"
+      :headers="notificationPopupMessage"
+      acceptButtonText="common.approve"
+      :showAcceptButton="true"
+      :showRejectButton="true"
+      @handlerClose="onReject"
+      @handlerAccept="onApprove"
+    />
     <WalletChooseForm
       v-if="showWalletSelect"
       :selectedAddress="selectedAddress"
@@ -79,7 +87,12 @@ import { useNotify } from '@/plugins/soramitsuUI';
 import { transformNamespaces } from '@/util/walletConnect';
 import { cut } from '@/helpers';
 import { Components } from '@/router/routes';
-
+import { WALLET_CONNECT_SUPPORTED_METHODS } from '@/extension/background/extension-base/src/services/wallet-connect-service/consts';
+const notificationPopupMessage = {
+  subtext: 'walletConnect.unsupportedMethodsPopup',
+  text: ``,
+};
+const showNotificationPopup = ref(false);
 const router = useRouter();
 const store = useStore();
 const notify = useNotify();
@@ -97,6 +110,15 @@ const id = computed(() => request.value.id);
 const url = computed(() => request.value.url);
 const title = computed(() => request.value.request.params.proposer.metadata.name);
 const showWalletSelect = ref(false);
+const isSupportAllMethods = computed(() => {
+  for (const namespace of Object.values(request.value.request.params.requiredNamespaces)) {
+    for (const method of namespace.methods) {
+      if (!WALLET_CONNECT_SUPPORTED_METHODS.some((el) => el === method)) return false;
+    }
+  }
+
+  return true;
+});
 
 const toggleWalletSelectForm = () => {
   showWalletSelect.value = !showWalletSelect.value;
@@ -128,6 +150,12 @@ const namespaces = computed<ChainData[]>(() => {
 const isSupportNetwork = computed(() => namespaces.value.length !== 0);
 
 const onApprove = async () => {
+  if (!isSupportAllMethods.value && !showNotificationPopup.value) {
+    showNotificationPopup.value = true;
+
+    return;
+  }
+
   const { message, title } = await approveWalletConnectSession({
     accounts: [selectedAddress.value],
     id: id.value,

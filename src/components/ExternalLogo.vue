@@ -7,7 +7,7 @@ import { computed } from 'vue';
 import { NetworksController } from '@/controllers';
 
 type Props = {
-  name: string;
+  name?: string;
   alt?: string;
   width?: number;
 };

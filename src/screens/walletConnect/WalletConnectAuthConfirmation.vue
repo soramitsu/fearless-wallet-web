@@ -4,15 +4,17 @@
       <div class="scroll__container">
         <Scroll>
           <div class="auth-confirmation">
-            <WalletConnectHeader :name="title" :url="url" />
-            <AppPermissions />
+            <WalletConnectHeader :title="title" :url="url" />
+            <AppPermissions v-if="isSupportNetwork" />
+            <div v-else class="alert">
+              <Alert
+                headerText="walletConnect.requiredNetworkAlert.header"
+                message="walletConnect.requiredNetworkAlert.message"
+                sizeText="small"
+              />
+            </div>
 
-            <ContentForm
-              v-if="isSupportNetwork"
-              class="namespaces-form"
-              :bottomRightCorner="true"
-              @click.native="toggleWalletSelectForm"
-            >
+            <ContentForm v-if="isSupportNetwork" class="width-100" @click.native="toggleWalletSelectForm">
               <div class="wallet">
                 <Icon icon="wallet-logo-transaction" class="wallet__logo" />
 
@@ -23,19 +25,16 @@
               </div>
             </ContentForm>
 
-            <ContentForm class="namespaces-form" :bottomRightCorner="true">
+            <ContentForm v-if="isSupportNetwork" class="namespaces-form" :bottomRightCorner="true">
               <div class="namespaces">
                 <span>{{ $t('common.networks') }}</span>
                 <div class="namespaces__icons">
-                  <div v-if="!isSupportNetwork">{{ $t('walletConnect.noNetworkSupport') }}</div>
-                  <template v-else>
-                    <ExternalLogo
-                      v-for="(namespace, index) in namespaces"
-                      :name="namespace.icon"
-                      :width="28"
-                      :key="index"
-                    />
-                  </template>
+                  <ExternalLogo
+                    v-for="(namespace, index) in namespaces"
+                    :name="namespace.icon"
+                    :width="28"
+                    :key="index"
+                  />
                 </div>
               </div>
             </ContentForm>
@@ -159,6 +158,7 @@ const onReject = () => {
     'logo name chevron'
     'logo address chevron';
   place-items: center;
+  width: 100%;
   padding: 16px;
   column-gap: 10px;
   cursor: pointer;
@@ -226,5 +226,30 @@ const onReject = () => {
     flex-flow: row nowrap;
     gap: 7px;
   }
+}
+.warning-container {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  gap: 10px;
+}
+.warning--orange {
+  color: $simple-orange-color;
+}
+.warning-text {
+  max-width: 400px;
+  color: $gray-color;
+}
+.icon {
+  width: 64px;
+  height: 64px;
+}
+.width-100 {
+  width: 100%;
+}
+.alert {
+  width: 500px;
 }
 </style>

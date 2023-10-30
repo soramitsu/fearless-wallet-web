@@ -11,6 +11,8 @@ import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import State, { registry } from '@extension-base/background/handlers/State';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
+import { getInternalError } from '@walletconnect/utils';
+
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
 import {
   getSubstrateAddress,
@@ -45,6 +47,7 @@ import {
   RequestApproveWalletConnectNotSupport,
   RequestRejectWalletConnectNotSupport,
   EIP155_SIGNING_METHODS,
+  EIP155_METHODS,
 } from '../../services/wallet-connect-service/types';
 import {
   isProposalExpired,
@@ -202,8 +205,31 @@ export default class Extension extends FWExtensionBase {
       const pair = this.state.keyringService.getAccount(address);
       const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
 
-      if (ethereumAddress) this.state.keyringService.forgetAccount(ethereumAddress);
+      if (ethereumAddress) {
+        this.state.keyringService.forgetAccount(ethereumAddress);
+      }
 
+      this.state.walletConnectService.sessions.forEach((session) => {
+        const evm = session.namespaces['eip155'] ?? [];
+
+        if (evm) {
+          const [, , evmAddress] = evm.accounts[0].split(':');
+
+          if (ethereumAddress && ethereumAddress.toLowerCase() === evmAddress.toLowerCase()) {
+            return this.state.walletConnectService.disconnect(session.topic);
+          }
+        }
+
+        const polakdot = session.namespaces['polkadot'];
+
+        if (polakdot) {
+          const [, , substaddress] = polakdot.accounts[0].split(':');
+
+          if (substaddress.toLowerCase() === address.toLowerCase()) {
+            this.state.walletConnectService.disconnect(session.topic);
+          }
+        }
+      });
       this.state.keyringService.forgetAccount(address);
     } else this.state.keyringService.forgetAddress(address);
 
@@ -1169,11 +1195,22 @@ export default class Extension extends FWExtensionBase {
     return this.state.onboardingService.getStories(lang);
   }
 
-  async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<boolean> {
+  async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
     return this.state.walletConnectService
       .connect(uri)
-      .then(() => true)
-      .catch(() => false);
+      .then(() => {
+        return true;
+      })
+      .catch((error) => {
+        if ((error.message as string).includes(getInternalError('MISSING_OR_INVALID').message))
+          return { message: 'walletConnect.pairingErrorMessage' };
+        if (error.message === getInternalError('UNKNOWN_TYPE').message)
+          return {
+            message: 'walletConnect.relayNotSupported',
+          };
+
+        return { message: 'Unknown error' };
+      });
   }
 
   private connectWCSubscribe(id: string, port: chrome.runtime.Port): WalletConnectSessionRequest[] {
@@ -1255,7 +1292,7 @@ export default class Extension extends FWExtensionBase {
         availableNamespaces[key] = {
           chains,
           events: requiredNameSpace.events,
-          methods: requiredNameSpace.methods,
+          methods: key === WALLET_CONNECT_EIP155_NAMESPACE ? EIP155_METHODS : requiredNameSpace.methods,
         };
       } else {
         if (supportChains.length) {
@@ -1409,7 +1446,28 @@ export default class Extension extends FWExtensionBase {
         throw new Error('Not found sign method');
       }
 
-      const signature = await signer.signMessage(convertHexToUtf8(params[0]));
+      let payload;
+
+      if (typeof params[0] === 'string' && isEthereumAddress(params[0])) {
+        payload = params[1];
+      } else if (typeof params[1] === 'string' && isEthereumAddress(params[1])) {
+        payload = params[0];
+      }
+
+      if (address === '' || !payload) {
+        throw new Error('Not found address or payload to sign');
+      }
+
+      const message =
+        ['eth_sign', 'personal_sign'].indexOf(method) > -1 ? convertHexToUtf8(payload) : JSON.parse(payload);
+
+      const signature = await (['eth_sign', 'personal_sign'].indexOf(method) > -1
+        ? signer.signMessage(message)
+        : signer.signTypedData(
+            message.domain,
+            { Mail: message.types.Mail, Person: message.types.Person },
+            message.message
+          ));
 
       request.resolve({ id: request.request.topic, signature: signature as HexString });
     }
@@ -1685,9 +1743,6 @@ export default class Extension extends FWExtensionBase {
       // Not support
       case 'pri(walletConnect.requests.notSupport.subscribe)':
         return this.WCNotSupportSubscribe(id, port);
-
-      case 'pri(walletConnect.notSupport.approve)':
-        return this.approveWalletConnectNotSupport(request as RequestApproveWalletConnectNotSupport);
 
       case 'pri(walletConnect.notSupport.reject)':
         return this.rejectWalletConnectNotSupport(request as RequestRejectWalletConnectNotSupport);

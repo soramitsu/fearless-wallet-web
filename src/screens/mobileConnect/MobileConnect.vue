@@ -3,7 +3,7 @@
     <template v-if="isQRPrep">
       <h2 class="header">{{ $t('mobileConnector.qrHeader') }}</h2>
 
-      <QR :payload="getQR" />
+      <QR :payload="qr" />
     </template>
 
     <div v-show="isLoading && !isActiveAccountExists" class="loader">
@@ -21,16 +21,14 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
-import { Action, Getter, Mutation } from 'vuex-class';
+import { Action } from 'vuex-class';
 import type { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import type { PermissionResponseOutput } from '@airgap/beacon-sdk';
-import type { PermissionSuccess, AsyncFn, RequestSentInfo, Fn, PermissionResponsePayload } from '@/interfaces';
+import type { PermissionSuccess, AsyncFn, RequestSentInfo, PermissionResponsePayload } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
-import { createMobileWallet } from '@/extension/messaging';
+import { createMobileWallet, walletConnectDappInitSession } from '@/extension/messaging';
 import { beaconController } from '@/controllers';
 import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
-import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
-import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
 import PermissionRequestPopup from '@/screens/mobileConnect/PermissionRequestPopup.vue';
 import { MOONBEAM_GENESISHASH } from '@/consts/networks';
 import { IS_EXTENSION } from '@/consts/global';
@@ -51,31 +49,11 @@ export default class MobileConnect extends Vue {
   isActiveAccountExists = false;
   isPossibleConnectionProblem = false;
   permissionRequestDenied = false;
-
+  qr: string | null = null;
   @Action(AccountActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
-  @Getter(AccountGettersTypes.GET_QR) getQR!: Nullable<string>;
-  @Mutation(AccountMutationsTypes.SET_QR) setQR!: Fn<string>;
 
   async mounted() {
-    this.isLoading = !this.getQR;
-    const activeAccount = await beaconController.getActiveAccount();
-
-    if (activeAccount) {
-      this.isActiveAccountExists = true;
-
-      return;
-    }
-
-    this.initBeaconEvents();
-
-    beaconController.connect();
-  }
-
-  initBeaconEvents() {
-    beaconController.onPairingRequest(this.onPairingRequest);
-    beaconController.onPairingSuccess(this.onPairingSuccess);
-    beaconController.onPermissionRequest(this.onPermissionRequest);
-    beaconController.onPermissionsResponse(this.onPermissionResponse);
+    this.qr = await walletConnectDappInitSession();
   }
 
   get connectionStatus() {
@@ -93,7 +71,7 @@ export default class MobileConnect extends Vue {
   }
 
   get isQRPrep() {
-    return !this.connectionStatus && this.getQR && !this.isLoading;
+    return !this.connectionStatus && this.qr && !this.isLoading;
   }
 
   close() {
@@ -110,27 +88,6 @@ export default class MobileConnect extends Vue {
     if (this.isPermissionRequestResolved) return '';
 
     return 'welcome.connectMobile';
-  }
-
-  async onPairingRequest(payload: string) {
-    this.setQR(payload);
-
-    this.isLoading = false;
-  }
-
-  async onPairingSuccess() {
-    this.isPaired = true;
-    this.isLoading = true;
-  }
-
-  async onPermissionRequest(payload: RequestSentInfo) {
-    this.requestInfo = payload;
-
-    setTimeout(() => {
-      this.isLoading = false;
-
-      if (!this.isPermissionsGranted || !this.isWalletAlreadyExists) this.isPossibleConnectionProblem = true;
-    }, 30000);
   }
 
   async onPermissionResponse({ output, account }: PermissionSuccess) {

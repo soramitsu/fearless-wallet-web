@@ -17,13 +17,14 @@ import {
 import { convertConnectRequest, convertNotSupportRequest } from './utils';
 import Eip155Handler from './requestHandlers/Eip155Handler';
 import PolkadotHandler from './requestHandlers/PolkadotHandler';
+import WalletConnectDAppService from './dapp';
 
 export class WalletConnectService {
   readonly state: State;
   readonly requestService: RequestService;
   readonly eip155RequestHandler: Eip155Handler;
   readonly polkadotRequestHandler: PolkadotHandler;
-
+  readonly mobileWalletClient: WalletConnectDAppService;
   private client: WalletConnect | undefined;
   public readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]> = new BehaviorSubject<SessionTypes.Struct[]>(
     []
@@ -31,6 +32,7 @@ export class WalletConnectService {
 
   constructor(state: State, requestService: RequestService) {
     this.state = state;
+    this.mobileWalletClient = new WalletConnectDAppService();
     this.requestService = requestService;
     this.eip155RequestHandler = new Eip155Handler(this.state, this, requestService);
     this.polkadotRequestHandler = new PolkadotHandler(this.state, this, requestService);

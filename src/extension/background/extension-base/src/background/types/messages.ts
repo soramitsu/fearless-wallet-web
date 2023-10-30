@@ -218,6 +218,6 @@ export interface RequestSignatures {
   'pri(walletConnect.request.approve)': [RequestApproveWalletConnect, boolean];
   'pri(walletConnect.request.reject)': [{ topic: string }, boolean];
   //Wallet Connect dApp
-  'pri(walletConnect.app.makeqr)': [null, string];
+  'pri(walletConnect.app.connect)': [null, string];
   'pri(walletConnect.app.disconnect)': [null, string];
 }

@@ -1,7 +1,8 @@
 <template>
-  <Row :value="value" :price="price" :icon="icon" :isLoading="isLoading" :isIconPrepend="isIconPrepend">
+  <Row :value="value" :price="price" :icon="iconAppend" :isLoading="isLoading" :isIconPrepend="isIconPrepend">
     <Icon v-if="icon" :icon="icon" class="icon-info" :class="iconClasses" />
     {{ $t(text) }}
+    <slot></slot>
   </Row>
 </template>
 
@@ -18,6 +19,8 @@ export default class InfoRow extends Vue {
   @Prop(String) value!: string;
   @Prop(String) price!: string;
   @Prop(String) icon?: string;
+  @Prop(String) iconAppend?: string;
+
   @Prop({ default: false }) isLoading!: boolean;
   @Prop({ default: false }) isIconPrepend!: boolean;
   @Prop({ default: () => [] }) iconClasses!: string[];

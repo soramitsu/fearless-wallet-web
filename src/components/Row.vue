@@ -6,9 +6,10 @@
 
     <div v-if="value" class="value">
       <div>
-        <div>
+        <div class="value-container">
           <Loading v-if="isLoading" />
           <span v-else>{{ value }}</span>
+          <Icon v-if="icon" :icon="icon" class="icon-info" :class="iconClasses" />
         </div>
 
         <div v-if="price" class="price">
@@ -22,27 +23,38 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 type Props = {
   value: string;
-  price: string;
+  price?: string;
   icon?: string;
   rowClasses?: string;
-  isLoading: boolean;
-  isIconPrepend: boolean;
-  iconClasses: string[];
+  isLoading?: boolean;
+  isIconPrepend?: boolean;
+  iconClasses?: string[];
 };
 
 const props = withDefaults(defineProps<Props>(), {
   isIconPrepend: false,
   iconClasses: () => [],
 });
+const iconColor = computed(() => {
+  if (props.icon === 'check') return '#00ee77';
 
-const direction = computed(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
+  return '$grayish-white';
+});
+const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
 </script>
 
 <style lang="scss" scoped>
+.value-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  line-height: 19px;
+  gap: 4px;
+}
 .row {
   margin: 0 16px;
   height: 55px;
@@ -56,6 +68,20 @@ const direction = computed(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
     text-align: right;
     display: flex;
 
+    .icon-info {
+      width: 18px;
+      height: 18px;
+      color: v-bind('iconColor');
+      cursor: pointer;
+
+      &--prepend {
+        margin-left: 13px;
+      }
+
+      &:hover {
+        color: $default-white;
+      }
+    }
     .price {
       color: $gray-color;
       margin-top: 3px;

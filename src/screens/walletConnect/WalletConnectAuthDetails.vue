@@ -1,6 +1,6 @@
 <template>
   <div class="update-accounts">
-    <WalletConnectHeader v-if="url" :name="title" :url="url" />
+    <WalletConnectHeader v-if="url" :title="title" :url="url" />
 
     <Scroll>
       <div v-for="(el, index) in namespaces" class="network" :key="index">
@@ -31,6 +31,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
+import { useI18n } from 'vue-i18n-composable';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import type { SessionTypes } from '@walletconnect/types';
 import { transformNamespaces } from '@/util/walletConnect';
@@ -46,14 +47,12 @@ type ChainData = {
 const route = useRoute();
 const router = useRouter();
 const store = useStore();
-
+const { t } = useI18n();
 const topic = computed(() => route.params.topic);
 const request = computed(() => {
   const list: SessionTypes.Struct[] | null = store.getters.wcSessions;
 
-  const searchAuth = list?.find((request) => request.topic === topic.value);
-
-  return searchAuth;
+  return list?.find((request) => request.topic === topic.value);
 });
 
 const checkAuth = () => {
@@ -65,14 +64,14 @@ onBeforeMount(async () => {
 });
 
 const url = computed(() => request.value?.peer.metadata.url);
-const title = computed(() => request.value?.peer.metadata.name ?? '');
+const title = computed(() => t('authorize.connectedTo', { url: request.value?.peer.metadata.name ?? '' }).toString());
 
 const namespaces = computed<ChainData[]>(() => {
   if (!request.value) return [];
 
   const namespaces = request.value.namespaces;
 
-  return transformNamespaces(namespaces);
+  return transformNamespaces(namespaces, true);
 });
 
 const getNetworkStatusClass = (status: boolean) => `network__status-indicator--${status ? 'active' : 'inactive'}`;

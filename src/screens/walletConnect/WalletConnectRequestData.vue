@@ -43,11 +43,15 @@ const isSignatureRequest = computed(() => !isEvmTxRequest.value);
 const cutAddress = (address: string) => cut(address, 5);
 
 const address = computed(() => {
-  if (!isEvmTxRequest.value) {
+  if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
+    return (params[0].from as string).toLowerCase();
+  }
+
+  if (Array.isArray(params)) {
     return isEthereumAddress(params[0]) ? params[0] : params[1];
   }
 
-  return params.value.from as string;
+  return params[0].from as string;
 });
 
 const requestData = computed(() => {

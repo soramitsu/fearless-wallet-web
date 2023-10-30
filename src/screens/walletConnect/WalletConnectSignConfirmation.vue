@@ -39,6 +39,7 @@ import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import {
   EIP155_SIGNING_METHODS,
+  SIGNATURE_METHODS,
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 import { TransferErrorCode, BasicTxErrorCode } from '@extension-base/background/types';
@@ -62,7 +63,7 @@ const isPassValid = ref(false);
 const [request]: WalletConnectTransactionRequest[] = store.getters.wcSignList;
 
 const method = computed(() => request.params.request.method as EIP155_SIGNING_METHODS);
-const isSignatureRequest = computed(() => method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN);
+const isSignatureRequest = computed(() => SIGNATURE_METHODS.includes(method.value));
 const origin = request.verifyContext.verified.origin;
 const title = computed<string>(() => {
   if (!isSignatureRequest.value) return t('walletConnect.txRequestTitle', { url: origin }).toString();

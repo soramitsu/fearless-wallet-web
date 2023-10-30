@@ -70,18 +70,17 @@ const title = computed<string>(() => {
 
   return t('walletConnect.signRequestTitle').toString();
 });
+const params = request.params.request.params;
 const address = computed<string>(() => {
   if (method.value === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
-    return (request.params.request.params[0].from as string).toLowerCase();
+    return (params[0].from as string).toLowerCase();
   }
 
-  if (Array.isArray(request.params.request.params)) {
-    return isEthereumAddress(request.params.request.params[0])
-      ? request.params.request.params[0]
-      : request.params.request.params[1];
+  if (Array.isArray(params)) {
+    return isEthereumAddress(params[0]) ? params[0] : params[1];
   }
 
-  return request.params.request.params.from as string;
+  return params[0].from as string;
 });
 const isLocked = ref(false);
 const min15Label = computed(() => (isLocked.value ? 'assets.15min' : 'assets.15minExtend'));
@@ -96,7 +95,7 @@ const header = computed(() => {
 const onSavePass = (value: boolean) => (isSavePass.value = value);
 
 onMounted(async () => {
-  const res = await isSignLocked(address.value.toLowerCase());
+  const res = await isSignLocked(address.value);
   isLocked.value = res.isLocked;
 
   if (!res.isLocked) isSavePass.value = true;

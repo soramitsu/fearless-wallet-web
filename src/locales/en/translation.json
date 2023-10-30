@@ -350,6 +350,7 @@
       "method": "Sign Method",
       "message": "Message"
     },
+    "unsupportedMethodsPopup": "Certain methods requested by Wallet Connect are not currently supported by the App. Although the connection can be established, certain functionalities of the dApp may not be available.",
     "requiredNetworkAlert": {
       "header": "Unable to connect to wallet:",
       "message": "The requested blockchain network is not supported or available"

@@ -43,7 +43,7 @@ const isSignatureRequest = computed(() => !isEvmTxRequest.value);
 const cutAddress = (address: string) => cut(address, 5);
 
 const address = computed(() => {
-  if (Array.isArray(params)) {
+  if (!isEvmTxRequest.value) {
     return isEthereumAddress(params[0]) ? params[0] : params[1];
   }
 

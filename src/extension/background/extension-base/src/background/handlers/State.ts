@@ -3,7 +3,6 @@ import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 
 import { assert, u8aToHex } from '@polkadot/util';
-import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import {
@@ -76,8 +75,6 @@ import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/netw
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
 import { EXTENSION_ID } from '@/consts/global';
 import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
-
-export const registry = new TypeRegistry();
 
 type APIs = {
   evm: EvmApiMap;

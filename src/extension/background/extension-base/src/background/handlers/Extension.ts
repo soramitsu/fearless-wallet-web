@@ -8,7 +8,7 @@ import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/ev
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/swaps';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
-import State, { registry } from '@extension-base/background/handlers/State';
+import State from '@extension-base/background/handlers/State';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
@@ -31,9 +31,12 @@ import { MetadataDef } from '@polkadot/extension-inject/types';
 import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types';
 import {
-  WALLET_CONNECT_EIP155_NAMESPACE,
-  WALLET_CONNECT_POLKADOT_NAMESPACE,
-} from '../../services/wallet-connect-service/consts';
+  isProposalExpired,
+  isSupportWalletConnectNamespace,
+  isSupportWalletConnectChain,
+  convertHexToUtf8,
+} from '@extension-base/services/wallet-connect-service/utils';
+import registry from '@extension-base/api/substrate/typeRegistry';
 import {
   RequestConnectWalletConnect,
   WalletConnectSessionRequest,
@@ -48,13 +51,11 @@ import {
   RequestRejectWalletConnectNotSupport,
   EIP155_SIGNING_METHODS,
   EIP155_METHODS,
-} from '../../services/wallet-connect-service/types';
+} from '@extension-base/services/wallet-connect-service/types';
 import {
-  isProposalExpired,
-  isSupportWalletConnectNamespace,
-  isSupportWalletConnectChain,
-  convertHexToUtf8,
-} from '../../services/wallet-connect-service/utils';
+  WALLET_CONNECT_EIP155_NAMESPACE,
+  WALLET_CONNECT_POLKADOT_NAMESPACE,
+} from '@extension-base/services/wallet-connect-service/consts';
 import type {
   BasicTxResponse,
   NotificationResponse,
@@ -132,24 +133,19 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 async function transformAccounts(accounts: SubjectInfo, state: State): Promise<AccountJson[]> {
   const currentAccount = await state.currentAccount;
 
-  const transformedAccounts = Object.values(accounts)
-    .filter((el) => !isEthereumAddress(el.json.address))
-    .map(({ json: { address, meta }, type }): AccountJson => {
-      const isDefault = address === currentAccount?.address;
-      const currentNetwork = state.selectedNetworks[address] ?? ALL_NETWORKS;
+  return Object.values(accounts).flatMap(({ json: { address, meta }, type }) => {
+    if (isEthereumAddress(address)) return [];
 
-      return {
-        address,
-        ethereumAddress: meta.ethereumAddress as string,
-        active: isDefault,
-        name: meta.name ?? '',
-        type,
-        network: currentNetwork,
-        ...meta,
-      };
-    });
-
-  return transformedAccounts;
+    return {
+      address,
+      ethereumAddress: meta.ethereumAddress as string,
+      active: address === currentAccount?.address,
+      name: meta.name ?? '',
+      type,
+      network: state.selectedNetworks[address] ?? ALL_NETWORKS,
+      ...meta,
+    };
+  });
 }
 
 export default class Extension extends FWExtensionBase {

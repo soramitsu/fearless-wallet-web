@@ -1405,7 +1405,7 @@ export default class Extension extends FWExtensionBase {
         throw new Error(BasicTxErrorCode.KEYRING_ERROR);
       }
     } else {
-      const errors = this.validatePairPassword(address, password);
+      const errors = this.validatePairPassword(substrateAddress, password);
 
       if (errors.length) throw new Error(BasicTxErrorCode.KEYRING_ERROR);
     }

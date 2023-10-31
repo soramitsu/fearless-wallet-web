@@ -92,10 +92,9 @@ import {
   makeStaking,
   cancelMobileSignRequest,
 } from '@/extension/messaging';
-import { beaconController, ExtensionController } from '@/controllers';
+import { beaconController } from '@/controllers';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { IS_EXTENSION } from '@/consts/global';
@@ -120,14 +119,9 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop({ type: String, default: '0' }) feeValue!: string;
   @Prop(String) firstIcon!: string;
   @Prop(String) secondIcon!: string;
-  @Prop(String) transactionId?: string;
   @Prop(Object) currency?: TokenBalance;
   @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain | RequestStaking | SwapOptions;
-  @Prop(Object) payload?: SignerPayloadJSON;
   @Prop(String) extrinsicType!: 'transfer' | 'crossChain' | 'swap' | StakingOperation;
-
-  @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: AsyncFn<ApprovePayload>;
-  @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: AsyncFn<string>;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -170,10 +164,6 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transactionAddress() {
-    if (this.transactionId && this.payload?.address) {
-      return BaseApi.encodeAddress(this.payload?.address);
-    }
-
     return this.selectedWallet.address;
   }
 
@@ -184,8 +174,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get isSignMobile() {
-    const prepAddress = this.transactionId && this.payload?.address ? this.payload.address : this.transactionAddress;
-    const encodedAddress = BaseApi.encodeAddress(prepAddress);
+    const encodedAddress = BaseApi.encodeAddress(this.transactionAddress);
 
     return this.accounts.some((account) => account.address === encodedAddress && account.isMobile);
   }
@@ -290,33 +279,14 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async onSignMobile() {
-    if (!this.transactionId) this.makeExtrinsic();
-    else if (this.extrinsicType === 'swap')
+    if (this.extrinsicType === 'swap')
       await makeSwap({
         ...(this.tx as SwapOptions),
         password: this.password,
         isMobile: true,
         isSavePass: this.isSavePass,
       });
-    else if (this.payload) await this.signTransactionJSON(this.transactionId);
-  }
-
-  async signTransactionJSON(id: string) {
-    const payload: PayloadJSON = this.payload as SignerPayloadJSON;
-    delete payload.address;
-    payload.type = 'json';
-
-    const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
-
-    if (blockchainData.signature.length === 0) {
-      this.transactionState = 'failed';
-
-      ExtensionController.cancelSign(id);
-
-      return;
-    }
-
-    ExtensionController.approveSignSignature(id, blockchainData.signature);
+    else this.makeExtrinsic();
   }
 
   async makeExtrinsic() {
@@ -364,16 +334,6 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   async sendExtrinsic() {
     this.transactionState = 'pending';
-
-    if (this.transactionId) {
-      this.onSignApprove({
-        id: this.transactionId,
-        isSavePass: this.isSavePass,
-        password: this.password,
-      });
-
-      return;
-    }
 
     const results = await this.makeExtrinsic();
 

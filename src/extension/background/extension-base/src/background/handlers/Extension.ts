@@ -8,9 +8,11 @@ import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/ev
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/swaps';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
-import State, { registry } from '@extension-base/background/handlers/State';
+import State from '@extension-base/background/handlers/State';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
+import { getInternalError } from '@walletconnect/utils';
+
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
 import {
   BasicTxErrorCode,
@@ -44,9 +46,12 @@ import { MetadataDef } from '@polkadot/extension-inject/types';
 import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 
 import {
-  WALLET_CONNECT_EIP155_NAMESPACE,
-  WALLET_CONNECT_POLKADOT_NAMESPACE,
-} from '../../services/wallet-connect-service/consts';
+  isProposalExpired,
+  isSupportWalletConnectNamespace,
+  isSupportWalletConnectChain,
+  convertHexToUtf8,
+} from '@extension-base/services/wallet-connect-service/utils';
+import registry from '@extension-base/api/substrate/typeRegistry';
 import {
   RequestConnectWalletConnect,
   WalletConnectSessionRequest,
@@ -60,15 +65,12 @@ import {
   RequestApproveWalletConnectNotSupport,
   RequestRejectWalletConnectNotSupport,
   EIP155_SIGNING_METHODS,
-} from '../../services/wallet-connect-service/types';
-import {
-  isProposalExpired,
-  isSupportWalletConnectNamespace,
-  isSupportWalletConnectChain,
-  convertHexToUtf8,
-} from '../../services/wallet-connect-service/utils';
+} from '@extension-base/services/wallet-connect-service/types';
 import { CurrentAccountInfo, CurrentAccountState } from '../../stores/CurrentAccountStore';
 import { MakeStakingRequest, StakingParamsResponse } from './../../services/staking-service/types';
+  WALLET_CONNECT_EIP155_NAMESPACE,
+  WALLET_CONNECT_POLKADOT_NAMESPACE,
+} from '@extension-base/services/wallet-connect-service/consts';
 import type {
   BasicTxResponse,
   NotificationResponse,
@@ -141,24 +143,19 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 async function transformAccounts(accounts: SubjectInfo, state: State): Promise<AccountJson[]> {
   const currentAccount = await state.currentAccount;
 
-  const transformedAccounts = Object.values(accounts)
-    .filter((el) => !isEthereumAddress(el.json.address))
-    .map(({ json: { address, meta }, type }): AccountJson => {
-      const isDefault = address === currentAccount?.address;
-      const currentNetwork = state.selectedNetworks[address] ?? ALL_NETWORKS;
+  return Object.values(accounts).flatMap(({ json: { address, meta }, type }) => {
+    if (isEthereumAddress(address)) return [];
 
-      return {
-        address,
-        ethereumAddress: meta.ethereumAddress as string,
-        active: isDefault,
-        name: meta.name ?? '',
-        type,
-        network: currentNetwork,
-        ...meta,
-      };
-    });
-
-  return transformedAccounts;
+    return {
+      address,
+      ethereumAddress: meta.ethereumAddress as string,
+      active: address === currentAccount?.address,
+      name: meta.name ?? '',
+      type,
+      network: state.selectedNetworks[address] ?? ALL_NETWORKS,
+      ...meta,
+    };
+  });
 }
 
 export default class Extension extends FWExtensionBase {
@@ -214,8 +211,31 @@ export default class Extension extends FWExtensionBase {
       const pair = this.state.keyringService.getAccount(address);
       const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
 
-      if (ethereumAddress) this.state.keyringService.forgetAccount(ethereumAddress);
+      if (ethereumAddress) {
+        this.state.keyringService.forgetAccount(ethereumAddress);
+      }
 
+      this.state.walletConnectService.sessions.forEach((session) => {
+        const evm = session.namespaces['eip155'] ?? [];
+
+        if (evm) {
+          const [, , evmAddress] = evm.accounts[0].split(':');
+
+          if (ethereumAddress && ethereumAddress.toLowerCase() === evmAddress.toLowerCase()) {
+            return this.state.walletConnectService.disconnect(session.topic);
+          }
+        }
+
+        const polakdot = session.namespaces['polkadot'];
+
+        if (polakdot) {
+          const [, , substaddress] = polakdot.accounts[0].split(':');
+
+          if (substaddress.toLowerCase() === address.toLowerCase()) {
+            this.state.walletConnectService.disconnect(session.topic);
+          }
+        }
+      });
       this.state.keyringService.forgetAccount(address);
     } else this.state.keyringService.forgetAddress(address);
 
@@ -853,11 +873,10 @@ export default class Extension extends FWExtensionBase {
   validatePairPassword(address: string, password: string | undefined) {
     const substrateAddress = getSubstrateAddress(address, this.state);
     const errors = [] as Array<BasicTxError>;
+    const substratePair = this.state.keyringService.getPair(substrateAddress);
 
     if (password) {
       try {
-        const substratePair = this.state.keyringService.getPair(substrateAddress);
-
         if (substratePair) {
           substratePair.unlock(password);
 
@@ -877,10 +896,11 @@ export default class Extension extends FWExtensionBase {
         });
       }
     } else {
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        message: String('Password required to decode encrypted data'),
-      });
+      if (substratePair?.isLocked)
+        errors.push({
+          code: BasicTxErrorCode.KEYRING_ERROR,
+          message: String('Password required to decode encrypted data'),
+        });
     }
 
     return errors;
@@ -1006,8 +1026,6 @@ export default class Extension extends FWExtensionBase {
 
       if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
     } else {
-      this.cachedUnlocks[address] = 0;
-
       this.state.keyringService.lockPair(address);
       this.state.passwords[address] = undefined;
 
@@ -1212,11 +1230,22 @@ export default class Extension extends FWExtensionBase {
     return result;
   }
 
-  async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<boolean> {
+  async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
     return this.state.walletConnectService
       .connect(uri)
-      .then(() => true)
-      .catch(() => false);
+      .then(() => {
+        return true;
+      })
+      .catch((error) => {
+        if ((error.message as string).includes(getInternalError('MISSING_OR_INVALID').message))
+          return { message: 'walletConnect.pairingErrorMessage' };
+        if (error.message === getInternalError('UNKNOWN_TYPE').message)
+          return {
+            message: 'walletConnect.relayNotSupported',
+          };
+
+        return { message: 'Unknown error' };
+      });
   }
 
   private connectWCSubscribe(id: string, port: chrome.runtime.Port): WalletConnectSessionRequest[] {
@@ -1285,7 +1314,7 @@ export default class Extension extends FWExtensionBase {
     }
 
     for (const [key, namespace] of optionalEntries) {
-      if (isSupportWalletConnectNamespace(key)) continue;
+      if (!isSupportWalletConnectNamespace(key)) continue;
       if (!namespace.chains) continue;
 
       const supportChains = namespace.chains.filter((chain) => isSupportWalletConnectChain(chain, chainInfoMap)) || [];
@@ -1405,10 +1434,22 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async wcRequestApprove({ address, password, topic }: RequestApproveWalletConnect) {
-    const errors = this.validatePairPassword(address, password);
+  async wcRequestApprove({ address, password, topic, isSavePass }: RequestApproveWalletConnect) {
+    const substrateAddress = getSubstrateAddress(address, this.state);
+    const ethereumAddress = getEthereumAddress(address, this.state);
 
-    if (errors.length) throw new Error(BasicTxErrorCode.KEYRING_ERROR);
+    if (password === '') {
+      const eth = this.state.keyringService.getPair(address);
+
+      if (eth?.isLocked) {
+        throw new Error(BasicTxErrorCode.KEYRING_ERROR);
+      }
+    } else {
+      const errors = this.validatePairPassword(address, password);
+
+      if (errors.length) throw new Error(BasicTxErrorCode.KEYRING_ERROR);
+    }
+
     const request = this.state.requestService.signWcRequest(topic);
 
     const method = request.request.params.request.method;
@@ -1441,10 +1482,41 @@ export default class Extension extends FWExtensionBase {
         throw new Error('Not found sign method');
       }
 
-      const signature = await signer.signMessage(convertHexToUtf8(params[0]));
+      let payload;
+
+      if (typeof params[0] === 'string' && isEthereumAddress(params[0])) {
+        payload = params[1];
+      } else if (typeof params[1] === 'string' && isEthereumAddress(params[1])) {
+        payload = params[0];
+      }
+
+      if (address === '' || !payload) {
+        throw new Error('Not found address or payload to sign');
+      }
+
+      const message =
+        ['eth_sign', 'personal_sign'].indexOf(method) > -1 ? convertHexToUtf8(payload) : JSON.parse(payload);
+
+      const signature = await (['eth_sign', 'personal_sign'].indexOf(method) > -1
+        ? signer.signMessage(message)
+        : signer.signTypedData(
+            message.domain,
+            { Mail: message.types.Mail, Person: message.types.Person },
+            message.message
+          ));
 
       request.resolve({ id: request.request.topic, signature: signature as HexString });
     }
+
+    if (password !== '') {
+      const subst = this.state.keyringService.getPair(substrateAddress);
+      subst?.unlock(password);
+
+      const eth = this.state.keyringService.getPair(ethereumAddress);
+      eth?.unlock(password);
+    }
+
+    this.savePass(substrateAddress, ethereumAddress, isSavePass, false);
 
     return true;
   }
@@ -1731,9 +1803,6 @@ export default class Extension extends FWExtensionBase {
       // Not support
       case 'pri(walletConnect.requests.notSupport.subscribe)':
         return this.WCNotSupportSubscribe(id, port);
-
-      case 'pri(walletConnect.notSupport.approve)':
-        return this.approveWalletConnectNotSupport(request as RequestApproveWalletConnectNotSupport);
 
       case 'pri(walletConnect.notSupport.reject)':
         return this.rejectWalletConnectNotSupport(request as RequestRejectWalletConnectNotSupport);

@@ -8,61 +8,65 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 import type { Placement } from '@/interfaces';
 
 type BackgroundType = 'none' | 'black' | 'light-black';
-type Size = 'small' | 'medium' | 'big';
+type Size = 'small' | 'medium';
+type Props = {
+  iconName: string;
+  backgroundColor: BackgroundType;
+  backgroundColorHover?: BackgroundType;
+  target?: string;
+  tooltipText?: string;
+  placement?: Placement;
+  disabled?: boolean;
+  size?: Size;
+};
 
-@Component
-export default class CircleButton extends Vue {
-  @Prop(String) iconName!: string;
-  @Prop(String) backgroundColor!: BackgroundType;
-  @Prop(String) backgroundColorHover!: BackgroundType;
-  @Prop(String) target!: string;
-  @Prop({ default: '' }) tooltipText!: string;
-  @Prop({ default: 'top' }) placement!: Placement;
-  @Prop({ default: false }) disabled!: boolean;
-  @Prop({ default: 'medium' }) size!: Size;
+const emit = defineEmits(['click']);
+const props = withDefaults(defineProps<Props>(), {
+  tooltipText: '',
+  placement: 'top',
+  disabled: false,
+  size: 'medium',
+});
 
-  get showTooltip() {
-    return this.tooltipText !== '';
-  }
+const showTooltip = computed(() => props.tooltipText !== '');
 
-  get backgroundClass() {
-    const backgroundClass = `background-${this.backgroundColor}`;
+const backgroundClass = computed(() => {
+  const backgroundClass = `background-${props.backgroundColor}`;
 
-    return [
-      'circle-button',
-      `circle-button-${this.size}`,
-      backgroundClass,
-      this.iconName,
-      {
-        [`${backgroundClass}-hover-${this.backgroundColorHover}`]: this.backgroundColor === 'none',
-      },
-    ];
-  }
+  return [
+    'circle-button',
+    `circle-button-${props.size}`,
+    backgroundClass,
+    props.iconName,
+    {
+      [`${backgroundClass}-hover-${props.backgroundColorHover}`]: props.backgroundColor === 'none',
+    },
+  ];
+});
 
-  get imageClasses() {
-    const shiftLeft = ['chevron-left', 'send', 'send-white'].includes(this.iconName);
-    const shiftRight = ['chevron-right'].includes(this.iconName);
+const imageClasses = computed(() => {
+  const shiftLeft = ['chevron-left', 'send', 'send-white'].includes(props.iconName);
+  const shiftRight = ['chevron-right'].includes(props.iconName);
 
-    return [
-      'image',
-      this.disabled ? 'image-disabled' : 'image-enabled',
-      this.iconName,
-      {
-        'image-shift-left': shiftLeft,
-        'image-shift-fight': shiftRight,
-      },
-    ];
-  }
+  return [
+    'image',
+    props.disabled ? 'image-disabled' : 'image-enabled',
+    props.iconName,
+    {
+      'image-shift-left': shiftLeft,
+      'image-shift-fight': shiftRight,
+    },
+  ];
+});
 
-  click(event: Event) {
-    if (!this.disabled) this.$emit('click', event);
-  }
-}
+const click = (event: Event) => {
+  if (!props.disabled) emit('click', event);
+};
 </script>
 
 <style lang="scss" scoped>

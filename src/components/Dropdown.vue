@@ -20,29 +20,27 @@
   </FCorners>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 
 type Options = { value: string; label: string; visibility: boolean }[];
 
-@Component
-export default class Dropdown extends Vue {
-  @Prop(String) value!: string;
-  @Prop({ default: 'button' }) type!: string;
-  @Prop(Array) options!: Options;
+type Props = {
+  value: string;
+  options: Options;
+  type: string;
+};
 
-  get filteredOptions() {
-    return this.options.filter(({ visibility }) => (visibility !== undefined ? visibility : true));
-  }
+const props = withDefaults(defineProps<Props>(), {
+  type: 'button',
+});
 
-  get label() {
-    return this.options.find(({ value }) => value === this.value)?.label ?? '';
-  }
+const filteredOptions = computed(() =>
+  props.options.filter(({ visibility }) => (visibility !== undefined ? visibility : true))
+);
 
-  get showCorners() {
-    return this.type === 'button';
-  }
-}
+const label = computed(() => props.options.find(({ value }) => value === props.value)?.label ?? '');
+const showCorners = computed(() => props.type === 'button');
 </script>
 
 <style lang="scss">

@@ -31,7 +31,8 @@ export const findChainInfoByHalfGenesisHash = (
 
 export const chainNamesFromRequest = (
   namespaces: SessionTypes.Namespaces | ProposalTypes.RequiredNamespaces,
-  key: string
+  key: string,
+  isRequired: boolean
 ): ChainData[] => {
   const store = useStore();
   const networks: NetworkJson[] = store.getters.allNetworks;
@@ -41,29 +42,41 @@ export const chainNamesFromRequest = (
   if (!chains) return names;
 
   if (key === WALLET_CONNECT_EIP155_NAMESPACE) {
-    chains.forEach((chain) => {
+    for (const chain of chains) {
       const [, chainId] = chain.split(':');
-
-      const net = networks.find((el) => parseInt(`0x${el.chainId}`) === +chainId);
+      const net = networks.find((el) => {
+        return +el.chainId === +chainId;
+      });
 
       if (net) names.push({ icon: net.icon, name: net.name, connected: net.active });
-    });
+      else if (isRequired) {
+        names.splice(0, names.length);
+        break;
+      }
+    }
   } else if (key === WALLET_CONNECT_POLKADOT_NAMESPACE) {
-    chains.forEach((chain) => {
+    for (const chain of chains) {
       const [, chainId] = chain.split(':');
 
       const network = findChainInfoByHalfGenesisHash(networks, chainId);
+
       if (network) names.push({ connected: network.active, icon: network.icon, name: network.name });
-    });
+      else if (isRequired) {
+        names.splice(0, names.length);
+        break;
+      }
+    }
   }
 
   return names;
 };
 
-export const transformNamespaces = (namespaces: SessionProposalNamespaces): ChainData[] => {
+export const transformNamespaces = (namespaces: SessionProposalNamespaces, isRequired: boolean): ChainData[] => {
   const chainData: ChainData[] = [];
 
-  Object.keys(namespaces).forEach((namespace) => chainData.push(...chainNamesFromRequest(namespaces, namespace)));
+  Object.keys(namespaces).forEach((namespace) =>
+    chainData.push(...chainNamesFromRequest(namespaces, namespace, isRequired))
+  );
 
   return chainData;
 };

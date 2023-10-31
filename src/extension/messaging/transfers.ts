@@ -4,8 +4,6 @@ import type {
   RequestTransfer,
   RequestCrossChain,
   RequestSwap,
-} from '@extension-base/background/types/types';
-import type {
   RequestCheckTransfer,
   RequestCheckCrossChain,
   ResponseCheckCrossChain,
@@ -13,6 +11,7 @@ import type {
   ResponseCheckSwap,
   ResponseMakeSwap,
 } from '@extension-base/background/types/types';
+
 import type { SoraFees } from '@/interfaces';
 import { sendMessage } from '@/extension/messaging/index';
 

@@ -3,7 +3,6 @@ import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 
 import { assert, u8aToHex } from '@polkadot/util';
-import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import {
@@ -85,8 +84,6 @@ export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
 import { EXTENSION_ID } from '@/consts/global';
 import { isSameString, isSora } from '@/helpers';
-
-export const registry = new TypeRegistry();
 
 type APIs = {
   evm: EvmApiMap;
@@ -512,7 +509,7 @@ export default class State {
       }
     });
 
-    this.initNetworkStates();
+    if (this.ready) this.initNetworkStates();
     this.updateServiceInfo();
 
     this.networkMapSubject.next(this.networkMap);
@@ -770,7 +767,7 @@ export default class State {
     });
 
     this.networksJson.forEach((network) => {
-      const currentProvider = network.nodes[0].url;
+      const [{ url: currentProvider }] = network.nodes;
       const providers: Record<string, string> = {};
 
       network.nodes.forEach(({ name, url }) => (providers[name] = url));
@@ -812,6 +809,7 @@ export default class State {
     });
 
     this.getSubstrateAccounts().forEach(({ address }) => this.generateDefaultBalance(address));
+    this.ready = true; //Set true if chain json is parsed and data is preped for init apis
   }
 
   public async init() {
@@ -1016,7 +1014,7 @@ export default class State {
     password,
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
     const pass = this.passwords[address] ?? password;
-    const json = this.keyringService.getPair(address)!.toJson(pass);
+    const json = this.keyringService.getPair(address.toLowerCase())!.toJson(pass);
     const decoded = decodePair(pass, base64Decode(json.encoded), json.encoding.type);
 
     const privateKey = u8aToHex(decoded.secretKey);

@@ -2,18 +2,19 @@
   <Row
     :value="value"
     :price="price"
-    :icon="icon"
+    :icon="iconAppend"
     :isLoading="isLoading"
     :borderType="borderType"
     :showBorder="showBorder"
     :hideLastBorder="hideLastBorder"
     :color="color"
+    :isIconPrepend="isIconPrepend"
   >
-    <Icon v-if="icon && isIconPrepend" :icon="icon" class="icon-info" :class="classesIcon" />
+    <Icon v-if="icon" :icon="icon" class="icon-info" :class="iconClasses" />
 
     {{ $t(text) }}
 
-    <Icon v-if="icon && !isIconPrepend" :icon="icon" class="icon-info--prepend" :class="classesIcon" />
+    <slot></slot>
   </Row>
 </template>
 
@@ -33,6 +34,7 @@ export default class InfoRow extends Vue {
   @Prop(String) price!: string;
   @Prop(String) icon?: string;
   @Prop(String) color!: Color;
+  @Prop(String) iconAppend?: string;
   @Prop({ default: 'secondary' }) borderType!: BorderType;
   @Prop({ default: true }) isIconPrepend!: boolean;
   @Prop({ default: true }) showBorder!: boolean;

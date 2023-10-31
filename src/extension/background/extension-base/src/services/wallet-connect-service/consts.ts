@@ -1,5 +1,4 @@
 import { CoreTypes, SignClientTypes } from '@walletconnect/types';
-import { ConnectParams } from '@walletconnect/universal-provider';
 import { WalletConnectSigningMethod, POLKADOT_SIGNING_METHODS, EIP155_SIGNING_METHODS } from './types';
 
 export const PROJECT_ID_EXTENSION = '991eb107bbaa66300db0223ec15c48ca';
@@ -20,8 +19,17 @@ export const DEFAULT_WALLET_CONNECT_OPTIONS: SignClientTypes.Options = {
   metadata: WALLET_CONNECT_METADATA,
 };
 
-export const WALLET_CONNECT_DAPP_CONFIG: ConnectParams = {
-  namespaces: {
+export const WALLET_CONNECT_DAPP_CONFIG: Record<string, unknown> = {
+  requiredNamespaces: {
+    polkadot: {
+      methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
+      chains: [
+        'polkadot:91b171bb158e2d3848fa23a9f1c25182', // polkadot
+      ],
+      events: ['chainChanged", "accountsChanged'],
+    },
+  },
+  optionalNamespaces: {
     polkadot: {
       methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
       chains: [

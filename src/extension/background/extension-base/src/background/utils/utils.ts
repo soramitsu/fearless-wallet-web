@@ -144,7 +144,7 @@ export function getEthereumAddress(address: string, state: State) {
   const accounts = state.keyringService.getAllAccounts();
   const account = accounts.find(({ address: _address }) => _address === address);
 
-  return account?.address ?? address;
+  return (account?.meta.ethereumAddress as string) ?? '';
 }
 
 export const uniqueStringArray = (array: string[]): string[] => {

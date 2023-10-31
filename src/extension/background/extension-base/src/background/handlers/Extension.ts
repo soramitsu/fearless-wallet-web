@@ -1396,7 +1396,7 @@ export default class Extension extends FWExtensionBase {
 
   async wcRequestApprove({ address, password, topic, isSavePass }: RequestApproveWalletConnect) {
     const substrateAddress = getSubstrateAddress(address, this.state);
-    const ethereumAddress = getEthereumAddress(address, this.state);
+    const ethereumAddress = getEthereumAddress(substrateAddress, this.state);
 
     if (password === '') {
       const eth = this.state.keyringService.getPair(address);
@@ -1418,8 +1418,8 @@ export default class Extension extends FWExtensionBase {
 
     if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
 
-    const privateKey = this.state.accountExportPrivateKey({ address, password });
-    const signer = new Wallet(privateKey.privateKey, this.state.getEvmApiMap[network.name]);
+    const { privateKey } = this.state.accountExportPrivateKey({ address: ethereumAddress, password });
+    const signer = new Wallet(privateKey, this.state.getEvmApiMap[network.name]);
 
     if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
       const txData = request.request.params.request.params[0] as { to: string; value: string };

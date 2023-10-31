@@ -286,4 +286,4 @@ async function fetchHistory(
   }
 }
 
-export { fetchHistory, fetchSoraHistory };
+export { fetchHistory };

@@ -36,7 +36,7 @@ export class StakingService {
 
     // TODO use networks
     const promises: Promise<StakingParams>[] = networks.map(async (network) => {
-      const apiProps = this.state.getSubstrateApiMap[network];
+      const apiProps = this.state.getSubstrateApiMap[network.toLowerCase()];
       const isReady = await apiProps?.api?.isReady;
 
       if (!isReady) return getDefaultStakingParams(network);
@@ -205,7 +205,7 @@ export class StakingService {
 
   public async makeStaking({ params, type }: MakeStakingRequest): Promise<BasicTxResponse> {
     const { networkName, isSavePass } = params;
-    const apiProps = this.state.getSubstrateApiMap[networkName];
+    const apiProps = this.state.getSubstrateApiMap[networkName.toLowerCase()];
     const isReady = await apiProps.api?.isReady;
 
     if (!isReady) return { status: false };

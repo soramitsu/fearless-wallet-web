@@ -38,7 +38,8 @@ import { NetworkName } from '@/interfaces';
 @Component
 export default class HistoryItem extends Vue {
   @Prop({ type: Object }) history!: SoraHistoryElement;
-  @Prop({ type: String }) assetId!: string;
+  @Prop({ type: String }) stakingAssetId!: string;
+  @Prop({ type: String }) rewardedAssetId!: string;
   @Prop({ type: String }) network!: NetworkName;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
@@ -55,7 +56,7 @@ export default class HistoryItem extends Vue {
   }
 
   get historyValue() {
-    return getHistoryValue(this.history, this.assetId, this.network, this.address, true);
+    return getHistoryValue(this.history, this.stakingAssetId, this.network, this.address, true);
   }
 
   get amount() {
@@ -67,6 +68,8 @@ export default class HistoryItem extends Vue {
   }
 
   get symbol() {
+    if (this.method === 'rewarded') return this.rewardedCurrency?.symbol;
+
     return this.currency?.symbol;
   }
 
@@ -75,7 +78,11 @@ export default class HistoryItem extends Vue {
   }
 
   get currency() {
-    return this.balances.find(({ assetId }) => assetId === this.assetId);
+    return this.balances.find(({ assetId }) => assetId === this.stakingAssetId);
+  }
+
+  get rewardedCurrency() {
+    return this.balances.find(({ assetId }) => assetId === this.rewardedAssetId);
   }
 
   get assetPrice() {

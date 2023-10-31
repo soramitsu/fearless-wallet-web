@@ -4,7 +4,8 @@
       v-for="historyItem in history"
       :key="historyItem.timestamp + historyItem.method"
       :history="historyItem"
-      :assetId="assetId"
+      :stakingAssetId="stakingAssetId"
+      :rewardedAssetId="rewardedAssetId"
       :network="network"
       @openHistoryDetailsForm="$emit('openHistoryDetailsForm', ...arguments)"
     />
@@ -24,11 +25,12 @@ import { NetworkName } from '@/interfaces';
 })
 export default class History extends Vue {
   @Prop({ type: String }) network!: NetworkName;
-  @Prop({ type: String }) assetId!: string;
-  @Getter(StakingGettersTypes.getStakingHistory) getStakingNetwork!: GetStakingHistory;
+  @Prop({ type: String }) stakingAssetId!: string;
+  @Prop({ type: String }) rewardedAssetId!: string;
+  @Getter(StakingGettersTypes.getStakingHistory) getStakingHistory!: GetStakingHistory;
 
   get history() {
-    return this.getStakingNetwork(this.network, this.assetId);
+    return this.getStakingHistory(this.network, this.stakingAssetId);
   }
 }
 </script>

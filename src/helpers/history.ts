@@ -8,7 +8,7 @@ import type {
   SoraHistoryElement,
 } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
-import { TransactionType, TransferType } from '@/interfaces';
+import { TransactionType } from '@/interfaces';
 import { firstCharToUp, isSora } from '@/helpers';
 import store from '@/store';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
@@ -21,7 +21,13 @@ function getType(historyElement: HistoryElement): TransactionType {
   return reward ? TransactionType.reward : TransactionType.extrinsic;
 }
 
-function getSignTransfer(historyElement: HistoryElement, address: string) {
+function getSignTransfer(historyElement: HistoryElement, address: string, networkName: NetworkName) {
+  if (isSora(networkName)) {
+    const element = historyElement as SoraHistoryElement;
+
+    return element.method === 'rewarded' ? '+' : '-';
+  }
+
   const type = getType(historyElement);
 
   if (type === TransactionType.transfer) {
@@ -42,10 +48,10 @@ function getTypeFormatted(historyElement: HistoryElement, address: string, netwo
   }
 
   const type = getType(historyElement);
-  const signTransfer = getSignTransfer(historyElement, address);
+  const signTransfer = getSignTransfer(historyElement, address, networkName);
 
   if (type === TransactionType.transfer) {
-    return signTransfer === '+' ? `${TransferType.incoming} transfer` : `${TransferType.outgoing} transfer`;
+    return signTransfer === '+' ? 'incomingTransfer' : 'outgoingTransfer';
   }
 
   if (type === TransactionType.extrinsic) {
@@ -110,25 +116,26 @@ function getHistoryValue(
   address: string,
   withFee = false
 ) {
+  const signTransfer = getSignTransfer(historyElement, address, networkName);
+
   if (isSora(networkName)) {
     const element = historyElement as SoraHistoryElement;
 
     const dataValue =
       element.data?.value ?? element.data?.amount ?? element.data?.baseAssetAmount ?? element.data?.maxAdditional ?? 0;
 
-    // TODO сейчас кривые значения, жем пока Саша исправит индексер
-    const value = getHumanValue(dataValue, assetId, networkName);
-    const targetValue = getHumanValue(element.data.targetAssetAmount ?? 0, assetId, networkName);
+    const targetValue = +(element.data.targetAssetAmount ?? 0);
+
+    // fee в индексерес учетом decimals
     const fee = getHumanTransferFee(historyElement, networkName);
 
-    const result = withFee ? value + fee : value;
+    const result = withFee && element.method !== 'rewarded' ? +dataValue + fee : +dataValue;
 
-    return { signTransfer: '-', value: result, targetValue };
+    return { signTransfer, value: result, targetValue };
   }
 
   const { transfer, reward, extrinsic } = historyElement;
   const type = getType(historyElement);
-  const signTransfer = getSignTransfer(historyElement, address);
 
   if (type === TransactionType.transfer && transfer) {
     const { amount } = transfer;

@@ -177,7 +177,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get showFee() {
-    if (this.isSora) return true;
+    if (this.isSora) return (this.historyElement as SoraHistoryElement).method !== 'rewarded';
 
     return this.isTransfer && this.signTransfer === '-';
   }
@@ -281,7 +281,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get signTransfer() {
-    return getSignTransfer(this.historyElement, this.address);
+    return getSignTransfer(this.historyElement, this.address, this.selectedNetwork);
   }
 
   get hash() {

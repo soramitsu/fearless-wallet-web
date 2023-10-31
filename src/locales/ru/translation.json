@@ -473,6 +473,8 @@
   },
   "history": {
     "transfer": "Трансфер",
+    "outgoingTransfer": "Исходящий трансфер",
+    "incomingTransfer": "Входящий трансфер",
     "swap": "Своп",
     "bond": "Стейк",
     "unbond": "Анстейк",
@@ -483,6 +485,7 @@
     "nominate": "Назначение валидаторов",
     "payoutStakers": "Выплаты стейкерам",
     "withdrawUnbonded": "Выкупить",
+    "rewarded": "Награда",
     "batchAll": "batchAll"
   },
   "staking": {
@@ -671,6 +674,7 @@
     "and": "и",
     "read": "Читать",
     "about": "О приложении",
+    "aboutApp": "О приложении",
     "skip": "Пропустить",
     "supportFeedback": "Поддержка & Фидбек",
     "socialMedia": "Социальные медиа",

@@ -17,7 +17,7 @@ type ExtrinsicTransferProps = {
 
 export function createExtrinsicTransfer(props: ExtrinsicTransferProps, state: State): Extrinsic {
   const { amount, tokenBalance, to, networkKey } = props;
-  const api = state.getSubstrateApiMap[networkKey].api;
+  const api = state.getSubstrateApiMap[networkKey.toLowerCase()].api;
 
   if (!api) return null;
 
@@ -59,7 +59,7 @@ export async function estimateFee(
   tokenBalance: TokenBalance,
   state: State
 ): Promise<string> {
-  const apiProps = state.getSubstrateApiMap[networkKey];
+  const apiProps = state.getSubstrateApiMap[networkKey.toLowerCase()];
   const api = apiProps.api;
 
   if (!api) return '0';
@@ -117,7 +117,7 @@ export async function makeTransfer({
   state,
 }: MakeTransferParams): Promise<void> {
   const txState: BasicTxResponse = {};
-  const apiProps = state.getSubstrateApiMap[networkKey];
+  const apiProps = state.getSubstrateApiMap[networkKey.toLowerCase()];
   const api = apiProps.api;
 
   if (!api) return;

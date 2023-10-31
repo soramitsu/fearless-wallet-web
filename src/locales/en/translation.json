@@ -479,6 +479,8 @@
   },
   "history": {
     "transfer": "Transfer",
+    "outgoingTransfer": "Outgoing transfer",
+    "incomingTransfer": "Incoming transfer",
     "swap": "Swap",
     "bond": "Stake",
     "unbond": "Unstake",
@@ -489,6 +491,7 @@
     "nominate": "Nominate validators",
     "payoutStakers": "Payout stakers",
     "withdrawUnbonded": "Redeem",
+    "rewarded": "Reward",
     "batchAll": "batchAll"
   },
   "staking": {
@@ -678,6 +681,7 @@
     "and": "and",
     "read": "Read",
     "about": "About",
+    "aboutApp": "About App",
     "skip": "Skip",
     "supportFeedback": "Support & Feedback",
     "socialMedia": "Social Media",

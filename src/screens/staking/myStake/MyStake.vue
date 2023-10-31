@@ -63,7 +63,8 @@
             <History
               v-else-if="isHistory"
               :network="network"
-              :assetId="stakingAssetId"
+              :stakingAssetId="stakingAssetId"
+              :rewardedAssetId="rewardedAssetId"
               @openHistoryDetailsForm="openHistoryDetailsForm"
             />
           </div>

@@ -8,6 +8,7 @@ import { isSameString, isSora } from '@/helpers';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common';
 import { SoraHistoryElement, SubqueryHistory } from '@/interfaces';
+import { SORA_VAL_ASSET_ID } from '@/consts/sora';
 
 export enum GettersTypes {
   allStakingItems = 'allStakingItems',
@@ -92,11 +93,18 @@ const getters: GetterTree<State, State> & Getters = {
 
       if (isSora(networkName)) {
         const nodes = history.nodes as unknown as SoraHistoryElement[];
+        const stakingXor = nodes.filter(({ module }) => module === 'staking');
 
-        return nodes.filter(({ module }) => module === 'staking');
+        const historyVal: SubqueryHistory = rootGetters.getHistory(SORA_VAL_ASSET_ID, networkName);
+        const nodesVal = historyVal.nodes as unknown as SoraHistoryElement[];
+        const stakingVal = nodesVal.filter(({ module }) => module === 'staking');
+
+        return [...stakingXor, ...stakingVal].sort(
+          ({ timestamp: timestamp1 }, { timestamp: timestamp2 }) => +timestamp2 - +timestamp1
+        );
       }
 
-      // TODO staking доделать для новых сетей
+      // TODO staking доделать когда появятся новые сети для стейкинга
       return history.nodes;
     },
 };

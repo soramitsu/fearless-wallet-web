@@ -172,7 +172,7 @@ export function subscribeBalance(
       // если список  === null, значит коннектимся ко всем включенным сетям
       if (newNetworks === null) return true;
 
-      return newNetworks.includes(networkName);
+      return newNetworks.some((net) => net.toLowerCase() === networkName.toLowerCase());
     })
     .map(async ([networkName, apiProps]) => {
       const isReady = isSora(networkName)

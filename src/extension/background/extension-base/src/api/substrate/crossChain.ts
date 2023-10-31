@@ -234,7 +234,7 @@ async function createNativeTeleportExtrinsic(
   tokenBalance: TokenBalance,
   state: State
 ): Promise<Extrinsic> {
-  const api = state.getSubstrateApiMap[originNet]?.api;
+  const api = state.getSubstrateApiMap[originNet.toLowerCase()]?.api;
 
   if (!api) return;
 
@@ -260,7 +260,7 @@ async function createOrmlTeleportExtrinsic(
   tokenBalance: TokenBalance,
   state: State
 ): Promise<Extrinsic> {
-  const api = state.getSubstrateApiMap[originNet].api;
+  const api = state.getSubstrateApiMap[originNet.toLowerCase()].api;
 
   if (!api) return;
 
@@ -398,7 +398,7 @@ async function makeCrossChain(
   state: State
 ): Promise<void> {
   const txState: BasicTxResponse = {};
-  const apiProps = state.getSubstrateApiMap[originNet];
+  const apiProps = state.getSubstrateApiMap[originNet.toLowerCase()];
 
   await apiProps.api?.isReady;
 

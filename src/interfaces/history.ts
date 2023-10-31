@@ -56,6 +56,7 @@ type SoraHistoryElement = {
     | 'payoutStakers'
     | 'swap'
     | 'transfer'
+    | 'rewarded'
     | 'batchAll'; // TODO
   data: {
     baseAssetId?: string;
@@ -105,11 +106,6 @@ type History = Record<AssetId, HistoryForAssetId>;
 
 type GetHistory = (assetId: AssetId, networkName: NetworkName) => SubqueryHistory;
 
-enum TransferType {
-  incoming = 'Incoming',
-  outgoing = 'Outgoing',
-}
-
 enum TransactionType {
   transfer = 'transfer',
   reward = 'reward',
@@ -118,7 +114,6 @@ enum TransactionType {
 
 export {
   TransactionType,
-  TransferType,
   GetHistory,
   History,
   HistoryForWalletAddress,

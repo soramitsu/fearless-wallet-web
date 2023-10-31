@@ -91,6 +91,8 @@ export class KeyringService {
   }
 
   restoreAccount(file: KeyringPair$Json, password: string) {
+    delete file.meta.genesisHash;
+
     return keyring.restoreAccount(file, password);
   }
 

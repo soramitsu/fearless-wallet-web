@@ -4,7 +4,7 @@
       <div class="scroll__container">
         <Scroll>
           <div class="wc-request">
-            <WalletConnectHeader :name="origin" :subtext="subtext" :url="url" :isTx="!isSignatureRequest" />
+            <WalletConnectHeader :title="title" :subtext="subtext" :url="url" />
             <Hint v-if="!isSignatureRequest" class="hint" iconName="warning" :text="$t('walletConnect.txHint')" />
             <WalletConnectRequestData :request="request" class="wc-request__details" />
           </div>
@@ -39,15 +39,18 @@ import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import {
   EIP155_SIGNING_METHODS,
+  SIGNATURE_METHODS,
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 import { TransferErrorCode, BasicTxErrorCode } from '@extension-base/background/types';
 import { useI18n } from 'vue-i18n-composable';
+import { isEthereumAddress } from '@polkadot/util-crypto';
 import WalletConnectRequestData from './WalletConnectRequestData.vue';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import { walletConnectRequestReject, walletConnectRequestApprove, isSignLocked } from '@/extension/messaging';
 import { useStore } from '@/store';
 import { useNotify } from '@/plugins/soramitsuUI';
+import ValidatedInput from '@/components/ValidatedInput.vue';
 type Error = { message: TransferErrorCode.UNSUPPORTED | BasicTxErrorCode.KEYRING_ERROR };
 
 const store = useStore();
@@ -60,14 +63,24 @@ const isPassValid = ref(false);
 const [request]: WalletConnectTransactionRequest[] = store.getters.wcSignList;
 
 const method = computed(() => request.params.request.method as EIP155_SIGNING_METHODS);
-const isSignatureRequest = computed(() => method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN);
+const isSignatureRequest = computed(() => SIGNATURE_METHODS.includes(method.value));
 const origin = request.verifyContext.verified.origin;
+const title = computed<string>(() => {
+  if (!isSignatureRequest.value) return t('walletConnect.txRequestTitle', { url: origin }).toString();
+
+  return t('walletConnect.signRequestTitle').toString();
+});
+const params = request.params.request.params;
 const address = computed<string>(() => {
   if (method.value === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
-    return (request.params.request.params[0].from as string).toLowerCase();
+    return (params[0].from as string).toLowerCase();
   }
 
-  return request.params.request.params[1].toLowerCase();
+  if (Array.isArray(params)) {
+    return isEthereumAddress(params[0]) ? params[0] : params[1];
+  }
+
+  return params[0].from as string;
 });
 const isLocked = ref(false);
 const min15Label = computed(() => (isLocked.value ? 'assets.15min' : 'assets.15minExtend'));
@@ -77,7 +90,7 @@ const url = computed(() => request.verifyContext.verified.origin);
 const header = computed(() => {
   if (method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN) return 'walletConnect.signRequestTitle';
 
-  return 'common.transaction';
+  return 'common.wc';
 });
 const onSavePass = (value: boolean) => (isSavePass.value = value);
 

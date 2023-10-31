@@ -2,7 +2,7 @@ import { formatJsonRpcError } from '@json-rpc-tools/utils';
 import State from '@extension-base/background/handlers/State';
 import WalletConnect from '@walletconnect/sign-client';
 import { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
-import { getInternalError, getSdkError } from '@walletconnect/utils';
+import { getInternalError, getSdkError, isValidUrl } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
 import { RequestService } from '..';
 import { storage } from '../../stores/Storage';
@@ -96,6 +96,7 @@ export class WalletConnectService {
     }
 
     this.updateSessions();
+
     this.createListener();
   }
 
@@ -112,6 +113,9 @@ export class WalletConnectService {
   }
 
   public async connect(uri: string) {
+    if (!isValidUrl(uri)) throw Error(getInternalError('MISSING_OR_INVALID').message);
+    if (uri.match('@1')) throw Error(getInternalError('UNKNOWN_TYPE').message);
+
     const haveData = await this.haveData();
 
     if (!haveData) await this.initClient(true);
@@ -160,8 +164,6 @@ export class WalletConnectService {
         .map((namespace) => namespace.methods)
         .flat();
 
-      // const chainInfoMap = this.state.getNetworkMap;
-
       const [requestNamespace] = chainId.split(':');
 
       if (!namespaces.includes(requestNamespace)) {
@@ -171,10 +173,6 @@ export class WalletConnectService {
       if (!chains.includes(chainId)) {
         throw Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + chainId);
       }
-
-      // if (!isSupportWalletConnectChain(chainId, chainInfoMap)) {
-      //   throw Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + chainId);
-      // }
 
       if (!methods.includes(method)) {
         throw Error(getSdkError('UNAUTHORIZED_METHOD').message + ' ' + method);

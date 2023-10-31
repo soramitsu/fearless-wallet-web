@@ -7,7 +7,8 @@
         :maxlength="500"
         size="big"
         :isError="isError"
-        :errorDescriptions="$t('walletConnect.pairingErrorMessage')"
+        :errorDescriptions="$t(errorDescriptions)"
+        :errorWithIcon="true"
       />
 
       <FButton text="common.connect" size="big" fontSize="big" :border="false" @click="onSubmit" />
@@ -24,7 +25,7 @@ import { newConnection } from '@/extension/messaging';
 const router = useRouter();
 const uri = ref('');
 const isError = ref(false);
-
+const errorDescriptions = ref('');
 watch(uri, () => {
   if (uri.value === '') isError.value = false;
 });
@@ -38,7 +39,10 @@ onMounted(() => {
 const onSubmit = async () => {
   const result = await newConnection({ uri: uri.value });
 
-  if (!result) isError.value = true;
+  if (!(typeof result === 'boolean')) {
+    isError.value = true;
+    errorDescriptions.value = result.message;
+  }
 };
 
 const onBack = () => router.back();

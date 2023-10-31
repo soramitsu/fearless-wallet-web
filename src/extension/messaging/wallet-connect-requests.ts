@@ -12,7 +12,7 @@ import {
 import { NotificationResponse } from '../background/extension-base/src/background/types/types';
 import { sendMessage } from '.';
 
-export function newConnection(request: RequestConnectWalletConnect): Promise<boolean> {
+export function newConnection(request: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
   return sendMessage('pri(walletConnect.connect)', request);
 }
 

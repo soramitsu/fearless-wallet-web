@@ -7,7 +7,7 @@ export default class WalletConnectStorage {
     });
   }
 
-  getEntries<T = any>(): Promise<[string, T][]> {
+  getEntries<T = unknown>(): Promise<[string, T][]> {
     return new Promise((res) => {
       chrome.storage.local.get(null).then((values) => {
         res(Object.entries(values));
@@ -15,7 +15,7 @@ export default class WalletConnectStorage {
     });
   }
 
-  getItem<T = any>(key: string): Promise<T | undefined> {
+  getItem<T = unknown>(key: string): Promise<T | undefined> {
     return new Promise((res) => {
       chrome.storage.local.get(key).then((values) => {
         res(values[key]);
@@ -23,7 +23,7 @@ export default class WalletConnectStorage {
     });
   }
 
-  setItem<T = any>(key: string, value: T): Promise<void> {
+  setItem<T = unknown>(key: string, value: T): Promise<void> {
     return chrome.storage.local.set({ [key]: value });
   }
 

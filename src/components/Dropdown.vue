@@ -26,7 +26,7 @@ import { computed } from 'vue';
 type Options = { value: string; label: string; visibility: boolean }[];
 
 type Props = {
-  value: string;
+  value?: string;
   options: Options;
   type: string;
 };

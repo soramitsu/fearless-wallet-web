@@ -102,6 +102,9 @@ const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
   align-items: center;
   line-height: 19px;
   gap: 4px;
+}
+
+.row {
   margin: 0 16px;
   height: 55px;
   display: flex;
@@ -112,7 +115,6 @@ const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
 
   .value {
     text-align: right;
-    text-transform: uppercase;
     display: flex;
 
     .icon-info {
@@ -133,6 +135,10 @@ const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
       color: $gray-color;
       margin-top: 3px;
     }
+  }
+
+  &:last-child {
+    border: none;
   }
 
   .label {

@@ -12,7 +12,6 @@ import State from '@extension-base/background/handlers/State';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
-
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
 import {
   BasicTxErrorCode,
@@ -44,7 +43,6 @@ import {
 } from '@extension-base/services/staking-service/types';
 import { MetadataDef } from '@polkadot/extension-inject/types';
 import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-
 import {
   isProposalExpired,
   isSupportWalletConnectNamespace,
@@ -67,10 +65,11 @@ import {
   EIP155_SIGNING_METHODS,
 } from '@extension-base/services/wallet-connect-service/types';
 import { CurrentAccountInfo, CurrentAccountState } from '../../stores/CurrentAccountStore';
-import { MakeStakingRequest, StakingParamsResponse } from './../../services/staking-service/types';
+import {
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
-} from '@extension-base/services/wallet-connect-service/consts';
+} from '../../services/wallet-connect-service/consts';
+import { MakeStakingRequest, StakingParamsResponse } from './../../services/staking-service/types';
 import type {
   BasicTxResponse,
   NotificationResponse,
@@ -116,7 +115,6 @@ import type {
   ResponseAuthorizeList,
   ResponseType,
 } from '@extension-base/background/types/types';
-
 import type { NetworkJson } from '@extension-base/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';

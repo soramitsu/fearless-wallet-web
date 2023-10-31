@@ -61,7 +61,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch, Ref } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
+import { Getter } from 'vuex-class';
 import {
   AccountJson,
   RequestCheckTransfer,
@@ -74,14 +74,7 @@ import {
 } from '@extension-base/background/types/types';
 import { RequestStaking } from '@extension-base//services/staking-service/types';
 import type { NetworkJson } from '@extension-base/types';
-import type {
-  RequestSentInfo,
-  AsyncFn,
-  SignerPayloadJSON,
-  PayloadJSON,
-  SwapOptions,
-  StakingOperation,
-} from '@/interfaces';
+import type { RequestSentInfo, SwapOptions, StakingOperation } from '@/interfaces';
 import type { GetNetwork, GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
 import {

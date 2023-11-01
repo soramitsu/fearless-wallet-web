@@ -13,6 +13,7 @@
 
             <Icon icon="copy" className="copy" />
           </div>
+          <Tooltip text="common.copied" target=".address-wrapper" placement="top-end" trigger="click" />
         </div>
       </div>
 
@@ -78,6 +79,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { upsertNetworkMap } from '@/extension/messaging';
+import { cut } from '@/helpers';
 
 @Component({
   components: { NodeItem },
@@ -110,7 +112,7 @@ export default class Nodes extends Vue {
   get address() {
     if (this.selectedWallet.address === '') return '';
 
-    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
+    return cut(BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork), 5);
   }
 
   get defaultNodes() {

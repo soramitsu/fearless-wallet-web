@@ -658,4 +658,4 @@ export interface TokenBalance {
 export type BalanceMap = Record<WalletAddress, TokenBalance[]>;
 
 export type NetworkMap = Record<string, NetworkJson>;
-export type NotificationResponse = { message: string; title: string };
+export type NotificationResponse = { message: string; title: string; status: boolean };

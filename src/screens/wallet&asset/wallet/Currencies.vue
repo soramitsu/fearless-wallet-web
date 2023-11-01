@@ -33,10 +33,7 @@ import CurrencyItem from '@/screens/wallet&asset/wallet/CurrencyItem.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
-type TimeoutSubscription = {
-  subscription: NodeJS.Timeout;
-  fn: () => void;
-};
+type Callback = () => void;
 
 @Component({
   components: {
@@ -45,7 +42,8 @@ type TimeoutSubscription = {
   },
 })
 export default class Currencies extends Vue {
-  timeoutSubscriptions: TimeoutSubscription[] = [];
+  callbacks: Callback[] = [];
+  timeout: NodeJS.Timeout | null = null;
 
   @Prop(Array) balances!: TokenBalance[];
   @Prop(Boolean) isEmptyBalances!: boolean;
@@ -107,13 +105,11 @@ export default class Currencies extends Vue {
   }
 
   timeoutCallback(fn: () => void) {
-    this.timeoutSubscriptions.forEach(({ subscription }) => clearTimeout(subscription));
+    if (this.timeout) clearTimeout(this.timeout);
 
-    this.timeoutSubscriptions = [...this.timeoutSubscriptions, { fn }].map(({ fn }) => {
-      const subscription = setTimeout(() => fn(), 300);
+    this.callbacks = [...this.callbacks, fn];
 
-      return { subscription, fn };
-    });
+    this.timeout = setTimeout(() => this.callbacks.forEach((cb) => cb()), 500);
   }
 }
 </script>

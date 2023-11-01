@@ -283,8 +283,6 @@ export default class Nodes extends Vue {
         .address {
           font-size: 13px;
           width: 100%;
-          overflow: hidden;
-          text-overflow: ellipsis;
           margin-right: 5px;
         }
 

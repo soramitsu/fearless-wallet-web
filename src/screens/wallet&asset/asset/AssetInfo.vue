@@ -56,6 +56,7 @@
       :showNodeSwitch="true"
       :showCopyAddress="false"
       :showExport="false"
+      :showReplaceAccount="false"
       @handlerClose="toggleDetailsPopup"
     />
   </Fragment>

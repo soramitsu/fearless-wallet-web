@@ -997,14 +997,15 @@ export default class State {
     password,
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
     const pass = this.passwords[address] ?? password;
+    const json = this.keyringService.backupAccount(address, pass!);
+    if (!json) throw new Error('Json was not exported');
 
-    const json = this.keyringService.getPair(address)!.toJson(pass);
     const decoded = decodePair(pass, base64Decode(json.encoded), json.encoding.type);
 
     const privateKey = u8aToHex(decoded.secretKey);
     const publicKey = u8aToHex(decoded.publicKey);
 
-    this.passwords[address] = password;
+    if (password) this.passwords[address] = password;
 
     return {
       privateKey,

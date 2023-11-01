@@ -261,7 +261,11 @@ export default class Extension extends FWExtensionBase {
 
   accountsValidatePassword({ address, password }: RequestAccountValidate): boolean {
     try {
-      this.state.keyringService.backupAccount(address, password);
+      const pair = this.state.keyringService.getPair(address);
+      if (!pair) throw new Error('Unable to get pair');
+      pair.unlock(password);
+
+      if (!pair.isLocked) pair.lock();
 
       return true;
     } catch (e) {
@@ -860,19 +864,26 @@ export default class Extension extends FWExtensionBase {
     const errors = [] as Array<BasicTxError>;
     const substratePair = this.state.keyringService.getPair(substrateAddress);
 
+    if (!substratePair) {
+      errors.push({
+        code: BasicTxErrorCode.KEYRING_ERROR,
+        message: String('Could not find substrate pair'),
+      });
+
+      return errors;
+    }
+
     if (password) {
       try {
-        if (substratePair) {
-          substratePair.unlock(password);
+        substratePair.unlock(password);
 
-          const { meta } = substratePair;
-          const ethereumAddress = meta.ethereumAddress as string | undefined;
+        const { meta } = substratePair;
+        const ethereumAddress = meta.ethereumAddress as string | undefined;
 
-          if (ethereumAddress) {
-            const pair = this.state.keyringService.getPair(ethereumAddress);
+        if (ethereumAddress) {
+          const pair = this.state.keyringService.getPair(ethereumAddress);
 
-            if (pair) pair.unlock(password);
-          }
+          if (pair) pair.unlock(password);
         }
       } catch (e: any) {
         errors.push({
@@ -1234,6 +1245,7 @@ export default class Extension extends FWExtensionBase {
       return {
         message: 'walletConnect.notifications.sessionExpired.message',
         title: 'walletConnect.notifications.sessionExpired.title',
+        status: false,
       };
     }
 
@@ -1258,6 +1270,7 @@ export default class Extension extends FWExtensionBase {
             return {
               message: 'walletConnect.notifications.unsupportedProposal.message',
               title: 'walletConnect.notifications.unsupportedProposal.title',
+              status: false,
             };
           }
 
@@ -1269,6 +1282,7 @@ export default class Extension extends FWExtensionBase {
         return {
           message: 'walletConnect.notifications.unsupportedProposal.message',
           title: 'walletConnect.notifications.unsupportedProposal.title',
+          status: false,
         };
       }
     }
@@ -1338,6 +1352,7 @@ export default class Extension extends FWExtensionBase {
     return {
       message: '',
       title: 'walletConnect.notifications.sessionApproved.title',
+      status: true,
     };
   }
 
@@ -1399,15 +1414,13 @@ export default class Extension extends FWExtensionBase {
     const ethereumAddress = getEthereumAddress(substrateAddress, this.state);
 
     if (password === '') {
-      const eth = this.state.keyringService.getPair(address);
+      const eth = this.state.keyringService.getPair(ethereumAddress);
 
-      if (eth?.isLocked) {
-        throw new Error(BasicTxErrorCode.KEYRING_ERROR);
-      }
+      if (eth?.isLocked) throw new Error(BasicTxErrorCode.KEYRING_ERROR, { cause: 'Pair is locked' });
     } else {
-      const errors = this.validatePairPassword(substrateAddress, password);
+      const isPassMatch = this.accountsValidatePassword({ address: ethereumAddress, password });
 
-      if (errors.length) throw new Error(BasicTxErrorCode.KEYRING_ERROR);
+      if (!isPassMatch) throw new Error(BasicTxErrorCode.KEYRING_ERROR, { cause: 'Password did not match' });
     }
 
     const request = this.state.requestService.signWcRequest(topic);
@@ -1468,7 +1481,7 @@ export default class Extension extends FWExtensionBase {
       request.resolve({ id: request.request.topic, signature: signature as HexString });
     }
 
-    if (password !== '') {
+    if (password) {
       const subst = this.state.keyringService.getPair(substrateAddress);
       subst?.unlock(password);
 

@@ -42,7 +42,7 @@ import type { ComponentText } from '@/interfaces';
 const { t } = useI18n();
 
 const emit = defineEmits(['handlerBack', 'closeHandler', 'saveChanges']);
-const { blur, fullScreen, header, showAcceptIcon, showAnimation, showBackIcon, showCloseIcon } = withDefaults(
+const props = withDefaults(
   defineProps<{
     header?: ComponentText;
     blur?: boolean;
@@ -64,9 +64,9 @@ const { blur, fullScreen, header, showAcceptIcon, showAnimation, showBackIcon, s
 );
 
 const tHeader = computed(() => {
-  if (typeof header === 'string') return t(header);
+  if (typeof props.header === 'string') return t(props.header);
 
-  return t(header.text, header.localeProps);
+  return t(props.header.text, props.header.localeProps);
 });
 
 const backgroundClasses = computed(() => {
@@ -74,7 +74,7 @@ const backgroundClasses = computed(() => {
     'form-background',
     {
       'background-blur': blur,
-      'form-animation': showAnimation,
+      'form-animation': props.showAnimation,
     },
   ];
 });
@@ -83,7 +83,7 @@ const aboveFormClasses = computed(() => {
   return [
     'form',
     {
-      fullscreen: fullScreen,
+      fullscreen: props.fullScreen,
     },
   ];
 });

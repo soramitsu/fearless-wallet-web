@@ -32,7 +32,6 @@ import { Components } from '@/router/routes';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { forgetAccount, initGoogleAuth } from '@/extension/messaging';
-import { beaconController } from '@/controllers';
 
 @Component
 export default class WalletDetailsPopup extends Vue {
@@ -64,7 +63,10 @@ export default class WalletDetailsPopup extends Vue {
   async deleteWallet() {
     await forgetAccount(this.selectedWalletAddress, this.isMobileWallet ? 'mobile' : 'native');
 
-    if (this.isMobileWallet) beaconController.resetConnection();
+    if (this.isMobileWallet) {
+      //TODO
+    }
+
     if (this.accounts.length === 0) this.$router.push({ name: Components.Welcome });
     else this.close();
   }

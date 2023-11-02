@@ -75,6 +75,6 @@ export function walletConnectRequestReject(topic: string): Promise<boolean> {
   return sendMessage('pri(walletConnect.request.reject)', { topic });
 }
 
-export function walletConnectDappInitSession(): Promise<string> {
-  return sendMessage('pri(walletConnect.app.connect)');
+export function walletConnectDappInitSession(callback: (data?: string) => void): Promise<string | undefined> {
+  return sendMessage('pri(walletConnect.app.subscribePairing)', null, callback);
 }

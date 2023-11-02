@@ -31,7 +31,6 @@
   },
   "main": "index.js",
   "dependencies": {
-    "@airgap/beacon-sdk": "^3.3.3",
     "@json-rpc-tools/utils": "^1.7.6",
     "@polkadot/api": "^10.9.1",
     "@polkadot/extension-chains": "^0.46.5",

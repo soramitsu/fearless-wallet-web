@@ -43,6 +43,7 @@ import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAc
 import { PriceJson, ServiceInfo, MobileSignRequest, MobileSigningRequest, ResponseSigning } from '../types';
 import { fetchEvmAssetBalance } from '../../api/evm/balance';
 import { REFRESH_TIME } from '../../api/evm/utils/eth';
+import WalletConnectDAppService from '../../services/wallet-connect-service/dapp';
 import type {
   AuthUrls,
   Resolver,
@@ -160,6 +161,8 @@ export default class State {
   public networkService = new NetworkService(this.eventService);
   public requestService = new RequestService(this, this.networkService);
   public walletConnectService = new WalletConnectService(this, this.requestService);
+  public walletConnectDappService = new WalletConnectDAppService(this.keyringService, this);
+
   public soraCardService = new SoraCardService(this.requestService);
   public onboardingService = new OnboardingService();
   public get knownMetadata(): MetadataDef[] {

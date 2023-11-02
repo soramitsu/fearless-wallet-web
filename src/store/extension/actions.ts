@@ -35,7 +35,6 @@ import {
 import router from '@/router';
 import { Components } from '@/router/routes';
 import { ExtensionController } from '@/controllers';
-import { SubstrateSignPayloadResponse } from '@/interfaces';
 import { URLS } from '@/consts/urls';
 
 export enum ActionTypes {
@@ -73,11 +72,6 @@ export type ApprovePayload = {
   password?: string;
 };
 
-type SignPayload = {
-  payload: SubstrateSignPayloadResponse['blockchainData'];
-  id: string;
-};
-
 type AugmentedExtensionContext = {
   commit<K extends keyof Mutations>(key: K, payload?: Parameters<Mutations[K]>[1]): ReturnType<Mutations[K]>;
 } & Omit<ActionContext<State, any>, 'commit'>;
@@ -109,7 +103,6 @@ export type Actions = {
   [ActionTypes.SUBSCRIBE_SIGN_REQUESTS](context: AugmentedExtensionContext): Promise<boolean>;
   [ActionTypes.SIGN_CANCEL](context: AugmentedExtensionContext, id: string): Promise<void>;
   [ActionTypes.APPROVE_SIGN_PASSWORD](context: AugmentedExtensionContext, payload: ApprovePayload): Promise<void>;
-  [ActionTypes.SIGN_SIGNATURE](context: AugmentedExtensionContext, payload: SignPayload): Promise<void>;
   [ActionTypes.SUBSCRIBE_EXTENSION_REQUESTS](context: AugmentedExtensionContext): Promise<void[]>;
   [ActionTypes.FETCH_TAB_STATUS](context: AugmentedExtensionContext): Promise<void>;
 };

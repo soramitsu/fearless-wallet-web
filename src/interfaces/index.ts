@@ -1,6 +1,5 @@
 export * from '@/interfaces/assets';
 export * from '@/interfaces/balances';
-export * from '@/interfaces/beacon';
 export * from '@/interfaces/common';
 export * from '@/interfaces/currencies';
 export * from '@/interfaces/history';

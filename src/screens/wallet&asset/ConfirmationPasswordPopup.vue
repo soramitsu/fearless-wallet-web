@@ -63,11 +63,10 @@
 import { Component, Vue, Prop, Watch, Ref } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
-import type { RequestSentInfo, AsyncFn, SwapOptions } from '@/interfaces';
+import type { AsyncFn, SwapOptions } from '@/interfaces';
 import type { GetNetwork, GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
-import { isSignLocked, makeSwap, makeTransfer, makeCrossChain, cancelMobileSignRequest } from '@/extension/messaging';
-import { beaconController } from '@/controllers';
+import { isSignLocked, makeSwap, makeTransfer, makeCrossChain } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
@@ -92,7 +91,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   isErrorPassword = false;
   isLocked = true;
   isSavePass = false;
-  signedPayload: RequestSentInfo | null = null;
+  signedPayload: null = null;
   transactionState: 'pending' | 'success' | 'failed' | null = null;
   showUnknownErrorPopup = false;
 
@@ -270,19 +269,8 @@ export default class ConfirmationPasswordPopup extends Vue {
     };
 
     if (this.isSignMobile) {
-      const mobileCb = () => {
-        this.transactionState = 'pending';
-      };
-
-      const onMobileCancel = (id: string) => {
-        this.transactionState = 'failed';
-
-        cancelMobileSignRequest(id);
-      };
-
-      await beaconController.subscribeRawRequests(mobileCb, onMobileCancel);
-
-      return await makeTransfer(this.requestTransfer, callback);
+      //TODO
+      // return await makeTransfer(this.requestTransfer, callback);
     }
 
     if (this.extrinsicType === 'transfer') return await makeTransfer(this.requestTransfer, callback);

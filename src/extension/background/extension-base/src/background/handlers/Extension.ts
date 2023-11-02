@@ -1531,9 +1531,11 @@ export default class Extension extends FWExtensionBase {
 
     return true;
   }
-  private walletConnectDappInitSession() {
-    return this.state.walletConnectService.mobileWalletClient.initSession();
+
+  private async walletConnectDappPairing(id: string, port: Port) {
+    return this.state.walletConnectDappService.subscribePairing(id, port);
   }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -1759,8 +1761,8 @@ export default class Extension extends FWExtensionBase {
         return this.rejectWalletConnectNotSupport(request as RequestRejectWalletConnectNotSupport);
 
       // WalletConnect mobilewallet
-      case 'pri(walletConnect.app.connect)':
-        return this.walletConnectDappInitSession();
+      case 'pri(walletConnect.app.subscribePairing)':
+        return this.walletConnectDappPairing(id, port);
 
       //OnBoarding
       case 'pri(onboarding.get.stories)':

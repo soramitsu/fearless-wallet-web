@@ -22,16 +22,10 @@
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
 import { Action } from 'vuex-class';
-import type { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
-import type { PermissionResponseOutput } from '@airgap/beacon-sdk';
-import type { PermissionSuccess, AsyncFn, RequestSentInfo, PermissionResponsePayload } from '@/interfaces';
-import BaseApi from '@/util/BaseApi';
-import { createMobileWallet, walletConnectDappInitSession } from '@/extension/messaging';
-import { beaconController } from '@/controllers';
+import type { AsyncFn } from '@/interfaces';
+import { walletConnectDappInitSession } from '@/extension/messaging';
 import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
 import PermissionRequestPopup from '@/screens/mobileConnect/PermissionRequestPopup.vue';
-import { MOONBEAM_GENESISHASH } from '@/consts/networks';
-import { IS_EXTENSION } from '@/consts/global';
 
 @Component({
   components: {
@@ -39,8 +33,8 @@ import { IS_EXTENSION } from '@/consts/global';
   },
 })
 export default class MobileConnect extends Vue {
-  requestInfo: RequestSentInfo | null = null;
-  requestResponse: PermissionResponseOutput | null = null;
+  requestInfo: null = null;
+  requestResponse: null = null;
   isLoading = false;
   isRequest = false;
   isPaired = false;
@@ -53,7 +47,11 @@ export default class MobileConnect extends Vue {
   @Action(AccountActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
 
   async mounted() {
-    this.qr = await walletConnectDappInitSession();
+    const res = await walletConnectDappInitSession((data) => {
+      if (data) this.qr = data;
+      else this.qr = null;
+    });
+    if (res) this.qr = res;
   }
 
   get connectionStatus() {
@@ -88,48 +86,6 @@ export default class MobileConnect extends Vue {
     if (this.isPermissionRequestResolved) return '';
 
     return 'welcome.connectMobile';
-  }
-
-  async onPermissionResponse({ output, account }: PermissionSuccess) {
-    this.isPossibleConnectionProblem = false;
-    this.isLoading = false;
-
-    this.requestResponse = output;
-
-    if (account.scopes.length === 0) {
-      this.permissionRequestDenied = true;
-
-      beaconController.resetConnection();
-
-      return;
-    }
-
-    if (BaseApi.getWalletType(account.address)) {
-      this.isWalletAlreadyExists = true;
-
-      beaconController.resetConnection();
-
-      return;
-    }
-
-    this.isPermissionsGranted = true;
-
-    const substrateAccount = BaseApi.encodeAddress(account.address);
-    const ethereumAddress = this.getEthereumAccount(account);
-    const meta: KeyringJson$Meta = { name: 'mobile wallet', isMobile: true, ethereumAddress };
-
-    if (IS_EXTENSION) await createMobileWallet(substrateAccount, meta);
-
-    // BaseApi.saveAddress(substrateAccount, meta);
-    await this.setSelectedWallet(substrateAccount);
-  }
-
-  getEthereumAccount(account: PermissionResponsePayload): string {
-    const filteredAccount = account.chainData.accounts.find((el) => {
-      if (el.network.genesisHash === MOONBEAM_GENESISHASH) return el;
-    });
-
-    return filteredAccount?.address ?? '';
   }
 }
 </script>

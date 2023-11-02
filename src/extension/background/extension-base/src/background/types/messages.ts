@@ -1,3 +1,4 @@
+import { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type { SessionTypes } from '@walletconnect/types';
 import type {
   BasicTxResponse,
@@ -74,9 +75,7 @@ import type {
   IGetFilesResponse,
   ICreateFile,
   FilesResponse,
-  SignerPayloadJSON,
   SoraFees,
-  SignerPayloadRaw,
   OnboardingStories,
 } from '@/interfaces';
 import type {
@@ -220,4 +219,5 @@ export interface RequestSignatures {
   //Wallet Connect dApp
   'pri(walletConnect.app.connect)': [null, string];
   'pri(walletConnect.app.disconnect)': [null, string];
+  'pri(walletConnect.app.subscribePairing)': [null, string | undefined, string | undefined];
 }

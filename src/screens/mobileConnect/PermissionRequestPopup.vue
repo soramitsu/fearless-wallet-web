@@ -19,13 +19,7 @@
         @click="onCancelRequest"
       />
 
-      <FButton
-        size="big"
-        type="secondary"
-        :border="false"
-        text="mobileConnector.resetConnection"
-        @click="onResetConnection"
-      />
+      <FButton size="big" type="secondary" :border="false" text="mobileConnector.resetConnection" @click="() => {}" />
     </div>
 
     <ConnectionStatus v-else-if="isRequestFinished" :status="status" @close="close" />
@@ -34,10 +28,7 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import { PermissionResponseOutput } from '@airgap/beacon-sdk';
 import ConnectionStatus from './ConnectionStatus.vue';
-import { beaconController } from '@/controllers';
-import { PermissionErrorPayload, RequestSentInfo } from '@/interfaces';
 import { Components } from '@/router/routes';
 
 @Component({
@@ -46,8 +37,7 @@ import { Components } from '@/router/routes';
   },
 })
 export default class PermissionRequestPopup extends Vue {
-  @Prop(Object) requestInfo!: RequestSentInfo | PermissionErrorPayload;
-  @Prop({ type: Object || null, default: null }) requestResponse?: PermissionResponseOutput;
+  @Prop({ type: Object || null, default: null }) requestResponse?: null;
   @Prop(String) status!: 'reset_form' | 'success' | 'failed' | 'wallet_exists' | 'active_account_exists';
 
   get isSuccess() {
@@ -87,12 +77,6 @@ export default class PermissionRequestPopup extends Vue {
   close() {
     if (this.isSuccess || this.isActiveAccountExists) this.toWalletScreen();
     else this.$router.back();
-  }
-
-  onResetConnection() {
-    beaconController.resetConnection();
-
-    this.toWalletScreen();
   }
 
   onCancelRequest() {

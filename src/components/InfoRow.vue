@@ -16,7 +16,7 @@ import Row from './Row.vue';
 })
 export default class InfoRow extends Vue {
   @Prop(String) text!: string;
-  @Prop(String) value!: string;
+  @Prop({ default: '' }) value!: string;
   @Prop(String) price!: string;
   @Prop(String) icon?: string;
   @Prop(String) iconAppend?: string;

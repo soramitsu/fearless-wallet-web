@@ -8,20 +8,19 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, set, ref } from 'vue';
-import { useRoute } from 'vue-router/composables';
+import { useRoute, useRouter } from 'vue-router/composables';
 import type { AuthUrls } from '@extension-base/background/types';
 import { updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import { type WalletInfo, useStore } from '@/store';
 
+const router = useRouter();
 const route = useRoute();
 const store = useStore();
 
 const list = ref<AuthUrls>({});
 const selectAll = ref(false);
 const state = ref<Record<string, WalletInfo>>({});
-
-const emit = defineEmits(['onUpdate']);
 
 const url = computed(() => route.params.id);
 const buttonText = computed(() => {
@@ -83,7 +82,7 @@ const updateAuths = async () => {
   await updateAuthorization(prepAccounts.value, url.value);
   list.value = await store.dispatch('GET_AUTHLIST');
 
-  emit('onUpdate');
+  router.back();
 };
 </script>
 

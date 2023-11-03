@@ -1,4 +1,4 @@
-import type { WalletAddress, NetworkName, AssetId } from '@/interfaces';
+import type { WalletAddress, NetworkName, AssetId, AssetName } from '@/interfaces';
 
 type Reward = {
   amount: string;
@@ -104,7 +104,7 @@ type HistoryForAssetId = Record<WalletAddress, HistoryForWalletAddress>;
 
 type History = Record<AssetId, HistoryForAssetId>;
 
-type GetHistory = (assetId: AssetId, networkName: NetworkName) => SubqueryHistory;
+type GetHistory = (assetId: AssetName, networkName: NetworkName) => SubqueryHistory;
 
 enum TransactionType {
   transfer = 'transfer',

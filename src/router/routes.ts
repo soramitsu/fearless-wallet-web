@@ -6,6 +6,8 @@ import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import { NetworkName } from '@/interfaces';
+import WcAuths from '@/screens/extension-ui/WcAuths.vue';
+import SubstrateAuths from '@/screens/extension-ui/SubstrateAuths.vue';
 
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
@@ -77,6 +79,8 @@ export enum Components {
   WalletConnectSessionRequest = 'WalletConnectSessionRequest',
   WalletConnectSignConfirmation = 'WalletConnectSignConfirmation',
   WalletConnectNotSupportedRequest = 'WalletConnectNotSupportedRequest',
+  SubstrateAuths = 'SubstrateAuths',
+  WcAuths = 'WcAuths',
   Onboarding = 'Onboarding',
 }
 
@@ -194,14 +198,27 @@ const routes: Array<RouteConfig> = [
         path: '/',
         name: Components.ManageAuths,
         component: ManageAuths,
+        redirect: { name: Components.SubstrateAuths },
+        children: [
+          {
+            path: '/dotsama',
+            name: Components.SubstrateAuths,
+            component: SubstrateAuths,
+          },
+          {
+            path: '/wc',
+            name: Components.WcAuths,
+            component: WcAuths,
+          },
+        ],
       },
       {
-        path: '/dotsama/:id',
+        path: '/dotsama-details/:id',
         name: Components.UpdateAuths,
         component: UpdateAuths,
       },
       {
-        path: 'wc/:topic',
+        path: 'wc-details/:topic',
         name: Components.WalletConnectAuthDetails,
         component: WalletConnectAuthDetails,
       },

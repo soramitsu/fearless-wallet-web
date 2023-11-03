@@ -45,7 +45,7 @@ export default class ExportForm extends Vue {
   @Getter(NetworksGettersTypes.allNetworks) networks!: Networks;
 
   get network() {
-    return this.$route.params.network;
+    return this.$route.params.network ?? this.$route.params.selectedNetwork;
   }
 
   get substrateAddress() {
@@ -83,7 +83,7 @@ export default class ExportForm extends Vue {
   }
 
   async export() {
-    const chainId = this.networks.find(({ name }) => name === this.network)!.chainId;
+    const chainId = this.networks.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!.chainId;
     const meta = { ...this.json.meta, genesisHash: `0x${chainId}` } as unknown as Record<string, string>;
 
     delete meta['ethereumAddress'];

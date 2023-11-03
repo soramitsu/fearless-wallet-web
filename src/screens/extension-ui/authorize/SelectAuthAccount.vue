@@ -45,7 +45,6 @@ const showAllCheckbox = computed(() => Object.keys(props.accounts).length && pro
 const showCheckboxes = computed(() => Object.keys(props.accounts).length);
 
 const cutAddress = (address: string) => cut(address);
-const prepHeight = computed(() => (props.height ? `${props.height}px` : 'fit-content'));
 </script>
 
 <style lang="scss" scoped>
@@ -54,7 +53,7 @@ const prepHeight = computed(() => (props.height ? `${props.height}px` : 'fit-con
   flex-flow: column;
   align-items: flex-start;
   overflow-y: hidden;
-  height: v-bind(prepHeight);
+  height: 100%;
 }
 
 .auth-account {
@@ -111,7 +110,6 @@ const prepHeight = computed(() => (props.height ? `${props.height}px` : 'fit-con
 .account__list {
   padding: 0;
   width: 100%;
-  height: 100%;
 }
 
 .account__checkbox .el-checkbox__label {

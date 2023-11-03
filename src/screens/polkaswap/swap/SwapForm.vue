@@ -215,12 +215,7 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
 import { Components } from '@/router/routes';
 import { checkSwap, getSoraFees } from '@/extension/messaging';
-import {
-  getCurrencyOptions,
-  getXORCurrency,
-  calcTransferableSendMinusFee,
-  isValidAmountAsset,
-} from '@/helpers/currencies';
+import { getCurrencyOptions, getXORCurrency, isValidAmountAsset } from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { MarketType, SwapOptions } from '@/interfaces';
 import { addNumbers } from '@/helpers/numbers';
@@ -532,8 +527,22 @@ export default class SwapForm extends Vue {
     return this.receiveAssetPrice * amount;
   }
 
-  created() {
-    this.updateComponentParams();
+  updateComponentParams() {
+    const { reset, restPriceXOR, assetId } = this.$route.params;
+
+    if (reset !== undefined) {
+      this.receiveAssetId = '';
+      this.sendAmount = '';
+      this.receiveAmount = '';
+    }
+
+    if (restPriceXOR) {
+      this.receiveAssetId = SORA_XOR_ASSET_ID;
+      this.receiveAmount = restPriceXOR;
+      this.isExchangeB = true;
+    }
+
+    this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
 
     this.getSoraFees();
   }
@@ -547,20 +556,8 @@ export default class SwapForm extends Vue {
     this.step = 1;
   }
 
-  updateComponentParams() {
-    const { reset, restPriceXOR, assetId } = this.$route.params;
-
-    if (reset !== undefined) {
-      this.receiveAssetId = '';
-      this.sendAmount = '';
-      this.receiveAmount = '';
-    } else if (restPriceXOR) {
-      this.receiveAssetId = SORA_XOR_ASSET_ID;
-      this.receiveAmount = restPriceXOR;
-      this.isExchangeB = true;
-    }
-
-    this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
+  async created() {
+    this.updateComponentParams();
   }
 
   async getSoraFees() {
@@ -729,7 +726,20 @@ export default class SwapForm extends Vue {
   }
 
   calcTransferableSendMinusFee() {
-    return calcTransferableSendMinusFee(this.sendCurrency, this.soraNetworkName, this.fee);
+    if (this.sendCurrency === undefined) return '0';
+
+    const balance = this.sendCurrency.balances.find(
+      ({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase()
+    )!;
+    const transferable = balance.transferable ?? '0';
+
+    if (this.sendCurrency?.symbol === SORA_UTILITY_ASSET) {
+      const result = new FPNumber(transferable).sub(new FPNumber(this.fee));
+
+      return FPNumber.lt(result, FPNumber.ZERO) ? '0' : result.toString();
+    }
+
+    return transferable;
   }
 
   setMax() {

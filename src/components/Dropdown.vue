@@ -28,7 +28,7 @@ type Options = { value: string; label: string; visibility: boolean }[];
 type Props = {
   value?: string;
   options: Options;
-  type: string;
+  type?: string;
 };
 
 const props = withDefaults(defineProps<Props>(), {

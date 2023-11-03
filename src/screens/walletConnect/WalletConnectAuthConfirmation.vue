@@ -1,66 +1,71 @@
 <template>
   <Fragment>
     <AboveForm v-if="!showWalletSelect" :fullScreen="true" @closeHandler="onReject">
-      <div class="scroll__container">
-        <Scroll>
-          <div class="auth-confirmation">
-            <WalletConnectHeader :title="title" :url="url" />
-            <AppPermissions v-if="isSupportNetwork" />
-            <div v-else class="alert">
-              <Alert
-                headerText="walletConnect.requiredNetworkAlert.header"
-                message="walletConnect.requiredNetworkAlert.message"
-                sizeText="small"
-              />
-            </div>
-
-            <ContentForm v-if="isSupportNetwork" class="width-100" @click.native="toggleWalletSelectForm">
-              <div class="wallet">
-                <Icon icon="wallet-logo-transaction" class="wallet__logo" />
-
-                <span class="wallet__name">{{ selectedWalletName }}</span>
-                <span class="wallet__address">{{ cutAddress }}</span>
-
-                <Icon icon="chevron-right" class="wallet__icon" />
+      <div class="auth-content">
+        <div class="scroll__container">
+          <Scroll>
+            <div class="auth-confirmation">
+              <WalletConnectHeader :title="title" :url="url" />
+              <AppPermissions v-if="isSupportNetwork" />
+              <div v-else class="alert">
+                <Alert
+                  headerText="walletConnect.requiredNetworkAlert.header"
+                  message="walletConnect.requiredNetworkAlert.message"
+                  sizeText="small"
+                />
               </div>
-            </ContentForm>
 
-            <ContentForm v-if="isSupportNetwork" class="namespaces-form" :bottomRightCorner="true">
-              <div class="namespaces">
-                <span>{{ $t('common.networks') }}</span>
-                <div class="namespaces__icons">
-                  <ExternalLogo
-                    v-for="(namespace, index) in namespaces"
-                    :name="namespace.icon"
-                    :width="28"
-                    :key="index"
-                  />
+              <ContentForm v-if="isSupportNetwork" class="width-100" @click.native="toggleWalletSelectForm">
+                <div class="wallet">
+                  <Icon icon="wallet-logo-transaction" class="wallet__logo" />
+
+                  <span class="wallet__name">{{ selectedWalletName }}</span>
+                  <span class="wallet__address">{{ cutAddress }}</span>
+
+                  <Icon icon="chevron-right" class="wallet__icon" />
                 </div>
-              </div>
-            </ContentForm>
-          </div>
-        </Scroll>
-      </div>
-      <div class="controls">
-        <FButton
-          text="common.reject"
-          :type="isSupportNetwork ? 'secondary' : 'primary'"
-          :border="false"
-          width="100%"
-          @click="onReject"
-        />
-        <FButton v-if="isSupportNetwork" text="common.approve" width="100%" @click="onApprove" />
+              </ContentForm>
+
+              <ContentForm v-if="isSupportNetwork" class="namespaces-form" :bottomRightCorner="true">
+                <div class="namespaces">
+                  <span>{{ $t('common.networks') }}</span>
+                  <div class="namespaces__icons">
+                    <ExternalLogo
+                      v-for="(namespace, index) in namespaces"
+                      :name="namespace.icon"
+                      :width="28"
+                      :key="index"
+                    />
+                  </div>
+                </div>
+              </ContentForm>
+            </div>
+          </Scroll>
+        </div>
+        <div class="controls">
+          <FButton
+            text="common.reject"
+            :type="isSupportNetwork ? 'secondary' : 'primary'"
+            :border="false"
+            width="100%"
+            @click="onReject"
+          />
+          <FButton v-if="isSupportNetwork" text="common.approve" width="100%" @click="onApprove" />
+        </div>
       </div>
     </AboveForm>
+
     <NotificationPopup
       v-if="showNotificationPopup"
       :headers="notificationPopupMessage"
       acceptButtonText="common.approve"
+      sizeWidth="big"
       :showAcceptButton="true"
       :showRejectButton="true"
       @handlerClose="onReject"
       @handlerAccept="onApprove"
     />
+
     <WalletChooseForm
       v-if="showWalletSelect"
       :selectedAddress="selectedAddress"
@@ -90,7 +95,7 @@ import { Components } from '@/router/routes';
 import { WALLET_CONNECT_SUPPORTED_METHODS } from '@/extension/background/extension-base/src/services/wallet-connect-service/consts';
 const notificationPopupMessage = {
   subtext: 'walletConnect.unsupportedMethodsPopup',
-  text: ``,
+  text: 'walletConnect.unsupportedMethod',
 };
 const showNotificationPopup = ref(false);
 const router = useRouter();
@@ -279,5 +284,11 @@ const onReject = () => {
 }
 .alert {
   width: 500px;
+}
+.auth-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
 }
 </style>

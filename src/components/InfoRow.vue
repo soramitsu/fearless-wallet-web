@@ -29,7 +29,7 @@ type Color = 'default' | 'pink-lavender';
 })
 export default class InfoRow extends Vue {
   @Prop(String) text!: string;
-  @Prop(String) value!: string;
+  @Prop({ default: '' }) value!: string;
   @Prop(String) price!: string;
   @Prop(String) icon?: string;
   @Prop(String) color!: Color;

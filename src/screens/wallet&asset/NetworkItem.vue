@@ -1,7 +1,7 @@
 <template>
   <li class="network" @click="onSelect">
     <Icon v-if="isNetworkGroup" icon="all-networks" width="24" height="24" className="network__icon" />
-    <ExternalLogo v-else :name="network.icon" width="24" height="24" class="img" />
+    <ExternalLogo v-else :name="network.icon" :width="24" class="img" />
 
     <span class="network__name">{{ network.name }}</span>
 

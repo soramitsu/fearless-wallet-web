@@ -23,6 +23,9 @@ function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }:
   const currenciesPending = currencies.filter(({ balances }) =>
     balances.every(({ state }) => state === APIItemState.PENDING)
   );
+  const currenciesWithError = currencies.filter(({ balances }) =>
+    balances.every(({ state }) => state === APIItemState.ERROR)
+  );
 
   const currenciesWithAssetsAndWithFiatBalance = currenciesThatReady.filter(
     ({ balances, priceId }) => balances.some(({ total }) => total !== '0') && tokenPriceMap[priceId ?? ''] !== 0
@@ -77,6 +80,7 @@ function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }:
     ...relayChains,
     ...currenciesWithoutAssets,
     ...currenciesPending,
+    ...currenciesWithError,
   ];
 }
 

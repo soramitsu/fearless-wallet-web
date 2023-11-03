@@ -1665,6 +1665,15 @@ export default class Extension extends FWExtensionBase {
       case 'pri(metadata.approve)':
         return this.metadataApprove(request as RequestMetadataApprove);
 
+      case 'pri(metadata.reject)':
+        return this.metadataReject(request as RequestMetadataReject);
+
+      case 'pri(metadata.requests)':
+        return port && this.metadataSubscribe(id, port);
+
+      case 'pri(activeTabsUrl.update)':
+        return this.updateCurrentTabs(request as RequestActiveTabsUrlUpdate);
+
       case 'pri(signing.approve.password)':
         return this.signingApprovePassword(request as RequestSigningApprovePassword);
 

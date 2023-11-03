@@ -454,10 +454,12 @@ export default class Extension extends FWExtensionBase {
       return new Promise((resolve, reject) => {
         try {
           const { address } = this.state.keyringService.restoreAccount(file, password);
+          const isEthereum = isEthereumAddress(address);
 
-          if (!isEthereumAddress(address)) this.updateNetworkForNewWallet(address);
-
-          this.updateCurrentAccount(address);
+          if (!isEthereum) {
+            this.updateNetworkForNewWallet(address);
+            this.updateCurrentAccount(address);
+          }
 
           resolve(address);
         } catch (error) {

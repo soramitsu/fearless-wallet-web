@@ -21,9 +21,7 @@ function createApiObject(): ApiProps {
 }
 
 function onConnected(networkName: string, state: State) {
-  if (isSora(networkName)) {
-    state.apis.substrate[networkName].api = soraConnection.api!;
-  }
+  if (isSora(networkName)) state.apis.substrate[networkName].api = soraConnection.api!;
 
   state.apis.substrate[networkName].apiRetry = 0;
   state.apis.substrate[networkName].apiStatus = NETWORK_STATUS.CONNECTED;

@@ -1,16 +1,17 @@
 import { Subscription } from 'rxjs';
 import { ApiPromise } from '@polkadot/api';
-import { getSubstrateAddress, isEthereumNetwork } from '@extension-base/background/utils/utils';
+import { isEthereumNetwork, getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
 import State from '@extension-base/background/handlers/State';
 import { setBalance } from '../helpers';
-import type { NetworkName, RelayChainName } from '@/interfaces';
+import type { RelayChainName, NetworkName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
-import { CHAIN_IDS, SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/networks';
+import { CHAIN_IDS } from '@/consts/networks';
 import { isSora } from '@/helpers';
+import { SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/sora';
 
 function subscribeTokensBalance(address: string, networkKey: string, api: ApiPromise, state: State) {
   const {

@@ -1,7 +1,7 @@
 import type { MutationTree } from 'vuex';
 import type { SelectedWallet, SetAccountsProps, SetAutoSelectNode, SetHiddenAsset } from './types';
 import type { State } from './state';
-import type { BalanceJson } from '@extension-base/background/types/types';
+import type { BalanceJson } from '@extension-base/background/types';
 import { accountController } from '@/controllers';
 
 export enum MutationTypes {
@@ -38,11 +38,12 @@ export type Mutations = {
 };
 
 const mutations: MutationTree<State> & Mutations = {
-  [MutationTypes.SET_SELECTED_WALLET](state, account) {
+  [MutationTypes.SET_SELECTED_WALLET](state, { address, ethereumAddress, name, isMobile }) {
     state.selectedWallet = {
-      address: account.address,
-      ethereumAddress: account.ethereumAddress,
-      name: account.name ?? '',
+      address: address,
+      ethereumAddress: ethereumAddress,
+      name: name ?? '',
+      isMobile: isMobile,
     };
   },
 

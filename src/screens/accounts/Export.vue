@@ -42,7 +42,7 @@ export default class Export extends Vue {
   password = '';
   isWrongPassword = false;
 
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   get network() {
     return this.$route.params.network;
@@ -54,6 +54,10 @@ export default class Export extends Vue {
 
   get warningText() {
     return this.noEthereumAccount ? 'accounts.notEthereumAccount' : 'accounts.exportWarning';
+  }
+
+  mounted() {
+    if (this.selectedWallet.isMobile) this.$router.back();
   }
 
   @Watch('password')

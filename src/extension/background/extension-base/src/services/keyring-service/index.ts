@@ -52,9 +52,11 @@ export class KeyringService {
     return keyring.backupAccount(pair, password);
   }
 
-  getPair(address: string) {
+  getPair(addressOrPair: string | KeyringPair) {
+    if (typeof addressOrPair !== 'string') return addressOrPair;
+
     try {
-      return keyring.getPair(address);
+      return keyring.getPair(addressOrPair);
     } catch {
       return null;
     }
@@ -78,47 +80,43 @@ export class KeyringService {
   }
 
   restoreAccount(file: KeyringPair$Json, password: string) {
+    delete file.meta.genesisHash;
+
     return keyring.restoreAccount(file, password);
   }
 
   unlockPair(addressOrPair: string | KeyringPair, password: string) {
-    const pair = typeof addressOrPair === 'string' ? this.getPair(addressOrPair) : addressOrPair;
+    const pair = this.getPair(addressOrPair);
 
     if (!pair) return false;
 
     const { address } = pair;
     const isEthereum = isEthereumAddress(address);
     const substrateAddress = getSubstrateAddress(address, this.state);
+
     const substratePair = isEthereum ? this.getPair(substrateAddress) : pair;
     const ethereumAddress = isEthereum ? address : (substratePair?.meta.ethereumAddress as string | undefined);
+    const ethereumPair = isEthereum ? pair : ethereumAddress ? this.getPair(ethereumAddress) : undefined;
 
     if (!substratePair) return false;
 
     try {
       substratePair.unlock(password);
-
-      if (ethereumAddress) {
-        const ethereumPair = this.getPair(ethereumAddress);
-
-        ethereumPair?.unlock(password);
-      }
+      ethereumPair?.unlock(password);
 
       return true;
-    } catch (e: any) {
+    } catch {
       substratePair.lock();
-
-      if (ethereumAddress) {
-        const ethereumPair = this.getPair(ethereumAddress);
-
-        ethereumPair?.lock();
-      }
+      ethereumPair?.lock();
 
       return false;
     }
   }
 
   lockPair(addressOrPair: string | KeyringPair | undefined) {
-    const pair = typeof addressOrPair === 'string' ? this.getPair(addressOrPair) : addressOrPair;
+    if (addressOrPair === undefined) return;
+
+    const pair = this.getPair(addressOrPair);
 
     if (!pair) return;
 

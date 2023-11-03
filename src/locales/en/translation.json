@@ -122,11 +122,14 @@
     "alertMessage": "This approval will add the metadata to your extension instance, allowing future requests to be decoded using this metadata"
   },
   "authorize": {
-    "selfIdentifyOne": "An application, self-identifying as",
-    "selfIdentifyTwo": "is requesting access from my",
+    "authWarningMessage": "An application, self-identifying as {name} is requesting access from my {link}",
     "accountsConnected": "Accounts connected to {url}",
+    "connectedTo": "Connected to {url}",
     "mobile": "mobile",
-    "connectCountAccounts": "Connect 1 account | Connect {count} accounts"
+    "connectCountAccounts": "Connect 1 account | Connect {count} accounts",
+    "noconnections": "There are no connections",
+    "connected": "Connected",
+    "disconnect": "Disconnect"
   },
   "header": {
     "connected": "Connected",
@@ -325,6 +328,54 @@
   "auth": {
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
   },
+  "walletConnect": {
+    "noNetworkSupport": "There are unknown required networks",
+    "details": "Details",
+    "relayNotSupported": "Our App only supports Wallet Connect SDK v2 and does not support the deprecated SDK v1. Please use the appropriate version for a successful connection.",
+    "personalSign": "Personal Sign",
+    "pairingErrorMessage": "Missing or invalid url, please try again",
+    "unknownMethod": "Unknown method",
+    "unsupportedMethod": "Usupported method",
+    "insertUrl": "Insert Wallet Connect url",
+    "usupportedNetwork": "Unsupported network",
+    "txHint": "Be careful: this message may transfer assets",
+    "signRequestTitle": "Signature request",
+    "txRequestTitle": "Request from {url}",
+    "signWarning": "You are approving a request with the following account",
+    "requestFields": {
+      "networkError": "Trouble to recognize the network",
+      "amount": "Amount",
+      "network": "Network",
+      "gasFee": "Gas fee",
+      "method": "Sign Method",
+      "message": "Message"
+    },
+    "unsupportedMethodsPopup": "Certain methods requested by Wallet Connect are not currently supported by the App. Although the connection can be established, certain functionalities of the dApp may not be available.",
+    "requiredNetworkAlert": {
+      "header": "Unable to connect to wallet:",
+      "message": "The requested blockchain network is not supported or available"
+    },
+    "permissions": {
+      "title": "App permissions",
+      "viewAddress": "View your wallet address",
+      "viewBalances": "View your token balances",
+      "transferAssets": "Transfer your tokens without approval"
+    },
+    "notifications": {
+      "sessionExpired": {
+        "title": "Session is expired",
+        "message": "Session proposal is expired, please, try again!"
+      },
+      "unsupportedProposal": {
+        "title": "Unsupported session proposal",
+        "message": "A network or method of this proposal isn’t supported"
+      },
+      "sessionApproved": {
+        "title": "Wallet is connected",
+        "message": ""
+      }
+    }
+  },
   "soraCard": {
     "getCard": "Get SORA Card",
     "title": "SORA Card",
@@ -437,6 +488,20 @@
     "privacyPolicy": "Privacy Policy",
     "importantText": "I confirm that I have read all of the documents mentioned and pressing 'Сontinue' I accept them."
   },
+  "history": {
+    "transfer": "Transfer",
+    "swap": "Swap",
+    "bond": "Stake",
+    "unbond": "Unstake",
+    "bondExtra": "Stake more",
+    "rebond": "Rebond",
+    "setController": "Controller Account",
+    "setPayee": "Rewards destination",
+    "nominate": "Nominate validators",
+    "payoutStakers": "Payout stakers",
+    "withdrawUnbonded": "Redeem",
+    "batchAll": "batchAll"
+  },
   "browserTabs": {
     "welcome": "Welcome",
     "onboarding": "Onboarding",
@@ -458,6 +523,13 @@
     "polkaswap": "Polkaswap"
   },
   "common": {
+    "approve": "Approve",
+    "sign": "Sign",
+    "wc": "Wallet Connect",
+    "substrate": "Substrate",
+    "connect": "Connect",
+    "enterAccountPass": "Password for this account",
+    "reject": "Reject",
     "privacyPolicy": "Privacy Policy",
     "termsConditions": "Terms and Conditions",
     "disclaimer": "Disclaimer",
@@ -521,6 +593,7 @@
     "resolveOption": "Resolve Option",
     "dontShowAgain": "Don't show me again",
     "iAmReady": "OK, I am ready",
-    "name": "Name"
+    "name": "Name",
+    "networks": "Networks"
   }
 }

@@ -25,7 +25,7 @@
         <FInput v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
       </div>
 
-      <Corners size="big" class="row">
+      <FCorners size="big" class="row">
         <div class="summary">
           <div class="summary-label">{{ $t('assets.summary') }}</div>
 
@@ -55,7 +55,7 @@
             </div>
           </div>
         </div>
-      </Corners>
+      </FCorners>
     </div>
   </TransferForm>
 </template>
@@ -64,7 +64,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { addNumbers } from '@/helpers/numbers';
@@ -83,7 +83,7 @@ export default class SendForm extends Vue {
 
   @Prop(String) _selectedNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
@@ -138,6 +138,7 @@ export default class SendForm extends Vue {
 
   created() {
     this.assetId = this._selectedAssetId;
+
     this.selectedNetwork = this._selectedNetwork;
   }
 

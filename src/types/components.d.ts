@@ -1,5 +1,6 @@
 // components.d.ts
-declare module '@vue/runtime-dom' {
+
+declare module 'vue' {
   export interface GlobalComponents {
     Loading: typeof import('@/components/Loading.vue')['Loading'];
     AboveForm: typeof import('@/components/AboveForm.vue')['AboveForm'];
@@ -11,7 +12,7 @@ declare module '@vue/runtime-dom' {
     ComingSoon: typeof import('@/components/ComingSoon.vue')['ComingSoon'];
     ConfirmationPopup: typeof import('@/components/ConfirmationPopup.vue')['ConfirmationPopup'];
     ContentForm: typeof import('@/components/ContentForm.vue')['ContentForm'];
-    Corners: typeof import('@/components/Corners.vue')['Corners'];
+    FCorners: typeof import('@/components/FCorners.vue')['FCorners'];
     Dropdown: typeof import('@/components/Dropdown.vue')['Dropdown'];
     ExternalLogo: typeof import('@/components/ExternalLogo.vue')['ExternalLogo'];
     ExternalWidget: typeof import('@/components/ExternalWidget.vue')['ExternalWidget'];

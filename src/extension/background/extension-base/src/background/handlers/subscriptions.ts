@@ -119,18 +119,24 @@ export class FWSubscription {
             newEvmNetworksWithoutSubscribe.length !== 0
           ) {
             if (addressHasChanged) {
+              this.state.publishBalance();
+
               // если адрес изменился, то подписываемся на все сети
               this.subscribeBalances(address, ethereumAddress, null, null);
             } else if (thereIsEthereumAddress) {
               this.subscribeBalances(address, ethereumAddress, SUBSTRATE_ETHEREUM_NETWORKS, null);
             } else {
               // если адрес не менялся, подписываемся только на новые сети(которые только что включили)
-              this.subscribeBalances(
-                address,
-                ethereumAddress,
-                newSubstrateNetworksWithoutSubscribe,
-                newEvmNetworksWithoutSubscribe
-              );
+              if (newSubstrateNetworksWithoutSubscribe.length) {
+                this.subscribeBalances(
+                  address,
+                  ethereumAddress,
+                  newSubstrateNetworksWithoutSubscribe,
+                  newEvmNetworksWithoutSubscribe
+                );
+              }
+
+              if (newEvmNetworksWithoutSubscribe.length) this.state.fetchEvmBalance(newEvmNetworksWithoutSubscribe);
             }
 
             this.serviceInfo.address = address;
@@ -169,8 +175,7 @@ export class FWSubscription {
   }
 
   init() {
-    this.state.getAuthorize((value) => {
-      const authUrls = this.state.authUrls;
+    this.state.requestService.getAuthorize((authUrls) => {
       const previousAuth = authUrls;
 
       if (previousAuth && Object.keys(previousAuth).length) {
@@ -181,9 +186,9 @@ export class FWSubscription {
         });
       }
 
-      const migrateValue = { ...previousAuth, ...value };
+      const migrateValue = { ...previousAuth, ...authUrls };
 
-      this.state.setAuthorize(migrateValue);
+      this.state.requestService.setAuthorize(migrateValue);
     });
   }
 
@@ -198,7 +203,7 @@ export class FWSubscription {
 
     if (isFirstRun) this.state.generateDefaultBalance(address);
 
-    this.state.fetchEvmBalance(newEvmNetworks);
+    this.state.fetchEvmBalance(newEvmNetworks, ethereumAddress);
 
     const unsubList = subscribeBalance(address, ethereumAddress, newNetworks, this.state);
 

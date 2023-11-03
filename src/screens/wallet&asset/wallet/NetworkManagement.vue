@@ -7,7 +7,7 @@
   >
     <div class="management-content">
       <Scroll>
-        <Corners v-for="{ name, icon } in networks" :key="name" size="big" class="network-corners">
+        <FCorners v-for="{ name, icon } in networks" :key="name" size="big" class="network-FCorners">
           <div class="network-item">
             <ExternalLogo class="network-img" :name="icon" />
 
@@ -24,7 +24,7 @@
               @click="$emit('setNetworkUnavailable', name)"
             />
           </div>
-        </Corners>
+        </FCorners>
       </Scroll>
     </div>
   </AboveForm>
@@ -40,7 +40,7 @@ import { SelectedWallet } from '@/store';
 @Component
 export default class NetworkManagement extends Vue {
   @Prop(Array) networks!: NetworkJson[];
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 }
 </script>
 
@@ -52,7 +52,7 @@ export default class NetworkManagement extends Vue {
     margin-right: -16px;
     height: 100%;
 
-    .network-corners {
+    .network-FCorners {
       margin-right: 16px;
 
       .network-item {

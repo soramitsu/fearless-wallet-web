@@ -1,11 +1,11 @@
 <template>
-  <Corners :size="size">
+  <FCorners :size="size">
     <div :class="containerSelectClasses">
       <SSelect v-model="vModel" :placeholder="$t(placeholder)" :size="size" :disabled="disabled">
         <SOption v-for="{ value, label } in options" :key="label" :value="value" :label="label" />
       </SSelect>
     </div>
-  </Corners>
+  </FCorners>
 </template>
 
 <script lang="ts">

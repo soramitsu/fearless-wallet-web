@@ -42,18 +42,16 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
 chrome.runtime.onUpdateAvailable.addListener(() => {
   //for FIREFOX
-  if (chrome.extension.getViews !== undefined) {
-    const windows = chrome.extension.getViews({});
-
-    // one window = background page => means we can update our extension
-    if (windows.length === 1) chrome.runtime.reload();
-  }
-
-  //TODO we need to move on from "@types/chrome" to "chrome-types" lib do something with beacon-sdk
-  //chrome after v116
-  (chrome.runtime as any).getContexts({}, (vals: Record<string, string>[]) => {
-    if (vals.length === 1) chrome.runtime.reload();
-  });
+  // if (chrome.extension.getViews !== undefined) {
+  //   const windows = chrome.extension.getViews({});
+  //   // one window = background page => means we can update our extension
+  //   if (windows.length === 1) chrome.runtime.reload();
+  // }
+  // //TODO we need to move on from "@types/chrome" to "chrome-types" lib do something with beacon-sdk
+  // //chrome after v116
+  // (chrome.runtime as any).getContexts({}, (vals: Record<string, string>[]) => {
+  //   if (vals.length === 1) chrome.runtime.reload();
+  // });
 });
 
 chrome.runtime.onConnect.addListener((port: Port) => {

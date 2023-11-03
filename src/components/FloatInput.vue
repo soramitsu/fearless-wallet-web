@@ -1,5 +1,5 @@
 <template>
-  <Corners :isError="isError" :size="size">
+  <FCorners :isError="isError" :size="size">
     <div :class="containerInputClasses">
       <SFloatInput
         v-model="vModel"
@@ -10,7 +10,7 @@
         @input="$emit('change', $event)"
       />
     </div>
-  </Corners>
+  </FCorners>
 </template>
 
 <script lang="ts">

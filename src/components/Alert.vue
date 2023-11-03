@@ -1,5 +1,5 @@
 <template>
-  <Corners :isError="true" size="big">
+  <FCorners :isError="true" size="big">
     <div class="alert-container">
       <div class="alert__content">
         <Hint class="alert__header" size="big" iconName="warning" :text="headerText" />
@@ -9,27 +9,28 @@
         </p>
       </div>
     </div>
-  </Corners>
+  </FCorners>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 
 type SizeTextType = 'small' | 'medium' | 'big';
+type Props = {
+  message?: string;
+  sizeText?: SizeTextType;
+  headerText?: string;
+};
 
-@Component
-export default class Container extends Vue {
-  @Prop(String) message!: string;
-  @Prop({ default: 'medium' }) sizeText!: SizeTextType;
-  @Prop({ default: 'common.attention' }) headerText!: string;
+const props = withDefaults(defineProps<Props>(), { sizeText: 'medium', headerText: 'common.attention', message: '' });
 
-  get messageClasses() {
-    const classes = ['alert__message'];
-    if (this.sizeText !== 'medium') classes.push(`text-${this.sizeText}`);
+const messageClasses = computed(() => {
+  const classes = ['alert__message'];
 
-    return classes;
-  }
-}
+  if (props.sizeText !== 'medium') classes.push(`text-${props.sizeText}`);
+
+  return classes;
+});
 </script>
 
 <style lang="scss" scoped>

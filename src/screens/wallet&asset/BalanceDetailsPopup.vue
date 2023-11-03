@@ -19,7 +19,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -31,7 +31,7 @@ export default class LockedDetailsPopup extends Vue {
   @Prop(String) network!: string;
   @Prop(Object) currency!: TokenBalance;
   @Prop(Object) assetPrice!: AssetPrice;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;

@@ -68,6 +68,8 @@ export default class Onboarding extends Vue {
     const stories = await getOnboardingStories(this.$i18n.locale);
 
     this.stories = stories;
+
+    if (stories.length === 0) this.$router.back();
   }
 
   onSkip() {

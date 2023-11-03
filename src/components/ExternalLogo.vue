@@ -2,39 +2,40 @@
   <img :src="iconName" :style="style" :alt="altName" :width="width" :height="width" loading="lazy" decoding="async" />
 </template>
 
-<script lang="ts">
-import { Vue, Prop, Component } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 import { NetworksController } from '@/controllers';
 
-@Component
-export default class ExternalLogo extends Vue {
-  @Prop(String) name!: string;
-  @Prop(String) alt?: string;
-  @Prop({ default: 32 }) width!: number;
+type Props = {
+  name?: string;
+  alt?: string;
+  width?: number;
+};
 
-  get style() {
-    const styles: Record<string, string> = {};
+const props = withDefaults(defineProps<Props>(), {
+  width: 32,
+});
 
-    if (this.width) {
-      styles.width = `${this.width}px`;
-      styles.height = `${this.width}px`;
-    }
+const style = computed(() => {
+  const styles: Record<string, string> = {};
 
-    return styles;
+  if (props.width) {
+    styles.width = `${props.width}px`;
+    styles.height = `${props.width}px`;
   }
 
-  get altName() {
-    return this.alt ?? this.name;
-  }
+  return styles;
+});
 
-  get iconName() {
-    if (this.name === undefined || this.name === '') return '';
+const altName = computed(() => props.alt ?? props.name);
 
-    if (this.name.startsWith('https://')) return this.name;
+const iconName = computed(() => {
+  if (props.name === undefined || props.name === '') return '';
 
-    const networkIcon = NetworksController.getNetwork(this.name)?.icon;
+  if (props.name.startsWith('https://')) return props.name;
 
-    return networkIcon || this.name;
-  }
-}
+  const networkIcon = NetworksController.getNetwork(props.name)?.icon;
+
+  return networkIcon || props.name;
+});
 </script>

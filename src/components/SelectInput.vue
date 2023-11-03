@@ -1,5 +1,5 @@
 <template>
-  <Corners size="big" :isSelected="isSelected">
+  <FCorners size="big" :isSelected="isSelected">
     <div :class="selectClasses">
       <div class="column left-column">
         <div class="header">{{ header }}</div>
@@ -17,7 +17,7 @@
       </div>
 
       <div class="column right-column">
-        <Corners class="corners-button" @click.native="click">
+        <FCorners class="FCorners-button" @click.native="click">
           <button :class="selectButtonClasses">
             <template v-if="asset !== ''">
               <ExternalLogo class="asset-icon" :name="assetIcon" :width="32" />
@@ -31,7 +31,7 @@
               <SIcon name="chevron-bottom-16" />
             </Rotate>
           </button>
-        </Corners>
+        </FCorners>
 
         <div v-if="showBalance" class="balance">
           {{ $t('assets.balance') }}
@@ -40,14 +40,14 @@
         </div>
       </div>
     </div>
-  </Corners>
+  </FCorners>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component
@@ -96,9 +96,7 @@ export default class SelectInput extends Vue {
     if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN') {
       const string = FPNumber.fromCodecValue(value || 0, 0).toString();
 
-      // Если последний символ это 0 и это дробная часть
-      // При этом string это целое число
-      if (value.endsWith('0') && value.includes('.') && !string.includes('.')) {
+      if (value.endsWith('0') && value.includes('.')) {
         const zeros = value.match(/[0]*$/)!;
 
         this.syncedAmount = `${string}.${zeros}`;
@@ -251,7 +249,7 @@ export default class SelectInput extends Vue {
     align-items: flex-end;
     justify-content: center;
 
-    .corners-button {
+    .FCorners-button {
       width: fit-content;
     }
 

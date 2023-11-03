@@ -4,7 +4,7 @@ import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
 import type { FetchHistory, AugmentedActionContext, ToggleFavorite } from '@/store';
 import type { FiatJson, Network } from '@/interfaces';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import { fetchHistory } from '@/subquery/fetchingHistory';

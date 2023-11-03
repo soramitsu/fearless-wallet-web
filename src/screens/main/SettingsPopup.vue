@@ -9,6 +9,8 @@
     horizontalPlacement="right"
   >
     <div class="settings">
+      <SettingMenuItem title="common.wc" icon="wallet-connect" @onOpen="open('WalletConnectInitAuth')" />
+      <SettingMenuItem v-if="isExtension" title="common.manageDApp" icon="mechanic-tool" @onOpen="openManageAuths" />
       <SettingMenuItem title="header.settings.accounts" icon="account" @onOpen="open('Accounts')" />
 
       <SettingMenuItem v-if="showSoraCard" title="soraCard.title" icon="card" @onOpen="open('SoraCard')" />
@@ -24,13 +26,6 @@
       <SettingMenuItem title="header.settings.language.text" icon="language" @onOpen="openPopup('openLanguagePopup')" />
 
       <SettingMenuItem title="common.aboutApp" icon="info" @onOpen="openPopup('openAboutPopup')" />
-
-      <SettingMenuItem
-        v-if="isExtension"
-        title="common.manageDApp"
-        icon="mechanic-tool"
-        @onOpen="openPopup('openManageAuths')"
-      />
     </div>
   </Popup>
 </template>
@@ -46,7 +41,7 @@ import { SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
-type SettingsItemType = 'Accounts' | 'SoraCard' | 'PolkaswapDisclaimer';
+type SettingsItemType = 'Accounts' | 'SoraCard' | 'PolkaswapDisclaimer' | 'WalletConnectInitAuth';
 
 @Component({
   components: { SettingMenuItem },
@@ -54,7 +49,7 @@ type SettingsItemType = 'Accounts' | 'SoraCard' | 'PolkaswapDisclaimer';
 export default class SettingsPopup extends Vue {
   readonly isExtension = IS_EXTENSION;
 
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(ExtensionGettersTypes.features) features!: Nullable<Features>;
 
   get showSoraCard() {
@@ -67,6 +62,10 @@ export default class SettingsPopup extends Vue {
 
   openPopup(value: string) {
     this.$emit(value);
+  }
+
+  openManageAuths() {
+    this.$router.push({ name: Components.SubstrateAuths });
   }
 
   open(name: SettingsItemType) {

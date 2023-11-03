@@ -40,14 +40,14 @@
       />
 
       <NetworkManagementButton
-        class="background-ellipse"
+        class="background-ellipse network-management"
         :isGroupIcon="isGroup"
         :icon="selectedNetworkIcon"
         :selectedNetwork="networkManagementButtonText"
         @onToggle="toggleSelectNetworkPopupVisible"
       />
 
-      <div v-if="isPopup" class="background-ellipse" @click="toggleConnectionPopup">
+      <div v-if="isPopup" class="background-ellipse connection" @click="toggleConnectionPopup">
         <Loading v-if="!tabStatus" :width="16" />
 
         <template v-else>
@@ -57,7 +57,8 @@
 
       <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" @handlerClose="toggleConnectionPopup" />
 
-      <Tooltip text="header.connectionStatus" target=".background-ellipse" placement="top" />
+      <Tooltip text="header.connectionStatus" target=".connection" placement="top" />
+      <Tooltip :text="selectedNetwork" target=".network-management" placement="top" />
 
       <CircleButton
         :ref="settingsNameRef"
@@ -117,10 +118,10 @@ export default class Header extends Vue {
 
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(ExtensionGettersTypes.tabStatus) tabStatus!: ActiveTabAuthorizeStatus;
   @Action(ExtensionActionTypes.FETCH_TAB_STATUS) fetchTabStatus!: AsyncFn<ActiveTabAuthorizeStatus>;
-  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
+  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
@@ -164,8 +165,8 @@ export default class Header extends Vue {
   get computeActiveNetworks() {
     if (!this.currentCurrency) return [];
 
-    return this.currentCurrency.balances.filter(({ name }) => {
-      return this.getNetwork(name).active;
+    return this.currentCurrency.balances.filter((network) => {
+      return this.getNetwork(network.name).active;
     });
   }
 
@@ -183,15 +184,14 @@ export default class Header extends Vue {
     return this.selectedNetwork;
   }
 
-  get selectedAssetNetwork() {
-    return this.$route.params.selectedNetwork;
-  }
-
   get selectedNetworkIcon() {
     if (this.isGroup) return this.allNetworksIcon;
 
     if (this.$route.name === Components.AssetHistory) {
-      return this.getNetwork(this.selectedAssetNetwork).icon;
+      const asset = this.currentCurrency?.balances.find((el) => el.id === this.selectedAssetId);
+      if (!asset) return '';
+
+      return this.getNetwork(asset?.name).icon;
     }
 
     const network = this.getNetwork(this.selectedNetwork);
@@ -394,10 +394,6 @@ export default class Header extends Vue {
     width: 9px;
   }
 
-  .icon--network {
-    height: 16px;
-    width: 16px;
-  }
   .copy {
     filter: invert(0.5);
     width: 20px;

@@ -1,11 +1,17 @@
 import Vue from 'vue';
+import { SessionTypes } from '@walletconnect/types';
 import {
+  WalletConnectNotSupportRequest,
+  WalletConnectSessionRequest,
+  WalletConnectTransactionRequest,
+} from '@extension-base/services/wallet-connect-service/types';
+import type {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
   MetadataRequest,
   ResponseAuthorizeList,
-  SigningRequest,
-} from '@extension-base/background/types/types';
+} from '@extension-base/background/types';
+import type { SigningRequest } from '@extension-base/background/types/types';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
 import type { Features } from '@/store/extension/types';
@@ -21,14 +27,25 @@ export enum MutationTypes {
 }
 
 interface SetPayload {
-  type: keyof State['requests'];
-  requests: AuthorizeRequest[] | SigningRequest[] | MetadataRequest[];
+  type: 'auth' | 'meta' | 'sign' | 'wcConnectRequests' | 'wcNotSupportedRequests' | 'wcRequests' | 'wcSessions';
+  requests:
+    | AuthorizeRequest[]
+    | SigningRequest[]
+    | MetadataRequest[]
+    | WalletConnectSessionRequest[]
+    | WalletConnectNotSupportRequest[]
+    | WalletConnectTransactionRequest[]
+    | SessionTypes.Struct[]
+    | null;
 }
 
 export type Mutations = {
   [MutationTypes.SET_AUTHLIST](state: State, payload: ResponseAuthorizeList): void;
   [MutationTypes.DELETE_AUTHLIST_ITEM](state: State, payload: string): void;
-  [MutationTypes.DELETE_REQUEST](state: State, payload: keyof State['requests']): void;
+  [MutationTypes.DELETE_REQUEST](
+    state: State,
+    payload: 'authRequests' | 'metaRequests' | 'signRequests' | 'wcConnectRequests' | 'wcNotSupportedRequests'
+  ): void;
   [MutationTypes.SET_REQUEST](state: State, payload: SetPayload): void;
   [MutationTypes.SET_TAB_STATUS](state: State, payload: ActiveTabAuthorizeStatus): void;
   [MutationTypes.SET_FEATURES](state: State, features: Features): void;
@@ -37,23 +54,53 @@ export type Mutations = {
 
 const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.DELETE_REQUEST](state, type) {
-    state.requests[type].shift();
+    state[type].shift();
   },
 
   [MutationTypes.SET_REQUEST](state, { type, requests }) {
     if (type === 'auth') {
-      state.requests.auth = [...(requests as AuthorizeRequest[])];
+      state.authRequests = [...(requests as AuthorizeRequest[])];
 
       return;
     }
 
     if (type === 'meta') {
-      state.requests.meta = [...(requests as MetadataRequest[])];
+      state.metaRequests = [...(requests as MetadataRequest[])];
 
       return;
     }
 
-    state.requests.sign = [...(requests as SigningRequest[])];
+    if (type === 'wcConnectRequests') {
+      state.wcConnectRequests = [...(requests as unknown as WalletConnectSessionRequest[])];
+
+      return;
+    }
+
+    if (type === 'wcNotSupportedRequests') {
+      state.wcNotSupportedRequests = [...(requests as unknown as WalletConnectNotSupportRequest[])];
+
+      return;
+    }
+
+    if (type === 'wcRequests') {
+      state.wcRequests = [...(requests as unknown as WalletConnectTransactionRequest[])];
+
+      return;
+    }
+
+    if (type === 'wcSessions') {
+      if (requests !== null) {
+        state.wcSessions = [...(requests as SessionTypes.Struct[])];
+
+        return;
+      }
+
+      state.wcSessions = requests;
+
+      return;
+    }
+
+    state.signRequests = [...(requests as SigningRequest[])];
   },
 
   [MutationTypes.SET_AUTHLIST](state, { list }) {

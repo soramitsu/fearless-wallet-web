@@ -1,6 +1,6 @@
 import Vue from 'vue';
-import DesignSystem from '@soramitsu/soramitsu-js-ui/lib/types/DesignSystem';
-import { setDesignSystem, setTheme } from '@soramitsu/soramitsu-js-ui/lib/utils';
+import DesignSystem from '@soramitsu-ui/ui-vue2/lib/types/DesignSystem';
+import { setDesignSystem, setTheme } from '@soramitsu-ui/ui-vue2/lib/utils';
 import {
   SButton,
   SCard,
@@ -39,10 +39,10 @@ import {
   STabs,
   STable,
   STableColumn,
-} from '@soramitsu/soramitsu-js-ui';
-import ElementUIPlugin, { Message, MessageBox, Notification } from '@soramitsu/soramitsu-js-ui/lib/plugins/elementUI';
+} from '@soramitsu-ui/ui-vue2';
+import ElementUIPlugin, { Message, MessageBox, Notification } from '@soramitsu-ui/ui-vue2/lib/plugins/elementUI';
 
-import SoramitsuUIStorePlugin from '@soramitsu/soramitsu-js-ui/lib/plugins/soramitsuUIStore';
+import SoramitsuUIStorePlugin from '@soramitsu-ui/ui-vue2/lib/plugins/soramitsuUIStore';
 
 import store from '@/store';
 
@@ -62,6 +62,8 @@ const notificationFn = ({ message, title, type }: SNotificationParams) => {
     customClass: 'sora s-flex fearless-notify',
   });
 };
+
+export const useNotify = () => notificationFn;
 
 Vue.use(ElementUIPlugin)
   .use(SoramitsuUIStorePlugin, { store })

@@ -21,22 +21,18 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
   if (!asset) return;
 
   const contract = await getERC20Contract(networkKey, contractAddress, state);
-  const { symbol, precision, icon, id } = asset;
+  const { symbol, precision, id } = asset;
 
   const balanceItem = {
     state: APIItemState.PENDING,
     symbol,
     id,
-    icon,
+    relayChain: 'ethereum',
+    free: '0',
     reserved: '0',
     frozen: '0',
-    free: '0',
     transferable: '0',
     total: '0',
-    relayChain: 'ethereum',
-    key: networkKey,
-    name: networkKey,
-    chain: networkKey,
   } as BalanceItem;
 
   try {
@@ -60,19 +56,15 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
 
 async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, state: State) {
   const network = state.networkMap[networkKey];
-  const { icon, type, id, symbol } = network.assets.find((el) => el.isUtility)!;
+  const { id, symbol } = network.assets.find((el) => el.isUtility)!;
 
   const balanceItem = {
     state: APIItemState.PENDING,
     symbol,
-    icon,
-    type,
     id,
-    name: networkKey,
-    free: '0',
     relayChain: 'ethereum',
+    free: '0',
     reserved: '0',
-    miscFrozen: '0',
     frozen: '0',
     transferable: '0',
     total: '0',

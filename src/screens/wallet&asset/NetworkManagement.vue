@@ -81,8 +81,8 @@ export default class NetworkManagement extends Vue {
   };
   @Prop(String) type!: keyof Tabs | string;
   @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
-  @Getter(AccountGettersTypes.getSelectedNetwork) selectedNetwork!: string;
-  @Getter(AccountGettersTypes.getSelectedWallet) selectedWallet!: Wallet;
+  @Getter(AccountGettersTypes.selectedNetwork) selectedNetwork!: string;
+  @Getter(AccountGettersTypes.selectedWallet) selectedWallet!: Wallet;
 
   @Action(NetworksActionsTypes.TOGGLE_FAVORITE_NETWORK) setFavorite!: (props: SetFavoriteNetwork) => Promise<boolean>;
   @Mutation(AccountMutationsTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;

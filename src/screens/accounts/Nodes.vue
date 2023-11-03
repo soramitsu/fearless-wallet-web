@@ -13,6 +13,7 @@
 
             <Icon icon="copy" className="copy" />
           </div>
+          <Tooltip text="common.copied" target=".address-wrapper" placement="top-end" trigger="click" />
         </div>
       </div>
 
@@ -78,12 +79,13 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { upsertNetworkMap } from '@/extension/messaging';
+import { cut } from '@/helpers';
 
 @Component({
   components: { NodeItem },
 })
 export default class Nodes extends Vue {
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getAutoSelectNodesValueByNetwork)
   getAutoSelectNodesValueByNetwork!: GetAutoSelectNodesValueByNetwork;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
@@ -106,11 +108,13 @@ export default class Nodes extends Vue {
 
     return activeNode ?? this.networkJson.nodes[0];
   }
-
+  get formattedAddress() {
+    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
+  }
   get address() {
     if (this.selectedWallet.address === '') return '';
 
-    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
+    return cut(this.formattedAddress, 5);
   }
 
   get defaultNodes() {
@@ -162,7 +166,7 @@ export default class Nodes extends Vue {
   }
 
   copyAddress() {
-    navigator.clipboard.writeText(this.address);
+    navigator.clipboard.writeText(this.formattedAddress);
   }
 
   getActiveStatus(nodeName: string, url: string) {
@@ -281,8 +285,6 @@ export default class Nodes extends Vue {
         .address {
           font-size: 13px;
           width: 100%;
-          overflow: hidden;
-          text-overflow: ellipsis;
           margin-right: 5px;
         }
 

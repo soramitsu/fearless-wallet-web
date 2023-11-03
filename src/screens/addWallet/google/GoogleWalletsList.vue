@@ -4,7 +4,7 @@
 
     <Scroll>
       <ul class="wallets__list">
-        <Corners v-for="(file, index) in items" size="big" v-bind:key="file.id">
+        <FCorners v-for="(file, index) in items" size="big" v-bind:key="file.id">
           <li class="wallets__item">
             <div class="json__info" @click.self="onSelect(!file.active, index)">
               <Checkbox
@@ -45,7 +45,7 @@
               </div>
             </transition>
           </li>
-        </Corners>
+        </FCorners>
       </ul>
     </Scroll>
   </div>
@@ -64,7 +64,7 @@ import { isJsonValid, jsonRestore } from '@/extension/messaging';
 @Component
 export default class GoogleWalletsList extends Vue {
   @Prop(Array) items!: FilesState[];
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
 
   setItemValue(index: number, data: Record<string, string | boolean>) {

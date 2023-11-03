@@ -138,15 +138,15 @@ export default class Wallet extends Vue {
     assetId?: string;
   };
 
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getShowWarningNetwork) getShowWarningNetwork!: GetShowWarningNetworks;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
-  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
+  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
+  @Getter(NetworksGettersTypes.prices) prices!: AssetsPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];

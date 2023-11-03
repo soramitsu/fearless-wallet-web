@@ -94,7 +94,7 @@ export default class ReceiveForm extends Vue {
 
   @Prop(String) _selectedNetwork!: string;
   @Prop(String) selectedAssetId!: string;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get assetNetworks() {

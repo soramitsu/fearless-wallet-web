@@ -2,7 +2,7 @@
   <div :class="assetPageWrapperClasses">
     <div class="network-management" :class="assetPageClasses" @click.stop="onToggle">
       <Icon v-if="isGroupIcon" :icon="icon" className="icon--network" width="16" height="16" />
-      <ExternalLogo v-else :name="icon" width="16" height="16" class="icon--network" />
+      <ExternalLogo v-else :name="icon" :width="16" class="icon--network" />
 
       <span class="network__title">{{ selectedNetwork }}</span>
       <Icon icon="down" className="icon--down" width="10" height="9" />
@@ -64,14 +64,17 @@ export default class Header extends Vue {
     cursor: not-allowed;
   }
 }
+
+.icon--network {
+  width: 16px;
+  height: 16px;
+}
+
 .icon--down {
   height: 9px;
   width: 9px;
 }
-.icon--network {
-  height: 16px;
-  width: 16px;
-}
+
 .network__title {
   max-width: 80px;
   text-overflow: ellipsis;

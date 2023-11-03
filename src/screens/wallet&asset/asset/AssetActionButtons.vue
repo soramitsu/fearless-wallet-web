@@ -46,7 +46,7 @@ import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import type { NetworkJson } from '@extension-base/types';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { isSora } from '@/helpers';
 import { SelectedWallet } from '@/store';
@@ -85,7 +85,7 @@ export default class AssetActionButtons extends Vue {
   @Prop(Object) currency!: TokenBalance;
   @Prop(Boolean) showBuyButton!: boolean;
   @Prop(String) assetId!: string;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
 
   get selectedNetwork() {
@@ -105,7 +105,7 @@ export default class AssetActionButtons extends Vue {
   }
 
   get showCrossChainButton() {
-    if (this.selectedNetwork === '') return false;
+    if (this.selectedNetwork === '' || this.selectedWallet.isMobile) return false;
 
     const network = this.getNetwork(this.selectedNetwork);
 

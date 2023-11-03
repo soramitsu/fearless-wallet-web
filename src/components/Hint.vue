@@ -6,29 +6,26 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Prop, Component } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 
 type IconNameType = 'notification' | 'warning';
-
 type Size = 'big' | 'medium';
-@Component
-export default class Hint extends Vue {
-  @Prop(String) iconName!: IconNameType;
-  @Prop(String) text!: string;
-  @Prop({ default: 'medium' }) size!: Size;
-  baseClass = 'notifications-icon';
+type Props = {
+  iconName: IconNameType;
+  text: string;
+  size?: Size;
+};
+const baseClass = 'notifications-icon';
+const props = withDefaults(defineProps<Props>(), { size: 'medium' });
 
-  get getClasses() {
-    if (this.iconName === 'warning') return [`${this.baseClass} warning--orange`];
+const getClasses = computed(() => {
+  if (props.iconName === 'warning') return [`${baseClass} warning--orange`];
 
-    return [this.baseClass];
-  }
+  return [baseClass];
+});
 
-  get getSize() {
-    return this.size === 'big' ? 'info-text--big' : 'info-text';
-  }
-}
+const getSize = computed(() => (props.size === 'big' ? 'info-text--big' : 'info-text'));
 </script>
 
 <style lang="scss" scoped>

@@ -37,13 +37,14 @@ import { exportAccount } from '@/extension/messaging';
 export default class ExportForm extends Vue {
   exportType = 'Restore JSON';
   json: KeyringPair$Json = {} as KeyringPair$Json;
-  isLoading = true;
+  isLoading = false;
+
   @Prop(String) password!: string;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) networks!: Networks;
 
   get network() {
-    return this.$route.params.network;
+    return this.$route.params.network ?? this.$route.params.selectedNetwork;
   }
 
   get substrateAddress() {
@@ -59,6 +60,8 @@ export default class ExportForm extends Vue {
   }
 
   async mounted() {
+    this.isLoading = true;
+
     const { exportedJson: json } = await this.keyringPairJson();
     this.json = json;
 
@@ -79,7 +82,7 @@ export default class ExportForm extends Vue {
   }
 
   async export() {
-    const chainId = this.networks.find(({ name }) => name === this.network)!.chainId;
+    const chainId = this.networks.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!.chainId;
     const meta = { ...this.json.meta, genesisHash: `0x${chainId}` } as unknown as Record<string, string>;
 
     delete meta['ethereumAddress'];

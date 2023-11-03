@@ -53,7 +53,7 @@
 <script lang="ts">
 import { Component, Vue, Ref } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
-import { AuthUrlInfo } from '@extension-base/background/types/types';
+import { AuthUrlInfo } from '@extension-base/background/types';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
 import type { AsyncFn, Fn } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
@@ -115,7 +115,7 @@ export default class SoraCardPage extends Vue {
   @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;
   @Getter(SoraCardGettersTypes.wantsToPassKycAgain) wantsToPassKycAgain!: boolean;
   @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
   @Action(SoraCardActionTypes.GET_USER_KYC_ATTEMPT) getUserKycAttempt!: AsyncFn;
   @Action(ExtensionActionTypes.GET_AUTHLIST) getAuthList!: AsyncFn<void>;

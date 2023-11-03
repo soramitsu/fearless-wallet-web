@@ -37,7 +37,7 @@
         <ExternalLogo :name="destNetIcon" :width="42" />
       </div>
 
-      <Corners size="big" class="row">
+      <FCorners size="big" class="row">
         <div class="summary">
           <InfoRow text="assets.direction" :value="directionText" />
 
@@ -62,7 +62,7 @@
 
         <Tooltip text="assets.feeDescription" target=".origin-fee" placement="right" />
         <Tooltip text="assets.feeDescription" target=".cross-chain-fee" placement="right" />
-      </Corners>
+      </FCorners>
     </div>
   </TransferForm>
 </template>
@@ -74,7 +74,7 @@ import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import TransferForm from './TransferForm.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetNetwork } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp, cut } from '@/helpers/';
 import { formattedNumber } from '@/helpers/numbers';
@@ -96,7 +96,7 @@ export default class CrossChainForm extends Vue {
 
   @Prop(String) _originalNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];

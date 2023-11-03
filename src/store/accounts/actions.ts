@@ -1,7 +1,7 @@
 import type { ActionTree, ActionContext } from 'vuex';
 import type { Mutations } from '@/store/accounts/mutations';
 import type { State } from '@/store/accounts/state';
-import type { AccountJson, BalanceJson } from '@extension-base/background/types/types';
+import type { AccountJson, BalanceJson } from '@extension-base/background/types';
 import { MutationTypes } from '@/store/accounts/mutations';
 import { accountController } from '@/controllers/accountController';
 
@@ -25,6 +25,7 @@ const actions: ActionTree<State, State> & Actions = {
       address: account?.address ?? '',
       ethereumAddress: account?.ethereumAddress ?? '',
       name: account?.name ?? '',
+      isMobile: account?.isMobile ?? false,
     });
 
     accountController.setSelectedWalletAddress(account?.address);

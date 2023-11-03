@@ -1,18 +1,17 @@
 import assert from 'assert';
-import { isRequireEvmAPI } from '../utils/utils';
+import { getSubstrateAddress, isRequireEvmAPI } from '../utils/utils';
 import type {
   CachedUnlocks,
   RequestAccountExport,
-  RequestAccountExportPrivateKey,
   RequestAccountName,
   RequestJsonValidate,
   RequestSigningIsLocked,
   ResponseAccountExport,
-  ResponseAccountExportPrivateKey,
   ResponseSigningIsLocked,
   ValidateJsonResult,
   RequestUpdateMeta,
-} from '@extension-base/background/types/types';
+} from '@extension-base/background/types';
+
 import type State from '@extension-base/background/handlers/State';
 import type { KeyringPair } from '@polkadot/keyring/types';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
@@ -65,7 +64,7 @@ export default class FWExtensionBase {
         this.state.setCurrentAccount(
           {
             ...account!,
-            ethereumAddress: meta.ethereumAddress,
+            ethereumAddress: (meta.ethereumAddress as string) ?? '',
           },
           cb
         )
@@ -88,7 +87,7 @@ export default class FWExtensionBase {
 
     const { address } = pair;
 
-    const savedExpiry = this.cachedUnlocks[address] || 0;
+    const savedExpiry = this.cachedUnlocks[address] || this.cachedUnlocks[address.toLowerCase()] || 0;
 
     const remainingTime = savedExpiry - Date.now();
 
@@ -97,6 +96,7 @@ export default class FWExtensionBase {
 
   refreshAccountPasswordCache(pair: KeyringPair): number {
     const remainingTime = this.getRemainingTime(pair);
+
     const { address, meta } = pair;
 
     const ethereumAddress = meta.ethereumAddress as string;
@@ -119,7 +119,8 @@ export default class FWExtensionBase {
   }
 
   signingIsLocked({ address }: RequestSigningIsLocked): ResponseSigningIsLocked {
-    const pair = this.state.keyringService.getPair(address);
+    const substrateAddress = getSubstrateAddress(address, this.state);
+    const pair = this.state.keyringService.getPair(substrateAddress);
 
     assert(pair, 'Unable to find pair');
 
@@ -146,12 +147,5 @@ export default class FWExtensionBase {
 
       return { value: false, errorType };
     }
-  }
-
-  protected accountExportPrivateKey({
-    address,
-    password,
-  }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    return this.state.accountExportPrivateKey({ address, password });
   }
 }

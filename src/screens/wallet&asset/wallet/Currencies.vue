@@ -25,7 +25,7 @@
 import Draggable from 'vuedraggable';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { TokenBalance, BalanceJson } from '@extension-base/background/types/types';
+import { TokenBalance, BalanceJson } from '@extension-base/background/types';
 import type { SelectedWallet } from '@/store';
 import type { AsyncFn, AssetsPrice } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -50,8 +50,8 @@ export default class Currencies extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(String) filterValue!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
-  @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.prices) prices!: AssetsPrice;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
 

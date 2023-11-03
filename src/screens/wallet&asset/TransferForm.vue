@@ -188,7 +188,7 @@ import { Component, Vue, Prop, Watch, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import { getMoonbeamMoonriverAssetName, getNativeAssetName } from '@extension-base/background/utils/utils';
-import { RequestCheckTransfer, RequestCheckCrossChain, TokenBalance } from '@extension-base/background/types/types';
+import { RequestCheckTransfer, RequestCheckCrossChain, TokenBalance } from '@extension-base/background/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import HistoryBook from './HistoryBook.vue';
 import EditAddressBook from './EditAddressBook.vue';
@@ -197,7 +197,7 @@ import WarningAddressPopup from './WarningAddressPopup.vue';
 import InputWithIcon from './InputWithIcon.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { GetAssetPrice, GetNetwork } from '@/store';
-import type { AccountJson } from '@extension-base/background/types/types';
+import type { AccountJson } from '@extension-base/background/types';
 import BaseApi from '@/util/BaseApi';
 import FloatInput from '@/components/FloatInput.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -255,8 +255,8 @@ export default class TransferForm extends Vue {
   @PropSync('value', { type: String }) syncedValue!: string;
   @PropSync('partialFee', { type: String }) syncedFee!: string;
   @PropSync('destNetFee', { type: String, default: '0' }) syncedDestNetFee!: string;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetworkInManagment!: string;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetworkInManagement!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
@@ -475,7 +475,7 @@ export default class TransferForm extends Vue {
   }
 
   get isSelectedNetworkGroup() {
-    return isNetworkGroup(this.selectedNetworkInManagment);
+    return isNetworkGroup(this.selectedNetworkInManagement);
   }
 
   get assetWithActiveNetworks() {
@@ -488,14 +488,14 @@ export default class TransferForm extends Vue {
         if (!active) return false;
 
         if (this.isSelectedNetworkGroup) {
-          if (this.selectedNetworkInManagment === POPULAR_NETWORKS && rank) return true;
+          if (this.selectedNetworkInManagement === POPULAR_NETWORKS && rank) return true;
 
           const isNetworkInFavorites = favorite.some((el) => el === this.selectedWallet.address);
 
-          if (this.selectedNetworkInManagment === FAVORITE_NETWORKS && isNetworkInFavorites) return true;
+          if (this.selectedNetworkInManagement === FAVORITE_NETWORKS && isNetworkInFavorites) return true;
         }
 
-        return this.selectedNetworkInManagment.toLowerCase() === name.toLowerCase();
+        return this.selectedNetworkInManagement.toLowerCase() === name.toLowerCase();
       });
     });
 
@@ -527,24 +527,24 @@ export default class TransferForm extends Vue {
   get optionsNetworks() {
     // used only for transfer
     const walletBalance = this.currency?.balances ?? [];
-    const networks: {
-      name: string;
-      value: string;
-      icon: string;
-    }[] = [];
-    walletBalance.forEach(({ name, icon }) => {
-      const network = this.getNetwork(name);
 
-      if (network.active) {
-        networks.push({
-          name: firstCharToUp(name),
-          value: name,
-          icon,
-        });
-      }
-    });
-
-    return networks;
+    return walletBalance.reduce(
+      (result, { name, icon }) => {
+        return [
+          ...result,
+          {
+            name: firstCharToUp(name),
+            value: name.toLowerCase(),
+            icon,
+          },
+        ];
+      },
+      [] as {
+        name: string;
+        value: string;
+        icon: string;
+      }[]
+    );
   }
 
   get originNet() {
@@ -600,24 +600,24 @@ export default class TransferForm extends Vue {
   }
 
   get tx() {
+    const baseRequest = {
+      to: this.syncedRecipient,
+      from: this.transactionAddress,
+      relayChain: this.currency?.relayChain,
+      assetId: this.syncedAssetId,
+      amount: this.syncedAmount,
+    };
+
     if (this.isTransfer)
       return {
+        ...baseRequest,
         networkKey: this.syncedNetwork,
-        from: this.transactionAddress,
-        to: this.syncedRecipient,
-        relayChain: this.currency?.relayChain,
-        amount: this.syncedAmount,
-        assetId: this.syncedAssetId,
       } as RequestCheckTransfer;
 
     return {
+      ...baseRequest,
       originNet: this.syncedNetwork,
       destinationNet: this.syncedDestNet,
-      amount: this.syncedAmount,
-      from: this.transactionAddress,
-      to: this.syncedRecipient,
-      relayChain: this.currency?.relayChain,
-      assetId: this.syncedAssetId,
     } as RequestCheckCrossChain;
   }
 

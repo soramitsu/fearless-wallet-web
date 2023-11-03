@@ -52,7 +52,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import HistoryDetailsForm from '@/screens/wallet&asset/asset/HistoryDetailsForm.vue';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
@@ -92,8 +92,8 @@ export default class Asset extends Vue {
   filterValue = '';
 
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];

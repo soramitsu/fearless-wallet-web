@@ -1,5 +1,5 @@
 <template>
-  <Corners size="big">
+  <FCorners size="big">
     <div :class="contentClasses" @click="setWallet">
       <div class="content">
         <div class="name">{{ name }}</div>
@@ -13,13 +13,13 @@
         <Icon icon="dots-horizontal" className="dots" />
       </div>
     </div>
-  </Corners>
+  </FCorners>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { ResponseTotalBalances } from '@extension-base/background/types/types';
+import type { ResponseTotalBalances } from '@extension-base/background/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { CustomEvent } from '@/interfaces';
 import WalletBalance from '@/screens/main/WalletBalance.vue';

@@ -52,7 +52,7 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { TabWallet } from '@/interfaces/common';
 import type { SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 interface TabsOptions {
@@ -79,7 +79,7 @@ export default class ContentSettings extends Vue {
   @PropSync('filterValue', { type: String }) syncedFilterValue!: TabWallet;
   @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
   @Prop(Array) balances!: TokenBalance[];
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
 
   get target() {

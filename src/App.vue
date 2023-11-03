@@ -10,9 +10,9 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { ALL_NETWORKS } from './consts/networks';
-import { setTitle } from './helpers/common';
 import { beaconController } from './controllers/beaconController';
-import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
+import { setTitle } from './helpers/common';
+import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
 import { Components } from '@/router/routes';
@@ -22,7 +22,6 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import {
   isOnboardingRequired,
   pingServiceWorker,
@@ -33,14 +32,13 @@ import {
   subscribePrice,
 } from '@/extension/messaging';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
-import { IS_EXTENSION } from '@/consts/global';
+import { IS_EXTENSION, IS_PRODUCTION } from '@/consts/global';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 
 @Component({})
 export default class App extends Vue {
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
-  @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
   @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: Fn<SetNetworksStatusProps>;
   @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: Fn<SetAssetsPriceProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: Fn<SetAccountsProps>;
@@ -82,9 +80,11 @@ export default class App extends Vue {
   async mounted() {
     this.mobileWalletListeners();
 
-    const isRequired = await isOnboardingRequired();
+    if (IS_PRODUCTION) {
+      const isRequired = await isOnboardingRequired();
 
-    if (isRequired) this.$router.push({ name: Components.Onboarding });
+      if (isRequired) this.$router.push({ name: Components.Onboarding });
+    }
   }
 
   mobileWalletListeners() {
@@ -154,14 +154,6 @@ export default class App extends Vue {
     subscribeAddresses((accounts) => {
       this.onAccountUpdate(accounts, true);
     });
-  }
-
-  unsubscribe() {
-    clearInterval(this.assetsPriceInterval!);
-  }
-
-  beforeDestroy() {
-    this.unsubscribe();
   }
 }
 </script>

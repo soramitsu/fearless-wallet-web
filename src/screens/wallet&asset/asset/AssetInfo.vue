@@ -3,7 +3,7 @@
     <ContentForm :height="160" :isStaticHeight="true" :bottomRightCorner="true">
       <div class="asset-info">
         <div class="asset__icon">
-          <ExternalLogo :name="icon" :width="82" :height="82" />
+          <ExternalLogo :name="icon" :width="82" />
         </div>
 
         <div class="asset-info__content">
@@ -64,7 +64,7 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types';
 import type { AssetPrice } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers/currencies';
@@ -86,7 +86,7 @@ export default class AssetInfo extends Vue {
   @Prop(Object) price!: AssetPrice;
   @Prop(Object) currency!: TokenBalance;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
+  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get selectedAssetNetwork() {

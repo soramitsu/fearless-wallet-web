@@ -1,4 +1,3 @@
-import { IS_PRODUCTION } from '@/consts/global';
 import { NetworkName } from '@/interfaces';
 
 const SUBSTRATE_ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
@@ -29,20 +28,6 @@ const ALL_NETWORKS = 'all';
 const POPULAR_NETWORKS = 'popular';
 const FAVORITE_NETWORKS = 'favorites';
 const NETWORKS_GROUPS = [ALL_NETWORKS, POPULAR_NETWORKS, FAVORITE_NETWORKS];
-
-interface GroupMap {
-  all: [];
-  popular: [];
-  favorites: [];
-}
-
-const GROUPS_MAP = NETWORKS_GROUPS.reduce((result, nameGroup) => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  //@ts-ignore
-  result[nameGroup] = [];
-
-  return result;
-}, {} as GroupMap);
 
 const POLKADOT_ID = '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3';
 const KUSAMA_ID = 'b0a8d493285c2df73290dfb7e61f870f17b41801197a149ca93654499ea3dafe';
@@ -93,14 +78,6 @@ const MOONBEAM_GENESISHASH = '0xfe58ea77779b7abda7da4ec526d14db9b1e9cd40a217c348
 const VALID_SUBSTRATE_ADDRESS = '5GsGqbQ2692eBUzbAUznPr84ikvuFavYmkDXdQEndzHkMFaH';
 const VALID_ETHEREUM_ADDRESS = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
 
-const SORA_MAINNET = 'sora mainnet';
-const SORA_TEST = 'sora test';
-const SORA_NETWORK_NAME = IS_PRODUCTION ? SORA_MAINNET : SORA_TEST;
-const SORA_XOR_ASSET_ID = IS_PRODUCTION
-  ? 'b774c386-5cce-454a-a845-1ec0381538ec'
-  : 'b5a44630-920e-43ee-809f-61890d0888b0';
-const SORA_UTILITY_ASSET = 'xor';
-
 export {
   ALL_NETWORKS,
   POPULAR_NETWORKS,
@@ -117,20 +94,14 @@ export {
   MAX_CONTINUE_RETRY,
   WESTEND_GENESISHASH,
   MOONBEAM_GENESISHASH,
-  SORA_NETWORK_NAME,
-  SORA_UTILITY_ASSET,
-  SORA_XOR_ASSET_ID,
   VALID_SUBSTRATE_ADDRESS,
   VALID_ETHEREUM_ADDRESS,
   NATIVE_ETHEREUM_NETWORKS,
   POLKADOT_ID,
   KUSAMA_ID,
   CHAIN_IDS,
-  SORA_MAINNET,
-  SORA_TEST,
   NETWORKS_ALIASES,
   SUBSTRATE_ETHEREUM_NETWORKS,
   EXPLORERS_BASE_URLS,
   EVM_EXPLORERS_BASE_URLS,
-  GROUPS_MAP,
 };

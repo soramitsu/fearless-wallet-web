@@ -57,8 +57,9 @@ async function fetchSubqueryHistory(
 async function fetchGiantsquidHistory(url: string, address: string): Promise<GiantsquidHistoryItem[]> {
   const {
     data: { data },
-  } = await axios.post(url, {
-    query: `{
+  } = await axios
+    .post(url, {
+      query: `{
       transfers(
         orderBy: id_DESC
         where: {
@@ -85,7 +86,12 @@ async function fetchGiantsquidHistory(url: string, address: string): Promise<Gia
         }
       }
     }`,
-  });
+    })
+    .catch(() => {
+      return {
+        data: { transfers: [] },
+      };
+    });
 
   return data?.transfers;
 }
@@ -93,8 +99,9 @@ async function fetchGiantsquidHistory(url: string, address: string): Promise<Gia
 async function fetchSubsquidHistory(url: string, address: string): Promise<HistoryElement[]> {
   const {
     data: { data },
-  } = await axios.post(url, {
-    query: `{
+  } = await axios
+    .post(url, {
+      query: `{
       historyElements(
         orderBy: id_DESC
         where: {
@@ -132,7 +139,12 @@ async function fetchSubsquidHistory(url: string, address: string): Promise<Histo
         }
       }
     }`,
-  });
+    })
+    .catch(() => {
+      return {
+        data: { historyElements: [] },
+      };
+    });
 
   return data?.historyElements;
 }
@@ -150,8 +162,8 @@ async function fetchEthereumTokenHistory(
     params: {
       module: 'account',
       action: 'tokentx',
-      contractAddress,
-      address,
+      contractAddress: contractAddress,
+      address: address,
       page: 1,
       offset: 300,
       sort: 'desc',
@@ -166,7 +178,7 @@ async function fetchEthereumTokenHistory(
     return [];
   }
 
-  return res.data.result.map(({ timeStamp, value, gasPrice, gasUsed, from, to, hash }, index) => ({
+  return res.data.result.map(({ timeStamp, value, gasUsed, from, to, hash }, index) => ({
     address,
     id: String(index),
     timestamp: (+timeStamp * 1000).toString(),
@@ -174,7 +186,7 @@ async function fetchEthereumTokenHistory(
       amount: value,
       hash,
       eventIdx: 0,
-      fee: (+gasPrice * +gasUsed).toString(),
+      fee: gasUsed,
       from: from,
       success: true,
       to,
@@ -206,7 +218,7 @@ async function fetchEthereumHistory(url: string, address: string): Promise<Histo
     return [];
   }
 
-  return res.data.result.map(({ timeStamp, value, gasPrice, gasUsed, from, isError, to, hash }, index) => ({
+  return res.data.result.map(({ timeStamp, value, gasUsed, from, isError, to, hash }, index) => ({
     address,
     id: String(index),
     timestamp: (+timeStamp * 1000).toString(),
@@ -214,7 +226,7 @@ async function fetchEthereumHistory(url: string, address: string): Promise<Histo
       amount: value,
       hash,
       eventIdx: 0,
-      fee: (+gasPrice * +gasUsed).toString(),
+      fee: gasUsed,
       from: from,
       success: isError === '0',
       to,

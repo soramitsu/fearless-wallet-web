@@ -126,8 +126,8 @@ const onError = (error: Error) => {
     });
   } else {
     notify({
-      message: error.message,
-      title: '',
+      message: '',
+      title: t('addWallet.google.somethingWrong').toString(),
       type: 'warning',
     });
   }

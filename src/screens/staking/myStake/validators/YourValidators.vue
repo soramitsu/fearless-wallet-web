@@ -1,43 +1,69 @@
 <template>
   <div>
     <Alert
-      v-if="showAlert"
+      v-if="showOversubscribedAlert"
       headerText="common.attention"
       message="staking.tokensAllocated"
       sizeText="small"
       class="alert"
     />
 
-    <ContentForm :height="430" :bottomRightCorner="true">
+    <ContentForm :height="405" :isStaticHeight="showWaitingMyValidators" :bottomRightCorner="true">
       <Scroll>
         <div class="form-layout">
           <template v-if="showMyValidators">
             <div class="label">{{ $t('staking.elected') }}</div>
 
-            <div class="sub-label">{{ $t('staking.stakeAllocated') }}</div>
+            <template v-if="showMyActiveValidators">
+              <div class="sub-label">{{ $t('staking.stakeAllocated') }}</div>
 
-            <ValidatorItem
-              v-for="validator in myValidators"
-              :key="validator.address"
-              :validator="validator"
-              :showCheckbox="false"
-              @openValidatorInfo="$emit('openValidatorInfo', $event)"
-            />
+              <ValidatorItem
+                v-for="validator in myActiveValidators"
+                :key="validator.address"
+                :validator="validator"
+                :showCheckbox="false"
+                @openValidatorInfo="$emit('openValidatorInfo', $event)"
+              />
+            </template>
+
+            <template v-if="showInactiveMyValidators">
+              <div class="sub-label">{{ $t('staking.withoutAllocation') }}</div>
+
+              <ValidatorItem
+                v-for="validator in inactiveValidators"
+                :key="validator.address"
+                :validator="validator"
+                :showCheckbox="false"
+                @openValidatorInfo="$emit('openValidatorInfo', $event)"
+              />
+            </template>
           </template>
 
           <div v-else class="no-validators">{{ $t('staking.noValidators') }}</div>
+        </div>
+      </Scroll>
+    </ContentForm>
 
-          <template v-if="showWithoutAllocation">
-            <div class="sub-label">{{ $t('staking.withoutAllocation') }}</div>
+    <ContentForm
+      v-if="showWaitingMyValidators"
+      :height="405"
+      :isStaticHeight="true"
+      :bottomRightCorner="true"
+      class="form-waiting"
+    >
+      <Scroll>
+        <div class="form-layout">
+          <div class="label">{{ $t('staking.notElected') }}</div>
 
-            <ValidatorItem
-              v-for="validator in withoutAllocationValidators"
-              :key="validator.address"
-              :validator="validator"
-              :showCheckbox="false"
-              @openValidatorInfo="$emit('openValidatorInfo', $event)"
-            />
-          </template>
+          <div class="sub-label">{{ $t('staking.waitingValidators') }}</div>
+
+          <ValidatorItem
+            v-for="validator in waitingValidators"
+            :key="validator.address"
+            :validator="validator"
+            :showCheckbox="false"
+            @openValidatorInfo="$emit('openValidatorInfo', $event)"
+          />
         </div>
       </Scroll>
     </ContentForm>
@@ -57,26 +83,36 @@ import ValidatorItem from '@/screens/staking/myStake/validators/ValidatorItem.vu
 export default class YourValidators extends Vue {
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
 
-  get myValidators() {
-    return this.stakingNetwork.myValidators;
-  }
-
   get showMyValidators() {
-    return this.myValidators.length !== 0;
+    return this.stakingNetwork.myValidators.length !== 0;
   }
 
-  get withoutAllocationValidators() {
-    // TODO staking
-    return [];
+  get myActiveValidators() {
+    return this.stakingNetwork.myValidators.filter(({ isActive }) => isActive);
   }
 
-  get showWithoutAllocation() {
-    return this.withoutAllocationValidators.length !== 0;
+  get showMyActiveValidators() {
+    return this.myActiveValidators.length !== 0;
   }
 
-  get showAlert() {
-    // TODO staking
-    return false;
+  get inactiveValidators() {
+    return this.stakingNetwork.myValidators.filter(({ isInactive }) => isInactive);
+  }
+
+  get showInactiveMyValidators() {
+    return this.inactiveValidators.length !== 0;
+  }
+
+  get waitingValidators() {
+    return this.stakingNetwork.myValidators.filter(({ isWaiting }) => isWaiting);
+  }
+
+  get showWaitingMyValidators() {
+    return this.waitingValidators.length !== 0;
+  }
+
+  get showOversubscribedAlert() {
+    return this.stakingNetwork.myValidators.some(({ isOversubscribed }) => isOversubscribed);
   }
 }
 </script>
@@ -115,5 +151,9 @@ export default class YourValidators extends Vue {
 
 .alert {
   margin-bottom: 15px;
+}
+
+.form-waiting {
+  margin-top: 10px;
 }
 </style>

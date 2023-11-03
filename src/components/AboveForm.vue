@@ -5,7 +5,7 @@
 
       <div v-else class="header-content">
         <div class="activity align-left">
-          <div v-if="showBackIcon" class="icon icon-back" @click="emit('handlerBack')">
+          <div v-if="props.showBackIcon" class="icon icon-back" @click="emit('handlerBack')">
             <Icon icon="chevron-left" />
           </div>
 
@@ -17,11 +17,11 @@
         <div class="header">{{ tHeader }}</div>
 
         <div class="activity align-right">
-          <div v-if="showCloseIcon" class="icon" @click="emit('closeHandler')">
+          <div v-if="props.showCloseIcon" class="icon" @click="emit('closeHandler')">
             <SIcon name="basic-close-24" />
           </div>
 
-          <div v-show="showAcceptIcon" class="icon" @click="emit('saveChanges')">
+          <div v-show="props.showAcceptIcon" class="icon" @click="emit('saveChanges')">
             <SIcon name="basic-check-mark-24" />
           </div>
         </div>
@@ -42,7 +42,7 @@ import type { ComponentText } from '@/interfaces';
 const { t } = useI18n();
 
 const emit = defineEmits(['handlerBack', 'closeHandler', 'saveChanges']);
-const { blur, fullScreen, header, showAcceptIcon, showAnimation, showBackIcon, showCloseIcon } = withDefaults(
+const props = withDefaults(
   defineProps<{
     header?: ComponentText;
     blur?: boolean;
@@ -64,17 +64,17 @@ const { blur, fullScreen, header, showAcceptIcon, showAnimation, showBackIcon, s
 );
 
 const tHeader = computed(() => {
-  if (typeof header === 'string') return t(header);
+  if (typeof props.header === 'string') return t(props.header);
 
-  return t(header.text, header.localeProps);
+  return t(props.header.text, props.header.localeProps);
 });
 
 const backgroundClasses = computed(() => {
   return [
     'form-background',
     {
-      'background-blur': blur,
-      'form-animation': showAnimation,
+      'background-blur': props.blur,
+      'form-animation': props.showAnimation,
     },
   ];
 });
@@ -83,7 +83,7 @@ const aboveFormClasses = computed(() => {
   return [
     'form',
     {
-      fullscreen: fullScreen,
+      fullscreen: props.fullScreen,
     },
   ];
 });

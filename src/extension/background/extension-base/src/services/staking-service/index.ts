@@ -2,7 +2,7 @@ import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import State from '@extension-base/background/handlers/State';
 import { storage } from '@extension-base/stores/Storage';
 import { BasicTxErrorCode, BasicTxResponse, TransferErrorCode } from '../../background/types/types';
-import { getUtilityProps } from '../../background/utils/utils';
+import { getEthereumAddress, getSubstrateAddress, getUtilityProps } from '../../background/utils/utils';
 import {
   RequestBond,
   RequestUnbond,
@@ -22,6 +22,7 @@ import type {
   MyStakingInfo,
   RewardsResponse,
   RequestPayoutRewards,
+  ValidatorStatuses,
 } from '@extension-base/services/staking-service/types';
 import { NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
@@ -71,6 +72,8 @@ export class StakingService {
     const stakingInfo = await apiSora.staking.getMyStakingInfo(address);
     const { addressBook } = await storage.get(['addressBook']);
 
+    const validatorsStatuses = await this.getValidatorsStatuses(address, network, stakingInfo.myValidators);
+
     const myAccountName = this.state.keyringService.getAccountName(stakingInfo.payee);
     const addressBookName = addressBook[network]?.find(({ address: _address }) =>
       isSameString(_address, stakingInfo.payee)
@@ -87,13 +90,82 @@ export class StakingService {
       ...stakingInfo,
       payee,
       controller,
-      myValidators: this.getValidatorsInformation(stakingInfo.myValidators, validators),
+      myValidators: this.getValidatorsInformation(stakingInfo.myValidators, validators).map((info) => {
+        const isActive = validatorsStatuses.validatorsActive.includes(info.address);
+        const isInactive = validatorsStatuses.validatorsInactive.includes(info.address);
+        const isWaiting = validatorsStatuses.validatorsWaiting.includes(info.address);
+        const isOversubscribed = validatorsStatuses.validatorsOversubscribed.includes(info.address);
+
+        const status = isActive ? 'active' : isInactive ? 'inactive' : isWaiting ? 'waiting' : 'oversubscribed ';
+
+        return { ...info, isActive, isInactive, isWaiting, isOversubscribed, status };
+      }),
     };
 
     const minBond = _minBond ?? (await this.getMinNominatorBond());
     const alerts = this.getALerts(result, minBond);
 
     return { ...result, alerts };
+  }
+
+  public async getValidatorsStatuses(
+    _address: string,
+    network: NetworkName,
+    myValidators: string[]
+  ): Promise<ValidatorStatuses> {
+    const substrateAddress = getSubstrateAddress(_address, this.state);
+    const ethereumAddress = getEthereumAddress(_address, this.state);
+    const address = this.state.keyringService.formatAddress({ address: substrateAddress, ethereumAddress }, network);
+    const max = this.maxNominatorRewardedPerValidator();
+    const activeEra = await apiSora.staking.getCurrentEra();
+    const submittedIn = (await apiSora.staking.getNominations(address))?.submittedIn;
+    const electedValidators = await apiSora.staking.getElectedValidators(activeEra);
+
+    // all nominations that are oversubscribed
+    const validatorsOversubscribed = electedValidators
+      .map(({ others }) => others.sort((a, b) => (+b.value ?? 0) - +a.value ?? 0))
+      .map((others, index) => {
+        if (!max) return null;
+
+        if (max > others.map(({ who }) => who.toString()).indexOf(address)) return null;
+
+        return myValidators[index];
+      })
+      .filter((validator): validator is string => !!validator); // && !nomsChilled.includes(nominee)
+
+    // first a blanket find of nominations not in the active set
+    const allValidatorsInactive = electedValidators
+      .map((exposure, index) => {
+        if (exposure.others.some(({ who }) => isSameString(who, address))) return null;
+
+        return myValidators[index];
+      })
+      .filter((validator): validator is string => !!validator);
+
+    // waiting if validator is inactive or we have not submitted long enough ago
+    const validatorsWaiting = electedValidators
+      .map((exposure, index) => {
+        if (exposure.total === '0') return myValidators[index];
+
+        if (allValidatorsInactive.includes(myValidators[index]) && (submittedIn ?? 0) >= +activeEra)
+          return myValidators[index];
+
+        return null;
+      })
+      .filter((validator): validator is string => !!validator)
+      .filter((validator) => !validatorsOversubscribed.includes(validator)); // && !nomsChilled.includes(nominee)
+
+    // filter based on all inactives
+    const validatorsActive = myValidators.filter(
+      (validator) => !allValidatorsInactive.includes(validator) && !validatorsOversubscribed.includes(validator) // && !nomsChilled.includes(nominee)
+    );
+
+    // inactive also contains waiting, remove those
+    const validatorsInactive = allValidatorsInactive.filter(
+      (validator) => !validatorsWaiting.includes(validator) && !validatorsOversubscribed.includes(validator) // && !nomsChilled.includes(nominee)
+    );
+
+    return { validatorsOversubscribed, validatorsWaiting, validatorsActive, validatorsInactive };
   }
 
   public async getRewards(network: NetworkName, address: string): Promise<RewardsResponse> {
@@ -163,7 +235,7 @@ export class StakingService {
     const { redeemAmount, myValidators, totalStake } = myStakingInfo;
     const isRedeem = redeemAmount !== '0';
     const isNeedBondExtra = +totalStake < minBond;
-    const electedValidators = myValidators.filter(({ isElected }) => isElected);
+    const electedValidators = myValidators.filter(({ isActive }) => isActive);
     const waitingValidators = myValidators.filter(({ isWaiting }) => isWaiting);
 
     const isEmptyValidators = myValidators.length === 0;

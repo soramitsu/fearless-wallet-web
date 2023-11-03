@@ -30,7 +30,7 @@ type BorderType = 'default' | 'secondary';
 type Color = 'white' | 'pink-lavender';
 
 type Props = {
-  value: string;
+  value?: string;
   price?: string;
   color?: Color;
   icon?: string;

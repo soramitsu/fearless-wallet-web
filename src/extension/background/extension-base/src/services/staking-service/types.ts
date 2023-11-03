@@ -118,8 +118,11 @@ export type MakeStakingRequest = {
 export interface FWValidatorInfoFull extends ValidatorInfoFull {
   name: string;
   description: string;
-  isElected: boolean;
+  status: string;
+  isActive: boolean;
+  isInactive: boolean;
   isWaiting: boolean;
+  isOversubscribed: boolean;
 }
 
 export type Alert = { name: string; timespan: number };
@@ -175,3 +178,10 @@ export type StakingNetworkRequest = {
 export type MyValidatorsResponse = FWValidatorInfoFull[];
 
 export type MyStakingInfoResponse = MyStakingInfo;
+
+export type ValidatorStatuses = {
+  validatorsOversubscribed: string[];
+  validatorsWaiting: string[];
+  validatorsActive: string[];
+  validatorsInactive: string[];
+};

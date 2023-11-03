@@ -17,7 +17,7 @@
           :showBorder="!showOversubscribedWarning"
         />
 
-        <Hint v-if="showOversubscribedWarning" iconName="warning" text="staking.oversubscribed" />
+        <Hint v-if="showOversubscribedWarning" iconName="warning" text="staking.oversubscribedOnly" />
 
         <InfoRow text="staking.totalStake" :value="`${totalStake} ${stakingAssetName}`" :price="totalStakeValue" />
 
@@ -115,14 +115,12 @@ export default class ValidatorInfo extends Vue {
     return this.validator.identity?.info.twitter;
   }
 
-  // TODO staking
   get status() {
-    return 'Elected';
+    return this.$t(`staking.${this.validator.status}`);
   }
 
-  // TODO staking что это?
   get elementName() {
-    return '';
+    return this.validator.identity?.info.description;
   }
 
   get maxNominatorRewardedPerValidator() {

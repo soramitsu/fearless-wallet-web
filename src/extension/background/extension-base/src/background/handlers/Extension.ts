@@ -54,6 +54,7 @@ import {
 import {
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
+  WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
 import type {
   BasicTxResponse,
@@ -1334,7 +1335,7 @@ export default class Extension extends FWExtensionBase {
 
       namespaces[key] = {
         accounts,
-        methods: namespace.methods,
+        methods: key === WALLET_CONNECT_EIP155_NAMESPACE ? WALLET_CONNECT_SUPPORTED_METHODS : namespace.methods,
         events: namespace.events,
         chains: chains,
       };
@@ -1470,13 +1471,13 @@ export default class Extension extends FWExtensionBase {
       const message =
         ['eth_sign', 'personal_sign'].indexOf(method) > -1 ? convertHexToUtf8(payload) : JSON.parse(payload);
 
+      if (!(['eth_sign', 'personal_sign'].indexOf(method) > -1)) {
+        delete message.types['EIP712Domain'];
+      }
+
       const signature = await (['eth_sign', 'personal_sign'].indexOf(method) > -1
         ? signer.signMessage(message)
-        : signer.signTypedData(
-            message.domain,
-            { Mail: message.types.Mail, Person: message.types.Person },
-            message.message
-          ));
+        : signer.signTypedData(message.domain, message.types, message.message));
 
       request.resolve({ id: request.request.topic, signature: signature as HexString });
     }

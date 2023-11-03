@@ -122,12 +122,19 @@ const onError = (error: Error) => {
     notify({
       message: '',
       title: t('walletConnect.usupportedNetwork').toString(),
-      type: 'warn',
+      type: 'warning',
     });
-    onReject();
-
-    router.back();
+  } else {
+    notify({
+      message: '',
+      title: t('addWallet.google.somethingWrong').toString(),
+      type: 'warning',
+    });
   }
+
+  onReject();
+
+  router.back();
 };
 
 const onApprove = async () => {

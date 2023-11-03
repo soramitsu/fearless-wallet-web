@@ -59,6 +59,7 @@
       v-if="showNotificationPopup"
       :headers="notificationPopupMessage"
       acceptButtonText="common.approve"
+      sizeWidth="big"
       :showAcceptButton="true"
       :showRejectButton="true"
       @handlerClose="onReject"
@@ -94,7 +95,7 @@ import { Components } from '@/router/routes';
 import { WALLET_CONNECT_SUPPORTED_METHODS } from '@/extension/background/extension-base/src/services/wallet-connect-service/consts';
 const notificationPopupMessage = {
   subtext: 'walletConnect.unsupportedMethodsPopup',
-  text: ``,
+  text: 'walletConnect.unsupportedMethod',
 };
 const showNotificationPopup = ref(false);
 const router = useRouter();

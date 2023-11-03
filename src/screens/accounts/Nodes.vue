@@ -108,11 +108,13 @@ export default class Nodes extends Vue {
 
     return activeNode ?? this.networkJson.nodes[0];
   }
-
+  get formattedAddress() {
+    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
+  }
   get address() {
     if (this.selectedWallet.address === '') return '';
 
-    return cut(BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork), 5);
+    return cut(this.formattedAddress, 5);
   }
 
   get defaultNodes() {
@@ -164,7 +166,7 @@ export default class Nodes extends Vue {
   }
 
   copyAddress() {
-    navigator.clipboard.writeText(this.address);
+    navigator.clipboard.writeText(this.formattedAddress);
   }
 
   getActiveStatus(nodeName: string, url: string) {

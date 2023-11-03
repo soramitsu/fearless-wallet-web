@@ -9,7 +9,7 @@
 
       <Scroll>
         <div :class="historyContainerClasses">
-          <Loader v-if="showLoader" />
+          <Loader v-if="isLoadingHistory" />
 
           <template v-else-if="!isEmptyHistory">
             <HistoryItem
@@ -52,7 +52,7 @@ export default class History extends Vue {
   ];
 
   filterHistoryValue: FilterHistory = 'all';
-  showLoader = false;
+  isLoadingHistory = false;
 
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
@@ -122,7 +122,6 @@ export default class History extends Vue {
   }
 
   mounted() {
-    setTimeout(() => this.fetchHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
     this.fetchHistory();
   }
 
@@ -131,15 +130,17 @@ export default class History extends Vue {
   }
 
   async fetchHistory() {
+    if (this.isLoadingHistory) return;
+
     if (this.history.length !== 0) return;
 
     if (!this.isMainNetwork && this.isSubstrateEthereumNetwork) return;
 
-    this.showLoader = true;
+    this.isLoadingHistory = true;
 
-    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.assetId);
+    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.assetId, false, 0.3); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
 
-    this.showLoader = false;
+    this.isLoadingHistory = false;
   }
 
   filterHistoryValueUpdate(name: FilterHistory) {

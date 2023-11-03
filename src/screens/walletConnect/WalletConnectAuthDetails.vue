@@ -3,15 +3,15 @@
     <WalletConnectHeader v-if="url" :title="title" :url="url" />
 
     <Scroll>
-      <div v-for="(el, index) in namespaces" class="network" :key="index">
+      <div v-for="({ name, icon, connected }, index) in namespaces" class="network" :key="index">
         <div class="network__content">
           <div class="network__name">
-            <ExternalLogo :name="el.icon" :alt="el.name" />
-            <span>{{ el.name }}</span>
+            <ExternalLogo :name="icon" :alt="name" />
+            <span>{{ name }}</span>
           </div>
           <div class="network__status">
             <span>{{ $t('authorize.connected') }}</span>
-            <div class="network__status-indicator" :class="getNetworkStatusClass(el.connected)"></div>
+            <div class="network__status-indicator" :class="getNetworkStatusClass(connected)"></div>
           </div>
         </div>
       </div>
@@ -71,7 +71,7 @@ const namespaces = computed<ChainData[]>(() => {
 
   const namespaces = request.value.namespaces;
 
-  return transformNamespaces(namespaces, true);
+  return transformNamespaces(namespaces, false);
 });
 
 const getNetworkStatusClass = (status: boolean) => `network__status-indicator--${status ? 'active' : 'inactive'}`;

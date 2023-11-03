@@ -38,6 +38,8 @@ import type { TokenBalance } from '@extension-base/background/types';
 import type { Features } from '@/store/extension/types';
 import AssetActionButtons from '@/screens/wallet&asset/asset/AssetActionButtons.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
+import BaseApi from '@/util/BaseApi';
+import { fetchEvmBalance } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -75,6 +77,10 @@ export default class AssetHistory extends Vue {
 
   get selectedNetwork() {
     return this.$route.params.selectedNetwork ?? '';
+  }
+
+  mounted() {
+    if (BaseApi.isEthereumNetwork(this.currency.mainNetwork)) fetchEvmBalance();
   }
 
   togglePopupButton() {

@@ -561,7 +561,7 @@ export default class TransferForm extends Vue {
 
         return {
           name: firstCharToUp(name),
-          value: name.toLowerCase(),
+          value: name,
           icon,
         };
       });

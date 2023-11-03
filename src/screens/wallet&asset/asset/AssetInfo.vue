@@ -3,7 +3,7 @@
     <ContentForm :height="160" :isStaticHeight="true" :bottomRightCorner="true">
       <div class="asset-info">
         <div class="asset__icon">
-          <ExternalLogo :name="icon" :width="82" :height="82" />
+          <ExternalLogo :name="icon" :width="82" />
         </div>
 
         <div class="asset-info__content">
@@ -56,6 +56,7 @@
       :showNodeSwitch="true"
       :showCopyAddress="false"
       :showExport="false"
+      :showReplaceAccount="false"
       @handlerClose="toggleDetailsPopup"
     />
   </Fragment>

@@ -94,7 +94,7 @@ export default class SwapInfo extends Vue {
   }
 
   get marketTypeUP() {
-    return firstCharToUp(this.marketType);
+    return firstCharToUp(this.marketType) ?? '';
   }
 }
 </script>

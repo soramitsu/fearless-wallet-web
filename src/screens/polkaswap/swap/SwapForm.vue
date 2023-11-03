@@ -532,14 +532,28 @@ export default class SwapForm extends Vue {
     return this.receiveAssetPrice * amount;
   }
 
-  activated() {
-    const { reset } = this.$route.params;
+  updateComponentParams() {
+    const { reset, restPriceXOR, assetId } = this.$route.params;
 
     if (reset !== undefined) {
       this.receiveAssetId = '';
       this.sendAmount = '';
       this.receiveAmount = '';
     }
+
+    if (restPriceXOR) {
+      this.receiveAssetId = SORA_XOR_ASSET_ID;
+      this.receiveAmount = restPriceXOR;
+      this.isExchangeB = true;
+    }
+
+    this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
+
+    this.getSoraFees();
+  }
+
+  activated() {
+    this.updateComponentParams();
   }
 
   deactivated() {
@@ -548,15 +562,7 @@ export default class SwapForm extends Vue {
   }
 
   async created() {
-    const { assetId, restPriceXOR } = this.$route.params;
-
-    if (restPriceXOR) {
-      this.receiveAssetId = SORA_XOR_ASSET_ID;
-      this.receiveAmount = restPriceXOR;
-      this.isExchangeB = true;
-    } else this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
-
-    this.getSoraFees();
+    this.updateComponentParams();
   }
 
   async getSoraFees() {
@@ -730,7 +736,7 @@ export default class SwapForm extends Vue {
     const balance = this.sendCurrency.balances.find(
       ({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase()
     )!;
-    const transferable = balance.transferable ? +balance.transferable : 0;
+    const transferable = balance.transferable ?? '0';
 
     if (this.sendCurrency?.symbol === SORA_UTILITY_ASSET) {
       const result = new FPNumber(transferable).sub(new FPNumber(this.fee));
@@ -738,7 +744,7 @@ export default class SwapForm extends Vue {
       return FPNumber.lt(result, FPNumber.ZERO) ? '0' : result.toString();
     }
 
-    return new FPNumber(+transferable).sub(new FPNumber(this.fee)).toString();
+    return transferable;
   }
 
   setMax() {

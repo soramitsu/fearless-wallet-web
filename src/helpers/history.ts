@@ -1,3 +1,4 @@
+import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 import { FPNumber } from '@sora-substrate/util';
 import type {
   HistoryElement,
@@ -5,11 +6,10 @@ import type {
   SubqueryHistory,
   HistoryServiceType,
   NetworkName,
-  SoraHistoryElement,
 } from '@/interfaces';
-import type { TokenBalance } from '@extension-base/background/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { TransactionType, TransferType } from '@/interfaces';
-import { firstCharToUp, isSora } from '@/helpers';
+import { firstCharToUp } from '@/helpers';
 import store from '@/store';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
@@ -34,18 +34,12 @@ function getSignTransfer(historyElement: HistoryElement, address: string) {
   return '';
 }
 
-function getTypeFormatted(historyElement: HistoryElement, address: string, networkName: NetworkName) {
-  if (isSora(networkName)) {
-    const element = historyElement as SoraHistoryElement;
-
-    return element.module;
-  }
-
+function getTypeFormatted(historyElement: HistoryElement, address: string) {
   const type = getType(historyElement);
   const signTransfer = getSignTransfer(historyElement, address);
 
   if (type === TransactionType.transfer) {
-    return signTransfer === '+' ? `${TransferType.incoming} transfer` : `${TransferType.outgoing} transfer`;
+    return signTransfer === '+' ? TransferType.incoming : TransferType.outgoing;
   }
 
   if (type === TransactionType.extrinsic) {
@@ -58,12 +52,27 @@ function getTypeFormatted(historyElement: HistoryElement, address: string, netwo
   return firstCharToUp(type);
 }
 
+function getFormattedDate({ timestamp }: HistoryElement) {
+  const date = new Date(secondsToMilliseconds(+timestamp));
+
+  if (isToday(date)) {
+    return format(date, 'HH:mm');
+  }
+
+  if (isThisYear(date)) {
+    return format(date, 'dd MMMM HH:mm');
+  }
+
+  return format(date, 'dd MMMM yyyy HH:mm');
+}
+
 function getHumanFeeValue(value: string, networkName: NetworkName) {
   const tokenBalances: TokenBalance[] = store.getters.getBalances;
   const network: NetworkJson = store.getters.getNetwork(networkName);
   const asset = network.assets.find((asset) => asset.isUtility);
-  const token = tokenBalances.find(({ symbol }) => symbol === asset?.symbol);
+  const token = tokenBalances.find(({ balances }) => balances.some(({ id }) => id === asset?.id));
   const balance = token?.balances.find(({ id }) => id === asset?.id);
+
   const precision = balance?.precision ?? 0;
 
   return FPNumber.fromCodecValue(value, precision).toNumber();
@@ -74,7 +83,7 @@ function getHumanValue(value: string, assetId: string, networkName: NetworkName)
   const { balances } = tokenBalances.find(({ assetId: id }) => id === assetId)!;
   const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
 
-  return +FPNumber.fromCodecValue(value, precision);
+  return FPNumber.fromCodecValue(value, precision).toNumber();
 }
 
 function getHistoryValue(historyElement: HistoryElement, assetId: string, networkName: NetworkName, address: string) {
@@ -83,11 +92,12 @@ function getHistoryValue(historyElement: HistoryElement, assetId: string, networ
   const signTransfer = getSignTransfer(historyElement, address);
 
   if (type === TransactionType.transfer && transfer) {
-    const { amount } = transfer;
+    const { amount, fee } = transfer;
 
     const value = getHumanValue(amount, assetId, networkName);
+    const fees = getHumanFeeValue(fee, networkName);
 
-    return { signTransfer, value };
+    return { signTransfer, value, fee: fees };
   }
 
   if (type === TransactionType.reward && reward) {
@@ -99,6 +109,7 @@ function getHistoryValue(historyElement: HistoryElement, assetId: string, networ
 
   // extrinsic
   const { fee } = extrinsic!;
+
   const value = getHumanValue(fee, assetId, networkName);
 
   return { signTransfer: '-', value };
@@ -182,6 +193,7 @@ export {
   getHumanTransferFee,
   getHistoryValue,
   getHumanFeeValue,
+  getFormattedDate,
   getSignTransfer,
   getFormattedHistory,
 };

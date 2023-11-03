@@ -23,14 +23,14 @@
         <Scroll>
           <div class="networks networks-content">
             <AssetRow
-              v-for="({ name, icon, id }, index) in sortedNetworks"
+              v-for="({ name, icon }, index) in sortedNetworks"
               :key="index"
               :text="name"
               :value="getBalanceInNetworkString(name)"
               :price="getFiatInNetworkString(name)"
               :icon="icon"
               :isIconPrepend="true"
-              @selectHistory="selectNetworkHistory(name, id)"
+              @openAsset="openAsset(name)"
             />
           </div>
         </Scroll>
@@ -73,6 +73,8 @@ import { Components } from '@/router/routes';
 import { NetworksController } from '@/controllers';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
+import { fetchEvmBalance } from '@/extension/messaging';
+import BaseApi from '@/util/BaseApi';
 
 interface TabsOptions {
   label: string;
@@ -177,11 +179,15 @@ export default class AssetNetworks extends Vue {
     return +(price ?? 0);
   }
 
-  selectNetworkHistory(name: string, assetId: string) {
+  mounted() {
+    if (BaseApi.isEthereumNetwork(this.currency.mainNetwork)) fetchEvmBalance();
+  }
+
+  openAsset(name: string) {
     this.$router.push({
       name: Components.AssetHistory,
       params: {
-        assetId,
+        assetId: this.currency.assetId,
         selectedNetwork: name.toLowerCase(),
       },
     });

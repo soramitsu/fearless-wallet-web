@@ -57,8 +57,9 @@ async function fetchSubqueryHistory(
 async function fetchGiantsquidHistory(url: string, address: string): Promise<GiantsquidHistoryItem[]> {
   const {
     data: { data },
-  } = await axios.post(url, {
-    query: `{
+  } = await axios
+    .post(url, {
+      query: `{
       transfers(
         orderBy: id_DESC
         where: {
@@ -85,7 +86,12 @@ async function fetchGiantsquidHistory(url: string, address: string): Promise<Gia
         }
       }
     }`,
-  });
+    })
+    .catch(() => {
+      return {
+        data: { transfers: [] },
+      };
+    });
 
   return data?.transfers;
 }
@@ -93,8 +99,9 @@ async function fetchGiantsquidHistory(url: string, address: string): Promise<Gia
 async function fetchSubsquidHistory(url: string, address: string): Promise<HistoryElement[]> {
   const {
     data: { data },
-  } = await axios.post(url, {
-    query: `{
+  } = await axios
+    .post(url, {
+      query: `{
       historyElements(
         orderBy: id_DESC
         where: {
@@ -132,7 +139,12 @@ async function fetchSubsquidHistory(url: string, address: string): Promise<Histo
         }
       }
     }`,
-  });
+    })
+    .catch(() => {
+      return {
+        data: { historyElements: [] },
+      };
+    });
 
   return data?.historyElements;
 }

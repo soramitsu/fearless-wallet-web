@@ -1337,7 +1337,10 @@ export default class Extension extends FWExtensionBase {
 
       namespaces[key] = {
         accounts,
-        methods: key === WALLET_CONNECT_EIP155_NAMESPACE ? WALLET_CONNECT_SUPPORTED_METHODS : namespace.methods,
+        methods:
+          key === WALLET_CONNECT_EIP155_NAMESPACE
+            ? [...WALLET_CONNECT_SUPPORTED_METHODS, ...namespace.methods]
+            : namespace.methods,
         events: namespace.events,
         chains: chains,
       };
@@ -1349,7 +1352,11 @@ export default class Extension extends FWExtensionBase {
       relayProtocol: params.relays[0].protocol,
     };
 
-    await this.state.walletConnectService.approveSession(result);
+    const res = await this.state.walletConnectService.approveSession(result).catch((e) => {
+      return { message: e.message, title: '', status: false };
+    });
+    if (res) return res;
+
     request.resolve();
 
     return {

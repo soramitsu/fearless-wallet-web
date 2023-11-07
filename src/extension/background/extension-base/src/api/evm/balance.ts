@@ -35,23 +35,25 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
     total: '0',
   } as BalanceItem;
 
-  try {
-    const balance = await contract.balanceOf(address);
-    const free = ethers.formatUnits(balance, precision);
+  contract
+    .balanceOf(address)
+    .then((balance) => {
+      const free = ethers.formatUnits(balance, precision);
 
-    balanceItem.free = free;
-    balanceItem.transferable = free;
-    balanceItem.total = free;
-    balanceItem.state = APIItemState.READY;
+      balanceItem.free = free;
+      balanceItem.transferable = free;
+      balanceItem.total = free;
+      balanceItem.state = APIItemState.READY;
 
-    setBalance(networkKey, balanceItem, address, state);
-  } catch (ex) {
-    balanceItem.state = APIItemState.ERROR;
+      setBalance(networkKey, balanceItem, address, state);
+    })
+    .catch((ex) => {
+      balanceItem.state = APIItemState.ERROR;
 
-    setBalance(networkKey, balanceItem, address, state);
+      setBalance(networkKey, balanceItem, address, state);
 
-    console.info(`There is problem when fetching ${symbol} token balance on ${networkKey}`, ex);
-  }
+      console.info(`There is problem when fetching ${symbol} token balance on ${networkKey}`, ex);
+    });
 }
 
 async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, state: State) {
@@ -72,20 +74,20 @@ async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, 
 
   const address = getSubstrateAddress(ethereumAddress, state);
 
-  try {
-    const balance = await getUtilityBalance(networkKey, ethereumAddress, state);
+  getUtilityBalance(networkKey, ethereumAddress, state)
+    .then((balance) => {
+      balanceItem.free = balance;
+      balanceItem.total = balance;
+      balanceItem.transferable = balance;
+      balanceItem.state = APIItemState.READY;
 
-    balanceItem.free = balance;
-    balanceItem.total = balance;
-    balanceItem.transferable = balance;
-    balanceItem.state = APIItemState.READY;
+      setBalance(networkKey, balanceItem, address, state);
+    })
+    .catch(() => {
+      balanceItem.state = APIItemState.ERROR;
 
-    setBalance(networkKey, balanceItem, address, state);
-  } catch {
-    balanceItem.state = APIItemState.ERROR;
-
-    setBalance(networkKey, balanceItem, address, state);
-  }
+      setBalance(networkKey, balanceItem, address, state);
+    });
 }
 
 export function fetchEvmAssetBalance(ethereumAddress: string, networkKey: string, assetId: string, state: State) {

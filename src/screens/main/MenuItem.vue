@@ -18,7 +18,7 @@ export default class MenuItem extends Vue {
   @Prop({ default: false }) isActive!: boolean;
 
   get localeName() {
-    return `menu.${this.name}`;
+    return `menu.${this.name.toLowerCase()}`;
   }
 
   get menuItemClasses() {
@@ -54,6 +54,7 @@ export default class MenuItem extends Vue {
     margin-top: 8px;
     font-weight: 600;
     font-size: 13px;
+    text-transform: capitalize;
   }
 
   .menu-icon {

@@ -1,5 +1,6 @@
-export const prepNetworkNames: Record<string, string> = {
+export const PREP_NETWORKS_NAME: Record<string, string> = {
   'Integritee Network (Kusama)': 'Integritee Network',
+  'integritee network (kusama)': 'Integritee Network',
 };
 
 export const getEvmApiKey = (url: string) => {

@@ -1,5 +1,5 @@
 import { storage } from '@extension-base/stores/Storage';
-import { axios } from '../../utils';
+import { axios } from '@extension-base/utils/axios';
 import type { UserType } from './types';
 import type { OnBoardingStoriesLocales, OnboardingStories } from '@/interfaces';
 import { IS_PRODUCTION } from '@/consts/global';

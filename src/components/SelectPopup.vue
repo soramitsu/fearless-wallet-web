@@ -18,12 +18,19 @@
     :top="top"
     :left="left"
   >
-    <div v-for="{ name, value, icon } in options" :key="value" :class="rowClasses(value)" @click="toggle(value)">
+    <div
+      v-for="{ name, value, icon, iconType } in options"
+      :key="value"
+      :class="rowClasses(value)"
+      @click="toggle(value)"
+    >
       <div class="description">
         <template v-if="showIcon">
-          <Icon v-if="icon === 'globus' && showIcon" :icon="icon" className="img" />
+          <Identicon v-if="isAddressIconType(iconType)" :address="value" class="img" />
 
-          <ExternalLogo v-else-if="showIcon" :name="icon" class="img" />
+          <Icon v-else-if="isGlobusIcon(icon)" :icon="icon" className="img" />
+
+          <ExternalLogo v-else :name="icon" class="img" />
         </template>
 
         {{ name }}
@@ -42,6 +49,14 @@ import Popup from './Popup.vue';
 
 type SpaceSize = 'small' | 'medium' | 'big';
 
+interface Options {
+  name: string;
+  value: string;
+  icon: string;
+  iconType: string;
+  isAll?: true;
+}
+
 @Component({
   components: { Popup },
 })
@@ -50,7 +65,7 @@ export default class SelectPopup extends Vue {
   formattedOptions: Record<string, string>[] = [];
 
   @Prop(String) value!: string;
-  @Prop(Array) options!: Record<string, string>[];
+  @Prop(Array) options!: Options[];
   @Prop(String) headerText!: string;
   @Prop(Number) top!: number;
   @Prop(Number) left!: number;
@@ -100,6 +115,14 @@ export default class SelectPopup extends Vue {
 
   toggle(value: string) {
     this.$emit('toggleValue', value);
+  }
+
+  isAddressIconType(iconType: string) {
+    return iconType === 'address';
+  }
+
+  isGlobusIcon(icon: string) {
+    return icon === 'globus';
   }
 }
 </script>

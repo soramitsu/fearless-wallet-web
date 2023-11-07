@@ -5,6 +5,8 @@ declare module 'vue' {
     Loading: typeof import('@/components/Loading.vue')['Loading'];
     AboveForm: typeof import('@/components/AboveForm.vue')['AboveForm'];
     Alert: typeof import('@/components/Alert.vue')['Alert'];
+    AssetIcon: typeof import('@/components/AssetIcon.vue')['AssetIcon'];
+    BadgeButton: typeof import('@/components/BadgeButton.vue')['BadgeButton'];
     BorderButton: typeof import('@/components/BorderButton.vue')['BorderButton'];
     FButton: typeof import('@/components/FButton.vue')['Button'];
     Checkbox: typeof import('@/components/Checkbox.vue')['Checkbox'];
@@ -23,6 +25,7 @@ declare module 'vue' {
     InfoRow: typeof import('@/components/InfoRow.vue')['InfoRow'];
     FInput: typeof import('@/components/FInput.vue')['Input'];
     Lazy: typeof import('@/components/Lazy.vue')['Lazy'];
+    Link: typeof import('@/components/FLink.vue')['Link'];
     Loader: typeof import('@/components/Loader.vue')['Loader'];
     Loading: typeof import('@/components/Loading.vue')['Loading'];
     Logo: typeof import('@/components/Logo.vue')['Logo'];

@@ -15,7 +15,7 @@ import type { Message } from '@extension-base/types';
 interface Handler {
   resolve: (data: any) => void;
   reject: (error: Error) => void;
-  subscriber?: (data: any) => void;
+  subscriber?: (value: any) => void;
 }
 
 type Handlers = Record<string, Handler>;
@@ -40,9 +40,8 @@ function connect() {
       delete handlers[data.id];
     }
 
-    if (data.subscription) {
-      // eslint-disable-next-line @typescript-eslint/ban-types
-      (handler.subscriber as Function)(data.subscription);
+    if (data.value && handler.subscriber) {
+      handler.subscriber(data.value);
     } else if (data.error) {
       handler.reject(new Error(data.error));
     } else {

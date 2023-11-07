@@ -309,10 +309,13 @@ export default class Header extends Vue {
   .s-icon-arrows-arrows-diagonals-bltr-24 {
     font-size: 18px !important;
   }
+
   .header-part-right {
     gap: 4px;
     justify-content: flex-end;
+    align-items: center;
   }
+
   .header-part-left {
     gap: 10px;
     &:hover {
@@ -381,6 +384,7 @@ export default class Header extends Vue {
     height: 16px;
     border-radius: 50%;
   }
+
   .network-management {
     justify-content: space-between;
     width: 137px;

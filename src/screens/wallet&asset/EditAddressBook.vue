@@ -7,7 +7,7 @@
         v-model="address"
         placeholder="assets.walletAddress"
         class="row"
-        errorDescriptions="assets.invalidAccountAddress"
+        errorDescriptions="accounts.invalidAccountAddress"
         :isError="isErrorAddress"
       />
 

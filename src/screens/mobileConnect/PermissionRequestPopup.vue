@@ -124,7 +124,7 @@ export default class PermissionRequestPopup extends Vue {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  border: 1px solid $default-background-color;
+  border: $default-border;
   background-color: $secondary-background-color;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;

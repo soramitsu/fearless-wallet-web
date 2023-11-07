@@ -1,9 +1,10 @@
 <template>
-  <FCorners>
+  <FCorners :topLeftCorner="showCorners" :bottomRightCorner="showCorners">
     <SDropdown
-      type="button"
+      :type="type"
       buttonType="secondary"
       trigger="click"
+      placement="bottom-end"
       class="dropdown"
       size="mini"
       @select="$emit('handler', ...arguments)"
@@ -11,7 +12,7 @@
       {{ $t(label) }}
 
       <template slot="menu">
-        <SDropdownItem v-for="{ label, value } in options" :key="label" :value="value">
+        <SDropdownItem v-for="{ label, value } in filteredOptions" :key="label" :value="value">
           {{ $t(label) }}
         </SDropdownItem>
       </template>
@@ -21,12 +22,25 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
+
+type Options = { value: string; label: string; visibility: boolean }[];
+
 type Props = {
-  value: string;
-  options: Record<string, string>[];
+  value?: string;
+  options: Options;
+  type: string;
 };
-const props = defineProps<Props>();
+
+const props = withDefaults(defineProps<Props>(), {
+  type: 'button',
+});
+
+const filteredOptions = computed(() =>
+  props.options.filter(({ visibility }) => (visibility !== undefined ? visibility : true))
+);
+
 const label = computed(() => props.options.find(({ value }) => value === props.value)?.label ?? '');
+const showCorners = computed(() => props.type === 'button');
 </script>
 
 <style lang="scss">
@@ -42,6 +56,10 @@ const label = computed(() => props.options.find(({ value }) => value === props.v
     font-feature-settings: var(--s-font-feature-settings-heading);
     font-weight: 400;
     font-size: 14px;
+  }
+
+  .el-dropdown-selfdefine {
+    color: $grayish-white !important;
   }
 }
 

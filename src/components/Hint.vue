@@ -2,27 +2,46 @@
   <div class="hint">
     <Icon :icon="iconName" :className="getClasses" />
 
-    <span class="info-text" :class="getSize">{{ $t(text) }}</span>
+    <span class="info-text" :class="getSize">{{ tText }}</span>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n-composable';
+import type { ComponentText } from '@/interfaces';
 
-type IconNameType = 'notification' | 'warning';
-type Size = 'big' | 'medium';
 type Props = {
-  iconName: IconNameType;
-  text: string;
-  size?: Size;
+  iconName: 'notification' | 'warning';
+  size?: 'big' | 'medium';
+  text: ComponentText;
 };
+
 const baseClass = 'notifications-icon';
 const props = withDefaults(defineProps<Props>(), { size: 'medium' });
+const { t, tc } = useI18n();
 
 const getClasses = computed(() => {
-  if (props.iconName === 'warning') return [`${baseClass} warning--orange`];
+  return [
+    baseClass,
+    {
+      'warning--orange': props.iconName === 'warning',
+    },
+  ];
+});
 
-  return [baseClass];
+const tText = computed(() => {
+  if (typeof props.text === 'string') return t(props.text);
+
+  const { text, localeProps } = props.text;
+
+  if (localeProps) {
+    const { tc: tcProps } = localeProps;
+
+    if (tcProps) return tc(text, tcProps, localeProps);
+  }
+
+  return t(text, localeProps);
 });
 
 const getSize = computed(() => (props.size === 'big' ? 'info-text--big' : 'info-text'));
@@ -31,15 +50,14 @@ const getSize = computed(() => (props.size === 'big' ? 'info-text--big' : 'info-
 <style lang="scss" scoped>
 .hint {
   color: $grayish-white;
-
-  i {
-    color: $grayish-white;
-  }
-
   display: flex;
   font-size: 12px;
   align-items: center;
   text-align: left;
+
+  i {
+    color: $grayish-white;
+  }
 
   .warning--orange {
     color: $simple-orange-color;

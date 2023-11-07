@@ -1,8 +1,7 @@
 import axios from 'axios';
-
 import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
-import type { FetchHistory, AugmentedActionContext, ToggleFavorite } from '@/store';
+import type { FetchHistory, AugmentedNetworksContext, ToggleFavorite } from '@/store';
 import type { FiatJson, Network } from '@/interfaces';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
@@ -11,6 +10,7 @@ import { URLS } from '@/consts/urls';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { toggleFavoriteNetwork } from '@/extension/messaging';
 import { isRequireEvmAPI } from '@/extension/background/extension-base/src/background/utils/utils';
+import { isSora } from '@/helpers';
 
 export enum ActionTypes {
   FETCH_FIATS = 'FETCH_FIATS',
@@ -19,9 +19,9 @@ export enum ActionTypes {
 }
 
 export type Actions = {
-  [ActionTypes.FETCH_FIATS](store: AugmentedActionContext): Promise<void>;
-  [ActionTypes.FETCH_HISTORY](store: AugmentedActionContext, props: FetchHistory): Promise<void>;
-  [ActionTypes.TOGGLE_FAVORITE_NETWORK](store: AugmentedActionContext, props: ToggleFavorite): Promise<boolean>;
+  [ActionTypes.FETCH_FIATS](store: AugmentedNetworksContext): Promise<void>;
+  [ActionTypes.FETCH_HISTORY](store: AugmentedNetworksContext, props: FetchHistory): Promise<void>;
+  [ActionTypes.TOGGLE_FAVORITE_NETWORK](store: AugmentedNetworksContext, props: ToggleFavorite): Promise<boolean>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
@@ -33,24 +33,43 @@ const actions: ActionTree<State, State> & Actions = {
     }
   },
 
-  async [ActionTypes.FETCH_HISTORY]({ commit, getters, rootState }, { networkName, wallet, assetId, isPreviously }) {
+  async [ActionTypes.FETCH_HISTORY]({ commit, getters, rootState, rootGetters }, { networkName, assetId }) {
     const { externalApi } = getters.getNetwork(networkName) as Network;
+    const wallet = rootGetters.selectedWallet;
+    const formattedAddress = BaseApi.formatAddress(wallet, networkName);
+
+    // TODO staking обновить, когда обновят json
+    if (isSora(networkName)) {
+      const { url } = externalApi.staking!;
+      const history = await fetchHistory(url, formattedAddress, 'sora', networkName, assetId, false);
+
+      if (history)
+        commit(MutationTypes.SET_HISTORY, {
+          networkName: networkName.toLowerCase(),
+          walletAddress: wallet.address,
+          history,
+          assetId,
+          serviceType: 'sora',
+        });
+
+      return;
+    }
 
     if (!externalApi || !externalApi.history) return;
 
     const { type, url } = externalApi.history;
-    const formattedAddress = BaseApi.formatAddress(wallet, networkName);
-
     const asset = getUtilityAsset(rootState.account.balances, networkName)!;
 
     const utilityId = isRequireEvmAPI(networkName)
       ? asset.balances.find((el) => el.name.toLowerCase() === networkName.toLowerCase() && el.isUtility)?.id
       : asset.assetId;
+
     const isUtility = assetId === utilityId;
+
     // сейчас эндпоинт истории парсит только историю утилити токена
     // TODO: когда появится история других токенов отрефаткорить данную логику
-
     if (isUtility && type !== 'etherscan') return;
+
     const history = await fetchHistory(url, formattedAddress, type, networkName, assetId, isUtility);
 
     if (history)
@@ -58,7 +77,6 @@ const actions: ActionTree<State, State> & Actions = {
         networkName: networkName.toLowerCase(),
         walletAddress: wallet.address,
         history,
-        isPreviously,
         assetId,
         serviceType: type,
       });

@@ -1,0 +1,283 @@
+<template>
+  <AboveForm
+    :fullScreen="true"
+    :showBackIcon="showBackIcon"
+    :header="header"
+    @handlerBack="handlerBack"
+    @closeHandler="closeForm"
+  >
+    <div class="pending-rewards">
+      <div>
+        <ContentForm v-if="step === 1" :height="380" :isStaticHeight="true" :bottomRightCorner="true">
+          <Loader v-if="showLoader" />
+
+          <div v-show="!showLoader" class="form-layout">
+            <Scroll>
+              <div class="descriptions">{{ $t('staking.validatorsPayoutRewards') }}</div>
+
+              <ValidatorItem
+                v-for="validator in myValidatorRewards"
+                :key="validator.address"
+                :validator="validator"
+                :rewardedCurrency="rewardedCurrency"
+                @openValidatorInfo="$emit('openValidatorInfo', $event)"
+              />
+            </Scroll>
+          </div>
+        </ContentForm>
+
+        <div v-else-if="step === 2">
+          <FInput v-model="selectedAccountName" placeholder="accounts.account" size="big" :readonly="true" />
+
+          <SelectInput
+            class="amount-input"
+            text="assets.amount"
+            :value="summaryRewardsValue"
+            :asset="rewardedAssetName"
+            :assetId="rewardedAssetId"
+            :amount="summaryRewards"
+            :showBalance="false"
+            :readonly="true"
+          />
+
+          <FInput v-model="payee" :readonly="true" placeholder="staking.payee" size="big" />
+        </div>
+
+        <InfoRow
+          text="assets.networkFee"
+          :value="`${fee} ${stakingAssetName}`"
+          :price="feeValueString"
+          borderType="default"
+          icon="info"
+          :iconClasses="['network-fee']"
+        />
+
+        <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
+      </div>
+
+      <FButton width="100%" size="big" fontSize="big" :disabled="disabledBtn" :text="btnText" @click="confirm" />
+    </div>
+
+    <WarningPopup v-if="showWarningPopup" :handlerAccept="handlerAccept" :handlerClose="closeWarningPopup" />
+
+    <ConfirmationPasswordPopup
+      v-if="showConfirmationPasswordPopup"
+      :currency="stakingCurrency"
+      :amount="summaryRewards"
+      :value="summaryRewardsValue"
+      :fee="fee"
+      :feeValue="feeValue"
+      :firstIcon="stakingAssetId"
+      :tx="tx"
+      extrinsicType="payoutRewards"
+      @close="confirmationPasswordPopupClose"
+    />
+  </AboveForm>
+</template>
+
+<script lang="ts">
+import { Vue, Component, Prop } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import { FPNumber } from '@sora-substrate/util';
+import type { GetAssetPrice, NetworkParams, SelectedWallet } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
+import { getCostOfAssets } from '@/controllers/transferHelpers';
+import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
+import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
+import { getRewards, getSoraFees } from '@/extension/messaging';
+import {
+  PayoutRewards,
+  RewardsResponse,
+} from '@/extension/background/extension-base/src/services/staking-service/types';
+
+@Component({
+  components: {
+    WarningPopup,
+    ValidatorItem,
+    ConfirmationPasswordPopup,
+  },
+})
+export default class StakingManagement extends Vue {
+  showConfirmationPasswordPopup = false;
+  showWarningPopup = false;
+  amount = '';
+  step = 1;
+  fee = '';
+  showLoader = false;
+  rewards: RewardsResponse = { validators: [], payouts: [], sum: '0' };
+
+  @Prop({ type: Object }) stakingCurrency!: TokenBalance;
+  @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
+  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
+  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+
+  get selectedAccountName() {
+    return this.selectedWallet.name;
+  }
+
+  get btnText() {
+    if (this.step === 1) return 'staking.payoutAll';
+
+    return 'common.confirm';
+  }
+
+  get disabledBtn() {
+    if (this.step === 1) return this.myValidatorRewards.length === 0;
+
+    return false;
+  }
+
+  get payee() {
+    return this.stakingNetwork.payee;
+  }
+
+  get myValidatorRewards() {
+    return this.rewards?.validators;
+  }
+
+  get summaryRewards() {
+    return this.rewards.sum;
+  }
+
+  get feeValueString() {
+    const value = +this.fee * this.stakingAssetPrice;
+
+    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
+  }
+
+  get stakingAssetName() {
+    return this.stakingCurrency?.symbol;
+  }
+
+  get rewardedAssetName() {
+    return this.rewardedCurrency?.symbol;
+  }
+
+  get showBackIcon() {
+    return this.step !== 1;
+  }
+
+  get header() {
+    if (this.step === 1) return 'staking.pendingRewards';
+
+    if (this.step === 2) return 'common.confirmation';
+
+    return '';
+  }
+
+  get rewardedAssetId() {
+    return this.rewardedCurrency!.assetId;
+  }
+
+  get stakingAssetId() {
+    return this.stakingCurrency!.assetId;
+  }
+
+  get stakingAssetPrice() {
+    const priceId = this.stakingCurrency?.priceId ?? '';
+
+    return this.getAssetPrice(priceId).price;
+  }
+
+  get rewardedAssetPrice() {
+    const priceId = this.rewardedCurrency?.priceId ?? '';
+
+    return this.getAssetPrice(priceId).price;
+  }
+
+  get feeValue() {
+    return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
+  }
+
+  get summaryRewardsValue() {
+    return getCostOfAssets(this.summaryRewards, this.rewardedAssetPrice).toString();
+  }
+
+  get tx() {
+    return {
+      payouts: this.rewards.payouts,
+      from: this.selectedWallet.address,
+      networkName: this.stakingNetwork.network,
+    } as PayoutRewards;
+  }
+
+  async created() {
+    this.getSoraFees();
+
+    this.showLoader = true;
+
+    this.rewards = await getRewards(this.stakingNetwork.network);
+
+    this.showLoader = false;
+  }
+
+  async getSoraFees() {
+    const { StakingPayout } = await getSoraFees();
+
+    this.fee = StakingPayout;
+  }
+
+  closeForm() {
+    this.$emit('closeForm');
+  }
+
+  confirmationPasswordPopupClose(closeForm: boolean) {
+    this.showConfirmationPasswordPopup = false;
+
+    if (closeForm) this.closeForm();
+  }
+
+  handlerBack() {
+    this.step -= 1;
+  }
+
+  handlerAccept() {
+    this.step = 2;
+
+    this.closeWarningPopup();
+  }
+
+  closeWarningPopup() {
+    this.showWarningPopup = false;
+  }
+
+  confirm() {
+    if (this.step === 2) {
+      const rewardLessFee = FPNumber.lte(new FPNumber(this.summaryRewardsValue), new FPNumber(this.feeValue));
+
+      if (rewardLessFee) this.showWarningPopup = true;
+      else this.showConfirmationPasswordPopup = true;
+    } else this.step += 1;
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.pending-rewards {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+
+  .descriptions {
+    font-size: 14px;
+    color: $default-white;
+    text-align: left;
+    margin-bottom: 5px;
+  }
+
+  .form-layout {
+    height: 100%;
+    padding: $default-padding;
+  }
+
+  .amount-input {
+    margin: 10px 0;
+  }
+}
+</style>

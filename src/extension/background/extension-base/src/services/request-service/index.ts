@@ -11,7 +11,7 @@ import {
   AccountJson,
   AuthorizeRequest,
   MetadataRequest,
-} from '@extension-base/background/types';
+} from '@extension-base/background/types/types';
 import { WCSignRequest } from '@extension-base/services/request-service/types';
 import { SigningRequest } from '@extension-base/background/types/types';
 import EvmRequestHandler from '@extension-base/services/request-service/handlers/EvmRequestHandler';

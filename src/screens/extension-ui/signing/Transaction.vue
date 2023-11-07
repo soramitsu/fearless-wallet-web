@@ -22,6 +22,7 @@
           <InfoItem v-for="(value, key) in txInfo" :name="key" :value="value" :key="key" />
         </InfoList>
       </div>
+
       <div class="control-form">
         <ValidatedInput
           v-if="isLocked"

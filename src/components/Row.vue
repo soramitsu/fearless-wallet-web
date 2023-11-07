@@ -1,14 +1,16 @@
 <template>
-  <div class="row" :class="rowClasses" v-on="$listeners">
+  <div :class="internalRowClasses" v-on="$listeners">
     <div class="label">
       <slot></slot>
     </div>
 
-    <div v-if="value" class="value">
+    <div v-if="value" :class="valueClasses">
       <div>
         <div class="value-container">
           <Loading v-if="isLoading" />
+
           <span v-else>{{ value }}</span>
+
           <Icon v-if="icon" :icon="icon" class="icon-info" :class="iconClasses" />
         </div>
 
@@ -24,37 +26,85 @@
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
+type BorderType = 'default' | 'secondary';
+type Color = 'white' | 'pink-lavender';
 
 type Props = {
-  value: string;
+  value?: string;
   price?: string;
+  color?: Color;
   icon?: string;
   rowClasses?: string;
   isLoading?: boolean;
   isIconPrepend?: boolean;
   iconClasses?: string[];
+  showBorder?: boolean;
+  borderType?: BorderType;
+  hideLastBorder?: boolean;
 };
 
 const props = withDefaults(defineProps<Props>(), {
   isIconPrepend: false,
+  showBorder: true,
+  hideLastBorder: true,
+  borderType: 'secondary',
+  color: 'white',
   iconClasses: () => [],
 });
+
 const iconColor = computed(() => {
   if (props.icon === 'check') return '#00ee77';
 
   return '$grayish-white';
 });
+
+const valueClasses = computed(() => ['value', `color-${props.color}`]);
+
+const internalRowClasses = computed(() => {
+  const classes = ['row'];
+
+  if (props.showBorder) classes.push(`border-${props.borderType}`);
+
+  if (props.hideLastBorder) classes.push('border-last');
+
+  return classes;
+});
+
 const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
 </script>
 
 <style lang="scss" scoped>
+.color-white {
+  color: $default-white;
+}
+
+.color-pink-lavender {
+  color: $pink-lavender-color;
+}
+
+.border-default {
+  border-bottom: $default-border;
+}
+
+.border-secondary {
+  border-bottom: $secondary-border;
+}
+
+.border-last {
+  &:last-child {
+    border: none;
+  }
+}
+
 .value-container {
   display: flex;
   flex-direction: row;
   align-items: center;
   line-height: 19px;
   gap: 4px;
+  text-transform: uppercase;
 }
+
 .row {
   margin: 0 16px;
   height: 55px;

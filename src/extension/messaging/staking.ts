@@ -1,5 +1,27 @@
+import {
+  MakeStakingRequest,
+  StakingParamsRequest,
+  StakingParamsResponse,
+  StakingNetworkRequest,
+  MyStakingInfoResponse,
+  RewardsResponse,
+} from '../background/extension-base/src/services/staking-service/types';
+import type { BasicTxResponse } from '@extension-base/background/types/types';
 import { sendMessage } from '@/extension/messaging/index';
+import { NetworkName } from '@/interfaces';
 
-export function getValidators(): Promise<any> {
-  return sendMessage('pri(accounts.soraFees)');
+export function getStakingParams(request: StakingParamsRequest): Promise<StakingParamsResponse> {
+  return sendMessage('pri(staking.stakingParams)', request);
+}
+
+export function getRewards(network: NetworkName): Promise<RewardsResponse> {
+  return sendMessage('pri(staking.rewards)', network);
+}
+
+export function getMyStakingInfo(request: StakingNetworkRequest): Promise<MyStakingInfoResponse> {
+  return sendMessage('pri(staking.myStaking)', request);
+}
+
+export function makeStaking(request: MakeStakingRequest): Promise<BasicTxResponse> {
+  return sendMessage('pri(staking.makeStaking)', request);
 }

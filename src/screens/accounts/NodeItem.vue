@@ -69,7 +69,7 @@ export default class NodeItem extends Vue {
   align-items: center;
   height: 60px;
   padding: 10px 20px;
-  border-bottom: 1px solid $default-background-color;
+  border-bottom: $default-border;
   box-sizing: border-box;
 
   &:last-child {

@@ -142,7 +142,7 @@ export default class SwapPreview extends Vue {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid $secondary-background-color;
+  border-bottom: $secondary-border;
 
   .value {
     text-align: right;
@@ -162,7 +162,7 @@ export default class SwapPreview extends Vue {
   justify-content: center;
   align-items: center;
   margin: -46px auto 0;
-  border: 1px solid $secondary-background-color;
+  border: $secondary-border;
   opacity: 1;
   position: absolute;
   top: 70px;

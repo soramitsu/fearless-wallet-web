@@ -12,8 +12,10 @@
       horizontalPlacement="right"
     >
       <div class="about-popup">
-        <div class="header">{{ t('aboutApp') }}</div>
+        <div class="header">{{ t('about') }}</div>
+
         <div class="title">{{ $t('common.fearlessWallet') }}</div>
+
         <div class="item__container">
           <div v-for="{ icon, label, subLabel, url } in mainItems" class="about-item" :key="label" @click="open(url)">
             <div class="about-left-part">

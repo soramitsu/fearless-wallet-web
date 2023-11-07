@@ -12,8 +12,8 @@ import { sendMessage } from '@/extension/messaging/index';
 export function addAccount(
   password: string,
   suri: string,
-  type?: KeypairType,
-  meta?: Record<string, unknown>
+  type: KeypairType,
+  meta: Record<string, unknown>
 ): Promise<string> {
   return sendMessage('pri(accounts.create)', { password, suri, type, meta });
 }

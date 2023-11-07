@@ -4,7 +4,7 @@ import {
   RequestWalletConnectSession,
   WalletConnectSessionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
-import { Resolver } from '../../../background/types';
+import { Resolver } from '../../../background/types/types';
 
 // WC = WalletConnect
 export class ConnectWCRequestHandler {

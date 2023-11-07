@@ -5,8 +5,8 @@ import { BehaviorSubject } from 'rxjs';
 import { KeyringService } from '../keyring-service';
 import { createSubscription } from '../../background/handlers/subscriptions';
 import State from '../../background/handlers/State';
-import { Port } from '../../background/types';
 
+import { Port } from '../../background/types/types';
 import {
   PROJECT_ID_EXTENSION,
   WALLET_CONNECT_DAPP_CONFIG,
@@ -109,8 +109,8 @@ export default class WalletConnectDAppService {
     this.app?.abortPairingAttempt();
   }
 
-  onResponse(data: any) {
-    console.info(data, 'PAIRING');
+  onResponse() {
+    // console.log(data, 'PAIRING');
   }
 
   // onPairingDelete() {

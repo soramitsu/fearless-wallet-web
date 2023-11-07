@@ -1,7 +1,7 @@
 import { REFRESH_PRICE_INTERVAL } from '@extension-base/const/intervals';
 import { axios } from '@extension-base/utils/axios';
 import type { Prices } from '@extension-base/background/handlers/State';
-import type { PriceJson } from '@extension-base/background/types';
+import type { PriceJson } from '@extension-base/background/types/types';
 
 export async function getTokenPrice(assets: Array<string>, currency = 'usd', prices: Prices): Promise<PriceJson> {
   try {

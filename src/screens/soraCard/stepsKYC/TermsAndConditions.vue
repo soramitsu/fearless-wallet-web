@@ -71,7 +71,7 @@ export default class TermsAndConditions extends Vue {
     align-items: center;
     padding: 16px 0;
     margin: 0 16px;
-    border-bottom: 1px solid $default-background-color;
+    border-bottom: $default-border;
     color: $default-white;
     cursor: pointer;
 

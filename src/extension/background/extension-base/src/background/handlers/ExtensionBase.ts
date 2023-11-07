@@ -10,7 +10,7 @@ import type {
   ResponseSigningIsLocked,
   ValidateJsonResult,
   RequestUpdateMeta,
-} from '@extension-base/background/types';
+} from '@extension-base/background/types/types';
 
 import type State from '@extension-base/background/handlers/State';
 import type { KeyringPair } from '@polkadot/keyring/types';

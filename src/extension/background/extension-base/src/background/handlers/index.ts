@@ -3,7 +3,7 @@ import { PORT_EXTENSION } from '@extension-base/defaults';
 import Extension from '@extension-base/background/handlers/Extension';
 import Tabs from '@extension-base/background/handlers/Tabs';
 import State from '@extension-base/background/handlers/State';
-import type { MessageTypes, Port, TransportRequestMessage } from '@extension-base/background/types';
+import type { MessageTypes, Port, TransportRequestMessage } from '@extension-base/background/types/types';
 
 export const state = new State();
 export const extension = new Extension(state);

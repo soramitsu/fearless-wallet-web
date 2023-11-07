@@ -1,16 +1,22 @@
-import { type BasicTxResponse, ApiProps } from '@extension-base/background/types/types';
 import { sendExtrinsic } from '@extension-base/api/substrate/shared/sendExtrinsic';
 import { signExtrinsic } from '@extension-base/api/substrate/shared/signExtrinsic';
-import { BasicTxErrorCode } from '@extension-base/background/types';
+import { BasicTxErrorCode } from '@extension-base/background/types/types';
 import State from '@extension-base/background/handlers/State';
+import type {
+  ApiProps,
+  BasicTxResponse,
+  PrepareExternalRequest,
+  SignerType,
+} from '@extension-base/background/types/types';
+
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { EventRecord } from '@polkadot/types/interfaces';
 import type { HandleBasicTx } from '@extension-base/api/evm/transfer';
-import type { PrepareExternalRequest, SignerType } from '@extension-base/background/types';
+
 interface AbstractSignAndSendExtrinsicProps extends Partial<PrepareExternalRequest> {
   extrinsic: Nullable<SubmittableExtrinsic<'promise'>>;
   callback: HandleBasicTx;
-  txState: BasicTxResponse;
+  txState?: BasicTxResponse;
   address: string;
   type: SignerType;
   errorMessage: string;
@@ -31,7 +37,7 @@ interface ExternalSignAndSendExtrinsicProps extends AbstractSignAndSendExtrinsic
 type SignAndSendExtrinsicProps = ExternalSignAndSendExtrinsicProps | PasswordSignAndSendExtrinsicProps;
 
 export const signAndSendExtrinsic = async (
-  { address, apiProps, callback, errorMessage, extrinsic, password, txState, type }: SignAndSendExtrinsicProps,
+  { address, apiProps, callback, errorMessage, extrinsic, password, txState = {}, type }: SignAndSendExtrinsicProps,
   state: State
 ) => {
   if (!extrinsic) {

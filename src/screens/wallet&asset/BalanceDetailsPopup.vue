@@ -19,9 +19,9 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { TokenBalance } from '@extension-base/background/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
+import { GetAssetPrice, SelectedWallet, GetNetwork } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { AssetPrice } from '@/interfaces';
 import { ALL_NETWORKS } from '@/consts/networks';
@@ -111,7 +111,7 @@ export default class LockedDetailsPopup extends Vue {
     display: flex;
     justify-content: space-between;
     padding: 8px 0;
-    border-bottom: 1px solid $default-background-color;
+    border-bottom: $default-border;
     margin: 0 16px;
     color: $default-white;
     min-height: 57px;

@@ -5,7 +5,7 @@
     :headerType="status"
     :headerText="header"
     :showBorder="true"
-    @handlerClose="close"
+    @handlerClose="onClose"
   >
     <div v-if="isPendingWithResetForm" class="reset__form">
       <span class="message">{{ $t('mobileConnector.noAnswer') }}</span>
@@ -22,67 +22,39 @@
       <FButton size="big" type="secondary" :border="false" text="mobileConnector.resetConnection" @click="() => {}" />
     </div>
 
-    <ConnectionStatus v-else-if="isRequestFinished" :status="status" @close="close" />
+    <ConnectionStatus v-else-if="isRequestFinished" :status="status" @close="onClose" />
   </Popup>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useRouter } from 'vue-router/composables';
 import ConnectionStatus from './ConnectionStatus.vue';
 import { Components } from '@/router/routes';
 
-@Component({
-  components: {
-    ConnectionStatus,
-  },
-})
-export default class PermissionRequestPopup extends Vue {
-  @Prop({ type: Object || null, default: null }) requestResponse?: null;
-  @Prop(String) status!: 'reset_form' | 'success' | 'failed' | 'wallet_exists' | 'active_account_exists';
+type Props = {
+  requestResponse?: object | null;
+  status: 'reset_form' | 'success' | 'failed' | 'wallet_exists' | 'active_account_exists';
+};
+const props = withDefaults(defineProps<Props>(), { requestResponse: null });
+const router = useRouter();
 
-  get isSuccess() {
-    return this.status === 'success';
-  }
+const isSuccess = computed(() => props.status === 'success');
+const isFailed = computed(() => props.status === 'failed');
+const isActiveAccountExists = computed(() => props.status === 'active_account_exists');
+const isWalletExists = computed(() => props.status === 'wallet_exists');
+const isRequestFinished = computed(() => isSuccess.value || isFailed || isWalletExists || isActiveAccountExists);
+const isPendingWithResetForm = computed(() => props.status === 'reset_form');
 
-  get isFailed() {
-    return this.status === 'failed';
-  }
+const header = computed(() => {
+  if (isRequestFinished.value) return '';
 
-  get isActiveAccountExists() {
-    return this.status === 'active_account_exists';
-  }
+  return `No answer from wallet`;
+});
 
-  get isWalletExists() {
-    return this.status === 'wallet_exists';
-  }
-
-  get isRequestFinished() {
-    return this.isSuccess || this.isFailed || this.isWalletExists || this.isActiveAccountExists;
-  }
-
-  get isPendingWithResetForm() {
-    return this.status === 'reset_form';
-  }
-
-  get header() {
-    if (this.isRequestFinished) return '';
-
-    return `No answer from wallet`;
-  }
-
-  toWalletScreen() {
-    this.$router.push({ name: Components.Wallet });
-  }
-
-  close() {
-    if (this.isSuccess || this.isActiveAccountExists) this.toWalletScreen();
-    else this.$router.back();
-  }
-
-  onCancelRequest() {
-    this.$router.push({ name: Components.Wallet });
-  }
-}
+const toWalletScreen = () => router.push({ name: Components.Wallet });
+const onClose = () => (isSuccess.value || isActiveAccountExists ? toWalletScreen() : router.back());
+const onCancelRequest = () => router.push({ name: Components.Wallet });
 </script>
 
 <style lang="scss" scoped>

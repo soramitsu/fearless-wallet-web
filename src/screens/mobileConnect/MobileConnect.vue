@@ -19,75 +19,58 @@
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Vue, Component } from 'vue-property-decorator';
-import { Action } from 'vuex-class';
-import type { AsyncFn } from '@/interfaces';
-import { walletConnectDappInitSession } from '@/extension/messaging';
-import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
+<script lang="ts" setup>
+import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router/composables';
 import PermissionRequestPopup from '@/screens/mobileConnect/PermissionRequestPopup.vue';
+import { walletConnectDappInitSession } from '@/extension/messaging';
+const router = useRouter();
 
-@Component({
-  components: {
-    PermissionRequestPopup,
-  },
-})
-export default class MobileConnect extends Vue {
-  requestInfo: null = null;
-  requestResponse: null = null;
-  isLoading = false;
-  isRequest = false;
-  isPaired = false;
-  isPermissionsGranted = false;
-  isWalletAlreadyExists = false;
-  isActiveAccountExists = false;
-  isPossibleConnectionProblem = false;
-  permissionRequestDenied = false;
-  qr: string | null = null;
-  @Action(AccountActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
+const requestInfo: null = null;
+const requestResponse: null = null;
+const isLoading = false;
+const isPaired = false;
+const isPermissionsGranted = false;
+const isWalletAlreadyExists = false;
+const isActiveAccountExists = false;
+const isPossibleConnectionProblem = false;
+const permissionRequestDenied = false;
+const qr = ref<string | null>(null);
 
-  async mounted() {
-    const res = await walletConnectDappInitSession((data) => {
-      if (data) this.qr = data;
-      else this.qr = null;
-    });
-    if (res) this.qr = res;
-  }
+onMounted(async () => {
+  const res = await walletConnectDappInitSession((data) => {
+    if (data) qr.value = data;
+    else qr.value = null;
+  });
 
-  get connectionStatus() {
-    if (this.isActiveAccountExists) return 'active_account_exists';
-    if (this.isPossibleConnectionProblem && !this.isPermissionsGranted) return 'reset_form';
-    if (this.isPermissionsGranted) return 'success';
-    if (this.isWalletAlreadyExists) return 'wallet_exists';
-    if (this.permissionRequestDenied) return 'failed';
+  if (res) qr.value = res;
+});
 
-    return false;
-  }
+const connectionStatus = computed(() => {
+  if (isActiveAccountExists) return 'active_account_exists';
+  if (isPossibleConnectionProblem && !isPermissionsGranted) return 'reset_form';
+  if (isPermissionsGranted) return 'success';
+  if (isWalletAlreadyExists) return 'wallet_exists';
+  if (permissionRequestDenied) return 'failed';
 
-  get isAwaitWalletResponse() {
-    return this.requestInfo && !this.isPermissionsGranted && !this.isActiveAccountExists;
-  }
+  return false;
+});
 
-  get isQRPrep() {
-    return !this.connectionStatus && this.qr && !this.isLoading;
-  }
+const isQRPrep = computed(() => !connectionStatus.value && qr && !isLoading);
 
-  close() {
-    this.$router.back();
-  }
+const close = () => router.back();
 
-  get isPermissionRequestResolved() {
-    return this.connectionStatus === 'success' || this.connectionStatus === 'failed';
-  }
+const isPermissionRequestResolved = computed(
+  () => connectionStatus.value === 'success' || connectionStatus.value === 'failed'
+);
 
-  get header() {
-    if (this.isPaired && !this.isPermissionRequestResolved) return 'mobileConnector.requesting';
+const header = computed(() => {
+  if (isPaired && !isPermissionRequestResolved.value) return 'mobileConnector.requesting';
 
-    if (this.isPermissionRequestResolved) return '';
+  if (isPermissionRequestResolved.value) return '';
 
-    return 'welcome.connectMobile';
-  }
-}
+  return 'welcome.connectMobile';
+});
 </script>
 
 <style lang="scss" scoped>

@@ -2,67 +2,42 @@
   <div class="connection__status">
     <Icon :icon="icon" className="connection__status-icon" />
 
-    <span class="connection__status-name" :class="nameColorClass">{{ $t(statusHeader) }}</span>
-    <span class="connection__status-message">{{ $t(message) }}</span>
+    <span class="connection__status-name" :class="nameColorClass">{{ statusHeader }}</span>
+    <span class="connection__status-message">{{ message }}</span>
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
-import Loader from '@/components/Loader.vue';
-import Alert from '@/components/Alert.vue';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n-composable';
 
-@Component({
-  components: {
-    Loader,
+type Props = {
+  status: 'reset_form' | 'success' | 'failed' | 'wallet_exists' | 'active_account_exists';
+};
+const props = defineProps<Props>();
+const { t } = useI18n();
+const translate = (value: string) => t(`mobileConnector.${value}`);
 
-    Alert,
-  },
-})
-export default class PermissionRequest extends Vue {
-  @Prop(String) status!: 'success' | 'failed' | 'wallet_exists' | 'active_account_exists';
+const isSuccess = computed(() => props.status === 'success');
+const isFailed = computed(() => props.status === 'failed');
+const isActiveAccountExists = computed(() => props.status === 'active_account_exists');
+const isWalletExists = computed(() => props.status === 'wallet_exists');
 
-  get nameColorClass() {
-    return `connection__status-name--${this.isSuccess ? 'success' : 'failed'}`;
-  }
+const statusHeader = computed(() => translate(isSuccess.value ? 'connectionSet' : 'connectionFailed'));
+const nameColorClass = computed(() => `connection__status-name--${isSuccess.value ? 'success' : 'failed'}`);
 
-  get isSuccess() {
-    return this.status === 'success';
-  }
+const message = computed(() => {
+  if (isSuccess.value) return translate('connected');
+  if (isFailed.value) return translate('requestDenied');
+  if (isWalletExists.value) return translate('walletAlreadyExists');
+  if (isActiveAccountExists.value) return translate('activeMobileAccountExists');
 
-  get isFailed() {
-    return this.status === 'failed';
-  }
+  return '';
+});
 
-  get isActiveAccountExists() {
-    return this.status === 'active_account_exists';
-  }
-
-  get isWalletExists() {
-    return this.status === 'wallet_exists';
-  }
-
-  get statusHeader() {
-    return this.isSuccess ? this.t('connectionSet') : this.t('connectionFailed');
-  }
-
-  get message() {
-    if (this.isSuccess) return this.t('connected');
-    if (this.isFailed) return this.t('requestDenied');
-    if (this.isWalletExists) return this.t('walletAlreadyExists');
-    if (this.isActiveAccountExists) return this.t('activeMobileAccountExists');
-
-    return '';
-  }
-
-  get icon() {
-    return this.isFailed || this.isWalletExists || this.isActiveAccountExists ? 'status__failed' : 'status__success';
-  }
-
-  t(value: string) {
-    return this.$t(`mobileConnector.${value}`);
-  }
-}
+const icon = computed(() =>
+  isFailed.value || isWalletExists || isActiveAccountExists ? 'status__failed' : 'status__success'
+);
 </script>
 
 <style lang="scss" scoped>

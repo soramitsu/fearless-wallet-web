@@ -83,7 +83,7 @@ import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/h
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
 import { EXTENSION_ID } from '@/consts/global';
-import { isSameString, isSora } from '@/helpers';
+import { isSameString } from '@/helpers';
 
 type APIs = {
   evm: EvmApiMap;
@@ -753,10 +753,10 @@ export default class State {
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
-    this.networksJson = networks.filter((el) => isSora(el.name));
+    // this.networksJson = networks.filter((el) => isSora(el.name));
     // this.networksJson = networks.filter((el) => el.name.toLowerCase() === 'kusama');
 
-    // this.networksJson = networks.filter((el) => !el.disabled);
+    this.networksJson = networks.filter((el) => !el.disabled);
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
 

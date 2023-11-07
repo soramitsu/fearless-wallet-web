@@ -156,7 +156,7 @@ const onApprove = async () => {
     return;
   }
 
-  const { message, title } = await approveWalletConnectSession({
+  const { message, title, status } = await approveWalletConnectSession({
     accounts: [selectedAddress.value],
     id: id.value,
   });
@@ -164,7 +164,7 @@ const onApprove = async () => {
   notify({
     message: t(message).toString(),
     title: t(title).toString(),
-    type: 'warn',
+    type: status ? 'success' : 'warning',
   });
 
   router.push(Components.Wallet);

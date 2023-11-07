@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import {
   EIP155_SIGNING_METHODS,
@@ -60,17 +60,22 @@ const { t } = useI18n();
 const isSavePass = ref(false);
 const password = ref('');
 const isPassValid = ref(false);
-const [request]: WalletConnectTransactionRequest[] = store.getters.wcSignList;
+const requests = computed<WalletConnectTransactionRequest[]>(() => store.getters.wcSignList);
+const request = computed<WalletConnectTransactionRequest>(() => requests.value[0]);
 
-const method = computed(() => request.params.request.method as EIP155_SIGNING_METHODS);
+watch(requests, () => {
+  if (!requests.value.length) router.back();
+});
+
+const method = computed(() => request.value.params.request.method as EIP155_SIGNING_METHODS);
 const isSignatureRequest = computed(() => SIGNATURE_METHODS.includes(method.value));
-const origin = request.verifyContext.verified.origin;
+const origin = request.value.verifyContext.verified.origin;
 const title = computed<string>(() => {
   if (!isSignatureRequest.value) return t('walletConnect.txRequestTitle', { url: origin }).toString();
 
   return t('walletConnect.signRequestTitle').toString();
 });
-const params = request.params.request.params;
+const params = request.value.params.request.params;
 const address = computed<string>(() => {
   if (method.value === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
     return (params[0].from as string).toLowerCase();
@@ -86,7 +91,7 @@ const isLocked = ref(false);
 const min15Label = computed(() => (isLocked.value ? 'assets.15min' : 'assets.15minExtend'));
 
 const subtext = isSignatureRequest.value ? 'walletConnect.signWarning' : undefined;
-const url = computed(() => request.verifyContext.verified.origin);
+const url = computed(() => request.value.verifyContext.verified.origin);
 const header = computed(() => {
   if (method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN) return 'walletConnect.signRequestTitle';
 
@@ -102,7 +107,7 @@ onMounted(async () => {
 });
 
 const onReject = () => {
-  walletConnectRequestReject(request.topic);
+  walletConnectRequestReject(request.value.topic);
   router.back();
 };
 
@@ -127,9 +132,13 @@ const onError = (error: Error) => {
 
 const onApprove = async () => {
   isPassValid.value = false;
-  const res = await walletConnectRequestApprove(address.value, password.value, request.topic, isSavePass.value).catch(
-    onError
-  );
+
+  const res = await walletConnectRequestApprove(
+    address.value.toLowerCase(),
+    password.value,
+    request.value.topic,
+    isSavePass.value
+  ).catch(onError);
 
   if (res) router.back();
 };

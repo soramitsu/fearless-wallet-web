@@ -134,7 +134,9 @@ export function getSubstrateAddress(address: string, state: State) {
   if (!isEthereumAddress(address)) return address;
 
   const accounts = state.keyringService.getAllAccounts();
-  const account = accounts.find(({ meta: { ethereumAddress } }) => (ethereumAddress as string) === address);
+  const account = accounts.find(
+    ({ meta: { ethereumAddress } }) => (ethereumAddress as string).toLowerCase() === address.toLowerCase()
+  );
 
   return account?.address ?? address;
 }
@@ -145,7 +147,7 @@ export function getEthereumAddress(address: string, state: State) {
   const accounts = state.keyringService.getAllAccounts();
   const account = accounts.find(({ address: _address }) => _address === address);
 
-  return account?.address ?? address;
+  return (account?.meta.ethereumAddress as string) ?? '';
 }
 
 export const uniqueStringArray = (array: string[]): string[] => {

@@ -1,7 +1,7 @@
 <template>
   <div class="wrapper" @click="click">
     <FInput
-      v-model="firstCharToUpVModel"
+      v-model="model"
       size="big"
       class="rotate-input"
       :placeholder="placeholder"
@@ -21,7 +21,6 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
-import { firstCharToUp } from '@/helpers/';
 
 @Component({})
 export default class InputWithIcon extends Vue {
@@ -32,12 +31,12 @@ export default class InputWithIcon extends Vue {
   @Prop(Boolean) isActiveRotate!: boolean;
   @Prop(String) icon!: 'rotate' | 'close';
 
-  get firstCharToUpVModel() {
-    return firstCharToUp(this.vModel);
+  get model() {
+    return this.vModel;
   }
 
   get isCloseIcon() {
-    return this.icon === 'close' && this.firstCharToUpVModel !== '';
+    return this.icon === 'close' && this.model !== '';
   }
 
   click() {
@@ -58,6 +57,10 @@ export default class InputWithIcon extends Vue {
   .rotate-input {
     flex: 0 0 529px;
     width: 529px;
+
+    & .el-input__inner::first-letter {
+      text-transform: capitalize;
+    }
   }
 
   .icon {

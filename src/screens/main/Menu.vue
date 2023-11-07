@@ -15,11 +15,10 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { Components } from '@/router/routes';
 import MenuItem from '@/screens/main/MenuItem.vue';
-import { firstCharToUp } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store';
+import { type SelectedWallet } from '@/store';
 
-type MenuItemType = 'wallet' | 'crowdloans' | 'staking' | 'polkaswap';
+type MenuItemType = 'Wallet' | 'Staking' | 'Polkaswap';
 
 @Component({
   components: { MenuItem },
@@ -27,7 +26,7 @@ type MenuItemType = 'wallet' | 'crowdloans' | 'staking' | 'polkaswap';
 export default class Menu extends Vue {
   walletItems: string[] = [Components.Accounts, Components.Export, Components.Nodes];
   stakingItems: string[] = [Components.MyStake];
-  menuItems: MenuItemType[] = ['wallet', 'staking', 'crowdloans', 'polkaswap'];
+  menuItems: MenuItemType[] = [Components.Wallet, Components.Staking, Components.Polkaswap];
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
@@ -42,14 +41,14 @@ export default class Menu extends Vue {
   }
 
   checkActive(menuItem: MenuItemType) {
-    if (menuItem === 'wallet') {
+    if (menuItem === 'Wallet') {
       const isHighlightWalletItem = this.walletItems.includes(this.routeName);
       const haveAssetId = this.$route.params.assetId !== undefined;
 
       if (isHighlightWalletItem || haveAssetId) return true;
     }
 
-    if (menuItem === 'staking') {
+    if (menuItem === 'Staking') {
       const isHighlightWalletItem = this.stakingItems.includes(this.routeName);
 
       if (isHighlightWalletItem) return true;
@@ -61,7 +60,7 @@ export default class Menu extends Vue {
   clickMenuItem(menuItem: MenuItemType) {
     if (this.currentRouteName === menuItem.toLowerCase()) return;
 
-    const route = firstCharToUp(menuItem) as keyof typeof Components;
+    const route = menuItem as keyof typeof Components;
 
     const accountParams = {
       address: this.selectedWallet.address,

@@ -102,6 +102,7 @@ const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
   align-items: center;
   line-height: 19px;
   gap: 4px;
+  text-transform: uppercase;
 }
 
 .row {

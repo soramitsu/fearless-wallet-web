@@ -7,7 +7,7 @@ export const setBalance = (networkKey: string, rs: Partial<BalanceItem>, address
 
   if (!isAccountExists) return;
 
-  state.setBalanceItem(networkKey, rs, address);
+  state.balanceService.setBalanceItem(networkKey, rs, address);
 };
 
 export function getAssetInfo(assetId: string, state: State): Asset {

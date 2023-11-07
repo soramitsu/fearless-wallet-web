@@ -57,10 +57,14 @@ export async function createSwap(
   const { assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage, marketType } = options;
   const currentAccount = await state.currentAccount;
 
-  const tokenBalanceA = state.balanceMap[currentAccount!.address].find(({ assetId }) => assetId === assetAId);
+  const tokenBalanceA = state.balanceService
+    .getAccountBalance(currentAccount!.address)
+    .find(({ assetId }) => assetId === assetAId);
   const aId = tokenBalanceA?.balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
 
-  const tokenBalanceB = state.balanceMap[currentAccount!.address].find(({ assetId }) => assetId === assetBId);
+  const tokenBalanceB = state.balanceService
+    .getAccountBalance(currentAccount!.address)
+    .find(({ assetId }) => assetId === assetBId);
   const aIB = tokenBalanceB?.balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
 
   const assetAAddress = getAssetOptions(aId!.id, state.assetsMap) as string;

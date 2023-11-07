@@ -54,7 +54,10 @@ export default class MenuItem extends Vue {
     margin-top: 8px;
     font-weight: 600;
     font-size: 13px;
-    text-transform: capitalize;
+
+    &::first-letter {
+      text-transform: capitalize;
+    }
   }
 
   .menu-icon {

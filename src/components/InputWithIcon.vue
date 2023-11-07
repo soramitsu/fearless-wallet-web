@@ -58,7 +58,7 @@ export default class InputWithIcon extends Vue {
     flex: 0 0 529px;
     width: 529px;
 
-    & .el-input__inner {
+    & .el-input__inner::first-letter {
       text-transform: capitalize;
     }
   }

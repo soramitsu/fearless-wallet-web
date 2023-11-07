@@ -140,7 +140,7 @@ export default class EditNodeForm extends Vue {
 
   .row {
     margin-top: 16px;
-    & .el-input__inner {
+    & .el-input__inner::first-letter {
       text-transform: capitalize;
     }
   }

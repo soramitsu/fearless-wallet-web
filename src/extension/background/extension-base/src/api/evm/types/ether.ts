@@ -58,14 +58,6 @@ export interface CustomTokenJson {
   [CustomTokenType.erc20]: CustomToken[];
 }
 
-export type NetWorkGroup =
-  | 'RELAY_CHAIN'
-  | 'POLKADOT_PARACHAIN'
-  | 'KUSAMA_PARACHAIN'
-  | 'MAIN_NET'
-  | 'TEST_NET'
-  | 'UNKNOWN';
-
 export type TokenInfo = {
   network: string;
   isMainToken: boolean;
@@ -75,7 +67,6 @@ export type TokenInfo = {
   type?: CustomTokenType; // to differentiate custom tokens from native tokens
   decimals: number;
   name: string;
-  coinGeckoKey?: string;
   // TODO: unify specialOption, assetId, assetIndex
   specialOption?: object;
   assetId?: string; // for moon assets

@@ -1,7 +1,8 @@
+import { APIItemState } from '@extension-base//api/types/networks';
+import { isSameString } from '..';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { addNumbers } from '@/helpers/numbers';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, NETWORKS_GROUPS, POPULAR_NETWORKS } from '@/consts/networks';
-import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 import { AssetsPrice, ChangeWalletBalance, NetworkName } from '@/interfaces';
 import { FEARLESS_TITLE } from '@/consts/global';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
@@ -32,13 +33,12 @@ export function getSummaryTransferableWalletBalance(
       return result + assetValue;
     }
 
-    // TODO: нужна проверка на то, входит ли сеть в группу
     balances.forEach(({ state, transferable, name }) => {
-      const networkParams = networks.find(({ name: _name }) => _name.toLowerCase() === name.toLowerCase());
+      const networkParams = networks.find(({ name: _name }) => isSameString(_name.toLowerCase(), name.toLowerCase()));
 
-      if (network === POPULAR_NETWORKS && networkParams?.rank === undefined) return result;
+      if (isSameString(network, POPULAR_NETWORKS) && networkParams?.rank === undefined) return result;
 
-      if (network === FAVORITE_NETWORKS && !networkParams?.favorite.includes(address)) return result;
+      if (isSameString(network, FAVORITE_NETWORKS) && !networkParams?.favorite.includes(address)) return result;
 
       if (state === APIItemState.READY) {
         const assetCount = +(transferable ?? 0);

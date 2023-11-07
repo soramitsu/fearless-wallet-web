@@ -11,12 +11,12 @@ type Props = {
   icon: string;
   iconColor?: string;
   className?: string[] | string;
-  isHoverable?: boolean;
   width?: string;
   height?: string;
+  hover?: boolean;
 };
 
-const props = withDefaults(defineProps<Props>(), { width: '32px', height: '32px', className: '' });
+const props = withDefaults(defineProps<Props>(), { width: '32px', height: '32px', className: '', hover: true });
 const emit = defineEmits(['click']);
 
 const getIconColor = computed(() => `icon--${props.iconColor}`);
@@ -25,11 +25,13 @@ const getIconName = computed(() => `#icon-${props.icon}`);
 const styles = computed(() => `width:${props.width}; height:${props.height};`);
 
 const getSvgClasses = computed(() => {
-  const prepClasses = Array.isArray(props.className) ? props.className.flat() : [props.className];
-
-  const classes = [...prepClasses];
-
-  if (props.isHoverable) classes.push('svg-icon--hover');
+  const classes = [
+    'svg-icon',
+    {
+      'svg-icon--hover': props.hover,
+    },
+    ...[props.className].flat(),
+  ];
 
   if (props.iconColor) classes.push(getIconColor.value);
 
@@ -59,8 +61,12 @@ const click = () => {
   outline: none;
 }
 
-.svg-icon--hover:hover {
-  opacity: 0.5;
+.svg-icon--hover {
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.5;
+  }
 }
 
 .icon__inner {

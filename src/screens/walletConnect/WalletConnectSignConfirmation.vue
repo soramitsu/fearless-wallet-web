@@ -42,7 +42,7 @@ import {
   SIGNATURE_METHODS,
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
-import { TransferErrorCode, BasicTxErrorCode } from '@extension-base/background/types';
+import { TransferErrorCode, BasicTxErrorCode } from '@extension-base/background/types/types';
 import { useI18n } from 'vue-i18n-composable';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import WalletConnectRequestData from './WalletConnectRequestData.vue';

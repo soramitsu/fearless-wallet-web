@@ -10,8 +10,8 @@ import type { RelayChainName, NetworkName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
 import { CHAIN_IDS } from '@/consts/networks';
-import { isSora } from '@/helpers';
 import { SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/sora';
+import { isSameString, isSora } from '@/helpers';
 
 function subscribeTokensBalance(address: string, networkKey: string, api: ApiPromise, state: State) {
   const {
@@ -96,9 +96,9 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
 
       let pallet;
 
-      const networkNameLower = networkName.toLowerCase();
       const isSoraXOR =
-        symbol === SORA_UTILITY_ASSET && (networkNameLower === SORA_MAINNET || networkNameLower === SORA_TEST);
+        symbol === SORA_UTILITY_ASSET &&
+        (isSameString(networkName, SORA_MAINNET) || isSameString(networkName, SORA_TEST));
 
       if (type === 'normal' || isSoraXOR) pallet = query.system.account(address);
       else if (type === 'assets') {
@@ -151,7 +151,8 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
         address,
         state
       );
-      console.warn(err.message, networkKey, `type: ${type}`);
+
+      console.warn(err.message, networkKey);
     }
 
     return () => null;
@@ -171,7 +172,7 @@ export function subscribeBalance(
       // если список  === null, значит коннектимся ко всем включенным сетям
       if (newNetworks === null) return true;
 
-      return newNetworks.includes(networkName);
+      return newNetworks.some((net) => net.toLowerCase() === networkName.toLowerCase());
     })
     .map(async ([networkName, apiProps]) => {
       const isReady = isSora(networkName)

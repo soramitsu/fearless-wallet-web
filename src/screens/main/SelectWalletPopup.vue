@@ -35,7 +35,7 @@ import WalletInfo from './WalletInfo.vue';
 import type { SelectedWallet } from '@/store';
 import type { Fn, CustomEvent } from '@/interfaces';
 import type { AccountJson } from '@extension-base/background/types/types';
-import type { CurrentAccountInfo } from '@/extension/background/extension-base/src/stores/CurrentAccountStore';
+import type { CurrentAccountInfo } from '@extension-base//stores/CurrentAccountStore';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { Components } from '@/router/routes';

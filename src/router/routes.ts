@@ -1,14 +1,13 @@
 import { RouteConfig } from 'vue-router';
-import store from '@/store';
+import store, { NetworkParams } from '@/store';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
+import { NetworkName } from '@/interfaces';
 
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
-const Staking = () => import('@/screens/staking/Staking.vue');
-const History = () => import('@/screens/history/History.vue');
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
 const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
@@ -30,14 +29,18 @@ const Onboarding = () => import('@/screens/onboarding/Onboarding.vue');
 const AssetNetworks = () =>
   import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetNetworks.vue');
 const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetHistory.vue');
+
 const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
-const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/Disclaimer.vue');
 const Polkaswap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/Polkaswap.vue');
+const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/Disclaimer.vue');
 
 const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/AddWallet.vue');
 const AddFromGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/AddFromGoogle.vue');
 const CreateGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/CreateGoogle.vue');
+
+const MyStake = () => import(/* webpackChunkName: "staking */ '@/screens/staking/myStake/MyStake.vue');
+const Staking = () => import(/* webpackChunkName: "staking */ '@/screens/staking/StakingPage.vue');
 
 export enum Components {
   Welcome = 'Welcome',
@@ -46,9 +49,6 @@ export enum Components {
   Main = 'Main',
   Wallet = 'Wallet',
   Crowdloans = 'Crowdloans',
-  Polkaswap = 'Polkaswap',
-  Staking = 'Staking',
-  History = 'History',
   Asset = 'Asset',
   AccountsLayout = 'AccountsLayout',
   Accounts = 'Accounts',
@@ -61,9 +61,12 @@ export enum Components {
   Transaction = 'Transaction',
   CreateGoogle = 'CreateGoogle',
   AddFromGoogle = 'AddFromGoogle',
+  Polkaswap = 'Polkaswap',
   PolkaswapDisclaimer = 'PolkaswapDisclaimer',
   SoraSwap = 'SoraSwap',
   SoraCard = 'SoraCard',
+  Staking = 'Staking',
+  MyStake = 'MyStake',
   NoFound = 'NoFound',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
@@ -81,10 +84,12 @@ const haveSelectedWallet = () => {
   return store.getters.selectedWallet.address.length !== 0;
 };
 
-const haveAuthRequests = () => store.getters.authList.length;
-const haveSignRequests = () => store.getters.signList.length;
-const haveMetaRequests = () => store.getters.metaRequests.length;
-const showSoraCard = () => store.getters.features?.fiat?.soraCard;
+const haveAuthRequests = (): number => store.getters.authList.length;
+const haveSignRequests = (): number => store.getters.signList.length;
+const haveMetaRequests = (): number => store.getters.metaRequests.length;
+const showSoraCard = (): boolean => store.getters.features?.fiat?.soraCard;
+const getStakingNetwork = async (network: NetworkName): Promise<NetworkParams> =>
+  await new Promise((res) => setTimeout(() => res(store.getters.getStakingNetwork(network)), 100));
 
 const routes: Array<RouteConfig> = [
   {
@@ -231,6 +236,21 @@ const routes: Array<RouteConfig> = [
     },
   },
   {
+    path: '/my-stake/:network',
+    name: Components.MyStake,
+    component: MyStake,
+    beforeEnter: async (to, from, next) => {
+      const network = to.params.network;
+      const stakingParams = await getStakingNetwork(network);
+
+      if (stakingParams.totalStake === '0') next({ name: Components.Staking });
+      else next();
+    },
+    meta: {
+      title: 'myStake',
+    },
+  },
+  {
     path: '/fearless',
     component: Main,
     children: [
@@ -325,11 +345,6 @@ const routes: Array<RouteConfig> = [
         meta: {
           title: 'polkaswap',
         },
-      },
-      {
-        path: 'history',
-        name: Components.History,
-        component: History,
       },
     ],
     beforeEnter: (to, from, next) => {

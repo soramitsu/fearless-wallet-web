@@ -28,17 +28,17 @@ function onConnected(networkName: string, state: State) {
 }
 
 async function onDisconnect(networkName: string, state: State) {
-  const api = state.getSubstrateApiMap[networkName];
+  const api = state.getSubstrateApiMap[networkName.toLowerCase()];
+  const netName = state.getNetworkByKey(networkName).name;
+  const network = state.networkMap[netName];
 
-  if (!state.networkMap[networkName].active) return;
+  if (!network.active) return;
 
   if (api === undefined) return;
 
   api.apiRetry += 1;
 
   if (api.apiRetry < MAX_CONTINUE_RETRY) return;
-
-  const network = state.networkMap[networkName];
 
   api.api?.disconnect();
 
@@ -68,7 +68,8 @@ function onReady(networkName: string, state: State) {
 }
 
 export async function initApi(network: NetworkJson, state: State): Promise<void> {
-  const { name: networkName, nodes } = network;
+  const { name, nodes } = network;
+  const networkName = name.toLowerCase();
 
   if (state.getSubstrateApiMap[networkName] === undefined) state.getSubstrateApiMap[networkName] = createApiObject();
 

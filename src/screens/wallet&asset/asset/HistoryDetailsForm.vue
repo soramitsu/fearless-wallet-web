@@ -73,6 +73,12 @@
           <div class="item-value">{{ value }}</div>
         </div>
 
+        <div v-if="showTargetAmount" class="item">
+          Target Amount
+
+          <div class="item-value">{{ targetValue }}</div>
+        </div>
+
         <template v-if="isExtrinsic">
           <div class="item">
             Module
@@ -128,6 +134,10 @@ export default class HistoryDetailsForm extends Vue {
     return this.isTransfer;
   }
 
+  get showTargetAmount() {
+    return this.isSora && (this.historyElement as SoraHistoryElement).method === 'swap';
+  }
+
   get isTransfer() {
     return this.type === 'transfer';
   }
@@ -167,7 +177,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get showFee() {
-    if (this.isSora) return true;
+    if (this.isSora) return (this.historyElement as SoraHistoryElement).method !== 'rewarded';
 
     return this.isTransfer && this.signTransfer === '-';
   }
@@ -260,12 +270,18 @@ export default class HistoryDetailsForm extends Vue {
     return this.$n(value, 'decimalPrecise');
   }
 
+  get targetValue() {
+    const { targetValue } = getHistoryValue(this.historyElement, this.assetId, this.selectedNetwork, this.address);
+
+    return this.$n(targetValue!, 'decimalPrecise');
+  }
+
   get type() {
     return getType(this.historyElement);
   }
 
   get signTransfer() {
-    return getSignTransfer(this.historyElement, this.address);
+    return getSignTransfer(this.historyElement, this.address, this.selectedNetwork);
   }
 
   get hash() {
@@ -318,7 +334,7 @@ export default class HistoryDetailsForm extends Vue {
 
     .item {
       color: $default-white;
-      border-bottom: 1px solid $default-background-color;
+      border-bottom: $default-border;
       padding: $default-padding 0;
       display: flex;
       justify-content: space-between;

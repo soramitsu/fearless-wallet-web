@@ -1,5 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
-import { Resolver } from '@extension-base/background/types';
+import { Resolver } from '@extension-base/background/types/types';
 import { RequestService } from '@extension-base/services';
 import {
   RequestWalletConnectNotSupport,

@@ -25,7 +25,7 @@
 import Draggable from 'vuedraggable';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { TokenBalance, BalanceJson } from '@extension-base/background/types';
+import { TokenBalance, BalanceJson } from '@extension-base/background/types/types';
 import type { SelectedWallet } from '@/store';
 import type { AsyncFn, AssetsPrice } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -56,12 +56,6 @@ export default class Currencies extends Vue {
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
-
-  mainText() {
-    if (!navigator.onLine) return 'common.offlineStatus';
-
-    return this.filterValue !== '' ? 'wallet.nothingFound' : 'wallet.allAssetsHidden';
-  }
 
   get isOnline() {
     return navigator.onLine;
@@ -114,6 +108,12 @@ export default class Currencies extends Vue {
 
       return { subscription, fn };
     });
+  }
+
+  mainText() {
+    if (!navigator.onLine) return 'common.offlineStatus';
+
+    return this.filterValue !== '' ? 'wallet.nothingFound' : 'wallet.allAssetsHidden';
   }
 }
 </script>

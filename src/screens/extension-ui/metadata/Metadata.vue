@@ -29,7 +29,7 @@
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Action, Getter } from 'vuex-class';
-import { MetadataRequest } from '@extension-base/background/types';
+import { MetadataRequest } from '@extension-base/background/types/types';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import Hint from '@/components/Hint.vue';
 import { Components } from '@/router/routes';
@@ -45,7 +45,7 @@ import { AsyncFn } from '@/interfaces';
     Hint,
   },
 })
-export default class MetaRequest extends Vue {
+export default class Metadata extends Vue {
   @Getter(ExtensionGettersTypes.metaRequests) requests!: MetadataRequest[];
   @Action(ExtensionActionTypes.APPROVE_META_REQUEST) onApproveMetaRequest!: AsyncFn<MetadataRequest>;
   @Action(ExtensionActionTypes.REJECT_META_REQUEST) onRejectMetaRequest!: AsyncFn<MetadataRequest>;

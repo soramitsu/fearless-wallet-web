@@ -1,6 +1,6 @@
 <template>
   <Fragment>
-    <ContentForm :height="341">
+    <ContentForm :height="271">
       <div class="networks">
         <div class="networks-settings">
           <TabButton
@@ -21,7 +21,7 @@
         </div>
 
         <Scroll>
-          <div class="networks networks-content">
+          <div class="network networks-content">
             <AssetRow
               v-for="({ name, icon, id }, index) in sortedNetworks"
               :key="index"
@@ -61,10 +61,9 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { TokenBalance } from '@extension-base/background/types';
+import { TokenBalance } from '@extension-base/background/types/types';
 import HistoryItem from './HistoryItem.vue';
 import type { NetworkJson } from '@extension-base/types';
-import type { GetHistory } from '@/interfaces';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -73,6 +72,7 @@ import { Components } from '@/router/routes';
 import { NetworksController } from '@/controllers';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
+import { GetHistory } from '@/interfaces';
 
 interface TabsOptions {
   label: string;
@@ -116,7 +116,6 @@ export default class AssetNetworks extends Vue {
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
@@ -165,6 +164,10 @@ export default class AssetNetworks extends Vue {
 
       return a.name.localeCompare(b.name);
     });
+  }
+
+  get selectedNetwork() {
+    return this.$route.params.network;
   }
 
   get priceString() {
@@ -262,7 +265,7 @@ export default class AssetNetworks extends Vue {
     flex-direction: column;
   }
 
-  .networks {
+  .network {
     height: 200px;
   }
 }

@@ -4,7 +4,7 @@
       <SIcon name="basic-menu-24" class="handle" />
     </div>
     <div class="img-container">
-      <ExternalLogo class="main-network-img" :name="assetData.icon" :width="42" />
+      <ExternalLogo class="asset-icon" :name="assetData.icon" :width="42" />
     </div>
 
     <div class="descriptions-column">
@@ -96,9 +96,10 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
+import { APIItemState, NETWORK_STATUS } from '@extension-base//api/types/networks';
 import type { CustomEvent, Fn } from '@/interfaces';
 import type { SetHiddenAsset, SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
@@ -108,7 +109,6 @@ import {
   filterBalanceItemsByNetwork,
   getSummaryTransferableBalanceFilteredByActiveNetworks,
 } from '@/helpers/currencies';
-import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 import { isNetworkGroup } from '@/helpers/common';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 
@@ -324,7 +324,7 @@ export default class CurrencyItem extends Vue {
 .currency-item {
   display: flex;
   padding: 8px 0 8px 14px;
-  border-bottom: 1px solid $default-background-color;
+  border-bottom: $default-border;
   margin-right: 16px;
   align-items: center;
   height: 80px;
@@ -449,7 +449,7 @@ export default class CurrencyItem extends Vue {
     margin: auto;
     user-select: none;
 
-    .main-network-img {
+    .asset-icon {
       margin-right: 13px;
     }
   }

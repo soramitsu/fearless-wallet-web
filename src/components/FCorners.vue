@@ -1,5 +1,5 @@
 <template>
-  <div class="FCorners">
+  <div :class="cornersClasses">
     <div :class="slotContainerClasses">
       <slot></slot>
     </div>
@@ -50,6 +50,11 @@ const cornerClasses = computed(() => {
 const slotContainerClasses = computed(() => [{ hover: props.hover }]);
 const topLeftCornerClasses = computed(() => [...cornerClasses.value, 'top-left']);
 const bottomRightCornerClasses = computed(() => [...cornerClasses.value, 'bottom-right']);
+const cornersClasses = computed(() => [
+  {
+    FCorners: props.topLeftCorner || props.bottomRightCorner,
+  },
+]);
 </script>
 
 <style lang="scss" scoped>
@@ -73,7 +78,7 @@ const bottomRightCornerClasses = computed(() => [...cornerClasses.value, 'bottom
   }
 
   .corner-border {
-    border-top: 1px solid $default-background-color;
+    border-top: $default-border;
   }
 
   .hover:hover ~ .corner-border {

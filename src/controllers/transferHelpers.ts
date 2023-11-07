@@ -3,7 +3,7 @@ import { NetworkName } from '@/interfaces';
 import { Wallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 
-export function getCostOfAssets(count: number, price: number): number {
+export function getCostOfAssets(count: number | string, price: number): number {
   return new FPNumber(count).mul(new FPNumber(price)).toNumber();
 }
 

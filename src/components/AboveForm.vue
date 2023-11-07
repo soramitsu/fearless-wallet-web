@@ -5,23 +5,23 @@
 
       <div v-else class="header-content">
         <div class="activity align-left">
-          <div v-if="showBackIcon" class="icon icon-back" @click="emit('handlerBack')">
+          <div v-if="props.showBackIcon" class="icon icon-back" @click="emit('handlerBack')">
             <Icon icon="chevron-left" />
           </div>
 
           <div v-else class="icon">
-            <Icon icon="fw-logo" className="logo" />
+            <Icon icon="fw-logo" :hover="false" className="logo" />
           </div>
         </div>
 
         <div class="header">{{ tHeader }}</div>
 
         <div class="activity align-right">
-          <div v-if="showCloseIcon" class="icon" @click="emit('closeHandler')">
+          <div v-if="props.showCloseIcon" class="icon" @click="emit('closeHandler')">
             <SIcon name="basic-close-24" />
           </div>
 
-          <div v-show="showAcceptIcon" class="icon" @click="emit('saveChanges')">
+          <div v-show="props.showAcceptIcon" class="icon" @click="emit('saveChanges')">
             <SIcon name="basic-check-mark-24" />
           </div>
         </div>
@@ -73,7 +73,7 @@ const backgroundClasses = computed(() => {
   return [
     'form-background',
     {
-      'background-blur': blur,
+      'background-blur': props.blur,
       'form-animation': props.showAnimation,
     },
   ];
@@ -152,7 +152,7 @@ const aboveFormClasses = computed(() => {
       display: flex;
       justify-content: space-between;
       padding: $default-padding;
-      border-bottom: 1px solid $default-background-color;
+      border-bottom: $default-border;
     }
 
     .icon {
@@ -181,6 +181,7 @@ const aboveFormClasses = computed(() => {
       font-size: 18px;
       font-weight: 700;
       margin: auto 0;
+      text-transform: capitalize;
     }
 
     .activity {

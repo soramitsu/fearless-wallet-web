@@ -2,13 +2,15 @@ import { BN, isFunction } from '@polkadot/util';
 import { FPNumber } from '@sora-substrate/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 import { isEthereumNetwork, getUtilityProps, getNativeAssetName } from '@extension-base/background/utils/utils';
-import { SignerType } from '@extension-base/background/types';
+import { SignerType } from '@extension-base/background/types/types';
 import { getAssetInfo } from '@extension-base/api/helpers';
 import State from '@extension-base/background/handlers/State';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
+import { Extrinsic } from './utils/types';
+import { getPrecisionValue } from './utils';
 import type { TokenBalance, BasicTxResponse } from '@extension-base/background/types/types';
-import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { AssetId, Interiors, NetworkName, RelayChainName } from '@/interfaces';
+
 import {
   NATIVE_NETWORKS,
   RELAY_CHAINS,
@@ -19,8 +21,6 @@ import {
 } from '@/consts/networks';
 import { firstCharToUp } from '@/helpers';
 import { IS_PRODUCTION } from '@/consts/global';
-
-type Extrinsic = Nullable<SubmittableExtrinsic<'promise'>>;
 
 enum XcmVersions {
   V1 = 'V1',
@@ -45,13 +45,6 @@ const XCM_NATIVE_PALLETS = ['xcmPallet', 'polkadotXcm'];
 
 function isNativeNetwork(networkName: NetworkName) {
   return NATIVE_NETWORKS.includes(networkName.toLowerCase());
-}
-
-function getPrecisionValue(_amount: string, precision: number): string {
-  const amount = _amount === '' ? '0' : _amount;
-  const amountFP = new FPNumber(amount, precision);
-
-  return amountFP.toCodecString();
 }
 
 function isRelayChain(network: string) {
@@ -241,7 +234,7 @@ async function createNativeTeleportExtrinsic(
   tokenBalance: TokenBalance,
   state: State
 ): Promise<Extrinsic> {
-  const api = state.getSubstrateApiMap[originNet]?.api;
+  const api = state.getSubstrateApiMap[originNet.toLowerCase()]?.api;
 
   if (!api) return;
 
@@ -267,7 +260,7 @@ async function createOrmlTeleportExtrinsic(
   tokenBalance: TokenBalance,
   state: State
 ): Promise<Extrinsic> {
-  const api = state.getSubstrateApiMap[originNet].api;
+  const api = state.getSubstrateApiMap[originNet.toLowerCase()].api;
 
   if (!api) return;
 
@@ -405,7 +398,7 @@ async function makeCrossChain(
   state: State
 ): Promise<void> {
   const txState: BasicTxResponse = {};
-  const apiProps = state.getSubstrateApiMap[originNet];
+  const apiProps = state.getSubstrateApiMap[originNet.toLowerCase()];
 
   await apiProps.api?.isReady;
 

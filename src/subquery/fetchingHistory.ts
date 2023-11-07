@@ -1,5 +1,4 @@
 import axios from 'axios';
-// import { ethers } from 'ethers';
 import type {
   SubqueryHistory,
   GiantsquidHistoryItem,
@@ -12,6 +11,7 @@ import type {
 } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { getEthereumExplorerApiKey } from '@/helpers/history';
+import { SEC1 } from '@/consts/time';
 
 async function fetchSubqueryHistory(
   url: string,
@@ -169,7 +169,7 @@ async function fetchEthereumTokenHistory(
   return res.data.result.map(({ timeStamp, value, gasUsed, from, to, hash }, index) => ({
     address,
     id: String(index),
-    timestamp: (+timeStamp * 1000).toString(),
+    timestamp: (+timeStamp * SEC1).toString(),
     transfer: {
       amount: value,
       hash,
@@ -209,7 +209,7 @@ async function fetchEthereumHistory(url: string, address: string): Promise<Histo
   return res.data.result.map(({ timeStamp, value, gasUsed, from, isError, to, hash }, index) => ({
     address,
     id: String(index),
-    timestamp: (+timeStamp * 1000).toString(),
+    timestamp: (+timeStamp * SEC1).toString(),
     transfer: {
       amount: value,
       hash,
@@ -222,6 +222,39 @@ async function fetchEthereumHistory(url: string, address: string): Promise<Histo
   }));
 }
 
+async function fetchSoraHistory(url: string, address: string) {
+  const {
+    data: { data },
+  } = await axios.post(url, {
+    query: `{
+        historyElements(
+          orderBy: id_DESC
+          where: {
+            address_eq: "${address}"
+          }
+        ) {
+          timestamp
+          id
+          address
+          blockHash
+          blockHeight
+          updatedAtBlock
+          networkFee
+          module
+          method
+          dataTo
+          dataFrom
+          data
+          execution {
+            success
+          }
+        }
+      }`,
+  });
+
+  return data?.historyElements;
+}
+
 async function fetchHistory(
   url: string,
   address: string,
@@ -231,6 +264,8 @@ async function fetchHistory(
   isUtility: boolean
 ) {
   try {
+    if (type === 'sora') return fetchSoraHistory(url, address);
+
     if (type === 'etherscan') {
       if (isUtility) return fetchEthereumHistory(url, address);
 

@@ -1,12 +1,7 @@
-// Copyright 2019-2022 @polkadot/extension authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
-import { CustomTokenType, NetWorkGroup } from '@extension-base/api/evm/types/ether';
+import { CustomTokenType } from '@extension-base/api/evm/types/ether';
 import { NETWORK_STATUS } from './api/types/networks';
 import type { AssetType, BuyProvider, XcmVersion } from '@/interfaces';
 import { ExternalApi } from '@/interfaces';
-
-import { ContractType } from '@/interfaces/ether';
 
 export interface Message extends MessageEvent {
   data: {
@@ -14,7 +9,7 @@ export interface Message extends MessageEvent {
     id: string;
     origin: string;
     response?: string;
-    subscription?: string;
+    value?: any;
   };
 }
 
@@ -103,26 +98,14 @@ export interface NetworkJson {
   customProviders?: Record<string, string>; // Custom provider map, provider name same with provider map
   // Metadata get after connect to provider
   genesisHash: string; // identifier for network
-  groups: NetWorkGroup[];
   ss58Format: number;
   chainType?: 'substrate' | 'ethereum';
-  crowdloanUrl?: string;
   disabled: boolean;
   // Ethereum related information for predefined network only
   isEthereum?: boolean; // Only show network with isEthereum=true when select one EVM account // user input
-  evmChainId?: number;
-  // isHybrid?: boolean;
   // Native token information
-  nativeToken?: string;
   decimals?: number;
   // Other information
-  coinGeckoKey: string; // Provider key to get token price from CoinGecko // user input
-  blockExplorer?: string; // Link to block scanner to check transaction with extrinsic hash // user input
-  abiExplorer?: string; // Link to block scanner to check transaction with extrinsic hash // user input
-  dependencies?: string[]; // Auto active network in dependencies if current network is activated
-  // getStakingOnChain?: boolean; // support get bonded on chain
-  // supportBonding?: boolean;
-  supportSmartContract?: ContractType[]; // if network supports PSP smart contracts
   networkStatus?: NETWORK_STATUS;
   requestId?: string;
   // from json

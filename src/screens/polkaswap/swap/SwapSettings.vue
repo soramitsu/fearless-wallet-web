@@ -113,7 +113,7 @@ export default class SwapSettings extends Vue {
     user-select: none;
 
     &:hover {
-      border: 1px solid $default-background-color;
+      border: $default-border;
     }
   }
 

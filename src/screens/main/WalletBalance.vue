@@ -2,7 +2,7 @@
   <div :class="containerClasses">
     <div class="fiat-balance">{{ fiatSymbol }}{{ $n(balance, 'price') }}</div>
 
-    <div :class="percentClasses">{{ percentString }}</div>
+    <div v-if="changeWalletBalance" :class="percentClasses">{{ percentString }}</div>
   </div>
 </template>
 

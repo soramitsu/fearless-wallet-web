@@ -3,7 +3,7 @@ import {
   AuthorizeRequest,
   AuthUrlInfo,
   MetadataRequest,
-} from '@extension-base/background/types';
+} from '@extension-base/background/types/types';
 import type { Features } from '@/store/extension/types';
 import type { SigningRequest } from '@extension-base/background/types/types';
 import type {

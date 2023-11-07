@@ -1,4 +1,5 @@
 import { IS_PRODUCTION } from './global';
+import { WEEK1 } from './time';
 
 enum StepsKyc {
   Preview = 1,
@@ -57,7 +58,7 @@ const UNSUPPORTED_COUNTRIES = {
 const OTP_CODE_LENGTH = 6;
 const RESEND_INTERVAL = IS_PRODUCTION ? 59 : 10;
 const SORA_CARD_BANNER_HEIGHT = 120; // height + margin-bottom
-const SORA_CARD_BANNER_RERUN = 1000 * 60 * 60 * 24 * 7;
+const SORA_CARD_BANNER_RERUN = WEEK1;
 
 export {
   UNSUPPORTED_COUNTRIES,

@@ -1,19 +1,20 @@
-import type { SessionTypes } from '@walletconnect/types';
+import { SessionTypes } from '@walletconnect/types';
+import {
+  StakingNetworkRequest,
+  MakeStakingRequest,
+  StakingParamsRequest,
+  StakingParamsResponse,
+  MyStakingInfoResponse,
+  RewardsResponse,
+} from '@extension-base/services/staking-service/types';
 import type {
   BasicTxResponse,
   NotificationResponse,
+  RequestCrossChain,
+  RequestSwap,
+  RequestTransfer,
   ResponseCheckTransfer,
   SigningRequest,
-} from '@extension-base/background/types/types';
-import type { NetworkJson } from '@extension-base/types';
-import type {
-  InjectedAccount,
-  MetadataDef,
-  InjectedMetadataKnown,
-  ProviderMeta,
-} from '@polkadot/extension-inject/types';
-import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
-import type {
   RequestAccountCreateSuri,
   RequestAddressCreate,
   RequestAccountExport,
@@ -45,8 +46,6 @@ import type {
   RequestCheckTransfer,
   RequestCheckCrossChain,
   ResponseCheckCrossChain,
-  RequestTransfer,
-  RequestCrossChain,
   BalanceJson,
   PriceJson,
   RequestSubscribePrice,
@@ -59,13 +58,21 @@ import type {
   RequestRpcSubscribe,
   RequestCheckSwap,
   ResponseCheckSwap,
-  RequestSwap,
   ResponseMakeSwap,
   RequestUpdateMeta,
   ResponseTotalBalances,
   MobileSigningRequest,
   RequestSigningSubscribe,
-} from '@extension-base/background/types';
+} from '@extension-base/background/types/types';
+import type { NetworkJson } from '@extension-base/types';
+import type {
+  InjectedAccount,
+  MetadataDef,
+  InjectedMetadataKnown,
+  ProviderMeta,
+} from '@polkadot/extension-inject/types';
+import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
+
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
   DerivationPath,
@@ -78,6 +85,7 @@ import type {
   SoraFees,
   SignerPayloadRaw,
   OnboardingStories,
+  NetworkName,
 } from '@/interfaces';
 import type {
   RequestApproveConnectWalletSession,
@@ -129,7 +137,7 @@ export interface RequestSignatures {
   'pri(authorize.delete.request)': [string, void];
   'pri(authorize.cancel)': [string, boolean];
   'pri(authorize.update)': [RequestUpdateAuthorizedAccounts, void];
-  'pri(activeTabsUrl.update)': [RequestActiveTabsUrlUpdate, void];
+  'pri(tabs.update.activeTabsUrl)': [RequestActiveTabsUrlUpdate, void];
   'pri(accounts.json.restore)': [RequestJsonRestore, string];
   'pri(accounts.json.valid)': [RequestJsonValidate, ValidateJsonResult];
   'pri(metadata.approve)': [RequestMetadataApprove, boolean];
@@ -157,11 +165,20 @@ export interface RequestSignatures {
   //Transfer, CrossChain, Sora Swap
   'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
   'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
+
   'pri(accounts.checkCrossChain)': [RequestCheckCrossChain, ResponseCheckCrossChain];
   'pri(accounts.crossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse];
+
   'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
   'pri(accounts.swap)': [RequestSwap, ResponseMakeSwap];
+
   'pri(accounts.soraFees)': [null, SoraFees];
+
+  // staking
+  'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];
+  'pri(staking.rewards)': [NetworkName, RewardsResponse];
+  'pri(staking.myStaking)': [StakingNetworkRequest, MyStakingInfoResponse];
+  'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];
 
   //ether
   'pri(balance)': [null, BalanceJson];

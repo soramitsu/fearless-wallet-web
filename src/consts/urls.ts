@@ -4,7 +4,7 @@ const BASE_URL = 'https://raw.githubusercontent.com/soramitsu/shared-features-ut
 
 const CHAINS = IS_PRODUCTION
   ? `${BASE_URL}/master/chains/v4/chains.json`
-  : `${BASE_URL}/develop-free/chains/v3/chains_dev.json`;
+  : `${BASE_URL}/sora-staking/chains/v4/chains_dev.json`;
 
 const FIATS = `${BASE_URL}/master/fiat/fiats.json`;
 
@@ -18,7 +18,7 @@ const XCM_LOCATIONS = IS_PRODUCTION
 
 const XCM_FEES = IS_PRODUCTION ? `${BASE_URL}/master/xcm/xcm_fees.json` : `${BASE_URL}/develop-free/xcm/xcm_fees.json`;
 
-export const ONBOARDING_URL = IS_PRODUCTION
+const ONBOARDING_URL = IS_PRODUCTION
   ? `${BASE_URL}/master/appConfigs/onboarding/web.json`
   : `${BASE_URL}/develop-free/appConfigs/onboarding/web.json`;
 

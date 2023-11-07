@@ -1,14 +1,17 @@
 <template>
-  <div class="row" :class="rowClasses" v-on="$listeners">
+  <div :class="internalRowClasses" v-on="$listeners">
     <div class="label">
       <slot></slot>
     </div>
 
-    <div v-if="value" class="value">
+    <div v-if="value" :class="valueClasses">
       <div>
-        <div>
+        <div class="value-container">
           <Loading v-if="isLoading" />
+
           <span v-else>{{ value }}</span>
+
+          <Icon v-if="icon" :icon="icon" class="icon-info" :class="iconClasses" />
         </div>
 
         <div v-if="price" class="price">
@@ -21,34 +24,87 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, ref } from 'vue';
+type BorderType = 'default' | 'secondary';
+type Color = 'white' | 'pink-lavender';
 
-@Component
-export default class Row extends Vue {
-  @Prop(String) value!: string;
-  @Prop(String) price!: string;
-  @Prop(String) icon?: string;
-  @Prop(String) rowClasses?: string;
-  @Prop(Boolean) isLoading!: boolean;
-  @Prop({ default: false }) isIconPrepend!: boolean;
-  @Prop({ default: () => [] }) iconClasses!: string[];
+type Props = {
+  value?: string;
+  price?: string;
+  color?: Color;
+  icon?: string;
+  rowClasses?: string;
+  isLoading?: boolean;
+  isIconPrepend?: boolean;
+  iconClasses?: string[];
+  showBorder?: boolean;
+  borderType?: BorderType;
+  hideLastBorder?: boolean;
+};
 
-  get classes() {
-    return ['icon-info', ...this.iconClasses];
-  }
+const props = withDefaults(defineProps<Props>(), {
+  isIconPrepend: false,
+  showBorder: true,
+  hideLastBorder: true,
+  borderType: 'secondary',
+  color: 'white',
+  iconClasses: () => [],
+});
 
-  get isPrepend() {
-    return this.icon && this.isIconPrepend;
-  }
+const iconColor = computed(() => {
+  if (props.icon === 'check') return '#00ee77';
 
-  get isUppend() {
-    return this.icon && !this.isIconPrepend;
-  }
-}
+  return '$grayish-white';
+});
+
+const valueClasses = computed(() => ['value', `color-${props.color}`]);
+
+const internalRowClasses = computed(() => {
+  const classes = ['row'];
+
+  if (props.showBorder) classes.push(`border-${props.borderType}`);
+
+  if (props.hideLastBorder) classes.push('border-last');
+
+  return classes;
+});
+
+const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
 </script>
 
 <style lang="scss" scoped>
+.color-white {
+  color: $default-white;
+}
+
+.color-pink-lavender {
+  color: $pink-lavender-color;
+}
+
+.border-default {
+  border-bottom: $default-border;
+}
+
+.border-secondary {
+  border-bottom: $secondary-border;
+}
+
+.border-last {
+  &:last-child {
+    border: none;
+  }
+}
+
+.value-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  line-height: 19px;
+  gap: 4px;
+  text-transform: uppercase;
+}
+
 .row {
   margin: 0 16px;
   height: 55px;
@@ -62,6 +118,20 @@ export default class Row extends Vue {
     text-align: right;
     display: flex;
 
+    .icon-info {
+      width: 18px;
+      height: 18px;
+      color: v-bind('iconColor');
+      cursor: pointer;
+
+      &--prepend {
+        margin-left: 13px;
+      }
+
+      &:hover {
+        color: $default-white;
+      }
+    }
     .price {
       color: $gray-color;
       margin-top: 3px;
@@ -76,6 +146,7 @@ export default class Row extends Vue {
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-direction: v-bind(direction);
     gap: 6px;
 
     .icon-info {

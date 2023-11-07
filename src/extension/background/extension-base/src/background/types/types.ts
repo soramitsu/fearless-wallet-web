@@ -1,15 +1,15 @@
 /* eslint-disable no-use-before-define */
 import { Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '@extension-base/defaults';
-
 import { JsonRpcProvider, WebSocketProvider } from 'ethers';
+import { UserType } from '@extension-base/services/onboarding-service/types';
 import { ApiPromise } from '@polkadot/api';
 import { WsProvider } from '@polkadot/rpc-provider';
 import { ProviderInterface } from '@polkadot/rpc-provider/types';
 import { HexString } from '@polkadot/util/types';
-import { UserType } from '../../services/onboarding-service/types';
 import MetadataStore from '../../stores/Metadata';
 import { NETWORK_STATUS } from '../../api/types/networks';
+import { CurrentAccountState } from '../../stores/CurrentAccountStore';
 import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -19,7 +19,6 @@ import type { SignerResult } from '@polkadot/types/types/extrinsic';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
-import type { AccountAuthType, AddressBook, AuthUrlInfo, ResponseSigning } from '@extension-base/background/types';
 import {
   NetworkName,
   WalletAddress,
@@ -50,20 +49,16 @@ export interface AccountJson extends KeyringPair$Meta {
   ethereumAddress: string;
   genesisHash?: HexString | null;
   network?: string;
-  isExternal?: boolean;
-  isHardware?: boolean;
-  isMobile?: boolean;
-  isHidden?: boolean;
   active?: boolean;
   name: string;
-  parentAddress?: string;
   suri?: string;
   type?: KeypairType;
   whenCreated?: number;
+  isMobile?: boolean;
 }
 
 export interface ApproveAuthRequest {
-  request: AuthorizeRequest;
+  id: string;
   accounts: string[];
 }
 
@@ -73,11 +68,20 @@ export interface AuthorizeRequest {
   url: string;
 }
 
+export interface ServiceInfo {
+  networkMap: Record<string, NetworkJson>;
+  apiMap: ApiMap;
+  isLock?: boolean;
+  currentAccountInfo: CurrentAccountState;
+}
+
 export interface MetadataRequest {
   id: string;
   request: MetadataDef;
   url: string;
 }
+
+export type AccountAuthType = 'substrate' | 'evm' | 'both';
 
 export interface SigningRequest {
   account: AccountJson;
@@ -85,6 +89,18 @@ export interface SigningRequest {
   request: RequestSign;
   url: string;
 }
+
+export interface MobileSigningRequest {
+  id: string;
+  request: SignerPayloadRaw;
+}
+
+export interface MobileSignRequest extends Resolver<ResponseSigning> {
+  id: string;
+  request: SignerPayloadRaw;
+}
+
+export type RequestSigningSubscribe = null;
 
 export interface RequestAddressCreate {
   address: string;
@@ -170,32 +186,57 @@ export interface BalanceJson {
   saveSequence?: boolean;
 }
 
+export interface RequestMobileSign {
+  signature: `0x${string}`;
+  id: string;
+}
+
+export interface PriceJson {
+  ready?: boolean;
+  currency: string;
+  priceMap: Record<string, number>;
+  tokenPriceMap: Record<string, number>;
+  tokenPriceChange: Record<string, number>;
+}
+
 export enum TransferErrorCode {
-  NOT_ENOUGH_FEE = 'notEnoughValue',
-  INVALID_VALUE = 'invalidValue',
-  INVALID_TOKEN = 'invalidToken',
   TRANSFER_ERROR = 'transferError',
+  CROSSCHAIN_ERROR = 'crossChainError',
+  SWAP_ERROR = 'swapError',
+  BOND_ERROR = 'bondError',
+  BONDEXTRA_ERROR = 'bondExtraError',
+  UNBOND_ERROR = 'unbondError',
+  REBOND_ERROR = 'rebondError',
+  REDEEM_ERROR = 'redeemError',
+  SET_CONTROLLER_ERROR = 'setControllerError',
+  NOMINATE_ERROR = 'nominateError',
+  SET_PAYEE_ERROR = 'setPayeeError',
+  PAYOUT_REWARDS_ERROR = 'payoutRewardsError',
   UNSUPPORTED = 'unsupported',
 }
 
 export enum BasicTxErrorCode {
   INVALID_PARAM = 'invalidParam',
   KEYRING_ERROR = 'keyringError',
-  STAKING_ERROR = 'stakingError',
-  UN_STAKING_ERROR = 'unStakingError',
-  WITHDRAW_STAKING_ERROR = 'withdrawStakingError',
-  CLAIM_REWARD_ERROR = 'claimRewardError',
-  CREATE_COMPOUND_ERROR = 'createCompoundError',
-  CANCEL_COMPOUND_ERROR = 'cancelCompoundError',
-  TIMEOUT = 'timeout',
   BALANCE_TO_LOW = 'balanceTooLow',
-  UNKNOWN_ERROR = 'unknownError',
+  INVALID_PASSWORD = 'invalidPassword',
 }
 
 export interface BasicTxResponse {
   passwordError?: string | null;
   status?: boolean;
   errors?: BasicTxError[];
+}
+
+export enum SignerType {
+  PASSWORD = 'PASSWORD',
+  MOBILE = 'MOBILE',
+}
+
+export interface PrepareExternalRequest {
+  id: string;
+  setState: (promise: ExternalRequestPromise) => void;
+  updateState: (promise: Partial<ExternalRequestPromise>) => void;
 }
 
 export type TxErrorCode = TransferErrorCode | BasicTxErrorCode;
@@ -225,7 +266,6 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   assetId: string;
   relayChain?: RelayChainName;
   amount?: string;
-  isMobile?: boolean;
 }
 
 export interface RequestCheckCrossChain extends BaseRequestSign {
@@ -236,7 +276,6 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
   assetId: string;
   relayChain?: RelayChainName;
   amount?: string;
-  isMobile?: boolean;
 }
 
 export interface ResponseCheckTransfer {
@@ -275,18 +314,20 @@ export interface ResponseCheckSwap {
   route: string;
 }
 
+export type PasswordRequestSign<T extends BaseRequestSign> = T & {
+  password: string;
+  isSavePass: boolean;
+  isMobile: boolean;
+};
+
 export interface ResponseMakeSwap {
   errors?: Array<BasicTxError>;
   status: boolean;
 }
 
-export type PasswordRequestSign<T extends BaseRequestSign> = T & { password: string; isSavePass?: boolean };
-
 export type ExternalRequestSign<T extends BaseRequestSign> = Omit<T, 'password'>;
+
 export interface RequestSwap extends PasswordRequestSign<RequestCheckSwap> {
-  feeSymbol?: string;
-}
-export interface BasicSwapResponse {
   feeSymbol?: string;
 }
 
@@ -398,7 +439,7 @@ export interface RequestSigningCancel {
 }
 
 export interface RequestSigningIsLocked {
-  id: string;
+  address: string;
 }
 
 export interface ResponseSigningIsLocked {
@@ -487,6 +528,23 @@ export interface AuthRequest extends Resolver<AuthResponse> {
   accountAuthType?: AccountAuthType;
 }
 
+export interface ResponseSigning {
+  id: string;
+  signature: HexString;
+}
+
+export interface AuthUrlInfo {
+  count: number;
+  id: string;
+  isAllowed: boolean;
+  origin: string;
+  url: string;
+  accountAuthType?: AccountAuthType;
+  authorizedAccounts: string[];
+  isAllowedMap: Record<string, boolean>;
+  currentEvmNetworkKey?: string;
+}
+
 export type AuthUrls = Record<string, AuthUrlInfo>;
 
 export type AuthorizedAccountsDiff = [url: string, authorizedAccounts: AuthUrlInfo['authorizedAccounts']][];
@@ -555,6 +613,13 @@ export interface AccountSub {
 }
 export type Subscriptions = Record<string, Port>;
 
+export type Address = {
+  name: string;
+  address: string;
+}[];
+
+export type AddressBook = Record<NetworkName, Address>;
+
 export interface IState {
   registry: TypeRegistry;
   metaStore: MetadataStore;
@@ -603,7 +668,6 @@ export interface TransactionHistoryItem {
   // ex: sub token (DOT, AUSD, KSM, ...) of Acala, Karaura uses main token to pay fee
   isSuccess: boolean;
   action: 'send' | 'received';
-  extrinsicHash: string;
   origin?: 'app' | 'network';
   eventIdx?: number | null;
 }
@@ -653,9 +717,10 @@ export interface TokenBalance {
   providers: BuyProvider[];
   balances: BalanceItem[];
   color?: string;
+  isUtility: boolean; // Это поле означает, что токен является утилити для какой-то из сетей
 }
 
 export type BalanceMap = Record<WalletAddress, TokenBalance[]>;
 
 export type NetworkMap = Record<string, NetworkJson>;
-export type NotificationResponse = { message: string; title: string };
+export type NotificationResponse = { message: string; title: string; status: boolean };

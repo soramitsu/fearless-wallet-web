@@ -105,7 +105,7 @@ export default class Logo extends Vue {
   }
 
   .circle-blur-primary {
-    border: 1px solid $default-background-color;
+    border: $default-border;
   }
 
   .img {

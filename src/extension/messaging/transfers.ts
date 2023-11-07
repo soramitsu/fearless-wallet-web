@@ -1,15 +1,17 @@
-import type { ResponseCheckTransfer, BasicTxResponse } from '@extension-base/background/types/types';
 import type {
+  ResponseCheckTransfer,
+  BasicTxResponse,
   RequestTransfer,
   RequestCrossChain,
+  RequestSwap,
   RequestCheckTransfer,
   RequestCheckCrossChain,
   ResponseCheckCrossChain,
   RequestCheckSwap,
   ResponseCheckSwap,
-  RequestSwap,
   ResponseMakeSwap,
-} from '@extension-base/background/types';
+} from '@extension-base/background/types/types';
+
 import type { SoraFees } from '@/interfaces';
 import { sendMessage } from '@/extension/messaging/index';
 
@@ -35,14 +37,14 @@ export function makeCrossChain(
   return sendMessage('pri(accounts.crossChain)', request, callback);
 }
 
-export function getSoraFees(): Promise<SoraFees> {
-  return sendMessage('pri(accounts.soraFees)');
-}
-
 export function makeSwap(request: RequestSwap): Promise<ResponseMakeSwap> {
   return sendMessage('pri(accounts.swap)', request);
 }
 
 export function checkSwap(request: RequestCheckSwap): Promise<ResponseCheckSwap> {
   return sendMessage('pri(accounts.checkSwap)', request);
+}
+
+export function getSoraFees(): Promise<SoraFees> {
+  return sendMessage('pri(accounts.soraFees)');
 }

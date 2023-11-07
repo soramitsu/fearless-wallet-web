@@ -76,18 +76,19 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
 import type { TokenBalance } from '@extension-base/background/types/types';
-import InputWithIcon from '@/screens/wallet&asset/InputWithIcon.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { cut } from '@/helpers/';
+import { cut } from '@/helpers';
 
-@Component({
-  components: { InputWithIcon },
-})
+@Component
 export default class ReceiveForm extends Vue {
   readonly selectNetworkInputRef = 'selectNetworkInput';
-  readonly copyQRTooltip = { text: 'common.copiedValue', localeProps: { value: 'QR' } };
+  readonly copyQRTooltip = {
+    text: 'common.copiedValue',
+    localeProps: { value: 'QR' },
+  };
+
   filterValue = '';
   selectedNetwork = 'polkadot';
   showSelectNetworkPopup = false;
@@ -119,6 +120,10 @@ export default class ReceiveForm extends Vue {
 
   mounted() {
     this.selectedNetwork = this._selectedNetwork;
+  }
+
+  closeForm() {
+    this.$emit('closeForm');
   }
 
   toggleSelectNetworkPopupVisible() {

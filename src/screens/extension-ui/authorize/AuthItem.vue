@@ -70,7 +70,7 @@ const onRemoveAuth = () => emits('remove', stripedUrl.value);
 .auth-content {
   cursor: pointer;
   padding: 16px 0;
-  border-bottom: 1px solid $default-background-color;
+  border-bottom: $default-border;
 }
 
 .authorized-account__count {

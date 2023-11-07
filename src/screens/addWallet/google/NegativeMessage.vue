@@ -25,7 +25,7 @@ defineProps<Props>();
 
 .subtext {
   font-size: 18px;
-  color: #ffffffbf;
+  color: $default-white;
 }
 
 .img {

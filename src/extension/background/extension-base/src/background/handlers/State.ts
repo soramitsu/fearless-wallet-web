@@ -3,7 +3,6 @@ import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 
 import { assert, u8aToHex } from '@polkadot/util';
-import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import {
@@ -11,6 +10,7 @@ import {
   SoraCardService,
   OnboardingService,
   KeyringService,
+  StakingService,
   NetworkService,
   RequestService,
   WalletConnectService,
@@ -26,7 +26,7 @@ import { getTokenPrice } from '@extension-base/utils/coingecko';
 import { getCurrentProvider, getId } from '@extension-base/utils/utils';
 import { initApi } from '@extension-base/api/substrate/api';
 import { axios } from '@extension-base/utils/axios';
-import { prepNetworkNames } from '@extension-base/const/networks';
+import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
 import {
@@ -38,10 +38,15 @@ import {
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
-
 import { SignerPayloadRaw } from '@polkadot/types/types';
+import {
+  PriceJson,
+  ServiceInfo,
+  MobileSignRequest,
+  MobileSigningRequest,
+  ResponseSigning,
+} from '@extension-base/background/types/types';
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
-import { PriceJson, ServiceInfo, MobileSignRequest, MobileSigningRequest, ResponseSigning } from '../types';
 import { fetchEvmAssetBalance } from '../../api/evm/balance';
 import { REFRESH_TIME } from '../../api/evm/utils/eth';
 import type {
@@ -73,11 +78,12 @@ import type { HexString } from '@polkadot/util/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
-import { EXTENSION_ID } from '@/consts/global';
 import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
+import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
+export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
-export const registry = new TypeRegistry();
+import { EXTENSION_ID } from '@/consts/global';
+import { isSameString } from '@/helpers';
 
 type APIs = {
   evm: EvmApiMap;
@@ -165,6 +171,8 @@ export default class State {
   public walletConnectService = new WalletConnectService(this, this.requestService);
   public soraCardService = new SoraCardService(this.requestService);
   public onboardingService = new OnboardingService();
+  public stakingService = new StakingService(this);
+
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }
@@ -322,8 +330,7 @@ export default class State {
 
     this.lockNetworkMap = true;
 
-    const { name, currentProvider, chain, blockExplorer, paraId, nativeToken, decimals, customNodes, isEthereum } =
-      data;
+    const { name, currentProvider, chain, paraId, decimals, customNodes, isEthereum } = data;
 
     if (name in this.networkMap) {
       const network = this.networkMap[name];
@@ -336,12 +343,9 @@ export default class State {
 
       network.chain = chain;
 
-      if (nativeToken) network.nativeToken = nativeToken;
-
       if (decimals) network.decimals = decimals;
 
       network.paraId = paraId;
-      network.blockExplorer = blockExplorer;
     } else {
       // insert
       this.networkMap[name] = data;
@@ -378,7 +382,7 @@ export default class State {
 
     this.lockNetworkMap = true;
 
-    if (this.networkMap[networkKey].isEthereum) delete this.apis.evm[networkKey];
+    if (this.networkMap[networkKey]?.isEthereum) delete this.apis.evm[networkKey];
     else delete this.apis.substrate[networkKey];
 
     this.networkMap[networkKey].active = false;
@@ -422,7 +426,7 @@ export default class State {
       const { name } = network;
       const currentProvider = getCurrentProvider(network);
 
-      if (currentProvider) this.apis.evm[name] = initWeb3Api(currentProvider);
+      if (currentProvider) this.apis.evm[name.toLowerCase()] = initWeb3Api(currentProvider);
     });
   }
 
@@ -432,7 +436,9 @@ export default class State {
       this.getSubstrateApiMap[key].apiRetry = 0;
     }
 
-    initApi(this.networkMap[key], this);
+    const network = this.getNetworkByKey(key);
+
+    initApi(network, this);
   }
 
   public getNetworkByKey(key: string): NetworkJson {
@@ -503,7 +509,7 @@ export default class State {
       }
     });
 
-    await this.initNetworkStates(true);
+    if (this.ready) this.initNetworkStates();
     this.updateServiceInfo();
 
     this.networkMapSubject.next(this.networkMap);
@@ -540,7 +546,9 @@ export default class State {
     return Object.keys(accounts.subject.value);
   }
 
-  public updateNetworkStatus(networkKey: string, status: NETWORK_STATUS) {
+  public updateNetworkStatus(key: string, status: NETWORK_STATUS) {
+    const networkKey = this.getNetworkByKey(key)?.name ?? '';
+
     if (this.networkMap[networkKey].networkStatus === status) return;
 
     this.networkMap[networkKey].networkStatus = status;
@@ -719,7 +727,7 @@ export default class State {
     });
   }
 
-  public getCurrentAccount(update: (value: CurrentAccountState) => void): void {
+  public getCurrentAccount(update: (value: CurrentAccountState) => void = () => null): void {
     this.currentAccountStore.get('CurrentAccountInfo', update);
   }
 
@@ -745,6 +753,9 @@ export default class State {
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
+    // this.networksJson = networks.filter((el) => isSora(el.name));
+    // this.networksJson = networks.filter((el) => el.name.toLowerCase() === 'kusama');
+
     this.networksJson = networks.filter((el) => !el.disabled);
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
@@ -756,7 +767,7 @@ export default class State {
     });
 
     this.networksJson.forEach((network) => {
-      const currentProvider = network.nodes[0].url;
+      const [{ url: currentProvider }] = network.nodes;
       const providers: Record<string, string> = {};
 
       network.nodes.forEach(({ name, url }) => (providers[name] = url));
@@ -798,13 +809,15 @@ export default class State {
     });
 
     this.getSubstrateAccounts().forEach(({ address }) => this.generateDefaultBalance(address));
+    this.ready = true; //Set true if chain json is parsed and data is preped for init apis
   }
 
   public async init() {
     await this.eventService.waitCryptoReady;
     await this.prepNetworkJson();
-    await this.initNetworkStates();
 
+    this.initNetworkStates();
+    this.onReady();
     this.updateServiceInfo();
   }
 
@@ -815,7 +828,7 @@ export default class State {
     });
   }
 
-  public async initNetworkStates(reset?: boolean) {
+  public initNetworkStates() {
     const activeNetworks = Object.values(this.networkMap).filter(({ active }) => active);
 
     activeNetworks.forEach(async (network) => {
@@ -830,13 +843,11 @@ export default class State {
           if (isReady) return;
         }
 
-        if (reset) this.resetApiRetries();
+        this.resetApiRetries();
 
         initApi(network, this);
       }
     });
-
-    this.onReady();
   }
 
   public getWallets(): KeyringAddress[] {
@@ -872,11 +883,12 @@ export default class State {
   }
 
   public subscribePrice() {
-    return this.priceStore.getSubject();
+    return this.priceStore.subject;
   }
 
   public async updateXorTotalBalance(muchTotal: FPNumber): Promise<void> {
     const currentAccount = await this.currentAccount;
+
     if (!currentAccount) return;
 
     const { address } = currentAccount;
@@ -891,9 +903,9 @@ export default class State {
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
     const { reserved, free, locked, frozen, total, transferable, state, id, relayChain, symbol } = item;
-
     const accountAddress = getSubstrateAddress(address, this);
     const balancesByAddress = this.balanceMap[accountAddress];
+
     const currencyIndex = balancesByAddress.findIndex(
       ({ assetId: _assetId, symbol: _symbol, relayChain: _relayChain }) => {
         const isExistingAssetId = _assetId === id;
@@ -904,12 +916,14 @@ export default class State {
       }
     );
 
+    if (currencyIndex === -1) throw new Error(`Failed to find ${symbol} on ${networkKey}`);
+
     const asset = balancesByAddress[currencyIndex];
 
     const assetIndex = asset.balances.findIndex(({ name }) => {
-      const key = prepNetworkNames[name] ?? name;
+      const key = PREP_NETWORKS_NAME[name] ?? name;
 
-      return key === networkKey;
+      return isSameString(key, networkKey);
     });
 
     const balanceItem = asset.balances[assetIndex];
@@ -948,6 +962,7 @@ export default class State {
 
           apiSora.account = { json: null as any, pair };
 
+          // TODO добавить фича тогл
           this.subscribeTotalXorBalance();
         }
       } else this.updateServiceInfo();
@@ -999,13 +1014,15 @@ export default class State {
     password,
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
     const pass = this.passwords[address] ?? password;
-    const json = this.keyringService.getPair(address.toLowerCase())!.toJson(pass);
+    const json = this.keyringService.backupAccount(address, pass!);
+    if (!json) throw new Error('Json was not exported');
+
     const decoded = decodePair(pass, base64Decode(json.encoded), json.encoding.type);
 
     const privateKey = u8aToHex(decoded.secretKey);
     const publicKey = u8aToHex(decoded.publicKey);
 
-    this.passwords[address] = password;
+    if (password) this.passwords[address] = password;
 
     return {
       privateKey,
@@ -1077,7 +1094,13 @@ export default class State {
   }
 
   public subscribeNetworkMap() {
-    return this.networkMapStore.getSubject();
+    return this.networkMapStore.subject;
+  }
+
+  async getCurrentAddress(network: NetworkName, _currentAccount?: CurrentAccountState) {
+    const currentAccount = _currentAccount ?? (await this.currentAccount);
+
+    return isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
   }
 
   getTimespan(name: keyof Timespans, address: string) {

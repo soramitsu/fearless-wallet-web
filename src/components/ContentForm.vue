@@ -47,7 +47,7 @@ export default class ContentForm extends Vue {
 .content-form {
   display: flex;
   flex-direction: column;
-  border: 1px solid $default-background-color;
+  border: $default-border;
   border-radius: $default-border-radius;
   z-index: 1;
 }

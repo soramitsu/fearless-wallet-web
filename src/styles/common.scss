@@ -10,8 +10,9 @@ $pink-lavender-color: #bb77ff;
 $purple-color: rgba(119, 0, 238, 1);
 $pink-purple-color: rgba(119, 0, 238, 0.25);
 $plain-white: rgba(255, 255, 255, 1);
-$default-white: rgba(255, 255, 255, 0.75);
+$default-white: rgba(255, 255, 255, 0.75); // #ffffffbf
 $grayish-white: rgba(255, 255, 255, 0.65);
+$grayish-white-2: #ffffff80;
 $gray-color: rgba(255, 255, 255, 0.5);
 $gray-2-color: rgba(255, 255, 255, 0.3);
 $pink-color: #ee0077;
@@ -22,14 +23,10 @@ $reject-color: #ed0e0e;
 $default-background-color: rgba(255, 255, 255, 0.1);
 $secondary-background-color: rgba(255, 255, 255, 0.05);
 
-$big-clip-path-left-top-and-right-bottom: polygon(
-  20px 0,
-  100% 0,
-  100% calc(100% - 20px),
-  calc(100% - 20px) 100%,
-  0 100%,
-  0 20px
-);
+$default-border: 1px solid $default-background-color;
+$secondary-border: 1px solid $secondary-background-color;
+
+$big-clip-path-left-top-and-right-bottom: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
 $big-clip-path-left-top: polygon(20px 0, 100% 0, 100% calc(100% - 20px), 100% 100%, 0 100%, 0 20px);
 
 $medium-clip-path-left-top-and-right-bottom: polygon(

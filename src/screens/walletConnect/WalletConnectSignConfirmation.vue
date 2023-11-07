@@ -4,7 +4,7 @@
       <div class="scroll__container">
         <Scroll>
           <div class="wc-request">
-            <WalletConnectHeader :name="origin" :subtext="subtext" :url="url" :isTx="!isSignatureRequest" />
+            <WalletConnectHeader :title="title" :subtext="subtext" :url="url" />
             <Hint v-if="!isSignatureRequest" class="hint" iconName="warning" :text="$t('walletConnect.txHint')" />
             <WalletConnectRequestData :request="request" class="wc-request__details" />
           </div>
@@ -35,19 +35,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import {
   EIP155_SIGNING_METHODS,
+  SIGNATURE_METHODS,
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
-import { TransferErrorCode, BasicTxErrorCode } from '@extension-base/background/types';
+import { TransferErrorCode, BasicTxErrorCode } from '@extension-base/background/types/types';
 import { useI18n } from 'vue-i18n-composable';
+import { isEthereumAddress } from '@polkadot/util-crypto';
 import WalletConnectRequestData from './WalletConnectRequestData.vue';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import { walletConnectRequestReject, walletConnectRequestApprove, isSignLocked } from '@/extension/messaging';
 import { useStore } from '@/store';
 import { useNotify } from '@/plugins/soramitsuUI';
+import ValidatedInput from '@/components/ValidatedInput.vue';
 type Error = { message: TransferErrorCode.UNSUPPORTED | BasicTxErrorCode.KEYRING_ERROR };
 
 const store = useStore();
@@ -57,27 +60,42 @@ const { t } = useI18n();
 const isSavePass = ref(false);
 const password = ref('');
 const isPassValid = ref(false);
-const [request]: WalletConnectTransactionRequest[] = store.getters.wcSignList;
+const requests = computed<WalletConnectTransactionRequest[]>(() => store.getters.wcSignList);
+const request = computed<WalletConnectTransactionRequest>(() => requests.value[0]);
 
-const method = computed(() => request.params.request.method as EIP155_SIGNING_METHODS);
-const isSignatureRequest = computed(() => method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN);
-const origin = request.verifyContext.verified.origin;
+watch(requests, () => {
+  if (!requests.value.length) router.back();
+});
+
+const method = computed(() => request.value.params.request.method as EIP155_SIGNING_METHODS);
+const isSignatureRequest = computed(() => SIGNATURE_METHODS.includes(method.value));
+const origin = request.value.verifyContext.verified.origin;
+const title = computed<string>(() => {
+  if (!isSignatureRequest.value) return t('walletConnect.txRequestTitle', { url: origin }).toString();
+
+  return t('walletConnect.signRequestTitle').toString();
+});
+const params = request.value.params.request.params;
 const address = computed<string>(() => {
   if (method.value === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
-    return (request.params.request.params[0].from as string).toLowerCase();
+    return (params[0].from as string).toLowerCase();
   }
 
-  return request.params.request.params[1].toLowerCase();
+  if (Array.isArray(params)) {
+    return isEthereumAddress(params[0]) ? params[0] : params[1];
+  }
+
+  return params[0].from as string;
 });
 const isLocked = ref(false);
 const min15Label = computed(() => (isLocked.value ? 'assets.15min' : 'assets.15minExtend'));
 
 const subtext = isSignatureRequest.value ? 'walletConnect.signWarning' : undefined;
-const url = computed(() => request.verifyContext.verified.origin);
+const url = computed(() => request.value.verifyContext.verified.origin);
 const header = computed(() => {
-  if (method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN) return 'assets.signature';
+  if (method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN) return 'walletConnect.signRequestTitle';
 
-  return 'assets.transaction';
+  return 'common.wc';
 });
 const onSavePass = (value: boolean) => (isSavePass.value = value);
 
@@ -89,7 +107,7 @@ onMounted(async () => {
 });
 
 const onReject = () => {
-  walletConnectRequestReject(request.topic);
+  walletConnectRequestReject(request.value.topic);
   router.back();
 };
 
@@ -114,9 +132,13 @@ const onError = (error: Error) => {
 
 const onApprove = async () => {
   isPassValid.value = false;
-  const res = await walletConnectRequestApprove(address.value, password.value, request.topic, isSavePass.value).catch(
-    onError
-  );
+
+  const res = await walletConnectRequestApprove(
+    address.value.toLowerCase(),
+    password.value,
+    request.value.topic,
+    isSavePass.value
+  ).catch(onError);
 
   if (res) router.back();
 };
@@ -137,7 +159,6 @@ const onApprove = async () => {
   justify-content: space-between;
   align-items: center;
   flex-direction: column;
-  overflow-y: hidden;
   padding-left: 10px;
   padding-right: 10px;
   gap: 10px;

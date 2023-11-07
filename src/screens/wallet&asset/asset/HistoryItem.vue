@@ -10,7 +10,7 @@
       </div>
 
       <div class="second-row">
-        <div>{{ typeFormatted }}</div>
+        <div>{{ tModule }}</div>
 
         <div>{{ date }}</div>
       </div>
@@ -25,7 +25,7 @@ import type { HistoryElement, NetworkName } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import { getType, getTypeFormatted, getHistoryValue, getSignTransfer } from '@/helpers/history';
-import { cut, getFormattedDate, isSora } from '@/helpers';
+import { getFormattedDate, cut, isSora } from '@/helpers';
 import { SoraHistoryElement, TransactionType } from '@/interfaces/history';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
@@ -36,12 +36,11 @@ export default class HistoryItem extends Vue {
   @Prop(Object) historyElement!: HistoryElement;
   @Prop(Object) token!: TokenBalance;
   @Prop(String) network!: NetworkName;
-
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get signTransfer() {
-    return getSignTransfer(this.historyElement, this.address);
+    return getSignTransfer(this.historyElement, this.address, this.network);
   }
 
   get address() {
@@ -54,6 +53,10 @@ export default class HistoryItem extends Vue {
 
   get asset() {
     return this.token.symbol;
+  }
+
+  get isSora() {
+    return isSora(this.network);
   }
 
   get date() {
@@ -69,7 +72,7 @@ export default class HistoryItem extends Vue {
   }
 
   get value() {
-    const values = getHistoryValue(this.historyElement, this.token.assetId, this.network, this.address);
+    const values = getHistoryValue(this.historyElement, this.token.assetId, this.network, this.address, true);
 
     if (!values) return 0;
 
@@ -77,7 +80,7 @@ export default class HistoryItem extends Vue {
   }
 
   get hash() {
-    if (isSora(this.network)) {
+    if (this.isSora) {
       const element = this.historyElement as SoraHistoryElement;
 
       return this.$t(`history.${element.method}`);
@@ -86,7 +89,7 @@ export default class HistoryItem extends Vue {
     const { transfer, reward, extrinsic } = this.historyElement;
 
     if (this.type === TransactionType.transfer) {
-      const value = this.typeFormatted === 'Incoming' ? transfer!.from : transfer!.to;
+      const value = this.typeFormatted === 'incomingTransfer' ? transfer!.from : transfer!.to;
 
       return cut(value);
     }
@@ -102,6 +105,13 @@ export default class HistoryItem extends Vue {
   get typeFormatted() {
     return getTypeFormatted(this.historyElement, this.address, this.network);
   }
+
+  get tModule() {
+    if (this.typeFormatted === 'incomingTransfer' || this.typeFormatted === 'outgoingTransfer')
+      return this.$t(this.typeFormatted);
+
+    return this.typeFormatted;
+  }
 }
 </script>
 
@@ -110,7 +120,7 @@ export default class HistoryItem extends Vue {
   display: flex;
   margin: 0 16px;
   padding: $default-padding 0;
-  border-bottom: 1px solid $default-background-color;
+  border-bottom: $default-border;
 
   &:hover {
     cursor: pointer;

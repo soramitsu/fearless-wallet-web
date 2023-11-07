@@ -33,7 +33,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import type { WalletConnectSessions } from '@extension-base/services/wallet-connect-service/types';
-import type { AuthUrlInfo } from '@extension-base/background/types';
+import type { AuthUrlInfo } from '@extension-base/background/types/types';
 import WalletConnectAuthItem from '@/screens/walletConnect/WalletConnectAuthItem.vue';
 import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { useStore } from '@/store';

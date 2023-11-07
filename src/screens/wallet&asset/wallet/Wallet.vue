@@ -1,26 +1,22 @@
 <template>
   <div class="wallet">
     <header class="wallet-header">
-      <div class="wallet-balance__container">
-        <WalletBalance
-          class="balance"
-          :balance="summaryTransferableBalance"
-          :changeWalletBalance="changeWalletBalance"
-          :staticWidth="false"
-          @click.native="$emit('openFiatsPopup', true)"
-        />
+      <WalletBalance
+        class="wallet-balance"
+        :balance="summaryTransferableBalance"
+        :changeWalletBalance="changeWalletBalance"
+        :staticWidth="false"
+        @click.native="$emit('openFiatsPopup', true)"
+      />
 
-        <div class="wallet-balance__loading">
-          <Loading :width="28" v-if="showLoadingBalance" />
-        </div>
-      </div>
+      <Loading v-if="showLoadingBalance" :width="28" class="balance-loading" />
     </header>
 
     <SoraCardBanner />
 
     <ContentForm :height="contentFormHeight">
       <div class="content">
-        <ContentSettings
+        <WalletSettings
           :activeTabName="activeTabName"
           :filterValue="filterValue"
           :showAssetsManagementForm="showAssetsManagementForm"
@@ -90,7 +86,7 @@ import type { AsyncFn, Fn, TabWallet } from '@/interfaces';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
-import ContentSettings from '@/screens/wallet&asset/wallet/ContentSettings.vue';
+import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import { accountController } from '@/controllers/accountController';
@@ -107,9 +103,12 @@ import { AssetsPrice } from '@/interfaces';
 import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers/currencies';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance, isNetworkGroup } from '@/helpers/common';
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
+import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
+import { networksIsPending } from '@/helpers/shimmers';
 import BaseApi from '@/util/BaseApi';
 import { fetchEvmBalance } from '@/extension/messaging';
+import { isSameString } from '@/helpers';
 
 @Component({
   components: {
@@ -119,7 +118,7 @@ import { fetchEvmBalance } from '@/extension/messaging';
     ReceiveForm,
     WalletBalance,
     SoraCardBanner,
-    ContentSettings,
+    WalletSettings,
     NetworkManagement,
     NetworkUnavailablePopup,
     GoogleExportPopup,
@@ -131,7 +130,7 @@ export default class Wallet extends Vue {
   showSendForm = false;
   showReceiveForm = false;
   networkUnavailable = '';
-  activeTabName: TabWallet = 'Currencies';
+  activeTabName: TabWallet = 'currencies';
   filterValue = '';
   selectedCurrency!: {
     mainNetwork?: string;
@@ -157,7 +156,7 @@ export default class Wallet extends Vue {
   get contentFormHeight() {
     const subtractionNumber = this.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
 
-    return 452 - subtractionNumber;
+    return CONTENT_FORM_HEIGHT - subtractionNumber;
   }
 
   get showNetworkUnavailablePopup() {
@@ -205,6 +204,11 @@ export default class Wallet extends Vue {
   }
 
   get sortedCurrencies() {
+    const balances =
+      this.selectedWallet.ethereumAddress === ''
+        ? this.balances.filter((el) => !BaseApi.isEthereumNetwork(el.mainNetwork))
+        : this.balances;
+
     const { address } = this.selectedWallet;
 
     if (address === '') return [];
@@ -214,12 +218,16 @@ export default class Wallet extends Vue {
 
     const sequence = accountController.getSequenceAssetsByAddress(address);
 
-    return this.balances.sort((currency1, currency2) => {
+    return balances.sort((currency1, currency2) => {
       const index1 = sequence.indexOf(currency1.assetId);
       const index2 = sequence.indexOf(currency2.assetId);
 
       return index1 - index2;
     });
+  }
+
+  get showShimmers() {
+    return networksIsPending(this.networks, this.selectedNetwork);
   }
 
   get showLoadingBalance() {
@@ -238,15 +246,11 @@ export default class Wallet extends Vue {
   }
 
   get filteredCurrencies() {
-    const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
-    const baseFilter =
-      this.selectedWallet.ethereumAddress === ''
-        ? this.sortedCurrencies.filter((el) => !BaseApi.isEthereumNetwork(el.mainNetwork))
-        : this.sortedCurrencies;
+    const isAllNetworks = isSameString(this.selectedNetwork, ALL_NETWORKS);
 
     const filteredByNetwork = isAllNetworks
-      ? baseFilter
-      : baseFilter.filter(({ balances }) => {
+      ? this.sortedCurrencies
+      : this.sortedCurrencies.filter(({ balances }) => {
           return balances.some((balance) => filterBalanceItemsByNetwork(balance, this.selectedNetwork));
         });
 
@@ -258,7 +262,7 @@ export default class Wallet extends Vue {
   }
 
   get showCurrencies() {
-    return this.activeTabName === 'Currencies';
+    return this.activeTabName === 'currencies';
   }
 
   get showGoogleExportPopup() {
@@ -379,24 +383,16 @@ export default class Wallet extends Vue {
   .wallet-header {
     min-height: 46px;
     display: flex;
-    justify-content: space-between;
     margin-bottom: 10px;
   }
 
-  .wallet-balance__container {
-    display: flex;
-    flex-flow: row;
-    gap: 5px;
+  .balance-loading {
+    margin-left: 10px;
   }
 
-  .wallet-balance__loading {
-    height: 46px;
-  }
-
-  .balance {
+  .wallet-balance {
     font-size: 22px;
     line-height: 28px;
-    max-width: 245px;
   }
 
   .balance-shimmers {

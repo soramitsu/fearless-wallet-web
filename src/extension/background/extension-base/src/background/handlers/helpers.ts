@@ -1,5 +1,3 @@
-// Copyright 2019-2022 @polkadot/extension authors & contributors
-// SPDX-License-Identifier: Apache-2.0
 import { assert } from '@polkadot/util';
 import { canDerive } from '@extension-base/utils/utils';
 import type { InjectedAccount } from '@polkadot/extension-inject/types';
@@ -30,13 +28,6 @@ export function stripUrl(url: string): string {
 
 export function transformAccounts(accounts: SubjectInfo, anyType = false): InjectedAccount[] {
   return Object.values(accounts)
-    .filter(
-      ({
-        json: {
-          meta: { isHidden },
-        },
-      }) => !isHidden
-    )
     .filter(({ type }) => (anyType ? true : canDerive(type)))
     .sort((a, b) => (a.json.meta.whenCreated || 0) - (b.json.meta.whenCreated || 0))
     .map(

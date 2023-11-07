@@ -22,7 +22,9 @@ interface AddressMeta extends Meta {
 
 type ParentAddress = string;
 
-type TabWallet = 'Currencies' | 'NFTs';
+type TabWallet = 'currencies' | 'nft';
+type StakingTab = 'all' | 'my';
+type MyStakingTab = 'about' | 'alerts' | 'history';
 type ImportType = 'mnemonic' | 'rawSeed' | 'json';
 type FilterHistory = 'all' | 'transfer' | 'reward' | 'extrinsic';
 
@@ -52,10 +54,9 @@ enum MenuItems {
   crowdloans = 'Crowdloans',
   staking = 'Staking',
   polkaswap = 'Polkaswap',
-  history = 'History',
 }
 
-type MenuItem = 'Wallet' | 'Crowdloans' | 'Staking' | 'Polkaswap' | 'History';
+type MenuItem = keyof typeof MenuItems;
 
 type FiatJson = {
   id: string;
@@ -127,4 +128,6 @@ export {
   CustomEvent,
   TCallback,
   ChangeWalletBalance,
+  StakingTab,
+  MyStakingTab,
 };

@@ -14,7 +14,10 @@
       :type="type"
     />
 
-    <div v-show="showErrorText" class="error-descriptions">{{ $t(errorDescriptions) }}</div>
+    <div v-show="showErrorText" class="error-descriptions">
+      <Icon v-if="errorWithIcon" icon="warning" className="warning" />
+      {{ $t(errorDescriptions) }}
+    </div>
   </div>
 </template>
 
@@ -36,6 +39,8 @@ export default class ValidatedInput extends Vue {
   @Prop({ default: 'text' }) type!: Type;
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: 'big' }) size!: string;
+  @Prop({ default: false }) errorWithIcon!: string;
+
   @Ref('input') readonly inputComponent!: FInput;
 
   get showErrorText() {
@@ -55,10 +60,20 @@ export default class ValidatedInput extends Vue {
   }
 
   .error-descriptions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
     font-size: 14px;
     color: #ee7700;
     text-align: left;
     margin-top: 15px;
+  }
+  .warning {
+    color: #ee7700;
+    width: 16px;
+    min-width: 16px;
+    height: 16px;
   }
 }
 </style>

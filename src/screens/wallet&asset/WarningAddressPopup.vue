@@ -6,7 +6,7 @@
     :showHeader="false"
     :showAcceptButton="true"
     :showRejectButton="true"
-    :closeBuBackground="false"
+    :closeByBackground="false"
     :headers="headers"
     @handlerClose="$emit('handlerClose')"
     @handlerAccept="$emit('handlerAccept')"

@@ -42,14 +42,14 @@
       @closeSelectWalletPopup="setSelectWalletPopupVisible"
     />
 
-    <!-- <Menu /> -->
+    <Menu />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import Header from './Header.vue';
-// import Menu from './Menu.vue';
+import Menu from './Menu.vue';
 import SelectWalletPopup from './SelectWalletPopup.vue';
 import WalletDetailsPopup from './WalletDetailsPopup.vue';
 import SettingsPopup from './SettingsPopup.vue';
@@ -60,7 +60,7 @@ import ManageAuths from '@/screens/extension-ui/ManageAuths.vue';
 
 @Component({
   components: {
-    // Menu,
+    Menu,
     Header,
     FiatsPopup,
     AboutPopup,

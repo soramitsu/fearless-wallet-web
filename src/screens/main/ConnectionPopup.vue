@@ -4,7 +4,7 @@
     sizeWidth="big"
     :showBorder="true"
     :headerText="activeTabName"
-    :closeBuBackground="true"
+    :closeByBackground="true"
     zIndex="299"
     @handlerClose="$emit('handlerClose')"
   >
@@ -16,7 +16,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { ActiveTabAuthorizeStatus } from '@extension-base/background/types';
+import { ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
 
 @Component
 export default class ConnectionPopup extends Vue {

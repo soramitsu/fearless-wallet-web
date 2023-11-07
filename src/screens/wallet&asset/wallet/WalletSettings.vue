@@ -52,7 +52,7 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { TabWallet } from '@/interfaces/common';
 import type { SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 interface TabsOptions {
@@ -68,7 +68,7 @@ export default class ContentSettings extends Vue {
   readonly tabsOptions: TabsOptions[] = [
     {
       label: 'wallet.currencies',
-      tabName: 'Currencies',
+      tabName: 'currencies',
       tooltipText: 'wallet.fungibleTokens',
       classes: 'currencies-tab',
       target: '.currencies-tab',
@@ -76,7 +76,7 @@ export default class ContentSettings extends Vue {
   ];
 
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;
-  @PropSync('filterValue', { type: String }) syncedFilterValue!: TabWallet;
+  @PropSync('filterValue', { type: String }) syncedFilterValue!: string;
   @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
   @Prop(Array) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -99,7 +99,7 @@ export default class ContentSettings extends Vue {
   }
 
   get isCurrenciesTab() {
-    return this.syncedActiveTabName === 'Currencies';
+    return this.syncedActiveTabName === 'currencies';
   }
 
   openTab(name: TabWallet) {

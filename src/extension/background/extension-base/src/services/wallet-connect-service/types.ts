@@ -1,7 +1,7 @@
 import { SignerPayloadJSON } from '@polkadot/types/types';
 import { EngineTypes, SignClientTypes, SessionTypes } from '@walletconnect/types';
 import { EvmSendTransactionParams } from '../../api/evm/types/ether';
-import { Resolver } from '../../background/types';
+import { Resolver } from '../../background/types/types';
 
 //TODO refactoring types
 type BaseWalletConnectSessionRequest = {
@@ -9,6 +9,7 @@ type BaseWalletConnectSessionRequest = {
   isInternal?: boolean;
   url: string;
 };
+
 export interface WalletConnectSessionRequest extends BaseWalletConnectSessionRequest {
   request: SignClientTypes.EventArguments['session_proposal'];
   isPasswordRequired?: boolean;
@@ -72,6 +73,14 @@ export enum EIP155_SIGNING_METHODS {
   ETH_SEND_RAW_TRANSACTION = 'eth_sendRawTransaction',
   ETH_SEND_TRANSACTION = 'eth_sendTransaction',
 }
+export const SIGNATURE_METHODS = [
+  EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA,
+  EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V1,
+  EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3,
+  EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4,
+  EIP155_SIGNING_METHODS.PERSONAL_SIGN,
+  EIP155_SIGNING_METHODS.ETH_SIGN,
+];
 
 export enum POLKADOT_SIGNING_METHODS {
   POLKADOT_SIGN_TRANSACTION = 'polkadot_signTransaction',

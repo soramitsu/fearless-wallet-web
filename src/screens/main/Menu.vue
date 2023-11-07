@@ -19,14 +19,15 @@ import { firstCharToUp } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 
-type MenuItemType = 'wallet' | 'crowdloans' | 'staking' | 'polkaswap' | 'history';
+type MenuItemType = 'wallet' | 'crowdloans' | 'staking' | 'polkaswap';
 
 @Component({
   components: { MenuItem },
 })
 export default class Menu extends Vue {
-  walletItems = [Components.Accounts, Components.Export, Components.Nodes];
-  menuItems: MenuItemType[] = ['wallet', 'crowdloans', 'staking', 'polkaswap', 'history'];
+  walletItems: string[] = [Components.Accounts, Components.Export, Components.Nodes];
+  stakingItems: string[] = [Components.MyStake];
+  menuItems: MenuItemType[] = ['wallet', 'staking', 'crowdloans', 'polkaswap'];
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
@@ -36,13 +37,25 @@ export default class Menu extends Vue {
     return route;
   }
 
-  checkActive(menuItem: MenuItemType) {
-    const isHighlightWalletItem = this.walletItems.includes(this.$route.name as any);
+  get routeName() {
+    return this.$route.name as string;
+  }
 
-    return (
-      menuItem.toLowerCase() === this.currentRouteName ||
-      (menuItem === 'wallet' && (this.$route.params.assetId !== undefined || isHighlightWalletItem))
-    );
+  checkActive(menuItem: MenuItemType) {
+    if (menuItem === 'wallet') {
+      const isHighlightWalletItem = this.walletItems.includes(this.routeName);
+      const haveAssetId = this.$route.params.assetId !== undefined;
+
+      if (isHighlightWalletItem || haveAssetId) return true;
+    }
+
+    if (menuItem === 'staking') {
+      const isHighlightWalletItem = this.stakingItems.includes(this.routeName);
+
+      if (isHighlightWalletItem) return true;
+    }
+
+    return menuItem.toLowerCase() === this.currentRouteName;
   }
 
   clickMenuItem(menuItem: MenuItemType) {
@@ -70,7 +83,7 @@ export default class Menu extends Vue {
 <style lang="scss" scoped>
 .menu {
   display: flex;
-  min-height: 60px;
+  min-height: 70px;
   justify-content: space-around;
   align-items: center;
   user-select: none;

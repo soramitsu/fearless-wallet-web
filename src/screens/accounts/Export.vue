@@ -29,53 +29,50 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { SelectedWallet } from '@/store';
+<script lang="ts" setup>
+import { computed, ref, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router/composables';
+import { useStore, type SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { validatePassword } from '@/extension/messaging';
 
-@Component
-export default class Export extends Vue {
-  password = '';
-  isWrongPassword = false;
+const emit = defineEmits(['setPassword']);
+const store = useStore();
+const route = useRoute();
+const router = useRouter();
 
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+const password = ref('');
+const isWrongPassword = ref(false);
 
-  get network() {
-    return this.$route.params.network;
-  }
+watch(password, () => {
+  isWrongPassword.value = false;
+});
 
-  get noEthereumAccount() {
-    return this.selectedWallet.ethereumAddress === '' && BaseApi.isEthereumNetwork(this.network);
-  }
+const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+const network = computed(() => route.params.network);
 
-  get warningText() {
-    return this.noEthereumAccount ? 'accounts.notEthereumAccount' : 'accounts.exportWarning';
-  }
+onMounted(() => {
+  if (selectedWallet.value.isMobile) router.back();
+});
 
-  mounted() {
-    if (this.selectedWallet.isMobile) this.$router.back();
-  }
+const noEthereumAccount = computed(
+  () => selectedWallet.value.ethereumAddress === '' && BaseApi.isEthereumNetwork(network.value)
+);
 
-  @Watch('password')
-  filter() {
-    this.isWrongPassword = false;
-  }
+const warningText = computed(() => {
+  return noEthereumAccount.value ? 'accounts.notEthereumAccount' : 'accounts.exportWarning';
+});
 
-  async checkPassword() {
-    const addressByNetwork = BaseApi.formatAddress(this.selectedWallet, this.network);
-    const validatePass = await validatePassword(addressByNetwork, this.password);
+const checkPassword = async () => {
+  const addressByNetwork = BaseApi.formatAddress(selectedWallet.value, network.value);
+  const validatePass = await validatePassword(addressByNetwork, password.value);
 
-    this.isWrongPassword = !validatePass;
+  isWrongPassword.value = !validatePass;
 
-    if (this.isWrongPassword) return;
+  if (isWrongPassword.value) return;
 
-    this.$emit('setPassword', this.password);
-  }
-}
+  emit('setPassword', password.value);
+};
 </script>
 
 <style lang="scss" scoped>

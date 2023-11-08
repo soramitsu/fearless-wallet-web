@@ -27,7 +27,7 @@
         <div class="asset-logo">
           <div class="hr"></div>
 
-          <div class="background-circle" :style="circleStyles">
+          <div class="background-circle">
             <ExternalLogo v-if="currency" :name="currency.icon" :width="87" />
           </div>
 

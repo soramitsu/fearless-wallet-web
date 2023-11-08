@@ -4,6 +4,7 @@ import { BehaviorSubject } from 'rxjs';
 import { createSubscription } from '@extension-base/background/handlers/subscriptions';
 
 import {
+  DEFAULT_LOGGER,
   PROJECT_ID_EXTENSION,
   WALLET_CONNECT_DAPP_CONFIG,
   WALLET_CONNECT_METADATA,
@@ -13,11 +14,9 @@ import WalletConnectStorage from '@extension-base/services/wallet-connect-servic
 import type State from '@extension-base/background/handlers/State';
 import type { SessionTypes } from '@walletconnect/types';
 import type { AppSessionInitResponse } from './dappTypes';
-import type { KeyringService } from '@extension-base/services/keyring-service';
 import type { Port } from '@extension-base/background/types/types';
 
 export default class WalletConnectDAppService {
-  keyringService: KeyringService;
   state: State;
   private app: UniversalProvider | undefined;
 
@@ -26,8 +25,7 @@ export default class WalletConnectDAppService {
     AppSessionInitResponse | undefined
   >(undefined);
 
-  constructor(keyringService: KeyringService, state: State) {
-    this.keyringService = keyringService;
+  constructor(state: State) {
     this.state = state;
     this.initApp().catch(console.error);
   }
@@ -36,12 +34,10 @@ export default class WalletConnectDAppService {
     this.app = await UniversalProvider.init({
       projectId: PROJECT_ID_EXTENSION,
       metadata: WALLET_CONNECT_METADATA,
+      logger: DEFAULT_LOGGER,
       storage: new WalletConnectStorage(),
     });
-    this.app.on('auth_response', (data: unknown) => {
-      console.info(data);
-    });
-    this.app.cleanupPendingPairings();
+
     this.setListeners();
   }
 
@@ -50,10 +46,20 @@ export default class WalletConnectDAppService {
   }
 
   private setListeners() {
-    // this.app?.client.pairing.core.on('pairing_expire', this.onPairingExpire);
-    // this.app?.client.on('session_update', this.onSessionUpdate);
+    this.app?.client.pairing.core.on('pairing_expire', this.onPairingExpire);
+    this.app?.client.on('session_update', this.onSessionUpdate);
+    this.app?.client.on('session_event', (data: any) => {
+      console.info(data, 'session_event');
+    });
+    this.app?.client.on('session_ping', ({ id, topic }: { id: number; topic: string }) => {
+      console.info('EVENT', 'session_ping');
+      console.info(id, topic);
+    });
+    this.app?.client.on('session_delete', ({ id, topic }: { id: number; topic: string }) => {
+      console.info('EVENT', 'session_deleted');
+      console.info(id, topic);
+    });
   }
-
   updateSessions() {
     // this.sessionSubject.next(this.sessions);
   }
@@ -71,6 +77,8 @@ export default class WalletConnectDAppService {
     }
 
     const pairing = await this.app?.client.connect(WALLET_CONNECT_DAPP_CONFIG);
+    this.setListeners();
+
     this.pairingSubject.next(pairing);
   }
 
@@ -79,6 +87,10 @@ export default class WalletConnectDAppService {
     const pairingSubscription = this.pairingSubject.subscribe({
       next: (rs) => {
         cb(rs?.uri);
+        rs?.approval().then((data: SessionTypes.Struct) => {
+          console.info(this);
+          this.onApproval(data);
+        });
       },
     });
 
@@ -94,11 +106,17 @@ export default class WalletConnectDAppService {
   }
 
   onApproval(data: SessionTypes.Struct) {
+    console.info(data, 'PAYLOAD');
     const [, , address] = data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].accounts[0].split(':');
-    const encodedAddress = this.keyringService.encodeAddress(address);
+    const encodedAddress = this.state.keyringService.encodeAddress(address);
+    console.info(address, this.state.keyringService.getAllAccounts());
 
-    if (this.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress))
-      this.keyringService.saveAddress(encodedAddress, { name: data.peer.metadata.name, isMobile: true }, 'address');
+    if (!this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress))
+      this.state.keyringService.saveAddress(
+        encodedAddress,
+        { name: data.peer.metadata.name, isMobile: true },
+        'address'
+      );
   }
 
   disconnect(topic: string) {
@@ -110,12 +128,12 @@ export default class WalletConnectDAppService {
   }
 
   onResponse() {
-    // console.log(data, 'PAIRING');
+    // console.info(data, 'PAIRING');
   }
 
   // onPairingDelete() {
   //   this.app?.client.pairing.core.on('pairing_delete', ({ id, topic }) => {
-  //     console.log(id, topic);
+  //     console.info(id, topic);
   //     // clean up after the pairing for `topic` was deleted.
   //   });
   // }

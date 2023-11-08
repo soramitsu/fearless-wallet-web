@@ -66,7 +66,7 @@ export const WALLET_CONNECT_SUPPORTED_METHODS: WalletConnectSigningMethod[] = [
 ];
 
 export const WALLET_CONNECT_REQUEST_KEY = 'wallet-connect';
-
+export const DEFAULT_LOGGER = 'debug';
 export const WALLET_CONNECT_EIP155_NAMESPACE = 'eip155';
 export const WALLET_CONNECT_POLKADOT_NAMESPACE = 'polkadot';
 export const WALLET_CONNECT_SUPPORT_NAMESPACES: string[] = [

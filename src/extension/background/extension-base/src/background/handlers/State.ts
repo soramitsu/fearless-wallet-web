@@ -155,7 +155,7 @@ export default class State {
   public networkService = new NetworkService(this.eventService);
   public requestService = new RequestService(this, this.networkService);
   public walletConnectService = new WalletConnectService(this, this.requestService);
-  public walletConnectDappService = new WalletConnectDAppService(this.keyringService, this);
+  public walletConnectDappService = new WalletConnectDAppService(this);
 
   public soraCardService = new SoraCardService(this.requestService);
   public onboardingService = new OnboardingService();

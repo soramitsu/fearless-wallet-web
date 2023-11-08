@@ -20,12 +20,16 @@
       </div>
     </div>
 
-    <ValidatorItem
-      v-for="validator in filteredValidators"
-      :key="validator.address"
-      :validator="validator"
-      @onSelect="onSelect"
-    />
+    <Scroll>
+      <div class="validators-items">
+        <ValidatorItem
+          v-for="validator in filteredValidators"
+          :key="validator.address"
+          :validator="validator"
+          @onSelect="onSelect"
+        />
+      </div>
+    </Scroll>
   </div>
 </template>
 
@@ -33,9 +37,10 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { SelectionValidator } from '@/interfaces';
 import ValidatorItem from '@/screens/staking/myStake/validators/ValidatorItem.vue';
+import Scroll from '@/components/Scroll.vue';
 
 @Component({
-  components: { ValidatorItem },
+  components: { ValidatorItem, Scroll },
 })
 export default class SelectValidator extends Vue {
   filterValue = '';
@@ -107,6 +112,10 @@ export default class SelectValidator extends Vue {
 
   .validators {
     text-transform: lowercase;
+  }
+
+  .validators-items {
+    height: 320px;
   }
 
   .settings {

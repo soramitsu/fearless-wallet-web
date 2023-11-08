@@ -2,6 +2,8 @@
   <div :class="internalRowClasses" v-on="$listeners">
     <div class="label">
       <slot></slot>
+
+      <Icon v-if="icon" :icon="icon" class="icon-info" :class="iconClasses" />
     </div>
 
     <div v-if="value" :class="valueClasses">
@@ -10,8 +12,6 @@
           <Loading v-if="isLoading" />
 
           <span v-else>{{ value }}</span>
-
-          <Icon v-if="icon" :icon="icon" class="icon-info" :class="iconClasses" />
         </div>
 
         <div v-if="price" class="price">

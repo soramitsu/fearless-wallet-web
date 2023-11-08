@@ -189,7 +189,6 @@
     "addWallet": "Add wallet",
     "networkUnavailable": "Network is unavailable",
     "networkUnavailableSubtext": "The network is unavailable, you can wait or ask a question to the community",
-    "nothingFound": "Nothing found",
     "googleExportSuccess": "The secret data has been successfully saved on Google Drive"
   },
   "assets": {
@@ -683,7 +682,7 @@
     "invalidPassword": "Incorrect password",
     "password": "Password",
     "max": "max",
-    "min": "min",
+    "min": "Min",
     "networkManagement": "Network management",
     "fullScreen": "Full screen mode",
     "manageDApp": "Manage dApp access",
@@ -732,6 +731,7 @@
     "twitter": "Twitter",
     "areYouSure": "Are you sure?",
     "searchByAddress": "Search by address or name",
-    "networks": "Networks"
+    "networks": "Networks",
+    "nothingFound": "Nothing found"
   }
 }

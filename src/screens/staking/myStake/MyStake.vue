@@ -58,7 +58,7 @@
               :network="network"
             />
 
-            <Alerts v-else-if="isAlerts" :alerts="alerts" />
+            <Alerts v-else-if="isAlerts" :alerts="alerts" @openForm="openForm" />
 
             <History
               v-else-if="isHistory"
@@ -315,6 +315,8 @@ export default class MyStake extends Vue {
   }
 
   openForm(field: ShowField) {
+    console.log('field', field);
+
     this[field] = true;
   }
 

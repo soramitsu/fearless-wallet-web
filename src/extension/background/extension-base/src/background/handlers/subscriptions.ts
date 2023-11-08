@@ -197,7 +197,7 @@ export class FWSubscription {
   ) {
     console.info(`Start balance sub for: ${address}${isFirstRun ? `; isFirstRun: ${true}` : ''}`);
 
-    if (isFirstRun) this.state.generateDefaultBalance(address);
+    if (isFirstRun) this.state.balanceService.generateDefaultBalance(address);
 
     this.state.fetchEvmBalance(newEvmNetworks, ethereumAddress);
 

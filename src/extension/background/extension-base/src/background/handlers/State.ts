@@ -19,22 +19,15 @@ import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import { storage } from '@extension-base/stores/Storage';
 import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
-import BalanceService from '@extension-base/shared/balanceService';
 import { initWeb3Api } from '@extension-base/api/evm';
 import PriceStore from '@extension-base/stores/Price';
 import { getTokenPrice } from '@extension-base/utils/coingecko';
 import { getCurrentProvider, getId } from '@extension-base/utils/utils';
 import { initApi } from '@extension-base/api/substrate/api';
 import { axios } from '@extension-base/utils/axios';
-import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
-import {
-  getMockCurrencies,
-  getSubstrateAddress,
-  isEthereumNetwork,
-  isRequireEvmAPI,
-} from '@extension-base/background/utils/utils';
+import { isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
@@ -50,6 +43,7 @@ import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAc
 import { fetchEvmAssetBalance } from '../../api/evm/balance';
 import { REFRESH_TIME } from '../../api/evm/utils/eth';
 import WalletConnectDAppService from '../../services/wallet-connect-service/dapp';
+import BalanceService from '../../services/balance-service';
 import type {
   AuthUrls,
   Resolver,
@@ -61,17 +55,14 @@ import type {
   Port,
   IState,
   ActiveTabAuthorizeStatus,
-  BalanceMap,
   Providers,
-  ResponseTotalBalances,
   RequestAuthorizeCancel,
   ApiProps,
-  BalanceJson,
   RequestAccountExportPrivateKey,
   ResponseAccountExportPrivateKey,
   EvmApiMap,
 } from '@extension-base/background/types/types';
-import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
+import type { CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import type { ChainRegistry, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
@@ -79,12 +70,9 @@ import type { HexString } from '@polkadot/util/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
-import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
-export const cacheRegistryMap: Record<string, ChainRegistry> = {};
-
 import { EXTENSION_ID } from '@/consts/global';
-import { isSameString } from '@/helpers';
+
+export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
 type APIs = {
   evm: EvmApiMap;
@@ -149,14 +137,11 @@ export default class State {
   public networkMapSubject = new Subject<Record<string, NetworkJson>>();
   public selectedNetworks: Record<string, string> = {};
   public serviceInfoSubject = new Subject<ServiceInfo>();
-  public balanceMap: BalanceMap = {};
-  public balanceSubject = new Subject<BalanceJson>();
   public customTokenState: CustomTokenJson = { erc20: [] };
   public customTokenSubject = new Subject<CustomTokenJson>();
   public customTokenStore = new CustomTokenStore();
   public mobileSignRequests: Record<string, MobileSignRequest> = {};
   public readonly mobileSignSubject = new BehaviorSubject<MobileSigningRequest[]>([]); //TODO MOVE TO. IT's ON HANDLER
-  public balanceService = new BalanceService();
   public lazyMap: Record<string, unknown> = {};
   public soraFees: SoraFees = {} as SoraFees;
   public ready = false;
@@ -175,6 +160,7 @@ export default class State {
   public soraCardService = new SoraCardService(this.requestService);
   public onboardingService = new OnboardingService();
   public stakingService = new StakingService(this);
+  public balanceService = new BalanceService(this);
 
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
@@ -745,9 +731,9 @@ export default class State {
   }
 
   public async publishBalance() {
-    const balance = await this.getBalance();
+    const balance = await this.balanceService.getBalance();
 
-    return this.balanceSubject.next(balance);
+    return this.balanceService.updateBalance(balance);
   }
 
   public async prepNetworkJson() {
@@ -811,7 +797,7 @@ export default class State {
       this.networkMap[key].active = isExists;
     });
 
-    this.getSubstrateAccounts().forEach(({ address }) => this.generateDefaultBalance(address));
+    this.getSubstrateAccounts().forEach(({ address }) => this.balanceService.generateDefaultBalance(address));
     this.ready = true; //Set true if chain json is parsed and data is preped for init apis
   }
 
@@ -889,65 +875,6 @@ export default class State {
     return this.priceStore.subject;
   }
 
-  public async updateXorTotalBalance(muchTotal: FPNumber): Promise<void> {
-    const currentAccount = await this.currentAccount;
-
-    if (!currentAccount) return;
-
-    const { address } = currentAccount;
-
-    const currencyIndex = this.balanceMap[address].findIndex(({ assetId }) => assetId === SORA_XOR_ASSET_ID);
-
-    const token = this.balanceMap[address][currencyIndex];
-    const index = token.balances.findIndex(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
-
-    this.balanceMap[address][currencyIndex].balances[index].muchTotal = muchTotal.toString();
-  }
-
-  public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
-    const { reserved, free, locked, frozen, total, transferable, state, id, relayChain, symbol } = item;
-    const accountAddress = getSubstrateAddress(address, this);
-    const balancesByAddress = this.balanceMap[accountAddress];
-
-    const currencyIndex = balancesByAddress.findIndex(
-      ({ assetId: _assetId, symbol: _symbol, relayChain: _relayChain }) => {
-        const isExistingAssetId = _assetId === id;
-        const isExistingDisplayName = _symbol === symbol;
-        const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
-
-        return isExistingAssetId || isExistingAsset;
-      }
-    );
-
-    if (currencyIndex === -1) throw new Error(`Failed to find ${symbol} on ${networkKey}`);
-
-    const asset = balancesByAddress[currencyIndex];
-
-    const assetIndex = asset.balances.findIndex(({ name }) => {
-      const key = PREP_NETWORKS_NAME[name] ?? name;
-
-      return isSameString(key, networkKey);
-    });
-
-    const balanceItem = asset.balances[assetIndex];
-
-    asset.balances[assetIndex] = {
-      ...balanceItem,
-      reserved,
-      free,
-      locked,
-      frozen,
-      total,
-      transferable,
-      state: state!,
-      timestamp: +new Date(),
-    };
-
-    this.updateBalanceStore(networkKey, item);
-
-    this.lazyNext('setBalanceItem', () => this.publishBalance());
-  }
-
   public getNetworkGenesisHashByKey(key: string) {
     const network = this.networkMap[key];
 
@@ -982,7 +909,7 @@ export default class State {
     try {
       const subscription = apiSora.assets
         .getTotalXorBalanceObservable()
-        .subscribe((xorTotalBalance: FPNumber) => this.updateXorTotalBalance(xorTotalBalance));
+        .subscribe((xorTotalBalance: FPNumber) => this.balanceService.updateXorTotalBalance(xorTotalBalance));
 
       this.subscription.updateSubscription({ name: 'xorTotalBalance', func: subscription.unsubscribe });
     } catch (ex) {
@@ -990,26 +917,11 @@ export default class State {
     }
   }
 
-  private updateBalanceStore(networkKey: string, item: Partial<BalanceItem>) {
-    this.getCurrentAccount((currentAccountInfo) => {
-      if (currentAccountInfo)
-        this.balanceService
-          .updateBalanceStore(networkKey, currentAccountInfo.address, item)
-          .catch((e) => console.warn(e));
-    });
-  }
-
   public getSubstrateAccounts() {
     const accounts = this.keyringService.getAccounts().filter((el) => !isEthereumAddress(el.address));
     const addresses = this.keyringService.getAddresses();
 
     return [...accounts, ...addresses];
-  }
-
-  public generateDefaultBalance(address: string) {
-    if (address === '') return;
-
-    if (this.balanceMap?.[address] === undefined) this.balanceMap[address] = getMockCurrencies(this.networksJson);
   }
 
   public accountExportPrivateKey({
@@ -1033,46 +945,7 @@ export default class State {
     };
   }
 
-  async getTotalBalances(): Promise<ResponseTotalBalances[]> {
-    return new Promise<ResponseTotalBalances[]>((res) =>
-      this.getPrice((prices) => {
-        const balances: BalanceMap = { ...this.balanceMap };
-
-        const totalBalances = Object.keys(balances).map((address) => {
-          const total = getSummaryTransferableWalletBalance(
-            address,
-            balances[address],
-            prices,
-            ALL_NETWORKS,
-            this.networksJson
-          );
-
-          const change = getChangeWalletBalance(balances[address], prices, ALL_NETWORKS);
-
-          return {
-            address,
-            total,
-            change,
-          };
-        });
-
-        res(totalBalances);
-      })
-    );
-  }
-
-  public async getBalance(): Promise<BalanceJson> {
-    const account = await this.currentAccount;
-
-    if (account)
-      return new Promise((resolve) => {
-        resolve({ details: this.balanceMap[account.address] ?? [] });
-      });
-
-    return { details: [] };
-  }
-
-  private lazyNext = (key: string, callback: () => void) => {
+  public lazyNext = (key: string, callback: () => void) => {
     if (this.lazyMap[key]) clearTimeout(this.lazyMap[key] as number);
 
     const lazy = setTimeout(() => {

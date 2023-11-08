@@ -1,6 +1,13 @@
 <template>
   <div class="alerts">
-    <AlertItem v-for="{ name, timespan } in alerts" :key="name" :name="name" :timespan="timespan" />
+    <AlertItem
+      v-for="{ name, timespan, formName } in alerts"
+      :key="name"
+      :name="name"
+      :timespan="timespan"
+      :formName="formName"
+      @openForm="$emit('openForm', $event)"
+    />
   </div>
 </template>
 

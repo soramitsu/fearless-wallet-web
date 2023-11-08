@@ -315,8 +315,6 @@ export default class MyStake extends Vue {
   }
 
   openForm(field: ShowField) {
-    console.log('field', field);
-
     this[field] = true;
   }
 

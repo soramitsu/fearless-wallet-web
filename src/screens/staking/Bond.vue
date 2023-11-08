@@ -20,11 +20,12 @@
             :asset="stakingAssetName"
             :assetId="stakingAssetId"
             :amount="amount"
+            :showIcon="false"
             @update:amount="updateAmount"
             @setMax="setMax"
           />
 
-          <Hint class="hint" iconName="notification" :text="text" />
+          <Hint class="hint" iconName="notification" :text="textMinHint" />
 
           <InputWithIcon
             v-model="payoutAddressCut"
@@ -32,6 +33,8 @@
             placeholder="staking.payoutAccount"
             @click="setPayoutAddress"
           />
+
+          <Hint class="hint" iconName="notification" text="staking.defaultPayout" />
 
           <div class="activity-buttons">
             <BadgeButton text="common.paste" @click="paste" />
@@ -70,9 +73,9 @@
               borderType="default"
             />
 
-            <InfoRow text="accounts.account" :value="selectedAccountName" borderType="default" />
+            <InfoRow text="assets.amount" :value="amountString" borderType="default" :price="amountValueString" />
 
-            <InfoRow text="assets.amount" :value="amount" borderType="default" :price="amountValueString" />
+            <InfoRow text="accounts.account" :value="selectedAccountName" borderType="default" />
 
             <InfoRow
               text="assets.networkFee"
@@ -80,6 +83,7 @@
               icon="info"
               :value="`${fee} ${stakingAssetName}`"
               :price="feeValueString"
+              :isIconPrepend="false"
               :iconClasses="['network-fee']"
             />
           </ContentForm>
@@ -297,7 +301,7 @@ export default class Bond extends Vue {
     return this.selectedWallet.name;
   }
 
-  get text() {
+  get textMinHint() {
     return {
       text: 'staking.minimumStake',
       localeProps: {
@@ -315,6 +319,10 @@ export default class Bond extends Vue {
     const priceId = this.stakingCurrency?.priceId ?? '';
 
     return this.getAssetPrice(priceId).price;
+  }
+
+  get amountString() {
+    return `${this.amount} ${this.stakingAssetName.toUpperCase()}`;
   }
 
   get amountValueString() {

@@ -125,7 +125,7 @@ export interface FWValidatorInfoFull extends ValidatorInfoFull {
   isOversubscribed: boolean;
 }
 
-export type Alert = { name: string; timespan: number };
+export type Alert = { name: string; timespan: number; formName: string };
 
 export type StakingParams = {
   network: NetworkName;

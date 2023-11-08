@@ -187,7 +187,6 @@
     "addWallet": "Добавить кошелек",
     "networkUnavailable": "Сеть недоступна",
     "networkUnavailableSubtext": "Сеть недоступна, можете подождать или задать вопрос сообществу",
-    "nothingFound": "Ничего не найдено",
     "googleExportSuccess": "Ваши приватные данные были успешно сохранены в Google Drive"
   },
   "assets": {
@@ -720,6 +719,7 @@
     "twitter": "Твиттер",
     "areYouSure": "Вы уверены?",
     "searchByAddress": "Поиск по адресу или имени",
-    "networks": "Сети"
+    "networks": "Сети",
+    "nothingFound": "Ничего не найдено"
   }
 }

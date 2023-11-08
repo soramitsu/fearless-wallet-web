@@ -1,12 +1,12 @@
 import { logger as createLogger } from '@polkadot/util';
-import { Logger } from '@polkadot/util/types';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { storage } from '@extension-base/stores/Storage';
 import { Subject } from 'rxjs';
 import { FPNumber } from '@sora-substrate/util';
-import State from '../../background/handlers/State';
-import { getMockCurrencies, getSubstrateAddress } from '../../background/utils/utils';
-import { PREP_NETWORKS_NAME } from '../../const/networks';
+import { getMockCurrencies, getSubstrateAddress } from '@extension-base/background/utils/utils';
+import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
+import type { Logger } from '@polkadot/util/types';
+import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { BalanceMap, BalanceJson, ResponseTotalBalances } from '@extension-base/background/types/types';
 import { SORA_XOR_ASSET_ID, SORA_NETWORK_NAME } from '@/consts/sora';

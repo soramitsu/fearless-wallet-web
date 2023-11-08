@@ -1,6 +1,6 @@
 import PriceStore from '@extension-base/stores/Price';
 import { axios } from '@extension-base/utils';
-import { REFRESH_PRICE_INTERVAL } from '../../const/intervals';
+import { REFRESH_PRICE_INTERVAL } from '@extension-base/const/intervals';
 import type State from '@extension-base/background/handlers/State';
 import type { PriceJson } from '@extension-base/background/types/types';
 

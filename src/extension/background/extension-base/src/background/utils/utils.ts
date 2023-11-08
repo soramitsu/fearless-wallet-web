@@ -109,15 +109,6 @@ export function getNativeAssetName(asset: AssetName) {
   return asset.toLowerCase().replace('xc', '');
 }
 
-export function getTokenBalance(state: State, address: string, assetId: string, relayChain?: string) {
-  // TODO проверить будет ли корерктно работать если заменить на поиск по groupId
-  return state.balanceMap[address].find(
-    (balance) =>
-      balance.balances.some(({ id }) => id === assetId) &&
-      balance.relayChain?.toLowerCase() === relayChain?.toLowerCase()
-  )!;
-}
-
 export function getBalanceItem(balances: BalanceItem[], network: string) {
   return balances.find((balance) => balance.name.toLowerCase() === network.toLowerCase());
 }

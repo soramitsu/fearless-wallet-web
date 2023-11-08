@@ -1,20 +1,20 @@
 import UniversalProvider from '@walletconnect/universal-provider';
 import { getInternalError } from '@walletconnect/utils';
-import { SessionTypes } from '@walletconnect/types';
 import { BehaviorSubject } from 'rxjs';
-import { KeyringService } from '../keyring-service';
-import { createSubscription } from '../../background/handlers/subscriptions';
-import State from '../../background/handlers/State';
+import { createSubscription } from '@extension-base/background/handlers/subscriptions';
 
-import { Port } from '../../background/types/types';
 import {
   PROJECT_ID_EXTENSION,
   WALLET_CONNECT_DAPP_CONFIG,
   WALLET_CONNECT_METADATA,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
-} from './consts';
-import WalletConnectStorage from './storage';
-import { AppSessionInitResponse } from './dappTypes';
+} from '@extension-base/services/wallet-connect-service/consts';
+import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
+import type State from '@extension-base/background/handlers/State';
+import type { SessionTypes } from '@walletconnect/types';
+import type { AppSessionInitResponse } from './dappTypes';
+import type { KeyringService } from '@extension-base/services/keyring-service';
+import type { Port } from '@extension-base/background/types/types';
 
 export default class WalletConnectDAppService {
   keyringService: KeyringService;

@@ -27,7 +27,6 @@ import {
   isRequireEvmAPI,
   uniqueStringArray,
   getBalanceItem,
-  getTokenBalance,
   getEthereumAddress,
 } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
@@ -265,7 +264,7 @@ export default class Extension extends FWExtensionBase {
       storage.set({ selectedNetworks: this.state.selectedNetworks });
     }
 
-    if (this.state.balanceMap[address]) delete this.state.balanceMap[address];
+    this.state.balanceService.deleteBalance(address);
   }
 
   accountsValidatePassword({ address, password }: RequestAccountValidate): boolean {
@@ -530,7 +529,7 @@ export default class Extension extends FWExtensionBase {
   private updateCurrentAccount(address: string, isNew = true): boolean {
     if (isEthereumAddress(address)) return false;
 
-    this.state.generateDefaultBalance(address);
+    this.state.balanceService.generateDefaultBalance(address);
 
     this._saveCurrentAccountAddress(address, () => {
       this.triggerWalletsSubscription();
@@ -734,11 +733,11 @@ export default class Extension extends FWExtensionBase {
   }
 
   private getTotalBalances() {
-    return this.state.getTotalBalances();
+    return this.state.balanceService.getTotalBalances();
   }
 
   private getBalance(): Promise<BalanceJson> {
-    return this.state.getBalance();
+    return this.state.balanceService.getBalance();
   }
 
   private async fetchEvmBalance() {
@@ -748,7 +747,7 @@ export default class Extension extends FWExtensionBase {
   private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {
     const cb = createSubscription<'pri(balance.subscription)'>(id, port);
 
-    const balanceSubscription = this.state.balanceSubject.subscribe({
+    const balanceSubscription = this.state.balanceService.balanceSubject.subscribe({
       next: (rs) => {
         cb(rs);
       },
@@ -919,7 +918,7 @@ export default class Extension extends FWExtensionBase {
     const { from, networkKey, to, assetId, relayChain, amount } = request;
     const substrateAddress = getSubstrateAddress(from, this.state);
 
-    const tokenBalance = getTokenBalance(this.state, substrateAddress, assetId, relayChain);
+    const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
     const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
 
     let fee = '0';
@@ -964,7 +963,7 @@ export default class Extension extends FWExtensionBase {
 
     const substrateAddress = getSubstrateAddress(from, this.state);
     const ethereumAddress = getEthereumAddress(from, this.state);
-    const tokenBalance = getTokenBalance(this.state, substrateAddress, assetId, relayChain);
+    const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
     const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
 
     const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
@@ -1053,7 +1052,7 @@ export default class Extension extends FWExtensionBase {
     if (destinationNet === '') return { estimateFee: '0', destEstimateFee: '0' };
 
     const substrateAddress = getSubstrateAddress(from, this.state);
-    const tokenBalance = getTokenBalance(this.state, substrateAddress, assetId, relayChain);
+    const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
 
     const [fee, crossChainFee] = await estimateCrossChainFee(
       assetId,
@@ -1099,7 +1098,7 @@ export default class Extension extends FWExtensionBase {
 
     const substrateAddress = getSubstrateAddress(from, this.state);
     const ethereumAddress = getEthereumAddress(from, this.state);
-    const tokenBalance = getTokenBalance(this.state, substrateAddress, assetId, relayChain);
+    const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
     const savePass = () => this.savePass(substrateAddress, ethereumAddress, !!isSavePass, !!isMobile);

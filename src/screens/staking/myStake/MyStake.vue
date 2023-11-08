@@ -58,7 +58,7 @@
               :network="network"
             />
 
-            <Alerts v-else-if="isAlerts" :alerts="alerts" />
+            <Alerts v-else-if="isAlerts" :alerts="alerts" @openForm="openForm" />
 
             <History
               v-else-if="isHistory"

@@ -17,7 +17,7 @@ type Props = {
 const props = withDefaults(defineProps<Props>(), { isActive: false });
 
 const iconClass = ['menu-icon'];
-const localeName = ref(`menu.${props.name}`);
+const localeName = ref(`menu.${props.name.toLowerCase()}`);
 const menuItemClasses = ref(['menu-item', { active: props.isActive }]);
 const img = ref(props.name.toLowerCase());
 </script>
@@ -45,6 +45,10 @@ const img = ref(props.name.toLowerCase());
     margin-top: 8px;
     font-weight: 600;
     font-size: 13px;
+
+    &::first-letter {
+      text-transform: capitalize;
+    }
   }
 
   .menu-icon {

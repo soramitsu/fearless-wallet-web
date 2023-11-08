@@ -74,7 +74,7 @@ export default class StakingItem extends Vue {
   }
 
   get asset() {
-    return this.networkParams.asset;
+    return this.networkParams.asset.toUpperCase();
   }
 
   get icon() {
@@ -169,7 +169,6 @@ export default class StakingItem extends Vue {
     .min-bond {
       font-size: 12px;
       color: $default-white;
-      text-transform: uppercase;
     }
 
     .values {

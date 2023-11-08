@@ -27,7 +27,7 @@
 
             <div v-else class="select-label">Select</div>
 
-            <Rotate v-if="!readonly" :isActive="syncedIsRotate" class="rotate-asset">
+            <Rotate v-if="showIconRotate" :isActive="syncedIsRotate" class="rotate-asset">
               <SIcon name="chevron-bottom-16" />
             </Rotate>
           </button>
@@ -61,10 +61,15 @@ export default class SelectInput extends Vue {
   @Prop({ default: 0 }) totalAmount!: number;
   @Prop({ default: true }) showBalance!: boolean;
   @Prop({ default: false }) readonly!: boolean;
+  @Prop({ default: true }) showIcon!: boolean;
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+
+  get showIconRotate() {
+    return this.showIcon && !this.readonly;
+  }
 
   get isSelected() {
     return this.inputIsFocused && !this.readonly;

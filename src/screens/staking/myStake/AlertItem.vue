@@ -8,7 +8,7 @@
       <div class="date">{{ date }}</div>
     </div>
 
-    <Icon icon="chevron-right" class="img chevron" />
+    <Icon icon="chevron-right" class="img chevron" @click="click" />
   </div>
 </template>
 
@@ -20,6 +20,7 @@ import { getFormattedDate } from '@/helpers';
 export default class AlertItem extends Vue {
   @Prop({ type: String }) name!: string;
   @Prop({ type: Number }) timespan!: number;
+  @Prop({ type: String }) formName!: string;
 
   get date() {
     return getFormattedDate(this.timespan, 'ms');
@@ -31,6 +32,10 @@ export default class AlertItem extends Vue {
 
   get tDescriptions() {
     return this.$t(`staking.alertsList.${this.name}.text`);
+  }
+
+  click() {
+    this.$emit('openForm', this.formName);
   }
 }
 </script>

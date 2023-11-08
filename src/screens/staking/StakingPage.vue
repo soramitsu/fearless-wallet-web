@@ -29,18 +29,22 @@
           />
 
           <Scroll>
-            <template v-if="isAllTab">
-              <StakingItem
-                v-for="item in stakingItems"
-                :key="item.network"
-                :networkParams="item"
-                @click="updateNetworkBond(item)"
-              />
+            <template v-if="haveFilteredItems">
+              <template v-if="isAllTab">
+                <StakingItem
+                  v-for="item in filteredStakingItems"
+                  :key="item.network"
+                  :networkParams="item"
+                  @click="updateNetworkBond(item)"
+                />
+              </template>
+
+              <template v-else->
+                <MyStakingItem v-for="item in filteredMyStakingItems" :key="item.network" :networkParams="item" />
+              </template>
             </template>
 
-            <template v-else>
-              <MyStakingItem v-for="item in myStakingItems" :key="item.network" :networkParams="item" />
-            </template>
+            <div v-else class="nothing-found">{{ $t('common.nothingFound') }}</div>
           </Scroll>
         </template>
       </div>
@@ -94,6 +98,24 @@ export default class StakingPage extends Vue {
   @Getter(StakingGettersTypes.stakingItems) stakingItems!: NetworkParams[];
   @Getter(StakingGettersTypes.myStakingItems) myStakingItems!: NetworkParams[];
   @Action(StakingActionTypes.GET_STAKING_PARAMS) getStakingParams!: AsyncFn;
+
+  get filteredStakingItems() {
+    if (this.filterValue === '') return this.stakingItems;
+
+    return this.stakingItems.filter(({ network }) => isSameString(network, this.filterValue));
+  }
+
+  get filteredMyStakingItems() {
+    if (this.filterValue === '') return this.myStakingItems;
+
+    return this.myStakingItems.filter(({ network }) => isSameString(network, this.filterValue));
+  }
+
+  get haveFilteredItems() {
+    if (this.isAllTab) return this.filteredStakingItems.length;
+
+    return this.filteredMyStakingItems.length;
+  }
 
   get showLoader() {
     return this.activeTabName === '';
@@ -226,6 +248,13 @@ export default class StakingPage extends Vue {
       align-items: center;
       height: 100%;
     }
+  }
+
+  .nothing-found {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 </style>

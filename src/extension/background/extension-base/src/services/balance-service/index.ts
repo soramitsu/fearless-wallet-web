@@ -127,7 +127,7 @@ export default class BalanceService {
 
   async getTotalBalances(): Promise<ResponseTotalBalances[]> {
     return new Promise<ResponseTotalBalances[]>((res) =>
-      this.state.getPrice((prices) => {
+      this.state.pricesService.getPrice((prices) => {
         const balances: BalanceMap = { ...this.balanceMap };
 
         const totalBalances = Object.keys(balances).map((address) => {

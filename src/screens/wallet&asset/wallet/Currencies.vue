@@ -113,7 +113,7 @@ export default class Currencies extends Vue {
   mainText() {
     if (!navigator.onLine) return 'common.offlineStatus';
 
-    return this.filterValue !== '' ? 'wallet.nothingFound' : 'wallet.allAssetsHidden';
+    return this.filterValue !== '' ? 'common.nothingFound' : 'wallet.allAssetsHidden';
   }
 }
 </script>

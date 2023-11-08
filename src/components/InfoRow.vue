@@ -2,7 +2,8 @@
   <Row
     :value="value"
     :price="price"
-    :icon="iconAppend"
+    :icon="icon"
+    :iconAppend="iconAppend"
     :isLoading="isLoading"
     :borderType="borderType"
     :showBorder="showBorder"
@@ -10,8 +11,6 @@
     :color="color"
     :isIconPrepend="isIconPrepend"
   >
-    <Icon v-if="icon" :icon="icon" class="icon-info" :class="iconClasses" />
-
     {{ $t(text) }}
 
     <slot></slot>

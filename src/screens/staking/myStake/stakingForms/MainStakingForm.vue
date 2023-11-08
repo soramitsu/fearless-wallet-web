@@ -23,7 +23,7 @@
           :asset="stakingAssetName"
           :assetId="stakingAssetId"
           :amount="amount"
-          :readonly="isRedeem"
+          :readonly="true"
           @update:amount="updateAmount"
           @setMax="setMax"
         />

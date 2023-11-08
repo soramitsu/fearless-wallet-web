@@ -242,18 +242,20 @@ export class StakingService {
     const isEmptyElectedValidators = electedValidators.length === 0;
     const isWaitingValidators = waitingValidators.length !== 0;
 
-    if (isRedeem) alerts.push({ name: 'redeem', timespan: Date.now() });
+    if (isRedeem) alerts.push({ name: 'redeem', timespan: Date.now(), formName: 'showRedeemForm' });
 
-    if (isNeedBondExtra) alerts.push({ name: 'bondMoreTokens', timespan: Date.now() });
+    if (isNeedBondExtra) alerts.push({ name: 'bondMoreTokens', timespan: Date.now(), formName: 'showBondExtraForm' });
 
     // Если нет избранных валидаторов
-    if (isEmptyValidators) alerts.push({ name: 'emptyValidators', timespan: Date.now() });
+    if (isEmptyValidators)
+      alerts.push({ name: 'emptyValidators', timespan: Date.now(), formName: 'showYourValidatorsForm' });
     else {
       // Если нет активных валидаторов и нет валидаторов в режиме ожидания(то есть все валидаторы неактивны)
       if (isEmptyElectedValidators && !isWaitingValidators)
-        alerts.push({ name: 'emptyElectedValidators', timespan: Date.now() });
+        alerts.push({ name: 'emptyElectedValidators', timespan: Date.now(), formName: 'showYourValidatorsForm' });
       // Если есть валидаторы в режиме ожидания
-      else if (isWaitingValidators) alerts.push({ name: 'waitingForNextEra', timespan: Date.now() });
+      else if (isWaitingValidators)
+        alerts.push({ name: 'waitingForNextEra', timespan: Date.now(), formName: 'showYourValidatorsForm' });
     }
 
     return alerts;

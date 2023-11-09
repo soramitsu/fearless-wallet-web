@@ -766,20 +766,20 @@ export default class Extension extends FWExtensionBase {
   }
 
   private updateCurrencySymbol(symbol: string) {
-    this.state.setFiatSymbol(symbol);
-    this.state.refreshPrice();
+    this.state.pricesService.setFiatSymbol(symbol);
+    this.state.pricesService.refreshPrice();
   }
 
   private getPrice(): Promise<PriceJson> {
     return new Promise<PriceJson>((resolve) => {
-      this.state.getPrice((rs: PriceJson) => resolve(rs));
+      this.state.pricesService.getPrice((rs: PriceJson) => resolve(rs));
     });
   }
 
   private subscribePrice(id: string, port: chrome.runtime.Port): Promise<PriceJson> {
     const cb = createSubscription<'pri(price.subscription)'>(id, port);
 
-    const priceSubscription = this.state.subscribePrice().subscribe({
+    const priceSubscription = this.state.pricesService.subscribePrice().subscribe({
       next: (rs) => {
         cb(rs);
       },

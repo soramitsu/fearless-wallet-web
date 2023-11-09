@@ -1,3 +1,5 @@
+import { PairingSubjectType } from '@extension-base/services/wallet-connect-service/dappTypes';
+import { NotificationResponse } from '@extension-base/background/types/types';
 import {
   RequestConnectWalletConnect,
   WalletConnectSessionRequest,
@@ -8,8 +10,7 @@ import {
   RequestApproveWalletConnectNotSupport,
   RequestRejectWalletConnectNotSupport,
   WalletConnectTransactionRequest,
-} from '../background/extension-base/src/services/wallet-connect-service/types';
-import { NotificationResponse } from '../background/extension-base/src/background/types/types';
+} from '@extension-base/services/wallet-connect-service/types';
 import { sendMessage } from '.';
 
 export function newConnection(request: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
@@ -75,6 +76,13 @@ export function walletConnectRequestReject(topic: string): Promise<boolean> {
   return sendMessage('pri(walletConnect.request.reject)', { topic });
 }
 
-export function walletConnectDappInitSession(callback: (data?: string) => void): Promise<string | undefined> {
-  return sendMessage('pri(walletConnect.app.subscribePairing)', null, callback);
+export function walletConnectDappSubscribeSession(
+  uri: string,
+  callback: (data: PairingSubjectType) => void
+): Promise<PairingSubjectType> {
+  return sendMessage('pri(walletConnect.app.subscribePairing)', uri, callback);
+}
+
+export function walletConnectDappInitSession(): Promise<string> {
+  return sendMessage('pri(walletConnect.app.pairing)');
 }

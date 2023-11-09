@@ -29,8 +29,6 @@ import {
   getBalanceItem,
   getEthereumAddress,
 } from '@extension-base/background/utils/utils';
-import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
-import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { ProposalTypes, SessionTypes } from '@walletconnect/types';
 import { HexString } from '@polkadot/util/types';
 import { storage } from '@extension-base/stores/Storage';
@@ -63,7 +61,6 @@ import {
   RequestRejectWalletConnectNotSupport,
   EIP155_SIGNING_METHODS,
 } from '@extension-base/services/wallet-connect-service/types';
-import { CurrentAccountInfo, CurrentAccountState } from '../../stores/CurrentAccountStore';
 import {
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
@@ -165,14 +162,10 @@ export default class Extension extends FWExtensionBase {
     return this.state.cancelSubscription(id);
   }
 
-  public updateNetworkForNewWallet(address: string) {
-    this.setActiveNetworks(this.state.selectedNetworks[address] ?? ALL_NETWORKS);
-  }
-
   accountsCreate({ password, suri, type, meta }: RequestAccountCreateSuri): string {
     const address = this.state.keyringService.addAccount(suri, password, { ...meta, isMobile: false }, type);
 
-    if (!isEthereumAddress(address)) this.updateCurrentAccount(address);
+    if (!isEthereumAddress(address)) this.state.updateCurrentAccount(address);
 
     return address;
   }
@@ -250,7 +243,7 @@ export default class Extension extends FWExtensionBase {
       if (accounts.length) account = accounts.find(({ address }) => !isEthereumAddress(address))!;
       else if (addresses.length) account = addresses[0];
 
-      this.updateCurrentAccount(account?.address ?? '');
+      this.state.updateCurrentAccount(account?.address ?? '');
     }
 
     this.cleanupDeletedAccount(address);
@@ -285,9 +278,9 @@ export default class Extension extends FWExtensionBase {
   async addressesSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(addresses.subscribe)'>(id, port);
 
-    const transformedAddresses = transformAccounts(addressesObservable.subject.value, this.state);
+    const transformedAddresses = transformAccounts(this.state.keyringService.addressSubject.value, this.state);
 
-    const subscription = addressesObservable.subject.subscribe((addresses: SubjectInfo): void => {
+    const subscription = this.state.keyringService.addressSubject.subscribe((addresses: SubjectInfo): void => {
       transformAccounts(addresses, this.state).then(cb);
     });
 
@@ -302,9 +295,9 @@ export default class Extension extends FWExtensionBase {
   async accountsSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
 
-    const transformedAccounts = transformAccounts(accountsObservable.subject.value, this.state);
+    const transformedAccounts = transformAccounts(this.state.keyringService.accountSubject.value, this.state);
 
-    const subscription = accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
+    const subscription = this.state.keyringService.accountSubject.subscribe((accounts: SubjectInfo): void => {
       transformAccounts(accounts, this.state).then(cb);
     });
 
@@ -466,8 +459,8 @@ export default class Extension extends FWExtensionBase {
           const isEthereum = isEthereumAddress(address);
 
           if (!isEthereum) {
-            this.updateNetworkForNewWallet(address);
-            this.updateCurrentAccount(address);
+            this.state.updateNetworkForNewWallet(address);
+            this.state.updateCurrentAccount(address);
           }
 
           resolve(address);
@@ -496,51 +489,6 @@ export default class Extension extends FWExtensionBase {
 
       return false;
     }
-  }
-
-  private _saveCurrentAccountAddress(address: string, callback?: (account: CurrentAccountState) => void) {
-    if (address === '') {
-      this.state.setCurrentAccount(null);
-
-      return;
-    }
-
-    const {
-      meta: { isMobile, name, ethereumAddress },
-    } = this.state.keyringService.getAccount(address) ?? this.state.keyringService.getAddress(address)!;
-
-    const accountInfo: CurrentAccountInfo = {
-      address,
-      isMobile: !!(isMobile as boolean),
-      name: name as string,
-      ethereumAddress: (ethereumAddress as string) ?? '',
-    };
-
-    this.state.setCurrentAccount(accountInfo, () => callback?.(accountInfo));
-  }
-
-  private triggerWalletsSubscription(): boolean {
-    const accountsSubject = accountsObservable.subject;
-    const addressSubject = addressesObservable.subject;
-
-    accountsSubject.next(accountsSubject.getValue());
-    addressSubject.next(addressSubject.getValue());
-
-    return true;
-  }
-
-  private updateCurrentAccount(address: string, isNew = true): boolean {
-    if (isEthereumAddress(address)) return false;
-
-    this.state.balanceService.generateDefaultBalance(address);
-
-    this._saveCurrentAccountAddress(address, () => {
-      this.triggerWalletsSubscription();
-
-      if (isNew) this.updateNetworkForNewWallet(address);
-    });
-
-    return true;
   }
 
   signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): boolean {
@@ -1162,7 +1110,7 @@ export default class Extension extends FWExtensionBase {
   private createMobileWallet({ address, meta }: RequestAddressCreate) {
     this.state.keyringService.saveAddress(address, meta, 'address');
 
-    this.updateCurrentAccount(address);
+    this.state.updateCurrentAccount(address);
   }
 
   private subscribeNetworkMap(id: string, port: Port): Record<string, NetworkJson> {
@@ -1579,8 +1527,12 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  private async walletConnectDappPairing(id: string, port: Port) {
-    return this.state.walletConnectDappService.subscribePairing(id, port);
+  private async walletConnectDappSubscribePairing(uri: string, id: string, port: Port) {
+    return this.state.walletConnectDappService.subscribePairing(uri, id, port);
+  }
+
+  private async walletConnectDappPairing() {
+    return this.state.walletConnectDappService.initPairing();
   }
 
   async handle<TMessageType extends MessageTypes>(
@@ -1649,7 +1601,7 @@ export default class Extension extends FWExtensionBase {
         return this.accountsCreate(request as RequestAccountCreateSuri);
 
       case 'pri(accounts.update.current)':
-        return this.updateCurrentAccount(request as string, false);
+        return this.state.updateCurrentAccount(request as string, false);
 
       case 'pri(accounts.update.currentNetwork)':
         return this.setActiveNetworks(request as string);
@@ -1833,7 +1785,10 @@ export default class Extension extends FWExtensionBase {
 
       // WalletConnect mobilewallet
       case 'pri(walletConnect.app.subscribePairing)':
-        return this.walletConnectDappPairing(id, port);
+        return this.walletConnectDappSubscribePairing(request as string, id, port);
+
+      case 'pri(walletConnect.app.pairing)':
+        return this.walletConnectDappPairing();
 
       //OnBoarding
       case 'pri(onboarding.get.stories)':

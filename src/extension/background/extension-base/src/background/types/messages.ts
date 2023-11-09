@@ -7,6 +7,7 @@ import {
   MyStakingInfoResponse,
   MakeStakingRequest,
 } from '../../services/staking-service/types';
+import { PairingSubjectType } from '../../services/wallet-connect-service/dappTypes';
 import type { SessionTypes } from '@walletconnect/types';
 import type {
   BasicTxResponse,
@@ -236,5 +237,6 @@ export interface RequestSignatures {
   //Wallet Connect dApp
   'pri(walletConnect.app.connect)': [null, string];
   'pri(walletConnect.app.disconnect)': [null, string];
-  'pri(walletConnect.app.subscribePairing)': [null, string | undefined, string | undefined];
+  'pri(walletConnect.app.subscribePairing)': [string, PairingSubjectType, PairingSubjectType];
+  'pri(walletConnect.app.pairing)': [null, string];
 }

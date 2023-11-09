@@ -4,9 +4,10 @@ import { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-
 import { keyring } from '@polkadot/ui-keyring';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import State from '@extension-base/background/handlers/State';
+import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
+import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { getSubstrateAddress, isEthereumNetwork } from '../../background/utils/utils';
 import { isSameString } from '@/helpers';
-
 type Wallet = {
   address: string;
   ethereumAddress: string;
@@ -36,6 +37,24 @@ export class KeyringService {
 
   getAddresses() {
     return keyring.getAddresses();
+  }
+
+  get addressSubject() {
+    return addressesObservable.subject;
+  }
+
+  get accountSubject() {
+    return accountsObservable.subject;
+  }
+
+  triggerWalletsSubscription(): boolean {
+    const accountsSubject = accountsObservable.subject;
+    const addressSubject = addressesObservable.subject;
+
+    accountsSubject.next(accountsSubject.getValue());
+    addressSubject.next(addressSubject.getValue());
+
+    return true;
   }
 
   addAccount(suri: string, password: string, meta: KeyringPair$Meta, type?: KeypairType) {

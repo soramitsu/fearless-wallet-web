@@ -39,7 +39,10 @@ import PricesService from '@extension-base/services/prices-service';
 import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
 import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
 import BalanceService from '@extension-base/services/balance-service';
-import CurrentAccountStore, { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import CurrentAccountStore, {
+  CurrentAccountInfo,
+  CurrentAccountState,
+} from '@extension-base/stores/CurrentAccountStore';
 import WalletConnectDAppService from '@extension-base/services/wallet-connect-service/dapp';
 import type {
   AuthUrls,
@@ -814,6 +817,24 @@ export default class State {
     return network && network.genesisHash;
   }
 
+  public updateNetworkForNewWallet(address: string) {
+    this.setActiveNetworks(this.selectedNetworks[address] ?? ALL_NETWORKS);
+  }
+
+  public updateCurrentAccount(address: string, isNew = true): boolean {
+    if (isEthereumAddress(address)) return false;
+
+    this.balanceService.generateDefaultBalance(address);
+
+    this.saveCurrentAccountAddress(address, () => {
+      this.keyringService.triggerWalletsSubscription();
+
+      if (isNew) this.setActiveNetworks(this.selectedNetworks[address] ?? ALL_NETWORKS);
+    });
+
+    return true;
+  }
+
   public setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null, updateNetworks = true): void {
     const cb = () => {
       if (updateNetworks) {
@@ -834,6 +855,27 @@ export default class State {
     };
 
     this.currentAccountStore.set('CurrentAccountInfo', data, cb);
+  }
+
+  public saveCurrentAccountAddress(address: string, callback?: (account: CurrentAccountState) => void) {
+    if (address === '') {
+      this.setCurrentAccount(null);
+
+      return;
+    }
+
+    const {
+      meta: { isMobile, name, ethereumAddress },
+    } = this.keyringService.getAccount(address) ?? this.keyringService.getAddress(address)!;
+
+    const accountInfo: CurrentAccountInfo = {
+      address,
+      isMobile: !!(isMobile as boolean),
+      name: name as string,
+      ethereumAddress: (ethereumAddress as string) ?? '',
+    };
+
+    this.setCurrentAccount(accountInfo, () => callback?.(accountInfo));
   }
 
   public subscribeTotalXorBalance() {

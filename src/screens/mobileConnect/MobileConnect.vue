@@ -23,7 +23,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import PermissionRequestPopup from '@/screens/mobileConnect/PermissionRequestPopup.vue';
-import { walletConnectDappInitSession } from '@/extension/messaging';
+import { walletConnectDappInitSession, walletConnectDappSubscribeSession } from '@/extension/messaging';
 const router = useRouter();
 
 const requestInfo: null = null;
@@ -38,12 +38,14 @@ const permissionRequestDenied = false;
 const qr = ref<string | null>(null);
 
 onMounted(async () => {
-  const res = await walletConnectDappInitSession((data) => {
-    if (data) qr.value = data;
-    else qr.value = null;
-  });
+  const res = await walletConnectDappInitSession();
 
-  if (res) qr.value = res;
+  if (res) {
+    qr.value = res;
+    walletConnectDappSubscribeSession(res, (data) => {
+      console.info(data);
+    });
+  }
 });
 
 const connectionStatus = computed(() => {

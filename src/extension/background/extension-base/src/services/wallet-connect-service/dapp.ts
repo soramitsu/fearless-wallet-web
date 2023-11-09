@@ -13,17 +13,20 @@ import {
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
 import type State from '@extension-base/background/handlers/State';
 import type { SessionTypes } from '@walletconnect/types';
-import type { AppSessionInitResponse } from './dappTypes';
+import type {
+  AppSessionInitResponse,
+  PairingSubjectType,
+} from '@extension-base/services/wallet-connect-service/dappTypes';
 import type { Port } from '@extension-base/background/types/types';
 
 export default class WalletConnectDAppService {
   state: State;
-  private app: UniversalProvider | undefined;
+  private app?: UniversalProvider;
 
   public readonly uriSubject: BehaviorSubject<string> = new BehaviorSubject<string>('');
-  public readonly pairingSubject: BehaviorSubject<AppSessionInitResponse | undefined> = new BehaviorSubject<
-    AppSessionInitResponse | undefined
-  >(undefined);
+  public readonly pairingSubject: BehaviorSubject<Record<string, AppSessionInitResponse>> = new BehaviorSubject<
+    Record<string, AppSessionInitResponse>
+  >({});
 
   constructor(state: State) {
     this.state = state;
@@ -51,10 +54,6 @@ export default class WalletConnectDAppService {
     this.app?.client.on('session_event', (data: any) => {
       console.info(data, 'session_event');
     });
-    this.app?.client.on('session_ping', ({ id, topic }: { id: number; topic: string }) => {
-      console.info('EVENT', 'session_ping');
-      console.info(id, topic);
-    });
     this.app?.client.on('session_delete', ({ id, topic }: { id: number; topic: string }) => {
       console.info('EVENT', 'session_deleted');
       console.info(id, topic);
@@ -70,53 +69,73 @@ export default class WalletConnectDAppService {
     }
   }
 
-  async initPairing() {
-    if (!this.app) {
-      console.info('HAVE TO RECONECT');
-      await this.initApp();
-    }
-
-    const pairing = await this.app?.client.connect(WALLET_CONNECT_DAPP_CONFIG);
-    this.setListeners();
-
-    this.pairingSubject.next(pairing);
+  private updatePairing(key: string, data: AppSessionInitResponse) {
+    this.pairingSubject.next({ ...this.pairingSubject.value, [key]: data });
   }
 
-  public async subscribePairing(id: string, port: Port) {
-    const cb = createSubscription<'pri(walletConnect.app.subscribePairing)'>(id, port);
-    const pairingSubscription = this.pairingSubject.subscribe({
-      next: (rs) => {
-        cb(rs?.uri);
-        rs?.approval().then((data: SessionTypes.Struct) => {
-          console.info(this);
-          this.onApproval(data);
-        });
-      },
-    });
+  async initPairing() {
+    if (!this.app) await this.initApp();
 
-    this.state.createUnsubscriptionHandle(id, pairingSubscription.unsubscribe);
+    const pairing = await this.app?.client.connect(WALLET_CONNECT_DAPP_CONFIG);
+
+    this.setListeners();
+
+    if (!pairing?.uri) throw new Error('uri error');
+    this.updatePairing(pairing.uri, pairing);
+
+    return pairing?.uri;
+  }
+
+  public async subscribePairing(uri: string, id: string, port: Port) {
+    const cb = createSubscription<'pri(walletConnect.app.subscribePairing)'>(id, port);
+
+    this.state.createUnsubscriptionHandle(id, () => {});
 
     port.onDisconnect.addListener((): void => {
       this.state.cancelSubscription(id);
     });
 
-    await this.initPairing();
+    const activePairing = this.pairingSubject.value[uri];
+    if (!activePairing)
+      cb({
+        status: false,
+        message: 'ERROR',
+      });
+
+    activePairing
+      ?.approval()
+      .then((data) => {
+        this.onApproval(data, cb);
+      })
+      .catch(() => {
+        //TODO
+      });
 
     return this.pairingSubject.value?.uri;
   }
 
-  onApproval(data: SessionTypes.Struct) {
-    console.info(data, 'PAYLOAD');
+  onApproval(data: SessionTypes.Struct, cb: (data: PairingSubjectType) => void) {
     const [, , address] = data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].accounts[0].split(':');
     const encodedAddress = this.state.keyringService.encodeAddress(address);
-    console.info(address, this.state.keyringService.getAllAccounts());
 
-    if (!this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress))
+    if (!this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress)) {
       this.state.keyringService.saveAddress(
         encodedAddress,
         { name: data.peer.metadata.name, isMobile: true },
         'address'
       );
+      this.state.updateCurrentAccount(encodedAddress);
+
+      cb({
+        status: true,
+        message: 'all set up',
+      });
+    } else {
+      cb({
+        status: false,
+        message: 'already has this wallet',
+      });
+    }
   }
 
   disconnect(topic: string) {

@@ -163,6 +163,9 @@ export default class CurrencyItem extends Vue {
   }
 
   get assetId() {
+    if (this.assetData.relayChain === 'ethereum' && !isNetworkGroup(this.selectedNetwork))
+      return this.assetData.balances.find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase())?.id;
+
     return this.assetData.assetId;
   }
 
@@ -202,14 +205,6 @@ export default class CurrencyItem extends Vue {
 
   get showShimmers() {
     if (this.showWarning) return false;
-
-    if (!isNetworkGroup(this.selectedNetwork)) {
-      const balance = this.assetData.balances.find(
-        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
-      )!;
-
-      return balance.state === APIItemState.PENDING;
-    }
 
     // Убираем шимммер если баланс загружен хотя бы в одной сети
     return !this.assetData.balances.some(({ state }) => state === APIItemState.READY);
@@ -301,21 +296,24 @@ export default class CurrencyItem extends Vue {
     )
       return;
 
-    if (this.isCurrentNetwork || this.computeActiveNetworks.length === 1)
+    if (this.isCurrentNetwork || this.computeActiveNetworks.length === 1) {
       this.$router.push({
         name: Components.AssetHistory,
         params: {
-          assetId: this.assetId,
+          assetId: this.assetId ?? this.assetData.assetId,
           selectedNetwork: this.redirectNetwork === '' ? this.computeActiveNetworks[0].name : this.redirectNetwork,
         },
       });
-    else
-      this.$router.push({
-        name: Components.AssetNetworks,
-        params: {
-          assetId: this.assetId,
-        },
-      });
+
+      return;
+    }
+
+    this.$router.push({
+      name: Components.AssetNetworks,
+      params: {
+        assetId: this.assetData.assetId,
+      },
+    });
   }
 }
 </script>

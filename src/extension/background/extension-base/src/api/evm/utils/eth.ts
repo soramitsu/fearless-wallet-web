@@ -1,11 +1,12 @@
 import { Contract } from 'ethers';
 import ERC20Contract from '@extension-base/api/evm/helpers/ERC20Contract.json';
-import State from '@extension-base/background/handlers/State';
+import type State from '@extension-base/background/handlers/State';
 
 export const REFRESH_TIME = 30000;
 
 export const getERC20Contract = async (network: string, contractAddress: string, state: State): Promise<Contract> => {
-  const createContract = () => new Contract(contractAddress, ERC20Contract.abi, state.getEvmApiMap[network]);
+  const createContract = () =>
+    new Contract(contractAddress, ERC20Contract.abi, state.getEvmApiMap[network.toLowerCase()]);
 
   if (state.getEvmApiMap[network]) return createContract();
 

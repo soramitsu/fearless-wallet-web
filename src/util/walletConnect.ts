@@ -44,9 +44,8 @@ export const chainNamesFromRequest = (
   if (key === WALLET_CONNECT_EIP155_NAMESPACE) {
     for (const chain of chains) {
       const [, chainId] = chain.split(':');
-      const net = networks.find((el) => {
-        return +el.chainId === +chainId;
-      });
+
+      const net = networks.find((el) => +el.chainId === +chainId);
 
       if (net) names.push({ icon: net.icon, name: net.name, connected: net.active });
       else if (isRequired) {

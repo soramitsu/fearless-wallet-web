@@ -3,6 +3,7 @@ import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
 import type { FetchHistory, AugmentedNetworksContext, ToggleFavorite } from '@/store';
 import type { FiatJson, Network } from '@/interfaces';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import { fetchHistory } from '@/subquery/fetchingHistory';
@@ -58,19 +59,23 @@ const actions: ActionTree<State, State> & Actions = {
     if (!externalApi || !externalApi.history) return;
 
     const { type, url } = externalApi.history;
-    const asset = getUtilityAsset(rootState.account.balances, networkName)!;
+    const isNativeEvm = isRequireEvmAPI(networkName);
+    const balances: TokenBalance[] = rootState.account.balances;
+    const asset = isNativeEvm
+      ? balances.find((el) => el.balances.some((asset) => asset.id === assetId))!
+      : getUtilityAsset(rootState.account.balances, networkName)!;
 
-    const utilityId = isRequireEvmAPI(networkName)
+    const utilityId = isNativeEvm
       ? asset.balances.find((el) => el.name.toLowerCase() === networkName.toLowerCase() && el.isUtility)?.id
       : asset.assetId;
-
-    const isUtility = assetId === utilityId;
+    const isUtility = isNativeEvm ? utilityId !== undefined : assetId === utilityId;
 
     // сейчас эндпоинт истории парсит только историю утилити токена
     // TODO: когда появится история других токенов отрефаткорить данную логику
     if (isUtility && type !== 'etherscan') return;
 
-    const history = await fetchHistory(url, formattedAddress, type, networkName, assetId, isUtility);
+    const { id } = asset.balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
+    const history = await fetchHistory(url, formattedAddress, type, networkName, id, isUtility);
 
     if (history)
       commit(MutationTypes.SET_HISTORY, {

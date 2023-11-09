@@ -7,7 +7,7 @@ import { BehaviorSubject } from 'rxjs';
 import { RequestService } from '..';
 import { storage } from '../../stores/Storage';
 import WalletConnectStorage from './storage';
-import { ALL_WALLET_CONNECT_EVENT, DEFAULT_WALLET_CONNECT_OPTIONS, WALLET_CONNECT_SUPPORTED_METHODS } from './consts';
+import { ALL_WALLET_CONNECT_EVENT, DEFAULT_WALLET_CONNECT_OPTIONS } from './consts';
 import {
   EIP155_SIGNING_METHODS,
   POLKADOT_SIGNING_METHODS,
@@ -158,10 +158,6 @@ export class WalletConnectService {
         .map((namespace) => namespace.chains)
         .flat();
 
-      const methods = Object.values(_namespaces)
-        .map((namespace) => namespace.methods)
-        .flat();
-
       const [requestNamespace] = chainId.split(':');
 
       if (!namespaces.includes(requestNamespace)) {
@@ -170,14 +166,6 @@ export class WalletConnectService {
 
       if (!chains.includes(chainId)) {
         throw Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + chainId);
-      }
-
-      if (!methods.includes(method)) {
-        throw Error(getSdkError('UNAUTHORIZED_METHOD').message + ' ' + method);
-      }
-
-      if (!WALLET_CONNECT_SUPPORTED_METHODS.includes(method)) {
-        throw Error(getSdkError('UNSUPPORTED_METHODS').message + ' ' + method);
       }
 
       switch (method) {

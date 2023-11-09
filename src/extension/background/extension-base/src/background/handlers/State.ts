@@ -1,7 +1,6 @@
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
-
 import { assert, u8aToHex } from '@polkadot/util';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { decodePair } from '@polkadot/keyring/pair/decode';
@@ -20,8 +19,6 @@ import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import { storage } from '@extension-base/stores/Storage';
 import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
 import { initWeb3Api } from '@extension-base/api/evm';
-import PriceStore from '@extension-base/stores/Price';
-import { getTokenPrice } from '@extension-base/utils/coingecko';
 import { getCurrentProvider, getId } from '@extension-base/utils/utils';
 import { initApi } from '@extension-base/api/substrate/api';
 import { axios } from '@extension-base/utils/axios';
@@ -33,17 +30,17 @@ import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-b
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import { SignerPayloadRaw } from '@polkadot/types/types';
 import {
-  PriceJson,
   ServiceInfo,
   MobileSignRequest,
   MobileSigningRequest,
   ResponseSigning,
 } from '@extension-base/background/types/types';
-import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
-import { fetchEvmAssetBalance } from '../../api/evm/balance';
-import { REFRESH_TIME } from '../../api/evm/utils/eth';
-import WalletConnectDAppService from '../../services/wallet-connect-service/dapp';
-import BalanceService from '../../services/balance-service';
+import PricesService from '@extension-base/services/prices-service';
+import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
+import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
+import BalanceService from '@extension-base/services/balance-service';
+import CurrentAccountStore, { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import WalletConnectDAppService from '@extension-base/services/wallet-connect-service/dapp';
 import type {
   AuthUrls,
   Resolver,
@@ -91,25 +88,11 @@ export type Passwords = {
   [address in string]: string | undefined;
 };
 
-export type Prices = {
-  json: PriceJson;
-  timestamp: number;
-};
-
 export default class State {
   public cron: FWCron;
   public timespans: Timespans = {};
   public evmTimeouts: EvmTimeouts = {};
   public passwords: Passwords = {};
-  public prices: Prices = {
-    json: {
-      tokenPriceMap: {},
-      currency: 'usd',
-      priceMap: {},
-      tokenPriceChange: {},
-    },
-    timestamp: 0,
-  };
   public subscription: FWSubscription;
   public injectedProviders: Map<Port, ProviderInterface> = new Map();
   public providers: Providers = {};
@@ -117,7 +100,6 @@ export default class State {
   public chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
   public readonly unsubscriptionMap: Record<string, () => void> = {};
   private readonly currentAccountStore = new CurrentAccountStore();
-  private readonly priceStore = new PriceStore();
   private readonly evmChainSubject = new Subject<AuthUrls>();
   private readonly authorizeUrlSubject = new Subject<AuthUrls>();
   public signature: HexString | null = null;
@@ -127,8 +109,6 @@ export default class State {
     substrate: {},
     evm: {},
   };
-  private priceStoreReady = false;
-  public fiatSymbol = 'usd';
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
   public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
@@ -161,6 +141,7 @@ export default class State {
   public onboardingService = new OnboardingService();
   public stakingService = new StakingService(this);
   public balanceService = new BalanceService(this);
+  public pricesService = new PricesService(this);
 
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
@@ -172,12 +153,6 @@ export default class State {
     this.cron = new FWCron(this);
     this.subscription = new FWSubscription(this, this.cron);
     this.init();
-  }
-
-  public setFiatSymbol(symbol: string) {
-    this.fiatSymbol = symbol;
-
-    chrome.storage.local.set({ fiatSymbol: this.fiatSymbol });
   }
 
   public get assetsMap() {
@@ -242,7 +217,7 @@ export default class State {
         'windows',
       ]);
 
-    if (fiatSymbol) this.setFiatSymbol(fiatSymbol);
+    if (fiatSymbol) this.pricesService.setFiatSymbol(fiatSymbol);
     if (selectedNetworks) this.selectedNetworks = selectedNetworks;
     if (injectedProviders) this.injectedProviders = new Map(injectedProviders);
     if (providers) this.providers = providers;
@@ -720,16 +695,6 @@ export default class State {
     this.currentAccountStore.get('CurrentAccountInfo', update);
   }
 
-  public refreshPrice() {
-    const assets: string[] = this.assetsMap.filter(({ priceId }) => priceId).map(({ priceId }) => priceId);
-
-    getTokenPrice(Array.from(new Set(assets)), this.fiatSymbol, this.prices)
-      .then((rs) => {
-        this.setPrice(rs);
-      })
-      .catch((err) => console.info(err));
-  }
-
   public async publishBalance() {
     const balance = await this.balanceService.getBalance();
 
@@ -841,38 +806,6 @@ export default class State {
 
   public getWallets(): KeyringAddress[] {
     return [...this.keyringService.getAccounts(), ...this.keyringService.getAddresses()];
-  }
-
-  public setPrice(priceData: PriceJson, callback?: (priceData: PriceJson) => void): void {
-    this.priceStore.set('PriceData', priceData, () => {
-      if (callback) {
-        callback(priceData);
-
-        this.priceStoreReady = true;
-      }
-    });
-  }
-
-  public getPrice(update: (value: PriceJson) => void): void {
-    this.priceStore.get('PriceData', (rs) => {
-      if (this.priceStoreReady) update(rs);
-      else {
-        const assets: string[] = this.assetsMap.filter(({ priceId }) => priceId).map(({ priceId }) => priceId);
-
-        getTokenPrice(Array.from(new Set(assets)), this.fiatSymbol, this.prices)
-          .then((rs) => {
-            this.setPrice(rs);
-            update(rs);
-          })
-          .catch((err) => {
-            throw err;
-          });
-      }
-    });
-  }
-
-  public subscribePrice() {
-    return this.priceStore.subject;
   }
 
   public getNetworkGenesisHashByKey(key: string) {

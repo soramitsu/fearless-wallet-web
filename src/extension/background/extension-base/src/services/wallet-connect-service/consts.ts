@@ -4,7 +4,7 @@ import { WalletConnectSigningMethod, POLKADOT_SIGNING_METHODS, EIP155_SIGNING_ME
 export const PROJECT_ID_EXTENSION = '991eb107bbaa66300db0223ec15c48ca';
 export const RELAY_URL = 'wss://relay.walletconnect.com';
 export const WALLET_CONNECT_METADATA: CoreTypes.Metadata = {
-  name: 'FearlessWallet',
+  name: 'Fearless Wallet',
   description:
     'Non-Custodial and Decentralized wallet for the Polkadot and Kusama ecosystems with the best UX, performance and security.',
   url: 'https://fearlesswallet.io/',

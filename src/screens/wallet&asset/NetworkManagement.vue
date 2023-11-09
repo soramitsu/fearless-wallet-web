@@ -40,14 +40,14 @@ import NetworkItem from './NetworkItem.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { Tab } from '@/interfaces/ui';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as NetworksActionsTypes } from '@/store/networks/actions';
 import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
 import { isNetworkGroup } from '@/helpers/common';
 import { SetFavoriteNetwork, Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import BaseApi from '@/util/BaseApi';
 import { updateCurrentNetwork } from '@/extension/messaging';
+import BaseApi from '@/util/BaseApi';
 
 type Tabs = {
   [ALL_NETWORKS]: Tab;
@@ -81,9 +81,10 @@ export default class NetworkManagement extends Vue {
   value = '';
 
   @Prop(String) type!: keyof Tabs | string;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: Wallet;
+  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
+  @Getter(AccountGettersTypes.selectedNetwork) selectedNetwork!: string;
+  @Getter(AccountGettersTypes.selectedWallet) selectedWallet!: Wallet;
+
   @Action(NetworksActionsTypes.TOGGLE_FAVORITE_NETWORK) setFavorite!: (props: SetFavoriteNetwork) => Promise<boolean>;
   @Mutation(AccountMutationsTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
 
@@ -167,9 +168,9 @@ export default class NetworkManagement extends Vue {
 
     const prepNotification = this.$t(this.getLocale('groupSelected'), {
       group: this.$t(this.tabs[this.activeTab].label),
-    });
+    }).toString();
 
-    this.$notify({ title: prepNotification as string, message: '', type: 'success' });
+    this.$notify({ title: prepNotification, message: '', type: 'success' });
   }
 
   enableSingleNetwork(network: string) {
@@ -181,9 +182,9 @@ export default class NetworkManagement extends Vue {
 
     updateCurrentNetwork(network);
 
-    const prepNotification = this.$t(this.getLocale('networkSelected'), { network });
+    const prepNotification = this.$t(this.getLocale('networkSelected'), { network }).toString();
 
-    this.$notify({ title: prepNotification as string, message: '', type: 'success' });
+    this.$notify({ title: prepNotification, message: '', type: 'success' });
   }
 
   async toggleFavorite(network: string) {

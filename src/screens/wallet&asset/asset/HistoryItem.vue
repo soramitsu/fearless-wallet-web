@@ -24,9 +24,9 @@ import { Getter } from 'vuex-class';
 import type { HistoryElement, NetworkName } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
-import { getType, getTypeFormatted, getHistoryValue, getSignTransfer, getFormattedDate } from '@/helpers/history';
-import { cut, isSora } from '@/helpers';
-import { TransactionType } from '@/interfaces/history';
+import { getType, getTypeFormatted, getHistoryValue, getSignTransfer } from '@/helpers/history';
+import { getFormattedDate, cut, isSora } from '@/helpers';
+import { SoraHistoryElement, TransactionType } from '@/interfaces/history';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -45,6 +45,7 @@ export default class HistoryItem extends Vue {
 
   get address() {
     if (BaseApi.isEthereumNetwork(this.network.toLowerCase())) return this.selectedWallet.ethereumAddress;
+
     const network = this.getNetwork(this.network);
 
     return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
@@ -59,7 +60,7 @@ export default class HistoryItem extends Vue {
   }
 
   get date() {
-    return getFormattedDate(this.historyElement);
+    return getFormattedDate(this.historyElement.timestamp);
   }
 
   get assetToUpperCase() {
@@ -79,6 +80,12 @@ export default class HistoryItem extends Vue {
   }
 
   get hash() {
+    if (this.isSora) {
+      const element = this.historyElement as SoraHistoryElement;
+
+      return this.$t(`history.${element.method}`);
+    }
+
     const { transfer, reward, extrinsic } = this.historyElement;
 
     if (this.type === TransactionType.transfer) {

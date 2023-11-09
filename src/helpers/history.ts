@@ -1,4 +1,3 @@
-import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 import { FPNumber } from '@sora-substrate/util';
 import type {
   HistoryElement,
@@ -41,7 +40,13 @@ function getSignTransfer(historyElement: HistoryElement, address: string, networ
   return '';
 }
 
-function getTypeFormatted(historyElement: HistoryElement, address: string, networkName: string) {
+function getTypeFormatted(historyElement: HistoryElement, address: string, networkName: NetworkName) {
+  if (isSora(networkName)) {
+    const element = historyElement as SoraHistoryElement;
+
+    return element.module;
+  }
+
   const type = getType(historyElement);
   const signTransfer = getSignTransfer(historyElement, address, networkName);
 
@@ -59,27 +64,12 @@ function getTypeFormatted(historyElement: HistoryElement, address: string, netwo
   return firstCharToUp(type);
 }
 
-function getFormattedDate({ timestamp }: HistoryElement) {
-  const date = new Date(secondsToMilliseconds(+timestamp));
-
-  if (isToday(date)) {
-    return format(date, 'HH:mm');
-  }
-
-  if (isThisYear(date)) {
-    return format(date, 'dd MMMM HH:mm');
-  }
-
-  return format(date, 'dd MMMM yyyy HH:mm');
-}
-
 function getHumanFeeValue(value: string, networkName: NetworkName) {
   const tokenBalances: TokenBalance[] = store.getters.getBalances;
   const network: NetworkJson = store.getters.getNetwork(networkName);
   const asset = network.assets.find((asset) => asset.isUtility);
-  const token = tokenBalances.find(({ balances }) => balances.some(({ id }) => id === asset?.id));
+  const token = tokenBalances.find(({ symbol }) => symbol === asset?.symbol);
   const balance = token?.balances.find(({ id }) => id === asset?.id);
-
   const precision = balance?.precision ?? 0;
 
   return FPNumber.fromCodecValue(value, precision).toNumber();
@@ -90,7 +80,7 @@ function getHumanValue(value: string | number, assetId: string, networkName: Net
   const { balances } = tokenBalances.find(({ assetId: id }) => id === assetId)!;
   const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
 
-  return FPNumber.fromCodecValue(value, precision).toNumber();
+  return +FPNumber.fromCodecValue(value, precision);
 }
 
 function getHumanTransferFee(historyElement: HistoryElement, networkName: NetworkName) {
@@ -241,7 +231,6 @@ export {
   getHumanTransferFee,
   getHistoryValue,
   getHumanFeeValue,
-  getFormattedDate,
   getSignTransfer,
   getFormattedHistory,
 };

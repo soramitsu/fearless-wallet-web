@@ -63,7 +63,7 @@ export default class Eip155RequestHandler {
       this.requestService
         .sign(
           url,
-          new RequestBytesSign({ address: address, data: param.message, type: 'bytes' }),
+          new RequestBytesSign({ address, data: param.message, type: 'bytes' }),
           {
             address,
             name: pair.meta.name as string,
@@ -73,7 +73,7 @@ export default class Eip155RequestHandler {
         )
         .then(async ({ signature }) => {
           await this.walletConnectService.responseRequest({
-            topic: topic,
+            topic,
             response: formatJsonRpcResult(id, { signature }),
           });
         })
@@ -100,7 +100,7 @@ export default class Eip155RequestHandler {
         )
         .then(async ({ signature }) => {
           await this.walletConnectService.responseRequest({
-            topic: topic,
+            topic,
             response: formatJsonRpcResult(id, { signature }),
           });
         })

@@ -11,6 +11,8 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
+import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
 import type { SessionTypes } from '@walletconnect/types';
 import type {
@@ -121,7 +123,7 @@ export default class WalletConnectDAppService {
     if (!this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress)) {
       this.state.keyringService.saveAddress(
         encodedAddress,
-        { name: data.peer.metadata.name, isMobile: true },
+        { name: data.peer.metadata.name, isMobile: true, topic: data.topic },
         'address'
       );
       this.state.updateCurrentAccount(encodedAddress);
@@ -173,14 +175,38 @@ export default class WalletConnectDAppService {
     console.info(id, topic, params);
   }
 
-  // onRequest() {
-  //   this.app?.client.pairing.core.on('auth_request', ({ params }) => {
-  //     if (params) {
-  //       // Response contained a valid signature -> user is authenticated.
-  //     } else {
-  //       // Handle error or invalid signature case
-  //       console.error(params);
-  //     }
-  //   });
-  // }
+  async onRequest(payload: SignerPayloadJSON, txData: string) {
+    const topic = '';
+
+    const result = await this.app?.client.request<{ signature: HexString }>({
+      chainId: `polkadot:${payload.genesisHash}`,
+      topic,
+      request: {
+        method: 'polkadot_signTransaction',
+        params: {
+          address: payload.address,
+          transactionPayload: txData,
+        },
+      },
+    });
+
+    return result ?? { signature: '0x' as HexString };
+  }
+  async onRequestRaw(payload: SignerPayloadRaw, txData: string) {
+    const topic = '';
+
+    const result = await this.app?.client.request<{ signature: HexString }>({
+      chainId: `polkadot:`,
+      topic,
+      request: {
+        method: 'polkadot_signTransaction',
+        params: {
+          address: payload.address,
+          transactionPayload: txData,
+        },
+      },
+    });
+
+    return result ?? { signature: '0x' as HexString };
+  }
 }

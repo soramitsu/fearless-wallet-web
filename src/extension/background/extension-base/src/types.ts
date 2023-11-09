@@ -1,5 +1,6 @@
 import { CustomTokenType } from '@extension-base/api/evm/types/ether';
 import { NETWORK_STATUS } from './api/types/networks';
+import type { KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { AssetType, BuyProvider, XcmVersion } from '@/interfaces';
 import { ExternalApi } from '@/interfaces';
 
@@ -137,4 +138,9 @@ export interface ChainRegistry {
   chainDecimals: number[];
   chainTokens: string[];
   assetsMap: Asset[];
+}
+
+export interface FWKeyringMeta extends KeyringPair$Meta {
+  isMobile?: boolean;
+  wcTopic?: string;
 }

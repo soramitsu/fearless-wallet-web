@@ -1,36 +1,54 @@
 // Copyright 2017-2022 @polkadot/react-signer authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { KeyringPair } from '@polkadot/keyring/types';
+import { wrapBytes } from '@polkadot/extension-dapp';
+import { u8aToHex } from '@polkadot/util';
+import { HexString } from '@polkadot/util/types';
+import { state } from '../background/handlers';
+import type { Registry, SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { Signer, SignerResult } from '@polkadot/api/types';
-import type { Registry, SignerPayloadJSON } from '@polkadot/types/types';
+import type { KeyringPair } from '@polkadot/keyring/types';
 
 interface KeyringSignerProps {
   registry: Registry;
-  keyPair: KeyringPair;
+  keyPair: KeyringPair | null;
+  isMobile: boolean;
 }
 
 let id = 1;
 
 export default class KeyringSigner implements Signer {
-  readonly #pair: KeyringPair;
+  readonly #pair: KeyringPair | null;
   readonly #registry: Registry;
+  readonly #isMobile: boolean;
 
-  constructor({ keyPair, registry }: KeyringSignerProps) {
+  constructor({ keyPair, registry, isMobile }: KeyringSignerProps) {
     this.#pair = keyPair;
     this.#registry = registry;
+    this.#isMobile = isMobile;
   }
 
   public signPayload(payload: SignerPayloadJSON): Promise<SignerResult> {
     return new Promise((resolve) => {
       const wrapper = this.#registry.createType('ExtrinsicPayload', payload, { version: payload.version });
 
+      if (this.#isMobile) {
+        return state.walletConnectDappService.onRequest(payload, wrapper.toHex());
+      }
+
+      if (!this.#pair) throw new Error('unable to find pair');
+
       const signature = wrapper.sign(this.#pair).signature;
 
-      resolve({
-        id: id++,
-        signature: signature,
-      });
+      resolve({ id: id++, signature });
     });
+  }
+
+  async sign(payload: SignerPayloadRaw): Promise<{ signature: HexString }> {
+    if (!this.#pair) throw new Error('unable to find pair');
+
+    return {
+      signature: u8aToHex(this.#pair.sign(wrapBytes(payload.data))),
+    };
   }
 }

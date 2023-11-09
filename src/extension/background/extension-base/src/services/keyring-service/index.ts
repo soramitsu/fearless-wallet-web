@@ -1,5 +1,5 @@
 import { KeypairType } from '@polkadot/util-crypto/types';
-import { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
+import { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
 import { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-keyring/types';
 import { keyring } from '@polkadot/ui-keyring';
 import { isEthereumAddress } from '@polkadot/util-crypto';
@@ -7,6 +7,7 @@ import State from '@extension-base/background/handlers/State';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { getSubstrateAddress, isEthereumNetwork } from '../../background/utils/utils';
+import { FWKeyringMeta } from '../../types';
 import { isSameString } from '@/helpers';
 type Wallet = {
   address: string;
@@ -57,7 +58,7 @@ export class KeyringService {
     return true;
   }
 
-  addAccount(suri: string, password: string, meta: KeyringPair$Meta, type?: KeypairType) {
+  addAccount(suri: string, password: string, meta: FWKeyringMeta, type?: KeypairType) {
     const {
       pair: { address },
     } = keyring.addUri(suri, password, { ...meta, isMobile: false }, type);
@@ -65,7 +66,7 @@ export class KeyringService {
     return address;
   }
 
-  saveAddress(address: string, meta: KeyringPair$Meta, type: KeyringAddressType) {
+  saveAddress(address: string, meta: FWKeyringMeta, type: KeyringAddressType) {
     keyring.saveAddress(address, meta, type);
   }
 
@@ -166,7 +167,7 @@ export class KeyringService {
     return keyring.decodeAddress(key, ignoreChecksum, ss58Format);
   }
 
-  saveAccountMeta(address: string, meta: KeyringPair$Meta) {
+  saveAccountMeta(address: string, meta: FWKeyringMeta) {
     const pair = this.getPair(address);
 
     if (!pair) return;
@@ -174,7 +175,7 @@ export class KeyringService {
     keyring.saveAccountMeta(pair, { ...pair.meta, ...meta });
   }
 
-  createFromUri(suri: string, keypairType: KeypairType, meta: KeyringPair$Meta = {}) {
+  createFromUri(suri: string, keypairType: KeypairType, meta: FWKeyringMeta = {}) {
     keyring.createFromUri(suri, meta, keypairType);
   }
 

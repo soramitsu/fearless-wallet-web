@@ -1,5 +1,5 @@
 <template>
-  <Fragment v-if="wcFilteredList?.length">
+  <Fragment v-if="isAuthExists">
     <WalletConnectAuthItem
       v-for="(el, index) in wcFilteredList"
       :key="index"
@@ -21,7 +21,9 @@ import { Components } from '@/router/routes';
 
 const store = useStore();
 const router = useRouter();
+
 const wcFilteredList = computed<WalletConnectSessions>(() => store.getters.wcSessions);
+const isAuthExists = computed(() => wcFilteredList.value?.length);
 
 const openWCAuthDetails = (index: string) => {
   router.push({

@@ -67,6 +67,7 @@ import { CurrentAccountInfo, CurrentAccountState } from '../../stores/CurrentAcc
 import {
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
+  WALLET_CONNECT_SUPPORTED_METHODS,
 } from '../../services/wallet-connect-service/consts';
 import { MakeStakingRequest, StakingParamsResponse } from './../../services/staking-service/types';
 import type {
@@ -462,10 +463,12 @@ export default class Extension extends FWExtensionBase {
       return new Promise((resolve, reject) => {
         try {
           const { address } = this.state.keyringService.restoreAccount(file, password);
+          const isEthereum = isEthereumAddress(address);
 
-          if (!isEthereumAddress(address)) this.updateNetworkForNewWallet(address);
-
-          this.updateCurrentAccount(address);
+          if (!isEthereum) {
+            this.updateNetworkForNewWallet(address);
+            this.updateCurrentAccount(address);
+          }
 
           resolve(address);
         } catch (error) {
@@ -1371,7 +1374,10 @@ export default class Extension extends FWExtensionBase {
 
       namespaces[key] = {
         accounts,
-        methods: namespace.methods,
+        methods:
+          key === WALLET_CONNECT_EIP155_NAMESPACE
+            ? [...WALLET_CONNECT_SUPPORTED_METHODS, ...namespace.methods]
+            : namespace.methods,
         events: namespace.events,
         chains: chains,
       };
@@ -1383,7 +1389,11 @@ export default class Extension extends FWExtensionBase {
       relayProtocol: params.relays[0].protocol,
     };
 
-    await this.state.walletConnectService.approveSession(result);
+    const res = await this.state.walletConnectService.approveSession(result).catch((e) => {
+      return { message: e.message, title: '', status: false };
+    });
+    if (res) return res;
+
     request.resolve();
 
     return {
@@ -1507,13 +1517,13 @@ export default class Extension extends FWExtensionBase {
       const message =
         ['eth_sign', 'personal_sign'].indexOf(method) > -1 ? convertHexToUtf8(payload) : JSON.parse(payload);
 
+      if (!(['eth_sign', 'personal_sign'].indexOf(method) > -1)) {
+        delete message.types['EIP712Domain'];
+      }
+
       const signature = await (['eth_sign', 'personal_sign'].indexOf(method) > -1
         ? signer.signMessage(message)
-        : signer.signTypedData(
-            message.domain,
-            { Mail: message.types.Mail, Person: message.types.Person },
-            message.message
-          ));
+        : signer.signTypedData(message.domain, message.types, message.message));
 
       request.resolve({ id: request.request.topic, signature: signature as HexString });
     }

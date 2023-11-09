@@ -9,7 +9,7 @@ export const DEFAULT_WALLET_CONNECT_OPTIONS: SignClientTypes.Options = {
   projectId: PROJECT_ID_EXTENSION,
   relayUrl: RELAY_URL,
   metadata: {
-    name: 'FearlessWallet',
+    name: 'Fearless Wallet',
     description:
       'Non-Custodial and Decentralized wallet for the Polkadot and Kusama ecosystems with the best UX, performance and security.',
     url: 'https://fearlesswallet.io/',

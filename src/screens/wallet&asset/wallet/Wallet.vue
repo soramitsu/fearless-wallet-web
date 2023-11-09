@@ -141,7 +141,7 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getShowWarningNetwork) getShowWarningNetwork!: GetShowWarningNetworks;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getIsCustomSort) getIsCustomSort!: (address: string) => boolean;
+  @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
@@ -213,8 +213,7 @@ export default class Wallet extends Vue {
 
     if (address === '') return [];
 
-    if (!this.getIsCustomSort(address))
-      return defaultSortingCurrencies(this.balances, this.prices, this.selectedNetwork);
+    if (!this.isCustomSort(address)) return defaultSortingCurrencies(this.balances, this.prices, this.selectedNetwork);
 
     const sequence = accountController.getSequenceAssetsByAddress(address);
 
@@ -274,12 +273,6 @@ export default class Wallet extends Vue {
     if (value.length === 0) this.showNetworkManagement = false;
   }
 
-  closeGoogleExportPopup() {
-    this.$router.replace('/').catch((e) => e);
-
-    this.$emit('closeSelectWalletPopup');
-  }
-
   activated() {
     fetchEvmBalance();
   }
@@ -290,6 +283,12 @@ export default class Wallet extends Vue {
     this.filterValue = '';
 
     this.setNetworkUnavailable();
+  }
+
+  closeGoogleExportPopup() {
+    this.$router.replace('/').catch((e) => e);
+
+    this.$emit('closeSelectWalletPopup');
   }
 
   setNetworkUnavailable(network = '') {
@@ -319,6 +318,7 @@ export default class Wallet extends Vue {
 
       if (isZeroBalance) this.setHiddenAssets({ assetId, value: false });
     });
+
     const assetsVisibleWithBalance = this.balances.filter(({ balances, assetId }) => {
       const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
       const isVisibleAsset = !this.hiddenAssets.includes(assetId);

@@ -1,5 +1,6 @@
 import { FPNumber } from '@sora-substrate/util';
 import { Wallet } from 'ethers';
+import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import { APIItemState } from '@extension-base/api/types/networks';
 import type { NetworkName, AssetsPrice, BuyProvider } from '@/interfaces';
 import type { NetworkJson } from '@extension-base/types';
@@ -100,12 +101,13 @@ function getProviderUrl(name: BuyProvider, asset: string, address: string) {
 }
 
 function getCurrencyOptions(currencies: TokenBalance[]) {
-  return currencies.map(({ assetId: id, symbol, icon, relayChain }) => {
-    const filteredOptions = currencies.filter(({ symbol: _symbol }) => symbol === _symbol);
-    const label = filteredOptions.length > 1 ? `${symbol} (${relayChain})` : symbol;
+  return currencies.map(({ assetId: id, symbol: _symbol, icon, relayChain }) => {
+    const assetUpper = _symbol.toUpperCase();
+    const filteredOptions = currencies.filter(({ symbol }) => symbol === _symbol);
+    const label = filteredOptions.length > 1 ? `${assetUpper} (${relayChain.toUpperCase()})` : assetUpper;
 
     return {
-      name: label.toUpperCase(),
+      name: getNativeAssetName(label).toUpperCase(),
       value: id,
       icon,
     };

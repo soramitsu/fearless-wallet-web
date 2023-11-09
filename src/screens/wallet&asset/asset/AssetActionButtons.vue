@@ -105,7 +105,7 @@ export default class AssetActionButtons extends Vue {
   }
 
   get showCrossChainButton() {
-    if (this.selectedNetwork === '') return false;
+    if (this.selectedNetwork === '' || this.selectedWallet.isMobile) return false;
 
     const network = this.getNetwork(this.selectedNetwork);
 

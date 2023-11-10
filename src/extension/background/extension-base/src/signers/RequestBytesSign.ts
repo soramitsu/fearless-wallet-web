@@ -18,7 +18,7 @@ export default class RequestBytesSign implements RequestSign {
 
   async sign(_registry: TypeRegistry, pair: KeyringPair): Promise<{ signature: HexString }> {
     if (this.isMobile) {
-      return state.walletConnectDappService.onRequestRaw(this.payload, this.payload.data);
+      return state.walletConnectDappService.onRequestRaw(this.payload);
     }
 
     return {

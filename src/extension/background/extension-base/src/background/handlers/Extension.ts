@@ -217,10 +217,10 @@ export default class Extension extends FWExtensionBase {
           }
         }
 
-        const polakdot = session.namespaces['polkadot'];
+        const polkadot = session.namespaces['polkadot'];
 
-        if (polakdot) {
-          const [, , substaddress] = polakdot.accounts[0].split(':');
+        if (polkadot) {
+          const [, , substaddress] = polkadot.accounts[0].split(':');
 
           if (substaddress.toLowerCase() === address.toLowerCase()) {
             this.state.walletConnectService.disconnect(session.topic);
@@ -320,13 +320,16 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  mobileSignApprove({ signature, id }: RequestMobileSign): boolean {
+  async mobileSignApprove({ id }: RequestMobileSign): Promise<boolean> {
     const queued = this.state.getMobileSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
-    const { resolve } = queued;
-    resolve({ signature, id });
+    const { resolve, reject } = queued;
+    this.state.walletConnectDappService
+      .onRequestRaw(queued.request)
+      .then(({ signature }) => resolve({ signature, id }))
+      .catch(() => reject(new Error('USER REJECTED')));
 
     return true;
   }
@@ -491,12 +494,23 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): boolean {
+  async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
     const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
+    const account = this.state.keyringService
+      .getAllAccounts()
+      .find(({ address }) => address === queued.account.address);
 
     const { reject, request, resolve } = queued;
+
+    if (account && account?.meta.isMobile) {
+      const res = await this.state.walletConnectDappService.onRequest(queued.request.payload as SignerPayloadJSON);
+      resolve({ ...res, id });
+
+      return true;
+    }
+
     const pair = this.state.keyringService.getPair(queued.account.address);
 
     if (!pair) {
@@ -534,7 +548,7 @@ export default class Extension extends FWExtensionBase {
       if (currentMetadata) registry.register(currentMetadata?.types);
     }
 
-    const result = request.sign(registry, pair);
+    const result = await request.sign(registry, pair);
 
     if (savePass) this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
     else pair.lock();

@@ -5,6 +5,8 @@ import AccountsStore from '@extension-base/stores/Accounts';
 import { initStorage } from '@extension-base/stores/Storage';
 import { RequestSignatures } from '@extension-base/background/types/messages';
 import { TransportRequestMessage, Port } from '@extension-base/background/types/types';
+import MigrationService from '@extension-base/services/migration-service';
+
 import { APP_VERSION } from '@/consts/global';
 
 console.info('background initialization');
@@ -25,7 +27,7 @@ async function getActiveTabs() {
   });
 }
 
-chrome.runtime.onInstalled.addListener(async (details) => {
+chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'update') {
     state.onboardingService.isRequired = true;
     state.onboardingService.updateStorage();
@@ -33,9 +35,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     if (details.previousVersion !== APP_VERSION) chrome.runtime.reload();
   }
 
-  await initStorage();
-
-  state.onInstall();
+  initStorage().then(() => state.onInstall());
 
   getActiveTabs();
 });
@@ -69,6 +69,8 @@ cryptoWaitReady()
   .then((): void => {
     state.keyringService.loadAll(new AccountsStore());
     state.eventService.emit('crypto.ready', true);
+    const migrationService = new MigrationService();
+    migrationService.start();
   })
   .catch((error): void => {
     console.error('initialization failed', error);

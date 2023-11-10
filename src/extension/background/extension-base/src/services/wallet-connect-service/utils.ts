@@ -116,3 +116,7 @@ export function convertHexToUtf8(hex: string) {
     return hex;
   }
 }
+
+export function generateHalfGenesisHash(genesisHash: string): string {
+  return genesisHash.slice(2, Math.floor(genesisHash.length / 2) + 1);
+}

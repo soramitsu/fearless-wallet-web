@@ -33,7 +33,7 @@ export default class KeyringSigner implements Signer {
       const wrapper = this.#registry.createType('ExtrinsicPayload', payload, { version: payload.version });
 
       if (this.#isMobile) {
-        return state.walletConnectDappService.onRequest(payload, wrapper.toHex());
+        return state.walletConnectDappService.onRequest(payload);
       }
 
       if (!this.#pair) throw new Error('unable to find pair');

@@ -135,6 +135,7 @@ export default class Tabs {
 
   bytesSign(url: string, request: SignerPayloadRaw): Promise<ResponseSigning> {
     const address = request.address;
+
     const pair = this.getSigningPair(address);
     const signer = new RequestBytesSign(request);
 

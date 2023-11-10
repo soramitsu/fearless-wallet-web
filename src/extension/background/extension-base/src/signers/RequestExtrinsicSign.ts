@@ -17,7 +17,7 @@ export default class RequestExtrinsicSign implements RequestSign {
     const signData = registry.createType('ExtrinsicPayload', this.payload, { version: this.payload.version });
 
     if (this.isMobile) {
-      return state.walletConnectDappService.onRequest(this.payload, signData.toHex());
+      return state.walletConnectDappService.onRequest(this.payload);
     }
 
     return signData.sign(pair);

@@ -189,7 +189,6 @@ export interface BalanceJson {
 }
 
 export interface RequestMobileSign {
-  signature: `0x${string}`;
   id: string;
 }
 

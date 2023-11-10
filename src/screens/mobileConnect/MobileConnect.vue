@@ -42,6 +42,7 @@ onMounted(async () => {
 
   if (res) {
     qr.value = res;
+
     walletConnectDappSubscribeSession(res, (data) => {
       console.info(data);
     });

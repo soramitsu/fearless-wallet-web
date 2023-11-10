@@ -25,6 +25,7 @@ export const WALLET_CONNECT_DAPP_CONFIG: Record<string, unknown> = {
       methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
       chains: [
         'polkadot:91b171bb158e2d3848fa23a9f1c25182', // polkadot
+        'polkadot:9eb76c5184c4ab8679d2d5d819fdf90b', //astar
       ],
       events: ['chainChanged", "accountsChanged'],
     },

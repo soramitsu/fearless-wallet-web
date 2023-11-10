@@ -13,6 +13,7 @@ import {
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
 import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import { HexString } from '@polkadot/util/types';
+import { generateHalfGenesisHash } from './utils';
 import type State from '@extension-base/background/handlers/State';
 import type { SessionTypes } from '@walletconnect/types';
 import type {
@@ -123,7 +124,7 @@ export default class WalletConnectDAppService {
     if (!this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress)) {
       this.state.keyringService.saveAddress(
         encodedAddress,
-        { name: data.peer.metadata.name, isMobile: true, topic: data.topic },
+        { name: data.peer.metadata.name, isMobile: true, wcTopic: data.topic },
         'address'
       );
       this.state.updateCurrentAccount(encodedAddress);
@@ -175,34 +176,42 @@ export default class WalletConnectDAppService {
     console.info(id, topic, params);
   }
 
-  async onRequest(payload: SignerPayloadJSON, txData: string) {
-    const topic = '';
+  async onRequest(payload: SignerPayloadJSON) {
+    const encodedAddress = this.state.keyringService.encodeAddress(payload.address);
+    const account = this.state.keyringService.getAddress(encodedAddress);
 
-    const result = await this.app?.client.request<{ signature: HexString }>({
-      chainId: `polkadot:${payload.genesisHash}`,
-      topic,
+    const request = {
+      chainId: `polkadot:${generateHalfGenesisHash(payload.genesisHash)}`,
+      topic: account?.meta.wcTopic as string,
       request: {
         method: 'polkadot_signTransaction',
         params: {
           address: payload.address,
-          transactionPayload: txData,
+          transactionPayload: payload,
         },
       },
-    });
+    };
+    const result = await this.app?.client
+      .request<{ signature: HexString }>(request)
 
-    return result ?? { signature: '0x' as HexString };
+      .catch(() => {
+        return { signature: '0x' as HexString };
+      });
+
+    return result as any as { signature: HexString };
   }
-  async onRequestRaw(payload: SignerPayloadRaw, txData: string) {
-    const topic = '';
+  async onRequestRaw(payload: SignerPayloadRaw) {
+    const encodedAddress = this.state.keyringService.encodeAddress(payload.address);
+    const account = this.state.keyringService.getAddress(encodedAddress);
 
     const result = await this.app?.client.request<{ signature: HexString }>({
       chainId: `polkadot:`,
-      topic,
+      topic: account?.meta.wcTopic as string,
       request: {
         method: 'polkadot_signTransaction',
         params: {
           address: payload.address,
-          transactionPayload: txData,
+          transactionPayload: payload.data,
         },
       },
     });

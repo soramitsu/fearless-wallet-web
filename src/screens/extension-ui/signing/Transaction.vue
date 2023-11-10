@@ -80,6 +80,7 @@ import { SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
 import { isSignLocked, validatePassword } from '@/extension/messaging';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
+import { ExtensionController } from '@/controllers';
 
 @Component({
   components: {
@@ -191,9 +192,7 @@ export default class Transaction extends Vue {
   }
 
   async mounted() {
-    if (this.isSignMobile) {
-      //TODO
-    }
+    if (this.isSignMobile) this.onSignMobile();
 
     if (!IS_EXTENSION || this.isSignMobile) return;
 
@@ -243,8 +242,8 @@ export default class Transaction extends Vue {
 
   async signTransactionJSON(id: string) {
     console.info(id);
-    //TODO
-    // ExtensionController.approveSignSignature(id, blockchainData.signature);
+
+    ExtensionController.approveSignPassword(id, false);
   }
 
   async sendExtrinsic() {

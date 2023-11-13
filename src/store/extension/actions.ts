@@ -122,7 +122,7 @@ export type Actions = {
 const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.SUBSCRIBE_AUTH_REQUESTS]({ commit }) {
     const callback = (requests: AuthorizeRequest[]) => {
-      commit(MutationTypes.SET_REQUEST, { type: 'auth', requests });
+      commit(MutationTypes.SET_REQUEST, { type: 'authRequests', requests });
 
       if (requests.length)
         router.push({
@@ -165,7 +165,7 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.SUBSCRIBE_META_REQUESTS]({ commit }) {
     const callback = (requests: MetadataRequest[]) => {
-      commit(MutationTypes.SET_REQUEST, { type: 'meta', requests });
+      commit(MutationTypes.SET_REQUEST, { type: 'metaRequests', requests });
 
       if (router.currentRoute.name === 'MetaRequest' && requests.length === 0)
         router.push({
@@ -197,7 +197,7 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.SUBSCRIBE_SIGN_REQUESTS]({ commit }) {
     const callback = (requests: SigningRequest[]) => {
-      commit(MutationTypes.SET_REQUEST, { type: 'sign', requests });
+      commit(MutationTypes.SET_REQUEST, { type: 'signRequests', requests });
       if (router.currentRoute.name === 'Transaction' && requests.length === 0)
         router.push({
           name: Components.Wallet,

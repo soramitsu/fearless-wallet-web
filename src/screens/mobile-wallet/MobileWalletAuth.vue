@@ -10,7 +10,7 @@
       <Loader />
     </div>
 
-    <PermissionRequestPopup
+    <MobileWalletPermissionPopup
       v-if="connectionStatus"
       :status="connectionStatus"
       :requestResponse="requestResponse"
@@ -22,7 +22,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router/composables';
-import PermissionRequestPopup from '@/screens/mobileConnect/PermissionRequestPopup.vue';
+import MobileWalletPermissionPopup from '@/screens/mobile-wallet/MobileWalletPermissionPopup.vue';
 import { walletConnectDappInitSession, walletConnectDappSubscribeSession } from '@/extension/messaging';
 const router = useRouter();
 
@@ -61,8 +61,6 @@ const connectionStatus = computed(() => {
 
 const isQRPrep = computed(() => !connectionStatus.value && qr && !isLoading);
 
-const close = () => router.back();
-
 const isPermissionRequestResolved = computed(
   () => connectionStatus.value === 'success' || connectionStatus.value === 'failed'
 );
@@ -74,6 +72,7 @@ const header = computed(() => {
 
   return 'welcome.connectMobile';
 });
+const close = () => router.back();
 </script>
 
 <style lang="scss" scoped>

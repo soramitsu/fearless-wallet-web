@@ -22,14 +22,14 @@
       <FButton size="big" type="secondary" :border="false" text="mobileConnector.resetConnection" @click="() => {}" />
     </div>
 
-    <ConnectionStatus v-else-if="isRequestFinished" :status="status" @close="onClose" />
+    <MobileWalletStatus v-else-if="isRequestFinished" :status="status" @close="onClose" />
   </Popup>
 </template>
 
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { useRouter } from 'vue-router/composables';
-import ConnectionStatus from './ConnectionStatus.vue';
+import MobileWalletStatus from '@/screens/mobile-wallet/MobileWalletStatus.vue';
 import { Components } from '@/router/routes';
 
 type Props = {

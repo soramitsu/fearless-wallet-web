@@ -48,14 +48,11 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.SET_AUTHLIST](state, { list }) {
-    Object.assign(state.authList, list);
+    state.authList = { ...list };
   },
 
   [MutationTypes.DELETE_AUTHLIST_ITEM](state, id) {
-    const list = { ...state.authList };
-    delete list[id];
-
-    Object.assign(state.authList, list);
+    delete state.authList[id];
   },
 
   [MutationTypes.SET_TAB_STATUS](state, payload) {

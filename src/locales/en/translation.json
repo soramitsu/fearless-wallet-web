@@ -97,6 +97,7 @@
   "mobileConnector": {
     "connectionSet": "Connection is set",
     "connectionFailed": "Connection failed",
+    "rejected": "Rejected by user",
     "cancelRequest": "Cancel Request",
     "resetConnection": "Reset Request",
     "qrHeader": "Scan the QR code using the Fearless mobile app",

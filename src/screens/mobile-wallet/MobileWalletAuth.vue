@@ -7,12 +7,7 @@
         <QR :payload="qr" />
       </template>
 
-      <MobileWalletPermissionPopup
-        v-if="connectionStatus"
-        :status="connectionStatus"
-        :requestResponse="requestResponse"
-        :requestInfo="requestInfo"
-      />
+      <MobileWalletPermissionPopup v-if="connectionStatus" :status="connectionStatus" />
     </AboveForm>
     <div v-else class="finish-form">
       <FinishForm />
@@ -25,17 +20,17 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router/composables';
+import { useI18n } from 'vue-i18n-composable';
 import MobileWalletPermissionPopup from '@/screens/mobile-wallet/MobileWalletPermissionPopup.vue';
 import { walletConnectDappInitSession, walletConnectDappSubscribeSession } from '@/extension/messaging';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
 import { Components } from '@/router/routes';
+import { useNotify } from '@/plugins/soramitsuUI';
 
 const router = useRouter();
-
-const requestInfo: null = null;
-const requestResponse: null = null;
+const notify = useNotify();
+const { t } = useI18n();
 const isWalletAlreadyExists = ref(false);
-const permissionRequestDenied = false;
 const qr = ref<string | null>(null);
 const showFinishForm = ref(false);
 
@@ -49,7 +44,15 @@ onMounted(async () => {
       if (status) showFinishForm.value = true;
 
       if (!status) {
-        if (message === 'rejected') return router.back();
+        if (message === 'rejected') {
+          notify({
+            title: t('mobileConnector.rejected').toString(),
+            message: '',
+            type: 'warning',
+          });
+
+          return router.back();
+        }
 
         if (message === 'duplicate') isWalletAlreadyExists.value = true;
       }
@@ -59,7 +62,6 @@ onMounted(async () => {
 
 const connectionStatus = computed(() => {
   if (isWalletAlreadyExists.value) return 'wallet_exists';
-  if (permissionRequestDenied) return 'failed';
 
   return false;
 });

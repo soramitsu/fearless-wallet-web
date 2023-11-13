@@ -495,6 +495,7 @@
     "batchAll": "batchAll"
   },
   "staking": {
+    "stakingFee": "Сетевая плата в алгоритме консенсуса NPoS для цепочек на основе субстрата относится к затратам, понесенным участниками (валидаторами и номинаторами) за использование ресурсов и услуг сети.",
     "active": "Активен",
     "inactive": "Не активен",
     "waiting": "В ожидании",
@@ -553,7 +554,7 @@
     "yourValidators": "Ваши валидторы",
     "validatorInfo": "Информация о валидаторе",
     "tokensAllocated": "Ваши токены выделены валидатору с переподпиской. Вы не будете получать награды в этой эпохе.",
-    "about": "All-inone DeFi hub of KusamaContrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard McClintock",
+    "about": "Стейкинг SORA уникален среди цепочек, основанных на субстрате. Сделав ставку XOR для защиты сети SORA, вы получите дефляционный токен VAL и станете участником новой экономической системы.",
     "elected": "",
     "notElected": "Не избраные",
     "stakeAllocated": "Ваша ставка распределяется между следующими валидаторами.",

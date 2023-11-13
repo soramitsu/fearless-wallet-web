@@ -80,6 +80,9 @@ export class StakingService {
     )?.name;
     const payee = myAccountName ?? addressBookName ?? stakingInfo.payee;
 
+    const otherPayee =
+      stakingInfo.payee !== this.state.keyringService.formatAddress({ address, ethereumAddress: address }, network);
+
     const nameController = this.state.keyringService.getAccountName(stakingInfo.controller);
     const addressBookNameController = addressBook[network]?.find(({ address: _address }) =>
       isSameString(_address, stakingInfo.controller)
@@ -90,6 +93,7 @@ export class StakingService {
       ...stakingInfo,
       payee,
       controller,
+      otherPayee,
       myValidators: this.getValidatorsInformation(stakingInfo.myValidators, validators).map((info) => {
         const isActive = validatorsStatuses.validatorsActive.includes(info.address);
         const isInactive = validatorsStatuses.validatorsInactive.includes(info.address);

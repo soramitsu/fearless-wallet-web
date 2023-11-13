@@ -16,6 +16,7 @@ import { ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS, SUBSTRATE_ETHEREUM_NETWORK
 import { NetworksController } from '@/controllers';
 import store from '@/store';
 import { IS_EXTENSION, IS_PRODUCTION } from '@/consts/global';
+import { NetworkName } from '@/interfaces';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
 type WalletTypes = 'mobile' | 'native';
@@ -135,7 +136,7 @@ export default class BaseApi {
     return address === BaseApi.formatAddress({ address, ethereumAddress: address }, network);
   }
 
-  public static formatAddress({ address, ethereumAddress }: Wallet, networkName: string): string {
+  public static formatAddress({ address, ethereumAddress }: Wallet, networkName: NetworkName = 'westend'): string {
     const isEthereumNetwork = BaseApi.isEthereumNetwork(networkName);
 
     if (isEthereumNetwork) return ethereumAddress;

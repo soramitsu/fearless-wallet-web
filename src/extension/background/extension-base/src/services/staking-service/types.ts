@@ -139,6 +139,7 @@ export type StakingParams = {
   // my stake info:
   myValidators: FWValidatorInfoFull[];
   payee: string;
+  otherPayee: boolean;
   activeStake: string;
   totalStake: string;
   controller: string;
@@ -153,6 +154,7 @@ export type StakingParams = {
 export interface MyStakingInfo extends Omit<SoraMyStakingInfo, 'myValidators'> {
   myValidators: FWValidatorInfoFull[];
   alerts: Alert[];
+  otherPayee: boolean;
 }
 
 export type StakingParamsRequest = {

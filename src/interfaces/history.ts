@@ -104,7 +104,7 @@ type HistoryForAssetId = Record<WalletAddress, HistoryForWalletAddress>;
 
 type History = Record<AssetId, HistoryForAssetId>;
 
-type GetHistory = (assetName: AssetName, networkName: NetworkName) => SubqueryHistory;
+type GetHistory = (assetName: AssetName, networkName: NetworkName, address?: string) => SubqueryHistory;
 
 enum TransactionType {
   transfer = 'transfer',

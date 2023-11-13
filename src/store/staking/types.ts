@@ -17,7 +17,7 @@ export type StakingHistory = HistoryElement | SoraHistoryElement; // TODO
 
 export type GetStakingNetwork = (networkName: NetworkName) => NetworkParams;
 
-export type GetStakingHistory = (networkName: NetworkName, assetId: string) => StakingHistory[];
+export type GetStakingHistory = (networkName: NetworkName, assetId: string, address?: string) => StakingHistory[];
 
 export type SetAllStakingItems = StakingParamsResponse;
 

@@ -78,8 +78,22 @@ export default class WalletConnectDAppService {
 
   async initPairing() {
     if (!this.app) await this.initApp();
+    const prepOptionalNamespaces = {
+      optionalNamespaces: {
+        polkadot: {
+          methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
+          chains: [
+            ...Object.values(this.state.networkMap).flatMap(({ isEthereum, genesisHash }) => {
+              if (isEthereum) return [];
 
-    const pairing = await this.app?.client.connect(WALLET_CONNECT_DAPP_CONFIG);
+              return [`polkadot:${generateHalfGenesisHash(genesisHash)}`];
+            }),
+          ],
+          events: ['chainChanged", "accountsChanged'],
+        },
+      },
+    };
+    const pairing = await this.app?.client.connect({ ...WALLET_CONNECT_DAPP_CONFIG, ...prepOptionalNamespaces });
 
     this.setListeners();
 
@@ -99,20 +113,20 @@ export default class WalletConnectDAppService {
     });
 
     const activePairing = this.pairingSubject.value[uri];
-    if (!activePairing)
+
+    if (!activePairing) {
       cb({
         status: false,
         message: 'ERROR',
       });
 
+      return;
+    }
+
     activePairing
       ?.approval()
-      .then((data) => {
-        this.onApproval(data, cb);
-      })
-      .catch(() => {
-        //TODO
-      });
+      .then((data) => this.onApproval(data, cb))
+      .catch(() => cb({ status: false, message: 'rejected' }));
 
     return this.pairingSubject.value?.uri;
   }
@@ -129,14 +143,12 @@ export default class WalletConnectDAppService {
       );
       this.state.updateCurrentAccount(encodedAddress);
 
-      cb({
-        status: true,
-        message: 'all set up',
-      });
+      cb({ status: true });
     } else {
+      this.disconnect(data.topic);
       cb({
         status: false,
-        message: 'already has this wallet',
+        message: 'duplicate',
       });
     }
   }
@@ -149,16 +161,21 @@ export default class WalletConnectDAppService {
     this.app?.abortPairingAttempt();
   }
 
-  onResponse() {
-    // console.info(data, 'PAIRING');
-  }
+  onPairingDelete() {
+    this.app?.client.pairing.core.on('pairing_delete', async ({ topic }: { id: string; topic: string }) => {
+      const account = this.state.keyringService.getAddresses().find((el) => el.meta.wcTopic === topic);
 
-  // onPairingDelete() {
-  //   this.app?.client.pairing.core.on('pairing_delete', ({ id, topic }) => {
-  //     console.info(id, topic);
-  //     // clean up after the pairing for `topic` was deleted.
-  //   });
-  // }
+      if (account) {
+        const current = await this.state.currentAccount;
+        this.state.keyringService.forgetAddress(account?.address);
+
+        if (current?.address === account.address) {
+          const accounts = this.state.keyringService.getAccounts();
+          this.state.updateCurrentAccount(accounts.length ? accounts[0].address : '');
+        }
+      }
+    });
+  }
 
   onPairingExpire({ id, topic }: { id: string; topic: string }) {
     console.info(id, topic);

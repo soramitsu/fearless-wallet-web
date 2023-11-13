@@ -118,5 +118,5 @@ export function convertHexToUtf8(hex: string) {
 }
 
 export function generateHalfGenesisHash(genesisHash: string): string {
-  return genesisHash.slice(2, Math.floor(genesisHash.length / 2) + 1);
+  return genesisHash.slice(2, Math.ceil(genesisHash.length / 2));
 }

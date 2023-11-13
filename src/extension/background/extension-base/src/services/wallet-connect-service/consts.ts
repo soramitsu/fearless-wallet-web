@@ -1,5 +1,9 @@
 import { CoreTypes, SignClientTypes } from '@walletconnect/types';
-import { WalletConnectSigningMethod, POLKADOT_SIGNING_METHODS, EIP155_SIGNING_METHODS } from './types';
+import {
+  WalletConnectSigningMethod,
+  POLKADOT_SIGNING_METHODS,
+  EIP155_SIGNING_METHODS,
+} from '@extension-base/services/wallet-connect-service/types';
 
 export const PROJECT_ID_EXTENSION = '991eb107bbaa66300db0223ec15c48ca';
 export const RELAY_URL = 'wss://relay.walletconnect.com';
@@ -21,16 +25,6 @@ export const DEFAULT_WALLET_CONNECT_OPTIONS: SignClientTypes.Options = {
 
 export const WALLET_CONNECT_DAPP_CONFIG: Record<string, unknown> = {
   requiredNamespaces: {
-    polkadot: {
-      methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
-      chains: [
-        'polkadot:91b171bb158e2d3848fa23a9f1c25182', // polkadot
-        'polkadot:9eb76c5184c4ab8679d2d5d819fdf90b', //astar
-      ],
-      events: ['chainChanged", "accountsChanged'],
-    },
-  },
-  optionalNamespaces: {
     polkadot: {
       methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
       chains: [

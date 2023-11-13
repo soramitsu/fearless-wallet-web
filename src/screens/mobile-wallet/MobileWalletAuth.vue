@@ -1,22 +1,25 @@
 <template>
-  <AboveForm :fullScreen="true" :header="header" @closeHandler="close">
-    <template v-if="isQRPrep">
-      <h2 class="header">{{ $t('mobileConnector.qrHeader') }}</h2>
+  <Fragment>
+    <AboveForm v-if="!showFinishForm" :fullScreen="true" header="welcome.connectMobile" @closeHandler="onClose">
+      <template v-if="isQRPrep">
+        <h2 class="header">{{ $t('mobileConnector.qrHeader') }}</h2>
 
-      <QR :payload="qr" />
-    </template>
+        <QR :payload="qr" />
+      </template>
 
-    <div v-show="isLoading && !isActiveAccountExists" class="loader">
-      <Loader />
+      <MobileWalletPermissionPopup
+        v-if="connectionStatus"
+        :status="connectionStatus"
+        :requestResponse="requestResponse"
+        :requestInfo="requestInfo"
+      />
+    </AboveForm>
+    <div v-else class="finish-form">
+      <FinishForm />
+
+      <FButton size="big" fontSize="big" width="100%" text="common.continue" @click="onContinue" />
     </div>
-
-    <MobileWalletPermissionPopup
-      v-if="connectionStatus"
-      :status="connectionStatus"
-      :requestResponse="requestResponse"
-      :requestInfo="requestInfo"
-    />
-  </AboveForm>
+  </Fragment>
 </template>
 
 <script lang="ts" setup>
@@ -24,18 +27,17 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import MobileWalletPermissionPopup from '@/screens/mobile-wallet/MobileWalletPermissionPopup.vue';
 import { walletConnectDappInitSession, walletConnectDappSubscribeSession } from '@/extension/messaging';
+import FinishForm from '@/screens/addWallet/FinishForm.vue';
+import { Components } from '@/router/routes';
+
 const router = useRouter();
 
 const requestInfo: null = null;
 const requestResponse: null = null;
-const isLoading = false;
-const isPaired = false;
-const isPermissionsGranted = false;
-const isWalletAlreadyExists = false;
-const isActiveAccountExists = false;
-const isPossibleConnectionProblem = false;
+const isWalletAlreadyExists = ref(false);
 const permissionRequestDenied = false;
 const qr = ref<string | null>(null);
+const showFinishForm = ref(false);
 
 onMounted(async () => {
   const res = await walletConnectDappInitSession();
@@ -43,36 +45,29 @@ onMounted(async () => {
   if (res) {
     qr.value = res;
 
-    walletConnectDappSubscribeSession(res, (data) => {
-      console.info(data);
+    walletConnectDappSubscribeSession(res, ({ status, message }) => {
+      if (status) showFinishForm.value = true;
+
+      if (!status) {
+        if (message === 'rejected') return router.back();
+
+        if (message === 'duplicate') isWalletAlreadyExists.value = true;
+      }
     });
   }
 });
 
 const connectionStatus = computed(() => {
-  if (isActiveAccountExists) return 'active_account_exists';
-  if (isPossibleConnectionProblem && !isPermissionsGranted) return 'reset_form';
-  if (isPermissionsGranted) return 'success';
-  if (isWalletAlreadyExists) return 'wallet_exists';
+  if (isWalletAlreadyExists.value) return 'wallet_exists';
   if (permissionRequestDenied) return 'failed';
 
   return false;
 });
 
-const isQRPrep = computed(() => !connectionStatus.value && qr && !isLoading);
+const isQRPrep = computed(() => !connectionStatus.value && qr);
 
-const isPermissionRequestResolved = computed(
-  () => connectionStatus.value === 'success' || connectionStatus.value === 'failed'
-);
-
-const header = computed(() => {
-  if (isPaired && !isPermissionRequestResolved.value) return 'mobileConnector.requesting';
-
-  if (isPermissionRequestResolved.value) return '';
-
-  return 'welcome.connectMobile';
-});
-const close = () => router.back();
+const onClose = () => router.back();
+const onContinue = () => router.push({ name: Components.Wallet });
 </script>
 
 <style lang="scss" scoped>
@@ -102,6 +97,12 @@ const close = () => router.back();
   display: flex;
   justify-content: center;
   align-items: center;
+  height: 100%;
+}
+.finish-form {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   height: 100%;
 }
 </style>

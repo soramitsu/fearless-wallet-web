@@ -24,6 +24,7 @@ import type { Port } from '@extension-base/background/types/types';
 
 export default class WalletConnectDAppService {
   state: State;
+  private optionalNamespaces: Record<string, unknown>;
   private app?: UniversalProvider;
 
   public readonly uriSubject: BehaviorSubject<string> = new BehaviorSubject<string>('');
@@ -34,6 +35,21 @@ export default class WalletConnectDAppService {
   constructor(state: State) {
     this.state = state;
     this.initApp().catch(console.error);
+    this.optionalNamespaces = {
+      optionalNamespaces: {
+        polkadot: {
+          methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
+          chains: [
+            ...Object.values(this.state.networkMap).flatMap(({ isEthereum, genesisHash }) => {
+              if (isEthereum) return [];
+
+              return [`polkadot:${generateHalfGenesisHash(genesisHash)}`];
+            }),
+          ],
+          events: ['chainChanged", "accountsChanged'],
+        },
+      },
+    };
   }
 
   private async initApp() {
@@ -52,18 +68,8 @@ export default class WalletConnectDAppService {
   }
 
   private setListeners() {
-    this.app?.client.pairing.core.on('pairing_expire', this.onPairingExpire);
-    this.app?.client.on('session_update', this.onSessionUpdate);
-    this.app?.client.on('session_event', (data: any) => {
-      console.info(data, 'session_event');
-    });
-    this.app?.client.on('session_delete', ({ id, topic }: { id: number; topic: string }) => {
-      console.info('EVENT', 'session_deleted');
-      console.info(id, topic);
-    });
-  }
-  updateSessions() {
-    // this.sessionSubject.next(this.sessions);
+    this.app?.client.pairing.core.on('pairing_expire', this.onSessionDelete);
+    this.app?.client.on('session_delete', this.onSessionDelete);
   }
 
   checkClient() {
@@ -78,22 +84,8 @@ export default class WalletConnectDAppService {
 
   async initPairing() {
     if (!this.app) await this.initApp();
-    const prepOptionalNamespaces = {
-      optionalNamespaces: {
-        polkadot: {
-          methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
-          chains: [
-            ...Object.values(this.state.networkMap).flatMap(({ isEthereum, genesisHash }) => {
-              if (isEthereum) return [];
 
-              return [`polkadot:${generateHalfGenesisHash(genesisHash)}`];
-            }),
-          ],
-          events: ['chainChanged", "accountsChanged'],
-        },
-      },
-    };
-    const pairing = await this.app?.client.connect({ ...WALLET_CONNECT_DAPP_CONFIG, ...prepOptionalNamespaces });
+    const pairing = await this.app?.client.connect({ ...WALLET_CONNECT_DAPP_CONFIG, ...this.optionalNamespaces });
 
     this.setListeners();
 
@@ -161,36 +153,22 @@ export default class WalletConnectDAppService {
     this.app?.abortPairingAttempt();
   }
 
-  onPairingDelete() {
-    this.app?.client.pairing.core.on('pairing_delete', async ({ topic }: { id: string; topic: string }) => {
-      const account = this.state.keyringService.getAddresses().find((el) => el.meta.wcTopic === topic);
+  async onSessionDelete({ topic }: { id: number; topic: string }) {
+    const account = this.state.keyringService.getAddresses().find((el) => el.meta.wcTopic === topic);
 
-      if (account) {
-        const current = await this.state.currentAccount;
-        this.state.keyringService.forgetAddress(account?.address);
+    if (account) {
+      const current = await this.state.currentAccount;
+      this.state.keyringService.forgetAddress(account?.address);
 
-        if (current?.address === account.address) {
-          const accounts = this.state.keyringService.getAccounts();
-          this.state.updateCurrentAccount(accounts.length ? accounts[0].address : '');
-        }
+      if (current?.address === account.address) {
+        const accounts = this.state.keyringService.getAccounts();
+        this.state.updateCurrentAccount(accounts.length ? accounts[0].address : '');
       }
-    });
+    }
   }
 
   onPairingExpire({ id, topic }: { id: string; topic: string }) {
     console.info(id, topic);
-  }
-
-  onSessionUpdate({
-    id,
-    topic,
-    params,
-  }: {
-    id: number;
-    topic: string;
-    params: { namespaces: SessionTypes.Namespaces };
-  }) {
-    console.info(id, topic, params);
   }
 
   async onRequest(payload: SignerPayloadJSON) {
@@ -215,8 +193,9 @@ export default class WalletConnectDAppService {
         return { signature: '0x' as HexString };
       });
 
-    return result as any as { signature: HexString };
+    return result as unknown as { signature: HexString };
   }
+
   async onRequestRaw(payload: SignerPayloadRaw) {
     const encodedAddress = this.state.keyringService.encodeAddress(payload.address);
     const account = this.state.keyringService.getAddress(encodedAddress);

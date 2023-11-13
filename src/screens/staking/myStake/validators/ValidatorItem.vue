@@ -3,7 +3,7 @@
     <div class="left-part">
       <Checkbox
         v-if="showCheckbox"
-        v-model="validator.isSelect"
+        :value="validator.isSelect"
         size="medium"
         label=""
         class="validator-checkbox"

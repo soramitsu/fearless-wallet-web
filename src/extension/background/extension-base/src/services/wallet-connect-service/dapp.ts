@@ -5,12 +5,14 @@ import { createSubscription } from '@extension-base/background/handlers/subscrip
 import {
   DEFAULT_LOGGER,
   PROJECT_ID_EXTENSION,
+  THIRTY_DAYS_MS,
   WALLET_CONNECT_DAPP_CONFIG,
   WALLET_CONNECT_METADATA,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
 import { generateHalfGenesisHash } from '@extension-base/services/wallet-connect-service/utils';
+import registry from '../../api/substrate/typeRegistry';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
@@ -163,8 +165,8 @@ export default class WalletConnectDAppService {
     }
   }
 
-  onPairingExpire({ id, topic }: { id: string; topic: string }) {
-    console.info(id, topic);
+  onPairingExpire({ topic }: { id: string; topic: string }) {
+    this.app?.client.core.pairing.updateExpiry({ topic, expiry: Date.now() + THIRTY_DAYS_MS });
   }
 
   async onRequest(payload: SignerPayloadJSON) {
@@ -189,15 +191,25 @@ export default class WalletConnectDAppService {
         return { signature: '0x' as HexString };
       });
 
+    this.updateExpiry(account?.meta.wcTopic as string);
+
     return result as unknown as { signature: HexString };
+  }
+
+  updateExpiry(topic: string) {
+    this.app?.client.core.pairing.updateExpiry({
+      topic,
+      expiry: Date.now() + THIRTY_DAYS_MS,
+    });
   }
 
   async onRequestRaw(payload: SignerPayloadRaw) {
     const encodedAddress = this.state.keyringService.encodeAddress(payload.address);
     const account = this.state.keyringService.getAddress(encodedAddress);
+    const payloadJson = registry.createType('Extrinsic', payload.data) as any as SignerPayloadJSON;
 
     const result = await this.app?.client.request<{ signature: HexString }>({
-      chainId: `polkadot:`,
+      chainId: `polkadot:${generateHalfGenesisHash(payloadJson.genesisHash)}`,
       topic: account?.meta.wcTopic as string,
       request: {
         method: 'polkadot_signTransaction',
@@ -207,6 +219,7 @@ export default class WalletConnectDAppService {
         },
       },
     });
+    this.updateExpiry(account?.meta.wcTopic as string);
 
     return result ?? { signature: '0x' as HexString };
   }

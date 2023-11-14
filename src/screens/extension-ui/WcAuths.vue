@@ -25,7 +25,7 @@ const router = useRouter();
 const accounts = computed<AccountJson[]>(() => store.getters.getAccounts);
 const wcFilteredList = computed<WalletConnectSessions>(() =>
   (store.getters.wcSessions as WalletConnectSessions).filter(({ topic }) =>
-    accounts.value.some(({ wcTopic }) => wcTopic === topic)
+    accounts.value.every(({ wcTopic }) => wcTopic !== topic)
   )
 );
 const isAuthExists = computed(() => wcFilteredList.value?.length);

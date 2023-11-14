@@ -61,9 +61,9 @@ import type { FetchHistory, GetNetwork } from '@/store';
 import type { AddressBook } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { cut } from '@/helpers/';
+import { cut, isSora } from '@/helpers/';
 import { getType } from '@/helpers/history';
-import { TransactionType } from '@/interfaces/history';
+import { SoraHistoryElement, TransactionType } from '@/interfaces/history';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 
 @Component
@@ -101,10 +101,15 @@ export default class HistoryBook extends Vue {
   get historyAddresses() {
     if (!this.network) return [];
 
-    const addresses =
-      this.getHistory(this.assetId, this.network.toLowerCase())
-        ?.nodes.filter((item) => getType(item) === TransactionType.transfer)
-        .map(({ transfer }) => BaseApi.encodeAddress(transfer?.to ?? '', this.addressPrefix)) ?? [];
+    const history = this.getHistory(this.assetId, this.network.toLowerCase());
+
+    const addresses = isSora(this.network)
+      ? (history.nodes as SoraHistoryElement[])
+          .filter(({ method }) => method === 'transfer')
+          .map(({ data }) => BaseApi.encodeAddress(data?.to ?? '', this.addressPrefix)) ?? []
+      : history?.nodes
+          .filter((item) => getType(item) === TransactionType.transfer)
+          .map(({ transfer }) => BaseApi.encodeAddress(transfer?.to ?? '', this.addressPrefix)) ?? [];
 
     return Array.from(new Set(addresses))
       .filter(

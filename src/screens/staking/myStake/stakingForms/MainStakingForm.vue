@@ -1,65 +1,113 @@
 <template>
-  <AboveForm :fullScreen="true" :header="header" @closeHandler="closeForm">
+  <AboveForm
+    :fullScreen="true"
+    :showBackIcon="showBackIcon"
+    :header="header"
+    @handlerBack="handlerBack"
+    @closeHandler="closeForm"
+  >
     <div class="staking-management">
       <Scroll>
-        <div v-if="showWalletName" class="controller-description row">
-          {{ $t('staking.separateAccountController') }}
+        <EditAddressBook
+          v-if="showEditAddressBook"
+          :network="network"
+          :_address="newAddress"
+          @setAddress="setAddress"
+        />
+
+        <HistoryBook
+          v-else-if="showHistoryBook"
+          :network="network"
+          :assetId="stakingAssetId"
+          @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
+          @setRecipient="setPayoutAddress"
+          @setAddress="setAddress"
+        />
+
+        <div v-else-if="showMyWallets">
+          <WalletInfo
+            v-for="({ name, address, ethereumAddress, isMobile }, index) in filteredWallets"
+            :key="name + index"
+            :name="name"
+            :isSelected="getStatusWallet(address, ethereumAddress)"
+            :isMobile="isMobile"
+            :address="address"
+            :showMenu="false"
+            class="wallet"
+            @setWallet="setWallet(address, ethereumAddress)"
+          />
         </div>
 
-        <FInput
-          v-if="showWalletName"
-          v-model="accountName"
-          placeholder="accounts.account"
-          size="big"
-          :readonly="true"
-        />
+        <template v-else>
+          <div v-if="showWalletName" class="controller-description row">
+            {{ $t('staking.separateAccountController') }}
+          </div>
 
-        <SelectInput
-          v-if="showAmountInput"
-          class="amount-input"
-          text="assets.amount"
-          :totalAmount="totalAmount"
-          :value="amountValue"
-          :asset="stakingAssetName"
-          :assetId="stakingAssetId"
-          :amount="amount"
-          :readonly="true"
-          @update:amount="updateAmount"
-          @setMax="setMax"
-        />
+          <FInput
+            v-if="showWalletName"
+            v-model="accountName"
+            placeholder="accounts.account"
+            size="big"
+            :readonly="true"
+          />
 
-        <BondExtra v-if="isBondExtra" :stakingCurrency="stakingCurrency" :fee="fee" />
+          <SelectInput
+            v-if="showAmountInput"
+            class="amount-input"
+            text="assets.amount"
+            :totalAmount="totalAmount"
+            :value="amountValue"
+            :asset="stakingAssetName"
+            :assetId="stakingAssetId"
+            :amount="amount"
+            :readonly="true"
+            @update:amount="updateAmount"
+            @setMax="setMax"
+          />
 
-        <Unbond v-else-if="isUnbond" :stakingCurrency="stakingCurrency" :fee="fee" />
+          <BondExtra v-if="isBondExtra" :stakingCurrency="stakingCurrency" :fee="fee" />
 
-        <WithdrawUnbonded v-else-if="isRedeem" :stakingCurrency="stakingCurrency" :fee="fee" />
+          <Unbond v-else-if="isUnbond" :stakingCurrency="stakingCurrency" :fee="fee" />
 
-        <Rebond v-else-if="isRebond" :stakingCurrency="stakingCurrency" :fee="fee" :amount="amount" />
+          <WithdrawUnbonded v-else-if="isRedeem" :stakingCurrency="stakingCurrency" :fee="fee" />
 
-        <ControllerAccount
-          v-else-if="isControllerAccount"
-          :step="step"
-          :fee="fee"
-          :network="network"
-          :stakingNetwork="stakingNetwork"
-          :stakingCurrency="stakingCurrency"
-          :controllerAddress="controllerAddress"
-          @update:controllerAddress="updateControllerAddress"
-        />
+          <Rebond v-else-if="isRebond" :stakingCurrency="stakingCurrency" :fee="fee" :amount="amount" />
 
-        <Payee
-          v-else-if="isPayee"
-          :step="step"
-          :fee="fee"
-          :network="network"
-          :stakingNetwork="stakingNetwork"
-          :stakingCurrency="stakingCurrency"
-          :payoutAddress="payoutAddress"
-          @update:payoutAddress="updatePayoutAddress"
-        />
+          <ControllerAccount
+            v-else-if="isControllerAccount"
+            :step="step"
+            :fee="fee"
+            :network="network"
+            :stakingNetwork="stakingNetwork"
+            :stakingCurrency="stakingCurrency"
+            :controllerAddress="controllerAddress"
+            @update:controllerAddress="updateControllerAddress"
+          />
+
+          <Payee
+            v-else-if="isPayee"
+            :step="step"
+            :fee="fee"
+            :network="network"
+            :stakingNetwork="stakingNetwork"
+            :stakingCurrency="stakingCurrency"
+            :payoutAddress="payoutAddress"
+            @update:payoutAddress="setPayoutAddress"
+            @openHistoryBook="toggleHistoryBookVisibility"
+            @openMyWallets="toggleMyWalletsVisibility"
+          />
+        </template>
       </Scroll>
 
-      <FButton width="100%" size="big" fontSize="big" :text="btnText" :disabled="confirmBtnDisabled" @click="confirm" />
+      <FButton
+        v-if="showBtn"
+        width="100%"
+        size="big"
+        fontSize="big"
+        :text="btnText"
+        :disabled="confirmBtnDisabled"
+        @click="confirm"
+      />
     </div>
 
     <ConfirmationPasswordPopup
@@ -98,13 +146,18 @@ import { getSoraFees } from '@/extension/messaging';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { AsyncFn, StakingOperation, StakingOperationParams } from '@/interfaces';
-
+import WalletInfo from '@/screens/main/WalletInfo.vue';
+import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
+import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 @Component({
   components: {
     Payee,
     Rebond,
     Unbond,
     BondExtra,
+    WalletInfo,
+    HistoryBook,
+    EditAddressBook,
     WithdrawUnbonded,
     ControllerAccount,
     ConfirmationPasswordPopup,
@@ -113,11 +166,14 @@ import { AsyncFn, StakingOperation, StakingOperationParams } from '@/interfaces'
 export default class MainStakingForm extends Vue {
   showConfirmationPasswordPopup = false;
   isSuggested = false;
+  showHistoryBook = false;
+  showMyWallets = false;
   amount = '';
   fee = '0';
   step = 1;
   controllerAddress = '';
   payoutAddress = '';
+  newAddress = '';
 
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
@@ -129,6 +185,18 @@ export default class MainStakingForm extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
   @Action(StakingActionTypes.GET_MY_STAKING_INFO) getMyStakingInfo!: AsyncFn<GetStakingNetworkProps>;
+
+  get showBtn() {
+    return !this.showHistoryBook && !this.showEditAddressBook && !this.showMyWallets;
+  }
+
+  get showBackIcon() {
+    return this.showMyWallets || this.showHistoryBook || this.showEditAddressBook;
+  }
+
+  get showEditAddressBook() {
+    return this.newAddress !== '';
+  }
 
   get network() {
     return this.stakingNetwork.network;
@@ -181,6 +249,10 @@ export default class MainStakingForm extends Vue {
     if (this.isControllerAccount || this.isPayee) return this.step === 2;
 
     return this.step === 1;
+  }
+
+  get filteredWallets() {
+    return this.wallets.filter(({ active }) => !active);
   }
 
   get isPayee() {
@@ -307,8 +379,10 @@ export default class MainStakingForm extends Vue {
     this.controllerAddress = value;
   }
 
-  updatePayoutAddress(value: string) {
-    this.payoutAddress = value;
+  handlerBack() {
+    this.showMyWallets = false;
+    this.showHistoryBook = false;
+    this.newAddress = '';
   }
 
   closeForm() {
@@ -350,6 +424,39 @@ export default class MainStakingForm extends Vue {
 
     if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
   }
+
+  toggleHistoryBookVisibility() {
+    this.showHistoryBook = !this.showHistoryBook;
+  }
+
+  setAddress(address: string, showHistoryBook = false) {
+    this.newAddress = address;
+    this.showHistoryBook = showHistoryBook;
+  }
+
+  toggleMyWalletsVisibility() {
+    this.showMyWallets = !this.showMyWallets;
+  }
+
+  getStatusWallet(address: string, ethereumAddress: string) {
+    const currentAddress = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
+    const currentRecipientAddress = BaseApi.formatAddress(
+      { address: this.payoutAddress, ethereumAddress: this.payoutAddress },
+      this.network
+    );
+
+    return currentAddress === currentRecipientAddress;
+  }
+
+  setWallet(address: string, ethereumAddress: string) {
+    this.payoutAddress = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
+
+    this.toggleMyWalletsVisibility();
+  }
+
+  setPayoutAddress(value = '') {
+    this.payoutAddress = value;
+  }
 }
 </script>
 
@@ -370,6 +477,10 @@ export default class MainStakingForm extends Vue {
     color: $default-white;
     margin-bottom: 15px;
     margin-left: 15px;
+  }
+
+  .wallet {
+    margin-bottom: 12px !important;
   }
 }
 </style>

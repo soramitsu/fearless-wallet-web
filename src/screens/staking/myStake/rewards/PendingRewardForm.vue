@@ -45,7 +45,7 @@
 
         <InfoRow
           text="assets.networkFee"
-          :value="`${fee} ${stakingAssetName}`"
+          :value="`${sumFee} ${stakingAssetName}`"
           :price="feeValueString"
           borderType="default"
           icon="info"
@@ -65,7 +65,7 @@
       :currency="stakingCurrency"
       :amount="summaryRewards"
       :value="summaryRewardsValue"
-      :fee="fee"
+      :fee="sumFee"
       :feeValue="feeValue"
       :firstIcon="stakingAssetId"
       :tx="tx"
@@ -116,6 +116,10 @@ export default class StakingManagement extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
+  get sumFee() {
+    return (+this.fee * this.rewards.payouts.length).toString();
+  }
+
   get selectedAccountName() {
     return this.selectedWallet.name;
   }
@@ -145,9 +149,7 @@ export default class StakingManagement extends Vue {
   }
 
   get feeValueString() {
-    const value = +this.fee * this.stakingAssetPrice;
-
-    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
+    return `${this.fiatSymbol}${this.$n(+this.feeValue, 'price')}`;
   }
 
   get stakingAssetName() {
@@ -191,7 +193,7 @@ export default class StakingManagement extends Vue {
   }
 
   get feeValue() {
-    return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
+    return getCostOfAssets(this.sumFee, this.stakingAssetPrice).toString();
   }
 
   get summaryRewardsValue() {

@@ -68,6 +68,8 @@ type SoraHistoryElement = {
     maxAdditional?: string;
     value?: string;
     amount?: string;
+    to?: string;
+    from?: string;
   };
 };
 

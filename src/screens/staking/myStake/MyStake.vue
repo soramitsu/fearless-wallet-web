@@ -123,7 +123,7 @@ import YourValidatorsManagement from '@/screens/staking/myStake/validators/YourV
 import PendingRewardForm from '@/screens/staking/myStake/rewards/PendingRewardForm.vue';
 import { isSora } from '@/helpers';
 import { Components } from '@/router/routes';
-import { FetchHistory, GetStakingNetwork } from '@/store';
+import { FetchHistory, GetStakingNetwork, SelectedWallet } from '@/store';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -164,6 +164,7 @@ export default class MyStake extends Vue {
 
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Action(StakingActionTypes.GET_STAKING_PARAMS) getStakingParams!: AsyncFn;
@@ -291,10 +292,17 @@ export default class MyStake extends Vue {
   async loadHistory() {
     if (this.history.length !== 0) return;
 
-    await this.fetchHistory({
+    this.fetchHistory({
       networkName: this.network,
       assetId: this.stakingAssetId,
     });
+
+    if (this.stakingNetwork.isOtherPayee)
+      this.fetchHistory({
+        networkName: this.network,
+        assetId: this.stakingAssetId,
+        address: this.stakingNetwork.payee,
+      });
   }
 
   updateActiveTabName(name: MyStakingTab) {

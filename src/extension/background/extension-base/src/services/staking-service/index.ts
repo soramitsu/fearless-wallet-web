@@ -80,7 +80,7 @@ export class StakingService {
     )?.name;
     const payee = myAccountName ?? addressBookName ?? stakingInfo.payee;
 
-    const otherPayee =
+    const isOtherPayee =
       stakingInfo.payee !== this.state.keyringService.formatAddress({ address, ethereumAddress: address }, network);
 
     const nameController = this.state.keyringService.getAccountName(stakingInfo.controller);
@@ -89,11 +89,13 @@ export class StakingService {
     )?.name;
     const controller = nameController ?? addressBookNameController ?? stakingInfo.controller;
 
+    const controllerAddress = await this.getControllerAddress(address);
+
     const result = {
       ...stakingInfo,
       payee,
       controller,
-      otherPayee,
+      isOtherPayee,
       myValidators: this.getValidatorsInformation(stakingInfo.myValidators, validators).map((info) => {
         const isActive = validatorsStatuses.validatorsActive.includes(info.address);
         const isInactive = validatorsStatuses.validatorsInactive.includes(info.address);
@@ -263,6 +265,10 @@ export class StakingService {
     }
 
     return alerts;
+  }
+
+  public async getControllerAddress(address: string) {
+    return await apiSora.staking.getController(address);
   }
 
   public async getMinNominatorBond() {

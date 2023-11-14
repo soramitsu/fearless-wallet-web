@@ -13,7 +13,7 @@
 
           <Loading v-if="isLoading" class="loading" />
 
-          <div v-else class="amount">{{ rewardAmount }} {{ rewardedAsset }}</div>
+          <div v-else class="amount">{{ $n(rewardAmount, 'decimal') }} {{ rewardedAsset }}</div>
 
           <div class="value">{{ fiatSymbol }}{{ rewardedValue }}</div>
         </div>
@@ -54,13 +54,15 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { MyStakingTab } from '@/interfaces/common';
-import type { GetAssetPrice, GetStakingNetwork } from '@/store';
+import type { GetAssetPrice, GetStakingNetwork, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { getRewards } from '@/extension/messaging';
 import { RewardsResponse } from '@/extension/background/extension-base/src/services/staking-service/types';
+import { GetStakingHistory } from '@/store';
+import { SoraHistoryElement } from '@/interfaces';
 
 @Component
 export default class About extends Vue {
@@ -74,8 +76,20 @@ export default class About extends Vue {
   @Prop({ type: String }) network!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
+  @Getter(StakingGettersTypes.getStakingHistory) getStakingHistory!: GetStakingHistory;
+
+  get history() {
+    return this.getStakingHistory(this.network, this.stakingCurrency.assetId);
+  }
+
+  get payeeHistory() {
+    if (!this.stakingNetwork.isOtherPayee) return this.history;
+
+    return this.getStakingHistory(this.network, this.stakingCurrency.assetId, this.stakingNetwork.payee);
+  }
 
   get unbondDetails() {
     const unbond = this.stakingNetwork.unbond;
@@ -99,7 +113,13 @@ export default class About extends Vue {
   }
 
   get rewardAmount() {
-    return this.$n(+this.rewards.sum, 'decimal');
+    return (this.payeeHistory as SoraHistoryElement[])
+      .filter(({ method }) => method === 'rewarded')
+      .reduce((result, { data }) => {
+        result = result + +(data?.amount ?? 0);
+
+        return result;
+      }, 0);
   }
 
   get showUnbondDetails() {

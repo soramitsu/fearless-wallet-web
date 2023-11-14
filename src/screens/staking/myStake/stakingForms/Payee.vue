@@ -22,7 +22,11 @@
       />
 
       <div class="activity-buttons">
+        <BadgeButton text="assets.history" @click="$emit('openHistoryBook')" />
+
         <BadgeButton text="common.paste" @click="paste" />
+
+        <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="$emit('openMyWallets')" />
       </div>
 
       <Hint text="staking.defaultPayout" iconName="notification" class="hint row" />
@@ -35,12 +39,10 @@
         :value="`${fee} ${asset}`"
         :price="valueString"
         :hideLastBorder="false"
-        :iconClasses="['network-fee']"
+        :iconClasses="['staking-fee']"
       />
 
-      <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
-
-      <FLink text="staking.learnAboutRewards" class="about-controllers row" @click="openAboutRewards" />
+      <Tooltip text="staking.stakingFee" target=".staking-fee" placement="right" />
     </template>
   </div>
 </template>
@@ -49,7 +51,7 @@
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { SelectedWallet, GetAssetPrice, NetworkParams } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { AccountJson, TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { cut, getClipboard } from '@/helpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -63,6 +65,7 @@ export default class Payee extends Vue {
   @PropSync('payoutAddress', { type: String }) syncedPayoutAddress!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get payee() {
@@ -85,6 +88,14 @@ export default class Payee extends Vue {
     return this.selectedWallet.name;
   }
 
+  get filteredWallets() {
+    return this.wallets.filter(({ active }) => !active);
+  }
+
+  get showMyWalletsButton() {
+    return this.filteredWallets.length !== 0;
+  }
+
   get stakingAssetPrice() {
     const priceId = this.stakingCurrency?.priceId ?? '';
 
@@ -103,10 +114,6 @@ export default class Payee extends Vue {
 
   setPayoutAddress(value = '') {
     this.syncedPayoutAddress = value;
-  }
-
-  openAboutRewards() {
-    console.info('openAboutRewards');
   }
 }
 </script>
@@ -132,10 +139,6 @@ export default class Payee extends Vue {
 
   .row {
     margin-left: 15px;
-  }
-
-  .about-controllers {
-    margin-top: 10px;
   }
 
   .activity-buttons {

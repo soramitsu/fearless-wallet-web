@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { getSubstrateAddress, isRequireEvmAPI } from '../utils/utils';
+import { getSubstrateAddress, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import type {
   CachedUnlocks,
   RequestAccountExport,

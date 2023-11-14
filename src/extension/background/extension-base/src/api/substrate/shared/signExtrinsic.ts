@@ -1,7 +1,7 @@
 import { assert } from '@polkadot/util';
 import KeyringSigner from '@extension-base/signers/KeyringSigner';
 import { SignerType } from '@extension-base/background/types/types';
-import State from '@extension-base/background/handlers/State';
+import type State from '@extension-base/background/handlers/State';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { ApiProps, ExternalRequestPromise } from '@extension-base/background/types/types';
 import type { HandleBasicTx } from '@extension-base/api/evm/transfer';

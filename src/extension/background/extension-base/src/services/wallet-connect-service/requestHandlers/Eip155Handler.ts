@@ -1,12 +1,12 @@
 import { formatJsonRpcError, formatJsonRpcResult } from '@json-rpc-tools/utils';
-import { SignClientTypes } from '@walletconnect/types';
 import { getSdkError } from '@walletconnect/utils';
 import { isSameAddress } from '@extension-base/utils';
-import State from '@extension-base/background/handlers/State';
-import { WalletConnectService } from '..';
-import { EIP155_SIGNING_METHODS } from '../consts';
-import { getEip155MessageAddress, parseRequestParams } from '../utils';
-import { RequestService } from '../../request-service';
+import { getEip155MessageAddress, parseRequestParams } from '@extension-base/services/wallet-connect-service/utils';
+import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
+import type { SignClientTypes } from '@walletconnect/types';
+import type { WalletConnectService } from '@extension-base/services/wallet-connect-service';
+import type State from '@extension-base/background/handlers/State';
+import type { RequestService } from '@extension-base/services/request-service';
 
 export default class Eip155RequestHandler {
   readonly walletConnectService: WalletConnectService;

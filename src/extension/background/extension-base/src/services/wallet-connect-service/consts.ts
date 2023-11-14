@@ -1,9 +1,9 @@
-import { CoreTypes, SignClientTypes } from '@walletconnect/types';
 import {
-  WalletConnectSigningMethod,
+  type WalletConnectSigningMethod,
   POLKADOT_SIGNING_METHODS,
   EIP155_SIGNING_METHODS,
 } from '@extension-base/services/wallet-connect-service/types';
+import type { CoreTypes, SignClientTypes } from '@walletconnect/types';
 
 export const PROJECT_ID_EXTENSION = '991eb107bbaa66300db0223ec15c48ca';
 export const RELAY_URL = 'wss://relay.walletconnect.com';
@@ -68,4 +68,3 @@ export const WALLET_CONNECT_SUPPORT_NAMESPACES: string[] = [
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 ];
-export { EIP155_SIGNING_METHODS };

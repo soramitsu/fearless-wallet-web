@@ -8,20 +8,10 @@ import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/ev
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/swaps';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
-import State from '@extension-base/background/handlers/State';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
-import {
-  BasicTxErrorCode,
-  RequestUpdateMeta,
-  TransferErrorCode,
-  PriceJson,
-  RequestMobileSign,
-  RequestSigningIsLocked,
-} from '@extension-base/background/types/types';
-
 import {
   getSubstrateAddress,
   isRequireEvmAPI,
@@ -29,17 +19,7 @@ import {
   getBalanceItem,
   getEthereumAddress,
 } from '@extension-base/background/utils/utils';
-import { ProposalTypes, SessionTypes } from '@walletconnect/types';
-import { HexString } from '@polkadot/util/types';
 import { storage } from '@extension-base/stores/Storage';
-import {
-  StakingNetworkRequest,
-  StakingParamsRequest,
-  MyStakingInfoResponse,
-  RewardsResponse,
-} from '@extension-base/services/staking-service/types';
-import { MetadataDef } from '@polkadot/extension-inject/types';
-import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import {
   isProposalExpired,
   isSupportWalletConnectNamespace,
@@ -48,78 +28,93 @@ import {
 } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
 import {
-  RequestConnectWalletConnect,
-  WalletConnectSessionRequest,
-  RequestApproveConnectWalletSession,
-  ResultApproveWalletConnectSession,
-  RequestRejectConnectWalletSession,
-  RequestDisconnectWalletConnectSession,
-  WalletConnectTransactionRequest,
-  RequestApproveWalletConnect,
-  WalletConnectNotSupportRequest,
-  RequestApproveWalletConnectNotSupport,
-  RequestRejectWalletConnectNotSupport,
-  EIP155_SIGNING_METHODS,
-} from '@extension-base/services/wallet-connect-service/types';
-import {
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
-} from '../../services/wallet-connect-service/consts';
-import { MakeStakingRequest, StakingParamsResponse } from './../../services/staking-service/types';
-import type {
+} from '@extension-base/services/wallet-connect-service/consts';
+import {
+  type RequestUpdateMeta,
+  type PriceJson,
+  type RequestMobileSign,
+  type RequestSigningIsLocked,
+  type NotificationResponse,
+  type ResponseCheckTransfer,
+  type SigningRequest,
+  type MobileSigningRequest,
+  type ActiveTabAuthorizeStatus,
+  type BalanceJson,
+  type BasicTxError,
+  type Port,
+  type RequestCheckSwap,
+  type RequestCheckTransfer,
+  type RequestCheckCrossChain,
+  type RequestSwap,
+  type RequestTransfer,
+  type RequestCrossChain,
+  type ResponseCheckSwap,
+  type ResponseCheckCrossChain,
+  type ResponseMakeSwap,
+  type AccountJson,
+  type AllowedPath,
+  type AuthorizedAccountsDiff,
+  type AuthorizeRequest,
+  type GoogleFileId,
+  type MessageTypes,
+  type MetadataRequest,
+  type RequestAccountCreateSuri,
+  type RequestAccountExport,
+  type RequestAccountForget,
+  type RequestAccountName,
+  type RequestAccountValidate,
+  type RequestActiveTabsUrlUpdate,
+  type RequestAddressCreate,
+  type RequestAuthorizeApprove,
+  type RequestJsonRestore,
+  type RequestMetadataApprove,
+  type RequestMetadataReject,
+  type RequestSigningApprovePassword,
+  type RequestSigningApproveSignature,
+  type RequestSigningCancel,
+  type RequestTypes,
+  type RequestUpdateAuthorizedAccounts,
+  type ResponseAuthorizeList,
+  type ResponseType,
+  BasicTxErrorCode,
   BasicTxResponse,
-  NotificationResponse,
-  ResponseCheckTransfer,
-  SigningRequest,
-  MobileSigningRequest,
-  ActiveTabAuthorizeStatus,
-  BalanceJson,
-  BasicTxError,
-  Port,
-  RequestCheckSwap,
-  RequestCheckTransfer,
-  RequestCheckCrossChain,
-  RequestSwap,
-  RequestTransfer,
-  RequestCrossChain,
-  ResponseCheckSwap,
-  ResponseCheckCrossChain,
-  ResponseMakeSwap,
-  AccountJson,
-  AllowedPath,
-  AuthorizedAccountsDiff,
-  AuthorizeRequest,
-  GoogleFileId,
-  MessageTypes,
-  MetadataRequest,
-  RequestAccountCreateSuri,
-  RequestAccountExport,
-  RequestAccountForget,
-  RequestAccountName,
-  RequestAccountValidate,
-  RequestActiveTabsUrlUpdate,
-  RequestAddressCreate,
-  RequestAuthorizeApprove,
-  RequestJsonRestore,
-  RequestMetadataApprove,
-  RequestMetadataReject,
-  RequestSigningApprovePassword,
-  RequestSigningApproveSignature,
-  RequestSigningCancel,
-  RequestTypes,
-  RequestUpdateAuthorizedAccounts,
-  ResponseAuthorizeList,
-  ResponseType,
+  TransferErrorCode,
 } from '@extension-base/background/types/types';
+import {
+  type RequestConnectWalletConnect,
+  type WalletConnectSessionRequest,
+  type RequestApproveConnectWalletSession,
+  type ResultApproveWalletConnectSession,
+  type RequestRejectConnectWalletSession,
+  type RequestDisconnectWalletConnectSession,
+  type WalletConnectTransactionRequest,
+  type RequestApproveWalletConnect,
+  type WalletConnectNotSupportRequest,
+  type RequestApproveWalletConnectNotSupport,
+  type RequestRejectWalletConnectNotSupport,
+  EIP155_SIGNING_METHODS,
+} from '@extension-base/services/wallet-connect-service/types';
 import type { NetworkJson } from '@extension-base/types';
+import type State from '@extension-base/background/handlers/State';
+import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import type { MetadataDef } from '@polkadot/extension-inject/types';
+import type { ProposalTypes, SessionTypes } from '@walletconnect/types';
+import type { HexString } from '@polkadot/util/types';
+import type {
+  StakingNetworkRequest,
+  StakingParamsRequest,
+  MyStakingInfoResponse,
+  RewardsResponse,
+  MakeStakingRequest,
+  StakingParamsResponse,
+} from '@extension-base/services/staking-service/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
-import { ALL_NETWORKS } from '@/consts/networks';
-import { googleManage } from '@/controllers/googleController';
-import {
+import type {
   DerivationPath,
   FilesResponse,
   GoogleAuthTypes,
@@ -130,6 +125,9 @@ import {
   SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
+import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
+import { ALL_NETWORKS } from '@/consts/networks';
+import { googleManage } from '@/controllers/googleController';
 
 function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
   return (value as SignerPayloadJSON).genesisHash !== undefined;

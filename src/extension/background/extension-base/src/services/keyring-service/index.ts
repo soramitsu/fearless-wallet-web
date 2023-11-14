@@ -1,13 +1,13 @@
-import { KeypairType } from '@polkadot/util-crypto/types';
-import { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
-import { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-keyring/types';
 import { keyring } from '@polkadot/ui-keyring';
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import State from '@extension-base/background/handlers/State';
+import { getSubstrateAddress, isEthereumNetwork } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
-import { getSubstrateAddress, isEthereumNetwork } from '../../background/utils/utils';
-import { FWKeyringMeta } from '../../types';
+import type State from '@extension-base/background/handlers/State';
+import type { FWKeyringMeta } from '@extension-base/types';
+import type { KeypairType } from '@polkadot/util-crypto/types';
+import type { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-keyring/types';
+import type { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
 import { isSameString } from '@/helpers';
 type Wallet = {
   address: string;

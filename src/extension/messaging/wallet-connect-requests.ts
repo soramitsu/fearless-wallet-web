@@ -1,6 +1,5 @@
-import { PairingSubjectType } from '@extension-base/services/wallet-connect-service/dappTypes';
-import { NotificationResponse } from '@extension-base/background/types/types';
-import {
+import { sendMessage } from '.';
+import type {
   RequestConnectWalletConnect,
   WalletConnectSessionRequest,
   WalletConnectSessions,
@@ -10,8 +9,9 @@ import {
   RequestApproveWalletConnectNotSupport,
   RequestRejectWalletConnectNotSupport,
   WalletConnectTransactionRequest,
+  PairingSubjectType,
 } from '@extension-base/services/wallet-connect-service/types';
-import { sendMessage } from '.';
+import type { NotificationResponse } from '@extension-base/background/types/types';
 
 export function newConnection(request: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
   return sendMessage('pri(walletConnect.connect)', request);

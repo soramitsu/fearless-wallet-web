@@ -9,10 +9,10 @@ import {
   transformAddresses,
   withErrorLog,
 } from '@extension-base/background/handlers/helpers';
-import State from '@extension-base/background/handlers/State';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
+import type State from '@extension-base/background/handlers/State';
 import type {
   AccountSub,
   AuthUrlInfo,

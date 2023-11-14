@@ -3,9 +3,9 @@ import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signA
 import { getAssetOptions, getPrecisionValue } from '@extension-base/api/substrate/utils';
 import { getUtilityProps, getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { BasicTxResponse, TokenBalance, SignerType } from '@extension-base/background/types/types';
-import State from '@extension-base/background/handlers/State';
-
 import { Extrinsic } from './crossChain';
+import type State from '@extension-base/background/handlers/State';
+
 import { NetworkName } from '@/interfaces';
 
 type ExtrinsicTransferProps = {

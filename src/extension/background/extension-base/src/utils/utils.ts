@@ -1,7 +1,7 @@
 import { BN } from '@polkadot/util';
 import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import { isEthereumAddress, decodeAddress, encodeAddress, ethereumEncode } from '@polkadot/util-crypto';
-import { EXTENSION_REQUEST_URL } from '../const';
+import { EXTENSION_REQUEST_URL } from '@extension-base/const';
 import type { NetworkJson } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 

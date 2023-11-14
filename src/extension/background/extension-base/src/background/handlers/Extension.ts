@@ -226,7 +226,11 @@ export default class Extension extends FWExtensionBase {
         }
       });
       this.state.keyringService.forgetAccount(address);
-    } else this.state.keyringService.forgetAddress(address);
+    } else {
+      const account = this.state.keyringService.getAddress(address);
+      this.state.keyringService.forgetAddress(address);
+      this.state.walletConnectDappService.disconnect(account?.meta.wcTopic as string);
+    }
 
     const accounts = this.state.keyringService.getAccounts();
     const addresses = this.state.keyringService.getAddresses();

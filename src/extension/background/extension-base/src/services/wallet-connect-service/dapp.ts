@@ -2,7 +2,6 @@ import UniversalProvider from '@walletconnect/universal-provider';
 import { getInternalError } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
 import { createSubscription } from '@extension-base/background/handlers/subscriptions';
-
 import {
   DEFAULT_LOGGER,
   PROJECT_ID_EXTENSION,
@@ -11,15 +10,12 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
-import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import { HexString } from '@polkadot/util/types';
-import { generateHalfGenesisHash } from './utils';
+import { generateHalfGenesisHash } from '@extension-base/services/wallet-connect-service/utils';
+import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
 import type { SessionTypes } from '@walletconnect/types';
-import type {
-  AppSessionInitResponse,
-  PairingSubjectType,
-} from '@extension-base/services/wallet-connect-service/dappTypes';
+import type { AppSessionInitResponse, PairingSubjectType } from '@extension-base/services/wallet-connect-service/types';
 import type { Port } from '@extension-base/background/types/types';
 
 export default class WalletConnectDAppService {

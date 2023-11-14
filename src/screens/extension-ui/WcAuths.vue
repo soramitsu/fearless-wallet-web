@@ -14,15 +14,20 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { useRouter } from 'vue-router/composables';
-import { WalletConnectSessions } from '@/extension/background/extension-base/src/services/wallet-connect-service/types';
+import type { WalletConnectSessions } from '@/extension/background/extension-base/src/services/wallet-connect-service/types';
+import type { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import WalletConnectAuthItem from '@/screens/walletConnect/WalletConnectAuthItem.vue';
 import { useStore } from '@/store';
 import { Components } from '@/router/routes';
 
 const store = useStore();
 const router = useRouter();
-
-const wcFilteredList = computed<WalletConnectSessions>(() => store.getters.wcSessions);
+const accounts = computed<AccountJson[]>(() => store.getters.getAccounts);
+const wcFilteredList = computed<WalletConnectSessions>(() =>
+  (store.getters.wcSessions as WalletConnectSessions).filter(({ topic }) =>
+    accounts.value.some(({ wcTopic }) => wcTopic === topic)
+  )
+);
 const isAuthExists = computed(() => wcFilteredList.value?.length);
 
 const openWCAuthDetails = (index: string) => {

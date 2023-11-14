@@ -1394,7 +1394,7 @@ export default class Extension extends FWExtensionBase {
       this.cancelSubscription(id);
     });
 
-    return this.state.walletConnectService.sessions;
+    return this.state.walletConnectService.sessions ?? [];
   }
 
   private async disconnectWalletConnectSession({ topic }: RequestDisconnectWalletConnectSession): Promise<boolean> {

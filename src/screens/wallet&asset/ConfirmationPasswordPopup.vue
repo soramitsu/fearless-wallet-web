@@ -21,7 +21,7 @@
         />
 
         <div v-if="isExtension" class="remember-checkbox">
-          <Checkbox v-model="isSavePass" size="medium" :label="$t(min15Label)" />
+          <Checkbox :value="isSavePass" size="medium" :label="$t(min15Label)" @change="onSavePassChange" />
         </div>
 
         <FButton
@@ -261,6 +261,10 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.isTransactionPending || this.isTransactionFinished) {
       this.resetTxStatus();
     }
+  }
+
+  onSavePassChange(value: boolean) {
+    this.isSavePass = value;
   }
 
   async onSignMobile() {

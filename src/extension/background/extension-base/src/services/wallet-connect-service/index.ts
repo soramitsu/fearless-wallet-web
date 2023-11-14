@@ -126,6 +126,12 @@ export class WalletConnectService {
     return this.client?.pair({ uri });
   }
 
+  updateExpiry(topic: string) {
+    this.client?.extend({ topic }).catch((e) => {
+      console.info(e);
+    });
+  }
+
   public async approveSession(result: ResultApproveWalletConnectSession) {
     this.checkClient();
 
@@ -148,7 +154,6 @@ export class WalletConnectService {
 
   private onSessionRequest(requestEvent: SignClientTypes.EventArguments['session_request']) {
     this.checkClient();
-
     const { id, params, topic } = requestEvent;
     const { chainId, request } = params;
     const method = request.method as WalletConnectSigningMethod;
@@ -204,6 +209,8 @@ export class WalletConnectService {
         response: formatJsonRpcError(id, (e as Error).message),
       }).catch(console.error);
     }
+
+    this.updateExpiry(topic);
   }
 
   private createListener() {

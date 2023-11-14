@@ -22,7 +22,7 @@ export const DEFAULT_WALLET_CONNECT_OPTIONS: SignClientTypes.Options = {
   relayUrl: RELAY_URL,
   metadata: WALLET_CONNECT_METADATA,
 };
-export const THIRTY_DAYS_MS = 2592000000;
+
 export const WALLET_CONNECT_DAPP_CONFIG: Record<string, unknown> = {
   requiredNamespaces: {
     polkadot: {

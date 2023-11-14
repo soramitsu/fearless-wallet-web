@@ -5,14 +5,13 @@ import { createSubscription } from '@extension-base/background/handlers/subscrip
 import {
   DEFAULT_LOGGER,
   PROJECT_ID_EXTENSION,
-  THIRTY_DAYS_MS,
   WALLET_CONNECT_DAPP_CONFIG,
   WALLET_CONNECT_METADATA,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
 import { generateHalfGenesisHash } from '@extension-base/services/wallet-connect-service/utils';
-import registry from '../../api/substrate/typeRegistry';
+import registry from '@extension-base/api/substrate/typeRegistry';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
@@ -22,7 +21,6 @@ import type { Port } from '@extension-base/background/types/types';
 
 export default class WalletConnectDAppService {
   state: State;
-  private optionalNamespaces: Record<string, unknown>;
   private app?: UniversalProvider;
 
   public readonly uriSubject: BehaviorSubject<string> = new BehaviorSubject<string>('');
@@ -33,21 +31,6 @@ export default class WalletConnectDAppService {
   constructor(state: State) {
     this.state = state;
     this.initApp().catch(console.error);
-    this.optionalNamespaces = {
-      optionalNamespaces: {
-        polkadot: {
-          methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
-          chains: [
-            ...Object.values(this.state.networkMap).flatMap(({ isEthereum, genesisHash }) => {
-              if (isEthereum) return [];
-
-              return [`polkadot:${generateHalfGenesisHash(genesisHash)}`];
-            }),
-          ],
-          events: ['chainChanged", "accountsChanged'],
-        },
-      },
-    };
   }
 
   private async initApp() {
@@ -83,7 +66,22 @@ export default class WalletConnectDAppService {
   async initPairing() {
     if (!this.app) await this.initApp();
 
-    const pairing = await this.app?.client.connect({ ...WALLET_CONNECT_DAPP_CONFIG, ...this.optionalNamespaces });
+    const pairing = await this.app?.client.connect({
+      ...WALLET_CONNECT_DAPP_CONFIG,
+      optionalNamespaces: {
+        polkadot: {
+          methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
+          chains: [
+            ...Object.values(this.state.networkMap).flatMap(({ isEthereum, genesisHash }) => {
+              if (isEthereum) return [];
+
+              return [`polkadot:${generateHalfGenesisHash(genesisHash)}`];
+            }),
+          ],
+          events: ['chainChanged", "accountsChanged'],
+        },
+      },
+    });
 
     this.setListeners();
 
@@ -128,7 +126,7 @@ export default class WalletConnectDAppService {
     if (!this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress)) {
       this.state.keyringService.saveAddress(
         encodedAddress,
-        { name: data.peer.metadata.name, isMobile: true, wcTopic: data.topic },
+        { name: data.peer.metadata.name, isMobile: true, wcTopic: data.topic, ethereumAddress: '' },
         'address'
       );
       this.state.updateCurrentAccount(encodedAddress);
@@ -165,10 +163,6 @@ export default class WalletConnectDAppService {
     }
   }
 
-  onPairingExpire({ topic }: { id: string; topic: string }) {
-    this.app?.client.core.pairing.updateExpiry({ topic, expiry: Date.now() + THIRTY_DAYS_MS });
-  }
-
   async onRequest(payload: SignerPayloadJSON) {
     const encodedAddress = this.state.keyringService.encodeAddress(payload.address);
     const account = this.state.keyringService.getAddress(encodedAddress);
@@ -191,22 +185,13 @@ export default class WalletConnectDAppService {
         return { signature: '0x' as HexString };
       });
 
-    this.updateExpiry(account?.meta.wcTopic as string);
-
     return result as unknown as { signature: HexString };
-  }
-
-  updateExpiry(topic: string) {
-    this.app?.client.core.pairing.updateExpiry({
-      topic,
-      expiry: Date.now() + THIRTY_DAYS_MS,
-    });
   }
 
   async onRequestRaw(payload: SignerPayloadRaw) {
     const encodedAddress = this.state.keyringService.encodeAddress(payload.address);
     const account = this.state.keyringService.getAddress(encodedAddress);
-    const payloadJson = registry.createType('Extrinsic', payload.data) as any as SignerPayloadJSON;
+    const payloadJson = registry.createType('Extrinsic', payload.data) as unknown as SignerPayloadJSON;
 
     const result = await this.app?.client.request<{ signature: HexString }>({
       chainId: `polkadot:${generateHalfGenesisHash(payloadJson.genesisHash)}`,
@@ -219,7 +204,6 @@ export default class WalletConnectDAppService {
         },
       },
     });
-    this.updateExpiry(account?.meta.wcTopic as string);
 
     return result ?? { signature: '0x' as HexString };
   }

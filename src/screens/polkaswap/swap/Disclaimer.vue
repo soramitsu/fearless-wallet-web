@@ -66,26 +66,21 @@ import { useRoute, useRouter } from 'vue-router/composables';
 import { URLS } from '@/consts/urls';
 import { useStore } from '@/store';
 
+const router = useRouter();
+const route = useRoute();
+const store = useStore();
+
 const urls = URLS;
 const agreeWithRules = ref(false);
 
 const buttonDisabled = computed(() => !agreeWithRules.value);
-const showSwitcher = computed(() => {
-  const route = useRoute();
-
-  return route.params.showSwitcher;
-});
+const showSwitcher = computed(() => route.params.showSwitcher);
 
 const open = (url: string) => window.open(url);
 
-const closeForm = () => {
-  const router = useRouter();
-
-  router.back();
-};
+const closeForm = () => router.back();
 
 const agree = () => {
-  const store = useStore();
   store.commit('HIDE_POLKASWAP_ALERT');
 
   closeForm();

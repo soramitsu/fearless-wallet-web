@@ -38,7 +38,7 @@
           @keypress.native="keypress"
         />
 
-        <Checkbox v-model="isSavePass" size="medium" :label="$t(min15Label)" />
+        <Checkbox :value="isSavePass" size="medium" :label="$t(min15Label)" @change="onSavePassChange" />
 
         <div class="control-form-submit">
           <FButton
@@ -237,6 +237,10 @@ export default class Transaction extends Vue {
 
   onClose() {
     this.isSignPopupVisible = false;
+  }
+
+  onSavePassChange(value: boolean) {
+    this.isSavePass = value;
   }
 
   async onReject() {

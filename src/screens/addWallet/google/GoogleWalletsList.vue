@@ -10,7 +10,6 @@
               <Checkbox
                 class="wallet__checkbox"
                 size="big"
-                :name="file.name"
                 :label="file.name"
                 :value="file.active"
                 @change.self="() => onSelect(!file.active, index)"

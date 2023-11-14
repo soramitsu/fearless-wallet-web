@@ -11,7 +11,13 @@
     @handlerClose="close"
     :zIndex="500"
   >
-    <Checkbox v-model="isDontShowAgain" size="big" :label="$t('common.dontShowAgain')" class="dont-show-again" />
+    <Checkbox
+      :value="isDontShowAgain"
+      size="big"
+      :label="$t('common.dontShowAgain')"
+      class="dont-show-again"
+      @change="onChange"
+    />
   </NotificationPopup>
 </template>
 
@@ -58,6 +64,10 @@ export default class NetworkUnavailablePopup extends Vue {
     if (this.isDontShowAgain) this.hideNetworkWarning(this.network);
 
     this.$emit('closePopup');
+  }
+
+  onChange(value: boolean) {
+    this.isDontShowAgain = value;
   }
 }
 </script>

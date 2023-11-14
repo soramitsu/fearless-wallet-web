@@ -1,4 +1,4 @@
-import State from '@extension-base/background/handlers/State';
+import type State from '@extension-base/background/handlers/State';
 import type { Signer } from '@polkadot/api/types';
 import type { SignerPayloadRaw, SignerResult } from '@polkadot/types/types/extrinsic';
 

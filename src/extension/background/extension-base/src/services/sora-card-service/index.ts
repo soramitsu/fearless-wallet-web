@@ -2,7 +2,7 @@ import { createSubscription, unsubscribe } from '@extension-base/background/hand
 import { BehaviorSubject } from 'rxjs';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
 import { getId } from '@extension-base/utils/utils';
-import { RequestService } from '../request-service';
+import type { RequestService } from '@extension-base/services/request-service';
 import type { Port } from '@extension-base/background/types/types';
 import { IS_PRODUCTION } from '@/consts/global';
 import { URLS } from '@/consts/urls';

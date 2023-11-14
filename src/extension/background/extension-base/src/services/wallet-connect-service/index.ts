@@ -1,22 +1,25 @@
 import { formatJsonRpcError } from '@json-rpc-tools/utils';
-import State from '@extension-base/background/handlers/State';
 import WalletConnect from '@walletconnect/sign-client';
-import { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
 import { getInternalError, getSdkError, isValidUrl } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
-import { RequestService } from '..';
-import { storage } from '../../stores/Storage';
-import WalletConnectStorage from './storage';
-import { ALL_WALLET_CONNECT_EVENT, DEFAULT_WALLET_CONNECT_OPTIONS } from './consts';
+import { storage } from '@extension-base/stores/Storage';
+import Eip155Handler from '@extension-base/services/wallet-connect-service/requestHandlers/Eip155Handler';
+import PolkadotHandler from '@extension-base/services/wallet-connect-service/requestHandlers/PolkadotHandler';
+import { convertConnectRequest, convertNotSupportRequest } from '@extension-base/services/wallet-connect-service/utils';
 import {
   EIP155_SIGNING_METHODS,
   POLKADOT_SIGNING_METHODS,
-  ResultApproveWalletConnectSession,
-  WalletConnectSigningMethod,
-} from './types';
-import { convertConnectRequest, convertNotSupportRequest } from './utils';
-import Eip155Handler from './requestHandlers/Eip155Handler';
-import PolkadotHandler from './requestHandlers/PolkadotHandler';
+  type ResultApproveWalletConnectSession,
+  type WalletConnectSigningMethod,
+} from '@extension-base/services/wallet-connect-service/types';
+import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
+import {
+  ALL_WALLET_CONNECT_EVENT,
+  DEFAULT_WALLET_CONNECT_OPTIONS,
+} from '@extension-base/services/wallet-connect-service/consts';
+import type State from '@extension-base/background/handlers/State';
+import type { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
+import type { RequestService } from '@extension-base/services';
 
 export class WalletConnectService {
   readonly state: State;
@@ -24,7 +27,7 @@ export class WalletConnectService {
   readonly eip155RequestHandler: Eip155Handler;
   readonly polkadotRequestHandler: PolkadotHandler;
 
-  private client: WalletConnect | undefined;
+  private client?: WalletConnect;
   public readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]> = new BehaviorSubject<SessionTypes.Struct[]>(
     []
   );
@@ -37,7 +40,7 @@ export class WalletConnectService {
     this.initClient().catch(console.error);
   }
 
-  async haveData(): Promise<boolean> {
+  private async haveData(): Promise<boolean> {
     const data = await storage.get([
       'wc@2:client:0.3//session',
       'wc@2:client:0.3//proposal',
@@ -68,7 +71,7 @@ export class WalletConnectService {
     return this.client?.session.values || [];
   }
 
-  updateSessions() {
+  private updateSessions() {
     this.sessionSubject.next(this.sessions);
   }
 
@@ -104,7 +107,7 @@ export class WalletConnectService {
     await this.client?.respond(response);
   }
 
-  checkClient() {
+  private checkClient() {
     if (!this.client) {
       throw new Error(getInternalError('NOT_INITIALIZED').message);
     }
@@ -137,13 +140,13 @@ export class WalletConnectService {
     await this.client?.reject({ id, reason: getSdkError('USER_REJECTED') });
   }
 
-  onSessionProposal(proposal: SignClientTypes.EventArguments['session_proposal']) {
+  private onSessionProposal(proposal: SignClientTypes.EventArguments['session_proposal']) {
     this.checkClient();
 
     this.requestService.addConnectWCRequest(convertConnectRequest(proposal));
   }
 
-  onSessionRequest(requestEvent: SignClientTypes.EventArguments['session_request']) {
+  private onSessionRequest(requestEvent: SignClientTypes.EventArguments['session_request']) {
     this.checkClient();
 
     const { id, params, topic } = requestEvent;
@@ -203,7 +206,7 @@ export class WalletConnectService {
     }
   }
 
-  createListener() {
+  private createListener() {
     this.client?.on('session_proposal', this.onSessionProposal.bind(this));
     this.client?.on('session_request', this.onSessionRequest.bind(this));
     this.client?.on('session_ping', (data: unknown) => console.info('ping', data));
@@ -222,7 +225,7 @@ export class WalletConnectService {
   }
 
   // Remove old listener
-  removeListener() {
+  private removeListener() {
     ALL_WALLET_CONNECT_EVENT.forEach((event) => {
       this.client?.removeAllListeners(event);
     });

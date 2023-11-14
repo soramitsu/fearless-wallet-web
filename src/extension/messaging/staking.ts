@@ -1,11 +1,11 @@
-import {
+import type {
   MakeStakingRequest,
   StakingParamsRequest,
   StakingParamsResponse,
   StakingNetworkRequest,
   MyStakingInfoResponse,
   RewardsResponse,
-} from '../background/extension-base/src/services/staking-service/types';
+} from '@extension-base/services/staking-service/types';
 import type { BasicTxResponse } from '@extension-base/background/types/types';
 import { sendMessage } from '@/extension/messaging/index';
 import { NetworkName } from '@/interfaces';

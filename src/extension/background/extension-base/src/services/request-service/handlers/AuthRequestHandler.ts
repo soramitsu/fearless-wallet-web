@@ -1,14 +1,19 @@
 import { BehaviorSubject } from 'rxjs';
 import { assert } from '@polkadot/util';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
-import { Resolver } from '@extension-base/background/types/types';
 import AuthorizeStore from '@extension-base/stores/Authorize';
-import State from '@extension-base/background/handlers/State';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { getId } from '@extension-base/utils';
-import { NetworkService, RequestService } from '@extension-base/services';
-import { AuthorizeRequest } from '../../../background/types/types';
-import type { AuthRequest, AuthResponse, AuthUrls, RequestAuthorizeTab } from '@extension-base/background/types/types';
+import type {
+  Resolver,
+  AuthorizeRequest,
+  AuthRequest,
+  AuthResponse,
+  AuthUrls,
+  RequestAuthorizeTab,
+} from '@extension-base/background/types/types';
+import type { NetworkService, RequestService } from '@extension-base/services';
+import type State from '@extension-base/background/handlers/State';
 
 const AUTH_URLS_KEY = 'authUrls';
 

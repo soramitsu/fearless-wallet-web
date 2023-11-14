@@ -1,15 +1,15 @@
 /* eslint-disable no-use-before-define */
-import { Subscription } from 'rxjs';
-import { ALLOWED_PATH } from '@extension-base/defaults';
-import { JsonRpcProvider, WebSocketProvider } from 'ethers';
-import { UserType } from '@extension-base/services/onboarding-service/types';
-import { ApiPromise } from '@polkadot/api';
-import { WsProvider } from '@polkadot/rpc-provider';
-import { ProviderInterface } from '@polkadot/rpc-provider/types';
-import { HexString } from '@polkadot/util/types';
-import MetadataStore from '../../stores/Metadata';
-import { NETWORK_STATUS } from '../../api/types/networks';
-import { CurrentAccountState } from '../../stores/CurrentAccountStore';
+import type { ALLOWED_PATH } from '@extension-base/defaults';
+import type { Subscription } from 'rxjs';
+import type { JsonRpcProvider, WebSocketProvider } from 'ethers';
+import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import type { UserType } from '@extension-base/services/onboarding-service/types';
+import type { NETWORK_STATUS } from '@extension-base/api/types/networks';
+import type MetadataStore from '@extension-base/stores/Metadata';
+import type { ProviderInterface } from '@polkadot/rpc-provider/types';
+import type { WsProvider } from '@polkadot/rpc-provider';
+import type { ApiPromise } from '@polkadot/api';
+import type { HexString } from '@polkadot/util/types';
 import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -19,7 +19,7 @@ import type { SignerResult } from '@polkadot/types/types/extrinsic';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
-import {
+import type {
   NetworkName,
   WalletAddress,
   AssetName,

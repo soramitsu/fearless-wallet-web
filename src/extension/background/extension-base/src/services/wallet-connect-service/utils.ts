@@ -1,24 +1,22 @@
-import { SignClientTypes } from '@walletconnect/types';
-import { ProposalTypes } from '@walletconnect/types/dist/types/sign-client/proposal';
-
 import { isEthereumAddress } from '@polkadot/util-crypto';
-
 import * as encoding from '@walletconnect/encoding';
-import { findChainInfoByChainId, findChainInfoByHalfGenesisHash } from '../chain-service/helpers';
-import { NetworkJson } from '../../types';
+import {
+  EIP155_SIGNING_METHODS,
+  type WalletConnectNotSupportRequest,
+  type WalletConnectParamMap,
+  type WalletConnectSessionRequest,
+  type WalletConnectSigningMethod,
+} from '@extension-base/services/wallet-connect-service/types';
+import { findChainInfoByHalfGenesisHash, findChainInfoByChainId } from '@extension-base/services/chain-service/helpers';
 import {
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_REQUEST_KEY,
   WALLET_CONNECT_SUPPORT_NAMESPACES,
 } from './consts';
-import {
-  EIP155_SIGNING_METHODS,
-  WalletConnectNotSupportRequest,
-  WalletConnectParamMap,
-  WalletConnectSessionRequest,
-  WalletConnectSigningMethod,
-} from './types';
+import type { NetworkJson } from '@extension-base/types';
+import type { SignClientTypes } from '@walletconnect/types';
+import type { ProposalTypes } from '@walletconnect/types/dist/types/sign-client/proposal';
 
 export const getWCId = (id: number): string => {
   return [WALLET_CONNECT_REQUEST_KEY, Date.now(), id].join('.');

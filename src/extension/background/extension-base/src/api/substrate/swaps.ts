@@ -1,7 +1,7 @@
 import { Api, FPNumber } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
-import State from '@extension-base/background/handlers/State';
+import type State from '@extension-base/background/handlers/State';
 import type { Asset } from '@sora-substrate/util/build/assets/types';
 import type { CreateSwapResult, BaseExchangeProps } from '@extension-base/api/types/swaps';
 import type { SwapOptions } from '@/interfaces';

@@ -4,7 +4,7 @@ import { BalanceItem } from '@extension-base/api/evm/types/ether';
 import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
 import { getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { setBalance } from '@extension-base/api/helpers';
-import State from '@extension-base/background/handlers/State';
+import type State from '@extension-base/background/handlers/State';
 
 async function getUtilityBalance(networkKey: string, address: string, state: State): Promise<string> {
   const eth = state.getEvmApiMap[networkKey];

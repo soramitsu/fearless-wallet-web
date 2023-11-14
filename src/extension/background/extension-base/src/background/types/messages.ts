@@ -1,12 +1,26 @@
-import { SessionTypes } from '@walletconnect/types';
-import {
-  StakingNetworkRequest,
-  MakeStakingRequest,
+import type {
+  RequestApproveConnectWalletSession,
+  RequestApproveWalletConnect,
+  RequestApproveWalletConnectNotSupport,
+  RequestConnectWalletConnect,
+  RequestDisconnectWalletConnectSession,
+  RequestReconnectConnectWalletSession,
+  RequestRejectConnectWalletSession,
+  RequestRejectWalletConnectNotSupport,
+  WalletConnectNotSupportRequest,
+  WalletConnectSessionRequest,
+  WalletConnectTransactionRequest,
+} from '@extension-base/services/wallet-connect-service/types';
+import type {
   StakingParamsRequest,
   StakingParamsResponse,
   MyStakingInfoResponse,
+  MakeStakingRequest,
   RewardsResponse,
+  StakingNetworkRequest,
 } from '@extension-base/services/staking-service/types';
+import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
+import type { SessionTypes } from '@walletconnect/types';
 import type {
   BasicTxResponse,
   NotificationResponse,
@@ -72,7 +86,6 @@ import type {
   ProviderMeta,
 } from '@polkadot/extension-inject/types';
 import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
-
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
   DerivationPath,
@@ -81,27 +94,11 @@ import type {
   IGetFilesResponse,
   ICreateFile,
   FilesResponse,
-  SignerPayloadJSON,
   SoraFees,
-  SignerPayloadRaw,
   OnboardingStories,
   NetworkName,
 } from '@/interfaces';
-import type {
-  RequestApproveConnectWalletSession,
-  RequestApproveWalletConnect,
-  RequestApproveWalletConnectNotSupport,
-  RequestConnectWalletConnect,
-  RequestDisconnectWalletConnectSession,
-  RequestReconnectConnectWalletSession,
-  RequestRejectConnectWalletSession,
-  RequestRejectWalletConnectNotSupport,
-  WalletConnectNotSupportRequest,
-  WalletConnectSessionRequest,
-  WalletConnectTransactionRequest,
-} from '@extension-base/services/wallet-connect-service/types';
 
-// [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
 export interface RequestSignatures {
   // private/internal requests, i.e. from a popup
   //Account Managment

@@ -1,4 +1,4 @@
-import { CurrentAccountState } from '../../stores/CurrentAccountStore';
+import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 
 export interface EventRegistry {
   'crypto.ready': [boolean];

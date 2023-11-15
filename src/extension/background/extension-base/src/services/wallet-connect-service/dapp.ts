@@ -1,5 +1,5 @@
 import UniversalProvider from '@walletconnect/universal-provider';
-import { getInternalError } from '@walletconnect/utils';
+import { getInternalError, getSdkError } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
 import { createSubscription } from '@extension-base/background/handlers/subscriptions';
 import {
@@ -49,8 +49,10 @@ export default class WalletConnectDAppService {
   }
 
   private setListeners() {
-    this.app?.client.pairing.core.on('pairing_expire', this.onSessionDelete);
-    this.app?.client.on('session_delete', this.onSessionDelete);
+    this.app?.client.pairing.core.on('pairing_expire', (data: { id: number; topic: string }) =>
+      this.onSessionDelete(data)
+    );
+    this.app?.client.on('session_delete', (data: { id: number; topic: string }) => this.onSessionDelete(data));
   }
 
   checkClient() {
@@ -142,7 +144,7 @@ export default class WalletConnectDAppService {
   }
 
   disconnect(topic: string) {
-    this.app?.client.core.pairing.disconnect({ topic });
+    this.app?.client.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') });
   }
 
   abortPairingAttempt() {
@@ -157,8 +159,9 @@ export default class WalletConnectDAppService {
       this.state.keyringService.forgetAddress(account?.address);
 
       if (current?.address === account.address) {
-        const accounts = this.state.keyringService.getAccounts();
-        this.state.updateCurrentAccount(accounts.length ? accounts[0].address : '');
+        const accounts = this.state.keyringService.getAllAccounts();
+        if (accounts.length) this.state.updateCurrentAccount(accounts[0].address);
+        else this.state.setCurrentAccount(null);
       }
     }
   }

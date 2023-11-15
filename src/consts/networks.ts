@@ -9,8 +9,6 @@ const NATIVE_ETHEREUM_NETWORKS = [
   'sepolia',
   'bnb smart chain',
   'bnb smart chain testnet',
-  'arbitrum one',
-  'x1 testnet',
   'moonbeam (evm)',
   'moonriver (evm)',
   'okxchain mainnet',

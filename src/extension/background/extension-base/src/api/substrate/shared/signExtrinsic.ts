@@ -1,7 +1,6 @@
 import { assert } from '@polkadot/util';
 import KeyringSigner from '@extension-base/signers/KeyringSigner';
 import { SignerType } from '@extension-base/background/types/types';
-import { BeaconSigner } from '@extension-base/signers/BeaconSigner';
 import type State from '@extension-base/background/handlers/State';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { ApiProps, ExternalRequestPromise } from '@extension-base/background/types/types';
@@ -33,13 +32,13 @@ export const signExtrinsic = async (
   state: State
 ): Promise<void> => {
   const isMobile = type === SignerType.MOBILE;
-  const pair = state.keyringService.getPair(address);
+  const keyPair = state.keyringService.getPair(address);
 
-  if (!isMobile) assert(pair, 'Unable to find pair');
+  if (!isMobile) assert(keyPair, 'Unable to find pair');
 
   const nonce = (await apiProps.api?.rpc.system.accountNextIndex(address)) as unknown as number;
   const registry = apiProps.api!.registry;
-  const signer = pair ? new KeyringSigner({ registry, keyPair: pair }) : new BeaconSigner(state);
+  const signer = new KeyringSigner({ registry, keyPair, isMobile });
 
   await extrinsic.signAsync(address, { signer, nonce });
 };

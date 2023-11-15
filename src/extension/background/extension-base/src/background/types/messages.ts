@@ -1,4 +1,5 @@
 import type {
+  PairingSubjectType,
   RequestApproveConnectWalletSession,
   RequestApproveWalletConnect,
   RequestApproveWalletConnectNotSupport,
@@ -231,4 +232,9 @@ export interface RequestSignatures {
   ];
   'pri(walletConnect.request.approve)': [RequestApproveWalletConnect, boolean];
   'pri(walletConnect.request.reject)': [{ topic: string }, boolean];
+  //Wallet Connect dApp
+  'pri(walletConnect.app.connect)': [null, string];
+  'pri(walletConnect.app.disconnect)': [null, string];
+  'pri(walletConnect.app.subscribePairing)': [string, PairingSubjectType, PairingSubjectType];
+  'pri(walletConnect.app.pairing)': [null, string];
 }

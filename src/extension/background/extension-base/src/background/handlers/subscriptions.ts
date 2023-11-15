@@ -242,7 +242,7 @@ export function createSubscription<TMessageType extends MessageTypesWithSubscrip
 ): (data: SubscriptionMessageTypes[TMessageType] | null) => void {
   subscriptions[id] = port;
 
-  return (value: any): void => {
+  return (value: unknown): void => {
     if (subscriptions[id]) {
       try {
         port.postMessage({ id, value });

@@ -112,3 +112,14 @@ export type WalletConnectParamMap = {
   [EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4]: WalletConnectEip155SignMessage;
   [EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION]: WalletConnectEip155SendTransaction;
 };
+
+export type AppSessionInitResponse = {
+  uri?: string;
+  approval: () => Promise<SessionTypes.Struct>;
+};
+
+export type PairingSubjectType = {
+  uri?: string;
+  status?: boolean;
+  message?: string;
+};

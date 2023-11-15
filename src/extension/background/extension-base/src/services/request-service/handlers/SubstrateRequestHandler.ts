@@ -3,13 +3,18 @@ import { BehaviorSubject } from 'rxjs';
 import { SignerPayloadJSON } from '@polkadot/types/types/extrinsic';
 import { logger as createLogger } from '@polkadot/util/logger';
 import { Logger } from '@polkadot/util/types';
-import { keyring } from '@polkadot/ui-keyring';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import { Resolver } from '@extension-base/background/types/types';
 import { getId, isInternalRequest } from '@extension-base/utils';
 import { RequestService } from '@extension-base/services';
-import type { SignRequest, ResponseSigning, RequestSign, AccountJson } from '@extension-base/background/types/types';
-import type { SigningRequest } from '@extension-base/background/types/types';
+import { state } from '../../../background/handlers';
+import type {
+  SignRequest,
+  ResponseSigning,
+  RequestSign,
+  AccountJson,
+  SigningRequest,
+} from '@extension-base/background/types/types';
 
 export class SubstrateRequestHandler {
   readonly logger: Logger;
@@ -92,12 +97,14 @@ export class SubstrateRequestHandler {
     payload: SignerPayloadJSON
   ): Promise<ResponseSigning> {
     return new Promise((resolve, reject): void => {
-      const pair = keyring.getPair(address);
+      const existingAccount = state.keyringService.getAccounts().find((el) => el.address === address);
+      if (!existingAccount) return reject();
+
       const account: AccountJson = {
-        address: pair.address,
-        name: pair.meta.name as string,
-        ethereumAddress: (pair.meta.ethAddress as string) ?? '',
-        ...pair.meta,
+        address: existingAccount.address,
+        name: existingAccount.meta.name as string,
+        ethereumAddress: (existingAccount.meta.ethereumAddress as string) ?? '',
+        ...existingAccount.meta,
       };
 
       this.substrateRequests[id] = {
@@ -105,7 +112,7 @@ export class SubstrateRequestHandler {
         account,
         id,
         request: new RequestExtrinsicSign(payload),
-        url: url,
+        url,
       };
 
       this.updateIconSign();

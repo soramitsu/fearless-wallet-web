@@ -19,8 +19,6 @@ import {
   getBalanceItem,
   getEthereumAddress,
 } from '@extension-base/background/utils/utils';
-import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
-import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { storage } from '@extension-base/stores/Storage';
 import {
   isProposalExpired,
@@ -86,19 +84,20 @@ import {
   TransferErrorCode,
 } from '@extension-base/background/types/types';
 import {
-  RequestConnectWalletConnect,
-  WalletConnectSessionRequest,
-  RequestApproveConnectWalletSession,
-  ResultApproveWalletConnectSession,
-  RequestRejectConnectWalletSession,
-  RequestDisconnectWalletConnectSession,
-  WalletConnectTransactionRequest,
-  RequestApproveWalletConnect,
-  WalletConnectNotSupportRequest,
-  RequestApproveWalletConnectNotSupport,
-  RequestRejectWalletConnectNotSupport,
+  type RequestConnectWalletConnect,
+  type WalletConnectSessionRequest,
+  type RequestApproveConnectWalletSession,
+  type ResultApproveWalletConnectSession,
+  type RequestRejectConnectWalletSession,
+  type RequestDisconnectWalletConnectSession,
+  type WalletConnectTransactionRequest,
+  type RequestApproveWalletConnect,
+  type WalletConnectNotSupportRequest,
+  type RequestApproveWalletConnectNotSupport,
+  type RequestRejectWalletConnectNotSupport,
   EIP155_SIGNING_METHODS,
 } from '@extension-base/services/wallet-connect-service/types';
+import type { NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
@@ -112,8 +111,6 @@ import type {
   MakeStakingRequest,
   StakingParamsResponse,
 } from '@extension-base/services/staking-service/types';
-import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
-import type { NetworkJson } from '@extension-base/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
@@ -163,14 +160,10 @@ export default class Extension extends FWExtensionBase {
     return this.state.cancelSubscription(id);
   }
 
-  public updateNetworkForNewWallet(address: string) {
-    this.setActiveNetworks(this.state.selectedNetworks[address] ?? ALL_NETWORKS);
-  }
-
   accountsCreate({ password, suri, type, meta }: RequestAccountCreateSuri): string {
     const address = this.state.keyringService.addAccount(suri, password, { ...meta, isMobile: false }, type);
 
-    if (!isEthereumAddress(address)) this.updateCurrentAccount(address);
+    if (!isEthereumAddress(address)) this.state.updateCurrentAccount(address);
 
     return address;
   }
@@ -222,10 +215,10 @@ export default class Extension extends FWExtensionBase {
           }
         }
 
-        const polakdot = session.namespaces['polkadot'];
+        const polkadot = session.namespaces['polkadot'];
 
-        if (polakdot) {
-          const [, , substaddress] = polakdot.accounts[0].split(':');
+        if (polkadot) {
+          const [, , substaddress] = polkadot.accounts[0].split(':');
 
           if (substaddress.toLowerCase() === address.toLowerCase()) {
             this.state.walletConnectService.disconnect(session.topic);
@@ -233,7 +226,11 @@ export default class Extension extends FWExtensionBase {
         }
       });
       this.state.keyringService.forgetAccount(address);
-    } else this.state.keyringService.forgetAddress(address);
+    } else {
+      const account = this.state.keyringService.getAddress(address);
+      this.state.keyringService.forgetAddress(address);
+      this.state.walletConnectDappService.disconnect(account?.meta.wcTopic as string);
+    }
 
     const accounts = this.state.keyringService.getAccounts();
     const addresses = this.state.keyringService.getAddresses();
@@ -248,7 +245,7 @@ export default class Extension extends FWExtensionBase {
       if (accounts.length) account = accounts.find(({ address }) => !isEthereumAddress(address))!;
       else if (addresses.length) account = addresses[0];
 
-      this.updateCurrentAccount(account?.address ?? '');
+      this.state.updateCurrentAccount(account?.address ?? '');
     }
 
     this.cleanupDeletedAccount(address);
@@ -283,9 +280,9 @@ export default class Extension extends FWExtensionBase {
   async addressesSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(addresses.subscribe)'>(id, port);
 
-    const transformedAddresses = transformAccounts(addressesObservable.subject.value, this.state);
+    const transformedAddresses = transformAccounts(this.state.keyringService.addressSubject.value, this.state);
 
-    const subscription = addressesObservable.subject.subscribe((addresses: SubjectInfo): void => {
+    const subscription = this.state.keyringService.addressSubject.subscribe((addresses: SubjectInfo): void => {
       transformAccounts(addresses, this.state).then(cb);
     });
 
@@ -300,9 +297,9 @@ export default class Extension extends FWExtensionBase {
   async accountsSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
 
-    const transformedAccounts = transformAccounts(accountsObservable.subject.value, this.state);
+    const transformedAccounts = transformAccounts(this.state.keyringService.accountSubject.value, this.state);
 
-    const subscription = accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
+    const subscription = this.state.keyringService.accountSubject.subscribe((accounts: SubjectInfo): void => {
       transformAccounts(accounts, this.state).then(cb);
     });
 
@@ -325,13 +322,16 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  mobileSignApprove({ signature, id }: RequestMobileSign): boolean {
+  async mobileSignApprove({ id }: RequestMobileSign): Promise<boolean> {
     const queued = this.state.getMobileSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
-    const { resolve } = queued;
-    resolve({ signature, id });
+    const { resolve, reject } = queued;
+    this.state.walletConnectDappService
+      .onRequestRaw(queued.request)
+      .then(({ signature }) => resolve({ signature, id }))
+      .catch(() => reject(new Error('USER REJECTED')));
 
     return true;
   }
@@ -464,8 +464,8 @@ export default class Extension extends FWExtensionBase {
           const isEthereum = isEthereumAddress(address);
 
           if (!isEthereum) {
-            this.updateNetworkForNewWallet(address);
-            this.updateCurrentAccount(address);
+            this.state.updateNetworkForNewWallet(address);
+            this.state.updateCurrentAccount(address);
           }
 
           resolve(address);
@@ -496,57 +496,23 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  private _saveCurrentAccountAddress(address: string, callback?: (account: CurrentAccountState) => void) {
-    if (address === '') {
-      this.state.setCurrentAccount(null);
-
-      return;
-    }
-
-    const {
-      meta: { isMobile, name, ethereumAddress },
-    } = this.state.keyringService.getAccount(address) ?? this.state.keyringService.getAddress(address)!;
-
-    const accountInfo: CurrentAccountInfo = {
-      address,
-      isMobile: !!(isMobile as boolean),
-      name: name as string,
-      ethereumAddress: (ethereumAddress as string) ?? '',
-    };
-
-    this.state.setCurrentAccount(accountInfo, () => callback?.(accountInfo));
-  }
-
-  private triggerWalletsSubscription(): boolean {
-    const accountsSubject = accountsObservable.subject;
-    const addressSubject = addressesObservable.subject;
-
-    accountsSubject.next(accountsSubject.getValue());
-    addressSubject.next(addressSubject.getValue());
-
-    return true;
-  }
-
-  private updateCurrentAccount(address: string, isNew = true): boolean {
-    if (isEthereumAddress(address)) return false;
-
-    this.state.balanceService.generateDefaultBalance(address);
-
-    this._saveCurrentAccountAddress(address, () => {
-      this.triggerWalletsSubscription();
-
-      if (isNew) this.updateNetworkForNewWallet(address);
-    });
-
-    return true;
-  }
-
-  signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): boolean {
+  async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
     const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
+    const account = this.state.keyringService
+      .getAllAccounts()
+      .find(({ address }) => address === queued.account.address);
 
     const { reject, request, resolve } = queued;
+
+    if (account && account?.meta.isMobile) {
+      const res = await this.state.walletConnectDappService.onRequest(queued.request.payload as SignerPayloadJSON);
+      resolve({ ...res, id });
+
+      return true;
+    }
+
     const pair = this.state.keyringService.getPair(queued.account.address);
 
     if (!pair) {
@@ -584,7 +550,7 @@ export default class Extension extends FWExtensionBase {
       if (currentMetadata) registry.register(currentMetadata?.types);
     }
 
-    const result = request.sign(registry, pair);
+    const result = await request.sign(registry, pair);
 
     if (savePass) this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
     else pair.lock();
@@ -1160,7 +1126,7 @@ export default class Extension extends FWExtensionBase {
   private createMobileWallet({ address, meta }: RequestAddressCreate) {
     this.state.keyringService.saveAddress(address, meta, 'address');
 
-    this.updateCurrentAccount(address);
+    this.state.updateCurrentAccount(address);
   }
 
   private subscribeNetworkMap(id: string, port: Port): Record<string, NetworkJson> {
@@ -1577,6 +1543,14 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
+  private async walletConnectDappSubscribePairing(uri: string, id: string, port: Port) {
+    return this.state.walletConnectDappService.subscribePairing(uri, id, port);
+  }
+
+  private async walletConnectDappPairing() {
+    return this.state.walletConnectDappService.initPairing();
+  }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -1643,7 +1617,7 @@ export default class Extension extends FWExtensionBase {
         return this.accountsCreate(request as RequestAccountCreateSuri);
 
       case 'pri(accounts.update.current)':
-        return this.updateCurrentAccount(request as string, false);
+        return this.state.updateCurrentAccount(request as string, false);
 
       case 'pri(accounts.update.currentNetwork)':
         return this.setActiveNetworks(request as string);
@@ -1824,6 +1798,13 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(walletConnect.notSupport.reject)':
         return this.rejectWalletConnectNotSupport(request as RequestRejectWalletConnectNotSupport);
+
+      // WalletConnect mobilewallet
+      case 'pri(walletConnect.app.subscribePairing)':
+        return this.walletConnectDappSubscribePairing(request as string, id, port);
+
+      case 'pri(walletConnect.app.pairing)':
+        return this.walletConnectDappPairing();
 
       //OnBoarding
       case 'pri(onboarding.get.stories)':

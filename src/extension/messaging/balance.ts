@@ -1,5 +1,4 @@
-import type { BalanceJson, PriceJson } from '@extension-base/background/types/types';
-import type { RequestSubscribePrice } from '@extension-base/background/types/types';
+import type { BalanceJson, PriceJson, RequestSubscribePrice } from '@extension-base/background/types/types';
 import { sendMessage } from '@/extension/messaging/index';
 
 export function getBalance(): Promise<BalanceJson> {

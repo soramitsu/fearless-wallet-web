@@ -9,6 +9,7 @@ import type {
   RequestApproveWalletConnectNotSupport,
   RequestRejectWalletConnectNotSupport,
   WalletConnectTransactionRequest,
+  PairingSubjectType,
 } from '@extension-base/services/wallet-connect-service/types';
 import type { NotificationResponse } from '@extension-base/background/types/types';
 
@@ -73,4 +74,15 @@ export function walletConnectRequestApprove(
 
 export function walletConnectRequestReject(topic: string): Promise<boolean> {
   return sendMessage('pri(walletConnect.request.reject)', { topic });
+}
+
+export function walletConnectDappSubscribeSession(
+  uri: string,
+  callback: (data: PairingSubjectType) => void
+): Promise<PairingSubjectType> {
+  return sendMessage('pri(walletConnect.app.subscribePairing)', uri, callback);
+}
+
+export function walletConnectDappInitSession(): Promise<string> {
+  return sendMessage('pri(walletConnect.app.pairing)');
 }

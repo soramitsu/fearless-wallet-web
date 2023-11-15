@@ -62,6 +62,7 @@
 import { Component, Vue, Watch, Ref } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import registry from '@extension-base/api/substrate/typeRegistry';
+import { SignerPayloadJSON } from '@polkadot/types/types';
 import type { AccountJson, SigningRequest } from '@extension-base/background/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
@@ -72,14 +73,14 @@ import InfoList from '@/screens/extension-ui/InfoList.vue';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
-import { AsyncFn, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
-import { beaconController, ExtensionController } from '@/controllers';
+import { AsyncFn } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
 import { isSignLocked, validatePassword } from '@/extension/messaging';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
+import { ExtensionController } from '@/controllers';
 
 @Component({
   components: {
@@ -191,19 +192,7 @@ export default class Transaction extends Vue {
   }
 
   async mounted() {
-    if (this.isSignMobile) {
-      const payload: PayloadJSON = this.payload;
-      delete payload.address;
-      payload.type = 'json';
-
-      const response = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
-
-      if (!response || !response.blockchainData.signature) ExtensionController.cancelSign(this.request.id);
-
-      ExtensionController.approveSignSignature(this.request.id, response.blockchainData.signature);
-
-      this.$router.push({ name: Components.Wallet });
-    }
+    if (this.isSignMobile) this.onSignMobile();
 
     if (!IS_EXTENSION || this.isSignMobile) return;
 
@@ -256,19 +245,9 @@ export default class Transaction extends Vue {
   }
 
   async signTransactionJSON(id: string) {
-    const payload: PayloadJSON = this.payload as SignerPayloadJSON;
-    delete payload.address;
-    payload.type = 'json';
+    console.info(id);
 
-    const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
-
-    if (blockchainData.signature.length === 0) {
-      ExtensionController.cancelSign(id);
-
-      return;
-    }
-
-    ExtensionController.approveSignSignature(id, blockchainData.signature);
+    ExtensionController.approveSignPassword(id, false);
   }
 
   async sendExtrinsic() {

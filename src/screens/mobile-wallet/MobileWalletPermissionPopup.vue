@@ -1,5 +1,5 @@
 <template>
-  <Popup :isIcon="true" :sizeWidth="320" :headerType="status" headerText="" :showBorder="true" @handlerClose="onClose">
+  <Popup :isIcon="false" :sizeWidth="320" :showBorder="true" @handlerClose="onClose">
     <div class="connection__status">
       <Icon icon="status__failed" className="connection__status-icon" />
 
@@ -60,15 +60,35 @@ const onClose = () => toWalletScreen();
   padding: 16px;
 }
 
-.FCorners__container {
+.connection__status {
   display: flex;
-  justify-content: space-between;
+  flex-flow: column;
+  height: 100%;
   align-items: center;
+  justify-content: center;
   padding: 16px;
-  border: $default-border;
-  background-color: $secondary-background-color;
-  clip-path: $big-clip-path-left-top-and-right-bottom;
-  border-radius: $default-border-radius;
-  width: 100%;
+  gap: 16px;
+
+  .connection__status-message {
+    font-size: 18px;
+  }
+
+  .connection__status-name {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .connection__status-name--success {
+    color: $success-color;
+  }
+
+  .connection__status-name--failed {
+    color: $reject-color;
+  }
+
+  .connection__status-icon {
+    width: 60px;
+    height: 60px;
+  }
 }
 </style>

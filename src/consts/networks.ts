@@ -9,6 +9,18 @@ const NATIVE_ETHEREUM_NETWORKS = [
   'sepolia',
   'bnb smart chain',
   'bnb smart chain testnet',
+  'arbitrum one',
+  'x1 testnet',
+  'moonbeam (evm)',
+  'moonriver (evm)',
+  'okxchain mainnet',
+  'arbitrum one',
+  'op mainnet',
+  'klaytn mainnet cypress',
+  'avalanche c-chain',
+  'zetachain testnet',
+  'x1 testnet',
+  'greenfield mainnet',
 ];
 const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, ...NATIVE_ETHEREUM_NETWORKS];
 

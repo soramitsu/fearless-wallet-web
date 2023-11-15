@@ -44,7 +44,6 @@
     "@sora-substrate/util": "1.23.4",
     "@soramitsu-ui/ui-vue2": "^1.1.0",
     "@vespaiach/axios-fetch-adapter": "^0.3.1",
-    "@walletconnect/auth-client": "^2.1.2",
     "@walletconnect/encoding": "^1.0.2",
     "@walletconnect/sign-client": "^2.9.2",
     "@walletconnect/universal-provider": "^2.10.4",

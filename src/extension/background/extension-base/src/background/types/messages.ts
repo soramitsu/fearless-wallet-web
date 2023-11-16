@@ -7,6 +7,7 @@ import {
   MyStakingInfoResponse,
   RewardsResponse,
   CheckControllerRequest,
+  getRewardsRequest,
 } from '@extension-base/services/staking-service/types';
 import type {
   BasicTxResponse,
@@ -86,7 +87,6 @@ import type {
   SoraFees,
   SignerPayloadRaw,
   OnboardingStories,
-  NetworkName,
 } from '@/interfaces';
 import type {
   RequestApproveConnectWalletSession,
@@ -178,7 +178,7 @@ export interface RequestSignatures {
   // staking
   'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];
   'pri(staking.checkController)': [CheckControllerRequest, boolean];
-  'pri(staking.rewards)': [NetworkName, RewardsResponse];
+  'pri(staking.rewards)': [getRewardsRequest, RewardsResponse];
   'pri(staking.myStaking)': [StakingNetworkRequest, MyStakingInfoResponse];
   'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];
 

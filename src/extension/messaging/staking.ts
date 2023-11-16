@@ -6,10 +6,10 @@ import {
   MyStakingInfoResponse,
   RewardsResponse,
   CheckControllerRequest,
+  getRewardsRequest,
 } from '../background/extension-base/src/services/staking-service/types';
 import type { BasicTxResponse } from '@extension-base/background/types/types';
 import { sendMessage } from '@/extension/messaging/index';
-import { NetworkName } from '@/interfaces';
 
 export function getStakingParams(request: StakingParamsRequest): Promise<StakingParamsResponse> {
   return sendMessage('pri(staking.stakingParams)', request);
@@ -19,8 +19,8 @@ export function checkController(request: CheckControllerRequest): Promise<boolea
   return sendMessage('pri(staking.checkController)', request);
 }
 
-export function getRewards(network: NetworkName): Promise<RewardsResponse> {
-  return sendMessage('pri(staking.rewards)', network);
+export function getRewards(request: getRewardsRequest): Promise<RewardsResponse> {
+  return sendMessage('pri(staking.rewards)', request);
 }
 
 export function getMyStakingInfo(request: StakingNetworkRequest): Promise<MyStakingInfoResponse> {

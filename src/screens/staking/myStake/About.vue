@@ -59,8 +59,6 @@ import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
-import { getRewards } from '@/extension/messaging';
-import { RewardsResponse } from '@/extension/background/extension-base/src/services/staking-service/types';
 import { GetStakingHistory } from '@/store';
 import { SoraHistoryElement } from '@/interfaces';
 
@@ -68,7 +66,6 @@ import { SoraHistoryElement } from '@/interfaces';
 export default class About extends Vue {
   readonly dotsVerticalRef = 'dotsVertical';
   activeTabName: MyStakingTab = 'about';
-  rewards: RewardsResponse = { validators: [], payouts: [], sum: '0' };
   isLoading = false;
 
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
@@ -82,13 +79,12 @@ export default class About extends Vue {
   @Getter(StakingGettersTypes.getStakingHistory) getStakingHistory!: GetStakingHistory;
 
   get history() {
-    return this.getStakingHistory(this.network, this.stakingCurrency.assetId);
-  }
-
-  get payeeHistory() {
-    if (!this.stakingNetwork.isOtherPayee) return this.history;
-
-    return this.getStakingHistory(this.network, this.stakingCurrency.assetId, this.stakingNetwork.payee);
+    return this.getStakingHistory(
+      this.network,
+      this.stakingCurrency.assetId,
+      this.stakingNetwork.stashAddress,
+      this.stakingNetwork.payeeAddress
+    );
   }
 
   get unbondDetails() {
@@ -113,7 +109,7 @@ export default class About extends Vue {
   }
 
   get rewardAmount() {
-    return (this.payeeHistory as SoraHistoryElement[])
+    return (this.history as SoraHistoryElement[])
       .filter(({ method }) => method === 'rewarded')
       .reduce((result, { data }) => {
         result = result + +(data?.amount ?? 0);
@@ -176,14 +172,6 @@ export default class About extends Vue {
     const value = +this.stakingNetwork.redeemAmount * this.stakingAssetPrice;
 
     return this.$n(value, 'price');
-  }
-
-  async created() {
-    this.isLoading = true;
-
-    this.rewards = await getRewards(this.stakingNetwork.network);
-
-    this.isLoading = false;
   }
 }
 </script>

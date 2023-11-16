@@ -40,6 +40,7 @@ import {
   MyStakingInfoResponse,
   RewardsResponse,
   CheckControllerRequest,
+  getRewardsRequest,
 } from '@extension-base/services/staking-service/types';
 import { MetadataDef } from '@polkadot/extension-inject/types';
 import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
@@ -129,7 +130,6 @@ import {
   GoogleAuthTypes,
   ICreateFile,
   IGetFilesResponse,
-  NetworkName,
   OnboardingStories,
   SoraFees,
   VerifyTokenResponse,
@@ -1222,9 +1222,7 @@ export default class Extension extends FWExtensionBase {
     return isValidController;
   }
 
-  async getRewards(network: NetworkName): Promise<RewardsResponse> {
-    const address = await this.state.getCurrentAddress(network);
-
+  async getRewards({ network, address }: getRewardsRequest): Promise<RewardsResponse> {
     return this.state.stakingService.getRewards(network, address);
   }
 
@@ -1723,7 +1721,7 @@ export default class Extension extends FWExtensionBase {
         return this.checkController(request as CheckControllerRequest);
 
       case 'pri(staking.rewards)':
-        return this.getRewards(request as NetworkName);
+        return this.getRewards(request as getRewardsRequest);
 
       case 'pri(staking.myStaking)':
         return this.getMyStakingInfo(request as StakingNetworkRequest);

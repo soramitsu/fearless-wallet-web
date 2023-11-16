@@ -29,9 +29,9 @@ const img = ref(props.name.toLowerCase());
   align-items: center;
   color: $gray-color;
   width: 85px;
+  cursor: pointer;
 
   &:hover {
-    cursor: pointer;
     color: $plain-white;
     transition: 300ms ease-out;
 
@@ -55,6 +55,11 @@ const img = ref(props.name.toLowerCase());
     height: 24px;
     width: 24px;
     color: $gray-color;
+
+    &:hover {
+      color: $plain-white;
+      transition: 300ms ease-out;
+    }
   }
 }
 

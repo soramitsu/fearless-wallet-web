@@ -88,17 +88,16 @@ const getters: GetterTree<State, State> & Getters = {
   },
 
   [GettersTypes.getStakingHistory]:
-    (state, getters, rootState, rootGetters) => (networkName: string, assetId: string, address?: string) => {
-      const history: SubqueryHistory = rootGetters.getHistory(assetId, networkName);
-
-      if (history === undefined) return [];
+    (state, getters, rootState, rootGetters) =>
+    (networkName: string, assetId: string, stashAddress?: string, payeeAddress?: string) => {
+      const history: SubqueryHistory = rootGetters.getHistory(assetId, networkName, stashAddress);
 
       if (isSora(networkName)) {
-        const nodes = history.nodes as unknown as SoraHistoryElement[];
+        const nodes = (history?.nodes as unknown as SoraHistoryElement[]) ?? [];
         const stakingXor = nodes.filter(({ module }) => module === 'staking');
 
-        const historyVal: SubqueryHistory = rootGetters.getHistory(SORA_VAL_ASSET_ID, networkName, address);
-        const nodesVal = historyVal.nodes as unknown as SoraHistoryElement[];
+        const historyVal: SubqueryHistory = rootGetters.getHistory(SORA_VAL_ASSET_ID, networkName, payeeAddress);
+        const nodesVal = (historyVal?.nodes as unknown as SoraHistoryElement[]) ?? [];
         const stakingVal = nodesVal.filter(({ module }) => module === 'staking');
 
         return [...stakingXor, ...stakingVal].sort(
@@ -107,7 +106,7 @@ const getters: GetterTree<State, State> & Getters = {
       }
 
       // TODO staking доделать когда появятся новые сети для стейкинга
-      return history.nodes;
+      return history?.nodes ?? [];
     },
 };
 

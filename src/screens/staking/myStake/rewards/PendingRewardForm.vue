@@ -40,7 +40,7 @@
             :readonly="true"
           />
 
-          <FInput v-model="payee" :readonly="true" placeholder="staking.payee" size="big" />
+          <FInput v-model="payeeName" :readonly="true" placeholder="staking.setPayee" size="big" />
         </div>
 
         <InfoRow
@@ -92,6 +92,7 @@ import {
   PayoutRewards,
   RewardsResponse,
 } from '@/extension/background/extension-base/src/services/staking-service/types';
+import { isValidAmountAsset } from '@/helpers/currencies';
 
 @Component({
   components: {
@@ -100,7 +101,7 @@ import {
     ConfirmationPasswordPopup,
   },
 })
-export default class StakingManagement extends Vue {
+export default class PendingRewardForm extends Vue {
   showConfirmationPasswordPopup = false;
   showWarningPopup = false;
   amount = '';
@@ -133,11 +134,12 @@ export default class StakingManagement extends Vue {
   get disabledBtn() {
     if (this.step === 1) return this.myValidatorRewards.length === 0;
 
-    return false;
+    // TODO staking проверять баланс на комиссию у стеша
+    return isValidAmountAsset(this.stakingCurrency, this.stakingNetwork.network, this.fee ?? '0', '0');
   }
 
-  get payee() {
-    return this.stakingNetwork.payee;
+  get payeeName() {
+    return this.stakingNetwork.payeeName;
   }
 
   get myValidatorRewards() {
@@ -213,7 +215,10 @@ export default class StakingManagement extends Vue {
 
     this.showLoader = true;
 
-    this.rewards = await getRewards(this.stakingNetwork.network);
+    this.rewards = await getRewards({
+      address: this.stakingNetwork.stashAddress,
+      network: this.stakingNetwork.network,
+    });
 
     this.showLoader = false;
   }

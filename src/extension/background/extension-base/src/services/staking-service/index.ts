@@ -47,6 +47,8 @@ export class StakingService {
       const myStakingInfo = await this.getMyStakingInfo(network, validators, minBond);
       const apy = validators.reduce((result, { apy }) => result + +apy, 0) / validators.length;
 
+      console.log('myStakingInfo', myStakingInfo);
+
       return {
         ...myStakingInfo,
         network,
@@ -67,40 +69,77 @@ export class StakingService {
     validators: FWValidatorInfoFull[],
     _minBond?: number
   ): Promise<MyStakingInfo> {
-    const address = await this.state.getCurrentAddress(network);
+    const _address = await this.state.getCurrentAddress(network);
+    const stashByController = await this.state.stakingService.getStashByController(_address);
+    const stashAddress =
+      stashByController !== ''
+        ? stashByController
+        : this.state.keyringService.formatAddress({ address: _address, ethereumAddress: _address });
+
+    const isController =
+      stashByController !== '' &&
+      !this.state.keyringService.isSameAddress(
+        { address: stashAddress, ethereumAddress: stashAddress },
+        { address: _address, ethereumAddress: _address }
+      );
+
+    const address = isController
+      ? this.state.keyringService.formatAddress({ address: stashAddress, ethereumAddress: stashAddress })
+      : _address;
 
     const stakingInfo = await apiSora.staking.getMyStakingInfo(address);
     const { addressBook } = await storage.get(['addressBook']);
+    const isControllerAndPayeeStaked = isController && stakingInfo.payee.toLowerCase() === 'staked';
+    const isControllerAndPayeeStash = isController && stakingInfo.payee.toLowerCase() === 'stash';
+    const isControllerAndPayeeController = isController && stakingInfo.payee.toLowerCase() === 'controller';
 
     const validatorsStatuses = await this.getValidatorsStatuses(address, network, stakingInfo.myValidators);
 
-    const myAccountName = this.state.keyringService.getAccountName(stakingInfo.payee);
-    const addressBookName = addressBook[network]?.find(({ address: _address }) =>
-      isSameString(_address, stakingInfo.payee)
+    const stashAccountName = this.state.keyringService.getAccountName(stashAddress);
+    const stashBookName = addressBook[network]?.find(({ address: _address }) =>
+      isSameString(_address, stashAddress)
     )?.name;
-    const payee = myAccountName ?? addressBookName ?? stakingInfo.payee;
+    const stashName = stashAccountName ?? stashBookName ?? stashAddress;
+
+    const payeeAddress = isControllerAndPayeeController
+      ? this.state.keyringService.formatAddress({ address: _address, ethereumAddress: _address }, network)
+      : isControllerAndPayeeStaked || isControllerAndPayeeStash
+      ? stashAddress
+      : stakingInfo.payee;
+
+    const payeeAccountName = this.state.keyringService.getAccountName(payeeAddress);
+    const payeeBookName = addressBook[network]?.find(({ address: _address }) =>
+      isSameString(_address, payeeAddress)
+    )?.name;
+    const payeeName = payeeAccountName ?? payeeBookName ?? payeeAddress;
+
+    const controllerAddress = stakingInfo.controller;
+    const controllerAccountName = this.state.keyringService.getAccountName(controllerAddress);
+    const controllerBookName = addressBook[network]?.find(({ address: _address }) =>
+      isSameString(_address, controllerAddress)
+    )?.name;
+    const controllerName = controllerAccountName ?? controllerBookName ?? controllerAddress;
 
     const isOtherPayee =
-      stakingInfo.payee !== this.state.keyringService.formatAddress({ address, ethereumAddress: address }, network);
+      payeeAddress !==
+      this.state.keyringService.formatAddress({ address: stashAddress, ethereumAddress: stashAddress }, network);
 
-    const nameController = this.state.keyringService.getAccountName(stakingInfo.controller);
-    const addressBookNameController = addressBook[network]?.find(({ address: _address }) =>
-      isSameString(_address, stakingInfo.controller)
-    )?.name;
-    const controller = nameController ?? addressBookNameController ?? stakingInfo.controller;
-
-    const stashAddress = await this.getStashByController(address);
-    const isControllerForOtherAddress = !this.state.keyringService.isSameAddress(
-      { address: stashAddress, ethereumAddress: stashAddress },
-      { address, ethereumAddress: address }
-    );
+    const isOtherController = isController
+      ? false
+      : controllerAddress !==
+        this.state.keyringService.formatAddress({ address: stashAddress, ethereumAddress: stashAddress }, network);
 
     const result = {
       ...stakingInfo,
-      payee,
-      controller,
+      stashAddress,
+      stashName,
+      payeeName,
+      payeeAddress,
+      controllerAddress,
+      controllerName,
+      isController,
       isOtherPayee,
-      isControllerForOtherAddress,
+      isOtherController,
       myValidators: this.getValidatorsInformation(stakingInfo.myValidators, validators).map((info) => {
         const isActive = validatorsStatuses.validatorsActive.includes(info.address);
         const isInactive = validatorsStatuses.validatorsInactive.includes(info.address);

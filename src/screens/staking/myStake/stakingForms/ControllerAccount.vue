@@ -1,13 +1,7 @@
 <template>
   <div class="controller-account">
     <template v-if="step === 1">
-      <InfoRow
-        text="staking.stashAccount"
-        borderType="default"
-        :value="accountName"
-        :price="addressCut"
-        :hideLastBorder="false"
-      />
+      <InfoRow text="staking.stashAccount" borderType="default" :value="accountName" :hideLastBorder="false" />
 
       <InfoRow text="staking.setController" borderType="default" :value="controllerCut" :hideLastBorder="false" />
     </template>
@@ -29,9 +23,7 @@
         class="already-controlling"
       />
 
-      <div class="activity-buttons">
-        <BadgeButton text="common.paste" @click="paste" />
-      </div>
+      <slot></slot>
 
       <Hint text="staking.controllerUnbond" iconName="notification" class="hint row" />
 
@@ -57,7 +49,7 @@ import { Getter } from 'vuex-class';
 import type { SelectedWallet, GetAssetPrice, NetworkParams } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { cut, getClipboard } from '@/helpers';
+import { cut } from '@/helpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component({})
@@ -72,12 +64,12 @@ export default class ControllerAccount extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
-  get controller() {
-    return this.stakingNetwork.controller;
+  get controllerName() {
+    return this.stakingNetwork.controllerName;
   }
 
   get controllerCut() {
-    return cut(this.controller);
+    return cut(this.controllerName);
   }
 
   get asset() {
@@ -89,7 +81,7 @@ export default class ControllerAccount extends Vue {
   }
 
   get accountName() {
-    return this.selectedWallet.name;
+    return cut(this.stakingNetwork.stashName);
   }
 
   get stakingAssetPrice() {
@@ -102,10 +94,6 @@ export default class ControllerAccount extends Vue {
     const value = +this.fee * this.stakingAssetPrice;
 
     return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
-  }
-
-  paste() {
-    this.syncedControllerAddress = getClipboard();
   }
 
   setControllerAddress(value = '') {
@@ -131,12 +119,6 @@ export default class ControllerAccount extends Vue {
 
   .row {
     margin-left: 15px;
-  }
-
-  .activity-buttons {
-    display: flex;
-    user-select: none;
-    margin-bottom: 15px;
   }
 
   .already-controlling {

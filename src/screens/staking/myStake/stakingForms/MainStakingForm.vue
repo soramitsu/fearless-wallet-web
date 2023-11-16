@@ -60,7 +60,8 @@
             :asset="stakingAssetName"
             :assetId="stakingAssetId"
             :amount="amount"
-            :readonly="true"
+            :showIcon="false"
+            :readonly="isRebond"
             @update:amount="updateAmount"
             @setMax="setMax"
           />
@@ -83,7 +84,15 @@
             :controllerAddress="controllerAddress"
             :isInvalidController="isInvalidController"
             @update:controllerAddress="updateControllerAddress"
-          />
+          >
+            <div class="activity-buttons">
+              <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+
+              <BadgeButton text="common.paste" @click="paste" />
+
+              <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
+            </div>
+          </ControllerAccount>
 
           <Payee
             v-else-if="isPayee"
@@ -94,9 +103,15 @@
             :stakingCurrency="stakingCurrency"
             :payoutAddress="payoutAddress"
             @update:payoutAddress="setPayoutAddress"
-            @openHistoryBook="toggleHistoryBookVisibility"
-            @openMyWallets="toggleMyWalletsVisibility"
-          />
+          >
+            <div class="activity-buttons">
+              <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+
+              <BadgeButton text="common.paste" @click="paste" />
+
+              <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
+            </div>
+          </Payee>
         </template>
       </Scroll>
 
@@ -150,6 +165,8 @@ import { AsyncFn, StakingOperation, StakingOperationParams } from '@/interfaces'
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
+import { getClipboard } from '@/helpers';
+
 @Component({
   components: {
     Payee,
@@ -187,6 +204,10 @@ export default class MainStakingForm extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
   @Action(StakingActionTypes.GET_MY_STAKING_INFO) getMyStakingInfo!: AsyncFn<GetStakingNetworkProps>;
+
+  get showMyWalletsButton() {
+    return this.filteredWallets.length !== 0;
+  }
 
   get showBtn() {
     return !this.showHistoryBook && !this.showEditAddressBook && !this.showMyWallets;
@@ -254,6 +275,8 @@ export default class MainStakingForm extends Vue {
   }
 
   get filteredWallets() {
+    if (this.isPayee || this.isControllerAccount) return this.wallets;
+
     return this.wallets.filter(({ active }) => !active);
   }
 
@@ -298,6 +321,7 @@ export default class MainStakingForm extends Vue {
     // а значение уже залоченных токенов(bond, unbond, rebond)
     const amount = this.isBondExtra ? this.amount : '0';
 
+    // TODO staking проверять баланс на комиссию у стеша
     return isValidAmountAsset(this.stakingCurrency, this.network, this.fee ?? '0', amount);
   }
 
@@ -436,6 +460,10 @@ export default class MainStakingForm extends Vue {
     this.showHistoryBook = !this.showHistoryBook;
   }
 
+  paste() {
+    this.payoutAddress = getClipboard();
+  }
+
   setAddress(address: string, showHistoryBook = false) {
     this.newAddress = address;
     this.showHistoryBook = showHistoryBook;
@@ -456,7 +484,10 @@ export default class MainStakingForm extends Vue {
   }
 
   setWallet(address: string, ethereumAddress: string) {
-    this.payoutAddress = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
+    const value = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
+
+    if (this.isPayee) this.payoutAddress = value;
+    else if (this.isControllerAccount) this.controllerAddress = value;
 
     this.toggleMyWalletsVisibility();
   }
@@ -488,6 +519,12 @@ export default class MainStakingForm extends Vue {
 
   .wallet {
     margin-bottom: 12px !important;
+  }
+
+  .activity-buttons {
+    display: flex;
+    user-select: none;
+    margin-bottom: 15px;
   }
 }
 </style>

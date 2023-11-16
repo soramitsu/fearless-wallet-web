@@ -17,7 +17,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import HistoryItem from '@/screens/staking/myStake/HistoryItem.vue';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
-import { GetStakingHistory } from '@/store';
+import { GetStakingHistory, GetStakingNetwork } from '@/store';
 import { NetworkName } from '@/interfaces';
 
 @Component({
@@ -27,10 +27,20 @@ export default class History extends Vue {
   @Prop({ type: String }) network!: NetworkName;
   @Prop({ type: String }) stakingAssetId!: string;
   @Prop({ type: String }) rewardedAssetId!: string;
+  @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
   @Getter(StakingGettersTypes.getStakingHistory) getStakingHistory!: GetStakingHistory;
 
   get history() {
-    return this.getStakingHistory(this.network, this.stakingAssetId);
+    return this.getStakingHistory(
+      this.network,
+      this.stakingAssetId,
+      this.stakingNetwork.stashAddress,
+      this.stakingNetwork.payeeAddress
+    );
+  }
+
+  get stakingNetwork() {
+    return this.getStakingNetwork(this.network);
   }
 }
 </script>

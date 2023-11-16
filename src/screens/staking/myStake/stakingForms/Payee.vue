@@ -21,13 +21,7 @@
         @click="setPayoutAddress"
       />
 
-      <div class="activity-buttons">
-        <BadgeButton text="assets.history" @click="$emit('openHistoryBook')" />
-
-        <BadgeButton text="common.paste" @click="paste" />
-
-        <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="$emit('openMyWallets')" />
-      </div>
+      <slot></slot>
 
       <Hint text="staking.defaultPayout" iconName="notification" class="hint row" />
 
@@ -53,7 +47,7 @@ import { Getter } from 'vuex-class';
 import type { SelectedWallet, GetAssetPrice, NetworkParams } from '@/store';
 import type { AccountJson, TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { cut, getClipboard } from '@/helpers';
+import { cut } from '@/helpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
@@ -68,12 +62,12 @@ export default class Payee extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
-  get payee() {
-    return this.stakingNetwork.payee;
+  get payeeName() {
+    return this.stakingNetwork.payeeName;
   }
 
   get payeeCut() {
-    return cut(this.payee);
+    return cut(this.payeeName);
   }
 
   get asset() {
@@ -92,10 +86,6 @@ export default class Payee extends Vue {
     return this.wallets.filter(({ active }) => !active);
   }
 
-  get showMyWalletsButton() {
-    return this.filteredWallets.length !== 0;
-  }
-
   get stakingAssetPrice() {
     const priceId = this.stakingCurrency?.priceId ?? '';
 
@@ -106,10 +96,6 @@ export default class Payee extends Vue {
     const value = +this.fee * this.stakingAssetPrice;
 
     return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
-  }
-
-  paste() {
-    this.syncedPayoutAddress = getClipboard();
   }
 
   setPayoutAddress(value = '') {
@@ -139,12 +125,6 @@ export default class Payee extends Vue {
 
   .row {
     margin-left: 15px;
-  }
-
-  .activity-buttons {
-    display: flex;
-    user-select: none;
-    margin-bottom: 15px;
   }
 }
 </style>

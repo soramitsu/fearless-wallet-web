@@ -3,6 +3,7 @@
     <div class="my-stake">
       <div class="action-buttons">
         <BorderButton
+          v-if="showBondExtraBtn"
           class="action-button"
           text="staking.bondExtra"
           iconName="stake"
@@ -41,8 +42,16 @@
           @click="toggleVisible('showYourValidatorsForm', true)"
         />
 
+        <BorderButton
+          v-if="showControllerBtn"
+          class="action-button"
+          text="staking.setController"
+          iconName="controller"
+          @click="toggleVisible('showControllerAccountForm', true)"
+        />
+
         <div class="menu">
-          <Dropdown :options="actionOptions" type="dots-vertical" @handler="openForm" />
+          <Dropdown v-if="showDropdown" :options="actionOptions" type="dots-vertical" @handler="openForm" />
         </div>
       </div>
 
@@ -172,11 +181,39 @@ export default class MyStake extends Vue {
 
   get actionOptions() {
     return [
-      { label: 'staking.yourValidators', value: 'showYourValidatorsForm', visibility: !this.showValidatorsBtn },
-      { label: 'staking.setController', value: 'showControllerAccountForm' },
-      { label: 'staking.setPayee', value: 'showPayeeForm' },
-      { label: 'staking.pendingRewards', value: 'showPendingRewardForm' },
+      {
+        label: 'staking.yourValidators',
+        value: 'showYourValidatorsForm',
+        visibility: !this.showValidatorsBtn && !this.isOtherController,
+      },
+      {
+        label: 'staking.setController',
+        value: 'showControllerAccountForm',
+        visibility: !this.showControllerBtn && !this.isController,
+      },
+      {
+        label: 'staking.setPayee',
+        value: 'showPayeeForm',
+        visibility: this.isController || !this.isOtherController,
+      },
+      {
+        label: 'staking.pendingRewards',
+        value: 'showPendingRewardForm',
+        visibility: this.isController || !this.isOtherController,
+      },
     ];
+  }
+
+  get showDropdown() {
+    return this.actionOptions.some(({ visibility }) => visibility);
+  }
+
+  get isController() {
+    return this.stakingNetwork.isController;
+  }
+
+  get isOtherController() {
+    return this.stakingNetwork.isOtherController;
   }
 
   get showMainStakingForm() {
@@ -214,19 +251,37 @@ export default class MyStake extends Vue {
     return this.getStakingNetwork(this.network);
   }
 
+  get showControllerBtn() {
+    if (this.isController) return false;
+
+    return this.isOtherController;
+  }
+
   get showValidatorsBtn() {
+    if (this.isOtherController) return false;
+
     return !(this.showRebondBtn || this.showRedeemBtn);
   }
 
+  get showBondExtraBtn() {
+    return !this.isController;
+  }
+
   get showUnbondBtn() {
+    if (this.isOtherController) return false;
+
     return this.stakingNetwork.activeStake !== '0';
   }
 
   get showRebondBtn() {
+    if (this.isOtherController) return false;
+
     return this.stakingNetwork.unbond.sum !== '0';
   }
 
   get showRedeemBtn() {
+    if (this.isOtherController) return false;
+
     return this.stakingNetwork.redeemAmount !== '0';
   }
 
@@ -280,7 +335,13 @@ export default class MyStake extends Vue {
   get history() {
     if (!this.network) return [];
 
-    return this.getHistory(this.stakingAssetId, this.network.toLowerCase())?.nodes ?? [];
+    const stashHistory =
+      this.getHistory(this.stakingAssetId, this.network.toLowerCase(), this.stakingNetwork.stashAddress)?.nodes ?? [];
+
+    const payeeHistory =
+      this.getHistory(this.stakingAssetId, this.network.toLowerCase(), this.stakingNetwork.payeeAddress)?.nodes ?? [];
+
+    return [...stashHistory, ...payeeHistory];
   }
 
   created() {
@@ -295,13 +356,14 @@ export default class MyStake extends Vue {
     this.fetchHistory({
       networkName: this.network,
       assetId: this.stakingAssetId,
+      address: this.stakingNetwork.stashAddress,
     });
 
     if (this.stakingNetwork.isOtherPayee)
       this.fetchHistory({
         networkName: this.network,
         assetId: this.stakingAssetId,
-        address: this.stakingNetwork.payee,
+        address: this.stakingNetwork.payeeAddress,
       });
   }
 

@@ -392,7 +392,7 @@ export default class State {
       const { name } = network;
       const currentProvider = getCurrentProvider(network);
 
-      if (currentProvider) this.apis.evm[name.toLowerCase()] = initWeb3Api(currentProvider);
+      if (currentProvider) this.apis.evm[name] = initWeb3Api(currentProvider);
     });
   }
 

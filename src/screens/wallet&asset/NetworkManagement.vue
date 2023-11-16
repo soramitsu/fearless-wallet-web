@@ -81,7 +81,7 @@ export default class NetworkManagement extends Vue {
   value = '';
 
   @Prop(String) type!: keyof Tabs | string;
-  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(AccountGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountGettersTypes.selectedWallet) selectedWallet!: Wallet;
 
@@ -100,16 +100,10 @@ export default class NetworkManagement extends Vue {
     return { name: this.$t(`header.networkManagement.${this.activeTab}`), icon: 'all-networks' };
   }
 
-  get baseFilter() {
-    return this.selectedWallet.ethereumAddress === ''
-      ? this.networks.filter(({ isEthereum }) => !isEthereum)
-      : this.networks;
-  }
-
   get filterNetworks() {
-    if (this.activeTab === ALL_NETWORKS) return this.baseFilter;
+    if (this.activeTab === ALL_NETWORKS) return this.networks;
 
-    const networks = this.baseFilter.filter(({ favorite, rank }) => {
+    const networks = this.networks.filter(({ favorite, rank }) => {
       if (this.activeTab === POPULAR_NETWORKS) return rank !== undefined;
 
       if (this.activeTab === FAVORITE_NETWORKS)

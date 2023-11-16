@@ -89,13 +89,18 @@ export class StakingService {
     )?.name;
     const controller = nameController ?? addressBookNameController ?? stakingInfo.controller;
 
-    const controllerAddress = await this.getControllerAddress(address);
+    const stashAddress = await this.getStashByController(address);
+    const isControllerForOtherAddress = !this.state.keyringService.isSameAddress(
+      { address: stashAddress, ethereumAddress: stashAddress },
+      { address, ethereumAddress: address }
+    );
 
     const result = {
       ...stakingInfo,
       payee,
       controller,
       isOtherPayee,
+      isControllerForOtherAddress,
       myValidators: this.getValidatorsInformation(stakingInfo.myValidators, validators).map((info) => {
         const isActive = validatorsStatuses.validatorsActive.includes(info.address);
         const isInactive = validatorsStatuses.validatorsInactive.includes(info.address);
@@ -267,8 +272,8 @@ export class StakingService {
     return alerts;
   }
 
-  public async getControllerAddress(address: string) {
-    return await apiSora.staking.getController(address);
+  public async getStashByController(address: string) {
+    return await apiSora.staking.getStashByController(address);
   }
 
   public async getMinNominatorBond() {

@@ -507,7 +507,7 @@
   },
   "staking": {
     "stakingFee": "The network fee in the NPoS consensus algorithm for Substrate based chains refers to the cost incurred by participants (validators and nominators) for using the network's resources and services.",
-    "alreadyControlling": "A controller account should not be set to manage multiple stashes. The selected controller is already controlling",
+    "alreadyControlling": "A controller account should not be set to manage multiple stashes. The selected controller is already controlling another account.",
     "active": "Active",
     "inactive": "Inactive",
     "waiting": "Waiting",
@@ -583,7 +583,6 @@
     "defaultPayout": "By default your current account (stash) will be used for Payouts.",
     "controllerUnbond": "Controller can unbond, redeem, rebond, change reward destination and validators.",
     "stashAccount": "Stash Account",
-    "learnAboutControllers": "Learn more about controllers",
     "returnStake": "Return to stake",
     "latestUnstake": "Latest unstake",
     "pendingRewards": "Pending rewards",

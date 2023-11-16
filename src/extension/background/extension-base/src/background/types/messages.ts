@@ -6,6 +6,7 @@ import {
   StakingParamsResponse,
   MyStakingInfoResponse,
   RewardsResponse,
+  CheckControllerRequest,
 } from '@extension-base/services/staking-service/types';
 import type {
   BasicTxResponse,
@@ -176,6 +177,7 @@ export interface RequestSignatures {
 
   // staking
   'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];
+  'pri(staking.checkController)': [CheckControllerRequest, boolean];
   'pri(staking.rewards)': [NetworkName, RewardsResponse];
   'pri(staking.myStaking)': [StakingNetworkRequest, MyStakingInfoResponse];
   'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];

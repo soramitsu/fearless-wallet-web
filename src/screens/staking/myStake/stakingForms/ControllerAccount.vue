@@ -22,6 +22,13 @@
         @click="setControllerAddress"
       />
 
+      <Alert
+        v-if="isInvalidController"
+        message="staking.alreadyControlling"
+        sizeText="small"
+        class="already-controlling"
+      />
+
       <div class="activity-buttons">
         <BadgeButton text="common.paste" @click="paste" />
       </div>
@@ -40,8 +47,6 @@
       />
 
       <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
-
-      <FLink text="staking.learnAboutControllers" class="about-controllers row" @click="openAboutControllers" />
     </template>
   </div>
 </template>
@@ -61,6 +66,7 @@ export default class ControllerAccount extends Vue {
   @Prop({ type: String }) fee!: string;
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
+  @Prop({ type: Boolean }) isInvalidController!: boolean;
   @PropSync('controllerAddress', { type: String }) syncedControllerAddress!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -105,10 +111,6 @@ export default class ControllerAccount extends Vue {
   setControllerAddress(value = '') {
     this.syncedControllerAddress = value;
   }
-
-  openAboutControllers() {
-    console.info('openAboutControllers');
-  }
 }
 </script>
 
@@ -131,14 +133,14 @@ export default class ControllerAccount extends Vue {
     margin-left: 15px;
   }
 
-  .about-controllers {
-    margin-top: 10px;
-  }
-
   .activity-buttons {
     display: flex;
     user-select: none;
     margin-bottom: 15px;
+  }
+
+  .already-controlling {
+    margin: 10px 0;
   }
 }
 </style>

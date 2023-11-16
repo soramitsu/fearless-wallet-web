@@ -140,6 +140,7 @@ export type StakingParams = {
   myValidators: FWValidatorInfoFull[];
   payee: string;
   isOtherPayee: boolean;
+  isControllerForOtherAddress: boolean;
   activeStake: string;
   totalStake: string;
   controller: string;
@@ -155,10 +156,15 @@ export interface MyStakingInfo extends Omit<SoraMyStakingInfo, 'myValidators'> {
   myValidators: FWValidatorInfoFull[];
   alerts: Alert[];
   isOtherPayee: boolean;
+  isControllerForOtherAddress: boolean;
 }
 
 export type StakingParamsRequest = {
   networks: NetworkName[];
+};
+
+export type CheckControllerRequest = {
+  address: string;
 };
 
 export type StakingParamsResponse = StakingParams[];

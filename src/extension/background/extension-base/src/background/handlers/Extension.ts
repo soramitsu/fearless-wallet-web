@@ -39,6 +39,7 @@ import {
   StakingParamsRequest,
   MyStakingInfoResponse,
   RewardsResponse,
+  CheckControllerRequest,
 } from '@extension-base/services/staking-service/types';
 import { MetadataDef } from '@polkadot/extension-inject/types';
 import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
@@ -1206,6 +1207,21 @@ export default class Extension extends FWExtensionBase {
     return this.state.stakingService.getStakingParams(params);
   }
 
+  async checkController(params: CheckControllerRequest): Promise<boolean> {
+    const address = await this.state.getCurrentAddress('westend');
+    const stashAddress = await this.state.stakingService.getStashByController(params.address);
+
+    if (stashAddress === '') return true;
+
+    // Если для address существует stashAddress и он отличается от address, тогда address уже является контроллер аккаунтом
+    const isValidController = this.state.keyringService.isSameAddress(
+      { address: stashAddress, ethereumAddress: stashAddress },
+      { address, ethereumAddress: address }
+    );
+
+    return isValidController;
+  }
+
   async getRewards(network: NetworkName): Promise<RewardsResponse> {
     const address = await this.state.getCurrentAddress(network);
 
@@ -1702,6 +1718,9 @@ export default class Extension extends FWExtensionBase {
       // staking
       case 'pri(staking.stakingParams)':
         return this.getStakingParams(request as StakingParamsRequest);
+
+      case 'pri(staking.checkController)':
+        return this.checkController(request as CheckControllerRequest);
 
       case 'pri(staking.rewards)':
         return this.getRewards(request as NetworkName);

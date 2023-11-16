@@ -81,6 +81,7 @@
             :stakingNetwork="stakingNetwork"
             :stakingCurrency="stakingCurrency"
             :controllerAddress="controllerAddress"
+            :isInvalidController="isInvalidController"
             @update:controllerAddress="updateControllerAddress"
           />
 
@@ -126,7 +127,7 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AccountJson, TokenBalance } from '@extension-base/background/types/types';
 import type { GetAssetPrice, GetStakingNetwork, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
@@ -142,7 +143,7 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { calcTransferableSendMinusFee, isValidAmountAsset } from '@/helpers/currencies';
 import BaseApi from '@/util/BaseApi';
-import { getSoraFees } from '@/extension/messaging';
+import { checkController, getSoraFees } from '@/extension/messaging';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { AsyncFn, StakingOperation, StakingOperationParams } from '@/interfaces';
@@ -168,6 +169,7 @@ export default class MainStakingForm extends Vue {
   isSuggested = false;
   showHistoryBook = false;
   showMyWallets = false;
+  isInvalidController = false;
   amount = '';
   fee = '0';
   step = 1;
@@ -275,7 +277,7 @@ export default class MainStakingForm extends Vue {
     if (!this.isValidAmountAsset) return false;
 
     if (this.isControllerAccount) {
-      if (this.step === 1) return false;
+      if (this.step === 1) return this.isInvalidController;
 
       return !this.isValidControllerAddress;
     }
@@ -344,6 +346,11 @@ export default class MainStakingForm extends Vue {
       controllerAddress: this.controllerAddress,
       payee: this.payoutAddress,
     } as StakingOperationParams;
+  }
+
+  @Watch('controllerAddress')
+  async checkController(value: string) {
+    this.isInvalidController = !(await checkController({ address: value }));
   }
 
   mounted() {

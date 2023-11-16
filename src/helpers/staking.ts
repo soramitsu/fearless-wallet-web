@@ -14,6 +14,7 @@ const getDefaultStakingParams = (network: NetworkName): StakingParams => ({
   myValidators: [],
   payee: '',
   isOtherPayee: false,
+  isControllerForOtherAddress: false,
   activeStake: '0',
   totalStake: '0',
   controller: '',

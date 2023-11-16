@@ -92,15 +92,15 @@ import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 import NickNameForm from '@/screens/addWallet/NicknameForm.vue';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
-import { DerivationPaths, MnemonicConfirmation, AsyncFn } from '@/interfaces';
+import { type DerivationPaths, type MnemonicConfirmation, type AsyncFn } from '@/interfaces';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import BaseApi from '@/util/BaseApi';
 import { addAccount, createGoogleFile, exportAccount, updateCurrentAccount } from '@/extension/messaging';
-import { SelectedWallet } from '@/store/accounts/types';
+import { type SelectedWallet } from '@/store/accounts/types';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { WarningValueName } from '@/consts/messages';
+import { type WarningValueName } from '@/consts/messages';
 
 @Component({
   components: {

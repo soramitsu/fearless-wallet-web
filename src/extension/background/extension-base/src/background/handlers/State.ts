@@ -14,7 +14,7 @@ import {
   RequestService,
   WalletConnectService,
 } from '@extension-base/services';
-import { api as apiSora, FPNumber } from '@sora-substrate/util';
+import { api as apiSora, type FPNumber } from '@sora-substrate/util';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import { storage } from '@extension-base/stores/Storage';
 import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
@@ -27,41 +27,39 @@ import { FWCron } from '@extension-base/background/cron';
 import { isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
-import { KeyringAddress } from '@polkadot/ui-keyring/types';
-import { SignerPayloadRaw } from '@polkadot/types/types';
+import { type KeyringAddress } from '@polkadot/ui-keyring/types';
+import { type SignerPayloadRaw } from '@polkadot/types/types';
 import {
-  ServiceInfo,
-  MobileSignRequest,
-  MobileSigningRequest,
-  ResponseSigning,
+  type ServiceInfo,
+  type MobileSignRequest,
+  type MobileSigningRequest,
+  type ResponseSigning,
+  type AuthUrls,
+  type Resolver,
+  type AuthorizedAccountsDiff,
+  type RequestRpcSend,
+  type RequestRpcSubscribe,
+  type RequestRpcUnsubscribe,
+  type ResponseRpcListProviders,
+  type Port,
+  type IState,
+  type ActiveTabAuthorizeStatus,
+  type Providers,
+  type RequestAuthorizeCancel,
+  type ApiProps,
+  type RequestAccountExportPrivateKey,
+  type ResponseAccountExportPrivateKey,
+  type EvmApiMap,
 } from '@extension-base/background/types/types';
 import PricesService from '@extension-base/services/prices-service';
 import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
 import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
 import BalanceService from '@extension-base/services/balance-service';
 import CurrentAccountStore, {
-  CurrentAccountInfo,
-  CurrentAccountState,
+  type CurrentAccountInfo,
+  type CurrentAccountState,
 } from '@extension-base/stores/CurrentAccountStore';
 import WalletConnectDAppService from '@extension-base/services/wallet-connect-service/dapp';
-import type {
-  AuthUrls,
-  Resolver,
-  AuthorizedAccountsDiff,
-  RequestRpcSend,
-  RequestRpcSubscribe,
-  RequestRpcUnsubscribe,
-  ResponseRpcListProviders,
-  Port,
-  IState,
-  ActiveTabAuthorizeStatus,
-  Providers,
-  RequestAuthorizeCancel,
-  ApiProps,
-  RequestAccountExportPrivateKey,
-  ResponseAccountExportPrivateKey,
-  EvmApiMap,
-} from '@extension-base/background/types/types';
 import type { CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import type { ChainRegistry, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';

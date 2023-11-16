@@ -78,7 +78,7 @@ import { saveAs } from 'file-saver';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store';
+import { type SelectedWallet } from '@/store';
 import { cut } from '@/helpers';
 
 @Component

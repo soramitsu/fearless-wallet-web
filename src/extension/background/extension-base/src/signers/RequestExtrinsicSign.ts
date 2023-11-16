@@ -1,4 +1,4 @@
-import { TypeRegistry } from '@polkadot/types';
+import { type TypeRegistry } from '@polkadot/types';
 import { state } from '@extension-base/background/handlers';
 import type { KeyringPair } from '@polkadot/keyring/types';
 import type { SignerPayloadJSON } from '@polkadot/types/types';

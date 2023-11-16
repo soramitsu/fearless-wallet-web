@@ -29,14 +29,14 @@
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Action, Getter } from 'vuex-class';
-import { MetadataRequest } from '@extension-base/background/types/types';
+import { type MetadataRequest } from '@extension-base/background/types/types';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import Hint from '@/components/Hint.vue';
 import { Components } from '@/router/routes';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import InfoList from '@/screens/extension-ui/InfoList.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
-import { AsyncFn } from '@/interfaces';
+import { type AsyncFn } from '@/interfaces';
 
 @Component({
   components: {

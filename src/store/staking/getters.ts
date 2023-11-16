@@ -7,7 +7,7 @@ import type { SelectedWallet } from '@/store/accounts/types';
 import { isSameString, isSora } from '@/helpers';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common';
-import { SoraHistoryElement, SubqueryHistory } from '@/interfaces';
+import { type SoraHistoryElement, type SubqueryHistory } from '@/interfaces';
 import { SORA_VAL_ASSET_ID } from '@/consts/sora';
 
 export enum GettersTypes {

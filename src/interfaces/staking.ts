@@ -1,11 +1,11 @@
 import {
-  BondExtra,
-  Nominate,
-  Rebond,
-  SetControllerAccount,
-  SetPayee,
-  Unbond,
-  WithdrawUnbonded,
+  type BondExtra,
+  type Nominate,
+  type Rebond,
+  type SetControllerAccount,
+  type SetPayee,
+  type Unbond,
+  type WithdrawUnbonded,
 } from '@extension-base/services/staking-service/types';
 
 export interface SelectionValidator {

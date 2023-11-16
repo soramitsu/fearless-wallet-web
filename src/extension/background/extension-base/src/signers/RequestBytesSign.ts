@@ -1,5 +1,5 @@
 import { wrapBytes } from '@polkadot/extension-dapp/wrapBytes';
-import { TypeRegistry } from '@polkadot/types';
+import { type TypeRegistry } from '@polkadot/types';
 import { u8aToHex } from '@polkadot/util';
 import { state } from '@extension-base/background/handlers';
 import type { KeyringPair } from '@polkadot/keyring/types';

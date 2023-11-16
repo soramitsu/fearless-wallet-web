@@ -18,7 +18,7 @@ import { useRouter } from 'vue-router/composables';
 import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { useStore } from '@/store';
 import { Components } from '@/router/routes';
-import { AuthUrlInfo } from '@/extension/background/extension-base/src/background/types';
+import { type AuthUrlInfo } from '@/extension/background/extension-base/src/background/types';
 
 const store = useStore();
 const router = useRouter();

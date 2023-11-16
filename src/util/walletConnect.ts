@@ -1,10 +1,10 @@
-import { ProposalTypes, SessionTypes } from '@walletconnect/types';
+import { type ProposalTypes, type SessionTypes } from '@walletconnect/types';
 import {
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
-import { ChainData, SessionProposalNamespaces } from '@/screens/walletConnect/types';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import { type ChainData, type SessionProposalNamespaces } from '@/screens/walletConnect/types';
+import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 import { useStore } from '@/store';
 import { _getSubstrateGenesisHash } from '@/extension/background/extension-base/src/services/chain-service/helpers';
 

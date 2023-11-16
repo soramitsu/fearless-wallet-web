@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getBalanceItem } from '@extension-base/background/utils/utils';
 import jwtDecode from 'jwt-decode';
 import { FPNumber } from '@sora-substrate/util';
-import { TokenBalance } from '@extension-base/background/types/types';
+import { type TokenBalance } from '@extension-base/background/types/types';
 import type { JwtPayload } from 'jwt-decode';
 import type { Status } from '@/consts/soraCard';
 import { IS_PRODUCTION } from '@/consts/global';

@@ -1,4 +1,4 @@
-import { APIItemState } from '@extension-base/api/types/networks';
+import { type APIItemState } from '@extension-base/api/types/networks';
 import type { AssetType } from '@/interfaces';
 
 export interface BalanceChildItem {

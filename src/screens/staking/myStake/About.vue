@@ -60,7 +60,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { getRewards } from '@/extension/messaging';
-import { RewardsResponse } from '@/extension/background/extension-base/src/services/staking-service/types';
+import { type RewardsResponse } from '@/extension/background/extension-base/src/services/staking-service/types';
 
 @Component
 export default class About extends Vue {

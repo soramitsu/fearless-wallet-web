@@ -8,7 +8,7 @@ import type {
 } from '@extension-base/services/staking-service/types';
 import type { BasicTxResponse } from '@extension-base/background/types/types';
 import { sendMessage } from '@/extension/messaging/index';
-import { NetworkName } from '@/interfaces';
+import { type NetworkName } from '@/interfaces';
 
 export function getStakingParams(request: StakingParamsRequest): Promise<StakingParamsResponse> {
   return sendMessage('pri(staking.stakingParams)', request);

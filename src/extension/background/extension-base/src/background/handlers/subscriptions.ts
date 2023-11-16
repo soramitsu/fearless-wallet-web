@@ -1,6 +1,6 @@
-import { FWCron } from '@extension-base/background/cron';
+import { type FWCron } from '@extension-base/background/cron';
 import { logger as createLogger } from '@polkadot/util';
-import { Subscription } from 'rxjs';
+import { type Subscription } from 'rxjs';
 import { subscribeBalance } from '@extension-base/api/substrate/balance';
 import type State from '@extension-base/background/handlers/State';
 import type { Logger } from '@polkadot/util/types';
@@ -10,7 +10,7 @@ import type {
   SubscriptionMessageTypes,
   Subscriptions,
 } from '@extension-base/background/types/types';
-import { NetworkName } from '@/interfaces';
+import { type NetworkName } from '@/interfaces';
 import { SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 
 type SubscriptionName = 'xorTotalBalance' | NetworkName;

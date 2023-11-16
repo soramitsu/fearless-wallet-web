@@ -5,13 +5,13 @@ import { createSubscription } from '@extension-base/background/handlers/subscrip
 import {
   DEFAULT_LOGGER,
   PROJECT_ID_EXTENSION,
-  WALLET_CONNECT_DAPP_CONFIG,
   WALLET_CONNECT_METADATA,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
 import { generateHalfGenesisHash } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
+import { isEthereumNetwork } from '@extension-base/background/utils/utils';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
@@ -68,18 +68,28 @@ export default class WalletConnectDAppService {
   async initPairing() {
     if (!this.app) await this.initApp();
 
+    const optionalChains = this.state.networksJson.flatMap((network) => {
+      if (isEthereumNetwork(network.name) || !network.chainId) return [];
+      const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
+
+      return [`polkadot:${halfChainId}`];
+    });
+
     const pairing = await this.app?.client.connect({
-      ...WALLET_CONNECT_DAPP_CONFIG,
-      optionalNamespaces: {
+      requiredNamespaces: {
         polkadot: {
           methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
           chains: [
-            ...Object.values(this.state.networkMap).flatMap(({ isEthereum, genesisHash }) => {
-              if (isEthereum) return [];
-
-              return [`polkadot:${generateHalfGenesisHash(genesisHash)}`];
-            }),
+            'polkadot:91b171bb158e2d3848fa23a9f1c25182', //dot
+            'polkadot:7e4e32d0feafd4f9c9414b0be86373f9', //sora mainnet
           ],
+          events: ['chainChanged", "accountsChanged'],
+        },
+      },
+      optionalNamespaces: {
+        polkadot: {
+          methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
+          chains: optionalChains,
           events: ['chainChanged", "accountsChanged'],
         },
       },
@@ -170,8 +180,11 @@ export default class WalletConnectDAppService {
     const encodedAddress = this.state.keyringService.encodeAddress(payload.address);
     const account = this.state.keyringService.getAddress(encodedAddress);
 
+    const chainId = payload.genesisHash.slice(2);
+    const halfChainid = chainId.slice(0, Math.ceil(chainId.length / 2));
+
     const request = {
-      chainId: `polkadot:${generateHalfGenesisHash(payload.genesisHash)}`,
+      chainId: `polkadot:${halfChainid}`,
       topic: account?.meta.wcTopic as string,
       request: {
         method: 'polkadot_signTransaction',

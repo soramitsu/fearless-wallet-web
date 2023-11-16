@@ -81,7 +81,7 @@ export default class NetworkManagement extends Vue {
   value = '';
 
   @Prop(String) type!: keyof Tabs | string;
-  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(AccountGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountGettersTypes.selectedWallet) selectedWallet!: Wallet;
 

@@ -289,8 +289,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     };
 
     if (this.isSignMobile) {
-      //TODO
-      // return await makeTransfer(this.requestTransfer, callback);
+      return await makeTransfer(this.request as RequestTransfer, callback);
     }
 
     if (this.extrinsicType === 'transfer') return await makeTransfer(this.request as RequestTransfer, callback);

@@ -1,6 +1,7 @@
 import PriceStore from '@extension-base/stores/Price';
 import { axios } from '@extension-base/utils';
 import { REFRESH_PRICE_INTERVAL } from '@extension-base/const/intervals';
+import { storage } from '@extension-base/stores/Storage';
 import type State from '@extension-base/background/handlers/State';
 import type { PriceJson } from '@extension-base/background/types/types';
 
@@ -21,35 +22,37 @@ export default class PricesService {
   };
   private priceStoreReady = false;
   public fiatSymbol = 'usd';
-  private readonly priceStore;
+  private readonly priceStore: PriceStore;
   state: State;
+
   constructor(state: State) {
     this.state = state;
     this.priceStore = new PriceStore();
   }
 
-  public refreshPrice() {
-    const assets: string[] = this.state.assetsMap.filter(({ priceId }) => priceId).map(({ priceId }) => priceId);
+  get priceIds() {
+    const assets = this.state.assetsMap.flatMap(({ priceId }) => (priceId ? [priceId] : []));
 
-    this.getTokenPrice(Array.from(new Set(assets)), this.fiatSymbol, this.prices)
-      .then((rs) => {
-        this.setPrice(rs);
-      })
+    return Array.from(new Set(assets));
+  }
+
+  public refreshPrice() {
+    this.getTokenPrice(this.priceIds, this.fiatSymbol)
+      .then((rs) => this.setPrice(rs))
       .catch((err) => console.info(err));
   }
+
   public setFiatSymbol(symbol: string) {
     this.fiatSymbol = symbol;
 
-    chrome.storage.local.set({ fiatSymbol: this.fiatSymbol });
+    storage.set({ fiatSymbol: this.fiatSymbol });
   }
 
   public setPrice(priceData: PriceJson, callback?: (priceData: PriceJson) => void): void {
     this.priceStore.set('PriceData', priceData, () => {
-      if (callback) {
-        callback(priceData);
+      if (callback) callback(priceData);
 
-        this.priceStoreReady = true;
-      }
+      this.priceStoreReady = true;
     });
   }
 
@@ -57,9 +60,7 @@ export default class PricesService {
     this.priceStore.get('PriceData', (rs) => {
       if (this.priceStoreReady) update(rs);
       else {
-        const assets: string[] = this.state.assetsMap.filter(({ priceId }) => priceId).map(({ priceId }) => priceId);
-
-        this.getTokenPrice(Array.from(new Set(assets)), this.fiatSymbol, this.prices)
+        this.getTokenPrice(this.priceIds, this.fiatSymbol)
           .then((rs) => {
             this.setPrice(rs);
             update(rs);
@@ -75,13 +76,13 @@ export default class PricesService {
     return this.priceStore.subject;
   }
 
-  async getTokenPrice(assets: Array<string>, currency = 'usd', prices: Prices): Promise<PriceJson> {
+  async getTokenPrice(assets: Array<string>, currency = 'usd'): Promise<PriceJson> {
     try {
       const now = new Date().getTime();
-      const { currency: currentCurrency } = prices.json;
+      const { currency: currentCurrency } = this.prices.json;
 
-      if (Math.abs(prices.timestamp - now) <= REFRESH_PRICE_INTERVAL && currentCurrency === currency)
-        return prices.json;
+      if (Math.abs(this.prices.timestamp - now) <= REFRESH_PRICE_INTERVAL && currentCurrency === currency)
+        return this.prices.json;
 
       const assetsStr = assets.join(',');
       const coingeckoUrl = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${currency}&include_24hr_change=true&ids=${assetsStr}`;
@@ -110,7 +111,7 @@ export default class PricesService {
         tokenPriceMap[token] = responseData[token][currency];
       });
 
-      prices = {
+      this.prices = {
         json: {
           currency,
           tokenPriceChange,

@@ -19,6 +19,7 @@ const NATIVE_ETHEREUM_NETWORKS = [
   'zetachain testnet',
   'x1 testnet',
   'greenfield mainnet',
+  'polygon zkevm',
 ];
 const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, ...NATIVE_ETHEREUM_NETWORKS];
 

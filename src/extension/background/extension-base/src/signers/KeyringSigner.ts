@@ -29,11 +29,16 @@ export default class KeyringSigner implements Signer {
   }
 
   public signPayload(payload: SignerPayloadJSON): Promise<SignerResult> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const wrapper = this.#registry.createType('ExtrinsicPayload', payload, { version: payload.version });
 
       if (this.#isMobile) {
-        return state.walletConnectDappService.onRequest(payload);
+        state.walletConnectDappService
+          .onRequest(payload)
+          .then(({ signature }) => resolve({ id: id++, signature }))
+          .catch(() => reject());
+
+        return;
       }
 
       if (!this.#pair) throw new Error('unable to find pair');

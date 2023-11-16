@@ -23,18 +23,6 @@ export const DEFAULT_WALLET_CONNECT_OPTIONS: SignClientTypes.Options = {
   metadata: WALLET_CONNECT_METADATA,
 };
 
-export const WALLET_CONNECT_DAPP_CONFIG: Record<string, unknown> = {
-  requiredNamespaces: {
-    polkadot: {
-      methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
-      chains: [
-        'polkadot:91b171bb158e2d3848fa23a9f1c25182', // polkadot
-      ],
-      events: ['chainChanged", "accountsChanged'],
-    },
-  },
-};
-
 export const ALL_WALLET_CONNECT_EVENT: SignClientTypes.Event[] = [
   'session_proposal',
   'session_update',

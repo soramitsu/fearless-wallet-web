@@ -787,21 +787,21 @@ export default class State {
   public initNetworkStates() {
     const activeNetworks = Object.values(this.networkMap).filter(({ active }) => active);
 
-    activeNetworks.forEach(async (network) => {
+    activeNetworks.forEach((network) => {
       const { name, isEthereum } = network;
 
       if (isEthereum && isRequireEvmAPI(name)) {
-        if (!this.apis.evm[name] || !this.apis.evm[name].ready) this.initWeb3Api(network);
+        if (!this.apis.evm[name] || !this.apis.evm[name].ready) {
+          this.initWeb3Api(network);
+        }
       } else {
         if (this.apis.substrate[name]) {
-          const isReady = await this.apis.substrate[name].api?.isReady;
+          this.apis.substrate[name].api?.isReady.catch(() => {
+            this.resetApiRetries();
 
-          if (isReady) return;
+            initApi(network, this);
+          });
         }
-
-        this.resetApiRetries();
-
-        initApi(network, this);
       }
     });
   }
@@ -972,6 +972,8 @@ export default class State {
   }
 
   async fetchEvmBalance(_networks: NetworkName[] | null, _ethereumAddress?: string) {
+    if (!this.ready) return;
+
     const currentAccount = await this.currentAccount;
     const ethereumAddress = _ethereumAddress ?? currentAccount?.ethereumAddress ?? '';
 

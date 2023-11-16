@@ -37,7 +37,7 @@ export default class PricesService {
   }
 
   public refreshPrice() {
-    this.getTokenPrice(this.priceIds, this.fiatSymbol, this.prices)
+    this.getTokenPrice(this.priceIds, this.fiatSymbol)
       .then((rs) => this.setPrice(rs))
       .catch((err) => console.info(err));
   }
@@ -60,7 +60,7 @@ export default class PricesService {
     this.priceStore.get('PriceData', (rs) => {
       if (this.priceStoreReady) update(rs);
       else {
-        this.getTokenPrice(this.priceIds, this.fiatSymbol, this.prices)
+        this.getTokenPrice(this.priceIds, this.fiatSymbol)
           .then((rs) => {
             this.setPrice(rs);
             update(rs);
@@ -76,13 +76,13 @@ export default class PricesService {
     return this.priceStore.subject;
   }
 
-  async getTokenPrice(assets: Array<string>, currency = 'usd', prices: Prices): Promise<PriceJson> {
+  async getTokenPrice(assets: Array<string>, currency = 'usd'): Promise<PriceJson> {
     try {
       const now = new Date().getTime();
-      const { currency: currentCurrency } = prices.json;
+      const { currency: currentCurrency } = this.prices.json;
 
-      if (Math.abs(prices.timestamp - now) <= REFRESH_PRICE_INTERVAL && currentCurrency === currency)
-        return prices.json;
+      if (Math.abs(this.prices.timestamp - now) <= REFRESH_PRICE_INTERVAL && currentCurrency === currency)
+        return this.prices.json;
 
       const assetsStr = assets.join(',');
       const coingeckoUrl = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${currency}&include_24hr_change=true&ids=${assetsStr}`;
@@ -111,7 +111,7 @@ export default class PricesService {
         tokenPriceMap[token] = responseData[token][currency];
       });
 
-      prices = {
+      this.prices = {
         json: {
           currency,
           tokenPriceChange,

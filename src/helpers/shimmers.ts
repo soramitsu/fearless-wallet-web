@@ -1,7 +1,7 @@
-import { NetworkJson } from '@extension-base/types';
+import { type NetworkJson } from '@extension-base/types';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { isNetworkGroup } from './common';
-import { NetworkName } from '@/interfaces';
+import { type NetworkName } from '@/interfaces';
 
 function networksIsPending(networks: NetworkJson[], selectedNetwork: NetworkName = 'all') {
   if (isNetworkGroup(selectedNetwork)) {

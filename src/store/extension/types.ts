@@ -1,13 +1,13 @@
-import { SessionTypes } from '@walletconnect/types';
+import { type SessionTypes } from '@walletconnect/types';
 import {
-  AuthorizeRequest,
-  MetadataRequest,
-  SigningRequest,
+  type AuthorizeRequest,
+  type MetadataRequest,
+  type SigningRequest,
 } from '@/extension/background/extension-base/src/background/types/types';
 import {
-  WalletConnectSessionRequest,
-  WalletConnectNotSupportRequest,
-  WalletConnectTransactionRequest,
+  type WalletConnectSessionRequest,
+  type WalletConnectNotSupportRequest,
+  type WalletConnectTransactionRequest,
 } from '@/extension/background/extension-base/src/services/wallet-connect-service/types';
 
 export interface Features {

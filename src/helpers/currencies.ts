@@ -1,5 +1,5 @@
 import { FPNumber } from '@sora-substrate/util';
-import { Wallet } from 'ethers';
+import { type Wallet } from 'ethers';
 import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import { APIItemState } from '@extension-base/api/types/networks';
 import type { NetworkName, AssetsPrice, BuyProvider } from '@/interfaces';

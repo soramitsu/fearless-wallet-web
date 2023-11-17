@@ -1,8 +1,8 @@
 import { addMetadata } from '@polkadot/extension-chains';
-import { MetadataDef } from '@polkadot/extension-inject/types';
+import { type MetadataDef } from '@polkadot/extension-inject/types';
 import { knownGenesis } from '@polkadot/networks/defaults';
-import { HexString } from '@polkadot/util/types';
-import MetadataStore from '@extension-base/stores/Metadata';
+import { type HexString } from '@polkadot/util/types';
+import type MetadataStore from '@extension-base/stores/Metadata';
 
 export const extractMetadata = (store: MetadataStore): void => {
   store.allMap((map): void => {

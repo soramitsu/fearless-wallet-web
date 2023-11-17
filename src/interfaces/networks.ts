@@ -1,4 +1,4 @@
-import { NetworkFeesObject } from '@sora-substrate/util';
+import { type NetworkFeesObject } from '@sora-substrate/util';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Node } from '@/interfaces';
 

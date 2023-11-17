@@ -1,5 +1,5 @@
 import { formatJsonRpcError, formatJsonRpcResult } from '@json-rpc-tools/utils';
-import { SignClientTypes } from '@walletconnect/types';
+import { type SignClientTypes } from '@walletconnect/types';
 import { getSdkError } from '@walletconnect/utils';
 import { isSameAddress } from '@extension-base/utils';
 import { keyring } from '@polkadot/ui-keyring';

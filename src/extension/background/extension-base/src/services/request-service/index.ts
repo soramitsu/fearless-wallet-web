@@ -1,4 +1,4 @@
-import { BehaviorSubject } from 'rxjs';
+import { type BehaviorSubject } from 'rxjs';
 import EvmRequestHandler from '@extension-base/services/request-service/handlers/EvmRequestHandler';
 import {
   ConnectWCRequestHandler,

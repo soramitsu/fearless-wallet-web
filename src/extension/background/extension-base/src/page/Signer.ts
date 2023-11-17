@@ -1,7 +1,7 @@
 // Copyright 2019-2022 @polkadot/extension-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { SendRequest } from '@extension-base/page/types';
+import { type SendRequest } from '@extension-base/page/types';
 import type { Signer as SignerInterface, SignerResult } from '@polkadot/api/types';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 

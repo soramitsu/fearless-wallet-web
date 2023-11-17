@@ -17,8 +17,8 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import HistoryItem from '@/screens/staking/myStake/HistoryItem.vue';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
-import { GetStakingHistory } from '@/store';
-import { NetworkName } from '@/interfaces';
+import { type GetStakingHistory } from '@/store';
+import { type NetworkName } from '@/interfaces';
 
 @Component({
   components: { HistoryItem },

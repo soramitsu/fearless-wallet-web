@@ -57,7 +57,7 @@
 <script lang="ts">
 import { Component, Vue, Ref, Watch, Prop } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
-import { FPNumber } from '@sora-substrate/util';
+import { type FPNumber } from '@sora-substrate/util';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
 import type Input from '@/components/Input.vue';
 import type { AsyncFn, Fn } from '@/interfaces';

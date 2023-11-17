@@ -1,4 +1,4 @@
-import { Option, u32 } from '@polkadot/types';
+import { type Option, type u32 } from '@polkadot/types';
 import type { Exposure } from '@polkadot/types/interfaces/staking';
 import type {
   ValidatorExposure,

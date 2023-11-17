@@ -1,20 +1,20 @@
 import { BehaviorSubject } from 'rxjs';
 
-import { SignerPayloadJSON } from '@polkadot/types/types/extrinsic';
+import { type SignerPayloadJSON } from '@polkadot/types/types/extrinsic';
 import { logger as createLogger } from '@polkadot/util/logger';
-import { Logger } from '@polkadot/util/types';
+import { type Logger } from '@polkadot/util/types';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
-import { Resolver } from '@extension-base/background/types/types';
-import { getId, isInternalRequest } from '@extension-base/utils';
-import { RequestService } from '@extension-base/services';
-import { state } from '../../../background/handlers';
-import type {
-  SignRequest,
-  ResponseSigning,
-  RequestSign,
-  AccountJson,
-  SigningRequest,
+import {
+  type Resolver,
+  type SignRequest,
+  type ResponseSigning,
+  type RequestSign,
+  type AccountJson,
+  type SigningRequest,
 } from '@extension-base/background/types/types';
+import { getId, isInternalRequest } from '@extension-base/utils';
+import { type RequestService } from '@extension-base/services';
+import { state } from '../../../background/handlers';
 
 export class SubstrateRequestHandler {
   readonly logger: Logger;

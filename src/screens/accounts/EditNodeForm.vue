@@ -27,7 +27,7 @@ import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
 import { upsertNetworkMap } from '@/extension/messaging';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GetNetwork } from '@/store';
+import { type GetNetwork } from '@/store';
 
 @Component
 export default class EditNodeForm extends Vue {

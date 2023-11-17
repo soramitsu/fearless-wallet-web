@@ -3,9 +3,9 @@ import { isSameString } from '..';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { addNumbers } from '@/helpers/numbers';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, NETWORKS_GROUPS, POPULAR_NETWORKS } from '@/consts/networks';
-import { AssetsPrice, ChangeWalletBalance, NetworkName } from '@/interfaces';
+import { type AssetsPrice, type ChangeWalletBalance, type NetworkName } from '@/interfaces';
 import { FEARLESS_TITLE } from '@/consts/global';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 
 export function isNetworkGroup(network: string) {
   return NETWORKS_GROUPS.some((group) => group.toLowerCase() === network.toLowerCase());

@@ -40,7 +40,7 @@ import { useRouter } from 'vue-router/composables';
 import {
   EIP155_SIGNING_METHODS,
   SIGNATURE_METHODS,
-  WalletConnectTransactionRequest,
+  type WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 import { TransferErrorCode, BasicTxErrorCode } from '@extension-base/background/types/types';
 import { useI18n } from 'vue-i18n-composable';

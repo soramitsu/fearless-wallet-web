@@ -2,7 +2,7 @@ import { logger as createLogger } from '@polkadot/util';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { storage } from '@extension-base/stores/Storage';
 import { Subject } from 'rxjs';
-import { FPNumber } from '@sora-substrate/util';
+import { type FPNumber } from '@sora-substrate/util';
 import { getMockCurrencies, getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
 import type { Logger } from '@polkadot/util/types';

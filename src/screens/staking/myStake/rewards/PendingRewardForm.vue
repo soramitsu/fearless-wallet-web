@@ -89,8 +89,8 @@ import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
 import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
 import { getRewards, getSoraFees } from '@/extension/messaging';
 import {
-  PayoutRewards,
-  RewardsResponse,
+  type PayoutRewards,
+  type RewardsResponse,
 } from '@/extension/background/extension-base/src/services/staking-service/types';
 
 @Component({

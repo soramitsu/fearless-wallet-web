@@ -34,6 +34,14 @@ module.exports = {
     'vue/valid-define-props': 'off',
     'vue/html-indent': ['warn', 2],
     'vue/block-spacing': 1,
+    '@typescript-eslint/consistent-type-imports': [
+      'error',
+      {
+        disallowTypeAnnotations: false,
+        prefer: 'type-imports',
+        fixStyle: 'inline-type-imports',
+      },
+    ],
     '@typescript-eslint/explicit-function-return-type': ['off'],
     '@typescript-eslint/no-use-before-define': ['off'],
     '@typescript-eslint/no-var-requires': ['off'],

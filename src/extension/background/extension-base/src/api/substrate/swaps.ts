@@ -1,4 +1,4 @@
-import { Api, FPNumber } from '@sora-substrate/util';
+import { type Api, FPNumber } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import type State from '@extension-base/background/handlers/State';

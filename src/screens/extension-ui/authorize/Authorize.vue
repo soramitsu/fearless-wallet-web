@@ -32,12 +32,12 @@
 </template>
 
 <script lang="ts" setup>
-import { AuthorizeRequest, AccountJson } from '@extension-base/background/types/types';
+import { type AuthorizeRequest, type AccountJson } from '@extension-base/background/types/types';
 import { computed, ref, set, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
 import { Components } from '@/router/routes';
-import { WalletInfo, useStore } from '@/store';
+import { type WalletInfo, useStore } from '@/store';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import BaseApi from '@/util/BaseApi';
 

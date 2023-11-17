@@ -1,4 +1,4 @@
-import { OnBoardingStoriesLocales } from '@/interfaces';
+import { type OnBoardingStoriesLocales } from '@/interfaces';
 
 export type UserType = 'new' | 'regular';
 

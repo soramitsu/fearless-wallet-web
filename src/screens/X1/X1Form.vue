@@ -40,7 +40,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { loadScript, unloadScript } from 'vue-plugin-load-script';
 import { Getter } from 'vuex-class';
-import { FPNumber } from '@sora-substrate/util';
+import { type FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { X1Api } from '@/util/x1';

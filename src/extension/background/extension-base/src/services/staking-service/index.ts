@@ -1,6 +1,6 @@
 import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
-import { BasicTxErrorCode, BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
+import { BasicTxErrorCode, type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
 import { getEthereumAddress, getSubstrateAddress, getUtilityProps } from '@extension-base/background/utils/utils';
 import type State from '@extension-base/background/handlers/State';
 import type {
@@ -22,7 +22,7 @@ import type {
   RequestPayoutRewards,
   ValidatorStatuses,
 } from '@extension-base/services/staking-service/types';
-import { NetworkName } from '@/interfaces';
+import { type NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
 import { cut, isSameString } from '@/helpers';
 export * from '@sora-substrate/util/build/staking/types';

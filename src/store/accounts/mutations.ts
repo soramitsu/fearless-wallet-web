@@ -3,8 +3,6 @@ import type { SelectedWallet, SetAccountsProps, SetAutoSelectNode, SetHiddenAsse
 import type { State } from './state';
 import type { BalanceJson } from '@extension-base/background/types/types';
 import { accountController } from '@/controllers';
-import router from '@/router';
-import { Components } from '@/router/routes';
 
 export enum MutationTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
@@ -77,8 +75,6 @@ const mutations: MutationTree<State> & Mutations = {
     }
 
     accountController.setAccounts(state.accounts);
-    if (!state.accounts.length && router.currentRoute.name !== Components.Welcome)
-      router.push({ name: Components.Welcome });
 
     return;
   },

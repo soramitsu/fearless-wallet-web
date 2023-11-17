@@ -2,6 +2,7 @@
   <AboveForm :header="getLocale('header')" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="management">
       <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
+      <Tooltip text="common.copied" target=".search-input" placement="bottom" />
 
       <Tabs v-show="showTabs" :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
 
@@ -19,14 +20,24 @@
       <div v-show="isNetworksExists" class="container" :class="networkListClasses">
         <Scroll>
           <ul class="network__list">
+            <template> </template>
             <NetworkItem
               v-for="network in filteredOptionsNetworks"
               :network="network"
               :isSelected="isNetworkSelected(network.name)"
               :key="network.name"
+              :ref="network.name"
               :isAvailable="isAvailableNetwork(network.name)"
               @onChangeNetwork="enableSingleNetwork(network.name)"
               @onToggleFavorite="toggleFavorite(network.name)"
+            />
+            <Tooltip
+              text="common.unavailableNetworkMessage"
+              :maxWidth="300"
+              :delay="0"
+              target=".unavailable"
+              :arrow="true"
+              placement="top"
             />
           </ul>
         </Scroll>
@@ -38,6 +49,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Action, Getter, Mutation } from 'vuex-class';
+import { type AccountJson } from '@extension-base/background/types/types';
 import NetworkItem from './NetworkItem.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { Tab } from '@/interfaces/ui';
@@ -48,7 +60,7 @@ import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutatio
 import { isNetworkGroup } from '@/helpers/common';
 import { type SetFavoriteNetwork, type Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { mobileWalletAvailableNetworks, updateCurrentNetwork } from '@/extension/messaging';
+import { updateCurrentNetwork } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/utils/utils';
 
@@ -82,11 +94,13 @@ export default class NetworkManagement extends Vue {
   filterValue = '';
   activeTab: keyof Tabs = ALL_NETWORKS;
   value = '';
-  mobileWalletNetworks: string[] = []; //half chainId
+
   @Prop(String) type!: keyof Tabs | string;
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
   @Getter(AccountGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountGettersTypes.selectedWallet) selectedWallet!: Wallet;
+  @Getter(AccountGettersTypes.getAccounts) accounts!: AccountJson[];
+
   @Action(NetworksActionsTypes.TOGGLE_FAVORITE_NETWORK) setFavorite!: (props: SetFavoriteNetwork) => Promise<boolean>;
   @Mutation(AccountMutationsTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
@@ -155,18 +169,21 @@ export default class NetworkManagement extends Vue {
   }
 
   async mounted() {
-    if (this.selectedWallet.isMobile) {
-      this.mobileWalletNetworks = await mobileWalletAvailableNetworks(this.selectedWallet.address);
-    }
-
     if (isNetworkGroup(this.selectedNetwork)) this.activeTab = this.selectedNetwork as keyof Tabs;
+  }
+
+  get selectedAccount() {
+    return this.accounts.find((el) => el.address === this.selectedWallet.address);
   }
 
   isAvailableNetwork(network: string): boolean {
     const selectedNetwork = this.getNetwork(network);
 
     if (this.selectedWallet.isMobile) {
-      const available = this.mobileWalletNetworks.some((el) => selectedNetwork.chainId.includes(el));
+      if (!this.selectedAccount) return false;
+      if (!this.selectedAccount.chains) return false;
+
+      const available = this.selectedAccount.chains.some((el) => selectedNetwork.chainId.includes(el));
 
       return available;
     }

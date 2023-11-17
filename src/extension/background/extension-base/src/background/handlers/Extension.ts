@@ -19,7 +19,6 @@ import {
   getBalanceItem,
   getEthereumAddress,
 } from '@extension-base/background/utils/utils';
-import { storage } from '@extension-base/stores/Storage';
 import {
   isProposalExpired,
   isSupportWalletConnectNamespace,
@@ -248,19 +247,9 @@ export default class Extension extends FWExtensionBase {
       this.state.updateCurrentAccount(account?.address ?? '');
     }
 
-    this.cleanupDeletedAccount(address);
+    this.state.cleanupDeletedAccount(address);
 
     return true;
-  }
-
-  cleanupDeletedAccount(address: string) {
-    if (this.state.selectedNetworks[address]) {
-      delete this.state.selectedNetworks[address];
-
-      storage.set({ selectedNetworks: this.state.selectedNetworks });
-    }
-
-    this.state.balanceService.deleteBalance(address);
   }
 
   accountsValidatePassword({ address, password }: RequestAccountValidate): boolean {
@@ -1675,9 +1664,6 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.soraFees)':
         return this.getSoraFees();
-
-      case 'pri(accounts.wc.networks)':
-        return this.getWalletConnectSessionAvailableNetwork(request as string);
 
       // staking
       case 'pri(staking.stakingParams)':

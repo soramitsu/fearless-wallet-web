@@ -1,5 +1,5 @@
 <template>
-  <li class="network" @click="onSelect">
+  <li class="network" :class="!isAvailable ? 'unavailable' : ''" @click="onSelect">
     <Icon v-if="isNetworkGroup" icon="all-networks" width="24" height="24" className="network__icon" />
     <ExternalLogo v-else :name="network.icon" :width="24" class="img" />
 
@@ -25,7 +25,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import type { NetworkJson } from '@extension-base/types';
-import { type SelectedWallet } from '@/store/accounts/types';
+import type { SelectedWallet } from '@/store/accounts/types';
 import { useStore } from '@/store';
 
 type Props = {
@@ -76,6 +76,7 @@ const prepColor = computed(() => {
 
   return 'rgba(255, 255, 255, 1)'; //default-white
 });
+const prepOpacity = computed(() => (props.isAvailable ? '1' : '0.5'));
 </script>
 
 <style lang="scss" scoped>
@@ -113,5 +114,8 @@ const prepColor = computed(() => {
     gap: 10px;
     justify-content: flex-end;
   }
+}
+.img {
+  opacity: v-bind(prepOpacity);
 }
 </style>

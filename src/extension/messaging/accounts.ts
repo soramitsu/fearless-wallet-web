@@ -69,7 +69,3 @@ export function updatePairMeta(address: string, meta: FWKeyringMeta): Promise<bo
 export function getTotalBalances(): Promise<ResponseTotalBalances[]> {
   return sendMessage('pri(accounts.totalBalances)', null);
 }
-
-export function mobileWalletAvailableNetworks(address: string): Promise<string[]> {
-  return sendMessage('pri(accounts.wc.networks)', address);
-}

@@ -54,7 +54,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { MyStakingTab } from '@/interfaces/common';
-import type { GetAssetPrice, GetStakingNetwork, SelectedWallet, type GetStakingHistory } from '@/store';
+import type { GetAssetPrice, GetStakingNetwork, SelectedWallet, GetStakingHistory } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';

@@ -89,6 +89,7 @@ import {
   BasicTxErrorCode,
   type BasicTxResponse,
   TransferErrorCode,
+  type FetchBalanceRequest,
 } from '@extension-base/background/types/types';
 import {
   type RequestConnectWalletConnect,

@@ -99,6 +99,7 @@ export type SetSoraFee = {
 export type FetchHistory = {
   networkName: NetworkName;
   assetId: string;
+  address?: string;
 };
 
 export type ToggleFavorite = {

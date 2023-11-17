@@ -34,9 +34,9 @@ const actions: ActionTree<State, State> & Actions = {
     }
   },
 
-  async [ActionTypes.FETCH_HISTORY]({ commit, getters, rootState, rootGetters }, { networkName, assetId }) {
+  async [ActionTypes.FETCH_HISTORY]({ commit, getters, rootState, rootGetters }, { networkName, assetId, address }) {
     const { externalApi } = getters.getNetwork(networkName) as Network;
-    const wallet = rootGetters.selectedWallet;
+    const wallet = address ? { address, ethereumAddress: address } : rootGetters.selectedWallet;
     const formattedAddress = BaseApi.formatAddress(wallet, networkName);
 
     // TODO staking обновить, когда обновят json
@@ -47,7 +47,7 @@ const actions: ActionTree<State, State> & Actions = {
       if (history)
         commit(MutationTypes.SET_HISTORY, {
           networkName: networkName.toLowerCase(),
-          walletAddress: wallet.address,
+          walletAddress: BaseApi.formatAddress(wallet),
           history,
           assetId,
           serviceType: 'sora',

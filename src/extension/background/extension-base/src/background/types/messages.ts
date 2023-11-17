@@ -18,6 +18,8 @@ import type {
   MyStakingInfoResponse,
   MakeStakingRequest,
   RewardsResponse,
+  CheckControllerRequest,
+  getRewardsRequest,
   StakingNetworkRequest,
 } from '@extension-base/services/staking-service/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
@@ -78,6 +80,7 @@ import type {
   ResponseTotalBalances,
   MobileSigningRequest,
   RequestSigningSubscribe,
+  FetchBalanceRequest,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -97,7 +100,6 @@ import type {
   FilesResponse,
   SoraFees,
   OnboardingStories,
-  NetworkName,
 } from '@/interfaces';
 
 export interface RequestSignatures {
@@ -174,7 +176,8 @@ export interface RequestSignatures {
 
   // staking
   'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];
-  'pri(staking.rewards)': [NetworkName, RewardsResponse];
+  'pri(staking.checkController)': [CheckControllerRequest, boolean];
+  'pri(staking.rewards)': [getRewardsRequest, RewardsResponse];
   'pri(staking.myStaking)': [StakingNetworkRequest, MyStakingInfoResponse];
   'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];
 
@@ -182,6 +185,7 @@ export interface RequestSignatures {
   'pri(balance)': [null, BalanceJson];
   'pri(fetch.evm.balance)': [null, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
+  'pri(fetch.balance)': [FetchBalanceRequest, string];
 
   'pri(price.update.currency)': [string, void];
   'pri(price.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];

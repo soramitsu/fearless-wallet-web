@@ -95,10 +95,11 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.getHistory]:
     ({ history }, getters, rootState, rootGetters) =>
-    (assetId: string, networkName: string) => {
+    (assetId: string, networkName: string, address?: string) => {
       const wallet: SelectedWallet = rootGetters.selectedWallet;
+      const _address = address ? BaseApi.formatAddress({ address, ethereumAddress: address }) : wallet.address;
 
-      return history[assetId]?.[wallet.address]?.[networkName.toLowerCase()];
+      return history[assetId]?.[_address]?.[networkName.toLowerCase()];
     },
 
   [GettersTypes.getActiveNodesByNetwork]:

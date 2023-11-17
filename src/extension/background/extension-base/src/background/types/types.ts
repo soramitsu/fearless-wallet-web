@@ -109,6 +109,11 @@ export interface RequestAddressCreate {
   meta: FWKeyringMeta;
 }
 
+export interface FetchBalanceRequest {
+  address: string;
+  networkName: NetworkName;
+}
+
 export interface SubscribeBalanceRequest {
   id: string;
   port: Port;

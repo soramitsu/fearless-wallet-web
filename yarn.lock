@@ -3075,83 +3075,83 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sora-substrate/api@npm:1.23.4":
-  version: 1.23.4
-  resolution: "@sora-substrate/api@npm:1.23.4"
+"@sora-substrate/api@npm:1.25.3":
+  version: 1.25.3
+  resolution: "@sora-substrate/api@npm:1.25.3"
   dependencies:
     "@open-web3/orml-api-derive": 1.1.4
     "@polkadot/api": 9.14.2
-    "@sora-substrate/types": 1.23.4
-  checksum: 1849f748b285ddd5202cf5ac1326e0942a97b8f6bc4b285d8c3a6558f45559f030093e3cf3f7de7836404a60462f3a1a98a311181782987da1f2725e5b3aeed4
+    "@sora-substrate/types": 1.25.3
+  checksum: 11f1ef4930596496c2ddc739646245ec4750ccc4f24190384480f678be929b8c34c9e18304f2bc10c07f24a4d14ee4e250fcd494d800bb3d25c51dddadecba43
   languageName: node
   linkType: hard
 
-"@sora-substrate/connection@npm:1.23.4":
-  version: 1.23.4
-  resolution: "@sora-substrate/connection@npm:1.23.4"
+"@sora-substrate/connection@npm:1.25.3":
+  version: 1.25.3
+  resolution: "@sora-substrate/connection@npm:1.25.3"
   dependencies:
-    "@sora-substrate/api": 1.23.4
-  checksum: 72c7f87f575fcf188a498ba37cc5720d657da245239f092d8b6aff160c34448e2193722c4feb4cacdb9009b6778ee5e00b1a569e3f72db0ad7356bbfaca70ac8
+    "@sora-substrate/api": 1.25.3
+  checksum: 2c013873c04ff67d34081ed813d9ed4bdaeccd071900882f87cb70a741481d31a9268138a8f1da4f9ec9abd86bbdb91610c8f9330492fce15a12f8b960ece376
   languageName: node
   linkType: hard
 
-"@sora-substrate/liquidity-proxy@npm:1.23.4":
-  version: 1.23.4
-  resolution: "@sora-substrate/liquidity-proxy@npm:1.23.4"
+"@sora-substrate/liquidity-proxy@npm:1.25.3":
+  version: 1.25.3
+  resolution: "@sora-substrate/liquidity-proxy@npm:1.25.3"
   dependencies:
-    "@sora-substrate/math": 1.23.4
-  checksum: b3195f36024930fff0462ab8dcd5f9740287ea9326a919c89f32bf83574c1d47ee0b5ecf04e044975d78ac0fead30368794658e7e712008b8dee9a1a275a0406
+    "@sora-substrate/math": 1.25.3
+  checksum: 5ba4cb464b23486b0f1f56d2f76d69a56293d38aa6fd0a4de35b64ad0d693ba2b7feaf36d455186cf265371d28037636d3303c40737816a74fa9591ba182d5d0
   languageName: node
   linkType: hard
 
-"@sora-substrate/math@npm:1.23.4":
-  version: 1.23.4
-  resolution: "@sora-substrate/math@npm:1.23.4"
+"@sora-substrate/math@npm:1.25.3":
+  version: 1.25.3
+  resolution: "@sora-substrate/math@npm:1.25.3"
   dependencies:
     "@polkadot/types": 9.14.2
     bignumber.js: ^9.0.1
     lodash: ^4.17.15
-  checksum: e923cfe55fab324fcf439dcd8ad8025ca2365dc4484d849f6adc358d4d5854802f5dff96ebfea26e4f44fec2a5042ab92771812dc73ddde35760a2aca4d88c6a
+  checksum: 7629e8921ab949e63109afb25a9832e6049260a7d49d312332b8743abe6141847f61678714500d575483d858075fb27df9c89d0c411bea420288bd301dbc3e18
   languageName: node
   linkType: hard
 
-"@sora-substrate/type-definitions@npm:1.23.4":
-  version: 1.23.4
-  resolution: "@sora-substrate/type-definitions@npm:1.23.4"
+"@sora-substrate/type-definitions@npm:1.25.3":
+  version: 1.25.3
+  resolution: "@sora-substrate/type-definitions@npm:1.25.3"
   dependencies:
     "@open-web3/orml-type-definitions": 1.1.4
-  checksum: b40a059ccc57d1b9d150901b5f43e0ce0a0033b86db625c68ac40ee821f169e458062508b3ee10590e7ec10c59a95be0309a6c9bc7bc526d431fc4c66e5de1a2
+  checksum: 08f3d16931199a373169c9f867d94bbdc77bcb4dbb3c0d2c76ade3bccbd5328488f84b4b2abe9cbbf0af4f70106f7533de2888dfe2631c0be4361370a71addd8
   languageName: node
   linkType: hard
 
-"@sora-substrate/types@npm:1.23.4":
-  version: 1.23.4
-  resolution: "@sora-substrate/types@npm:1.23.4"
+"@sora-substrate/types@npm:1.25.3":
+  version: 1.25.3
+  resolution: "@sora-substrate/types@npm:1.25.3"
   dependencies:
     "@open-web3/api-mobx": 0.9.4-26
     "@open-web3/orml-types": 1.1.4
     "@polkadot/api": 9.14.2
     "@polkadot/typegen": 9.14.2
     "@polkadot/types": 9.14.2
-    "@sora-substrate/type-definitions": 1.23.4
-  checksum: cc276298e82b36ae8148fae2eff2566249b91cf9159879c0055ace2247ddde70d5f756abe3d22b5674fd782988c5c6314eff547e430822b484da9f4d94d6d7b1
+    "@sora-substrate/type-definitions": 1.25.3
+  checksum: 1bf06ae69a5971532ad08dca9d4470a6644a17818f7547cc195820e3e1d7ebc14f5b32764aa2da5dfb7879c7ecd3a3fb346574c78e59acded3b0facd6da3796c
   languageName: node
   linkType: hard
 
-"@sora-substrate/util@npm:1.23.4":
-  version: 1.23.4
-  resolution: "@sora-substrate/util@npm:1.23.4"
+"@sora-substrate/util@npm:1.25.3":
+  version: 1.25.3
+  resolution: "@sora-substrate/util@npm:1.25.3"
   dependencies:
     "@polkadot/ui-keyring": 2.12.1
-    "@sora-substrate/api": 1.23.4
-    "@sora-substrate/connection": 1.23.4
-    "@sora-substrate/liquidity-proxy": 1.23.4
-    "@sora-substrate/math": 1.23.4
-    "@sora-substrate/types": 1.23.4
+    "@sora-substrate/api": 1.25.3
+    "@sora-substrate/connection": 1.25.3
+    "@sora-substrate/liquidity-proxy": 1.25.3
+    "@sora-substrate/math": 1.25.3
+    "@sora-substrate/types": 1.25.3
     axios: ^0.21.1
     crypto-js: ^4.0.0
     lodash: ^4.17.15
-  checksum: e723b9290cc6f9a8465c18d8e647d9c9a026b0477c1969faca0b375679a45a1faae6826b33dbe17b1fe2ae9e66fed6f5f09b59dd982cd227585615cdbdcb2572
+  checksum: d24bd6f780f36f62b1b7a863bdc0773b8250d22decef8d43574b9e6820665503cbaf60a8b018743f22a869d20394e966885efc49cd2f8b1c7b8be6c52318e91c
   languageName: node
   linkType: hard
 
@@ -10270,7 +10270,7 @@ __metadata:
     "@polkadot/ui-keyring": ^3.5.1
     "@polkadot/util": ^12.3.2
     "@polkadot/vue-identicon": ^2.9.8
-    "@sora-substrate/util": 1.23.4
+    "@sora-substrate/util": 1.25.3
     "@soramitsu-ui/ui-vue2": ^1.1.0
     "@types/chrome": ^0.0.200
     "@types/electron-devtools-installer": ^2.2.2

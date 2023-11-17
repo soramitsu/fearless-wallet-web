@@ -77,9 +77,9 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Getter, Action } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
-import type { GetAssetPrice, NetworkParams, SelectedWallet } from '@/store';
+import type { GetAssetPrice, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -87,12 +87,14 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
 import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
-import { getRewards, getSoraFees } from '@/extension/messaging';
+import { fetchBalance, getRewards, getSoraFees } from '@/extension/messaging';
 import {
   PayoutRewards,
   RewardsResponse,
 } from '@/extension/background/extension-base/src/services/staking-service/types';
 import { isValidAmountAsset } from '@/helpers/currencies';
+import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
+import { AsyncFn } from '@/interfaces';
 
 @Component({
   components: {
@@ -107,6 +109,7 @@ export default class PendingRewardForm extends Vue {
   amount = '';
   step = 1;
   fee = '';
+  stashBalance = '0';
   showLoader = false;
   rewards: RewardsResponse = { validators: [], payouts: [], sum: '0' };
 
@@ -116,9 +119,14 @@ export default class PendingRewardForm extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+  @Action(StakingActionTypes.GET_MY_STAKING_INFO) getMyStakingInfo!: AsyncFn<GetStakingNetworkProps>;
 
   get sumFee() {
     return (+this.fee * this.rewards.payouts.length).toString();
+  }
+
+  get network() {
+    return this.stakingNetwork.network;
   }
 
   get selectedAccountName() {
@@ -134,8 +142,15 @@ export default class PendingRewardForm extends Vue {
   get disabledBtn() {
     if (this.step === 1) return this.myValidatorRewards.length === 0;
 
-    // TODO staking проверять баланс на комиссию у стеша
-    return isValidAmountAsset(this.stakingCurrency, this.stakingNetwork.network, this.fee ?? '0', '0');
+    // для controller аккаунта подставляем баланс stash аккаунта
+    const stakingCurrency: TokenBalance = this.stakingNetwork.isController
+      ? {
+          ...this.stakingCurrency,
+          balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),
+        }
+      : this.stakingCurrency;
+
+    return isValidAmountAsset(stakingCurrency, this.network, this.fee ?? '0', '0');
   }
 
   get payeeName() {
@@ -206,7 +221,7 @@ export default class PendingRewardForm extends Vue {
     return {
       payouts: this.rewards.payouts,
       from: this.selectedWallet.address,
-      networkName: this.stakingNetwork.network,
+      networkName: this.network,
     } as PayoutRewards;
   }
 
@@ -217,10 +232,16 @@ export default class PendingRewardForm extends Vue {
 
     this.rewards = await getRewards({
       address: this.stakingNetwork.stashAddress,
-      network: this.stakingNetwork.network,
+      network: this.network,
     });
 
     this.showLoader = false;
+
+    if (this.stakingNetwork.isController)
+      this.stashBalance = await fetchBalance({
+        address: this.stakingNetwork.stashAddress,
+        networkName: this.network,
+      });
   }
 
   async getSoraFees() {
@@ -236,7 +257,10 @@ export default class PendingRewardForm extends Vue {
   confirmationPasswordPopupClose(closeForm: boolean) {
     this.showConfirmationPasswordPopup = false;
 
-    if (closeForm) this.closeForm();
+    if (closeForm) {
+      this.getMyStakingInfo({ network: this.network });
+      this.closeForm();
+    }
   }
 
   handlerBack() {

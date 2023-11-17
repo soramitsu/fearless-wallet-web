@@ -116,6 +116,7 @@ import type {
   RequestUpdateAuthorizedAccounts,
   ResponseAuthorizeList,
   ResponseType,
+  FetchBalanceRequest,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
@@ -1593,6 +1594,10 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
+  private async fetchBalance({ address, networkName }: FetchBalanceRequest): Promise<string> {
+    return await this.state.balanceService.fetchBalance(address, networkName);
+  }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -1808,6 +1813,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(balance.subscription)':
         return this.subscribeBalance(id, port);
+
+      case 'pri(fetch.balance)':
+        return this.fetchBalance(request as FetchBalanceRequest);
 
       //Wallet Connect
       case 'pri(walletConnect.connect)':

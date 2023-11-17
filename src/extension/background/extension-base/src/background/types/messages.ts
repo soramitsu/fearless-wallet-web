@@ -65,6 +65,7 @@ import type {
   ResponseTotalBalances,
   MobileSigningRequest,
   RequestSigningSubscribe,
+  FetchBalanceRequest,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -186,6 +187,7 @@ export interface RequestSignatures {
   'pri(balance)': [null, BalanceJson];
   'pri(fetch.evm.balance)': [null, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
+  'pri(fetch.balance)': [FetchBalanceRequest, string];
 
   'pri(price.update.currency)': [string, void];
   'pri(price.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];

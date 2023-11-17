@@ -158,7 +158,7 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { calcTransferableSendMinusFee, isValidAmountAsset } from '@/helpers/currencies';
 import BaseApi from '@/util/BaseApi';
-import { checkController, getSoraFees } from '@/extension/messaging';
+import { checkController, fetchBalance, getSoraFees } from '@/extension/messaging';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { AsyncFn, StakingOperation, StakingOperationParams } from '@/interfaces';
@@ -188,6 +188,7 @@ export default class MainStakingForm extends Vue {
   showMyWallets = false;
   isInvalidController = false;
   amount = '';
+  stashBalance = '0';
   fee = '0';
   step = 1;
   controllerAddress = '';
@@ -321,8 +322,15 @@ export default class MainStakingForm extends Vue {
     // а значение уже залоченных токенов(bond, unbond, rebond)
     const amount = this.isBondExtra ? this.amount : '0';
 
-    // TODO staking проверять баланс на комиссию у стеша
-    return isValidAmountAsset(this.stakingCurrency, this.network, this.fee ?? '0', amount);
+    // для controller аккаунта подставляем баланс stash аккаунта
+    const stakingCurrency: TokenBalance = this.stakingNetwork.isController
+      ? {
+          ...this.stakingCurrency,
+          balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),
+        }
+      : this.stakingCurrency;
+
+    return isValidAmountAsset(stakingCurrency, this.network, this.fee ?? '0', amount);
   }
 
   get stakingAssetId() {
@@ -377,7 +385,7 @@ export default class MainStakingForm extends Vue {
     this.isInvalidController = !(await checkController({ address: value }));
   }
 
-  mounted() {
+  async mounted() {
     if (this.isRebond) {
       const unlocking = this.stakingNetwork.unbond.unlocking;
       const lastUnbond = unlocking[unlocking.length - 1].value;
@@ -386,6 +394,12 @@ export default class MainStakingForm extends Vue {
     } else if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
 
     this.getSoraFees();
+
+    if (this.stakingNetwork.isController)
+      this.stashBalance = await fetchBalance({
+        address: this.stakingNetwork.stashAddress,
+        networkName: this.stakingNetwork.network,
+      });
   }
 
   async getSoraFees() {
@@ -430,8 +444,7 @@ export default class MainStakingForm extends Vue {
     this.showConfirmationPasswordPopup = false;
 
     if (closeForm) {
-      if (this.isUnbond || this.isRebond) this.getMyStakingInfo({ network: this.network });
-
+      this.getMyStakingInfo({ network: this.network });
       this.closeForm();
     }
   }

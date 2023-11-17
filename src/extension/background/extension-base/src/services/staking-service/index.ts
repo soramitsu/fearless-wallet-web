@@ -47,8 +47,6 @@ export class StakingService {
       const myStakingInfo = await this.getMyStakingInfo(network, validators, minBond);
       const apy = validators.reduce((result, { apy }) => result + +apy, 0) / validators.length;
 
-      console.log('myStakingInfo', myStakingInfo);
-
       return {
         ...myStakingInfo,
         network,

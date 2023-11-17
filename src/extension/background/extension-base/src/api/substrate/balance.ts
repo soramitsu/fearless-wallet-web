@@ -1,6 +1,6 @@
 import { Subscription } from 'rxjs';
 import { ApiPromise } from '@polkadot/api';
-import { isEthereumNetwork, getSubstrateAddress } from '@extension-base/background/utils/utils';
+import { isEthereumNetwork, getSubstrateAddress, getUtilityProps } from '@extension-base/background/utils/utils';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
@@ -219,4 +219,38 @@ export function subscribeBalance(
     });
 
   return unsubListPromises;
+}
+
+export async function fetchBalance(address: string, networkKey: string, state: State, api?: ApiPromise) {
+  const { id, symbol, type, precision } = getUtilityProps(networkKey, state);
+  const options = getAssetOptions(id, state.assetsMap);
+
+  if (!api) return '0';
+
+  const query = api.query;
+
+  let response;
+
+  const isSoraXOR =
+    symbol === SORA_UTILITY_ASSET && (isSameString(networkKey, SORA_MAINNET) || isSameString(networkKey, SORA_TEST));
+
+  if (type === 'normal' || isSoraXOR) response = query.system.account(address);
+  else if (type === 'assets') {
+    response = (query.assets as any).account(options, address);
+  } else response = query.tokens.accounts(address, options);
+
+  const balances = await response;
+
+  const balance =
+    type === 'assets'
+      ? {
+          free: FPNumber.fromCodecValue(balances.toJSON()?.balance ?? 0, precision),
+        }
+      : balances.data
+      ? balances.data
+      : balances;
+
+  const { transferable } = formatBalance(balance, precision);
+
+  return transferable;
 }

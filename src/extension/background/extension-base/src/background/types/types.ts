@@ -107,6 +107,11 @@ export interface RequestAddressCreate {
   meta: KeyringPair$Meta;
 }
 
+export interface FetchBalanceRequest {
+  address: string;
+  networkName: NetworkName;
+}
+
 export interface SubscribeBalanceRequest {
   id: string;
   port: Port;

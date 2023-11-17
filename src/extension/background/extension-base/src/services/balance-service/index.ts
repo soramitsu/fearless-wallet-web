@@ -5,6 +5,7 @@ import { Subject } from 'rxjs';
 import { FPNumber } from '@sora-substrate/util';
 import { getMockCurrencies, getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
+import { fetchBalance } from '../../api/substrate/balance';
 import type { Logger } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
@@ -13,6 +14,7 @@ import { SORA_XOR_ASSET_ID, SORA_NETWORK_NAME } from '@/consts/sora';
 import { isSameString } from '@/helpers';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { getSummaryTransferableWalletBalance, getChangeWalletBalance } from '@/helpers/common';
+import { NetworkName } from '@/interfaces';
 
 export default class BalanceService {
   private logger: Logger;
@@ -178,5 +180,11 @@ export default class BalanceService {
         balance.balances.some(({ id }) => id === assetId) &&
         balance.relayChain?.toLowerCase() === relayChain?.toLowerCase()
     )!;
+  }
+
+  public async fetchBalance(address: string, networkName: NetworkName) {
+    const api = this.state.getSubstrateApiMap[networkName.toLowerCase()]?.api;
+
+    return await fetchBalance(address, networkName, this.state, api);
   }
 }

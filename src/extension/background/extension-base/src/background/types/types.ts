@@ -1,25 +1,25 @@
 /* eslint-disable no-use-before-define */
-import { Subscription } from 'rxjs';
-import { ALLOWED_PATH } from '@extension-base/defaults';
-import { JsonRpcProvider, WebSocketProvider } from 'ethers';
-import { UserType } from '@extension-base/services/onboarding-service/types';
-import { ApiPromise } from '@polkadot/api';
-import { WsProvider } from '@polkadot/rpc-provider';
-import { ProviderInterface } from '@polkadot/rpc-provider/types';
-import { HexString } from '@polkadot/util/types';
-import MetadataStore from '../../stores/Metadata';
-import { NETWORK_STATUS } from '../../api/types/networks';
-import { CurrentAccountState } from '../../stores/CurrentAccountStore';
-import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
+import type { ALLOWED_PATH } from '@extension-base/defaults';
+import type { Subscription } from 'rxjs';
+import type { JsonRpcProvider, WebSocketProvider } from 'ethers';
+import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import type { UserType } from '@extension-base/services/onboarding-service/types';
+import type { NETWORK_STATUS } from '@extension-base/api/types/networks';
+import type MetadataStore from '@extension-base/stores/Metadata';
+import type { ProviderInterface } from '@polkadot/rpc-provider/types';
+import type { WsProvider } from '@polkadot/rpc-provider';
+import type { ApiPromise } from '@polkadot/api';
+import type { HexString } from '@polkadot/util/types';
+import type { KeyringPair$Json, KeyringPair } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { NetworkJson } from '@extension-base/types';
+import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { TypeRegistry } from '@polkadot/types';
 import type { SignerResult } from '@polkadot/types/types/extrinsic';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
-import {
+import type {
   NetworkName,
   WalletAddress,
   AssetName,
@@ -44,7 +44,7 @@ type NullKeys<T> = { [K in keyof T]: IsNull<T, K> }[keyof T];
 
 export type Port = chrome.runtime.Port;
 
-export interface AccountJson extends KeyringPair$Meta {
+export interface AccountJson extends FWKeyringMeta {
   address: string;
   ethereumAddress: string;
   genesisHash?: HexString | null;
@@ -54,7 +54,9 @@ export interface AccountJson extends KeyringPair$Meta {
   suri?: string;
   type?: KeypairType;
   whenCreated?: number;
+  //mobile properties
   isMobile?: boolean;
+  wcTopic?: string;
 }
 
 export interface ApproveAuthRequest {
@@ -104,7 +106,7 @@ export type RequestSigningSubscribe = null;
 
 export interface RequestAddressCreate {
   address: string;
-  meta: KeyringPair$Meta;
+  meta: FWKeyringMeta;
 }
 
 export interface FetchBalanceRequest {
@@ -182,7 +184,7 @@ export interface RequestAccountCreateSuri {
   password: string;
   suri: string;
   type?: KeypairType;
-  meta: KeyringPair$Meta;
+  meta: FWKeyringMeta;
 }
 
 export interface BalanceJson {
@@ -192,7 +194,6 @@ export interface BalanceJson {
 }
 
 export interface RequestMobileSign {
-  signature: `0x${string}`;
   id: string;
 }
 
@@ -372,10 +373,8 @@ export interface RequestAccountForget {
 
 export interface RequestUpdateMeta {
   address: string;
-  meta: Meta;
+  meta: FWKeyringMeta;
 }
-
-export type Meta = KeyringPair$Meta & { ethereumAddress: string };
 
 export interface RequestAccountName {
   address: string;
@@ -498,7 +497,7 @@ export type MessageTypesWithNoSubscriptions = Exclude<MessageTypes, keyof Subscr
 export interface RequestSign {
   readonly payload: SignerPayloadJSON | SignerPayloadRaw;
 
-  sign(registry: TypeRegistry, pair: KeyringPair): { signature: HexString };
+  sign(registry: TypeRegistry, pair: KeyringPair): Promise<{ signature: HexString }>;
 }
 
 export interface RequestJsonRestore {

@@ -36,6 +36,8 @@ export default class QR extends Vue {
 
   @Watch('payload')
   async createQR() {
+    if (!this.payload) return;
+
     this.qr = await QRCode.toDataURL(this.payload, {
       margin: this.margin,
       width: this.width,

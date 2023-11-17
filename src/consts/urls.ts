@@ -4,7 +4,7 @@ const BASE_URL = 'https://raw.githubusercontent.com/soramitsu/shared-features-ut
 
 const CHAINS = IS_PRODUCTION
   ? `${BASE_URL}/master/chains/v4/chains.json`
-  : `${BASE_URL}/sora-staking/chains/v4/chains_dev.json`;
+  : `${BASE_URL}/new-evms/chains/v4/chains_dev.json`;
 
 const FIATS = `${BASE_URL}/master/fiat/fiats.json`;
 

@@ -1,4 +1,4 @@
-import { FPNumber } from '@sora-substrate/math';
+import { type FPNumber } from '@sora-substrate/math';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import { KycStatus, VerificationStatus } from '@/consts/soraCard';

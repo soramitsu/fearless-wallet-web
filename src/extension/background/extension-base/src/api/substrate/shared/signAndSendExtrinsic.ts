@@ -1,7 +1,7 @@
 import { sendExtrinsic } from '@extension-base/api/substrate/shared/sendExtrinsic';
 import { signExtrinsic } from '@extension-base/api/substrate/shared/signExtrinsic';
 import { BasicTxErrorCode } from '@extension-base/background/types/types';
-import State from '@extension-base/background/handlers/State';
+import type State from '@extension-base/background/handlers/State';
 import type {
   ApiProps,
   BasicTxResponse,

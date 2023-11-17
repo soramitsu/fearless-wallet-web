@@ -1,9 +1,9 @@
-import { SelectedWallet } from '../accounts/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { AssetsPrice, FiatJson, GetHistory } from '@/interfaces';
 import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetActiveNodesByNetwork } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
+import type { SelectedWallet } from '@/store/accounts/types';
 import BaseApi from '@/util/BaseApi';
 
 export enum GettersTypes {

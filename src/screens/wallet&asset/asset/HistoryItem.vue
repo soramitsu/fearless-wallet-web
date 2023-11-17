@@ -26,7 +26,7 @@ import type { TokenBalance } from '@extension-base/background/types/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import { getType, getTypeFormatted, getHistoryValue, getSignTransfer } from '@/helpers/history';
 import { getFormattedDate, cut, isSora } from '@/helpers';
-import { SoraHistoryElement, TransactionType } from '@/interfaces/history';
+import { type SoraHistoryElement, TransactionType } from '@/interfaces/history';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';

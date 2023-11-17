@@ -44,7 +44,7 @@ import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as NetworksActionsTypes } from '@/store/networks/actions';
 import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
 import { isNetworkGroup } from '@/helpers/common';
-import { SetFavoriteNetwork, Wallet } from '@/store/accounts/types';
+import { type SetFavoriteNetwork, type Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { updateCurrentNetwork } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
@@ -81,7 +81,7 @@ export default class NetworkManagement extends Vue {
   value = '';
 
   @Prop(String) type!: keyof Tabs | string;
-  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(AccountGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountGettersTypes.selectedWallet) selectedWallet!: Wallet;
 

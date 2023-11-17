@@ -33,7 +33,7 @@ module.exports = defineConfig({
   ...baseConfig,
   pages,
   outputDir: `dist/extension/${env.EXTENSION_TYPE}`,
-  productionSourceMap: true,
+  productionSourceMap: false,
   filenameHashing: false,
 
   configureWebpack: (config) => {

@@ -144,7 +144,7 @@
 <script lang="ts">
 import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { AccountJson, TokenBalance } from '@extension-base/background/types/types';
+import { type AccountJson, type TokenBalance } from '@extension-base/background/types/types';
 import type { GetAssetPrice, GetStakingNetwork, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -161,7 +161,7 @@ import BaseApi from '@/util/BaseApi';
 import { checkController, fetchBalance, getSoraFees } from '@/extension/messaging';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
-import { AsyncFn, StakingOperation, StakingOperationParams } from '@/interfaces';
+import { type AsyncFn, type StakingOperation, type StakingOperationParams } from '@/interfaces';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';

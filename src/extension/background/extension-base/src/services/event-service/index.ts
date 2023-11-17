@@ -1,5 +1,5 @@
 import EventEmitter from 'eventemitter3';
-import { EventRegistry, EventItem, EventType } from './types';
+import { type EventRegistry, type EventItem, type EventType } from './types';
 
 export class EventService extends EventEmitter<EventRegistry> {
   private lazyTime: number;

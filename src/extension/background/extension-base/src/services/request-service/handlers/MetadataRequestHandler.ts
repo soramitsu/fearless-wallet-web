@@ -1,9 +1,9 @@
 import { knownMetadata, addMetadata } from '@polkadot/extension-chains';
-import { MetadataDef } from '@polkadot/extension-inject/types';
+import { type MetadataDef } from '@polkadot/extension-inject/types';
 import { BehaviorSubject } from 'rxjs';
 import MetadataStore from '@extension-base/stores/Metadata';
 import { getId } from '@extension-base/utils';
-import { RequestService } from '@extension-base/services';
+import { type RequestService } from '@extension-base/services';
 import { extractMetadata } from '@extension-base/services/request-service/helper';
 import type { MetaRequest, Resolver, MetadataRequest } from '@extension-base/background/types/types';
 

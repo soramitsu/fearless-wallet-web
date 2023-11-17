@@ -37,7 +37,7 @@ import type { Features } from '@/store/extension/types';
 import { Components } from '@/router/routes';
 import SettingMenuItem from '@/screens/main/SettingMenuItem.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store';
+import { type SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 

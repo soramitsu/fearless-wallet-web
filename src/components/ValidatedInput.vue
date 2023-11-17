@@ -23,7 +23,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, VModel, Ref } from 'vue-property-decorator';
-import FInput from '@/components/FInput.vue';
+import type FInput from '@/components/FInput.vue';
 type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
 
 @Component({})

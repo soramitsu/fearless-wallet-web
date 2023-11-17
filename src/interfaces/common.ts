@@ -1,6 +1,6 @@
 import type { WarningValueName } from '@/consts/messages';
 import type { AssetName } from './assets';
-import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
+import { type INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 
 type Fn<T = null, R = void> = (props?: T) => R;
 type AsyncFn<T = null, R = void> = (props?: T) => Promise<R>;

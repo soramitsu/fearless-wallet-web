@@ -17,7 +17,7 @@ import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from '@/store/extension/state';
 import type { Features } from '@/store/extension/types';
 
-import { Mutations, MutationTypes } from '@/store/extension/mutations';
+import { type Mutations, MutationTypes } from '@/store/extension/mutations';
 import {
   subscribeAuthorizeRequests,
   approveAuthRequest,
@@ -40,7 +40,6 @@ import {
 import router from '@/router';
 import { Components } from '@/router/routes';
 import { ExtensionController } from '@/controllers';
-import { SubstrateSignPayloadResponse } from '@/interfaces';
 import { URLS } from '@/consts/urls';
 
 export enum ActionTypes {
@@ -78,11 +77,6 @@ export type ApprovePayload = {
   password?: string;
 };
 
-type SignPayload = {
-  payload: SubstrateSignPayloadResponse['blockchainData'];
-  id: string;
-};
-
 type AugmentedExtensionContext = {
   commit<K extends keyof Mutations>(key: K, payload?: Parameters<Mutations[K]>[1]): ReturnType<Mutations[K]>;
 } & Omit<ActionContext<State, any>, 'commit'>;
@@ -114,7 +108,6 @@ export type Actions = {
   [ActionTypes.SUBSCRIBE_SIGN_REQUESTS](context: AugmentedExtensionContext): Promise<boolean>;
   [ActionTypes.SIGN_CANCEL](context: AugmentedExtensionContext, id: string): Promise<void>;
   [ActionTypes.APPROVE_SIGN_PASSWORD](context: AugmentedExtensionContext, payload: ApprovePayload): Promise<void>;
-  [ActionTypes.SIGN_SIGNATURE](context: AugmentedExtensionContext, payload: SignPayload): Promise<void>;
   [ActionTypes.SUBSCRIBE_EXTENSION_REQUESTS](context: AugmentedExtensionContext): Promise<void[]>;
   [ActionTypes.FETCH_TAB_STATUS](context: AugmentedExtensionContext): Promise<void>;
 };
@@ -122,7 +115,7 @@ export type Actions = {
 const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.SUBSCRIBE_AUTH_REQUESTS]({ commit }) {
     const callback = (requests: AuthorizeRequest[]) => {
-      commit(MutationTypes.SET_REQUEST, { type: 'auth', requests });
+      commit(MutationTypes.SET_REQUEST, { type: 'authRequests', requests });
 
       if (requests.length)
         router.push({
@@ -165,7 +158,7 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.SUBSCRIBE_META_REQUESTS]({ commit }) {
     const callback = (requests: MetadataRequest[]) => {
-      commit(MutationTypes.SET_REQUEST, { type: 'meta', requests });
+      commit(MutationTypes.SET_REQUEST, { type: 'metaRequests', requests });
 
       if (router.currentRoute.name === 'MetaRequest' && requests.length === 0)
         router.push({
@@ -197,7 +190,7 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.SUBSCRIBE_SIGN_REQUESTS]({ commit }) {
     const callback = (requests: SigningRequest[]) => {
-      commit(MutationTypes.SET_REQUEST, { type: 'sign', requests });
+      commit(MutationTypes.SET_REQUEST, { type: 'signRequests', requests });
       if (router.currentRoute.name === 'Transaction' && requests.length === 0)
         router.push({
           name: Components.Wallet,

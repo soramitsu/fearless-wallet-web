@@ -1,8 +1,12 @@
-import { StakingParams, StakingParamsResponse, MyStakingInfo } from '@extension-base/services/staking-service/types';
+import {
+  type StakingParams,
+  type StakingParamsResponse,
+  type MyStakingInfo,
+} from '@extension-base/services/staking-service/types';
 import type { Mutations } from '@/store/staking/mutations';
 import type { ActionContext } from 'vuex';
 import type { State } from '@/store/staking/state';
-import { HistoryElement, NetworkName, SoraHistoryElement } from '@/interfaces';
+import { type HistoryElement, type NetworkName, type SoraHistoryElement } from '@/interfaces';
 
 export interface NetworkParams extends StakingParams {
   transferableAmount: string;

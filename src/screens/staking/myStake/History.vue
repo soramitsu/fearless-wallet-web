@@ -17,8 +17,8 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import HistoryItem from '@/screens/staking/myStake/HistoryItem.vue';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
-import { GetStakingHistory, GetStakingNetwork } from '@/store';
-import { NetworkName } from '@/interfaces';
+import { type GetStakingHistory, type GetStakingNetwork } from '@/store';
+import { type SoraHistoryElement, type NetworkName } from '@/interfaces';
 
 @Component({
   components: { HistoryItem },
@@ -36,7 +36,7 @@ export default class History extends Vue {
       this.stakingAssetId,
       this.stakingNetwork.stashAddress,
       this.stakingNetwork.payeeAddress
-    );
+    ) as SoraHistoryElement[];
   }
 
   get stakingNetwork() {

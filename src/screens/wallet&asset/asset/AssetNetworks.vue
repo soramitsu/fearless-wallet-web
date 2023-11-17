@@ -61,7 +61,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { TokenBalance } from '@extension-base/background/types/types';
+import { type TokenBalance } from '@extension-base/background/types/types';
 import HistoryItem from './HistoryItem.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
@@ -74,7 +74,7 @@ import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 import { fetchEvmBalance } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
-import { GetHistory } from '@/interfaces';
+import { type GetHistory } from '@/interfaces';
 
 interface TabsOptions {
   label: string;

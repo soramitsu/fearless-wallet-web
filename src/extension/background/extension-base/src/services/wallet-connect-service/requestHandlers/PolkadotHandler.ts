@@ -1,15 +1,15 @@
 import { formatJsonRpcError, formatJsonRpcResult } from '@json-rpc-tools/utils';
-import { SignClientTypes } from '@walletconnect/types';
+import { type SignClientTypes } from '@walletconnect/types';
 import { getSdkError } from '@walletconnect/utils';
 import { isSameAddress } from '@extension-base/utils';
-import State from '@extension-base/background/handlers/State';
 import { keyring } from '@polkadot/ui-keyring';
-import { WalletConnectService } from '..';
-import { getWCId, parseRequestParams } from '../utils';
-import { RequestService } from '../../request-service';
-import RequestBytesSign from '../../../signers/RequestBytesSign';
-import RequestExtrinsicSign from '../../../signers/RequestExtrinsicSign';
-import { POLKADOT_SIGNING_METHODS } from '../types';
+import { POLKADOT_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
+import { getWCId, parseRequestParams } from '@extension-base/services/wallet-connect-service/utils';
+import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
+import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
+import type State from '@extension-base/background/handlers/State';
+import type { RequestService } from '@extension-base/services/request-service';
+import type { WalletConnectService } from '@extension-base/services/wallet-connect-service';
 
 export default class Eip155RequestHandler {
   readonly walletConnectService: WalletConnectService;
@@ -63,7 +63,7 @@ export default class Eip155RequestHandler {
       this.requestService
         .sign(
           url,
-          new RequestBytesSign({ address: address, data: param.message, type: 'bytes' }),
+          new RequestBytesSign({ address, data: param.message, type: 'bytes' }),
           {
             address,
             name: pair.meta.name as string,
@@ -73,7 +73,7 @@ export default class Eip155RequestHandler {
         )
         .then(async ({ signature }) => {
           await this.walletConnectService.responseRequest({
-            topic: topic,
+            topic,
             response: formatJsonRpcResult(id, { signature }),
           });
         })
@@ -100,7 +100,7 @@ export default class Eip155RequestHandler {
         )
         .then(async ({ signature }) => {
           await this.walletConnectService.responseRequest({
-            topic: topic,
+            topic,
             response: formatJsonRpcResult(id, { signature }),
           });
         })

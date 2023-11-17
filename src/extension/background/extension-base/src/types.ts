@@ -1,7 +1,7 @@
-import { CustomTokenType } from '@extension-base/api/evm/types/ether';
-import { NETWORK_STATUS } from './api/types/networks';
-import type { AssetType, BuyProvider, XcmVersion } from '@/interfaces';
-import { ExternalApi } from '@/interfaces';
+import { type CustomTokenType } from '@extension-base/api/evm/types/ether';
+import { type NETWORK_STATUS } from './api/types/networks';
+import type { KeyringPair$Meta } from '@polkadot/keyring/types';
+import type { AssetType, BuyProvider, XcmVersion, ExternalApi } from '@/interfaces';
 
 export interface Message extends MessageEvent {
   data: {
@@ -137,4 +137,9 @@ export interface ChainRegistry {
   chainDecimals: number[];
   chainTokens: string[];
   assetsMap: Asset[];
+}
+
+export interface FWKeyringMeta extends KeyringPair$Meta {
+  isMobile?: boolean;
+  wcTopic?: string;
 }

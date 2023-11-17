@@ -14,7 +14,7 @@ import {
   RequestService,
   WalletConnectService,
 } from '@extension-base/services';
-import { api as apiSora, FPNumber } from '@sora-substrate/util';
+import { api as apiSora, type FPNumber } from '@sora-substrate/util';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import { storage } from '@extension-base/stores/Storage';
 import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
@@ -27,37 +27,39 @@ import { FWCron } from '@extension-base/background/cron';
 import { isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
-import { KeyringAddress } from '@polkadot/ui-keyring/types';
-import { SignerPayloadRaw } from '@polkadot/types/types';
+import { type KeyringAddress } from '@polkadot/ui-keyring/types';
+import { type SignerPayloadRaw } from '@polkadot/types/types';
 import {
-  ServiceInfo,
-  MobileSignRequest,
-  MobileSigningRequest,
-  ResponseSigning,
+  type ServiceInfo,
+  type MobileSignRequest,
+  type MobileSigningRequest,
+  type ResponseSigning,
+  type AuthUrls,
+  type Resolver,
+  type AuthorizedAccountsDiff,
+  type RequestRpcSend,
+  type RequestRpcSubscribe,
+  type RequestRpcUnsubscribe,
+  type ResponseRpcListProviders,
+  type Port,
+  type IState,
+  type ActiveTabAuthorizeStatus,
+  type Providers,
+  type RequestAuthorizeCancel,
+  type ApiProps,
+  type RequestAccountExportPrivateKey,
+  type ResponseAccountExportPrivateKey,
+  type EvmApiMap,
 } from '@extension-base/background/types/types';
 import PricesService from '@extension-base/services/prices-service';
 import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
 import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
 import BalanceService from '@extension-base/services/balance-service';
-import CurrentAccountStore, { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
-import type {
-  AuthUrls,
-  Resolver,
-  AuthorizedAccountsDiff,
-  RequestRpcSend,
-  RequestRpcSubscribe,
-  RequestRpcUnsubscribe,
-  ResponseRpcListProviders,
-  Port,
-  IState,
-  ActiveTabAuthorizeStatus,
-  Providers,
-  RequestAuthorizeCancel,
-  ApiProps,
-  RequestAccountExportPrivateKey,
-  ResponseAccountExportPrivateKey,
-  EvmApiMap,
-} from '@extension-base/background/types/types';
+import CurrentAccountStore, {
+  type CurrentAccountInfo,
+  type CurrentAccountState,
+} from '@extension-base/stores/CurrentAccountStore';
+import WalletConnectDAppService from '@extension-base/services/wallet-connect-service/dapp';
 import type { CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import type { ChainRegistry, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
@@ -134,6 +136,7 @@ export default class State {
   public networkService = new NetworkService(this.eventService);
   public requestService = new RequestService(this, this.networkService);
   public walletConnectService = new WalletConnectService(this, this.requestService);
+  public walletConnectDappService = new WalletConnectDAppService(this);
   public soraCardService = new SoraCardService(this.requestService);
   public onboardingService = new OnboardingService();
   public stakingService = new StakingService(this);
@@ -387,7 +390,7 @@ export default class State {
       const { name } = network;
       const currentProvider = getCurrentProvider(network);
 
-      if (currentProvider) this.apis.evm[name.toLowerCase()] = initWeb3Api(currentProvider);
+      if (currentProvider) this.apis.evm[name] = initWeb3Api(currentProvider);
     });
   }
 
@@ -782,21 +785,21 @@ export default class State {
   public initNetworkStates() {
     const activeNetworks = Object.values(this.networkMap).filter(({ active }) => active);
 
-    activeNetworks.forEach(async (network) => {
+    activeNetworks.forEach((network) => {
       const { name, isEthereum } = network;
 
       if (isEthereum && isRequireEvmAPI(name)) {
-        if (!this.apis.evm[name] || !this.apis.evm[name].ready) this.initWeb3Api(network);
+        if (this.apis.evm[name] || this.apis.evm[name].ready) {
+          this.initWeb3Api(network);
+        }
       } else {
         if (this.apis.substrate[name]) {
-          const isReady = await this.apis.substrate[name].api?.isReady;
+          this.apis.substrate[name].api?.isReady.catch(() => {
+            this.resetApiRetries();
 
-          if (isReady) return;
+            initApi(network, this);
+          });
         }
-
-        this.resetApiRetries();
-
-        initApi(network, this);
       }
     });
   }
@@ -809,6 +812,24 @@ export default class State {
     const network = this.networkMap[key];
 
     return network && network.genesisHash;
+  }
+
+  public updateNetworkForNewWallet(address: string) {
+    this.setActiveNetworks(this.selectedNetworks[address] ?? ALL_NETWORKS);
+  }
+
+  public updateCurrentAccount(address: string, isNew = true): boolean {
+    if (isEthereumAddress(address)) return false;
+
+    this.balanceService.generateDefaultBalance(address);
+
+    this.saveCurrentAccountAddress(address, () => {
+      this.keyringService.triggerWalletsSubscription();
+
+      if (isNew) this.setActiveNetworks(this.selectedNetworks[address] ?? ALL_NETWORKS);
+    });
+
+    return true;
   }
 
   public setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null, updateNetworks = true): void {
@@ -831,6 +852,27 @@ export default class State {
     };
 
     this.currentAccountStore.set('CurrentAccountInfo', data, cb);
+  }
+
+  public saveCurrentAccountAddress(address: string, callback?: (account: CurrentAccountState) => void) {
+    if (address === '') {
+      this.setCurrentAccount(null);
+
+      return;
+    }
+
+    const {
+      meta: { isMobile, name, ethereumAddress },
+    } = this.keyringService.getAccount(address) ?? this.keyringService.getAddress(address)!;
+
+    const accountInfo: CurrentAccountInfo = {
+      address,
+      isMobile: !!(isMobile as boolean),
+      name: name as string,
+      ethereumAddress: (ethereumAddress as string) ?? '',
+    };
+
+    this.setCurrentAccount(accountInfo, () => callback?.(accountInfo));
   }
 
   public subscribeTotalXorBalance() {
@@ -928,6 +970,8 @@ export default class State {
   }
 
   async fetchEvmBalance(_networks: NetworkName[] | null, _ethereumAddress?: string) {
+    if (!this.ready) return;
+
     const currentAccount = await this.currentAccount;
     const ethereumAddress = _ethereumAddress ?? currentAccount?.ethereumAddress ?? '';
 

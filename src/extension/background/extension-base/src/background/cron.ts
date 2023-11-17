@@ -1,5 +1,5 @@
 import { logger as createLogger } from '@polkadot/util';
-import { Logger } from '@polkadot/util/types';
+import { type Logger } from '@polkadot/util/types';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import {
   CRON_AUTO_RECOVER_DOTSAMA_INTERVAL,

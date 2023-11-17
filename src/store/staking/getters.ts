@@ -1,13 +1,13 @@
-import { TokenBalance } from '@extension-base/background/types/types';
-import { SelectedWallet } from '../accounts/types';
-import { GetStakingHistory, GetStakingNetwork, NetworkParams } from './types';
+import type { GetStakingHistory, GetStakingNetwork, NetworkParams } from '@/store/staking/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import type { NetworkJson } from '@extension-base/types';
+import type { SelectedWallet } from '@/store/accounts/types';
 import { isSameString, isSora } from '@/helpers';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common';
-import { SoraHistoryElement, SubqueryHistory } from '@/interfaces';
+import { type SoraHistoryElement, type SubqueryHistory } from '@/interfaces';
 import { SORA_VAL_ASSET_ID } from '@/consts/sora';
 
 export enum GettersTypes {

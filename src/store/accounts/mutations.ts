@@ -3,6 +3,8 @@ import type { SelectedWallet, SetAccountsProps, SetAutoSelectNode, SetHiddenAsse
 import type { State } from './state';
 import type { BalanceJson } from '@extension-base/background/types/types';
 import { accountController } from '@/controllers';
+import router from '@/router';
+import { Components } from '@/router/routes';
 
 export enum MutationTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
@@ -65,28 +67,20 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.SET_ACCOUNTS](state, { accounts, isMobileUpdate }) {
-    const mobileIndex = state.accounts.findIndex((account) => account.isMobile);
-    const isMobileWalletExists = mobileIndex !== -1;
-
-    if (accounts.length !== 0) {
-      if (isMobileUpdate) {
-        isMobileWalletExists ? state.accounts.splice(mobileIndex, 1, accounts[0]) : state.accounts.push(accounts[0]);
-      } else {
-        state.accounts = isMobileWalletExists ? [state.accounts[mobileIndex], ...accounts] : accounts;
-      }
-
-      accountController.setAccounts(state.accounts);
-
-      return;
-    }
-
     if (isMobileUpdate) {
-      if (isMobileWalletExists) state.accounts.splice(mobileIndex, 1);
+      const nativeWallets = state.accounts.filter((account) => !account.isMobile);
+      state.accounts = [...nativeWallets, ...accounts];
     } else {
-      state.accounts = isMobileWalletExists ? [state.accounts[mobileIndex]] : [];
+      const mobileWallets = state.accounts.filter((account) => account.isMobile);
+
+      state.accounts = [...mobileWallets, ...accounts];
     }
 
     accountController.setAccounts(state.accounts);
+    if (!state.accounts.length && router.currentRoute.name !== Components.Welcome)
+      router.push({ name: Components.Welcome });
+
+    return;
   },
 
   [MutationTypes.HIDE_POLKASWAP_ALERT](state) {

@@ -4,7 +4,7 @@
       v-if="showAllCheckbox"
       :value="props.selectAll"
       size="big"
-      label="Select all"
+      :label="$t('common.selectAll')"
       @change="(value) => emit('onSelectAll', value)"
     />
 
@@ -15,7 +15,6 @@
             <Checkbox
               class="account__checkbox"
               size="big"
-              :name="account.address"
               :label="$t(account.name)"
               :value="account.active"
               @change="(value) => emit('onSelect', value, account.name)"

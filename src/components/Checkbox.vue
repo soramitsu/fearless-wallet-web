@@ -1,24 +1,23 @@
 <template>
-  <SCheckbox class="fw-checkbox" v-model.lazy="vModel" :size="size" :label="label" @change="onChange" />
+  <SCheckbox class="fw-checkbox" v-model.lazy="vmodel" :size="size" :label="label" />
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 
-enum CheckboxSizes {
-  'medium' = '24',
-}
+type Props = {
+  label: string;
+  value: boolean;
+  size?: 'medium' | 'big';
+};
 
-@Component
-export default class Checkbox extends Vue {
-  @VModel({ type: Boolean }) vModel!: boolean;
-  @Prop(String) label!: string;
-  @Prop({ default: 'medium' }) size!: CheckboxSizes;
+const props = withDefaults(defineProps<Props>(), { size: 'medium' });
+const emit = defineEmits(['change']);
 
-  onChange(value: boolean) {
-    this.$emit('change', value);
-  }
-}
+const vmodel = computed({
+  get: () => props.value,
+  set: (value: boolean) => emit('change', value),
+});
 </script>
 
 <style lang="scss">

@@ -1,7 +1,7 @@
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { DEFAULT_NOTIFICATION_TYPE } from '@extension-base/services/request-service/consts';
-import { RequestService } from '@extension-base/services';
-import { BrowserConfirmationType } from '@extension-base/services/request-service/types';
+import { type RequestService } from '@extension-base/services';
+import { type BrowserConfirmationType } from '@extension-base/services/request-service/types';
 
 const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
 

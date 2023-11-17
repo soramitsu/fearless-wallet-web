@@ -11,7 +11,13 @@
         :isError="isErrorAddress"
       />
 
-      <Checkbox v-model="saveForAllNetworks" size="medium" :label="$t('assets.saveAddressForAllNetwork')" class="row" />
+      <Checkbox
+        :value="saveForAllNetworks"
+        size="medium"
+        :label="$t('assets.saveAddressForAllNetwork')"
+        class="row"
+        @change="onSave"
+      />
     </div>
 
     <FButton size="big" text="common.save" :disabled="buttonDisabled" @click="updateContact" />
@@ -65,6 +71,10 @@ export default class EditAddressBook extends Vue {
     });
 
     this.$emit('setAddress', '', true);
+  }
+
+  onSave(value: boolean) {
+    this.saveForAllNetworks = value;
   }
 }
 </script>

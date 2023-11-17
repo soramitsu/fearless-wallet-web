@@ -1,10 +1,10 @@
 import { ethers } from 'ethers';
 import { APIItemState } from '@extension-base/api/types/networks';
-import { BalanceItem } from '@extension-base/api/evm/types/ether';
+import { type BalanceItem } from '@extension-base/api/evm/types/ether';
 import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
 import { getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { setBalance } from '@extension-base/api/helpers';
-import State from '@extension-base/background/handlers/State';
+import type State from '@extension-base/background/handlers/State';
 
 async function getUtilityBalance(networkKey: string, address: string, state: State): Promise<string> {
   const eth = state.getEvmApiMap[networkKey];
@@ -19,8 +19,10 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
   const asset = network.assets.find((el) => el.id === contractAddress);
 
   if (!asset) return;
+  const web3Api = state.getEvmApiMap[networkKey];
+  if (!web3Api) return;
 
-  const contract = await getERC20Contract(networkKey, contractAddress, state);
+  const contract = await getERC20Contract(contractAddress, web3Api);
   const { symbol, precision, id } = asset;
 
   const balanceItem = {

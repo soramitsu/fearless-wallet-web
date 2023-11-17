@@ -1,7 +1,5 @@
-// Copyright 2019-2022 @polkadot/extension authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
-import { TypeRegistry } from '@polkadot/types';
+import { type TypeRegistry } from '@polkadot/types';
+import { state } from '@extension-base/background/handlers';
 import type { KeyringPair } from '@polkadot/keyring/types';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
@@ -9,12 +7,19 @@ import type { RequestSign } from '@extension-base/background/types/types';
 
 export default class RequestExtrinsicSign implements RequestSign {
   public readonly payload: SignerPayloadJSON;
-
-  constructor(payload: SignerPayloadJSON) {
+  private readonly isMobile: boolean;
+  constructor(payload: SignerPayloadJSON, isMobile = false) {
     this.payload = payload;
+    this.isMobile = isMobile;
   }
 
-  sign(registry: TypeRegistry, pair: KeyringPair): { signature: HexString } {
-    return registry.createType('ExtrinsicPayload', this.payload, { version: this.payload.version }).sign(pair);
+  async sign(registry: TypeRegistry, pair: KeyringPair): Promise<{ signature: HexString }> {
+    const signData = registry.createType('ExtrinsicPayload', this.payload, { version: this.payload.version });
+
+    if (this.isMobile) {
+      return state.walletConnectDappService.onRequest(this.payload);
+    }
+
+    return signData.sign(pair);
   }
 }

@@ -3,8 +3,10 @@ import { handlers, state } from '@extension-base/background/handlers';
 import '@polkadot/extension-inject/crossenv';
 import AccountsStore from '@extension-base/stores/Accounts';
 import { initStorage } from '@extension-base/stores/Storage';
-import { RequestSignatures } from '@extension-base/background/types/messages';
-import { TransportRequestMessage, Port } from '@extension-base/background/types/types';
+import { type RequestSignatures } from '@extension-base/background/types/messages';
+import { type TransportRequestMessage, type Port } from '@extension-base/background/types/types';
+import MigrationService from '@extension-base/services/migration-service';
+
 import { APP_VERSION } from '@/consts/global';
 
 console.info('background initialization');
@@ -25,7 +27,7 @@ async function getActiveTabs() {
   });
 }
 
-chrome.runtime.onInstalled.addListener(async (details) => {
+chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'update') {
     state.onboardingService.isRequired = true;
     state.onboardingService.updateStorage();
@@ -33,26 +35,12 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     if (details.previousVersion !== APP_VERSION) chrome.runtime.reload();
   }
 
-  await initStorage();
-
-  state.onInstall();
+  initStorage().then(() => state.onInstall());
 
   getActiveTabs();
 });
 
-chrome.runtime.onUpdateAvailable.addListener(() => {
-  //for FIREFOX
-  // if (chrome.extension.getViews !== undefined) {
-  //   const windows = chrome.extension.getViews({});
-  //   // one window = background page => means we can update our extension
-  //   if (windows.length === 1) chrome.runtime.reload();
-  // }
-  // //TODO we need to move on from "@types/chrome" to "chrome-types" lib do something with beacon-sdk
-  // //chrome after v116
-  // (chrome.runtime as any).getContexts({}, (vals: Record<string, string>[]) => {
-  //   if (vals.length === 1) chrome.runtime.reload();
-  // });
-});
+chrome.runtime.onUpdateAvailable.addListener(() => chrome.runtime.reload());
 
 chrome.runtime.onConnect.addListener((port: Port) => {
   port.onMessage.addListener((data: TransportRequestMessage<keyof RequestSignatures>) => handlers(data, port));
@@ -81,6 +69,8 @@ cryptoWaitReady()
   .then((): void => {
     state.keyringService.loadAll(new AccountsStore());
     state.eventService.emit('crypto.ready', true);
+    const migrationService = new MigrationService();
+    migrationService.start();
   })
   .catch((error): void => {
     console.error('initialization failed', error);

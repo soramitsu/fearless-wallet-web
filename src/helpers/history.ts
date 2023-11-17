@@ -11,7 +11,7 @@ import type { TokenBalance } from '@extension-base/background/types/types';
 import { TransactionType } from '@/interfaces';
 import { firstCharToUp, isSora } from '@/helpers';
 import store from '@/store';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 
 function getType(historyElement: HistoryElement): TransactionType {
   const { reward, transfer } = historyElement;

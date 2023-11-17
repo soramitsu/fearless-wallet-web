@@ -65,7 +65,7 @@ module.exports = {
       splitChunks: {
         cacheGroups: {
           vendor: {
-            test: /[\\/]node_modules[\\/](vue|qrcode|file-saver|vuedraggable|tippy.js|vue-class-component|@airgap)[\\/]/,
+            test: /[\\/]node_modules[\\/](vue|qrcode|file-saver|element-ui|vuedraggable|tippy.js|vue-class-component)[\\/]/,
             name: 'vendor',
             chunks: 'all',
           },

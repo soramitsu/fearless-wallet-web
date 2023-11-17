@@ -1,8 +1,8 @@
-import type {
-  BalanceJson,
-  FetchBalanceRequest,
-  PriceJson,
-  RequestSubscribePrice,
+import {
+  type BalanceJson,
+  type FetchBalanceRequest,
+  type PriceJson,
+  type RequestSubscribePrice,
 } from '@extension-base/background/types/types';
 
 import { sendMessage } from '@/extension/messaging/index';

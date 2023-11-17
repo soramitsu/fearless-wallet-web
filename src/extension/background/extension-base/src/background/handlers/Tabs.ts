@@ -9,11 +9,10 @@ import {
   transformAddresses,
   withErrorLog,
 } from '@extension-base/background/handlers/helpers';
-import State from '@extension-base/background/handlers/State';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
-import BeaconSignerJSON from '@extension-base/signers/BeaconSignerJSON';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
+import type State from '@extension-base/background/handlers/State';
 import type {
   AccountSub,
   AuthUrlInfo,
@@ -136,9 +135,11 @@ export default class Tabs {
 
   bytesSign(url: string, request: SignerPayloadRaw): Promise<ResponseSigning> {
     const address = request.address;
-    const pair = this.getSigningPair(address);
 
-    return this.state.requestService.substrateRequestHandler.sign(url, new RequestBytesSign(request), {
+    const pair = this.getSigningPair(address);
+    const signer = new RequestBytesSign(request);
+
+    return this.state.requestService.substrateRequestHandler.sign(url, signer, {
       address: pair.address,
       ethereumAddress: pair.meta.ethereumAddress as string,
       name: (pair.meta.name as string) ?? '',
@@ -154,7 +155,7 @@ export default class Tabs {
     if (this.state.keyringService.getAccount(address)) meta = this.getSigningPair(address).meta;
     else if (isMobile) meta = this.state.keyringService.getAddress(address, 'address')?.meta;
 
-    const signer = isMobile ? new BeaconSignerJSON(request, this.state.signature!) : new RequestExtrinsicSign(request);
+    const signer = new RequestExtrinsicSign(request);
 
     return this.state.requestService.substrateRequestHandler.sign(url, signer, {
       address: address,

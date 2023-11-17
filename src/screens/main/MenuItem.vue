@@ -1,6 +1,6 @@
 <template>
   <div :class="menuItemClasses">
-    <Icon :icon="img" :className="iconClass" />
+    <Icon :icon="img" :className="iconClass" :hover="false" />
 
     <div class="name">{{ $t(localeName) }}</div>
   </div>

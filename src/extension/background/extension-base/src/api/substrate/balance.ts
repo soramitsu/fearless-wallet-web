@@ -1,11 +1,12 @@
-import { Subscription } from 'rxjs';
-import { ApiPromise } from '@polkadot/api';
+import { type Subscription } from 'rxjs';
+import { type ApiPromise } from '@polkadot/api';
 import { isEthereumNetwork, getSubstrateAddress, getUtilityProps } from '@extension-base/background/utils/utils';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
-import State from '@extension-base/background/handlers/State';
-import { setBalance } from '../helpers';
+import { setBalance } from '@extension-base/api/helpers';
+
+import type State from '@extension-base/background/handlers/State';
 import type { RelayChainName, NetworkName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';

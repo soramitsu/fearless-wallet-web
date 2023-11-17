@@ -73,7 +73,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { FWValidatorInfoFull, RequestNominate } from '@extension-base/services/staking-service/types';
+import { type FWValidatorInfoFull, type RequestNominate } from '@extension-base/services/staking-service/types';
 import type { AsyncFn, SelectionValidator } from '@/interfaces';
 import type { GetAssetPrice, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';

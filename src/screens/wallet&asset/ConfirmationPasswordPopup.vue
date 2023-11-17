@@ -21,7 +21,7 @@
         />
 
         <div v-if="isExtension" class="remember-checkbox">
-          <Checkbox v-model="isSavePass" size="medium" :label="$t(min15Label)" />
+          <Checkbox :value="isSavePass" size="medium" :label="$t(min15Label)" @change="onSavePassChange" />
         </div>
 
         <FButton
@@ -63,29 +63,21 @@
 import { Component, Vue, Prop, Watch, Ref } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import {
-  AccountJson,
-  RequestCheckTransfer,
-  RequestCheckCrossChain,
-  RequestTransfer,
-  RequestCrossChain,
-  TokenBalance,
-  RequestSwap,
+  type AccountJson,
+  type RequestCheckTransfer,
+  type RequestCheckCrossChain,
+  type RequestTransfer,
+  type RequestCrossChain,
+  type TokenBalance,
+  type RequestSwap,
   BasicTxErrorCode,
 } from '@extension-base/background/types/types';
-import { RequestStaking } from '@extension-base//services/staking-service/types';
+import { type RequestStaking } from '@extension-base//services/staking-service/types';
 import type { NetworkJson } from '@extension-base/types';
-import type { RequestSentInfo, SwapOptions, StakingOperation } from '@/interfaces';
+import type { SwapOptions, StakingOperation } from '@/interfaces';
 import type { GetNetwork, GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
-import {
-  isSignLocked,
-  makeSwap,
-  makeTransfer,
-  makeCrossChain,
-  makeStaking,
-  cancelMobileSignRequest,
-} from '@/extension/messaging';
-import { beaconController } from '@/controllers';
+import { isSignLocked, makeSwap, makeTransfer, makeCrossChain, makeStaking } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
@@ -101,7 +93,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   isErrorPassword = false;
   isLocked = true;
   isSavePass = false;
-  signedPayload: RequestSentInfo | null = null;
+  signedPayload: null = null;
   transactionState: 'pending' | 'success' | 'failed' | null = null;
   showUnknownErrorPopup = false;
 
@@ -271,6 +263,10 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
   }
 
+  onSavePassChange(value: boolean) {
+    this.isSavePass = value;
+  }
+
   async onSignMobile() {
     if (this.extrinsicType === 'swap')
       await makeSwap({
@@ -293,18 +289,6 @@ export default class ConfirmationPasswordPopup extends Vue {
     };
 
     if (this.isSignMobile) {
-      const mobileCb = () => {
-        this.transactionState = 'pending';
-      };
-
-      const onMobileCancel = (id: string) => {
-        this.transactionState = 'failed';
-
-        cancelMobileSignRequest(id);
-      };
-
-      await beaconController.subscribeRawRequests(mobileCb, onMobileCancel);
-
       return await makeTransfer(this.request as RequestTransfer, callback);
     }
 

@@ -1,5 +1,5 @@
 import packages from '../../package.json';
-import { MIN1 } from './time';
+import { MIN1 } from '@/consts/time';
 
 const APP_WIDTH = 561;
 const APP_HEIGHT = 600;

@@ -1,11 +1,11 @@
-import {
+import type {
   ValidatorInfoFull,
   Payouts,
   MyStakingInfo as SoraMyStakingInfo,
   Unlocking,
 } from '@sora-substrate/util/build/staking/types';
-import { PasswordRequestSign } from '../../background/types/types';
-import { NetworkName, StakingOperation } from '@/interfaces';
+import type { PasswordRequestSign } from '@extension-base/background/types/types';
+import type { NetworkName, StakingOperation } from '@/interfaces';
 
 export interface Bond {
   from: string;

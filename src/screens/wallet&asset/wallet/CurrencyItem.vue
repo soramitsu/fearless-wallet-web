@@ -104,7 +104,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
-import { GetAssetPrice, GetNetwork } from '@/store/networks/types';
+import { type GetAssetPrice, type GetNetwork } from '@/store/networks/types';
 import {
   filterBalanceItemsByNetwork,
   getSummaryTransferableBalanceFilteredByActiveNetworks,

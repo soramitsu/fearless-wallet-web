@@ -4,10 +4,10 @@ import { decodeAddress } from '@polkadot/util-crypto';
 import { isEthereumNetwork, getUtilityProps, getNativeAssetName } from '@extension-base/background/utils/utils';
 import { SignerType } from '@extension-base/background/types/types';
 import { getAssetInfo } from '@extension-base/api/helpers';
-import State from '@extension-base/background/handlers/State';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
-import { Extrinsic } from './utils/types';
+import { type Extrinsic } from './utils/types';
 import { getPrecisionValue } from './utils';
+import type State from '@extension-base/background/handlers/State';
 import type { TokenBalance, BasicTxResponse } from '@extension-base/background/types/types';
 import type { AssetId, Interiors, NetworkName, RelayChainName } from '@/interfaces';
 

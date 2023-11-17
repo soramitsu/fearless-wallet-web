@@ -109,7 +109,7 @@ import {
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
-} from '../../services/wallet-connect-service/consts';
+} from '@extension-base/services/wallet-connect-service/consts';
 import type { NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
 import type { ProposalTypes, SessionTypes } from '@walletconnect/types';

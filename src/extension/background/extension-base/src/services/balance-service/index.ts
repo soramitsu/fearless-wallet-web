@@ -5,7 +5,7 @@ import { Subject } from 'rxjs';
 import { type FPNumber } from '@sora-substrate/util';
 import { getMockCurrencies, getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
-import { fetchBalance } from '../../api/substrate/balance';
+import { fetchBalance } from '@extension-base/api/substrate/balance';
 import type { Logger } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';

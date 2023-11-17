@@ -7,7 +7,7 @@ import type {
   RewardsResponse,
   CheckControllerRequest,
   getRewardsRequest,
-} from '../background/extension-base/src/services/staking-service/types';
+} from '@/extension/background/extension-base/src/services/staking-service/types';
 import type { BasicTxResponse } from '@extension-base/background/types/types';
 import { sendMessage } from '@/extension/messaging/index';
 

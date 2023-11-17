@@ -5,7 +5,6 @@ import { APIItemState } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
 import { setBalance } from '@extension-base/api/helpers';
-
 import type State from '@extension-base/background/handlers/State';
 import type { RelayChainName, NetworkName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
@@ -247,9 +246,7 @@ export async function fetchBalance(address: string, networkKey: string, state: S
       ? {
           free: FPNumber.fromCodecValue(balances.toJSON()?.balance ?? 0, precision),
         }
-      : balances.data
-      ? balances.data
-      : balances;
+      : balances?.data ?? balances;
 
   const { transferable } = formatBalance(balance, precision);
 

@@ -118,6 +118,7 @@ export interface RequestSignatures {
   'pri(accounts.update.current)': [string, boolean];
   'pri(accounts.update.currentNetwork)': [string, boolean];
   'pri(accounts.totalBalances)': [null, ResponseTotalBalances[]];
+  'pri(accounts.wc.networks)': [string, string[]];
 
   //App Managment - networks
   // Network, APIs, Custom tokens functions

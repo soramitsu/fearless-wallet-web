@@ -157,6 +157,17 @@ export default class WalletConnectDAppService {
     this.app?.client.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') });
   }
 
+  availableNetworks(address: string) {
+    const pairing = this.state.keyringService.getAddress(address);
+    if (!pairing) return [];
+
+    const session = this.sessions.find((session) => session.topic === pairing.meta.wcTopic);
+
+    if (session) return session.namespaces['polkadot'].chains?.map((chain) => chain.split(':')[1]) ?? [];
+
+    return [];
+  }
+
   abortPairingAttempt() {
     this.app?.abortPairingAttempt();
   }

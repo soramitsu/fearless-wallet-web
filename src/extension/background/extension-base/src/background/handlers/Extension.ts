@@ -1552,6 +1552,10 @@ export default class Extension extends FWExtensionBase {
     return this.state.walletConnectDappService.initPairing();
   }
 
+  private getWalletConnectSessionAvailableNetwork(address: string) {
+    return this.state.walletConnectDappService.availableNetworks(address);
+  }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -1671,6 +1675,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.soraFees)':
         return this.getSoraFees();
+
+      case 'pri(accounts.wc.networks)':
+        return this.getWalletConnectSessionAvailableNetwork(request as string);
 
       // staking
       case 'pri(staking.stakingParams)':

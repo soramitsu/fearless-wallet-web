@@ -11,6 +11,7 @@
         v-show="isNetworksExists"
         :network="networkGroup"
         :isNetworkGroup="true"
+        :isAvailable="true"
         :isSelected="isGroupSelected"
         @onChangeNetwork="toggleNetworkType"
       />
@@ -23,6 +24,7 @@
               :network="network"
               :isSelected="isNetworkSelected(network.name)"
               :key="network.name"
+              :isAvailable="isAvailableNetwork(network.name)"
               @onChangeNetwork="enableSingleNetwork(network.name)"
               @onToggleFavorite="toggleFavorite(network.name)"
             />
@@ -46,8 +48,9 @@ import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutatio
 import { isNetworkGroup } from '@/helpers/common';
 import { type SetFavoriteNetwork, type Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { updateCurrentNetwork } from '@/extension/messaging';
+import { mobileWalletAvailableNetworks, updateCurrentNetwork } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
+import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/utils/utils';
 
 type Tabs = {
   [ALL_NETWORKS]: Tab;
@@ -79,14 +82,14 @@ export default class NetworkManagement extends Vue {
   filterValue = '';
   activeTab: keyof Tabs = ALL_NETWORKS;
   value = '';
-
+  mobileWalletNetworks: string[] = []; //half chainId
   @Prop(String) type!: keyof Tabs | string;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
   @Getter(AccountGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountGettersTypes.selectedWallet) selectedWallet!: Wallet;
-
   @Action(NetworksActionsTypes.TOGGLE_FAVORITE_NETWORK) setFavorite!: (props: SetFavoriteNetwork) => Promise<boolean>;
   @Mutation(AccountMutationsTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
 
   get isGroupSelected() {
     return this.selectedNetwork === this.activeTab;
@@ -101,9 +104,9 @@ export default class NetworkManagement extends Vue {
   }
 
   get filterNetworks() {
-    if (this.activeTab === ALL_NETWORKS) return this.networks;
+    if (this.activeTab === ALL_NETWORKS) return this.allNetworks;
 
-    const networks = this.networks.filter(({ favorite, rank }) => {
+    const networks = this.allNetworks.filter(({ favorite, rank }) => {
       if (this.activeTab === POPULAR_NETWORKS) return rank !== undefined;
 
       if (this.activeTab === FAVORITE_NETWORKS)
@@ -121,10 +124,16 @@ export default class NetworkManagement extends Vue {
     return networks;
   }
 
+  get sortAvailableNetworks() {
+    return this.filterNetworks.sort((a, b) =>
+      this.isAvailableNetwork(a.name) > this.isAvailableNetwork(b.name) ? -1 : 1
+    );
+  }
+
   get filteredOptionsNetworks() {
     const filter = this.filterValue.trim().toLowerCase();
 
-    return this.filterNetworks.filter(({ name }) => name.toLowerCase().includes(filter));
+    return this.sortAvailableNetworks.filter(({ name }) => name.toLowerCase().includes(filter));
   }
 
   get showTabs() {
@@ -145,8 +154,26 @@ export default class NetworkManagement extends Vue {
     return `header.networkManagement.${key}`;
   }
 
-  mounted() {
+  async mounted() {
+    if (this.selectedWallet.isMobile) {
+      this.mobileWalletNetworks = await mobileWalletAvailableNetworks(this.selectedWallet.address);
+    }
+
     if (isNetworkGroup(this.selectedNetwork)) this.activeTab = this.selectedNetwork as keyof Tabs;
+  }
+
+  isAvailableNetwork(network: string): boolean {
+    const selectedNetwork = this.getNetwork(network);
+
+    if (this.selectedWallet.isMobile) {
+      const available = this.mobileWalletNetworks.some((el) => selectedNetwork.chainId.includes(el));
+
+      return available;
+    }
+
+    if (this.selectedWallet.ethereumAddress === '' && isEthereumNetwork(network)) return false;
+
+    return true;
   }
 
   isNetworkSelected(name: string) {

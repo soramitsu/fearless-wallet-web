@@ -789,7 +789,7 @@ export default class State {
       const { name, isEthereum } = network;
 
       if (isEthereum && isRequireEvmAPI(name)) {
-        if (!this.apis.evm[name] || !this.apis.evm[name].ready) {
+        if (this.apis.evm[name] || this.apis.evm[name].ready) {
           this.initWeb3Api(network);
         }
       } else {

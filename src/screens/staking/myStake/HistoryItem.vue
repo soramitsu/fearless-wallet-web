@@ -32,8 +32,8 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { getHistoryValue } from '@/helpers/history';
 import BaseApi from '@/util/BaseApi';
-import { SoraHistoryElement } from '@/interfaces/history';
-import { NetworkName } from '@/interfaces';
+import { type SoraHistoryElement } from '@/interfaces/history';
+import { type NetworkName } from '@/interfaces';
 
 @Component
 export default class HistoryItem extends Vue {

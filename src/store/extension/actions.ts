@@ -17,7 +17,7 @@ import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from '@/store/extension/state';
 import type { Features } from '@/store/extension/types';
 
-import { Mutations, MutationTypes } from '@/store/extension/mutations';
+import { type Mutations, MutationTypes } from '@/store/extension/mutations';
 import {
   subscribeAuthorizeRequests,
   approveAuthRequest,

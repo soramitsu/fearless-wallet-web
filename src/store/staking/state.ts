@@ -1,5 +1,5 @@
 import { SORA_ICON, SORA_NETWORK_NAME, SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID } from '@/consts/sora';
-import { NetworkParams } from '@/store/staking/types';
+import { type NetworkParams } from '@/store/staking/types';
 import { getDefaultStakingParams } from '@/helpers/staking';
 
 export type State = {

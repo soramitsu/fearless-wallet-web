@@ -80,7 +80,7 @@ import {
   type ResponseAuthorizeList,
   type ResponseType,
   BasicTxErrorCode,
-  BasicTxResponse,
+  type BasicTxResponse,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
 import {

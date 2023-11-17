@@ -159,7 +159,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { RequestBond } from '@extension-base/services/staking-service/types';
+import { type RequestBond } from '@extension-base/services/staking-service/types';
 import type { GetAssetPrice, SelectedWallet, NetworkParams } from '@/store';
 import type { SelectionValidator } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';

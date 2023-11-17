@@ -1,11 +1,11 @@
-import { RouteConfig } from 'vue-router';
-import store, { NetworkParams } from '@/store';
+import { type RouteConfig } from 'vue-router';
+import store, { type NetworkParams } from '@/store';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
-import { NetworkName } from '@/interfaces';
+import { type NetworkName } from '@/interfaces';
 import WcAuths from '@/screens/extension-ui/WcAuths.vue';
 import SubstrateAuths from '@/screens/extension-ui/SubstrateAuths.vue';
 

@@ -3,8 +3,8 @@ import { handlers, state } from '@extension-base/background/handlers';
 import '@polkadot/extension-inject/crossenv';
 import AccountsStore from '@extension-base/stores/Accounts';
 import { initStorage } from '@extension-base/stores/Storage';
-import { RequestSignatures } from '@extension-base/background/types/messages';
-import { TransportRequestMessage, Port } from '@extension-base/background/types/types';
+import { type RequestSignatures } from '@extension-base/background/types/messages';
+import { type TransportRequestMessage, type Port } from '@extension-base/background/types/types';
 import MigrationService from '@extension-base/services/migration-service';
 
 import { APP_VERSION } from '@/consts/global';

@@ -65,15 +65,14 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { TokenBalance } from '@extension-base/background/types/types';
+import { type TokenBalance } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
-import type { NetworkParams } from '@/store';
+import type { NetworkParams, GetAssetPrice } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { getUtilityAsset } from '@/helpers/currencies';
-import { GetAssetPrice } from '@/store';
 
 @Component
 export default class MyStakingItem extends Vue {

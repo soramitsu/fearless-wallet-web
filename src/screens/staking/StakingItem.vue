@@ -34,7 +34,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { APIItemState } from '@extension-base/api/types/networks';
-import { TokenBalance } from '@extension-base/background/types/types';
+import { type TokenBalance } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { NetworkParams } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';

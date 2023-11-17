@@ -1,4 +1,4 @@
-import { EventService } from '@extension-base/services';
+import { type EventService } from '@extension-base/services';
 
 export class NetworkService {
   private eventService: EventService;

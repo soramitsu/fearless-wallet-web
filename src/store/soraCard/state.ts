@@ -1,5 +1,5 @@
 import { FPNumber } from '@sora-substrate/math';
-import { KycStatus, VerificationStatus } from '@/consts/soraCard';
+import { type KycStatus, type VerificationStatus } from '@/consts/soraCard';
 
 export type State = {
   authLogin: any;

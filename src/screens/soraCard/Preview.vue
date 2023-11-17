@@ -102,7 +102,7 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { FPNumber } from '@sora-substrate/util';
+import { type FPNumber } from '@sora-substrate/util';
 import { NETWORK_STATUS } from '@extension-base//api/types/networks';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import type { AsyncFn } from '@/interfaces';

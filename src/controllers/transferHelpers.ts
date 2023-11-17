@@ -1,6 +1,6 @@
 import { FPNumber } from '@sora-substrate/util';
-import { NetworkName } from '@/interfaces';
-import { Wallet } from '@/store';
+import { type NetworkName } from '@/interfaces';
+import { type Wallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 
 export function getCostOfAssets(count: number | string, price: number): number {

@@ -1,8 +1,8 @@
 import { type TransactionRequest, Wallet, parseEther, parseUnits } from 'ethers';
-import { BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
+import { type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
 import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
 import { state } from '@extension-base/background/handlers';
-import type { BalanceItem } from './types/ether';
+import { type BalanceItem } from '@extension-base/api/evm/types/ether';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
 export type HandleTxResponse<T extends BasicTxResponse> = (data: T) => void;

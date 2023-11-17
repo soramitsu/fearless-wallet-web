@@ -10,7 +10,7 @@ import type {
   RemoveNetworkFavoriteProps,
 } from './types';
 import { getFormattedHistory } from '@/helpers/history';
-import { AssetId, SoraHistoryElement } from '@/interfaces';
+import { type AssetId, type SoraHistoryElement } from '@/interfaces';
 import { isSora } from '@/helpers';
 import { SORA_VAL_ASSET_ID, SORA_XOR_ASSET_ID } from '@/consts/sora';
 

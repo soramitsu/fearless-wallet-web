@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { APIItemState } from '@extension-base/api/types/networks';
-import { BalanceItem } from '@extension-base/api/evm/types/ether';
+import { type BalanceItem } from '@extension-base/api/evm/types/ether';
 import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
 import { getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { setBalance } from '@extension-base/api/helpers';

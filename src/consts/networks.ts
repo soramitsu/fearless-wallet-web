@@ -1,4 +1,4 @@
-import { NetworkName } from '@/interfaces';
+import { type NetworkName } from '@/interfaces';
 
 const SUBSTRATE_ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
 const NATIVE_ETHEREUM_NETWORKS = [

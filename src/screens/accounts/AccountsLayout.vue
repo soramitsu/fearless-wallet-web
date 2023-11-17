@@ -89,7 +89,7 @@ import EditNodeForm from './EditNodeForm.vue';
 import NodeSettingsPopup from './NodeSettingsPopup.vue';
 import AddEthereumAccountPopup from './AddEthereumAccountPopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
-import Nodes from './Nodes.vue';
+import type Nodes from './Nodes.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import { Components } from '@/router/routes';

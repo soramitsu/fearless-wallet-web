@@ -1,8 +1,7 @@
-import { CustomTokenType } from '@extension-base/api/evm/types/ether';
-import { NETWORK_STATUS } from './api/types/networks';
+import { type CustomTokenType } from '@extension-base/api/evm/types/ether';
+import { type NETWORK_STATUS } from './api/types/networks';
 import type { KeyringPair$Meta } from '@polkadot/keyring/types';
-import type { AssetType, BuyProvider, XcmVersion } from '@/interfaces';
-import { ExternalApi } from '@/interfaces';
+import type { AssetType, BuyProvider, XcmVersion, ExternalApi } from '@/interfaces';
 
 export interface Message extends MessageEvent {
   data: {

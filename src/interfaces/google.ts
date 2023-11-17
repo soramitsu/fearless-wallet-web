@@ -1,4 +1,4 @@
-import { AxiosResponse } from 'axios';
+import { type AxiosResponse } from 'axios';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 
 interface IGDriveFile {

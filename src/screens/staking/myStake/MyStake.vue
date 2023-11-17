@@ -123,7 +123,7 @@ import YourValidatorsManagement from '@/screens/staking/myStake/validators/YourV
 import PendingRewardForm from '@/screens/staking/myStake/rewards/PendingRewardForm.vue';
 import { isSora } from '@/helpers';
 import { Components } from '@/router/routes';
-import { FetchHistory, GetStakingNetwork } from '@/store';
+import { type FetchHistory, type GetStakingNetwork } from '@/store';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';

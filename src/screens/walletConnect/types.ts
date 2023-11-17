@@ -1,4 +1,4 @@
-import { ProposalTypes } from '@walletconnect/types';
+import { type ProposalTypes } from '@walletconnect/types';
 
 export type WalletConnectRequestProps = {
   id: string;

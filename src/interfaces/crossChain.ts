@@ -1,5 +1,5 @@
-import { AssetName } from './assets';
-import { NetworkName, RelayChainName } from './networks';
+import { type AssetName } from './assets';
+import { type NetworkName, type RelayChainName } from './networks';
 
 type XcmVersion = 'v1' | 'v2' | 'v3';
 

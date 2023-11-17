@@ -63,16 +63,16 @@
 import { Component, Vue, Prop, Watch, Ref } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import {
-  AccountJson,
-  RequestCheckTransfer,
-  RequestCheckCrossChain,
-  RequestTransfer,
-  RequestCrossChain,
-  TokenBalance,
-  RequestSwap,
+  type AccountJson,
+  type RequestCheckTransfer,
+  type RequestCheckCrossChain,
+  type RequestTransfer,
+  type RequestCrossChain,
+  type TokenBalance,
+  type RequestSwap,
   BasicTxErrorCode,
 } from '@extension-base/background/types/types';
-import { RequestStaking } from '@extension-base//services/staking-service/types';
+import { type RequestStaking } from '@extension-base//services/staking-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { SwapOptions, StakingOperation } from '@/interfaces';
 import type { GetNetwork, GetNetworkGenesisHash, SelectedWallet } from '@/store';

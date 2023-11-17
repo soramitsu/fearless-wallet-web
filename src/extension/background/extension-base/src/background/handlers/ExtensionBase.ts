@@ -15,7 +15,7 @@ import type {
 import type State from '@extension-base/background/handlers/State';
 import type { KeyringPair } from '@polkadot/keyring/types';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
-import { DerivationPath } from '@/interfaces';
+import { type DerivationPath } from '@/interfaces';
 
 export default class FWExtensionBase {
   protected token: string;

@@ -17,7 +17,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { ValidatorReward } from '@extension-base/services/staking-service/types';
+import { type ValidatorReward } from '@extension-base/services/staking-service/types';
 import type { GetAssetPrice } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';

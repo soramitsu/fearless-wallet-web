@@ -63,7 +63,7 @@ import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { cut, isSora } from '@/helpers/';
 import { getType } from '@/helpers/history';
-import { SoraHistoryElement, TransactionType } from '@/interfaces/history';
+import { type SoraHistoryElement, TransactionType } from '@/interfaces/history';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 
 @Component

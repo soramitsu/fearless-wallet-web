@@ -94,7 +94,7 @@ import {
 } from '@/extension/background/extension-base/src/services/staking-service/types';
 import { isValidAmountAsset } from '@/helpers/currencies';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
-import { AsyncFn } from '@/interfaces';
+import { type AsyncFn } from '@/interfaces';
 
 @Component({
   components: {

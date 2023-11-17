@@ -14,7 +14,7 @@ import { SORA_XOR_ASSET_ID, SORA_NETWORK_NAME } from '@/consts/sora';
 import { isSameString } from '@/helpers';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { getSummaryTransferableWalletBalance, getChangeWalletBalance } from '@/helpers/common';
-import { NetworkName } from '@/interfaces';
+import { type NetworkName } from '@/interfaces';
 
 export default class BalanceService {
   private logger: Logger;

@@ -708,6 +708,8 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async fetchEvmBalance() {
+    if (!this.state.ready) return;
+
     this.state.fetchEvmBalance(null);
   }
 
@@ -898,7 +900,6 @@ export default class Extension extends FWExtensionBase {
         to,
         from,
         amount: balance?.transferable || '0',
-        state: this.state,
       });
 
       fee = ethers.formatUnits(feeValue, 18);

@@ -19,8 +19,10 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
   const asset = network.assets.find((el) => el.id === contractAddress);
 
   if (!asset) return;
+  const web3Api = state.getEvmApiMap[networkKey];
+  if (!web3Api) return;
 
-  const contract = await getERC20Contract(networkKey, contractAddress, state);
+  const contract = await getERC20Contract(contractAddress, web3Api);
   const { symbol, precision, id } = asset;
 
   const balanceItem = {

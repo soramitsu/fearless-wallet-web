@@ -14,7 +14,7 @@ import {
 } from '@extension-base/background/types/types';
 import { getId, isInternalRequest } from '@extension-base/utils';
 import { type RequestService } from '@extension-base/services';
-import { state } from '../../../background/handlers';
+import { state } from '@extension-base/background/handlers';
 
 export class SubstrateRequestHandler {
   readonly logger: Logger;

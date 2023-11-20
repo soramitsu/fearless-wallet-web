@@ -7,7 +7,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import type { MenuItem as TMenuItem } from '@/interfaces/common';
 
 type Props = {
@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<Props>(), { isActive: false });
 
 const iconClass = ['menu-icon'];
 const localeName = ref(`menu.${props.name.toLowerCase()}`);
-const menuItemClasses = ref(['menu-item', { active: props.isActive }]);
+const menuItemClasses = computed(() => ['menu-item', { active: props.isActive }]);
 const img = ref(props.name.toLowerCase());
 </script>
 

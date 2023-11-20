@@ -2,7 +2,7 @@
   <AboveForm header="Details" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="details">
       <div class="descriptions">
-        <div v-if="isExtrinsic" class="item">
+        <div v-if="isExtrinsic || isSora" class="item">
           Extrinsic Hash
 
           <div class="item-value item-icon">
@@ -67,7 +67,7 @@
           <div class="item-value">{{ era }}</div>
         </div>
 
-        <div v-if="isTransfer" class="item">
+        <div v-if="showAmount" class="item">
           Amount
 
           <div class="item-value">{{ value }}</div>
@@ -93,7 +93,7 @@
           </div>
         </template>
 
-        <div v-if="showTransferFee" class="item">
+        <div v-if="showFee" class="item">
           Transfer fee
 
           <div class="item-value">{{ transferFee }}</div>
@@ -119,6 +119,7 @@ import { cut, getFormattedDate } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { type SoraHistoryElement } from '@/interfaces';
 
 @Component({})
 export default class HistoryDetailsForm extends Vue {
@@ -130,12 +131,17 @@ export default class HistoryDetailsForm extends Vue {
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
+  get showTargetAmount() {
+    return this.isSora && (this.historyElement as SoraHistoryElement).method === 'swap';
+  }
+
   get isTransfer() {
     return this.type === 'transfer';
   }
 
   get address() {
     if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
+
     const network = this.getNetwork(this.selectedNetwork);
 
     return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
@@ -168,11 +174,25 @@ export default class HistoryDetailsForm extends Vue {
     return this.type === 'reward';
   }
 
-  get showTransferFee() {
+  get showFee() {
+    if (this.isSora) return (this.historyElement as SoraHistoryElement).method !== 'rewarded';
+
     return this.isTransfer && this.signTransfer === '-';
   }
 
+  get isSora() {
+    return this.type === 'sora';
+  }
+
+  get showAmount() {
+    if (this.isSora) return true;
+
+    return this.isTransfer;
+  }
+
   get statusIsSuccess() {
+    if (this.isSora) return (this.historyElement as SoraHistoryElement).execution.success;
+
     if (this.isTransfer) {
       const { success } = this.historyElement.transfer!;
 
@@ -207,20 +227,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get statusText() {
-    if (this.isTransfer) {
-      const { success } = this.historyElement.transfer!;
-
-      return success ? 'Completed' : 'Reject';
-    }
-
-    if (this.isExtrinsic) {
-      const { success } = this.historyElement.extrinsic!;
-
-      return success ? 'Completed' : 'Reject';
-    }
-
-    //reward
-    return 'Completed';
+    return this.statusIsSuccess ? 'Completed' : 'Reject';
   }
 
   get fromAddress() {
@@ -240,10 +247,14 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get moduleType() {
+    if (this.isSora) return (this.historyElement as SoraHistoryElement).module;
+
     return this.historyElement.extrinsic!.module;
   }
 
   get call() {
+    if (this.isSora) return (this.historyElement as SoraHistoryElement).method;
+
     return this.historyElement.extrinsic!.call;
   }
 
@@ -270,7 +281,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get type() {
-    return getType(this.historyElement);
+    return getType(this.historyElement, this.selectedNetwork);
   }
 
   get signTransfer() {
@@ -278,6 +289,8 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get hash() {
+    if (this.isSora) return (this.historyElement as SoraHistoryElement).blockHash;
+
     return this.historyElement.extrinsic!.hash;
   }
 
@@ -286,7 +299,8 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get selectedNetwork() {
-    return this.$route.params.selectedNetwork;
+    // TODO Переделать на одинаковое название параметра
+    return this.$route.params.network ?? this.$route.params.selectedNetwork;
   }
 
   copy(value?: string) {

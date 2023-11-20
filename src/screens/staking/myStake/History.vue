@@ -1,8 +1,8 @@
 <template>
   <div class="history">
     <HistoryItem
-      v-for="historyItem in history"
-      :key="historyItem.timestamp + historyItem.method"
+      v-for="(historyItem, index) in history"
+      :key="historyItem.timestamp + index"
       :history="historyItem"
       :stakingAssetId="stakingAssetId"
       :rewardedAssetId="rewardedAssetId"

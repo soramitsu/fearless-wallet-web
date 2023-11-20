@@ -186,7 +186,7 @@ export default class StakingPage extends Vue {
   updateTabStakingParams() {
     setTimeout(() => {
       this.getStakingParams();
-    }, 1000);
+    }, 2000);
   }
 
   updateFilterValue(value: string) {

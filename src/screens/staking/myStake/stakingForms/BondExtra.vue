@@ -10,7 +10,7 @@
       :iconClasses="['network-fee']"
     />
 
-    <Tooltip text="assets.stakingFee" target=".network-fee" placement="right" />
+    <Tooltip text="staking.stakingFee" target=".network-fee" placement="right" />
   </div>
 </template>
 

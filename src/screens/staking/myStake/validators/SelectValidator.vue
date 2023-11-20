@@ -81,7 +81,7 @@ export default class SelectValidator extends Vue {
 
     const filter = this.filterValue.trim().toLowerCase();
 
-    return this.sortedValidators.filter(
+    return [...this.sortedValidators].filter(
       ({ address, name }) => address.toLowerCase().includes(filter) || name.toLowerCase().includes(filter)
     );
   }
@@ -115,7 +115,7 @@ export default class SelectValidator extends Vue {
   }
 
   .validators-items {
-    height: 320px;
+    height: calc(100vh - 275px);
   }
 
   .settings {

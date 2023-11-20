@@ -71,7 +71,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import Bond from '@/screens/staking/Bond.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
-import { isSameString } from '@/helpers';
+import { isSubstrString, isSameString } from '@/helpers';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 
@@ -101,13 +101,13 @@ export default class StakingPage extends Vue {
   get filteredStakingItems() {
     if (this.filterValue === '') return this.stakingItems;
 
-    return this.stakingItems.filter(({ network }) => isSameString(network, this.filterValue));
+    return this.stakingItems.filter(({ network }) => isSubstrString(network, this.filterValue));
   }
 
   get filteredMyStakingItems() {
     if (this.filterValue === '') return this.myStakingItems;
 
-    return this.myStakingItems.filter(({ network }) => isSameString(network, this.filterValue));
+    return this.myStakingItems.filter(({ network }) => isSubstrString(network, this.filterValue));
   }
 
   get haveFilteredItems() {

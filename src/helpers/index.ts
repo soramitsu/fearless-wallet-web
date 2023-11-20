@@ -16,6 +16,10 @@ function isSameString(string1: string, string2: string) {
   return string1.toLowerCase() === string2.toLowerCase();
 }
 
+function isSubstrString(string1: string, string2: string) {
+  return string1.toLowerCase().includes(string2.toLowerCase());
+}
+
 function isSora(network: string) {
   return isSameString(network, SORA_NETWORK_NAME);
 }
@@ -84,4 +88,5 @@ export {
   getClipboard,
   getFormattedDate,
   isSoraTest,
+  isSubstrString,
 };

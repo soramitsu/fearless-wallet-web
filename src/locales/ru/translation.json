@@ -723,6 +723,7 @@
     "areYouSure": "Вы уверены?",
     "searchByAddress": "Поиск по адресу или имени",
     "networks": "Сети",
-    "nothingFound": "Ничего не найдено"
+    "nothingFound": "Ничего не найдено",
+    "featureOff": "Временно недоступно"
   }
 }

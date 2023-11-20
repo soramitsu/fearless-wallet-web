@@ -60,7 +60,7 @@ import { Getter, Action } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
 import type { AsyncFn, StakingTab } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
-import type { NetworkParams, SelectedWallet, GetAssetPrice } from '@/store';
+import type { NetworkParams, SelectedWallet, GetAssetPrice, GetStakingParamsProps } from '@/store';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { networksIsPending } from '@/helpers/shimmers';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
@@ -88,6 +88,7 @@ export default class StakingPage extends Vue {
   showNetworkManagement = false;
   activeTabName: StakingTab | '' = '';
   filterValue = '';
+  isLoading = false;
   networkParams: Nullable<NetworkParams> = null;
 
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
@@ -96,7 +97,7 @@ export default class StakingPage extends Vue {
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(StakingGettersTypes.stakingItems) stakingItems!: NetworkParams[];
   @Getter(StakingGettersTypes.myStakingItems) myStakingItems!: NetworkParams[];
-  @Action(StakingActionTypes.GET_STAKING_PARAMS) getStakingParams!: AsyncFn;
+  @Action(StakingActionTypes.GET_STAKING_PARAMS) getStakingParams!: AsyncFn<GetStakingParamsProps>;
 
   get filteredStakingItems() {
     if (this.filterValue === '') return this.stakingItems;
@@ -117,6 +118,8 @@ export default class StakingPage extends Vue {
   }
 
   get showLoader() {
+    if (this.activeTabName === 'all' && this.isLoading) return true;
+
     return this.activeTabName === '';
   }
 
@@ -183,10 +186,12 @@ export default class StakingPage extends Vue {
   }
 
   @Watch('selectedWallet')
-  updateTabStakingParams() {
-    setTimeout(() => {
-      this.getStakingParams();
-    }, 2000);
+  async updateTabStakingParams() {
+    this.isLoading = true;
+
+    await this.getStakingParams({ delay: 5000 });
+
+    this.isLoading = false;
   }
 
   updateFilterValue(value: string) {

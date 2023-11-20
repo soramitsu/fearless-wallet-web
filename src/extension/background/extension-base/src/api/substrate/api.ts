@@ -79,7 +79,7 @@ export async function initApi(network: NetworkJson, state: State): Promise<void>
   const currentProvider = autoSelectNode ?? network.currentProvider;
   const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [
     ['connected', () => onConnected(networkName, state)],
-    ['disconnected', () => onDisconnect(networkName, state)],
+    ['disconnected', () => onDisconnect(name, state)],
     ['ready', () => onReady(networkName, state)],
     ['error', () => null],
   ];

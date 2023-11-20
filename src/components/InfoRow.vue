@@ -10,6 +10,7 @@
     :hideLastBorder="hideLastBorder"
     :color="color"
     :isIconPrepend="isIconPrepend"
+    :iconClasses="iconClasses"
   >
     {{ $t(text) }}
 
@@ -40,23 +41,5 @@ export default class InfoRow extends Vue {
   @Prop({ default: true }) hideLastBorder!: boolean;
   @Prop({ default: false }) isLoading!: boolean;
   @Prop({ default: () => [] }) iconClasses!: string[];
-
-  get classesIcon() {
-    return ['icon-info', ...this.iconClasses];
-  }
 }
 </script>
-
-<style lang="scss" scoped>
-.icon-info {
-  margin-left: 13px;
-  width: 18px;
-  height: 18px;
-  color: $grayish-white;
-  cursor: pointer;
-
-  &:hover {
-    color: $default-white;
-  }
-}
-</style>

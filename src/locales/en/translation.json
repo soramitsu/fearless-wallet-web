@@ -736,6 +736,7 @@
     "areYouSure": "Are you sure?",
     "searchByAddress": "Search by address or name",
     "networks": "Networks",
-    "nothingFound": "Nothing found"
+    "nothingFound": "Nothing found",
+    "featureOff": "Temparary unavailable, we're working to bring it back."
   }
 }

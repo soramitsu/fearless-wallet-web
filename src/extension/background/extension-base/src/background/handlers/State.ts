@@ -105,7 +105,6 @@ export default class State {
   private readonly authorizeUrlSubject = new Subject<AuthUrls>();
   public signature: HexString | null = null;
   public defaultAuthAccountSelection: string[] = [];
-  private lockNetworkMap = false;
   public apis: APIs = {
     substrate: {},
     evm: {},
@@ -290,10 +289,6 @@ export default class State {
   }
 
   public upsertNetworkMap(data: NetworkJson): boolean {
-    if (this.lockNetworkMap) return false;
-
-    this.lockNetworkMap = true;
-
     const { name, currentProvider, chain, paraId, decimals, customNodes, isEthereum } = data;
 
     if (name in this.networkMap) {
@@ -336,16 +331,10 @@ export default class State {
 
     this.updateServiceInfo();
 
-    this.lockNetworkMap = false;
-
     return true;
   }
 
   public disableNetworkMap(networkKey: string): boolean {
-    if (this.lockNetworkMap) return false;
-
-    this.lockNetworkMap = true;
-
     if (this.networkMap[networkKey]?.isEthereum) delete this.apis.evm[networkKey];
     else delete this.apis.substrate[networkKey];
 
@@ -355,8 +344,6 @@ export default class State {
     this.networkMapSubject.next(this.networkMap);
     this.updateServiceInfo();
     this.networkMapStore.set('NetworkMap', this.networkMap);
-
-    this.lockNetworkMap = false;
 
     this.requestService.getAuthorize((data) => {
       if (this.networkMap[networkKey].isEthereum) this.evmChainSubject.next(data);

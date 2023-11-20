@@ -161,32 +161,35 @@ export class StakingService {
 
     // all nominations that are oversubscribed
     const validatorsOversubscribed = electedValidators
-      .map(({ others }) => others.sort((a, b) => (+b.value ?? 0) - +a.value ?? 0))
-      .map((others, index) => {
+      .map((exposure) => {
         if (!max) return null;
+
+        const others = exposure.others.sort((a, b) => (+b.value ?? 0) - +a.value ?? 0);
 
         if (max > others.map(({ who }) => who.toString()).indexOf(address)) return null;
 
-        return myValidators[index];
+        return myValidators.find((address) => isSameString(address, exposure.address));
       })
       .filter((validator): validator is string => !!validator); // && !nomsChilled.includes(nominee)
 
     // first a blanket find of nominations not in the active set
     const allValidatorsInactive = electedValidators
-      .map((exposure, index) => {
+      .map((exposure) => {
         if (exposure.others.some(({ who }) => isSameString(who, address))) return null;
 
-        return myValidators[index];
+        return myValidators.find((address) => isSameString(address, exposure.address));
       })
       .filter((validator): validator is string => !!validator);
 
     // waiting if validator is inactive or we have not submitted long enough ago
     const validatorsWaiting = electedValidators
-      .map((exposure, index) => {
-        if (exposure.total === '0') return myValidators[index];
+      .map((exposure) => {
+        const validatorAddress = myValidators.find((address) => isSameString(address, exposure.address));
 
-        if (allValidatorsInactive.includes(myValidators[index]) && (submittedIn ?? 0) >= +activeEra)
-          return myValidators[index];
+        if (exposure.total === '0') return validatorAddress;
+
+        if (allValidatorsInactive.includes(validatorAddress!) && (submittedIn ?? 0) >= +activeEra)
+          return validatorAddress;
 
         return null;
       })

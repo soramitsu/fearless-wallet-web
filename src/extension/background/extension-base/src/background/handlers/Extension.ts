@@ -209,7 +209,7 @@ export default class Extension extends FWExtensionBase {
       this.state.walletConnectService.sessions.forEach((session) => {
         const evm = session.namespaces['eip155'] ?? [];
 
-        if (evm) {
+        if (evm && evm.accounts && evm.accounts.length) {
           const [, , evmAddress] = evm.accounts[0].split(':');
 
           if (ethereumAddress && ethereumAddress.toLowerCase() === evmAddress.toLowerCase()) {
@@ -219,7 +219,7 @@ export default class Extension extends FWExtensionBase {
 
         const polkadot = session.namespaces['polkadot'];
 
-        if (polkadot) {
+        if (polkadot && polkadot.accounts && polkadot.accounts.length) {
           const [, , substaddress] = polkadot.accounts[0].split(':');
 
           if (substaddress.toLowerCase() === address.toLowerCase()) {

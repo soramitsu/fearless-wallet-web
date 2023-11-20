@@ -161,14 +161,12 @@ export class StakingService {
 
     // all nominations that are oversubscribed
     const validatorsOversubscribed = electedValidators
-      .map((exposure) => ({
-        address: exposure.address,
-        others: exposure.others.sort((a, b) => (+b.value ?? 0) - +a.value ?? 0),
-      }))
       .map((exposure) => {
         if (!max) return null;
 
-        if (max > exposure.others.map(({ who }) => who.toString()).indexOf(address)) return null;
+        const others = exposure.others.sort((a, b) => (+b.value ?? 0) - +a.value ?? 0);
+
+        if (max > others.map(({ who }) => who.toString()).indexOf(address)) return null;
 
         return myValidators.find((address) => isSameString(address, exposure.address));
       })

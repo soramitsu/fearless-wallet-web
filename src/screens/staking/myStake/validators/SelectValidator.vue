@@ -115,7 +115,7 @@ export default class SelectValidator extends Vue {
   }
 
   .validators-items {
-    height: 320px;
+    height: calc(100vh - 275px);
   }
 
   .settings {

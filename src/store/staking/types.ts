@@ -32,6 +32,8 @@ export type SetAllStakingItems = StakingParamsResponse;
 
 export type SetMyStakingInfo = { network: NetworkName; stakingInfo: MyStakingInfo };
 
+export type GetStakingParamsProps = { delay: number };
+
 export type GetStakingNetworkProps = { network: NetworkName };
 
 export type AugmentedStakingContext = {

@@ -1,5 +1,5 @@
 <template>
-  <div class="history-item" @click="$emit('openHistoryDetailsForm', history)">
+  <div class="history-item" @click="openDetails">
     <div class="column left">
       <span class="name">
         {{ operationName }}
@@ -17,7 +17,7 @@
         <div class="value">{{ value }}</div>
       </div>
 
-      <Icon icon="chevron-right" className="chevron" @click="dostClick" />
+      <Icon icon="chevron-right" className="chevron" @click="openDetails" />
     </div>
   </div>
 </template>
@@ -105,8 +105,8 @@ export default class HistoryItem extends Vue {
     return `${this.fiatSymbol}${this.$n(value, 'price')}`;
   }
 
-  dostClick() {
-    console.info('dostClick');
+  openDetails() {
+    this.$emit('openHistoryDetailsForm', this.history);
   }
 }
 </script>

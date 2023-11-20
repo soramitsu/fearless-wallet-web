@@ -184,7 +184,9 @@ export default class StakingPage extends Vue {
 
   @Watch('selectedWallet')
   updateTabStakingParams() {
-    this.getStakingParams();
+    setTimeout(() => {
+      this.getStakingParams();
+    }, 2000);
   }
 
   updateFilterValue(value: string) {

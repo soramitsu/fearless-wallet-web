@@ -22,7 +22,7 @@
       {{ $t('staking.unstakingDisclaimers2') }}
     </div>
 
-    <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
+    <Tooltip text="assets.stakingFee" target=".network-fee" placement="right" />
   </div>
 </template>
 

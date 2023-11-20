@@ -112,6 +112,7 @@ enum TransactionType {
   transfer = 'transfer',
   reward = 'reward',
   extrinsic = 'extrinsic',
+  sora = 'sora',
 }
 
 export {

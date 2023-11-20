@@ -13,7 +13,9 @@ import { firstCharToUp, isSora } from '@/helpers';
 import store from '@/store';
 import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 
-function getType(historyElement: HistoryElement): TransactionType {
+function getType(historyElement: HistoryElement, networkName?: NetworkName): TransactionType {
+  if (isSora(networkName ?? '')) return TransactionType.sora;
+
   const { reward, transfer } = historyElement;
 
   if (transfer) return TransactionType.transfer;
@@ -22,13 +24,13 @@ function getType(historyElement: HistoryElement): TransactionType {
 }
 
 function getSignTransfer(historyElement: HistoryElement, address: string, networkName: NetworkName) {
-  if (isSora(networkName)) {
+  const type = getType(historyElement, networkName);
+
+  if (type === TransactionType.sora) {
     const element = historyElement as SoraHistoryElement;
 
     return element.method === 'rewarded' ? '+' : '-';
   }
-
-  const type = getType(historyElement);
 
   if (type === TransactionType.transfer) {
     const { transfer } = historyElement;
@@ -41,13 +43,14 @@ function getSignTransfer(historyElement: HistoryElement, address: string, networ
 }
 
 function getTypeFormatted(historyElement: HistoryElement, address: string, networkName: NetworkName) {
-  if (isSora(networkName)) {
+  const type = getType(historyElement, networkName);
+
+  if (type === TransactionType.sora) {
     const element = historyElement as SoraHistoryElement;
 
     return element.module;
   }
 
-  const type = getType(historyElement);
   const signTransfer = getSignTransfer(historyElement, address, networkName);
 
   if (type === TransactionType.transfer) {
@@ -84,7 +87,9 @@ function getHumanValue(value: string | number, assetId: string, networkName: Net
 }
 
 function getHumanTransferFee(historyElement: HistoryElement, networkName: NetworkName) {
-  if (isSora(networkName)) {
+  const type = getType(historyElement, networkName);
+
+  if (type === TransactionType.sora) {
     const element = historyElement as SoraHistoryElement;
     const { networkFee } = element;
 
@@ -92,7 +97,6 @@ function getHumanTransferFee(historyElement: HistoryElement, networkName: Networ
   }
 
   const { transfer, extrinsic } = historyElement;
-  const type = getType(historyElement);
 
   if (type === TransactionType.transfer) {
     const { fee } = transfer!;
@@ -117,8 +121,9 @@ function getHistoryValue(
   withFee = false
 ) {
   const signTransfer = getSignTransfer(historyElement, address, networkName);
+  const type = getType(historyElement, networkName);
 
-  if (isSora(networkName)) {
+  if (type === TransactionType.sora) {
     const element = historyElement as SoraHistoryElement;
 
     const dataValue =
@@ -135,7 +140,6 @@ function getHistoryValue(
   }
 
   const { transfer, reward, extrinsic } = historyElement;
-  const type = getType(historyElement);
 
   if (type === TransactionType.transfer && transfer) {
     const { amount } = transfer;

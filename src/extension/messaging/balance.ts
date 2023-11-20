@@ -1,4 +1,10 @@
-import type { BalanceJson, PriceJson, RequestSubscribePrice } from '@extension-base/background/types/types';
+import {
+  type BalanceJson,
+  type FetchBalanceRequest,
+  type PriceJson,
+  type RequestSubscribePrice,
+} from '@extension-base/background/types/types';
+
 import { sendMessage } from '@/extension/messaging/index';
 
 export function getBalance(): Promise<BalanceJson> {
@@ -22,4 +28,8 @@ export function subscribePrice(
 
 export function subscribeBalance(callback: (balanceData: BalanceJson) => void): Promise<BalanceJson> {
   return sendMessage('pri(balance.subscription)', null, callback);
+}
+
+export function fetchBalance(request: FetchBalanceRequest): Promise<string> {
+  return sendMessage('pri(fetch.balance)', request);
 }

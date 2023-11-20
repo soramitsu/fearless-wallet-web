@@ -21,9 +21,7 @@
         @click="setPayoutAddress"
       />
 
-      <div class="activity-buttons">
-        <BadgeButton text="common.paste" @click="paste" />
-      </div>
+      <slot></slot>
 
       <Hint text="staking.defaultPayout" iconName="notification" class="hint row" />
 
@@ -35,12 +33,10 @@
         :value="`${fee} ${asset}`"
         :price="valueString"
         :hideLastBorder="false"
-        :iconClasses="['network-fee']"
+        :iconClasses="['staking-fee']"
       />
 
-      <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
-
-      <FLink text="staking.learnAboutRewards" class="about-controllers row" @click="openAboutRewards" />
+      <Tooltip text="staking.stakingFee" target=".staking-fee" placement="right" />
     </template>
   </div>
 </template>
@@ -49,9 +45,9 @@
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { SelectedWallet, GetAssetPrice, NetworkParams } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { AccountJson, TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { cut, getClipboard } from '@/helpers';
+import { cut } from '@/helpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
@@ -63,14 +59,15 @@ export default class Payee extends Vue {
   @PropSync('payoutAddress', { type: String }) syncedPayoutAddress!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
-  get payee() {
-    return this.stakingNetwork.payee;
+  get payeeName() {
+    return this.stakingNetwork.payeeName;
   }
 
   get payeeCut() {
-    return cut(this.payee);
+    return cut(this.payeeName);
   }
 
   get asset() {
@@ -85,6 +82,10 @@ export default class Payee extends Vue {
     return this.selectedWallet.name;
   }
 
+  get filteredWallets() {
+    return this.wallets.filter(({ active }) => !active);
+  }
+
   get stakingAssetPrice() {
     const priceId = this.stakingCurrency?.priceId ?? '';
 
@@ -97,16 +98,8 @@ export default class Payee extends Vue {
     return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
   }
 
-  paste() {
-    this.syncedPayoutAddress = getClipboard();
-  }
-
   setPayoutAddress(value = '') {
     this.syncedPayoutAddress = value;
-  }
-
-  openAboutRewards() {
-    console.info('openAboutRewards');
   }
 }
 </script>
@@ -132,16 +125,6 @@ export default class Payee extends Vue {
 
   .row {
     margin-left: 15px;
-  }
-
-  .about-controllers {
-    margin-top: 10px;
-  }
-
-  .activity-buttons {
-    display: flex;
-    user-select: none;
-    margin-bottom: 15px;
   }
 }
 </style>

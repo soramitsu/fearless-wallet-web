@@ -1,10 +1,10 @@
-import { isEthereumNetwork, getSubstrateAddress } from '@extension-base/background/utils/utils';
+import { type Subscription } from 'rxjs';
+import { type ApiPromise } from '@polkadot/api';
+import { isEthereumNetwork, getSubstrateAddress, getUtilityProps } from '@extension-base/background/utils/utils';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
 import { setBalance } from '@extension-base/api/helpers';
-import type { ApiPromise } from '@polkadot/api';
-import type { Subscription } from 'rxjs';
 import type State from '@extension-base/background/handlers/State';
 import type { RelayChainName, NetworkName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
@@ -219,4 +219,36 @@ export function subscribeBalance(
     });
 
   return unsubListPromises;
+}
+
+export async function fetchBalance(address: string, networkKey: string, state: State, api?: ApiPromise) {
+  const { id, symbol, type, precision } = getUtilityProps(networkKey, state);
+  const options = getAssetOptions(id, state.assetsMap);
+
+  if (!api) return '0';
+
+  const query = api.query;
+
+  let response;
+
+  const isSoraXOR =
+    symbol === SORA_UTILITY_ASSET && (isSameString(networkKey, SORA_MAINNET) || isSameString(networkKey, SORA_TEST));
+
+  if (type === 'normal' || isSoraXOR) response = query.system.account(address);
+  else if (type === 'assets') {
+    response = (query.assets as any).account(options, address);
+  } else response = query.tokens.accounts(address, options);
+
+  const balances = await response;
+
+  const balance =
+    type === 'assets'
+      ? {
+          free: FPNumber.fromCodecValue(balances.toJSON()?.balance ?? 0, precision),
+        }
+      : balances?.data ?? balances;
+
+  const { transferable } = formatBalance(balance, precision);
+
+  return transferable;
 }

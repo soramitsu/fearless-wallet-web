@@ -20,17 +20,24 @@ import {
   getEthereumAddress,
 } from '@extension-base/background/utils/utils';
 import {
+  type StakingNetworkRequest,
+  type StakingParamsRequest,
+  type MyStakingInfoResponse,
+  type CheckControllerRequest,
+  type getRewardsRequest,
+  type RewardsResponse,
+  type MakeStakingRequest,
+  type StakingParamsResponse,
+} from '@extension-base/services/staking-service/types';
+import { type MetadataDef } from '@polkadot/extension-inject/types';
+import { type SignerPayloadRaw, type SignerPayloadJSON } from '@polkadot/types/types';
+import {
   isProposalExpired,
   isSupportWalletConnectNamespace,
   isSupportWalletConnectChain,
   convertHexToUtf8,
 } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
-import {
-  WALLET_CONNECT_EIP155_NAMESPACE,
-  WALLET_CONNECT_POLKADOT_NAMESPACE,
-  WALLET_CONNECT_SUPPORTED_METHODS,
-} from '@extension-base/services/wallet-connect-service/consts';
 import {
   type RequestUpdateMeta,
   type PriceJson,
@@ -81,6 +88,7 @@ import {
   BasicTxErrorCode,
   type BasicTxResponse,
   TransferErrorCode,
+  type FetchBalanceRequest,
 } from '@extension-base/background/types/types';
 import {
   type RequestConnectWalletConnect,
@@ -96,20 +104,15 @@ import {
   type RequestRejectWalletConnectNotSupport,
   EIP155_SIGNING_METHODS,
 } from '@extension-base/services/wallet-connect-service/types';
+import {
+  WALLET_CONNECT_EIP155_NAMESPACE,
+  WALLET_CONNECT_POLKADOT_NAMESPACE,
+  WALLET_CONNECT_SUPPORTED_METHODS,
+} from '@extension-base/services/wallet-connect-service/consts';
 import type { NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
-import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { MetadataDef } from '@polkadot/extension-inject/types';
 import type { ProposalTypes, SessionTypes } from '@walletconnect/types';
 import type { HexString } from '@polkadot/util/types';
-import type {
-  StakingNetworkRequest,
-  StakingParamsRequest,
-  MyStakingInfoResponse,
-  RewardsResponse,
-  MakeStakingRequest,
-  StakingParamsResponse,
-} from '@extension-base/services/staking-service/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
@@ -119,7 +122,6 @@ import type {
   GoogleAuthTypes,
   ICreateFile,
   IGetFilesResponse,
-  NetworkName,
   OnboardingStories,
   SoraFees,
   VerifyTokenResponse,
@@ -1160,9 +1162,22 @@ export default class Extension extends FWExtensionBase {
     return this.state.stakingService.getStakingParams(params);
   }
 
-  async getRewards(network: NetworkName): Promise<RewardsResponse> {
-    const address = await this.state.getCurrentAddress(network);
+  async checkController(params: CheckControllerRequest): Promise<boolean> {
+    const address = await this.state.getCurrentAddress('westend');
+    const stashAddress = await this.state.stakingService.getStashByController(params.address);
 
+    if (stashAddress === '') return true;
+
+    // Если для address существует stashAddress и он отличается от address, тогда address уже является контроллер аккаунтом
+    const isValidController = this.state.keyringService.isSameAddress(
+      { address: stashAddress, ethereumAddress: stashAddress },
+      { address, ethereumAddress: address }
+    );
+
+    return isValidController;
+  }
+
+  async getRewards({ network, address }: getRewardsRequest): Promise<RewardsResponse> {
     return this.state.stakingService.getRewards(network, address);
   }
 
@@ -1541,6 +1556,10 @@ export default class Extension extends FWExtensionBase {
     return this.state.walletConnectDappService.initPairing();
   }
 
+  private async fetchBalance({ address, networkName }: FetchBalanceRequest): Promise<string> {
+    return await this.state.balanceService.fetchBalance(address, networkName);
+  }
+
   private getWalletConnectSessionAvailableNetwork(address: string) {
     return this.state.walletConnectDappService.availableNetworks(address);
   }
@@ -1669,8 +1688,11 @@ export default class Extension extends FWExtensionBase {
       case 'pri(staking.stakingParams)':
         return this.getStakingParams(request as StakingParamsRequest);
 
+      case 'pri(staking.checkController)':
+        return this.checkController(request as CheckControllerRequest);
+
       case 'pri(staking.rewards)':
-        return this.getRewards(request as NetworkName);
+        return this.getRewards(request as getRewardsRequest);
 
       case 'pri(staking.myStaking)':
         return this.getMyStakingInfo(request as StakingNetworkRequest);
@@ -1757,6 +1779,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(balance.subscription)':
         return this.subscribeBalance(id, port);
+
+      case 'pri(fetch.balance)':
+        return this.fetchBalance(request as FetchBalanceRequest);
 
       //Wallet Connect
       case 'pri(walletConnect.connect)':

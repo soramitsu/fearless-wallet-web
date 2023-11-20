@@ -1,13 +1,7 @@
 <template>
   <div class="controller-account">
     <template v-if="step === 1">
-      <InfoRow
-        text="staking.stashAccount"
-        borderType="default"
-        :value="accountName"
-        :price="addressCut"
-        :hideLastBorder="false"
-      />
+      <InfoRow text="staking.stashAccount" borderType="default" :value="accountName" :hideLastBorder="false" />
 
       <InfoRow text="staking.setController" borderType="default" :value="controllerCut" :hideLastBorder="false" />
     </template>
@@ -22,9 +16,14 @@
         @click="setControllerAddress"
       />
 
-      <div class="activity-buttons">
-        <BadgeButton text="common.paste" @click="paste" />
-      </div>
+      <Alert
+        v-if="isInvalidController"
+        message="staking.alreadyControlling"
+        sizeText="small"
+        class="already-controlling"
+      />
+
+      <slot></slot>
 
       <Hint text="staking.controllerUnbond" iconName="notification" class="hint row" />
 
@@ -40,8 +39,6 @@
       />
 
       <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
-
-      <FLink text="staking.learnAboutControllers" class="about-controllers row" @click="openAboutControllers" />
     </template>
   </div>
 </template>
@@ -52,7 +49,7 @@ import { Getter } from 'vuex-class';
 import type { SelectedWallet, GetAssetPrice, NetworkParams } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { cut, getClipboard } from '@/helpers';
+import { cut } from '@/helpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component({})
@@ -61,17 +58,18 @@ export default class ControllerAccount extends Vue {
   @Prop({ type: String }) fee!: string;
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
+  @Prop({ type: Boolean }) isInvalidController!: boolean;
   @PropSync('controllerAddress', { type: String }) syncedControllerAddress!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
-  get controller() {
-    return this.stakingNetwork.controller;
+  get controllerName() {
+    return this.stakingNetwork.controllerName;
   }
 
   get controllerCut() {
-    return cut(this.controller);
+    return cut(this.controllerName);
   }
 
   get asset() {
@@ -83,7 +81,7 @@ export default class ControllerAccount extends Vue {
   }
 
   get accountName() {
-    return this.selectedWallet.name;
+    return cut(this.stakingNetwork.stashName);
   }
 
   get stakingAssetPrice() {
@@ -98,16 +96,8 @@ export default class ControllerAccount extends Vue {
     return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
   }
 
-  paste() {
-    this.syncedControllerAddress = getClipboard();
-  }
-
   setControllerAddress(value = '') {
     this.syncedControllerAddress = value;
-  }
-
-  openAboutControllers() {
-    console.info('openAboutControllers');
   }
 }
 </script>
@@ -131,14 +121,8 @@ export default class ControllerAccount extends Vue {
     margin-left: 15px;
   }
 
-  .about-controllers {
-    margin-top: 10px;
-  }
-
-  .activity-buttons {
-    display: flex;
-    user-select: none;
-    margin-bottom: 15px;
+  .already-controlling {
+    margin: 10px 0;
   }
 }
 </style>

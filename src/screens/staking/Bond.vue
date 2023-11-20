@@ -7,7 +7,32 @@
     @closeHandler="closeForm"
   >
     <div class="bond-form">
-      <div>
+      <EditAddressBook v-if="showEditAddressBook" :network="network" :_address="newAddress" @setAddress="setAddress" />
+
+      <HistoryBook
+        v-else-if="showHistoryBook"
+        :network="network"
+        :assetId="stakingAssetId"
+        @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
+        @setRecipient="setPayoutAddress"
+        @setAddress="setAddress"
+      />
+
+      <div v-else-if="showMyWallets">
+        <WalletInfo
+          v-for="({ name, address, ethereumAddress, isMobile }, index) in filteredWallets"
+          :key="name + index"
+          :name="name"
+          :isSelected="getStatusWallet(address, ethereumAddress)"
+          :isMobile="isMobile"
+          :address="address"
+          :showMenu="false"
+          class="wallet"
+          @setWallet="setWallet(address, ethereumAddress)"
+        />
+      </div>
+
+      <div v-else>
         <template v-if="step === 1">
           <FInput v-model="accountName" placeholder="accounts.account" size="big" :readonly="true" />
 
@@ -37,7 +62,11 @@
           <Hint class="hint" iconName="notification" text="staking.defaultPayout" />
 
           <div class="activity-buttons">
+            <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+
             <BadgeButton text="common.paste" @click="paste" />
+
+            <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
           </div>
 
           <InfoRow
@@ -46,7 +75,7 @@
             icon="info"
             :value="`${fee} ${stakingAssetName}`"
             :price="feeValueString"
-            :iconClasses="['network-fee']"
+            :iconClasses="['staking-fee']"
           />
         </template>
 
@@ -84,15 +113,13 @@
               :value="`${fee} ${stakingAssetName}`"
               :price="feeValueString"
               :isIconPrepend="false"
-              :iconClasses="['network-fee']"
+              :iconClasses="['staking-fee']"
             />
           </ContentForm>
         </template>
 
         <template v-if="step === 1 || step === 6">
-          <FLink text="staking.learnAboutRewards" class="about-rewards" @click="openAboutRewards" />
-
-          <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
+          <Tooltip text="staking.stakingFee" target=".staking-fee" placement="right" />
         </template>
 
         <template v-if="step === 6">
@@ -162,7 +189,8 @@ import { Getter } from 'vuex-class';
 import { type RequestBond } from '@extension-base/services/staking-service/types';
 import type { GetAssetPrice, SelectedWallet, NetworkParams } from '@/store';
 import type { SelectionValidator } from '@/interfaces';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { AccountJson, TokenBalance } from '@extension-base/background/types/types';
+import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectValidator from '@/screens/staking/myStake/validators/SelectValidator.vue';
@@ -174,11 +202,16 @@ import { getCostOfAssets } from '@/controllers/transferHelpers';
 import BaseApi from '@/util/BaseApi';
 import { cut, getClipboard } from '@/helpers';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
+import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
+import WalletInfo from '@/screens/main/WalletInfo.vue';
 
 @Component({
   components: {
+    WalletInfo,
+    HistoryBook,
     FiltersPopup,
     SelectValidator,
+    EditAddressBook,
     SelectionValidatorsForm,
     ConfirmationPasswordPopup,
   },
@@ -189,14 +222,22 @@ export default class Bond extends Vue {
   step = 1;
   isSuggested = false;
   showConfirmationPasswordPopup = false;
+  showHistoryBook = false;
+  showMyWallets = false;
   fee = '';
   amount = '';
+  newAddress = '';
 
   @Prop({ type: Object }) networkParams!: NetworkParams;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
+
+  get showEditAddressBook() {
+    return this.newAddress !== '';
+  }
 
   get isValidPayoutAddress() {
     if (this.payoutAddress === '') return true;
@@ -209,7 +250,7 @@ export default class Bond extends Vue {
   }
 
   get showBtn() {
-    return this.step !== 2;
+    return this.step !== 2 && !this.showHistoryBook && !this.showEditAddressBook;
   }
 
   get network() {
@@ -230,6 +271,14 @@ export default class Bond extends Vue {
 
   get accountName() {
     return this.selectedWallet.name;
+  }
+
+  get filteredWallets() {
+    return this.wallets.filter(({ active }) => !active);
+  }
+
+  get showMyWalletsButton() {
+    return this.filteredWallets.length !== 0;
   }
 
   get stakingCurrencyBalance() {
@@ -290,7 +339,7 @@ export default class Bond extends Vue {
   }
 
   get showBackIcon() {
-    return this.step !== 1;
+    return this.step !== 1 || this.showMyWallets || this.showHistoryBook || this.showEditAddressBook;
   }
 
   get showSelectionValidatorsForm() {
@@ -417,15 +466,23 @@ export default class Bond extends Vue {
     this.amount = amount;
   }
 
+  toggleHistoryBookVisibility() {
+    this.showHistoryBook = !this.showHistoryBook;
+  }
+
   updateSelectedValidators(value: boolean, address: string) {
     this.state[address].isSelect = value;
   }
 
-  openAboutRewards() {
-    console.info('openAboutRewards');
-  }
-
   handlerBack() {
+    if (this.step === 1) {
+      this.showMyWallets = false;
+      this.showHistoryBook = false;
+      this.newAddress = '';
+
+      return;
+    }
+
     if (this.step === 6 && this.isSuggested) this.step -= 1;
     else if (this.step === 5) this.step -= 2;
 
@@ -466,6 +523,31 @@ export default class Bond extends Vue {
 
     this.amount = this.calcTransferableSendMinusFee();
   }
+
+  setAddress(address: string, showHistoryBook = false) {
+    this.newAddress = address;
+    this.showHistoryBook = showHistoryBook;
+  }
+
+  toggleMyWalletsVisibility() {
+    this.showMyWallets = !this.showMyWallets;
+  }
+
+  getStatusWallet(address: string, ethereumAddress: string) {
+    const currentAddress = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
+    const currentRecipientAddress = BaseApi.formatAddress(
+      { address: this.payoutAddress, ethereumAddress: this.payoutAddress },
+      this.network
+    );
+
+    return currentAddress === currentRecipientAddress;
+  }
+
+  setWallet(address: string, ethereumAddress: string) {
+    this.payoutAddress = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
+
+    this.toggleMyWalletsVisibility();
+  }
 }
 </script>
 
@@ -488,10 +570,6 @@ export default class Bond extends Vue {
 
   .amount-input {
     margin-top: 10px;
-  }
-
-  .about-rewards {
-    margin: 20px 16px 16px;
   }
 
   .descriptions-row {
@@ -526,6 +604,10 @@ export default class Bond extends Vue {
       position: relative;
       left: -83px;
     }
+  }
+
+  .wallet {
+    margin-bottom: 12px !important;
   }
 }
 </style>

@@ -83,9 +83,10 @@ import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vu
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import { getSoraFees } from '@/extension/messaging';
+import { fetchBalance, getSoraFees } from '@/extension/messaging';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
+import { isValidAmountAsset } from '@/helpers/currencies';
 
 @Component({
   components: {
@@ -102,6 +103,7 @@ export default class YourValidatorsManagement extends Vue {
   isSuggested = false;
   selectedValidator: FWValidatorInfoFull | null = null;
   fee = '0';
+  stashBalance = '0';
 
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
@@ -142,6 +144,18 @@ export default class YourValidatorsManagement extends Vue {
 
   get confirmBtnDisabled() {
     if (this.step === 4 || this.step === 5) return this.selectedValidatorsLength === 0;
+
+    if (this.step === 6) {
+      // для controller аккаунта подставляем баланс stash аккаунта
+      const stakingCurrency: TokenBalance = this.stakingNetwork.isController
+        ? {
+            ...this.stakingCurrency,
+            balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),
+          }
+        : this.stakingCurrency;
+
+      return isValidAmountAsset(stakingCurrency, this.stakingNetwork.network, this.fee ?? '0', '0');
+    }
 
     return false;
   }
@@ -213,7 +227,7 @@ export default class YourValidatorsManagement extends Vue {
     } as RequestNominate;
   }
 
-  mounted() {
+  async mounted() {
     // TODO staking
     const isSlashed = false;
     const limitValidatorsIdentity = false;
@@ -233,6 +247,12 @@ export default class YourValidatorsManagement extends Vue {
     });
 
     this.getSoraFees();
+
+    if (this.stakingNetwork.isController)
+      this.stashBalance = await fetchBalance({
+        address: this.stakingNetwork.stashAddress,
+        networkName: this.stakingNetwork.network,
+      });
   }
 
   async getSoraFees() {

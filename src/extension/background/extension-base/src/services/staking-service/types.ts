@@ -127,7 +127,19 @@ export interface FWValidatorInfoFull extends ValidatorInfoFull {
 
 export type Alert = { name: string; timespan: number; formName: string };
 
-export type StakingParams = {
+export type DefaultStakingParams = {
+  stashAddress: string;
+  stashName: string;
+  payeeAddress: string;
+  payeeName: string;
+  controllerAddress: string;
+  controllerName: string;
+  isController: boolean; // аккаунт является Controller аккаунтом для другого аккаунта
+  isOtherPayee: boolean; // payee аккаунт не является stash аккаунтом
+  isOtherController: boolean; // controller аккаунт не является stash аккаунтом
+};
+
+export interface StakingParams extends DefaultStakingParams {
   network: NetworkName;
   unbondPeriod: number;
   maxNominations: number;
@@ -138,25 +150,32 @@ export type StakingParams = {
 
   // my stake info:
   myValidators: FWValidatorInfoFull[];
-  payee: string;
   activeStake: string;
   totalStake: string;
-  controller: string;
   redeemAmount: string;
+  alerts: Alert[];
   unbond: {
     unlocking: Unlocking[];
     sum: string;
   };
-  alerts: Alert[];
-};
+}
 
-export interface MyStakingInfo extends Omit<SoraMyStakingInfo, 'myValidators'> {
+export interface MyStakingInfo extends DefaultStakingParams, Omit<SoraMyStakingInfo, 'myValidators' | 'payee'> {
   myValidators: FWValidatorInfoFull[];
   alerts: Alert[];
 }
 
 export type StakingParamsRequest = {
   networks: NetworkName[];
+};
+
+export type CheckControllerRequest = {
+  address: string;
+};
+
+export type getRewardsRequest = {
+  network: NetworkName;
+  address: string;
 };
 
 export type StakingParamsResponse = StakingParams[];

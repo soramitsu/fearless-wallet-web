@@ -179,7 +179,7 @@ export class KeyringService {
     keyring.createFromUri(suri, meta, keypairType);
   }
 
-  formatAddress({ address, ethereumAddress }: Wallet, networkName: string): string {
+  formatAddress({ address, ethereumAddress }: Wallet, networkName: string = 'westend'): string {
     const isEthereumNet = isEthereumNetwork(networkName);
 
     if (isEthereumNet) return ethereumAddress;
@@ -194,5 +194,9 @@ export class KeyringService {
     } catch {
       return ethereumAddress;
     }
+  }
+
+  isSameAddress(wallet1: Wallet, wallet2: Wallet): boolean {
+    return this.state.keyringService.formatAddress(wallet1) === this.state.keyringService.formatAddress(wallet2);
   }
 }

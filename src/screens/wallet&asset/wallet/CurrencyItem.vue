@@ -1,5 +1,5 @@
 <template>
-  <Lazy v-if="showCurrencyItem" :timeoutCallback="timeoutCallback" class="currency-item" @click.native="openAssetPage">
+  <div v-if="showCurrencyItem" class="currency-item" @click="openAssetPage">
     <div v-if="showAssetsManagementForm" class="drag-icon">
       <SIcon name="basic-menu-24" class="handle" />
     </div>
@@ -90,7 +90,7 @@
         />
       </template>
     </div>
-  </Lazy>
+  </div>
 </template>
 
 <script lang="ts">

@@ -1,28 +1,40 @@
 <template>
-  <Scroll>
+  <Fragment>
     <Loader v-if="isEmptyBalances" class="asset-loader" />
 
     <div v-else-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText()) }}</div>
 
-    <Draggable v-else v-model="filteredBalances" handle=".handle" :key="selectedWallet.address">
-      <CurrencyItem
-        v-for="(asset, assetKey) in filteredBalances"
-        :assetData="asset"
-        :price="getAssetPrice(asset.priceId)"
-        :priceChange="getPriceChange(asset.priceId)"
-        :key="assetKey"
-        :selectedNetwork="selectedNetwork"
-        :showAssetsManagementForm="showAssetsManagementForm"
-        :timeoutCallback="timeoutCallback"
-        @toggleVisibleActivityForm="$emit('toggleVisibleActivityForm', ...arguments)"
-        @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
-      />
-    </Draggable>
-  </Scroll>
+    <VirtualDragList
+      v-else
+      :dataSource="filteredBalances"
+      dataKey="assetId"
+      handle=".handle"
+      :size="80"
+      class="scroll"
+      style="height: calc(100%-48px-48px-70px)"
+      :keeps="20"
+      :keepOffset="true"
+      @drop="onDrop"
+    >
+      <template v-slot:item="{ record: asset, index }">
+        <CurrencyItem
+          :assetData="asset"
+          :price="getAssetPrice(asset.priceId)"
+          :priceChange="getPriceChange(asset.priceId)"
+          :key="index"
+          :selectedNetwork="selectedNetwork"
+          :showAssetsManagementForm="showAssetsManagementForm"
+          :timeoutCallback="timeoutCallback"
+          @toggleVisibleActivityForm="$emit('toggleVisibleActivityForm', ...arguments)"
+          @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
+        />
+      </template>
+    </VirtualDragList>
+  </Fragment>
 </template>
 
 <script lang="ts">
-import Draggable from 'vuedraggable';
+import VirtualDragList from 'vue-virtual-draglist';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { type TokenBalance, type BalanceJson } from '@extension-base/background/types/types';
@@ -40,7 +52,7 @@ type TimeoutSubscription = {
 
 @Component({
   components: {
-    Draggable,
+    VirtualDragList,
     CurrencyItem,
   },
 })
@@ -82,7 +94,13 @@ export default class Currencies extends Vue {
       saveSequence: true,
     });
   }
-
+  onDrop(props: any) {
+    this.setBalance({
+      details: props.list,
+      reset: false,
+      saveSequence: true,
+    });
+  }
   getAssetPrice(assetKey: string | undefined) {
     if (assetKey === undefined) return 0;
 
@@ -133,5 +151,26 @@ export default class Currencies extends Vue {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+.scroll {
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.25);
+    border-radius: $default-border-radius;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+  }
 }
 </style>

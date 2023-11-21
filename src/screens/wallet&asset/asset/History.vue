@@ -64,7 +64,7 @@ export default class History extends Vue {
   @Action(NetworksActionTypes.FETCH_HISTORY) fetchHistory!: AsyncFn<FetchHistory>;
 
   get selectedNetwork() {
-    return this.$route.params.selectedNetwork;
+    return this.$route.params.selectedNetwork ?? '';
   }
 
   get assetId() {
@@ -108,6 +108,8 @@ export default class History extends Vue {
   }
 
   get isMainNetwork() {
+    if (this.selectedNetwork === '') return false;
+
     if (this.balances.length === 0) return false;
 
     const { assetId } = getUtilityAsset(this.balances, this.selectedNetwork);

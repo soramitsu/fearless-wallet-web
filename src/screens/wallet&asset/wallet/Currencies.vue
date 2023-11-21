@@ -11,7 +11,7 @@
       handle=".handle"
       :size="80"
       class="scroll"
-      style="height: calc(100%-48px-48px-70px)"
+      style="height: calc(100%-170px)"
       :keeps="20"
       :keepOffset="true"
       @drop="onDrop"

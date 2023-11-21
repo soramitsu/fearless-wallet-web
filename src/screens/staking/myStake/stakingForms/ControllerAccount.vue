@@ -26,20 +26,21 @@
       <slot></slot>
 
       <Hint text="staking.controllerUnbond" iconName="notification" class="hint row" />
-
-      <InfoRow
-        class="info-fee"
-        text="assets.networkFee"
-        borderType="default"
-        icon="info"
-        :value="`${fee} ${asset}`"
-        :price="valueString"
-        :hideLastBorder="false"
-        :iconClasses="['network-fee']"
-      />
-
-      <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
     </template>
+
+    <InfoRow
+      v-show="step !== 1"
+      class="info-fee"
+      text="assets.networkFee"
+      borderType="default"
+      icon="info"
+      :value="`${fee} ${asset}`"
+      :price="valueString"
+      :hideLastBorder="false"
+      :iconClasses="['network-fee']"
+    />
+
+    <Tooltip text="staking.stakingFee" target=".network-fee" placement="right" />
   </div>
 </template>
 

@@ -52,7 +52,7 @@
           :iconClasses="['network-fee']"
         />
 
-        <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
+        <Tooltip text="staking.stakingFee" target=".network-fee" placement="right" />
       </div>
 
       <FButton width="100%" size="big" fontSize="big" :disabled="disabledBtn" :text="btnText" @click="confirm" />

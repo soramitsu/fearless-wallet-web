@@ -332,10 +332,6 @@ export default class CurrencyItem extends Vue {
     cursor: pointer;
   }
 
-  &:last-child {
-    border-bottom: none;
-  }
-
   .drag-icon {
     margin: auto 20px auto 0;
 

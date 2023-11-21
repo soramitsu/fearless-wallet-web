@@ -12,8 +12,9 @@
       :size="80"
       class="scroll"
       style="height: calc(100%-170px)"
-      :keeps="20"
+      :keeps="30"
       :keepOffset="true"
+      itemClass="virtual-item"
       @drop="onDrop"
     >
       <template v-slot:item="{ record: asset, index }">
@@ -44,7 +45,6 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import CurrencyItem from '@/screens/wallet&asset/wallet/CurrencyItem.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
-
 type TimeoutSubscription = {
   subscription: NodeJS.Timeout;
   fn: () => void;
@@ -172,5 +172,8 @@ export default class Currencies extends Vue {
       background-color: rgba(255, 255, 255, 0.15);
     }
   }
+}
+.virtual-item:last-child > .currency-item {
+  border-bottom: none;
 }
 </style>

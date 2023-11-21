@@ -142,19 +142,23 @@ export default class YourValidatorsManagement extends Vue {
     return this.step !== 2 && !this.showValidatorInfo;
   }
 
+  get isValidAmountAsset() {
+    // для controller аккаунта подставляем баланс stash аккаунта
+    const stakingCurrency: TokenBalance = this.stakingNetwork.isController
+      ? {
+          ...this.stakingCurrency,
+          balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),
+        }
+      : this.stakingCurrency;
+
+    return isValidAmountAsset(stakingCurrency, this.stakingNetwork.network, this.fee ?? '0', '0');
+  }
+
   get confirmBtnDisabled() {
     if (this.step === 4 || this.step === 5) return this.selectedValidatorsLength === 0;
 
     if (this.step === 6) {
-      // для controller аккаунта подставляем баланс stash аккаунта
-      const stakingCurrency: TokenBalance = this.stakingNetwork.isController
-        ? {
-            ...this.stakingCurrency,
-            balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),
-          }
-        : this.stakingCurrency;
-
-      return isValidAmountAsset(stakingCurrency, this.stakingNetwork.network, this.fee ?? '0', '0');
+      return !this.isValidAmountAsset;
     }
 
     return false;

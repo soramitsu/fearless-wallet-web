@@ -19,7 +19,11 @@
 
         <Hint v-if="showOversubscribedWarning" iconName="warning" text="staking.oversubscribedOnly" />
 
-        <InfoRow text="staking.totalStake" :value="`${totalStake} ${stakingAssetName}`" :price="totalStakeValue" />
+        <InfoRow
+          text="staking.totalStake"
+          :value="`${totalStakeString} ${stakingAssetName}`"
+          :price="totalStakeValue"
+        />
 
         <InfoRow text="staking.estimatedRewards" :value="`${apy}% APY`" borderType="default" />
       </ContentForm>
@@ -138,9 +142,11 @@ export default class ValidatorInfo extends Vue {
   }
 
   get totalStake() {
-    const total = this.validator.stake.total ?? '0';
+    return this.validator.stake.total ?? '0';
+  }
 
-    return this.$n(+total, 'decimal');
+  get totalStakeString() {
+    return this.$n(+this.totalStake, 'decimal');
   }
 
   get totalStakeValue() {

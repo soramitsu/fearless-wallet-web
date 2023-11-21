@@ -27,11 +27,11 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
+import type { SelectionValidator } from '@/interfaces';
 
 @Component
 export default class ValidatorItem extends Vue {
-  @Prop({ type: Object }) validator!: FWValidatorInfoFull;
+  @Prop({ type: Object }) validator!: SelectionValidator;
   @Prop({ default: true }) showCheckbox!: boolean;
 
   get iconClasses() {

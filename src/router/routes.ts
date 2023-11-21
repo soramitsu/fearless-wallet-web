@@ -34,7 +34,6 @@ const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screen
 
 const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
-const Polkaswap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/Polkaswap.vue');
 const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/Disclaimer.vue');
 
 const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/AddWallet.vue');
@@ -353,14 +352,6 @@ const routes: Array<RouteConfig> = [
         component: Staking,
         meta: {
           title: 'staking',
-        },
-      },
-      {
-        path: 'polkaswap',
-        name: Components.Polkaswap,
-        component: Polkaswap,
-        meta: {
-          title: 'polkaswap',
         },
       },
     ],

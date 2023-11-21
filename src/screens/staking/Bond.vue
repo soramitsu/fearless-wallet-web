@@ -453,7 +453,7 @@ export default class Bond extends Vue {
     this.fee = (+StakingBond + +StakingNominate).toString();
   }
 
-  openValidatorList(isSuggested: boolean) {
+  openValidatorList(isSuggested = false) {
     this.validators.forEach(
       (validator, index) => (this.state[validator.address].isSelect = isSuggested && index < this.maxNominations) // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
     );
@@ -555,8 +555,7 @@ export default class Bond extends Vue {
 .bond-form {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
+  height: calc(100vh - 155px);
 
   .hint {
     padding: $default-padding;

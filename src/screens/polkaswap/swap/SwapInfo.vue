@@ -46,11 +46,11 @@ import { useStore } from '@/store';
 
 type Props = {
   marketType?: string;
-  slippage?: string;
+  slippage?: number;
   sendAmount?: string;
   receiveAmount?: string;
   sendValue?: string;
-  receiveValue?: string;
+  receiveValue?: number;
   minMaxAmount?: string;
   minMaxAmountPrice?: string;
   fee?: string;
@@ -64,11 +64,11 @@ type Props = {
 };
 const props = withDefaults(defineProps<Props>(), {
   marketType: '',
-  slippage: '',
+  slippage: 0,
   sendAmount: '',
   receiveAmount: '',
   sendValue: '',
-  receiveValue: '',
+  receiveValue: 0,
   minMaxAmount: '',
   minMaxAmountPrice: '',
   fee: '',

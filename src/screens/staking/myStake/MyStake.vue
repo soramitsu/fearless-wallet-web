@@ -58,7 +58,11 @@
       <ContentForm :height="450">
         <Scroll>
           <div class="content">
-            <MyStakeSettings :activeTabName="activeTabName" @update:activeTabName="updateActiveTabName" />
+            <MyStakeSettings
+              :activeTabName="activeTabName"
+              :showAlertTab="showAlertTab"
+              @update:activeTabName="updateActiveTabName"
+            />
 
             <About
               v-if="isAbout"
@@ -202,6 +206,10 @@ export default class MyStake extends Vue {
         visibility: this.isController || !this.isOtherController,
       },
     ];
+  }
+
+  get showAlertTab() {
+    return this.alerts.length !== 0;
   }
 
   get showDropdown() {

@@ -1,23 +1,24 @@
 <template>
   <div class="content-settings">
     <div class="settings-part">
-      <TabButton
-        v-for="{ label, tabName, tooltipText, target, classes } in tabsOptions"
-        class="tab"
-        :key="tabName"
-        :tooltipText="tooltipText"
-        :target="target"
-        :class="classes"
-        :label="label"
-        :isActive="activeTabName === tabName"
-        @click="openTab(tabName)"
-      />
+      <template v-for="{ label, tabName, target, classes, visibility } in tabsOptions">
+        <TabButton
+          v-if="visibility"
+          class="tab"
+          :key="tabName"
+          :target="target"
+          :class="classes"
+          :label="label"
+          :isActive="activeTabName === tabName"
+          @click="openTab(tabName)"
+        />
+      </template>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue, PropSync } from 'vue-property-decorator';
+import { Component, Vue, PropSync, Prop } from 'vue-property-decorator';
 import type { MyStakingTab } from '@/interfaces/common';
 
 interface TabsOptions {
@@ -25,32 +26,39 @@ interface TabsOptions {
   tabName: MyStakingTab;
   classes: string;
   target: string;
+  visibility: boolean;
 }
 
 @Component
 export default class MyStakeSettings extends Vue {
-  readonly tabsOptions: TabsOptions[] = [
-    {
-      label: 'common.about',
-      tabName: 'about',
-      classes: 'about-tab',
-      target: '.about-tab',
-    },
-    {
-      label: 'staking.alerts',
-      tabName: 'alerts',
-      classes: 'alerts-tab',
-      target: '.alerts-tab',
-    },
-    {
-      label: 'staking.history',
-      tabName: 'history',
-      classes: 'history-tab',
-      target: '.history-tab',
-    },
-  ];
-
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: MyStakingTab;
+  @Prop({ type: Boolean }) showAlertTab!: boolean;
+
+  get tabsOptions(): TabsOptions[] {
+    return [
+      {
+        label: 'common.about',
+        tabName: 'about',
+        classes: 'about-tab',
+        target: '.about-tab',
+        visibility: true,
+      },
+      {
+        label: 'staking.alerts',
+        tabName: 'alerts',
+        classes: 'alerts-tab',
+        target: '.alerts-tab',
+        visibility: this.showAlertTab,
+      },
+      {
+        label: 'staking.history',
+        tabName: 'history',
+        classes: 'history-tab',
+        target: '.history-tab',
+        visibility: true,
+      },
+    ];
+  }
 
   get isAboutTab() {
     return this.syncedActiveTabName === 'about';

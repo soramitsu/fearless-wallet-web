@@ -27,8 +27,7 @@
           @toggleCurrenciesVisible="toggleCurrenciesVisible"
         />
 
-        <Currencies
-          v-if="showCurrencies"
+        <router-view
           :isEmptyBalances="isEmptyBalances"
           :balances="filteredCurrencies"
           :selectedNetwork="selectedNetwork"

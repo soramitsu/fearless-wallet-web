@@ -8,6 +8,7 @@ import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import { type NetworkName } from '@/interfaces';
 import WcAuths from '@/screens/extension-ui/WcAuths.vue';
 import SubstrateAuths from '@/screens/extension-ui/SubstrateAuths.vue';
+import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
@@ -81,6 +82,7 @@ export enum Components {
   SubstrateAuths = 'SubstrateAuths',
   WcAuths = 'WcAuths',
   Onboarding = 'Onboarding',
+  Currencies = 'Currencies',
 }
 
 const haveSelectedWallet = () => {
@@ -282,6 +284,7 @@ const routes: Array<RouteConfig> = [
         props: (route) => ({ query: route.query.wallet }),
         name: Components.Wallet,
         component: Wallet,
+        redirect: { name: Components.Currencies },
         beforeEnter: (to, from, next) => {
           if (haveAuthRequests()) next({ name: Components.Authorize });
           else if (haveSignRequests()) next({ name: Components.Transaction });
@@ -291,6 +294,16 @@ const routes: Array<RouteConfig> = [
         meta: {
           title: 'wallet',
         },
+        children: [
+          {
+            path: '/currencies/:access_token?',
+            name: Components.Currencies,
+            component: Currencies,
+            meta: {
+              title: 'wallet',
+            },
+          },
+        ],
       },
       {
         path: 'accounts',
@@ -364,7 +377,7 @@ const routes: Array<RouteConfig> = [
     path: '*',
     component: Welcome,
     beforeEnter: (to, from, next) => {
-      if (haveSelectedWallet()) next({ name: Components.Wallet });
+      if (haveSelectedWallet()) next({ name: Components.Currencies });
       else next();
     },
   },

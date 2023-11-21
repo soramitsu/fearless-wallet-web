@@ -57,10 +57,6 @@ export default class ValidatorItem extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.validator-cursor {
-  cursor: pointer;
-}
-
 .validator {
   padding: 10px 0;
   border-bottom: $default-border;

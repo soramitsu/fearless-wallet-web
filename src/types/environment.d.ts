@@ -22,6 +22,15 @@ declare global {
       FL_BLAST_API_GOERLI_KEY: string;
       FL_BLAST_API_POLYGON_KEY: string;
       FL_ALCHEMY_API_ETHEREUM_KEY: string;
+      FL_ALCHEMY_API_ETHEREUM_KEY: string;
+      FL_BLAST_API_MOONBEAM_KEY: string;
+      FL_BLAST_API_MOONRIVER_KEY: string;
+      FL_BLAST_API_OKTC_MAINNET_KEY: string;
+      FL_BLAST_API_OPTIMISM_MAINNET_KEY: string;
+      FL_WEB_ARBISCAN_API_KEY: string;
+      FL_WEB_OPTIMISTIC_ETHERSCAN_API_KEY: string;
+      FL_WEB_SNOWTRACE_API_KEY: string;
+      FL_WEB_ZKEVM_POLYGONSCAN_API_KEY: string;
     }
   }
 }

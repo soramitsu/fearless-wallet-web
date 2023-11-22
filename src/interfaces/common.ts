@@ -1,6 +1,7 @@
 import type { WarningValueName } from '@/consts/messages';
 import type { AssetName } from './assets';
 import { type INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
+import { type Components } from '@/router/routes';
 
 type Fn<T = null, R = void> = (props?: T) => R;
 type AsyncFn<T = null, R = void> = (props?: T) => Promise<R>;
@@ -22,7 +23,7 @@ interface AddressMeta extends Meta {
 
 type ParentAddress = string;
 
-type TabWallet = 'currencies' | 'nft';
+type TabWallet = Components.Currencies | Components.Nfts;
 type StakingTab = 'all' | 'my';
 type MyStakingTab = 'about' | 'alerts' | 'history';
 type ImportType = 'mnemonic' | 'rawSeed' | 'json';

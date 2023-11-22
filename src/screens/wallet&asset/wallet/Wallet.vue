@@ -129,7 +129,6 @@ export default class Wallet extends Vue {
   showSendForm = false;
   showReceiveForm = false;
   networkUnavailable = '';
-  activeTabName: TabWallet = 'currencies';
   filterValue = '';
   selectedCurrency!: {
     mainNetwork?: string;
@@ -151,6 +150,10 @@ export default class Wallet extends Vue {
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
   @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: Fn<SetHiddenAsset>;
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
+
+  get activeTabName() {
+    return this.$route.name;
+  }
 
   get contentFormHeight() {
     const subtractionNumber = this.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
@@ -366,7 +369,9 @@ export default class Wallet extends Vue {
   }
 
   updateActiveTabName(name: TabWallet) {
-    this.activeTabName = name;
+    if (this.activeTabName === name) return;
+
+    this.$router.push({ name });
   }
 }
 </script>

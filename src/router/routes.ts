@@ -9,6 +9,7 @@ import { type NetworkName } from '@/interfaces';
 import WcAuths from '@/screens/extension-ui/WcAuths.vue';
 import SubstrateAuths from '@/screens/extension-ui/SubstrateAuths.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
+import NftsList from '@/screens/wallet&asset/asset/NftsList.vue';
 
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
@@ -83,6 +84,7 @@ export enum Components {
   WcAuths = 'WcAuths',
   Onboarding = 'Onboarding',
   Currencies = 'Currencies',
+  Nfts = 'Nfts',
 }
 
 const haveSelectedWallet = () => {
@@ -299,6 +301,14 @@ const routes: Array<RouteConfig> = [
             path: '/currencies/:access_token?',
             name: Components.Currencies,
             component: Currencies,
+            meta: {
+              title: 'wallet',
+            },
+          },
+          {
+            path: '/nfts/:access_token?',
+            name: Components.Nfts,
+            component: NftsList,
             meta: {
               title: 'wallet',
             },

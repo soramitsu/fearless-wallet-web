@@ -108,6 +108,7 @@ import { networksIsPending } from '@/helpers/shimmers';
 import BaseApi from '@/util/BaseApi';
 import { fetchEvmBalance } from '@/extension/messaging';
 import { isSameString } from '@/helpers';
+import { getNfts } from '@/extension/messaging/nfts';
 
 @Component({
   components: {
@@ -194,6 +195,10 @@ export default class Wallet extends Vue {
       this.selectedNetwork,
       this.networks
     );
+  }
+
+  async mounted() {
+    getNfts(this.selectedWallet.ethereumAddress);
   }
 
   get changeWalletBalance() {

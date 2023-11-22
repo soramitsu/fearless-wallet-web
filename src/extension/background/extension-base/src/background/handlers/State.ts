@@ -13,6 +13,7 @@ import {
   NetworkService,
   RequestService,
   WalletConnectService,
+  NftService,
 } from '@extension-base/services';
 import { api as apiSora, type FPNumber } from '@sora-substrate/util';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
@@ -134,6 +135,7 @@ export default class State {
   public eventService = new EventService();
   public networkService = new NetworkService(this.eventService);
   public requestService = new RequestService(this, this.networkService);
+  public nftService = new NftService();
   public walletConnectService = new WalletConnectService(this, this.requestService);
   public walletConnectDappService = new WalletConnectDAppService(this);
   public soraCardService = new SoraCardService(this.requestService);

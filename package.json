@@ -47,6 +47,7 @@
     "@walletconnect/encoding": "^1.0.2",
     "@walletconnect/sign-client": "^2.9.2",
     "@walletconnect/universal-provider": "^2.10.4",
+    "alchemy-sdk": "^3.0.0",
     "axios": "^0.27.2",
     "bignumber.js": "^9.0.2",
     "country-code-emoji": "^2.3.0",
@@ -137,6 +138,7 @@
     "pre-commit": "lint-staged"
   },
   "resolutions": {
+    "axios": "0.27.2",
     "@polkadot/api": "^10.9.1",
     "@polkadot/keyring": "^12.3.2",
     "@polkadot/networks": "^12.3.2",

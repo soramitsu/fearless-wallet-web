@@ -47,13 +47,13 @@ type TimeoutSubscription = {
 export default class Currencies extends Vue {
   timeoutSubscriptions: TimeoutSubscription[] = [];
 
-  @Prop(Array) balances!: TokenBalance[];
   @Prop(Boolean) isEmptyBalances!: boolean;
-  @Prop(String) selectedNetwork!: string;
   @Prop(String) filterValue!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Getter(NetworksGettersTypes.prices) prices!: AssetsPrice;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
 

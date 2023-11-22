@@ -53,7 +53,7 @@ const makeManifest = (browser) => {
     },
     content_security_policy: {
       extension_pages:
-        "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self';  style-src 'unsafe-inline';img-src 'self' https://icons.duckduckgo.com https://raw.githubusercontent.com https://cdn.elearningindustry.com data:; frame-src https://soracard.com/; connect-src https: wss: ws:",
+        "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self';  style-src 'unsafe-inline';img-src 'self' https://icons.duckduckgo.com https://nft-cdn.alchemy.com https://raw.githubusercontent.com https://cdn.elearningindustry.com data:; frame-src https://soracard.com/; connect-src https: wss: ws:",
     },
     web_accessible_resources: [
       {

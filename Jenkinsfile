@@ -25,7 +25,12 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_MOONBEAM_KEY', variable: 'FL_BLAST_API_MOONBEAM_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_MOONRIVER_KEY', variable: 'FL_BLAST_API_MOONRIVER_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_OKTC_MAINNET_KEY', variable: 'FL_BLAST_API_OKTC_MAINNET_KEY'],
-    [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_OPTIMISM_MAINNET_KEY', variable: 'FL_BLAST_API_OPTIMISM_MAINNET_KEY']
+    [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_OPTIMISM_MAINNET_KEY', variable: 'FL_BLAST_API_OPTIMISM_MAINNET_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_WEB_OPTIMISTIC_ETHERSCAN_API_KEY', variable: 'FL_WEB_OPTIMISTIC_ETHERSCAN_API_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_WEB_ARBISCAN_API_KEY', variable: 'FL_WEB_ARBISCAN_API_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_WEB_SNOWTRACE_API_KEY', variable: 'FL_WEB_SNOWTRACE_API_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY', variable: 'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY']
+
 ]
 
 def pipeline = new org.js.AppArtifactsPipeline(

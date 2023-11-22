@@ -7,12 +7,9 @@ import { initStorage } from '@extension-base/stores/Storage';
 import { type RequestSignatures } from '@extension-base/background/types/messages';
 import { type TransportRequestMessage, type Port } from '@extension-base/background/types/types';
 import MigrationService from '@extension-base/services/migration-service';
-
 import axios from 'axios';
-axios.defaults.adapter = fetchAdapter;
-
 import { APP_VERSION } from '@/consts/global';
-
+axios.defaults.adapter = fetchAdapter;
 console.info('background initialization');
 
 async function getActiveTabs() {

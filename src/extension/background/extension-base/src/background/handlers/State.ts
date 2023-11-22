@@ -22,7 +22,6 @@ import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
 import { initWeb3Api } from '@extension-base/api/evm';
 import { getCurrentProvider, getId } from '@extension-base/utils/utils';
 import { initApi } from '@extension-base/api/substrate/api';
-import { axios } from '@extension-base/utils/axios';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
 import { isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
@@ -61,6 +60,7 @@ import CurrentAccountStore, {
   type CurrentAccountState,
 } from '@extension-base/stores/CurrentAccountStore';
 import WalletConnectDAppService from '@extension-base/services/wallet-connect-service/dapp';
+import axios from 'axios';
 import type { CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import type { ChainRegistry, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';

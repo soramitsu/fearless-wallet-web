@@ -8,12 +8,7 @@
       class="alert"
     />
 
-    <ContentForm
-      v-if="showElectedValidators"
-      :height="405"
-      :isStaticHeight="showWaitingMyValidators"
-      :bottomRightCorner="true"
-    >
+    <ContentForm v-if="showElectedValidators" :height="430" :bottomRightCorner="true">
       <Scroll>
         <div class="form-layout">
           <template v-if="showMyValidators">
@@ -42,33 +37,23 @@
                 @openValidatorInfo="$emit('openValidatorInfo', $event)"
               />
             </template>
+
+            <template v-if="showWaitingMyValidators">
+              <div class="label">{{ $t('staking.notElected') }}</div>
+
+              <div class="sub-label">{{ $t('staking.waitingValidators') }}</div>
+
+              <ValidatorItem
+                v-for="validator in waitingValidators"
+                :key="validator.address"
+                :validator="validator"
+                :showCheckbox="false"
+                @openValidatorInfo="$emit('openValidatorInfo', $event)"
+              />
+            </template>
           </template>
 
           <div v-else class="no-validators">{{ $t('staking.noValidators') }}</div>
-        </div>
-      </Scroll>
-    </ContentForm>
-
-    <ContentForm
-      v-if="showWaitingMyValidators"
-      :height="405"
-      :isStaticHeight="true"
-      :bottomRightCorner="true"
-      class="form-waiting"
-    >
-      <Scroll>
-        <div class="form-layout">
-          <div class="label">{{ $t('staking.notElected') }}</div>
-
-          <div class="sub-label">{{ $t('staking.waitingValidators') }}</div>
-
-          <ValidatorItem
-            v-for="validator in waitingValidators"
-            :key="validator.address"
-            :validator="validator"
-            :showCheckbox="false"
-            @openValidatorInfo="$emit('openValidatorInfo', $event)"
-          />
         </div>
       </Scroll>
     </ContentForm>
@@ -138,6 +123,11 @@ export default class YourValidators extends Vue {
     font-weight: 600;
     text-align: left;
     color: $default-white;
+    margin-top: 15px;
+
+    &:first-child {
+      margin-top: 0;
+    }
   }
 
   .sub-label {
@@ -160,9 +150,5 @@ export default class YourValidators extends Vue {
 
 .alert {
   margin-bottom: 15px;
-}
-
-.form-waiting {
-  margin-top: 10px;
 }
 </style>

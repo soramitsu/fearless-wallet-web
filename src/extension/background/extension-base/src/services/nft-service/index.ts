@@ -1,14 +1,22 @@
-import { Network, Alchemy } from 'alchemy-sdk';
+import { Network, Alchemy, type Nft } from 'alchemy-sdk';
+import NftStore from '@extension-base/stores/Nfts';
+import { Subject } from 'rxjs';
 
-export class NftService extends Alchemy {
+export class NftService {
+  sdk: Alchemy;
+  store: NftStore;
+  private nftMap: Record<string, Nft> = {};
+  public nftSubject = new Subject<Nft[]>();
+
   constructor() {
-    super({
-      apiKey: process.env.FL_ALCHEMY_API_ETHEREUM_KEY, // Replace with your Alchemy API Key.
-      network: Network.ETH_MAINNET, // Replace with your network.
+    this.sdk = new Alchemy({
+      apiKey: process.env.FL_ALCHEMY_API_ETHEREUM_KEY,
+      network: Network.ETH_MAINNET,
     });
+    this.store = new NftStore();
   }
 
   async getNfts(address: string) {
-    return this.nft.getNftsForOwner(address);
+    return this.sdk.nft.getNftsForOwner(address);
   }
 }

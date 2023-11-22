@@ -137,6 +137,7 @@
     "pre-commit": "lint-staged"
   },
   "resolutions": {
+    "axios": "^0.27.2",
     "@polkadot/api": "^10.9.1",
     "@polkadot/keyring": "^12.3.2",
     "@polkadot/networks": "^12.3.2",

@@ -1,5 +1,4 @@
 import axios from 'axios';
-import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
 import { FEARLESS_TITLE } from '@/consts/global';
@@ -101,7 +100,6 @@ ${json}
     const { data } = await axios.get<IGetFilesResponse>(
       `${this.baseURL}/files?fields=files(id,name,description)&spaces=appDataFolder`,
       {
-        adapter: fetchAdapter,
         headers: {
           Authorization: `Bearer ${token}`,
           ...this.config.headers,
@@ -114,7 +112,6 @@ ${json}
 
   public async getFile(id: string, token?: string | undefined): Promise<KeyringPair$Json> {
     const { data } = await axios.get<KeyringPair$Json>(`${this.baseURL}/files/${id}?alt=media`, {
-      adapter: fetchAdapter,
       headers: {
         Authorization: `Bearer ${token}`,
         ...this.config.headers,
@@ -126,9 +123,7 @@ ${json}
 
   public async verifyToken(token: string): Promise<VerifyTokenResponse | null> {
     const res = await axios
-      .get<VerifyTokenResponse>(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`, {
-        adapter: fetchAdapter,
-      })
+      .get<VerifyTokenResponse>(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`)
       .catch(() => {
         return null;
       });
@@ -143,7 +138,6 @@ ${json}
     const length = prepData.length;
 
     const { data } = await axios.post<FilesResponse>(this.baseUploadUrl, prepData, {
-      adapter: fetchAdapter,
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'multipart/related; boundary=foo_bar_baz',
@@ -156,7 +150,6 @@ ${json}
 
   async deleteFile(id: string, token: string) {
     axios.delete(this.baseURL, {
-      adapter: fetchAdapter,
       params: {
         fields: id,
       },

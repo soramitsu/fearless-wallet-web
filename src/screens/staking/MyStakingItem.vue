@@ -86,8 +86,9 @@ export default class MyStakingItem extends Vue {
     const stakingCurrency = getUtilityAsset(this.balances, this.network);
     const priceId = stakingCurrency?.priceId ?? '';
     const price = this.getAssetPrice(priceId).price;
+    const value = getCostOfAssets(this.totalStake, price, 'string').toString();
 
-    return getCostOfAssets(this.totalStake, price).toString();
+    return this.$n(+value, 'price');
   }
 
   get network() {

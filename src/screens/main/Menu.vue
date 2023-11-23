@@ -69,8 +69,10 @@ export default class Menu extends Vue {
       isMobile: this.selectedWallet.isMobile ? 'mobile' : '',
     };
 
+    const name = menuItem === 'Polkaswap' ? Components.SoraSwap : Components[route];
+
     this.$router.push({
-      name: Components[route],
+      name,
       params: {
         ...(route === Components.Accounts ? accountParams : {}),
       },

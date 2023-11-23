@@ -22,12 +22,16 @@
 
     <Scroll>
       <div class="validators-items">
-        <ValidatorItem
-          v-for="validator in filteredValidators"
-          :key="validator.address"
-          :validator="validator"
-          @onSelect="onSelect"
-        />
+        <template v-if="haveFilteredValidators">
+          <ValidatorItem
+            v-for="validator in filteredValidators"
+            :key="validator.address"
+            :validator="validator"
+            @onSelect="onSelect"
+          />
+        </template>
+
+        <div v-else class="nothing-found">{{ $t('common.nothingFound') }}</div>
       </div>
     </Scroll>
   </div>
@@ -66,6 +70,10 @@ export default class SelectValidator extends Vue {
 
       return true;
     });
+  }
+
+  get haveFilteredValidators() {
+    return this.filteredValidators.length !== 0;
   }
 
   get sortedValidators() {
@@ -116,6 +124,13 @@ export default class SelectValidator extends Vue {
 
   .validators-items {
     height: calc(100vh - 275px);
+
+    .nothing-found {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      justify-content: center;
+    }
   }
 
   .settings {

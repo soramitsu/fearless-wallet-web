@@ -40,8 +40,8 @@ export class StakingService {
 
       if (!isReady) return getDefaultStakingParams(network);
 
-      const minBond = await this.getMinNominatorBond();
       const validators = await this.getValidators(network);
+      const minBond = await this.getMinNominatorBond(validators, network);
       const myStakingInfo = await this.getMyStakingInfo(network, validators, minBond);
       const apy = validators.reduce((result, { apy }) => result + +apy, 0) / validators.length;
 
@@ -140,7 +140,7 @@ export class StakingService {
       }),
     };
 
-    const minBond = _minBond ?? (await this.getMinNominatorBond());
+    const minBond = _minBond ?? (await this.getMinNominatorBond(validators, network));
     const alerts = this.getALerts(result, minBond);
 
     return { ...result, alerts };
@@ -306,8 +306,16 @@ export class StakingService {
     return await apiSora.staking.getStashByController(address);
   }
 
-  public async getMinNominatorBond() {
-    return await apiSora.staking.getMinNominatorBond();
+  public async getMinNominatorBond(validators: FWValidatorInfoFull[], networkName: NetworkName) {
+    const haveFreeValidators = validators.some(({ isOversubscribed }) => !isOversubscribed);
+
+    if (haveFreeValidators) return await apiSora.staking.getMinNominatorBond();
+
+    const lastNominators = validators.map(({ nominators }) => +nominators[nominators.length - 1].value);
+    const min = Math.min(...lastNominators);
+    const precision = getUtilityProps(networkName, this.state).precision;
+
+    return FPNumber.fromCodecValue(min + 1, precision).toNumber();
   }
 
   public getMaxNominations() {

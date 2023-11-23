@@ -20,7 +20,7 @@
           :network="network"
           :assetId="stakingAssetId"
           @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
-          @setRecipient="setPayoutAddress"
+          @setRecipient="setRecipient"
           @setAddress="setAddress"
         />
 
@@ -298,8 +298,6 @@ export default class MainStakingForm extends Vue {
   }
 
   get confirmBtnDisabled() {
-    if (!this.isValidAmountAsset) return false;
-
     if (this.isControllerAccount) {
       if (this.step === 1) return this.isInvalidController;
 
@@ -312,7 +310,9 @@ export default class MainStakingForm extends Vue {
       return !this.isValidPayoutAddress;
     }
 
-    return this.amount === '' || +this.amount === 0;
+    if (this.amount === '' || +this.amount === 0) return true;
+
+    return !this.isValidAmountAsset;
   }
 
   get isValidAmountAsset() {
@@ -474,7 +474,7 @@ export default class MainStakingForm extends Vue {
   }
 
   paste() {
-    this.payoutAddress = getClipboard();
+    this.setRecipient(getClipboard());
   }
 
   setAddress(address: string, showHistoryBook = false) {
@@ -507,6 +507,11 @@ export default class MainStakingForm extends Vue {
 
   setPayoutAddress(value = '') {
     this.payoutAddress = value;
+  }
+
+  setRecipient(value = '') {
+    if (this.isControllerAccount) this.controllerAddress = value;
+    else if (this.isPayee) this.payoutAddress = value;
   }
 }
 </script>

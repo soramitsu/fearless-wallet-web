@@ -18,21 +18,25 @@
     <div class="right-part">
       <div>{{ validator.apy }}%</div>
 
-      <Icon icon="info" class="icon-info" />
+      <Icon icon="info" :class="iconClasses" />
 
-      <Tooltip :text="validator.description" target=".icon-info" placement="left" />
+      <Tooltip :text="validator.description" :target="`.${validator.address}`" placement="left" />
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
+import type { SelectionValidator } from '@/interfaces';
 
 @Component
 export default class ValidatorItem extends Vue {
-  @Prop({ type: Object }) validator!: FWValidatorInfoFull;
+  @Prop({ type: Object }) validator!: SelectionValidator;
   @Prop({ default: true }) showCheckbox!: boolean;
+
+  get iconClasses() {
+    return ['icon-info', this.validator.address];
+  }
 
   get classes() {
     return [

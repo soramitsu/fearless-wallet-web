@@ -16,6 +16,7 @@ export const WALLET_CONNECT_METADATA: CoreTypes.Metadata = {
     'https://raw.githubusercontent.com/soramitsu/shared-features-utils/ffa1fd2a334530101022536c3b1ab3c063edd238/icons/FW%20icon%20128.png',
   ],
 };
+
 export const DEFAULT_WALLET_CONNECT_OPTIONS: SignClientTypes.Options = {
   logger: process.env.NODE_ENV === 'development' ? 'debug' : undefined,
   projectId: PROJECT_ID_EXTENSION,

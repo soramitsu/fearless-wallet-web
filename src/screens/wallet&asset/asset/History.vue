@@ -9,7 +9,7 @@
 
       <Scroll>
         <div :class="historyContainerClasses">
-          <Loader v-if="showLoader" />
+          <Loader v-if="isLoadingHistory" />
 
           <template v-else-if="!isEmptyHistory">
             <HistoryItem
@@ -54,7 +54,7 @@ export default class History extends Vue {
   ];
 
   filterHistoryValue: FilterHistory = 'all';
-  showLoader = false;
+  isLoadingHistory = false;
 
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
@@ -141,14 +141,14 @@ export default class History extends Vue {
 
     if (!isSora(this.selectedNetwork) && !this.isEthereumNativeNetwork && !this.isMainNetwork) return;
 
-    this.showLoader = true;
+    this.isLoadingHistory = true;
 
     await this.fetchHistory({
       networkName: this.selectedNetwork,
       assetId: this.assetId,
     });
 
-    this.showLoader = false;
+    this.isLoadingHistory = false;
   }
 
   filterHistoryValueUpdate(name: FilterHistory) {

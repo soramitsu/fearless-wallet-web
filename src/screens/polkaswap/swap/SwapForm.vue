@@ -613,6 +613,7 @@ export default class SwapForm extends Vue {
 
     createSwap();
   }
+
   clearSwapInterval() {
     clearInterval(this.swapInterval);
   }

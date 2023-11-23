@@ -45,9 +45,11 @@ export default class Account extends Vue {
   get chainAccounts() {
     return getChainAccounts(this.networks, this.selectedWallet);
   }
+
   get isMobile() {
     return !!this.selectedWallet.isMobile;
   }
+
   @Watch('selectedWallet')
   selectedWalletWatcher({ name }: SelectedWallet) {
     this.newName = name;

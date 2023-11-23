@@ -10,6 +10,7 @@
         :key="network"
         :network="network"
         :icon="networkIcon"
+        :isMobile="isMobile"
         :address="address"
         @openAddEthereumAccountPopup="$emit('openAddEthereumAccountPopup')"
         @openAccountSettingsPopup="openAccountSettingsPopup"
@@ -44,7 +45,9 @@ export default class Account extends Vue {
   get chainAccounts() {
     return getChainAccounts(this.networks, this.selectedWallet);
   }
-
+  get isMobile() {
+    return !!this.selectedWallet.isMobile;
+  }
   @Watch('selectedWallet')
   selectedWalletWatcher({ name }: SelectedWallet) {
     this.newName = name;

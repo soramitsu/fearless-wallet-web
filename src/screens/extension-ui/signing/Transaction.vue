@@ -1,7 +1,14 @@
 <template>
   <AboveForm :fullScreen="true" header="assets.transaction" @closeHandler="onReject">
     <div v-if="isSignMobile" class="transaction-mobile">
-      <Loader />
+      <Loader v-if="isSupportedNetwork" />
+
+      <Alert
+        v-else
+        headerText="walletConnect.requiredNetworkAlert.header"
+        message="walletConnect.requiredNetworkAlert.message"
+        sizeText="small"
+      />
 
       <FButton
         text="common.cancel"
@@ -142,6 +149,18 @@ export default class Transaction extends Vue {
     return this.accounts.some((account) => account.address === encodedAddress && account.isMobile);
   }
 
+  get isSupportedNetwork() {
+    if (this.isSignMobile) {
+      const encodedAddress = BaseApi.encodeAddress(this.transactionAddress);
+
+      const account = this.accounts.find((account) => account.address === encodedAddress && account.isMobile);
+
+      return account?.chains?.some((el) => this.payload.genesisHash.includes(el));
+    }
+
+    return false;
+  }
+
   get address() {
     return this.request.account.address;
   }
@@ -192,7 +211,7 @@ export default class Transaction extends Vue {
   }
 
   async mounted() {
-    if (this.isSignMobile) this.onSignMobile();
+    if (this.isSignMobile && this.isSupportedNetwork) this.onSignMobile();
 
     if (!IS_EXTENSION || this.isSignMobile) return;
 

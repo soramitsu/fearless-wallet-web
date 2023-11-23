@@ -134,11 +134,19 @@ export default class WalletConnectDAppService {
   onApproval(data: SessionTypes.Struct, cb: (data: PairingSubjectType) => void) {
     const [, , address] = data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].accounts[0].split(':');
     const encodedAddress = this.state.keyringService.encodeAddress(address);
+    const availableNetworks =
+      data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].chains?.map((el) => el.split(':')[1]) ?? [];
 
     if (!this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress)) {
       this.state.keyringService.saveAddress(
         encodedAddress,
-        { name: data.peer.metadata.name, isMobile: true, wcTopic: data.topic, ethereumAddress: '' },
+        {
+          name: data.peer.metadata.name,
+          isMobile: true,
+          wcTopic: data.topic,
+          ethereumAddress: '',
+          chains: availableNetworks,
+        },
         'address'
       );
       this.state.updateCurrentAccount(encodedAddress);
@@ -157,6 +165,17 @@ export default class WalletConnectDAppService {
     this.app?.client.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') });
   }
 
+  availableNetworks(address: string) {
+    const pairing = this.state.keyringService.getAddress(address);
+    if (!pairing) return [];
+
+    const session = this.sessions.find((session) => session.topic === pairing.meta.wcTopic);
+
+    if (session) return session.namespaces['polkadot'].chains?.map((chain) => chain.split(':')[1]) ?? [];
+
+    return [];
+  }
+
   abortPairingAttempt() {
     this.app?.abortPairingAttempt();
   }
@@ -170,9 +189,12 @@ export default class WalletConnectDAppService {
 
       if (current?.address === account.address) {
         const accounts = this.state.keyringService.getAllAccounts();
+
         if (accounts.length) this.state.updateCurrentAccount(accounts[0].address);
         else this.state.setCurrentAccount(null);
       }
+
+      this.state.cleanupDeletedAccount(account.address);
     }
   }
 

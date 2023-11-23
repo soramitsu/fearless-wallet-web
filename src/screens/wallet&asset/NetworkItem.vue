@@ -1,5 +1,5 @@
 <template>
-  <li class="network" @click="onSelect">
+  <li class="network" :class="!isAvailable ? 'unavailable' : ''" @click="onSelect">
     <Icon v-if="isNetworkGroup" icon="all-networks" width="24" height="24" className="network__icon" />
     <ExternalLogo v-else :name="network.icon" :width="24" class="img" />
 
@@ -22,63 +22,68 @@
   </li>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+<script lang="ts" setup>
+import { computed } from 'vue';
 import type { NetworkJson } from '@extension-base/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { type SelectedWallet } from '@/store/accounts/types';
+import type { SelectedWallet } from '@/store/accounts/types';
+import { useStore } from '@/store';
 
-@Component({})
-export default class NetworkItem extends Vue {
-  @Prop(Object) network!: NetworkJson;
-  @Prop(Boolean) isSelected!: boolean;
-  @Prop({ default: false }) isNetworkGroup!: boolean;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+type Props = {
+  network: NetworkJson;
+  isSelected: boolean;
+  isAvailable: boolean;
+  isNetworkGroup?: boolean;
+};
+const props = withDefaults(defineProps<Props>(), { isNetworkGroup: false });
+const store = useStore();
+const emit = defineEmits(['onToggleFavorite', 'onChangeNetwork']);
 
-  get iconColor() {
-    return this.isSelected ? 'purple' : '';
+const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+
+const iconColor = computed(() => (props.isSelected ? 'purple' : ''));
+const iconType = computed(() => (props.isNetworkGroup ? 'check' : 'star'));
+
+const isNetworkSelected = computed(() => props.isSelected && !props.isNetworkGroup);
+
+const isFavorite = computed(() => {
+  if (props.isNetworkGroup) return false;
+
+  return props.network.favorite.includes(selectedWallet.value.address);
+});
+
+const iconColorFavorite = computed(() =>
+  isFavorite.value || (props.isSelected && props.isNetworkGroup) ? 'purple' : ''
+);
+
+const onSelect = () => {
+  if (!props.isAvailable) return;
+
+  emit('onChangeNetwork');
+};
+
+const onToggleState = () => {
+  if (props.isNetworkGroup) {
+    onSelect();
+
+    return;
   }
 
-  get isNetworkSelected() {
-    return this.isSelected && !this.isNetworkGroup;
-  }
+  emit('onToggleFavorite');
+};
 
-  get isFavorite() {
-    if (this.isNetworkGroup) return false;
+const prepColor = computed(() => {
+  if (!props.isAvailable) return 'rgba(255, 255, 255, 0.5)'; //gray-color
 
-    return this.network.favorite.includes(this.selectedWallet.address);
-  }
-
-  get iconColorFavorite() {
-    return this.isFavorite || (this.isSelected && this.isNetworkGroup) ? 'purple' : '';
-  }
-
-  get iconType() {
-    return this.isNetworkGroup ? 'check' : 'star';
-  }
-
-  onToggleState() {
-    if (this.isNetworkGroup) {
-      this.onSelect();
-
-      return;
-    }
-
-    this.$emit('onToggleFavorite');
-  }
-
-  onSelect() {
-    this.$emit('onChangeNetwork');
-  }
-}
+  return 'rgba(255, 255, 255, 1)'; //default-white
+});
+const prepOpacity = computed(() => (props.isAvailable ? '1' : '0.5'));
 </script>
 
 <style lang="scss" scoped>
 .network {
   display: flex;
   flex-flow: row nowrap;
-  color: $default-white;
+  color: v-bind(prepColor);
   font-size: 16px;
   border: solid 1px transparent;
   border-bottom-color: $default-background-color;
@@ -109,5 +114,8 @@ export default class NetworkItem extends Vue {
     gap: 10px;
     justify-content: flex-end;
   }
+}
+.img {
+  opacity: v-bind(prepOpacity);
 }
 </style>

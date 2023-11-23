@@ -19,7 +19,6 @@ import {
   getBalanceItem,
   getEthereumAddress,
 } from '@extension-base/background/utils/utils';
-import { storage } from '@extension-base/stores/Storage';
 import {
   type StakingNetworkRequest,
   type StakingParamsRequest,
@@ -250,19 +249,9 @@ export default class Extension extends FWExtensionBase {
       this.state.updateCurrentAccount(account?.address ?? '');
     }
 
-    this.cleanupDeletedAccount(address);
+    this.state.cleanupDeletedAccount(address);
 
     return true;
-  }
-
-  cleanupDeletedAccount(address: string) {
-    if (this.state.selectedNetworks[address]) {
-      delete this.state.selectedNetworks[address];
-
-      storage.set({ selectedNetworks: this.state.selectedNetworks });
-    }
-
-    this.state.balanceService.deleteBalance(address);
   }
 
   accountsValidatePassword({ address, password }: RequestAccountValidate): boolean {
@@ -1569,6 +1558,10 @@ export default class Extension extends FWExtensionBase {
 
   private async fetchBalance({ address, networkName }: FetchBalanceRequest): Promise<string> {
     return await this.state.balanceService.fetchBalance(address, networkName);
+  }
+
+  private getWalletConnectSessionAvailableNetwork(address: string) {
+    return this.state.walletConnectDappService.availableNetworks(address);
   }
 
   async handle<TMessageType extends MessageTypes>(

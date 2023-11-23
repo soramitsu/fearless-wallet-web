@@ -10,9 +10,7 @@
 
             <div v-for="address in historyAddresses" :key="address" class="row" @click="setRecipient(address)">
               <div class="description">
-                <div v-if="isEthereumAddress(address)" v-html="getJdenticon(address)" class="identicon"></div>
-
-                <Identicon v-else class="identicon" :size="24" theme="polkadot" :value="address" />
+                <Identicon :address="address" />
 
                 <div class="full-description">
                   <div class="address">{{ cut(address) }}</div>
@@ -33,9 +31,7 @@
               @click="setRecipient(address)"
             >
               <div class="description">
-                <div v-if="isEthereumAddress(address)" v-html="getJdenticon(address)" class="identicon"></div>
-
-                <Identicon v-else class="identicon" :size="24" theme="polkadot" :value="address" />
+                <Identicon :address="address" />
 
                 <div class="full-description">
                   <div class="name">{{ name }}</div>
@@ -57,32 +53,28 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { Identicon } from '@polkadot/vue-identicon';
+import { Getter, Action } from 'vuex-class';
 import { storage } from '@extension-base/stores/Storage';
 import { toSvg } from 'jdenticon';
-import type { GetHistory } from '@/interfaces';
-import type { SelectedWallet, GetNetwork } from '@/store';
-import type { AddressBook } from '@extension-base/background/types';
+import type { AsyncFn, GetHistory } from '@/interfaces';
+import type { FetchHistory, GetNetwork } from '@/store';
+import type { AddressBook } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { cut } from '@/helpers/';
-import { NetworksController } from '@/controllers';
+import { cut, isSora } from '@/helpers/';
 import { getType } from '@/helpers/history';
-import { TransactionType } from '@/interfaces/history';
+import { type SoraHistoryElement, TransactionType } from '@/interfaces/history';
+import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 
-@Component({
-  components: { Identicon },
-})
+@Component
 export default class HistoryBook extends Vue {
   addressBook: AddressBook = {};
 
   @Prop(String) network!: string;
   @Prop(String) assetId!: string;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+  @Action(NetworksActionTypes.FETCH_HISTORY) fetchHistory!: AsyncFn<FetchHistory>;
 
   get showHistoryAndBook() {
     return this.showHistory || this.book.length !== 0;
@@ -109,10 +101,17 @@ export default class HistoryBook extends Vue {
   get historyAddresses() {
     if (!this.network) return [];
 
-    const addresses =
-      this.getHistory(this.assetId, this.selectedWallet.address, this.network.toLowerCase())
-        ?.nodes.filter((item) => getType(item) === TransactionType.transfer)
-        .map(({ transfer }) => BaseApi.encodeAddress(transfer?.to ?? '', this.addressPrefix)) ?? [];
+    const history = this.getHistory(this.assetId, this.network.toLowerCase());
+
+    if (history === undefined) return [];
+
+    const addresses = isSora(this.network)
+      ? (history.nodes as SoraHistoryElement[])
+          .filter(({ method }) => method === 'transfer')
+          .map(({ data }) => BaseApi.encodeAddress(data?.to ?? '', this.addressPrefix)) ?? []
+      : history?.nodes
+          .filter((item) => getType(item) === TransactionType.transfer)
+          .map(({ transfer }) => BaseApi.encodeAddress(transfer?.to ?? '', this.addressPrefix)) ?? [];
 
     return Array.from(new Set(addresses))
       .filter(
@@ -143,25 +142,24 @@ export default class HistoryBook extends Vue {
   @Watch('assetId')
   @Watch('selectedNetwork')
   async networkWatcher() {
-    this.fetchHistory();
+    this.loadHistory();
   }
 
   async mounted() {
-    this.fetchHistory();
+    this.loadHistory();
 
     const { addressBook } = await storage.get(['addressBook']);
 
     this.addressBook = addressBook;
   }
 
-  async fetchHistory() {
+  async loadHistory() {
     if (this.historyAddresses.length !== 0) return;
 
-    await NetworksController.fetchHistory(this.network, this.selectedWallet, this.assetId);
-  }
-
-  isEthereumAddress(address: string) {
-    return BaseApi.isEthereumAddress(address);
+    await this.fetchHistory({
+      networkName: this.network,
+      assetId: this.assetId,
+    });
   }
 
   getJdenticon(address: string) {
@@ -207,7 +205,7 @@ export default class HistoryBook extends Vue {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid $default-background-color;
+      border-bottom: $default-border;
 
       &:last-child {
         border: none;

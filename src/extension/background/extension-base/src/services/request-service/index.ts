@@ -1,19 +1,4 @@
-import { BehaviorSubject } from 'rxjs';
-import { MetadataDef } from '@polkadot/extension-inject/types';
-import State from '@extension-base/background/handlers/State';
-import {
-  AuthRequest,
-  AuthUrls,
-  MetaRequest,
-  RequestAuthorizeTab,
-  RequestSign,
-  ResponseSigning,
-  AccountJson,
-  AuthorizeRequest,
-  MetadataRequest,
-} from '@extension-base/background/types';
-import { WCSignRequest } from '@extension-base/services/request-service/types';
-import { SigningRequest } from '@extension-base/background/types/types';
+import { type BehaviorSubject } from 'rxjs';
 import EvmRequestHandler from '@extension-base/services/request-service/handlers/EvmRequestHandler';
 import {
   ConnectWCRequestHandler,
@@ -23,12 +8,27 @@ import {
   MetadataRequestHandler,
   SubstrateRequestHandler,
 } from '@extension-base/services/request-service/handlers';
-import {
+import type { NetworkService } from '@extension-base/services';
+import type {
   WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
   WalletConnectTransactionRequest,
-} from '../wallet-connect-service/types';
-import { NetworkService } from '..';
+} from '@extension-base/services/wallet-connect-service/types';
+import type { MetadataDef } from '@polkadot/extension-inject/types';
+import type State from '@extension-base/background/handlers/State';
+import type {
+  SigningRequest,
+  AuthRequest,
+  AuthUrls,
+  MetaRequest,
+  RequestAuthorizeTab,
+  RequestSign,
+  ResponseSigning,
+  AccountJson,
+  AuthorizeRequest,
+  MetadataRequest,
+} from '@extension-base/background/types/types';
+import type { WCSignRequest } from '@extension-base/services/request-service/types';
 
 export class RequestService {
   readonly state: State;

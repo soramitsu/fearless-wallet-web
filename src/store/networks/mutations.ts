@@ -10,9 +10,9 @@ import type {
   RemoveNetworkFavoriteProps,
 } from './types';
 import { getFormattedHistory } from '@/helpers/history';
-import { AssetId, SoraHistoryElement } from '@/interfaces';
+import { type AssetId, type SoraHistoryElement } from '@/interfaces';
 import { isSora } from '@/helpers';
-import { SORA_XOR_ASSET_ID } from '@/consts/sora';
+import { SORA_VAL_ASSET_ID, SORA_XOR_ASSET_ID } from '@/consts/sora';
 
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
@@ -77,7 +77,7 @@ const mutations: MutationTree<State> & Mutations = {
 
         const networkJson = state.networks.find(({ name }) => isSora(name));
         const asset = networkJson?.assets.find(({ currencyId }) => currencyId === baseAssetId);
-        const id = asset?.id ?? SORA_XOR_ASSET_ID;
+        const id = item.method === 'rewarded' ? SORA_VAL_ASSET_ID : asset?.id ?? SORA_XOR_ASSET_ID;
 
         if (result[id] === undefined) result[id] = [];
 

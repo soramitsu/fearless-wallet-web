@@ -53,10 +53,10 @@
 <script lang="ts">
 import { Component, Vue, Ref } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
-import { AuthUrlInfo } from '@extension-base/background/types';
+import { type AuthUrlInfo } from '@extension-base/background/types/types';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
 import type { AsyncFn, Fn } from '@/interfaces';
-import type { SelectedWallet } from '@/store';
+import type { SelectedWallet, WalletInfo } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
@@ -78,7 +78,6 @@ import KycView from '@/screens/soraCard/stepsKYC/KycView.vue';
 import { URLS } from '@/consts/urls';
 import { IS_EXTENSION } from '@/consts/global';
 import { updateAuthorization, approvePolkaswapAuthRequest } from '@/extension/messaging';
-import { WalletInfo } from '@/store';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { subscribeCardToken } from '@/util/soraCard';

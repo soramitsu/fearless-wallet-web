@@ -1,4 +1,4 @@
-import State from '@extension-base/background/handlers/State';
+import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import type { Asset } from '@extension-base/types';
 
@@ -7,7 +7,7 @@ export const setBalance = (networkKey: string, rs: Partial<BalanceItem>, address
 
   if (!isAccountExists) return;
 
-  state.setBalanceItem(networkKey, rs, address);
+  state.balanceService.setBalanceItem(networkKey, rs, address);
 };
 
 export function getAssetInfo(assetId: string, state: State): Asset {

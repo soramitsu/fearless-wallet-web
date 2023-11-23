@@ -1,26 +1,28 @@
-import { SignClientTypes } from '@walletconnect/types';
-import { WalletConnectSigningMethod, POLKADOT_SIGNING_METHODS, EIP155_SIGNING_METHODS } from './types';
+import {
+  type WalletConnectSigningMethod,
+  POLKADOT_SIGNING_METHODS,
+  EIP155_SIGNING_METHODS,
+} from '@extension-base/services/wallet-connect-service/types';
+import type { CoreTypes, SignClientTypes } from '@walletconnect/types';
 
 export const PROJECT_ID_EXTENSION = '991eb107bbaa66300db0223ec15c48ca';
 export const RELAY_URL = 'wss://relay.walletconnect.com';
+export const WALLET_CONNECT_METADATA: CoreTypes.Metadata = {
+  name: 'Fearless Wallet',
+  description:
+    'Non-Custodial and Decentralized wallet for the Polkadot and Kusama ecosystems with the best UX, performance and security.',
+  url: 'https://fearlesswallet.io/',
+  icons: [
+    'https://raw.githubusercontent.com/soramitsu/shared-features-utils/ffa1fd2a334530101022536c3b1ab3c063edd238/icons/FW%20icon%20128.png',
+  ],
+};
 
 export const DEFAULT_WALLET_CONNECT_OPTIONS: SignClientTypes.Options = {
   logger: process.env.NODE_ENV === 'development' ? 'debug' : undefined,
   projectId: PROJECT_ID_EXTENSION,
   relayUrl: RELAY_URL,
-  metadata: {
-    name: 'Fearless Wallet',
-    description:
-      'Non-Custodial and Decentralized wallet for the Polkadot and Kusama ecosystems with the best UX, performance and security.',
-    url: 'https://fearlesswallet.io/',
-    icons: [
-      'https://raw.githubusercontent.com/soramitsu/shared-features-utils/ffa1fd2a334530101022536c3b1ab3c063edd238/icons/FW%20icon%20128.png',
-    ],
-  },
+  metadata: WALLET_CONNECT_METADATA,
 };
-
-// Copyright 2019-2022 @subwallet/extension-base authors & contributors
-// SPDX-License-Identifier: Apache-2.0
 
 export const ALL_WALLET_CONNECT_EVENT: SignClientTypes.Event[] = [
   'session_proposal',
@@ -48,11 +50,10 @@ export const WALLET_CONNECT_SUPPORTED_METHODS: WalletConnectSigningMethod[] = [
 ];
 
 export const WALLET_CONNECT_REQUEST_KEY = 'wallet-connect';
-
+export const DEFAULT_LOGGER = 'debug';
 export const WALLET_CONNECT_EIP155_NAMESPACE = 'eip155';
 export const WALLET_CONNECT_POLKADOT_NAMESPACE = 'polkadot';
 export const WALLET_CONNECT_SUPPORT_NAMESPACES: string[] = [
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 ];
-export { EIP155_SIGNING_METHODS };

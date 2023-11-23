@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getBalanceItem } from '@extension-base/background/utils/utils';
 import jwtDecode from 'jwt-decode';
 import { FPNumber } from '@sora-substrate/util';
-import { TokenBalance } from '@extension-base/background/types/types';
+import { type TokenBalance } from '@extension-base/background/types/types';
 import type { JwtPayload } from 'jwt-decode';
 import type { Status } from '@/consts/soraCard';
 import { IS_PRODUCTION } from '@/consts/global';
@@ -12,6 +12,7 @@ import { soraCardController } from '@/controllers';
 import { VerificationStatus, KycStatus } from '@/consts/soraCard';
 import { subscribeSoraCardToken } from '@/extension/messaging';
 import { SORA_NETWORK_NAME } from '@/consts/sora';
+import { SEC1 } from '@/consts/time';
 
 type XorRestPrice = {
   euroToPay: string;
@@ -81,7 +82,7 @@ const isAccessTokenExpired = (accessToken: string): boolean => {
     const decoded: JwtPayload = jwtDecode(accessToken);
 
     if (decoded.exp) {
-      if (Date.now() <= decoded.exp * 1000) {
+      if (Date.now() <= decoded.exp * SEC1) {
         return false;
       }
     }

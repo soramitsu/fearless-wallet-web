@@ -10,9 +10,8 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { ALL_NETWORKS } from './consts/networks';
-import { beaconController } from './controllers/beaconController';
 import { setTitle } from './helpers/common';
-import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types';
+import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
 import { Components } from '@/router/routes';
@@ -78,23 +77,11 @@ export default class App extends Vue {
   }
 
   async mounted() {
-    this.mobileWalletListeners();
-
     if (IS_PRODUCTION) {
       const isRequired = await isOnboardingRequired();
 
       if (isRequired) this.$router.push({ name: Components.Onboarding });
     }
-  }
-
-  mobileWalletListeners() {
-    beaconController.onRateReached(() => {
-      this.$notify({
-        message: this.$t('mobileConnector.rateLimitWarning.message') as string,
-        title: this.$t('mobileConnector.rateLimitWarning.title') as string,
-        type: 'warning',
-      });
-    });
   }
 
   setupSWPing() {
@@ -136,6 +123,7 @@ export default class App extends Vue {
 
   onAccountUpdate(accounts: AccountJson[], isMobileUpdate = false) {
     const selectedAccount = accounts.find((account) => account.active);
+
     this.setAccounts({ accounts, isMobileUpdate });
 
     if (selectedAccount || !this.wallets.length) {

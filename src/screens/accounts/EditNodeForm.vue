@@ -2,7 +2,7 @@
   <AboveForm :fullScreen="true" header="accounts.newNode" @closeHandler="$emit('closeForm')">
     <div class="add-node-form">
       <div>
-        <FInput v-model="networkCharUp" placeholder="accounts.network" size="big" class="row" :readonly="true" />
+        <FInput v-model="network" placeholder="accounts.network" size="big" class="row" :readonly="true" />
 
         <FInput v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
 
@@ -25,10 +25,9 @@
 import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
-import { firstCharToUp } from '@/helpers';
 import { upsertNetworkMap } from '@/extension/messaging';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GetNetwork } from '@/store';
+import { type GetNetwork } from '@/store';
 
 @Component
 export default class EditNodeForm extends Vue {
@@ -89,10 +88,6 @@ export default class EditNodeForm extends Vue {
     return 'accounts.customNodeDuplicate';
   }
 
-  get networkCharUp() {
-    return firstCharToUp(this.network);
-  }
-
   get isUrlChanged() {
     return this.url !== this._url;
   }
@@ -145,6 +140,9 @@ export default class EditNodeForm extends Vue {
 
   .row {
     margin-top: 16px;
+    & .el-input__inner::first-letter {
+      text-transform: capitalize;
+    }
   }
 }
 </style>

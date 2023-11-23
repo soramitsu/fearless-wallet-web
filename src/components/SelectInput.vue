@@ -27,7 +27,7 @@
 
             <div v-else class="select-label">Select</div>
 
-            <Rotate :isActive="syncedIsRotate" class="rotate-asset">
+            <Rotate v-if="showIconRotate" :isActive="syncedIsRotate" class="rotate-asset">
               <SIcon name="chevron-bottom-16" />
             </Rotate>
           </button>
@@ -47,7 +47,7 @@
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
-import type { TokenBalance } from '@extension-base/background/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component
@@ -61,10 +61,15 @@ export default class SelectInput extends Vue {
   @Prop({ default: 0 }) totalAmount!: number;
   @Prop({ default: true }) showBalance!: boolean;
   @Prop({ default: false }) readonly!: boolean;
+  @Prop({ default: true }) showIcon!: boolean;
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+
+  get showIconRotate() {
+    return this.showIcon && !this.readonly;
+  }
 
   get isSelected() {
     return this.inputIsFocused && !this.readonly;
@@ -189,7 +194,7 @@ export default class SelectInput extends Vue {
   background-color: $secondary-background-color;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
-  border: 1px solid $secondary-background-color;
+  border: $secondary-border;
   display: flex;
   justify-content: space-between;
   color: $gray-color;
@@ -259,11 +264,12 @@ export default class SelectInput extends Vue {
       align-items: center;
       clip-path: $medium-clip-path-left-top-and-right-bottom;
       height: 42px;
-      min-width: 122px;
+      min-width: 100px;
       background-color: $secondary-background-color;
       color: white;
-      border: 1px solid $default-background-color;
+      border: $default-border;
       border-radius: 4px;
+      min-width: 122px;
       cursor: pointer;
 
       .asset-icon {
@@ -286,7 +292,7 @@ export default class SelectInput extends Vue {
 
     .select-button-readonly {
       cursor: default;
-      opacity: 0.5;
+      // opacity: 0.5;
     }
 
     .balance {

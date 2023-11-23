@@ -1,17 +1,17 @@
-import { Subscription } from 'rxjs';
-import { ApiPromise } from '@polkadot/api';
-import { isEthereumNetwork, getSubstrateAddress } from '@extension-base/background/utils/utils';
+import { type Subscription } from 'rxjs';
+import { type ApiPromise } from '@polkadot/api';
+import { isEthereumNetwork, getSubstrateAddress, getUtilityProps } from '@extension-base/background/utils/utils';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
-import State from '@extension-base/background/handlers/State';
-import { setBalance } from '../helpers';
+import { setBalance } from '@extension-base/api/helpers';
+import type State from '@extension-base/background/handlers/State';
 import type { RelayChainName, NetworkName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
 import { CHAIN_IDS } from '@/consts/networks';
-import { isSora } from '@/helpers';
 import { SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/sora';
+import { isSameString, isSora } from '@/helpers';
 
 function subscribeTokensBalance(address: string, networkKey: string, api: ApiPromise, state: State) {
   const {
@@ -96,9 +96,9 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
 
       let pallet;
 
-      const networkNameLower = networkName.toLowerCase();
       const isSoraXOR =
-        symbol === SORA_UTILITY_ASSET && (networkNameLower === SORA_MAINNET || networkNameLower === SORA_TEST);
+        symbol === SORA_UTILITY_ASSET &&
+        (isSameString(networkName, SORA_MAINNET) || isSameString(networkName, SORA_TEST));
 
       if (type === 'normal' || isSoraXOR) pallet = query.system.account(address);
       else if (type === 'assets') {
@@ -151,7 +151,8 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
         address,
         state
       );
-      console.warn(err.message, networkKey, `type: ${type}`);
+
+      console.warn(err.message, networkKey);
     }
 
     return () => null;
@@ -171,7 +172,7 @@ export function subscribeBalance(
       // если список  === null, значит коннектимся ко всем включенным сетям
       if (newNetworks === null) return true;
 
-      return newNetworks.includes(networkName);
+      return newNetworks.some((net) => net.toLowerCase() === networkName.toLowerCase());
     })
     .map(async ([networkName, apiProps]) => {
       const isReady = isSora(networkName)
@@ -218,4 +219,36 @@ export function subscribeBalance(
     });
 
   return unsubListPromises;
+}
+
+export async function fetchBalance(address: string, networkKey: string, state: State, api?: ApiPromise) {
+  const { id, symbol, type, precision } = getUtilityProps(networkKey, state);
+  const options = getAssetOptions(id, state.assetsMap);
+
+  if (!api) return '0';
+
+  const query = api.query;
+
+  let response;
+
+  const isSoraXOR =
+    symbol === SORA_UTILITY_ASSET && (isSameString(networkKey, SORA_MAINNET) || isSameString(networkKey, SORA_TEST));
+
+  if (type === 'normal' || isSoraXOR) response = query.system.account(address);
+  else if (type === 'assets') {
+    response = (query.assets as any).account(options, address);
+  } else response = query.tokens.accounts(address, options);
+
+  const balances = await response;
+
+  const balance =
+    type === 'assets'
+      ? {
+          free: FPNumber.fromCodecValue(balances.toJSON()?.balance ?? 0, precision),
+        }
+      : balances?.data ?? balances;
+
+  const { transferable } = formatBalance(balance, precision);
+
+  return transferable;
 }

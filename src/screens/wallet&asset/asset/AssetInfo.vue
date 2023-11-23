@@ -19,6 +19,7 @@
               <Icon icon="three-dots-vertical" className="asset__price-details" />
             </div>
           </div>
+
           <Shimmer v-if="showShimmers" height="14px" width="120px" />
 
           <div v-else class="asset__balance">{{ countAssetsString }}</div>
@@ -64,14 +65,14 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { TokenBalance } from '@extension-base/background/types';
+import { APIItemState } from '@extension-base/api/types/networks';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import type { AssetPrice } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers/currencies';
 import { getSummaryLockedBalance } from '@/helpers/common';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import AccountSettingsPopup from '@/screens/accounts/AccountSettingsPopup.vue';
-import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 
 @Component({
   components: {
@@ -87,7 +88,6 @@ export default class AssetInfo extends Vue {
   @Prop(Object) currency!: TokenBalance;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get selectedAssetNetwork() {
     return this.$route.params.selectedNetwork;
@@ -97,16 +97,12 @@ export default class AssetInfo extends Vue {
     return this.selectedAssetNetwork ?? this.selectedNetwork;
   }
 
-  get currentNetwork() {
-    return this.currency.balances?.find(({ name }) => name.toLowerCase() === this.pickedNetwork?.toLowerCase());
-  }
-
   get showShimmers() {
     return !navigator.onLine || !this.currency.balances?.some(({ state }) => state === APIItemState.READY);
   }
 
   get icon() {
-    return this.currency.icon;
+    return this.currency?.icon ?? '';
   }
 
   get showSettingsPopup() {
@@ -170,12 +166,6 @@ export default class AssetInfo extends Vue {
   }
 
   toggleBalanceDetailsPopup() {
-    if (this.showShimmers) {
-      this.showBalanceDetailsPopup = false;
-
-      return;
-    }
-
     this.showBalanceDetailsPopup = !this.showBalanceDetailsPopup;
   }
 

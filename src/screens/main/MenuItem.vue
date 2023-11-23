@@ -1,34 +1,25 @@
 <template>
   <div :class="menuItemClasses">
-    <Icon :icon="img" :className="iconClass" />
+    <Icon :icon="img" :className="iconClass" :hover="false" />
 
     <div class="name">{{ $t(localeName) }}</div>
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { ref, computed } from 'vue';
 import type { MenuItem as TMenuItem } from '@/interfaces/common';
 
-@Component
-export default class MenuItem extends Vue {
-  iconClass = ['menu-icon'];
+type Props = {
+  name: TMenuItem;
+  isActive?: boolean;
+};
+const props = withDefaults(defineProps<Props>(), { isActive: false });
 
-  @Prop(String) name!: TMenuItem;
-  @Prop({ default: false }) isActive!: boolean;
-
-  get localeName() {
-    return `menu.${this.name}`;
-  }
-
-  get menuItemClasses() {
-    return ['menu-item', { active: this.isActive }];
-  }
-
-  get img() {
-    return this.name.toLowerCase();
-  }
-}
+const iconClass = ['menu-icon'];
+const localeName = ref(`menu.${props.name.toLowerCase()}`);
+const menuItemClasses = computed(() => ['menu-item', { active: props.isActive }]);
+const img = ref(props.name.toLowerCase());
 </script>
 
 <style lang="scss" scoped>
@@ -38,9 +29,9 @@ export default class MenuItem extends Vue {
   align-items: center;
   color: $gray-color;
   width: 85px;
+  cursor: pointer;
 
   &:hover {
-    cursor: pointer;
     color: $plain-white;
     transition: 300ms ease-out;
 
@@ -54,12 +45,21 @@ export default class MenuItem extends Vue {
     margin-top: 8px;
     font-weight: 600;
     font-size: 13px;
+
+    &::first-letter {
+      text-transform: capitalize;
+    }
   }
 
   .menu-icon {
     height: 24px;
     width: 24px;
     color: $gray-color;
+
+    &:hover {
+      color: $plain-white;
+      transition: 300ms ease-out;
+    }
   }
 }
 

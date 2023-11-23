@@ -10,7 +10,6 @@
               <Checkbox
                 class="wallet__checkbox"
                 size="big"
-                :name="file.name"
                 :label="file.name"
                 :value="file.active"
                 @change.self="() => onSelect(!file.active, index)"
@@ -56,7 +55,7 @@ import { Getter, Action } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { FilesState, AsyncFn } from '@/interfaces';
 import { cut } from '@/helpers';
-import { SelectedWallet } from '@/store/accounts/types';
+import { type SelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import { isJsonValid, jsonRestore } from '@/extension/messaging';
@@ -154,7 +153,7 @@ export default class GoogleWalletsList extends Vue {
     flex-flow: column nowrap;
     justify-content: space-between;
     align-items: center;
-    border: 1px solid $default-background-color;
+    border: $default-border;
     background-color: $default-background-color;
     clip-path: $big-clip-path-left-top-and-right-bottom;
     padding: 10px;

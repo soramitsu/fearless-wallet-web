@@ -2,8 +2,8 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { api as apiSora } from '@sora-substrate/util';
 import { connection as soraConnection } from '@sora-substrate/connection';
 import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
-import State from '@extension-base/background/handlers/State';
-import { NETWORK_STATUS } from '../types/networks';
+import { NETWORK_STATUS } from '@extension-base/api/types/networks';
+import type State from '@extension-base/background/handlers/State';
 import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import type { ApiProps } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -28,17 +28,17 @@ function onConnected(networkName: string, state: State) {
 }
 
 async function onDisconnect(networkName: string, state: State) {
-  const api = state.getSubstrateApiMap[networkName];
+  const api = state.getSubstrateApiMap[networkName.toLowerCase()];
+  const netName = state.getNetworkByKey(networkName).name;
+  const network = state.networkMap[netName];
 
-  if (!state.networkMap[networkName].active) return;
+  if (!network.active) return;
 
   if (api === undefined) return;
 
   api.apiRetry += 1;
 
   if (api.apiRetry < MAX_CONTINUE_RETRY) return;
-
-  const network = state.networkMap[networkName];
 
   api.api?.disconnect();
 
@@ -68,7 +68,8 @@ function onReady(networkName: string, state: State) {
 }
 
 export async function initApi(network: NetworkJson, state: State): Promise<void> {
-  const { name: networkName, nodes } = network;
+  const { name, nodes } = network;
+  const networkName = name.toLowerCase();
 
   if (state.getSubstrateApiMap[networkName] === undefined) state.getSubstrateApiMap[networkName] = createApiObject();
 
@@ -78,7 +79,7 @@ export async function initApi(network: NetworkJson, state: State): Promise<void>
   const currentProvider = autoSelectNode ?? network.currentProvider;
   const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [
     ['connected', () => onConnected(networkName, state)],
-    ['disconnected', () => onDisconnect(networkName, state)],
+    ['disconnected', () => onDisconnect(name, state)],
     ['ready', () => onReady(networkName, state)],
     ['error', () => null],
   ];

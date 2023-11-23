@@ -136,7 +136,7 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Action, Getter } from 'vuex-class';
-import type { AccountJson } from '@extension-base/background/types';
+import type { AccountJson } from '@extension-base/background/types/types';
 import type { DerivationPaths, ImportType, ValidateJsonResult, MnemonicConfirmation, AsyncFn } from '@/interfaces';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { SelectedWallet } from '@/store';
@@ -151,9 +151,19 @@ import AddEthereumAccountPopup from '@/screens/addWallet/AddEthereumAccountPopup
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
-import { WarningValueName } from '@/consts/messages';
+import { type WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
-import { addAccount, forgetAccount, updatePairMeta, validatePassword, windowOpen } from '@/extension/messaging';
+import {
+  forgetAccount,
+  isDerivationPathValid,
+  isJsonValid,
+  jsonRestore,
+  validatePassword,
+  windowOpen,
+  addAccount,
+  updatePairMeta,
+} from '@/extension/messaging';
+
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
@@ -626,19 +636,19 @@ export default class AddWallet extends Vue {
     } = this.derivationPaths;
     const ETHDP = (ethereumDerivationPath[0] === '/' ? ethereumDerivationPath.slice(1) : ethereumDerivationPath).trim();
     const isValidMnemonic = this.mnemonic ? BaseApi.isValidPhrase(this.mnemonic.trim()) : true;
-    const isValidSubstratePhrase = substrate.value ? await BaseApi.isValidSubstrateDerivationPath(substrate) : true;
+    const isValidSubstratePhrase = substrate.value ? await isDerivationPathValid(substrate) : true;
     const isValidEthereumDP = ethereumDerivationPath ? BaseApi.isValidEthereumDerivationPath(ETHDP) : true;
     const isValidSubstrateRawSeed = this.substrateRawSeed ? BaseApi.isHex(this.substrateRawSeed) : true;
     const isValidEthereumRawSeed = this.ethereumRawSeed ? BaseApi.isHex(this.ethereumRawSeed) : true;
 
     const validatedSubstrateJson =
       this.substrateJson !== ''
-        ? await BaseApi.isValidJson(this.substrateJSON, this.passwordSubstrateJson)
+        ? await isJsonValid(this.substrateJSON, this.passwordSubstrateJson)
         : ({ value: true } as ValidateJsonResult);
 
     const validatedEthereumJson =
       this.ethereumJson !== ''
-        ? await BaseApi.isValidJson(this.ethereumJSON, this.passwordEthereumJson, false)
+        ? await isJsonValid(this.ethereumJSON, this.passwordEthereumJson, false)
         : ({ value: true } as ValidateJsonResult);
 
     if (!isValidMnemonic) this.warningValueName = 'mnemonic';
@@ -687,7 +697,7 @@ export default class AddWallet extends Vue {
     const substrateJSON = { ...this.substrateJSON };
 
     if (this.ethereumJson) {
-      const ethereumAddress = await BaseApi.addKeypairFromJson(this.ethereumJSON, this.passwordEthereumJson);
+      const ethereumAddress = await jsonRestore(this.ethereumJSON, this.passwordEthereumJson);
 
       if (this.isOnlyEthereumAccount) {
         updatePairMeta(this.selectedWallet.address, { ethereumAddress });
@@ -698,7 +708,7 @@ export default class AddWallet extends Vue {
       substrateJSON.meta.ethereumAddress = ethereumAddress;
     }
 
-    const address = await BaseApi.addKeypairFromJson(substrateJSON, this.passwordSubstrateJson);
+    const address = await jsonRestore(substrateJSON, this.passwordSubstrateJson);
 
     return address;
   }

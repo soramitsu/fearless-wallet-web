@@ -47,6 +47,7 @@ export default class Tooltip extends Vue {
       delay: [1500, 0],
       duration: 0,
       maxWidth: this.maxWidth,
+      allowHTML: true,
     };
 
     if (this.trigger) {

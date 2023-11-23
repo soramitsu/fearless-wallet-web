@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { getSubstrateAddress, isRequireEvmAPI } from '../utils/utils';
+import { getSubstrateAddress, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import type {
   CachedUnlocks,
   RequestAccountExport,
@@ -10,12 +10,12 @@ import type {
   ResponseSigningIsLocked,
   ValidateJsonResult,
   RequestUpdateMeta,
-} from '@extension-base/background/types';
+} from '@extension-base/background/types/types';
 
 import type State from '@extension-base/background/handlers/State';
 import type { KeyringPair } from '@polkadot/keyring/types';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
-import { DerivationPath } from '@/interfaces';
+import { type DerivationPath } from '@/interfaces';
 
 export default class FWExtensionBase {
   protected token: string;

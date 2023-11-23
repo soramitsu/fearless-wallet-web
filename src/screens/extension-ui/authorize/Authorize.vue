@@ -32,12 +32,12 @@
 </template>
 
 <script lang="ts" setup>
-import { AuthorizeRequest, AccountJson } from '@extension-base/background/types';
+import { type AuthorizeRequest, type AccountJson } from '@extension-base/background/types/types';
 import { computed, ref, set, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
 import { Components } from '@/router/routes';
-import { WalletInfo, useStore } from '@/store';
+import { type WalletInfo, useStore } from '@/store';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import BaseApi from '@/util/BaseApi';
 
@@ -122,15 +122,15 @@ const onReject = () => store.dispatch('REJECT_AUTH_REQUEST', request.value.id);
     font-size: 14px;
     line-height: 21px;
     font-weight: 400;
+  }
 
-    .authorize__content--name {
-      color: $pink-lavender-color;
-    }
+  .authorize__content--name {
+    color: $pink-lavender-color;
+  }
 
-    .authorize__content--link {
-      color: $pink-lavender-color;
-      cursor: pointer;
-    }
+  .authorize__content--link {
+    color: $pink-lavender-color;
+    cursor: pointer;
   }
 
   .authorize__control {

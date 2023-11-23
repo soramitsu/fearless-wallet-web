@@ -2,13 +2,15 @@ import { BN, isFunction } from '@polkadot/util';
 import { FPNumber } from '@sora-substrate/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 import { isEthereumNetwork, getUtilityProps, getNativeAssetName } from '@extension-base/background/utils/utils';
-import { SignerType } from '@extension-base/background/types';
+import { SignerType } from '@extension-base/background/types/types';
 import { getAssetInfo } from '@extension-base/api/helpers';
-import State from '@extension-base/background/handlers/State';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
+import { type Extrinsic } from './utils/types';
+import { getPrecisionValue } from './utils';
+import type State from '@extension-base/background/handlers/State';
 import type { TokenBalance, BasicTxResponse } from '@extension-base/background/types/types';
-import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { AssetId, Interiors, NetworkName, RelayChainName } from '@/interfaces';
+
 import {
   NATIVE_NETWORKS,
   RELAY_CHAINS,
@@ -19,8 +21,6 @@ import {
 } from '@/consts/networks';
 import { firstCharToUp } from '@/helpers';
 import { IS_PRODUCTION } from '@/consts/global';
-
-type Extrinsic = Nullable<SubmittableExtrinsic<'promise'>>;
 
 enum XcmVersions {
   V1 = 'V1',
@@ -45,13 +45,6 @@ const XCM_NATIVE_PALLETS = ['xcmPallet', 'polkadotXcm'];
 
 function isNativeNetwork(networkName: NetworkName) {
   return NATIVE_NETWORKS.includes(networkName.toLowerCase());
-}
-
-function getPrecisionValue(_amount: string, precision: number): string {
-  const amount = _amount === '' ? '0' : _amount;
-  const amountFP = new FPNumber(amount, precision);
-
-  return amountFP.toCodecString();
 }
 
 function isRelayChain(network: string) {
@@ -81,7 +74,8 @@ function getConcreteAsset(
   isNative: boolean,
   state: State
 ) {
-  const { parentId } = state.networkMap[originNet];
+  const networkKey = state.getNetworkByKey(originNet)?.name;
+  const { parentId } = state.networkMap[networkKey];
 
   // This Polkadot or Kusama
   if (parentId === undefined)
@@ -123,10 +117,12 @@ function getNativeTeleportParams(
   xcmAssetId: AssetId,
   state: State
 ) {
+  const originNetworkKey = state.getNetworkByKey(originNet)?.name;
+  const destNetworkKey = state.getNetworkByKey(destNet)?.name;
   const isFromRelayChain = isRelayChain(originNet);
   const isToRelayChain = isRelayChain(destNet);
-  const { xcm, parentId, name } = state.networkMap[originNet];
-  const paraId = state.networkMap[destNet]?.paraId ?? 0;
+  const { xcm, parentId, name } = state.networkMap[originNetworkKey];
+  const paraId = state.networkMap[destNetworkKey]?.paraId ?? 0;
   const xcmVersion = xcm!.xcmVersion.toUpperCase();
   const publicKey = decodeAddress(toAddress);
   const value = new BN(amount);
@@ -184,9 +180,11 @@ function getOrmlTeleportParams(
   xcmAssetId: AssetId,
   state: State
 ) {
+  const originNetworkKey = state.getNetworkByKey(originNet)?.name;
+  const destNetworkKey = state.getNetworkByKey(destNet)?.name;
   const isToRelayChain = isRelayChain(destNet);
-  const { xcm, parentId, name } = state.networkMap[originNet];
-  const paraId = state.networkMap[destNet]?.paraId ?? 0;
+  const { xcm, parentId, name } = state.networkMap[originNetworkKey];
+  const paraId = state.networkMap[destNetworkKey]?.paraId ?? 0;
   const xcmVersion = xcm!.xcmVersion.toUpperCase();
   const publicKey = decodeAddress(toAddress);
   const value = new BN(amount);
@@ -241,7 +239,7 @@ async function createNativeTeleportExtrinsic(
   tokenBalance: TokenBalance,
   state: State
 ): Promise<Extrinsic> {
-  const api = state.getSubstrateApiMap[originNet]?.api;
+  const api = state.getSubstrateApiMap[originNet.toLowerCase()]?.api;
 
   if (!api) return;
 
@@ -267,7 +265,7 @@ async function createOrmlTeleportExtrinsic(
   tokenBalance: TokenBalance,
   state: State
 ): Promise<Extrinsic> {
-  const api = state.getSubstrateApiMap[originNet].api;
+  const api = state.getSubstrateApiMap[originNet.toLowerCase()].api;
 
   if (!api) return;
 
@@ -300,13 +298,15 @@ async function createCrossChainExtrinsic(
   tokenBalance: TokenBalance,
   state: State
 ): Promise<Extrinsic> {
+  const originNetworkKey = state.getNetworkByKey(originNet)?.name;
+  const destNetworkKey = state.getNetworkByKey(destNet)?.name;
   const { symbol } = getAssetInfo(assetId, state);
-  const { xcm } = state.networkMap[originNet];
+  const { xcm } = state.networkMap[originNetworkKey];
 
   // Структура assets в availableDestinations всегда одинаковая
   // id у конкретного токена(например DOT), для всех сетей внутри availableDestinations одинаковый
   // Поэтому просто берем первый попавшийся элемент из массива availableDestinations, берем его assets и ищем нужный токен внутри assets
-  const { chainId: destChainId } = state.networkMap[destNet];
+  const { chainId: destChainId } = state.networkMap[destNetworkKey];
   const { assets } = xcm!.availableDestinations.find(({ chainId }) => chainId === destChainId)!;
   const { id: xcmAssetId } = assets.find(
     ({ symbol: _symbol }) => _symbol.toLowerCase() === getNativeAssetName(symbol)
@@ -405,7 +405,7 @@ async function makeCrossChain(
   state: State
 ): Promise<void> {
   const txState: BasicTxResponse = {};
-  const apiProps = state.getSubstrateApiMap[originNet];
+  const apiProps = state.getSubstrateApiMap[originNet.toLowerCase()];
 
   await apiProps.api?.isReady;
 

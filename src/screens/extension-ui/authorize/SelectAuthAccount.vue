@@ -4,7 +4,7 @@
       v-if="showAllCheckbox"
       :value="props.selectAll"
       size="big"
-      label="Select all"
+      :label="$t('common.selectAll')"
       @change="(value) => emit('onSelectAll', value)"
     />
 
@@ -15,7 +15,6 @@
             <Checkbox
               class="account__checkbox"
               size="big"
-              :name="account.address"
               :label="$t(account.name)"
               :value="account.active"
               @change="(value) => emit('onSelect', value, account.name)"
@@ -45,7 +44,6 @@ const showAllCheckbox = computed(() => Object.keys(props.accounts).length && pro
 const showCheckboxes = computed(() => Object.keys(props.accounts).length);
 
 const cutAddress = (address: string) => cut(address);
-const prepHeight = computed(() => (props.height ? `${props.height}px` : 'fit-content'));
 </script>
 
 <style lang="scss" scoped>
@@ -54,7 +52,7 @@ const prepHeight = computed(() => (props.height ? `${props.height}px` : 'fit-con
   flex-flow: column;
   align-items: flex-start;
   overflow-y: hidden;
-  height: v-bind(prepHeight);
+  height: 100%;
 }
 
 .auth-account {
@@ -111,7 +109,6 @@ const prepHeight = computed(() => (props.height ? `${props.height}px` : 'fit-con
 .account__list {
   padding: 0;
   width: 100%;
-  height: 100%;
 }
 
 .account__checkbox .el-checkbox__label {

@@ -1,4 +1,4 @@
-import type { WalletAddress, NetworkName, AssetName } from '@/interfaces';
+import type { WalletAddress, NetworkName, AssetId, AssetName } from '@/interfaces';
 
 type Reward = {
   amount: string;
@@ -19,7 +19,7 @@ type Transfer = {
   to: string;
 };
 
-type Extrinsic = {
+type HistoryExtrinsic = {
   call: string;
   fee: string;
   hash: string;
@@ -31,10 +31,9 @@ type HistoryElement = {
   id: string;
   address: string;
   timestamp: string;
-  extrinsic?: Extrinsic;
+  extrinsic?: HistoryExtrinsic;
   reward?: Reward;
   transfer?: Transfer;
-  isMock?: true;
 };
 
 type SoraHistoryElement = {
@@ -57,6 +56,7 @@ type SoraHistoryElement = {
     | 'payoutStakers'
     | 'swap'
     | 'transfer'
+    | 'rewarded'
     | 'batchAll'; // TODO
   data: {
     baseAssetId?: string;
@@ -67,6 +67,9 @@ type SoraHistoryElement = {
     liquidityProviderFee?: string;
     maxAdditional?: string;
     value?: string;
+    amount?: string;
+    to?: string;
+    from?: string;
   };
 };
 
@@ -90,7 +93,7 @@ interface GiantsquidHistoryItem {
 }
 
 interface SubqueryHistory {
-  nodes: HistoryElement[];
+  nodes: HistoryElement[]; // | SoraHistoryElement[]
   pageInfo: {
     startCursor: string;
     endCursor: string;
@@ -101,28 +104,23 @@ type HistoryForWalletAddress = Record<NetworkName, SubqueryHistory>;
 
 type HistoryForAssetId = Record<WalletAddress, HistoryForWalletAddress>;
 
-type History = Record<AssetName, HistoryForAssetId>;
+type History = Record<AssetId, HistoryForAssetId>;
 
-type GetHistory = (assetId: AssetName, walletAddress: WalletAddress, networkName: NetworkName) => SubqueryHistory;
-
-enum TransferType {
-  incoming = 'Incoming',
-  outgoing = 'Outgoing',
-}
+type GetHistory = (assetName: AssetName, networkName: NetworkName, address?: string) => SubqueryHistory;
 
 enum TransactionType {
   transfer = 'transfer',
   reward = 'reward',
   extrinsic = 'extrinsic',
+  sora = 'sora',
 }
 
 export {
   TransactionType,
-  TransferType,
   GetHistory,
   History,
   HistoryForWalletAddress,
-  Extrinsic,
+  HistoryExtrinsic,
   SubqueryHistory,
   GiantsquidHistoryItem,
   Reward,

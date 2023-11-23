@@ -27,7 +27,7 @@ import {
 } from '@extension-base/services/wallet-connect-service/types';
 import { formatEther, formatUnits } from 'ethers';
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import type { AccountJson } from '@extension-base/background/types';
+import type { AccountJson } from '@extension-base/background/types/types';
 import { useStore } from '@/store';
 import { cut } from '@/helpers';
 

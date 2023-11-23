@@ -139,6 +139,16 @@ const click = (event: Event) => {
   }
 }
 
+.circle-button-big {
+  width: 48px;
+  height: 48px;
+
+  .image {
+    width: 32px;
+    height: 32px;
+  }
+}
+
 .background-none {
   background: none;
 }

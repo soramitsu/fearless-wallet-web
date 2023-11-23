@@ -1,5 +1,4 @@
 import axios from 'axios';
-// import { ethers } from 'ethers';
 import type {
   SubqueryHistory,
   GiantsquidHistoryItem,
@@ -8,10 +7,10 @@ import type {
   NetworkName,
   EthereumHistoryResponse,
   EthereumTokenHistoryData,
-  EthereumHistoryData,
 } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { getEthereumExplorerApiKey } from '@/helpers/history';
+import { SEC1 } from '@/consts/time';
 
 async function fetchSubqueryHistory(
   url: string,
@@ -149,11 +148,7 @@ async function fetchSubsquidHistory(url: string, address: string): Promise<Histo
   return data?.historyElements;
 }
 
-async function fetchEthereumTokenHistory(
-  url: string,
-  address: string,
-  contractAddress: string
-): Promise<HistoryElement[]> {
+async function fetchEthereumHistory(url: string, address: string, contractAddress?: string): Promise<HistoryElement[]> {
   const abort = new AbortController();
   const signal = abort.signal;
   const apikey = getEthereumExplorerApiKey(url);
@@ -161,9 +156,9 @@ async function fetchEthereumTokenHistory(
   const res = await axios.get<EthereumHistoryResponse<EthereumTokenHistoryData>>(url, {
     params: {
       module: 'account',
-      action: 'tokentx',
+      action: contractAddress ? 'tokentx' : 'txlist',
       contractAddress: contractAddress,
-      address: address,
+      address,
       page: 1,
       offset: 300,
       sort: 'desc',
@@ -181,7 +176,7 @@ async function fetchEthereumTokenHistory(
   return res.data.result.map(({ timeStamp, value, gasUsed, from, to, hash }, index) => ({
     address,
     id: String(index),
-    timestamp: (+timeStamp * 1000).toString(),
+    timestamp: (+timeStamp * SEC1).toString(),
     transfer: {
       amount: value,
       hash,
@@ -194,44 +189,37 @@ async function fetchEthereumTokenHistory(
   }));
 }
 
-async function fetchEthereumHistory(url: string, address: string): Promise<HistoryElement[]> {
-  const abort = new AbortController();
-  const signal = abort.signal;
-  const apikey = getEthereumExplorerApiKey(url);
-
-  const res = await axios.get<EthereumHistoryResponse<EthereumHistoryData>>(url, {
-    params: {
-      module: 'account',
-      action: 'txlist',
-      address,
-      page: 1,
-      offset: 300,
-      sort: 'desc',
-      apikey,
-    },
-    signal,
+async function fetchSoraHistory(url: string, address: string) {
+  const {
+    data: { data },
+  } = await axios.post(url, {
+    query: `{
+        historyElements(
+          orderBy: id_DESC
+          where: {
+            address_eq: "${address}"
+          }
+        ) {
+          timestamp
+          id
+          address
+          blockHash
+          blockHeight
+          updatedAtBlock
+          networkFee
+          module
+          method
+          dataTo
+          dataFrom
+          data
+          execution {
+            success
+          }
+        }
+      }`,
   });
 
-  if (res.status !== 200) {
-    abort.abort();
-
-    return [];
-  }
-
-  return res.data.result.map(({ timeStamp, value, gasUsed, from, isError, to, hash }, index) => ({
-    address,
-    id: String(index),
-    timestamp: (+timeStamp * 1000).toString(),
-    transfer: {
-      amount: value,
-      hash,
-      eventIdx: 0,
-      fee: gasUsed,
-      from: from,
-      success: isError === '0',
-      to,
-    },
-  }));
+  return data?.historyElements;
 }
 
 async function fetchHistory(
@@ -243,10 +231,12 @@ async function fetchHistory(
   isUtility: boolean
 ) {
   try {
-    if (type === 'etherscan') {
-      if (isUtility) return fetchEthereumHistory(url, address);
+    if (type === 'sora') return fetchSoraHistory(url, address);
 
-      return fetchEthereumTokenHistory(url, address, assetId);
+    if (type === 'etherscan') {
+      const contractAddress = isUtility ? undefined : assetId;
+
+      return fetchEthereumHistory(url, address, contractAddress);
     }
 
     if (type === 'subquery') return fetchSubqueryHistory(url, address);

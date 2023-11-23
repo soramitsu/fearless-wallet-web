@@ -1,0 +1,74 @@
+<template>
+  <div class="bond-extra-form">
+    <InfoRow
+      class="info-fee"
+      text="assets.networkFee"
+      borderType="default"
+      icon="info"
+      :value="`${fee} ${asset}`"
+      :price="valueString"
+      :iconClasses="['network-fee']"
+    />
+
+    <Tooltip text="staking.stakingFee" target=".network-fee" placement="right" />
+  </div>
+</template>
+
+<script lang="ts">
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import type { GetAssetPrice } from '@/store';
+import type { TokenBalance } from '@extension-base/background/types/types';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+
+@Component
+export default class BondExtra extends Vue {
+  @Prop({ type: Object }) stakingCurrency!: TokenBalance;
+  @Prop({ type: String }) fee!: string;
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
+
+  get asset() {
+    return this.stakingCurrency.symbol;
+  }
+
+  get stakingAssetPrice() {
+    const priceId = this.stakingCurrency?.priceId ?? '';
+
+    return this.getAssetPrice(priceId).price;
+  }
+
+  get valueString() {
+    const value = +this.fee * this.stakingAssetPrice;
+
+    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.bond-extra-form {
+  .info-fee {
+    margin-top: 10px;
+  }
+
+  .disclaimer {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: $default-white;
+    margin-bottom: 10px;
+
+    &:last-child {
+      margin-bottom: none;
+    }
+  }
+
+  .img {
+    margin-right: 10px;
+    height: 30px;
+    width: 30px;
+  }
+}
+</style>

@@ -1,4 +1,4 @@
-import { NetworkName } from '@/interfaces';
+import { type NetworkName } from '@/interfaces';
 
 const SUBSTRATE_ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
 const NATIVE_ETHEREUM_NETWORKS = [
@@ -9,6 +9,17 @@ const NATIVE_ETHEREUM_NETWORKS = [
   'sepolia',
   'bnb smart chain',
   'bnb smart chain testnet',
+  'moonbeam (evm)',
+  'moonriver (evm)',
+  'okxchain mainnet',
+  'arbitrum one',
+  'op mainnet',
+  'klaytn mainnet cypress',
+  'avalanche c-chain',
+  'zetachain testnet',
+  'x1 testnet',
+  'greenfield mainnet',
+  'polygon zkevm',
 ];
 const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, ...NATIVE_ETHEREUM_NETWORKS];
 

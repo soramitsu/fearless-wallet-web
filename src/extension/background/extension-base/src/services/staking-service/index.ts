@@ -1,0 +1,589 @@
+import { FPNumber, api as apiSora } from '@sora-substrate/util';
+import { storage } from '@extension-base/stores/Storage';
+import { BasicTxErrorCode, type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
+import { getEthereumAddress, getSubstrateAddress, getUtilityProps } from '@extension-base/background/utils/utils';
+import type State from '@extension-base/background/handlers/State';
+import type {
+  RequestBond,
+  RequestUnbond,
+  RequestRebond,
+  RequestWithdrawUnbonded,
+  RequestSetControllerAccount,
+  RequestBondExtra,
+  MakeStakingRequest,
+  StakingParamsResponse,
+  RequestNominate,
+  FWValidatorInfoFull,
+  RequestSetPayee,
+  StakingParams,
+  StakingParamsRequest,
+  MyStakingInfo,
+  RewardsResponse,
+  RequestPayoutRewards,
+  ValidatorStatuses,
+} from '@extension-base/services/staking-service/types';
+import { type NetworkName } from '@/interfaces';
+import { getDefaultStakingParams } from '@/helpers/staking';
+import { cut, isSameString } from '@/helpers';
+export * from '@sora-substrate/util/build/staking/types';
+
+export class StakingService {
+  constructor(private state: State) {}
+
+  public async getStakingParams(params: StakingParamsRequest): Promise<StakingParamsResponse> {
+    const { networks } = params;
+
+    // TODO use networks
+    const promises: Promise<StakingParams>[] = networks.map(async (network) => {
+      const apiProps = this.state.getSubstrateApiMap[network.toLowerCase()];
+      const isReady = await apiProps?.api?.isReady;
+
+      if (!isReady) return getDefaultStakingParams(network);
+
+      const validators = await this.getValidators(network);
+      const minBond = await this.getMinNominatorBond(validators, network);
+      const myStakingInfo = await this.getMyStakingInfo(network, validators, minBond);
+      const apy = validators.reduce((result, { apy }) => result + +apy, 0) / validators.length;
+
+      return {
+        ...myStakingInfo,
+        network,
+        validators,
+        apy,
+        unbondPeriod: this.getUnbondPeriod(),
+        maxNominations: this.getMaxNominations(),
+        maxNominatorRewardedPerValidator: this.maxNominatorRewardedPerValidator(),
+        minBond,
+      };
+    });
+
+    return Promise.all(promises);
+  }
+
+  public async getMyStakingInfo(
+    network: NetworkName,
+    validators: FWValidatorInfoFull[],
+    _minBond?: number
+  ): Promise<MyStakingInfo> {
+    const _address = await this.state.getCurrentAddress(network);
+    const currentWallet = { address: _address, ethereumAddress: _address };
+    const stashByController = await this.state.stakingService.getStashByController(_address);
+    const stashAddress =
+      stashByController !== '' ? stashByController : this.state.keyringService.formatAddress(currentWallet);
+
+    const stashWallet = { address: stashAddress, ethereumAddress: stashAddress };
+
+    const isController =
+      stashByController !== '' && !this.state.keyringService.isSameAddress(stashWallet, currentWallet);
+
+    const address = isController ? this.state.keyringService.formatAddress(stashWallet) : _address;
+
+    const stakingInfo = await apiSora.staking.getMyStakingInfo(address);
+    const { addressBook } = await storage.get(['addressBook']);
+    const isControllerAndPayeeStaked = isController && stakingInfo.payee.toLowerCase() === 'staked';
+    const isControllerAndPayeeStash = isController && stakingInfo.payee.toLowerCase() === 'stash';
+    const isControllerAndPayeeController = isController && stakingInfo.payee.toLowerCase() === 'controller';
+
+    const validatorsStatuses = await this.getValidatorsStatuses(address, network, stakingInfo.myValidators);
+
+    const stashAccountName = this.state.keyringService.getAccountName(stashAddress);
+    const stashBookName = addressBook[network]?.find(({ address: _address }) =>
+      isSameString(_address, stashAddress)
+    )?.name;
+    const stashName = stashAccountName ?? stashBookName ?? stashAddress;
+
+    const payeeAddress = isControllerAndPayeeController
+      ? this.state.keyringService.formatAddress(currentWallet, network)
+      : isControllerAndPayeeStaked || isControllerAndPayeeStash
+      ? stashAddress
+      : stakingInfo.payee;
+
+    const payeeAccountName = this.state.keyringService.getAccountName(payeeAddress);
+    const payeeBookName = addressBook[network]?.find(({ address: _address }) =>
+      isSameString(_address, payeeAddress)
+    )?.name;
+    const payeeName = payeeAccountName ?? payeeBookName ?? payeeAddress;
+
+    const controllerAddress = stakingInfo.controller;
+    const controllerAccountName = this.state.keyringService.getAccountName(controllerAddress);
+    const controllerBookName = addressBook[network]?.find(({ address: _address }) =>
+      isSameString(_address, controllerAddress)
+    )?.name;
+    const controllerName = controllerAccountName ?? controllerBookName ?? controllerAddress;
+
+    const isOtherPayee = payeeAddress !== this.state.keyringService.formatAddress(stashWallet, network);
+
+    const isOtherController = isController
+      ? false
+      : controllerAddress !== this.state.keyringService.formatAddress(stashWallet, network);
+
+    const result = {
+      ...stakingInfo,
+      stashAddress,
+      stashName,
+      payeeName,
+      payeeAddress,
+      controllerAddress,
+      controllerName,
+      isController,
+      isOtherPayee,
+      isOtherController,
+      myValidators: this.getValidatorsInformation(stakingInfo.myValidators, validators).map((info) => {
+        const isActive = validatorsStatuses.validatorsActive.includes(info.address);
+        const isInactive = validatorsStatuses.validatorsInactive.includes(info.address);
+        const isWaiting = validatorsStatuses.validatorsWaiting.includes(info.address);
+        const isOversubscribed = validatorsStatuses.validatorsOversubscribed.includes(info.address);
+
+        const status = isActive ? 'active' : isInactive ? 'inactive' : isWaiting ? 'waiting' : 'oversubscribed ';
+
+        return { ...info, isActive, isInactive, isWaiting, isOversubscribed, status };
+      }),
+    };
+
+    const minBond = _minBond ?? (await this.getMinNominatorBond(validators, network));
+    const alerts = this.getALerts(result, minBond);
+
+    return { ...result, alerts };
+  }
+
+  public async getValidatorsStatuses(
+    _address: string,
+    network: NetworkName,
+    myValidators: string[]
+  ): Promise<ValidatorStatuses> {
+    const substrateAddress = getSubstrateAddress(_address, this.state);
+    const ethereumAddress = getEthereumAddress(_address, this.state);
+    const address = this.state.keyringService.formatAddress({ address: substrateAddress, ethereumAddress }, network);
+    const max = this.maxNominatorRewardedPerValidator();
+    const activeEra = await apiSora.staking.getCurrentEra();
+    const submittedIn = (await apiSora.staking.getNominations(address))?.submittedIn;
+    const electedValidators = await apiSora.staking.getElectedValidators(activeEra);
+
+    // all nominations that are oversubscribed
+    const validatorsOversubscribed = electedValidators
+      .map((exposure) => {
+        if (!max) return null;
+
+        const others = exposure.others.sort((a, b) => (+b.value ?? 0) - +a.value ?? 0);
+
+        if (max > others.map(({ who }) => who.toString()).indexOf(address)) return null;
+
+        return myValidators.find((address) => isSameString(address, exposure.address));
+      })
+      .filter((validator): validator is string => !!validator); // && !nomsChilled.includes(nominee)
+
+    // first a blanket find of nominations not in the active set
+    const allValidatorsInactive = electedValidators
+      .map((exposure) => {
+        if (exposure.others.some(({ who }) => isSameString(who, address))) return null;
+
+        return myValidators.find((address) => isSameString(address, exposure.address));
+      })
+      .filter((validator): validator is string => !!validator);
+
+    // waiting if validator is inactive or we have not submitted long enough ago
+    const validatorsWaiting = electedValidators
+      .map((exposure) => {
+        const validatorAddress = myValidators.find((address) => isSameString(address, exposure.address));
+
+        if (exposure.total === '0') return validatorAddress;
+
+        if (allValidatorsInactive.includes(validatorAddress!) && (submittedIn ?? 0) >= +activeEra)
+          return validatorAddress;
+
+        return null;
+      })
+      .filter((validator): validator is string => !!validator)
+      .filter((validator) => !validatorsOversubscribed.includes(validator)); // && !nomsChilled.includes(nominee)
+
+    // filter based on all inactives
+    const validatorsActive = myValidators.filter(
+      (validator) => !allValidatorsInactive.includes(validator) && !validatorsOversubscribed.includes(validator) // && !nomsChilled.includes(nominee)
+    );
+
+    // inactive also contains waiting, remove those
+    const validatorsInactive = allValidatorsInactive.filter(
+      (validator) => !validatorsWaiting.includes(validator) && !validatorsOversubscribed.includes(validator) // && !nomsChilled.includes(nominee)
+    );
+
+    return { validatorsOversubscribed, validatorsWaiting, validatorsActive, validatorsInactive };
+  }
+
+  public async getRewards(network: NetworkName, address: string): Promise<RewardsResponse> {
+    const rewards = await apiSora.staking.getNominatorsReward(address);
+
+    const validatorsRewards = rewards.reduce((result, { validators }) => {
+      validators.forEach(({ address, value }) => {
+        if (!result[address]) result[address] = new FPNumber(value);
+        else result[address] = result[address].add(new FPNumber(value));
+      });
+
+      return result;
+    }, {} as Record<string, FPNumber>);
+
+    const sum = Object.values(validatorsRewards)
+      .reduce((sum, rewards) => sum.add(new FPNumber(rewards)), FPNumber.ZERO)
+      .toString();
+
+    const allValidators = await this.getValidators(network);
+
+    return {
+      sum,
+      payouts: rewards.map(({ era, validators }) => ({ era, validators: validators.map(({ address }) => address) })),
+      validators: Object.entries(validatorsRewards).map(([address, rewards]) => {
+        const info = this.getValidatorsInformation([address], allValidators)[0];
+
+        return {
+          ...info,
+          rewards: rewards.toString(),
+        };
+      }),
+    };
+  }
+
+  public getValidatorsInformation(
+    validatorsAddress: string[],
+    validators: FWValidatorInfoFull[]
+  ): FWValidatorInfoFull[] {
+    return validators.filter(({ address }) => validatorsAddress.includes(address));
+  }
+
+  public async getValidators(network: NetworkName): Promise<FWValidatorInfoFull[]> {
+    const { precision } = getUtilityProps(network, this.state);
+
+    const validatorsInfo = await apiSora.staking.getValidatorsInfo();
+    const validators: FWValidatorInfoFull[] = validatorsInfo.map((validator) => {
+      const info = validator.identity?.info;
+
+      const name = info?.display || info?.legal || cut(validator.address);
+      const description = info?.twitter || info?.web || 'no validator info';
+
+      const stake = Object.fromEntries(
+        Object.entries(validator.stake).map(([key, value]) => [
+          key,
+          FPNumber.fromCodecValue(value, precision).toString(),
+        ])
+      );
+
+      return { ...validator, name, description, stake } as FWValidatorInfoFull;
+    });
+
+    return validators;
+  }
+
+  public getALerts(myStakingInfo: Omit<MyStakingInfo, 'alerts'>, minBond: number) {
+    const alerts = [];
+    const { redeemAmount, myValidators, totalStake } = myStakingInfo;
+    const isRedeem = redeemAmount !== '0';
+    const isNeedBondExtra = +totalStake < minBond;
+    const electedValidators = myValidators.filter(({ isActive }) => isActive);
+    const waitingValidators = myValidators.filter(({ isWaiting }) => isWaiting);
+
+    const isEmptyValidators = myValidators.length === 0;
+    const isEmptyElectedValidators = electedValidators.length === 0;
+    const isWaitingValidators = waitingValidators.length !== 0;
+
+    if (isRedeem) alerts.push({ name: 'redeem', timespan: Date.now(), formName: 'showRedeemForm' });
+
+    if (isNeedBondExtra) alerts.push({ name: 'bondMoreTokens', timespan: Date.now(), formName: 'showBondExtraForm' });
+
+    // Если нет избранных валидаторов
+    if (isEmptyValidators)
+      alerts.push({ name: 'emptyValidators', timespan: Date.now(), formName: 'showYourValidatorsForm' });
+    else {
+      // Если нет активных валидаторов и нет валидаторов в режиме ожидания(то есть все валидаторы неактивны)
+      if (isEmptyElectedValidators && !isWaitingValidators)
+        alerts.push({ name: 'emptyElectedValidators', timespan: Date.now(), formName: 'showYourValidatorsForm' });
+      // Если есть валидаторы в режиме ожидания
+      else if (isWaitingValidators)
+        alerts.push({ name: 'waitingForNextEra', timespan: Date.now(), formName: 'showYourValidatorsForm' });
+    }
+
+    return alerts;
+  }
+
+  public async getStashByController(address: string) {
+    return await apiSora.staking.getStashByController(address);
+  }
+
+  public async getMinNominatorBond(validators: FWValidatorInfoFull[], networkName: NetworkName) {
+    const haveFreeValidators = validators.some(({ isOversubscribed }) => !isOversubscribed);
+
+    if (haveFreeValidators) return await apiSora.staking.getMinNominatorBond();
+
+    const lastNominators = validators.map(({ nominators }) => +nominators[nominators.length - 1].value);
+    const min = Math.min(...lastNominators);
+    const precision = getUtilityProps(networkName, this.state).precision;
+
+    return FPNumber.fromCodecValue(min + 1, precision).toNumber();
+  }
+
+  public getMaxNominations() {
+    return apiSora.staking.getMaxNominations();
+  }
+
+  public getUnbondPeriod() {
+    return apiSora.staking.getUnbondPeriod();
+  }
+
+  public maxNominatorRewardedPerValidator() {
+    return apiSora.staking.getMaxNominatorRewardedPerValidator();
+  }
+
+  public async makeStaking({ params, type }: MakeStakingRequest): Promise<BasicTxResponse> {
+    const { networkName, isSavePass } = params;
+    const apiProps = this.state.getSubstrateApiMap[networkName.toLowerCase()];
+    const isReady = await apiProps.api?.isReady;
+
+    if (!isReady) return { status: false };
+
+    if (type === 'bond') {
+      // после бонда не нужно лочить пару, тк следом идет операция номинейта валидаторов
+      apiSora.shouldPairBeLocked = false;
+
+      return this.bond(params as RequestBond);
+    }
+
+    apiSora.shouldPairBeLocked = !isSavePass;
+
+    if (type === 'bondExtra') return this.bondExtra(params as RequestBondExtra);
+
+    if (type === 'unbond') return this.unbond(params as RequestUnbond);
+
+    if (type === 'rebond') return this.rebond(params as RequestRebond);
+
+    if (type === 'redeem') return this.withdrawUnbonded(params as RequestWithdrawUnbonded);
+
+    if (type === 'nominate') return this.nominate(params as RequestNominate);
+
+    if (type === 'setController') return this.setControllerAccount(params as RequestSetControllerAccount);
+
+    if (type === 'setPayee') return this.setPayee(params as RequestSetPayee);
+
+    if (type === 'payoutRewards') return this.payoutRewards(params as RequestPayoutRewards);
+
+    return {
+      status: false,
+      errors: [{ message: '[STAKING] unknown operation', code: BasicTxErrorCode.INVALID_PARAM }],
+    };
+  }
+
+  public async bond(params: RequestBond): Promise<BasicTxResponse> {
+    const { amount, payoutAddress, from, isSavePass } = params;
+
+    try {
+      await apiSora.staking.bond({ value: amount, controller: from, payee: payoutAddress }); // Controller аккаунт по умолчанию это Stash
+    } catch (ex) {
+      const message = `[STAKING] Bond failed: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.BOND_ERROR,
+            message,
+          },
+        ],
+      };
+    }
+
+    apiSora.shouldPairBeLocked = !isSavePass;
+
+    // nominate status
+    const { status } = await this.nominate(params);
+
+    return { status };
+  }
+
+  public async bondExtra(params: RequestBondExtra): Promise<BasicTxResponse> {
+    const { amount } = params;
+
+    try {
+      await apiSora.staking.bondExtra({ value: amount });
+    } catch (ex) {
+      const message = `[STAKING] BondExtra failed: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.BONDEXTRA_ERROR,
+            message,
+          },
+        ],
+      };
+    }
+
+    return { status: true };
+  }
+
+  public async unbond(params: RequestUnbond): Promise<BasicTxResponse> {
+    const { amount } = params;
+
+    try {
+      await apiSora.staking.unbond({ value: amount });
+    } catch (ex) {
+      const message = `[STAKING] Unbond failed: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.UNBOND_ERROR,
+            message,
+          },
+        ],
+      };
+    }
+
+    return { status: true };
+  }
+
+  public async rebond(params: RequestRebond): Promise<BasicTxResponse> {
+    const { amount } = params;
+
+    try {
+      await apiSora.staking.rebond({ value: amount });
+    } catch (ex) {
+      const message = `[STAKING] Rebond failed: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.REBOND_ERROR,
+            message,
+          },
+        ],
+      };
+    }
+
+    return { status: true };
+  }
+
+  public async withdrawUnbonded(params: RequestWithdrawUnbonded): Promise<BasicTxResponse> {
+    const { amount } = params;
+
+    try {
+      await apiSora.staking.withdrawUnbonded({ value: amount });
+    } catch (ex) {
+      const message = `[STAKING] WithdrawUnbonded failed: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.REDEEM_ERROR,
+            message,
+          },
+        ],
+      };
+    }
+
+    return { status: true };
+  }
+
+  public async setControllerAccount(params: RequestSetControllerAccount): Promise<BasicTxResponse> {
+    const { controllerAddress } = params;
+
+    try {
+      await apiSora.staking.setController({ address: controllerAddress });
+    } catch (ex) {
+      const message = `[STAKING] Set controller failed: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.SET_CONTROLLER_ERROR,
+            message,
+          },
+        ],
+      };
+    }
+
+    return { status: true };
+  }
+
+  public async nominate(params: RequestNominate): Promise<BasicTxResponse> {
+    const { validators } = params;
+
+    try {
+      await apiSora.staking.nominate({ validators });
+    } catch (ex) {
+      const message = `[STAKING] Nominate failed: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.NOMINATE_ERROR,
+            message,
+          },
+        ],
+      };
+    }
+
+    return { status: true };
+  }
+
+  public async setPayee(params: RequestSetPayee): Promise<BasicTxResponse> {
+    const { payee } = params;
+
+    try {
+      await apiSora.staking.setPayee({ payee });
+    } catch (ex) {
+      const message = `[STAKING] Set payee failed: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.SET_PAYEE_ERROR,
+            message,
+          },
+        ],
+      };
+    }
+
+    return { status: true };
+  }
+
+  public async payoutRewards({ payouts }: RequestPayoutRewards): Promise<BasicTxResponse> {
+    try {
+      await apiSora.staking.payout({ payouts });
+    } catch (ex) {
+      const message = `[STAKING] Payout rewards: ${ex}`;
+
+      console.info(message);
+
+      return {
+        status: false,
+        errors: [
+          {
+            code: TransferErrorCode.PAYOUT_REWARDS_ERROR,
+            message,
+          },
+        ],
+      };
+    }
+
+    return { status: true };
+  }
+}

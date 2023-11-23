@@ -1,6 +1,6 @@
-import { FWCron } from '@extension-base/background/cron';
+import { type FWCron } from '@extension-base/background/cron';
 import { logger as createLogger } from '@polkadot/util';
-import { Subscription } from 'rxjs';
+import { type Subscription } from 'rxjs';
 import { subscribeBalance } from '@extension-base/api/substrate/balance';
 import type State from '@extension-base/background/handlers/State';
 import type { Logger } from '@polkadot/util/types';
@@ -10,7 +10,7 @@ import type {
   SubscriptionMessageTypes,
   Subscriptions,
 } from '@extension-base/background/types/types';
-import { NetworkName } from '@/interfaces';
+import { type NetworkName } from '@/interfaces';
 import { SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 
 type SubscriptionName = 'xorTotalBalance' | NetworkName;
@@ -127,16 +127,12 @@ export class FWSubscription {
               this.subscribeBalances(address, ethereumAddress, SUBSTRATE_ETHEREUM_NETWORKS, null);
             } else {
               // если адрес не менялся, подписываемся только на новые сети(которые только что включили)
-              if (newSubstrateNetworksWithoutSubscribe.length) {
-                this.subscribeBalances(
-                  address,
-                  ethereumAddress,
-                  newSubstrateNetworksWithoutSubscribe,
-                  newEvmNetworksWithoutSubscribe
-                );
-              }
-
-              if (newEvmNetworksWithoutSubscribe.length) this.state.fetchEvmBalance(newEvmNetworksWithoutSubscribe);
+              this.subscribeBalances(
+                address,
+                ethereumAddress,
+                newSubstrateNetworksWithoutSubscribe,
+                newEvmNetworksWithoutSubscribe
+              );
             }
 
             this.serviceInfo.address = address;
@@ -201,7 +197,7 @@ export class FWSubscription {
   ) {
     console.info(`Start balance sub for: ${address}${isFirstRun ? `; isFirstRun: ${true}` : ''}`);
 
-    if (isFirstRun) this.state.generateDefaultBalance(address);
+    if (isFirstRun) this.state.balanceService.generateDefaultBalance(address);
 
     this.state.fetchEvmBalance(newEvmNetworks, ethereumAddress);
 
@@ -246,10 +242,10 @@ export function createSubscription<TMessageType extends MessageTypesWithSubscrip
 ): (data: SubscriptionMessageTypes[TMessageType] | null) => void {
   subscriptions[id] = port;
 
-  return (subscription: unknown): void => {
+  return (value: unknown): void => {
     if (subscriptions[id]) {
       try {
-        port.postMessage({ id, subscription });
+        port.postMessage({ id, value });
       } catch (error) {
         console.info('Error occurred while trying to post message', error);
 

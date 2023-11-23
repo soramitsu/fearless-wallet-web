@@ -191,10 +191,9 @@
       :currency="sendCurrency"
       :amount="sendAmount"
       :value="sendValue"
-      :network="soraNetworkName"
       :firstIcon="sendAssetId"
       :secondIcon="receiveAssetId"
-      :swapOptions="swapOptions"
+      :tx="tx"
       extrinsicType="swap"
       @close="confirmationPasswordPopupClose"
     />
@@ -206,7 +205,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet, GetNetwork, GetAssetPrice } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
 import SwapSettings from '@/screens/polkaswap/swap/SwapSettings.vue';
@@ -216,9 +215,14 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
 import { Components } from '@/router/routes';
 import { checkSwap, getSoraFees } from '@/extension/messaging';
-import { getCurrencyOptions, getXORCurrency } from '@/helpers/currencies';
+import {
+  getCurrencyOptions,
+  getXORCurrency,
+  calcTransferableSendMinusFee,
+  isValidAmountAsset,
+} from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
-import { MarketType, SwapOptions } from '@/interfaces';
+import { MarketType, type SwapOptions } from '@/interfaces';
 import { addNumbers } from '@/helpers/numbers';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID } from '@/consts/sora';
 
@@ -255,7 +259,7 @@ export default class SwapForm extends Vue {
   showConfirmationPasswordPopup = false;
   isExchangeB = false;
   fee = '';
-  swapOptions: SwapOptions = {} as SwapOptions;
+  tx: SwapOptions = {} as SwapOptions;
   swapInterval!: NodeJS.Timer;
 
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
@@ -466,14 +470,7 @@ export default class SwapForm extends Vue {
   }
 
   get isValidSendAsset() {
-    const maxSendFP = new FPNumber(this.calcTransferableSendMinusFee());
-
-    // sendAsset !== xor, если количество токенов равно нулю, то своп невалиден
-    // sendAsset === xor, если количество токенов за вычетом комиссии равно нулю, то своп невалиден
-    if (FPNumber.isEqualTo(maxSendFP, FPNumber.ZERO)) return false;
-
-    // если sendAmount меньше или равен максимальному количеству токенов, то своп валиден
-    return FPNumber.lte(new FPNumber(this.sendAmount), maxSendFP);
+    return isValidAmountAsset(this.sendCurrency, this.soraNetworkName, this.fee, this.sendAmount);
   }
 
   get isValidTransferByXOR() {
@@ -507,11 +504,14 @@ export default class SwapForm extends Vue {
     return this.receiveAssetName.toUpperCase();
   }
 
-  get transferableSendAmount() {
-    return +(
-      this.sendCurrency?.balances.find((balance) => balance.name.toLowerCase() === this.soraNetworkName.toLowerCase())
-        ?.transferable ?? 0
+  get sendCurrencyBalance() {
+    return this.sendCurrency?.balances.find(
+      (balance) => balance.name.toLowerCase() === this.soraNetworkName.toLowerCase()
     );
+  }
+
+  get transferableSendAmount() {
+    return +(this.sendCurrencyBalance?.transferable ?? 0);
   }
 
   get transferableReceiveAmount() {
@@ -532,22 +532,8 @@ export default class SwapForm extends Vue {
     return this.receiveAssetPrice * amount;
   }
 
-  updateComponentParams() {
-    const { reset, restPriceXOR, assetId } = this.$route.params;
-
-    if (reset !== undefined) {
-      this.receiveAssetId = '';
-      this.sendAmount = '';
-      this.receiveAmount = '';
-    }
-
-    if (restPriceXOR) {
-      this.receiveAssetId = SORA_XOR_ASSET_ID;
-      this.receiveAmount = restPriceXOR;
-      this.isExchangeB = true;
-    }
-
-    this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
+  created() {
+    this.updateComponentParams();
 
     this.getSoraFees();
   }
@@ -561,8 +547,20 @@ export default class SwapForm extends Vue {
     this.step = 1;
   }
 
-  async created() {
-    this.updateComponentParams();
+  updateComponentParams() {
+    const { reset, restPriceXOR, assetId } = this.$route.params;
+
+    if (reset !== undefined) {
+      this.receiveAssetId = '';
+      this.sendAmount = '';
+      this.receiveAmount = '';
+    } else if (restPriceXOR) {
+      this.receiveAssetId = SORA_XOR_ASSET_ID;
+      this.receiveAmount = restPriceXOR;
+      this.isExchangeB = true;
+    }
+
+    this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
   }
 
   async getSoraFees() {
@@ -602,7 +600,7 @@ export default class SwapForm extends Vue {
       if (this.isExchangeB) this.sendAmount = amountA;
       else this.receiveAmount = amountB;
 
-      this.swapOptions = swapOptions!;
+      this.tx = swapOptions!;
       this.minMaxAmount = minMaxValue;
       this.providerFee = fee;
       this.AToB = AToB;
@@ -615,6 +613,7 @@ export default class SwapForm extends Vue {
 
     createSwap();
   }
+
   clearSwapInterval() {
     clearInterval(this.swapInterval);
   }
@@ -731,20 +730,7 @@ export default class SwapForm extends Vue {
   }
 
   calcTransferableSendMinusFee() {
-    if (this.sendCurrency === undefined) return '0';
-
-    const balance = this.sendCurrency.balances.find(
-      ({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase()
-    )!;
-    const transferable = balance.transferable ?? '0';
-
-    if (this.sendCurrency?.symbol === SORA_UTILITY_ASSET) {
-      const result = new FPNumber(transferable).sub(new FPNumber(this.fee));
-
-      return FPNumber.lt(result, FPNumber.ZERO) ? '0' : result.toString();
-    }
-
-    return transferable;
+    return calcTransferableSendMinusFee(this.sendCurrency, this.soraNetworkName, this.fee);
   }
 
   setMax() {
@@ -763,7 +749,7 @@ export default class SwapForm extends Vue {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid $secondary-background-color;
+  border-bottom: $secondary-border;
 
   .fiat-info {
     text-align: right;
@@ -798,7 +784,7 @@ export default class SwapForm extends Vue {
   justify-content: space-between;
   align-items: center;
   padding: $default-padding;
-  border-bottom: 1px solid $default-background-color;
+  border-bottom: $default-border;
 }
 
 .header {
@@ -870,7 +856,7 @@ export default class SwapForm extends Vue {
     justify-content: center;
     align-items: center;
     margin: -46px auto 0;
-    border: 1px solid $secondary-background-color;
+    border: $secondary-border;
     opacity: 1;
     position: relative;
     top: -92px;

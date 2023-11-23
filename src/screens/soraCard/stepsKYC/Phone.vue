@@ -57,12 +57,12 @@
 <script lang="ts">
 import { Component, Vue, Ref, Watch, Prop } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
-import { FPNumber } from '@sora-substrate/util';
+import { type FPNumber } from '@sora-substrate/util';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
 import type Input from '@/components/Input.vue';
 import type { AsyncFn, Fn } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { validatePhoneNumber } from '@/helpers';
 import { RESEND_INTERVAL, OTP_CODE_LENGTH, VerificationStatus, StepsKyc } from '@/consts/soraCard';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';

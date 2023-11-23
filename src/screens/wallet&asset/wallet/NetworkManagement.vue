@@ -35,7 +35,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store';
+import { type SelectedWallet } from '@/store';
 
 @Component
 export default class NetworkManagement extends Vue {
@@ -59,13 +59,13 @@ export default class NetworkManagement extends Vue {
         display: flex;
         justify-content: space-between;
         padding: 16px 0 16px 16px;
-        border-bottom: 1px solid $default-background-color;
+        border-bottom: $default-border;
         align-items: center;
         height: 68px;
         margin-bottom: 10px;
         clip-path: $big-clip-path-left-top-and-right-bottom;
         background-color: $secondary-background-color;
-        border: 1px solid $default-background-color;
+        border: $default-border;
         border-radius: $default-border-radius;
 
         .network-img {

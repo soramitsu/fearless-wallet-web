@@ -83,7 +83,7 @@ export default class StepsKYCPopup extends Vue {
     display: flex;
     align-items: center;
     padding: 10px;
-    border-top: 1px solid $default-background-color;
+    border-top: $default-border;
     color: $default-white;
 
     &:first-child {

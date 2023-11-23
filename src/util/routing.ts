@@ -1,5 +1,5 @@
-import { Route } from 'vue-router';
-import { TokenBalance } from '@extension-base/background/types/types';
+import { type Route } from 'vue-router';
+import { type TokenBalance } from '@extension-base/background/types/types';
 import { Components } from '@/router/routes';
 import { setTitle } from '@/helpers/common';
 import { FEARLESS_TITLE } from '@/consts/global';

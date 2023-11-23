@@ -1,6 +1,5 @@
 export * from '@/interfaces/assets';
 export * from '@/interfaces/balances';
-export * from '@/interfaces/beacon';
 export * from '@/interfaces/common';
 export * from '@/interfaces/currencies';
 export * from '@/interfaces/history';
@@ -8,4 +7,6 @@ export * from '@/interfaces/networks';
 export * from '@/interfaces/nodes';
 export * from '@/interfaces/crossChain';
 export * from '@/interfaces/google';
+export * from '@/interfaces/staking';
 export * from '@/interfaces/ui';
+// export * from '@/interfaces/ether';

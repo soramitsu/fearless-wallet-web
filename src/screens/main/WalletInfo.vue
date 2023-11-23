@@ -19,9 +19,9 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { ResponseTotalBalances } from '@extension-base/background/types';
+import type { ResponseTotalBalances } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { CustomEvent } from '@/interfaces';
+import { type CustomEvent } from '@/interfaces';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import { getTotalBalances } from '@/extension/messaging';
 
@@ -101,10 +101,10 @@ export default class WalletInfo extends Vue {
   align-items: center;
   text-align: left;
   opacity: 0.9;
-  border: 1px solid $default-background-color;
+  border: $default-border;
   padding: 10px $default-padding;
   clip-path: $big-clip-path-left-top-and-right-bottom;
-  border: 1px solid $default-background-color;
+  border: $default-border;
   border-radius: $default-border-radius;
   background: $secondary-background-color;
   user-select: none;

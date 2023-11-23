@@ -1,24 +1,20 @@
+import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
-import type {
-  ValidateJsonResult,
-  AccountJson,
-  ResponseTotalBalances,
-  Meta,
-} from '@extension-base/background/types/types';
+import type { KeyringPair$Json } from '@polkadot/keyring/types';
+import type { ValidateJsonResult, AccountJson, ResponseTotalBalances } from '@extension-base/background/types/types';
 import type { DerivationPath } from '@/interfaces';
 import { sendMessage } from '@/extension/messaging/index';
 
 export function addAccount(
   password: string,
   suri: string,
-  type?: KeypairType,
-  meta?: Record<string, unknown>
+  type: KeypairType,
+  meta: Record<string, unknown>
 ): Promise<string> {
   return sendMessage('pri(accounts.create)', { password, suri, type, meta });
 }
 
-export function createMobileWallet(address: string, meta: KeyringPair$Meta): Promise<boolean> {
+export function createMobileWallet(address: string, meta: FWKeyringMeta): Promise<boolean> {
   return sendMessage('pri(accounts.create.mobile)', { meta, address });
 }
 
@@ -66,7 +62,7 @@ export function updateCurrentAccount(address: string): Promise<boolean> {
   return sendMessage('pri(accounts.update.current)', address);
 }
 
-export function updatePairMeta(address: string, meta: Meta): Promise<boolean> {
+export function updatePairMeta(address: string, meta: FWKeyringMeta): Promise<boolean> {
   return sendMessage('pri(accounts.update.meta)', { address, meta });
 }
 

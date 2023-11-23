@@ -89,18 +89,15 @@
                 class="row"
                 icon="close"
                 placeholder="assets.sendTo"
-                :isActiveRotate="showDestNetPopup"
                 @click="setRecipient"
               />
 
               <div class="activity-buttons row">
-                <button class="button" @click="toggleHistoryBookVisibility">{{ $t('assets.history') }}</button>
+                <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
 
-                <button class="button" @click="paste">{{ $t('common.paste') }}</button>
+                <BadgeButton text="common.paste" @click="paste" />
 
-                <button v-if="showMyWalletsButton" class="button" @click="toggleMyWalletsVisibility">
-                  {{ $t('assets.myWallets') }}
-                </button>
+                <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
               </div>
 
               <InfoRow
@@ -161,7 +158,6 @@
       :currency="currency"
       :amount="syncedAmount"
       :value="syncedValue"
-      :network="syncedNetwork"
       :firstIcon="firstIcon"
       :secondIcon="syncedDestNet"
       :extrinsicType="extrinsicType"
@@ -188,23 +184,30 @@ import { Component, Vue, Prop, Watch, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import { getMoonbeamMoonriverAssetName, getNativeAssetName } from '@extension-base/background/utils/utils';
-import { RequestCheckTransfer, RequestCheckCrossChain, TokenBalance } from '@extension-base/background/types';
+import {
+  type RequestCheckTransfer,
+  type RequestCheckCrossChain,
+  type TokenBalance,
+  type AccountJson,
+} from '@extension-base/background/types/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
-import HistoryBook from './HistoryBook.vue';
-import EditAddressBook from './EditAddressBook.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
-import InputWithIcon from './InputWithIcon.vue';
 import type { NetworkJson } from '@extension-base/types';
-import type { GetAssetPrice, GetNetwork } from '@/store';
-import type { AccountJson } from '@extension-base/background/types';
+import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
+import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
+import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import BaseApi from '@/util/BaseApi';
 import FloatInput from '@/components/FloatInput.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store';
-import { cut, firstCharToUp, getClipboard } from '@/helpers/';
-import { getCurrencyOptions, getUtilityAsset } from '@/helpers/currencies';
+import {
+  getCurrencyOptions,
+  calcTransferableSendMinusFee,
+  isValidAmountAsset,
+  getUtilityAsset,
+} from '@/helpers/currencies';
+import { cut, firstCharToUp, getClipboard } from '@/helpers';
 import {
   VALID_SUBSTRATE_ADDRESS,
   VALID_ETHEREUM_ADDRESS,
@@ -222,7 +225,6 @@ import { isNetworkGroup } from '@/helpers/common';
     WalletInfo,
     FloatInput,
     HistoryBook,
-    InputWithIcon,
     EditAddressBook,
     ExistentialPopup,
     WarningAddressPopup,
@@ -572,14 +574,7 @@ export default class TransferForm extends Vue {
   }
 
   get isValidSendAsset() {
-    const maxSendFP = new FPNumber(this.calcTransferableSendMinusFee(this.syncedFee));
-
-    // если sendAsset !== Utility, то: если количество токенов равно нулю, то транзакция невалидна
-    // если  sendAsset === Utility, то: если количество токенов за вычетом комиссии равно нулю, то транзакция невалидна
-    if (FPNumber.isEqualTo(maxSendFP, FPNumber.ZERO)) return false;
-
-    // если syncedAmount меньше или равен максимальному количеству токенов, то транзакция валидна
-    return FPNumber.lte(new FPNumber(this.syncedAmount), maxSendFP);
+    return isValidAmountAsset(this.currency, this.syncedNetwork, this.syncedFee ?? '0', this.syncedAmount);
   }
 
   get isValidTransferByUtility() {
@@ -754,27 +749,8 @@ export default class TransferForm extends Vue {
     return balance?.transferable?.toString() ?? '0';
   }
 
-  calcTransferableSendMinusFee(fee = '0') {
-    if (this.currency === undefined) return 0;
-
-    const destNetFeeFP = new FPNumber(this.syncedDestNetFee);
-
-    // Для Utility ассета вычитаем комиссию, тк комиссия всегда списывается в Utility токене
-    if (this.currencyBalance?.isUtility) {
-      const amountSubFee = new FPNumber(this.transferableAmount).sub(new FPNumber(fee));
-      const amountSubFeeSubDestFee = this.isTransfer ? amountSubFee : amountSubFee.sub(destNetFeeFP);
-
-      return FPNumber.lt(amountSubFeeSubDestFee, FPNumber.ZERO) ? 0 : amountSubFeeSubDestFee.toNumber();
-    }
-
-    // вычитаем CrossChain комиссию
-    if (this.isCrossChain) {
-      const amountSubDestFee = new FPNumber(this.transferableAmount).sub(destNetFeeFP);
-
-      return FPNumber.lt(amountSubDestFee, FPNumber.ZERO) ? 0 : amountSubDestFee.toNumber();
-    }
-
-    return this.transferableAmount;
+  calcTransferableSendMinusFee(fee: string) {
+    return calcTransferableSendMinusFee(this.currency, this.syncedNetwork, fee, this.syncedDestNetFee);
   }
 
   async setMax() {
@@ -782,7 +758,7 @@ export default class TransferForm extends Vue {
 
     const { estimateFee } = await this.verifyTx(this.transferableAmount.toString());
 
-    const transferableCountAssets = this.calcTransferableSendMinusFee(estimateFee);
+    const transferableCountAssets = this.calcTransferableSendMinusFee(estimateFee!);
 
     this.syncedAmount = transferableCountAssets.toString();
     this.syncedValue = getCostOfAssets(transferableCountAssets, this.assetPrice).toString();
@@ -875,7 +851,7 @@ export default class TransferForm extends Vue {
     );
   }
 
-  async paste() {
+  paste() {
     this.syncedRecipient = getClipboard();
   }
 
@@ -945,27 +921,6 @@ export default class TransferForm extends Vue {
     display: flex;
     user-select: none;
     margin-bottom: 30px;
-
-    .button {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 5px 15px;
-      height: 30px;
-      background: $secondary-background-color;
-      border-radius: 30px;
-      font-weight: 700;
-      font-size: 12px;
-      text-transform: uppercase;
-      color: $plain-white;
-      margin: 5px 14px 0 0;
-      border: none;
-      cursor: pointer;
-
-      &:hover {
-        background: $default-background-color;
-      }
-    }
   }
 }
 </style>

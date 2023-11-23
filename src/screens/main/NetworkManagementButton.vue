@@ -14,7 +14,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
 
 @Component({})
-export default class Header extends Vue {
+export default class NetworkManagementButton extends Vue {
   @Prop(Boolean) isGroupIcon!: boolean;
   @Prop(String) icon!: string;
   @Prop(String) selectedNetwork!: string;

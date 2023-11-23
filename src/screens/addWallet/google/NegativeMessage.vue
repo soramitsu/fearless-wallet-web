@@ -6,13 +6,12 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+type Props = {
+  message: string;
+};
 
-@Component
-export default class NegativeMessage extends Vue {
-  @Prop(String) message!: string;
-}
+defineProps<Props>();
 </script>
 
 <style lang="scss" scoped>
@@ -26,7 +25,7 @@ export default class NegativeMessage extends Vue {
 
 .subtext {
   font-size: 18px;
-  color: #ffffffbf;
+  color: $default-white;
 }
 
 .img {

@@ -82,17 +82,14 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { AccountJson } from '@extension-base/background/types';
+import type { AccountJson } from '@extension-base/background/types/types';
 import { Components } from '@/router/routes';
 import { URLS } from '@/consts/urls';
-import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 import { initGoogleAuth } from '@/extension/messaging';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { IS_EXTENSION } from '@/consts/global';
 
-@Component({
-  components: { MobileConnect },
-})
+@Component
 export default class Welcome extends Vue {
   showGoogleAuthPopup = false;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
@@ -134,7 +131,7 @@ export default class Welcome extends Vue {
   }
 
   openAddWalletMobile() {
-    this.$router.push({ name: Components.MobileConnect });
+    this.$router.push({ name: Components.MobileWalletAuth });
   }
 }
 </script>

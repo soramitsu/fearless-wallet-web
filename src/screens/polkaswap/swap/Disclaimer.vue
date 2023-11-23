@@ -60,44 +60,31 @@
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import { Mutation } from 'vuex-class';
-import type { Fn } from '@/interfaces';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+<script lang="ts" setup>
+import { ref, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router/composables';
 import { URLS } from '@/consts/urls';
+import { useStore } from '@/store';
 
-@Component
-export default class Disclaimer extends Vue {
-  agreeWithRules = false;
+const router = useRouter();
+const route = useRoute();
+const store = useStore();
 
-  @Mutation(AccountsMutationTypes.HIDE_POLKASWAP_ALERT) hidePolkaswapAlert!: Fn<unknown>;
+const urls = URLS;
+const agreeWithRules = ref(false);
 
-  get showSwitcher() {
-    return this.$route.params.showSwitcher;
-  }
+const buttonDisabled = computed(() => !agreeWithRules.value);
+const showSwitcher = computed(() => route.params.showSwitcher);
 
-  get buttonDisabled() {
-    return !this.agreeWithRules;
-  }
+const open = (url: string) => window.open(url);
 
-  get urls() {
-    return URLS;
-  }
+const closeForm = () => router.back();
 
-  open(url: string) {
-    window.open(url);
-  }
+const agree = () => {
+  store.commit('HIDE_POLKASWAP_ALERT');
 
-  closeForm() {
-    this.$router.back();
-  }
-
-  agree() {
-    this.hidePolkaswapAlert();
-    this.closeForm();
-  }
-}
+  closeForm();
+};
 </script>
 
 <style lang="scss" scoped>

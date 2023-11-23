@@ -1,19 +1,37 @@
+import type {
+  PairingSubjectType,
+  RequestApproveConnectWalletSession,
+  RequestApproveWalletConnect,
+  RequestApproveWalletConnectNotSupport,
+  RequestConnectWalletConnect,
+  RequestDisconnectWalletConnectSession,
+  RequestReconnectConnectWalletSession,
+  RequestRejectConnectWalletSession,
+  RequestRejectWalletConnectNotSupport,
+  WalletConnectNotSupportRequest,
+  WalletConnectSessionRequest,
+  WalletConnectTransactionRequest,
+} from '@extension-base/services/wallet-connect-service/types';
+import type {
+  StakingParamsRequest,
+  StakingParamsResponse,
+  MyStakingInfoResponse,
+  MakeStakingRequest,
+  RewardsResponse,
+  CheckControllerRequest,
+  getRewardsRequest,
+  StakingNetworkRequest,
+} from '@extension-base/services/staking-service/types';
+import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type { SessionTypes } from '@walletconnect/types';
 import type {
   BasicTxResponse,
   NotificationResponse,
+  RequestCrossChain,
+  RequestSwap,
+  RequestTransfer,
   ResponseCheckTransfer,
   SigningRequest,
-} from '@extension-base/background/types/types';
-import type { NetworkJson } from '@extension-base/types';
-import type {
-  InjectedAccount,
-  MetadataDef,
-  InjectedMetadataKnown,
-  ProviderMeta,
-} from '@polkadot/extension-inject/types';
-import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
-import type {
   RequestAccountCreateSuri,
   RequestAddressCreate,
   RequestAccountExport,
@@ -45,8 +63,6 @@ import type {
   RequestCheckTransfer,
   RequestCheckCrossChain,
   ResponseCheckCrossChain,
-  RequestTransfer,
-  RequestCrossChain,
   BalanceJson,
   PriceJson,
   RequestSubscribePrice,
@@ -59,13 +75,21 @@ import type {
   RequestRpcSubscribe,
   RequestCheckSwap,
   ResponseCheckSwap,
-  RequestSwap,
   ResponseMakeSwap,
   RequestUpdateMeta,
   ResponseTotalBalances,
   MobileSigningRequest,
   RequestSigningSubscribe,
-} from '@extension-base/background/types';
+  FetchBalanceRequest,
+} from '@extension-base/background/types/types';
+import type { NetworkJson } from '@extension-base/types';
+import type {
+  InjectedAccount,
+  MetadataDef,
+  InjectedMetadataKnown,
+  ProviderMeta,
+} from '@polkadot/extension-inject/types';
+import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
   DerivationPath,
@@ -74,26 +98,10 @@ import type {
   IGetFilesResponse,
   ICreateFile,
   FilesResponse,
-  SignerPayloadJSON,
   SoraFees,
-  SignerPayloadRaw,
   OnboardingStories,
 } from '@/interfaces';
-import type {
-  RequestApproveConnectWalletSession,
-  RequestApproveWalletConnect,
-  RequestApproveWalletConnectNotSupport,
-  RequestConnectWalletConnect,
-  RequestDisconnectWalletConnectSession,
-  RequestReconnectConnectWalletSession,
-  RequestRejectConnectWalletSession,
-  RequestRejectWalletConnectNotSupport,
-  WalletConnectNotSupportRequest,
-  WalletConnectSessionRequest,
-  WalletConnectTransactionRequest,
-} from '@extension-base/services/wallet-connect-service/types';
 
-// [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
 export interface RequestSignatures {
   // private/internal requests, i.e. from a popup
   //Account Managment
@@ -129,7 +137,7 @@ export interface RequestSignatures {
   'pri(authorize.delete.request)': [string, void];
   'pri(authorize.cancel)': [string, boolean];
   'pri(authorize.update)': [RequestUpdateAuthorizedAccounts, void];
-  'pri(activeTabsUrl.update)': [RequestActiveTabsUrlUpdate, void];
+  'pri(tabs.update.activeTabsUrl)': [RequestActiveTabsUrlUpdate, void];
   'pri(accounts.json.restore)': [RequestJsonRestore, string];
   'pri(accounts.json.valid)': [RequestJsonValidate, ValidateJsonResult];
   'pri(metadata.approve)': [RequestMetadataApprove, boolean];
@@ -157,16 +165,27 @@ export interface RequestSignatures {
   //Transfer, CrossChain, Sora Swap
   'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
   'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
+
   'pri(accounts.checkCrossChain)': [RequestCheckCrossChain, ResponseCheckCrossChain];
   'pri(accounts.crossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse];
+
   'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
   'pri(accounts.swap)': [RequestSwap, ResponseMakeSwap];
+
   'pri(accounts.soraFees)': [null, SoraFees];
+
+  // staking
+  'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];
+  'pri(staking.checkController)': [CheckControllerRequest, boolean];
+  'pri(staking.rewards)': [getRewardsRequest, RewardsResponse];
+  'pri(staking.myStaking)': [StakingNetworkRequest, MyStakingInfoResponse];
+  'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];
 
   //ether
   'pri(balance)': [null, BalanceJson];
   'pri(fetch.evm.balance)': [null, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
+  'pri(fetch.balance)': [FetchBalanceRequest, string];
 
   'pri(price.update.currency)': [string, void];
   'pri(price.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];
@@ -217,4 +236,9 @@ export interface RequestSignatures {
   ];
   'pri(walletConnect.request.approve)': [RequestApproveWalletConnect, boolean];
   'pri(walletConnect.request.reject)': [{ topic: string }, boolean];
+  //Wallet Connect dApp
+  'pri(walletConnect.app.connect)': [null, string];
+  'pri(walletConnect.app.disconnect)': [null, string];
+  'pri(walletConnect.app.subscribePairing)': [string, PairingSubjectType, PairingSubjectType];
+  'pri(walletConnect.app.pairing)': [null, string];
 }

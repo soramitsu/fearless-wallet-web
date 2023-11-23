@@ -1,4 +1,4 @@
-import { Menu, MenuItem, shell } from 'electron';
+import { Menu, type MenuItem, shell } from 'electron';
 import { URLS } from '@/consts/urls';
 
 const isMac = process.platform === 'darwin';

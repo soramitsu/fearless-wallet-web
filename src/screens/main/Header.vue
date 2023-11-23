@@ -83,7 +83,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
-import { ActiveTabAuthorizeStatus, TokenBalance } from '@extension-base/background/types/types';
+import { type ActiveTabAuthorizeStatus, type TokenBalance } from '@extension-base/background/types/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import type { NetworkJson } from '@extension-base/types';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
@@ -97,7 +97,7 @@ import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import { windowOpen } from '@/extension/messaging';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
-import { AsyncFn, Fn } from '@/interfaces';
+import { type AsyncFn, type Fn } from '@/interfaces';
 import { isNetworkGroup } from '@/helpers/common';
 import { cut } from '@/helpers';
 
@@ -309,10 +309,13 @@ export default class Header extends Vue {
   .s-icon-arrows-arrows-diagonals-bltr-24 {
     font-size: 18px !important;
   }
+
   .header-part-right {
     gap: 4px;
     justify-content: flex-end;
+    align-items: center;
   }
+
   .header-part-left {
     gap: 10px;
     &:hover {
@@ -381,6 +384,7 @@ export default class Header extends Vue {
     height: 16px;
     border-radius: 50%;
   }
+
   .network-management {
     justify-content: space-between;
     width: 137px;

@@ -1,7 +1,7 @@
-import { SignerPayloadJSON } from '@polkadot/types/types';
-import { EngineTypes, SignClientTypes, SessionTypes } from '@walletconnect/types';
-import { EvmSendTransactionParams } from '../../api/evm/types/ether';
-import { Resolver } from '../../background/types';
+import type { SignerPayloadJSON } from '@polkadot/types/types';
+import type { EngineTypes, SignClientTypes, SessionTypes } from '@walletconnect/types';
+import type { EvmSendTransactionParams } from '@extension-base/api/evm/types/ether';
+import type { Resolver } from '@extension-base/background/types/types';
 
 //TODO refactoring types
 type BaseWalletConnectSessionRequest = {
@@ -9,12 +9,13 @@ type BaseWalletConnectSessionRequest = {
   isInternal?: boolean;
   url: string;
 };
+
 export interface WalletConnectSessionRequest extends BaseWalletConnectSessionRequest {
   request: SignClientTypes.EventArguments['session_proposal'];
   isPasswordRequired?: boolean;
 }
 
-export type WalletConnectSessions = SessionTypes.Struct[] | null;
+export type WalletConnectSessions = SessionTypes.Struct[];
 
 export interface WalletConnectNotSupportRequest extends BaseWalletConnectSessionRequest {
   request: SignClientTypes.EventArguments['session_request'];
@@ -110,4 +111,15 @@ export type WalletConnectParamMap = {
   [EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3]: WalletConnectEip155SignMessage;
   [EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4]: WalletConnectEip155SignMessage;
   [EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION]: WalletConnectEip155SendTransaction;
+};
+
+export type AppSessionInitResponse = {
+  uri?: string;
+  approval: () => Promise<SessionTypes.Struct>;
+};
+
+export type PairingSubjectType = {
+  uri?: string;
+  status?: boolean;
+  message?: string;
 };

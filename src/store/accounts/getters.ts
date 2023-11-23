@@ -1,4 +1,4 @@
-import { AccountJson, TokenBalance } from '@extension-base/background/types';
+import { type AccountJson, type TokenBalance } from '@extension-base/background/types/types';
 import type { GetterTree } from 'vuex';
 import type { SelectedWallet, WalletInfo, GetAutoSelectNodesValueByNetwork, GetShowWarningNetworks } from './types';
 import type { State } from './state';

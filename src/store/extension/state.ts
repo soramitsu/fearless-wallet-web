@@ -1,11 +1,11 @@
 import {
-  ActiveTabAuthorizeStatus,
-  AuthorizeRequest,
-  AuthUrlInfo,
-  MetadataRequest,
-} from '@extension-base/background/types';
+  type ActiveTabAuthorizeStatus,
+  type AuthorizeRequest,
+  type AuthUrlInfo,
+  type MetadataRequest,
+  type SigningRequest,
+} from '@extension-base/background/types/types';
 import type { Features } from '@/store/extension/types';
-import type { SigningRequest } from '@extension-base/background/types/types';
 import type {
   WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,

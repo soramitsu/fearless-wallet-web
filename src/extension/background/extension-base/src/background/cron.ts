@@ -1,5 +1,5 @@
 import { logger as createLogger } from '@polkadot/util';
-import { Logger } from '@polkadot/util/types';
+import { type Logger } from '@polkadot/util/types';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import {
   CRON_AUTO_RECOVER_DOTSAMA_INTERVAL,
@@ -8,7 +8,7 @@ import {
   CRON_UPDATE_JSON_INTERVAL,
 } from '@extension-base/const/intervals';
 import type FWState from '@extension-base/background/handlers/State';
-import type { ServiceInfo } from '@extension-base/background/types';
+import type { ServiceInfo } from '@extension-base/background/types/types';
 
 export class FWCron {
   public status: 'pending' | 'running' | 'stopped' = 'pending';
@@ -63,7 +63,7 @@ export class FWCron {
         Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
         Object.keys(this.state.getEvmApiMap).length !== 0
       ) {
-        this.state.refreshPrice();
+        this.state.pricesService.refreshPrice();
         this.updateApiMapStatus();
       }
     });
@@ -83,7 +83,7 @@ export class FWCron {
         Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
         Object.keys(this.state.getEvmApiMap).length !== 0
       ) {
-        this.addCron('refreshPrice', () => this.state.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
+        this.addCron('refreshPrice', () => this.state.pricesService.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
         this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
         this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
       }
@@ -103,7 +103,7 @@ export class FWCron {
     }
 
     if (!this.isCronExist('refreshPrice'))
-      this.addCron('refreshPrice', () => this.state.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
+      this.addCron('refreshPrice', () => this.state.pricesService.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
 
     if (!this.isCronExist('checkStatusApiMap'))
       this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);

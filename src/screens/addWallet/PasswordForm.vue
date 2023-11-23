@@ -21,6 +21,7 @@
     />
 
     <Hint class="hint" iconName="notification" :text="hintText" />
+
     <Hint v-if="isGoogleFlow" class="hint" iconName="notification" :text="hintGoogleDriveText" />
   </div>
 </template>

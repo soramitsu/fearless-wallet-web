@@ -1,7 +1,7 @@
 import { FPNumber } from '@sora-substrate/util';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
-import { KycStatus, VerificationStatus } from '@/consts/soraCard';
+import { type KycStatus, type VerificationStatus } from '@/consts/soraCard';
 
 export enum MutationTypes {
   SET_AUTH_LOGIN = 'SET_AUTH_LOGIN',

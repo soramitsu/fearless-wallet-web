@@ -1,4 +1,4 @@
-import { NetworkFeesObject } from '@sora-substrate/util';
+import { type NetworkFeesObject } from '@sora-substrate/util';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Node } from '@/interfaces';
 
@@ -10,7 +10,7 @@ type SoraFees = {
 
 type NetworkName = string;
 
-type HistoryServiceType = 'subsquid' | 'giantsquid' | 'subquery' | 'etherscan' | 'sora';
+type HistoryServiceType = 'subsquid' | 'giantsquid' | 'subquery' | 'etherscan' | 'sora'; // TODO staking
 
 interface ExternalApiElement {
   url: string;

@@ -4,7 +4,7 @@
     @handlerClose="$emit('handlerClose')"
     :sizeWidth="sizeWidth"
     :showBorder="true"
-    :closeBuBackground="closeBuBackground"
+    :closeByBackground="closeByBackground"
     :zIndex="zIndex"
   >
     <div class="notification-popup-content">
@@ -51,7 +51,7 @@ export default class NotificationPopup extends Vue {
   @Prop({ default: false }) showRejectButton!: boolean;
   @Prop({ default: true }) showWarningIcon!: boolean;
   @Prop({ default: true }) showHeader!: boolean;
-  @Prop({ default: true }) closeBuBackground!: boolean;
+  @Prop({ default: true }) closeByBackground!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: Size;
   @Prop({ default: 'common.cancel' }) rejectButtonText!: string;
   @Prop({ default: 'common.proceed' }) acceptButtonText!: string;

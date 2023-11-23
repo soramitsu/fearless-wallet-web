@@ -1,7 +1,7 @@
 <template>
   <FCorners size="big" :topLeftCorner="false" :bottomRightCorner="false">
     <div class="nft">
-      <img :src="nft.image.cachedUrl" :alt="nft.collection?.name" />
+      <img :src="nft.image.cachedUrl" :alt="nft.collection?.name" loading="lazy" decoding="async" />
       <div class="nft-info">
         <div class="titles">
           <span v-if="isNft" class="title--overflow">{{ upperTitle }}</span>

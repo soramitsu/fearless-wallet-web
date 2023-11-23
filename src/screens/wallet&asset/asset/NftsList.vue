@@ -1,7 +1,10 @@
 <template>
   <Scroll>
-    <div class="nft-list">
+    <div v-if="nfts.length" class="nft-list">
       <NftItem v-for="(nft, i) in nfts" :nft="nft" :key="i" />
+    </div>
+    <div v-else class="no-nfts">
+      <span>{{ 'There is no nfts, yet' }}</span>
     </div>
   </Scroll>
 </template>
@@ -24,10 +27,16 @@ onMounted(async () => {
 </script>
 <style lang="scss">
 .nft-list {
-  height: 100%;
   display: grid;
-  gap: 16px;
-  flex-flow: row wrap;
   grid-template-columns: max-content max-content;
+  gap: 16px;
+  height: 100%;
+}
+
+.no-nfts {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
 }
 </style>

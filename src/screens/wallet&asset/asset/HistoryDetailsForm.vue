@@ -67,7 +67,7 @@
           <div class="item-value">{{ era }}</div>
         </div>
 
-        <div v-if="isTransfer" class="item">
+        <div v-if="showAmount" class="item">
           Amount
 
           <div class="item-value">{{ value }}</div>
@@ -162,9 +162,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get explorerUrl() {
-    if (this.networkProps.externalApi?.explorers) return this.networkProps?.externalApi?.explorers[0].url;
-
-    return '';
+    return this.networkProps?.externalApi?.explorers?.[0].url ?? '';
   }
 
   get buttonText() {
@@ -196,6 +194,8 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get statusIsSuccess() {
+    if (this.isSora) return (this.historyElement as SoraHistoryElement).execution.success;
+
     if (this.isTransfer) {
       const { success } = this.historyElement.transfer!;
 
@@ -230,20 +230,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get statusText() {
-    if (this.isTransfer) {
-      const { success } = this.historyElement.transfer!;
-
-      return success ? 'Completed' : 'Reject';
-    }
-
-    if (this.isExtrinsic) {
-      const { success } = this.historyElement.extrinsic!;
-
-      return success ? 'Completed' : 'Reject';
-    }
-
-    //reward
-    return 'Completed';
+    return this.statusIsSuccess ? 'Completed' : 'Reject';
   }
 
   get fromAddress() {
@@ -263,10 +250,14 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get moduleType() {
+    if (this.isSora) return (this.historyElement as SoraHistoryElement).module;
+
     return this.historyElement.extrinsic!.module;
   }
 
   get call() {
+    if (this.isSora) return (this.historyElement as SoraHistoryElement).method;
+
     return this.historyElement.extrinsic!.call;
   }
 
@@ -301,6 +292,8 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get hash() {
+    if (this.isSora) return (this.historyElement as SoraHistoryElement).blockHash;
+
     return this.historyElement.extrinsic!.hash;
   }
 

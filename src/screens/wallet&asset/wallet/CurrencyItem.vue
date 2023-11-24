@@ -163,9 +163,6 @@ export default class CurrencyItem extends Vue {
   }
 
   get assetId() {
-    if (this.assetData.relayChain === 'ethereum' && !isNetworkGroup(this.selectedNetwork))
-      return this.assetData.balances.find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase())?.id;
-
     return this.assetData.assetId;
   }
 

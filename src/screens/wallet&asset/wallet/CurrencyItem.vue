@@ -214,7 +214,7 @@ export default class CurrencyItem extends Vue {
     if (!isNetworkGroup(this.selectedNetwork)) return this.networkJson?.networkStatus === NETWORK_STATUS.DISCONNECTED;
 
     // Если все сети токена в статусе DISCONNECTED, то показываем ошибку
-    const allNetworksDisconnected = this.assetData.balances.some(({ name }) => {
+    const allNetworksDisconnected = this.assetData.balances.every(({ name }) => {
       const network = this.getNetwork(name);
 
       return network.networkStatus === NETWORK_STATUS.DISCONNECTED;

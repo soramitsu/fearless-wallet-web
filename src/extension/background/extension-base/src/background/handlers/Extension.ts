@@ -3,7 +3,7 @@ import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
-import { ethers, Wallet } from 'ethers';
+import { formatUnits, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/swaps';
@@ -904,7 +904,7 @@ export default class Extension extends FWExtensionBase {
         amount: balance?.transferable || '0',
       });
 
-      fee = ethers.formatUnits(feeValue, 18);
+      fee = formatUnits(feeValue, 18);
     } else {
       // Estimate with DotSama API
 
@@ -1459,7 +1459,7 @@ export default class Extension extends FWExtensionBase {
     if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
 
     const { privateKey } = this.state.accountExportPrivateKey({ address: ethereumAddress, password });
-    const signer = new Wallet(privateKey, this.state.getEvmApiMap[network.name]);
+    const signer = new Wallet(privateKey, this.state.getEvmApi(network.name));
 
     if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
       const txData = request.request.params.request.params[0] as { to: string; value: string };

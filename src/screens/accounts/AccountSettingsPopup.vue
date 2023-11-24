@@ -28,7 +28,7 @@
         <div class="label">{{ $t('accounts.copyAddress') }}</div>
       </div>
 
-      <div class="row" @click="openExplorer">
+      <div v-if="haveExplorers" class="row" @click="openExplorer">
         <Icon icon="globus" className="icon" />
 
         <div class="label">{{ buttonText }}</div>
@@ -46,6 +46,7 @@ import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { EXPLORERS_BASE_URLS } from '@/consts/networks';
+
 @Component
 export default class AccountSettingsPopup extends Vue {
   @Prop(String) selectedNetwork!: string;
@@ -53,18 +54,23 @@ export default class AccountSettingsPopup extends Vue {
   @Prop(Boolean) showCopyAddress!: boolean;
   @Prop(Boolean) showExport!: boolean;
   @Prop(Number) buttonTopClick!: number;
-
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
+  get networkProps() {
+    return this.getNetwork(this.selectedNetwork);
+  }
+
   get explorerType() {
-    return this.getNetwork(this.selectedNetwork)?.externalApi?.history?.type;
+    return this.networkProps?.externalApi?.history?.type;
+  }
+
+  get haveExplorers() {
+    return this.explorerUrl !== '';
   }
 
   get explorerUrl() {
-    const network = this.getNetwork(this.selectedNetwork);
-
-    if (network.externalApi?.explorers) return network?.externalApi?.explorers[0].url;
+    if (this.networkProps.externalApi?.explorers) return this.networkProps?.externalApi?.explorers[0].url;
 
     return '';
   }
@@ -85,18 +91,18 @@ export default class AccountSettingsPopup extends Vue {
     return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
   }
 
-  copyAddress() {
-    navigator.clipboard.writeText(this.addressByNetwork);
-
-    this.close();
-  }
-
   get lowerCaseSelectedNetwork() {
     return this.selectedNetwork.toLowerCase();
   }
 
   get substrateExplorerByNetwork() {
     return EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] ?? this.selectedNetwork;
+  }
+
+  copyAddress() {
+    navigator.clipboard.writeText(this.addressByNetwork);
+
+    this.close();
   }
 
   openEvmExplorer() {

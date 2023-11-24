@@ -74,8 +74,8 @@ async function getUtilityTransactionObject(params: TransferParams): Promise<Tran
   const gasLimit = await web3Api.provider.estimateGas(transactionObject);
   const block = await web3Api.provider.getBlock('latest');
 
-  const baseFeePerGas = block?.baseFeePerGas ?? BigInt(0);
-  const prepGasPrice = maxPriorityFeePerGas ?? baseFeePerGas;
+  const baseFeePerGas = block?.baseFeePerGas;
+  const prepGasPrice = baseFeePerGas ?? maxPriorityFeePerGas ?? BigInt(0);
   const estimateFee = prepGasPrice * gasLimit;
 
   transactionObject.gasLimit = gasLimit;

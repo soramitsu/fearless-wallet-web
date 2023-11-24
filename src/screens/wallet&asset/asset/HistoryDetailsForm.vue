@@ -100,7 +100,7 @@
         </div>
       </div>
 
-      <FButton size="big" :text="buttonText" @click="openExplorer" />
+      <FButton v-if="haveExplorers" size="big" :text="buttonText" @click="openExplorer" />
     </div>
 
     <Tooltip text="common.copied" target=".copy" placement="bottom" trigger="click" />
@@ -139,12 +139,14 @@ export default class HistoryDetailsForm extends Vue {
     return this.type === 'transfer';
   }
 
+  get networkProps() {
+    return this.getNetwork(this.selectedNetwork);
+  }
+
   get address() {
     if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
 
-    const network = this.getNetwork(this.selectedNetwork);
-
-    return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
+    return BaseApi.encodeAddress(this.selectedWallet.address, this.networkProps.addressPrefix);
   }
 
   get selectedNetworkJson() {
@@ -155,9 +157,12 @@ export default class HistoryDetailsForm extends Vue {
     return this.selectedNetworkJson?.externalApi?.history?.type;
   }
 
+  get haveExplorers() {
+    return this.explorerUrl !== '';
+  }
+
   get explorerUrl() {
-    if (this.selectedNetworkJson?.externalApi?.explorers)
-      return this.selectedNetworkJson?.externalApi?.explorers[0].url;
+    if (this.networkProps.externalApi?.explorers) return this.networkProps?.externalApi?.explorers[0].url;
 
     return '';
   }

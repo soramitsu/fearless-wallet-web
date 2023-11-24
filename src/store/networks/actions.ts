@@ -72,7 +72,7 @@ const actions: ActionTree<State, State> & Actions = {
 
     // сейчас эндпоинт истории парсит только историю утилити токена
     // TODO: когда появится история других токенов отрефаткорить данную логику
-    if (isUtility && type !== 'etherscan') return;
+    if (!isUtility && type !== 'etherscan') return;
 
     const { id } = asset.balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
     const history = await fetchHistory(url, formattedAddress, type, networkName, id, isUtility);

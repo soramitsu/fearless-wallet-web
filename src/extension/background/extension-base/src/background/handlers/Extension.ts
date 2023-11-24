@@ -927,7 +927,7 @@ export default class Extension extends FWExtensionBase {
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
 
-        return { status: false, errors: [{ message: 'Invalid password' }] };
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
       }
     }
 
@@ -1062,7 +1062,7 @@ export default class Extension extends FWExtensionBase {
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
 
-        return { status: false, errors: [{ message: 'Invalid password' }] };
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
       }
     }
 
@@ -1207,7 +1207,7 @@ export default class Extension extends FWExtensionBase {
       const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock) {
-        return { status: false, errors: [{ code: BasicTxErrorCode.INVALID_PASSWORD, message: 'Invalid password' }] };
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
       }
     }
 

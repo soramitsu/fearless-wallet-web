@@ -24,7 +24,7 @@ const ONBOARDING_URL = IS_PRODUCTION
 
 const BASE_URLS_PREFIX = {
   MOONPAY: 'https://buy.moonpay.com',
-  RAMP: 'https://buy.ramp.network',
+  RAMP: 'https://app.ramp.network',
   GOOGLE: 'https://accounts.google.com',
 };
 

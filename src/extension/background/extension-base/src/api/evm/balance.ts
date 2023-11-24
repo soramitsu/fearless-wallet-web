@@ -25,7 +25,7 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
   const contract = await getERC20Contract(contractAddress, web3Api);
   const { symbol, precision, id } = asset;
 
-  const balanceItem = {
+  const balanceItem: Partial<BalanceItem> = {
     state: APIItemState.PENDING,
     symbol,
     id,
@@ -35,7 +35,7 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
     frozen: '0',
     transferable: '0',
     total: '0',
-  } as BalanceItem;
+  };
 
   contract
     .balanceOf(address)
@@ -62,7 +62,7 @@ async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, 
   const network = state.networkMap[networkKey];
   const { id, symbol } = network.assets.find((el) => el.isUtility)!;
 
-  const balanceItem = {
+  const balanceItem: Partial<BalanceItem> = {
     state: APIItemState.PENDING,
     symbol,
     id,
@@ -72,7 +72,7 @@ async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, 
     frozen: '0',
     transferable: '0',
     total: '0',
-  } as BalanceItem;
+  };
 
   const address = getSubstrateAddress(ethereumAddress, state);
 

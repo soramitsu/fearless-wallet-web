@@ -162,9 +162,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get explorerUrl() {
-    if (this.networkProps.externalApi?.explorers) return this.networkProps?.externalApi?.explorers[0].url;
-
-    return '';
+    return this.networkProps?.externalApi?.explorers?.[0].url ?? '';
   }
 
   get buttonText() {

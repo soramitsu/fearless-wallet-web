@@ -3,7 +3,7 @@ import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
-import { ethers, Wallet } from 'ethers';
+import { formatUnits, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/swaps';
@@ -19,7 +19,6 @@ import {
   getBalanceItem,
   getEthereumAddress,
 } from '@extension-base/background/utils/utils';
-import { storage } from '@extension-base/stores/Storage';
 import {
   type StakingNetworkRequest,
   type StakingParamsRequest,
@@ -250,19 +249,9 @@ export default class Extension extends FWExtensionBase {
       this.state.updateCurrentAccount(account?.address ?? '');
     }
 
-    this.cleanupDeletedAccount(address);
+    this.state.cleanupDeletedAccount(address);
 
     return true;
-  }
-
-  cleanupDeletedAccount(address: string) {
-    if (this.state.selectedNetworks[address]) {
-      delete this.state.selectedNetworks[address];
-
-      storage.set({ selectedNetworks: this.state.selectedNetworks });
-    }
-
-    this.state.balanceService.deleteBalance(address);
   }
 
   accountsValidatePassword({ address, password }: RequestAccountValidate): boolean {
@@ -904,7 +893,7 @@ export default class Extension extends FWExtensionBase {
         amount: balance?.transferable || '0',
       });
 
-      fee = ethers.formatUnits(feeValue, 18);
+      fee = formatUnits(feeValue, 18);
     } else {
       // Estimate with DotSama API
 
@@ -927,7 +916,7 @@ export default class Extension extends FWExtensionBase {
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
 
-        return { status: false, errors: [{ message: 'Invalid password' }] };
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
       }
     }
 
@@ -1062,7 +1051,7 @@ export default class Extension extends FWExtensionBase {
       if (!isUnlock) {
         setTimeout(() => this.cancelSubscription(id), 500);
 
-        return { status: false, errors: [{ message: 'Invalid password' }] };
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
       }
     }
 
@@ -1207,7 +1196,7 @@ export default class Extension extends FWExtensionBase {
       const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock) {
-        return { status: false, errors: [{ code: BasicTxErrorCode.INVALID_PASSWORD, message: 'Invalid password' }] };
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
       }
     }
 
@@ -1459,7 +1448,7 @@ export default class Extension extends FWExtensionBase {
     if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
 
     const { privateKey } = this.state.accountExportPrivateKey({ address: ethereumAddress, password });
-    const signer = new Wallet(privateKey, this.state.getEvmApiMap[network.name]);
+    const signer = new Wallet(privateKey, this.state.getEvmApi(network.name));
 
     if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
       const txData = request.request.params.request.params[0] as { to: string; value: string };
@@ -1569,6 +1558,10 @@ export default class Extension extends FWExtensionBase {
 
   private async fetchBalance({ address, networkName }: FetchBalanceRequest): Promise<string> {
     return await this.state.balanceService.fetchBalance(address, networkName);
+  }
+
+  private getWalletConnectSessionAvailableNetwork(address: string) {
+    return this.state.walletConnectDappService.availableNetworks(address);
   }
 
   async handle<TMessageType extends MessageTypes>(

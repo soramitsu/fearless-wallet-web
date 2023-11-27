@@ -1,13 +1,12 @@
 <template>
   <Fragment>
     <AboveForm v-if="!showFinishForm" :fullScreen="true" header="welcome.connectMobile" @closeHandler="onClose">
-      <template>
-        <!-- <h2 class="header">{{ $t('mobileConnector.qrHeader') }}</h2> -->
+      <template v-if="isQRPrep">
+        <h2 class="header">{{ $t('mobileConnector.qrHeader') }}</h2>
 
-        <Alert :message="t('common.featureOff')" />
-
-        <QR v-if="false" :payload="qr" />
+        <QR :payload="qr" />
       </template>
+
       <MobileWalletPermissionPopup v-if="connectionStatus" :status="connectionStatus" />
     </AboveForm>
     <div v-else class="finish-form">
@@ -19,47 +18,47 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
 import MobileWalletPermissionPopup from '@/screens/mobile-wallet/MobileWalletPermissionPopup.vue';
-// import { walletConnectDappInitSession, walletConnectDappSubscribeSession } from '@/extension/messaging';
+import { walletConnectDappInitSession, walletConnectDappSubscribeSession } from '@/extension/messaging';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
 import { Components } from '@/router/routes';
-// import { useNotify } from '@/plugins/soramitsuUI';
+import { useNotify } from '@/plugins/soramitsuUI';
 
 const router = useRouter();
-// const notify = useNotify();
+const notify = useNotify();
 const { t } = useI18n();
 const isWalletAlreadyExists = ref(false);
 const qr = ref<string | null>(null);
 const showFinishForm = ref(false);
 
-// onMounted(async () => {
-//   const res = await walletConnectDappInitSession();
+onMounted(async () => {
+  const res = await walletConnectDappInitSession();
 
-//   if (res) {
-//     qr.value = res;
+  if (res) {
+    qr.value = res;
 
-//     walletConnectDappSubscribeSession(res, ({ status, message }) => {
-//       if (status) showFinishForm.value = true;
+    walletConnectDappSubscribeSession(res, ({ status, message }) => {
+      if (status) showFinishForm.value = true;
 
-//       if (!status) {
-//         if (message === 'rejected') {
-//           notify({
-//             title: t('mobileConnector.rejected').toString(),
-//             message: '',
-//             type: 'warning',
-//           });
+      if (!status) {
+        if (message === 'rejected') {
+          notify({
+            title: t('mobileConnector.rejected').toString(),
+            message: '',
+            type: 'warning',
+          });
 
-//           return router.back();
-//         }
+          return router.back();
+        }
 
-//         if (message === 'duplicate') isWalletAlreadyExists.value = true;
-//       }
-//     });
-//   }
-// });
+        if (message === 'duplicate') isWalletAlreadyExists.value = true;
+      }
+    });
+  }
+});
 
 const connectionStatus = computed(() => {
   if (isWalletAlreadyExists.value) return 'wallet_exists';
@@ -67,7 +66,7 @@ const connectionStatus = computed(() => {
   return false;
 });
 
-// const isQRPrep = computed(() => !connectionStatus.value && qr);
+const isQRPrep = computed(() => !connectionStatus.value && qr);
 
 const onClose = () => router.back();
 const onContinue = () => router.push({ name: Components.Wallet });

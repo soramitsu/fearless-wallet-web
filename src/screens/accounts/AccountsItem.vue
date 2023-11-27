@@ -39,7 +39,7 @@ export default class AccountsItem extends Vue {
   @Prop(String) address!: string;
 
   get addressExist() {
-    return this.address !== '';
+    return !!this.address;
   }
 
   getUpperValue(string: string) {

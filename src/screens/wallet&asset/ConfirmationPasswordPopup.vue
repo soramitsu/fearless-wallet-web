@@ -289,17 +289,17 @@ export default class ConfirmationPasswordPopup extends Vue {
     };
 
     if (this.isSignMobile) {
-      return await makeTransfer(this.request as RequestTransfer, callback);
+      return makeTransfer(this.request as RequestTransfer, callback);
     }
 
-    if (this.extrinsicType === 'transfer') return await makeTransfer(this.request as RequestTransfer, callback);
+    if (this.extrinsicType === 'transfer') return makeTransfer(this.request as RequestTransfer, callback);
 
-    if (this.extrinsicType === 'crossChain') return await makeCrossChain(this.request as RequestCrossChain, callback);
+    if (this.extrinsicType === 'crossChain') return makeCrossChain(this.request as RequestCrossChain, callback);
 
-    if (this.extrinsicType === 'swap') return await makeSwap(this.request as RequestSwap);
+    if (this.extrinsicType === 'swap') return makeSwap(this.request as RequestSwap);
 
     if (this.isStaking)
-      return await makeStaking({
+      return makeStaking({
         type: this.extrinsicType,
         params: this.request as RequestStaking,
       });

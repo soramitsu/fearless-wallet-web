@@ -131,7 +131,7 @@ function getHistoryValue(
 
     const targetValue = +(element.data.targetAssetAmount ?? 0);
 
-    // fee в индексерес учетом decimals
+    // fee в индексере с учетом decimals
     const fee = getHumanTransferFee(historyElement, networkName);
 
     const result = withFee && element.method !== 'rewarded' ? +dataValue + fee : +dataValue;

@@ -313,9 +313,11 @@ export default class SwapForm extends Vue {
   }
 
   get minMaxAmountPrice() {
-    const price = this.isExchangeB
-      ? getCostOfAssets(+this.minMaxAmount, this.getAssetPrice(this.sendAssetId).price)
-      : getCostOfAssets(+this.minMaxAmount, this.getAssetPrice(this.receiveAssetId).price);
+    const price = (
+      this.isExchangeB
+        ? getCostOfAssets(+this.minMaxAmount, this.getAssetPrice(this.sendAssetId).price)
+        : getCostOfAssets(+this.minMaxAmount, this.getAssetPrice(this.receiveAssetId).price)
+    ) as number;
 
     return `${this.fiatSymbol} ${this.$n(price ?? 0, 'price')}`;
   }
@@ -341,14 +343,14 @@ export default class SwapForm extends Vue {
   }
 
   get AToBValueCut() {
-    const cost = getCostOfAssets(this.transferableSendAmount, this.sendAssetPrice) ?? 0;
+    const cost = (getCostOfAssets(this.transferableSendAmount, this.sendAssetPrice) as number) ?? 0;
     const value = this.$n(cost, 'price') || '0';
 
     return `${this.fiatSymbol} ${value}`;
   }
 
   get BToAValueCut() {
-    const cost = getCostOfAssets(+this.transferableReceiveAmount, this.receiveAssetPrice) ?? 0;
+    const cost = (getCostOfAssets(+this.transferableReceiveAmount, this.receiveAssetPrice) as number) ?? 0;
     const value = this.$n(cost, 'price') || '0';
 
     return `${this.fiatSymbol} ${value}`;

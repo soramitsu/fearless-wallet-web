@@ -164,6 +164,10 @@ export default class State {
     return this.apis.substrate;
   }
 
+  public getEvmApi(key: string) {
+    return this.getEvmApiMap[key.toLowerCase()];
+  }
+
   public get getEvmApiMap() {
     return this.apis.evm;
   }
@@ -379,7 +383,7 @@ export default class State {
       const { name } = network;
       const currentProvider = getCurrentProvider(network);
 
-      if (currentProvider) this.apis.evm[name] = initWeb3Api(currentProvider);
+      if (currentProvider) this.apis.evm[name.toLowerCase()] = initWeb3Api(currentProvider);
     });
   }
 
@@ -864,6 +868,16 @@ export default class State {
     };
 
     this.setCurrentAccount(accountInfo, () => callback?.(accountInfo));
+  }
+
+  cleanupDeletedAccount(address: string) {
+    if (this.selectedNetworks[address]) {
+      delete this.selectedNetworks[address];
+
+      storage.set({ selectedNetworks: this.selectedNetworks });
+    }
+
+    this.balanceService.deleteBalance(address);
   }
 
   public subscribeTotalXorBalance() {

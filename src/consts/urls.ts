@@ -3,7 +3,7 @@ import { IS_PRODUCTION } from '@/consts/global';
 const BASE_URL = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils';
 
 const CHAINS = IS_PRODUCTION
-  ? `${BASE_URL}/master/chains/v4/chains.json`
+  ? `${BASE_URL}/master/chains/v5/chains.json`
   : `${BASE_URL}/new-evms/chains/v4/chains_dev.json`;
 
 const FIATS = `${BASE_URL}/master/fiat/fiats.json`;
@@ -24,7 +24,7 @@ const ONBOARDING_URL = IS_PRODUCTION
 
 const BASE_URLS_PREFIX = {
   MOONPAY: 'https://buy.moonpay.com',
-  RAMP: 'https://buy.ramp.network',
+  RAMP: 'https://app.ramp.network',
   GOOGLE: 'https://accounts.google.com',
 };
 

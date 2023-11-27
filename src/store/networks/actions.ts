@@ -36,31 +36,16 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.FETCH_HISTORY]({ commit, getters, rootState, rootGetters }, { networkName, assetId, address }) {
     const { externalApi } = getters.getNetwork(networkName) as Network;
-    const wallet = address ? { address, ethereumAddress: address } : rootGetters.selectedWallet;
-    const formattedAddress = BaseApi.formatAddress(wallet, networkName);
-
-    // TODO staking обновить, когда обновят json
-    if (isSora(networkName)) {
-      const { url } = externalApi.staking!;
-      const history = await fetchHistory(url, formattedAddress, 'sora', networkName, assetId, false);
-
-      if (history)
-        commit(MutationTypes.SET_HISTORY, {
-          networkName: networkName.toLowerCase(),
-          walletAddress: BaseApi.formatAddress(wallet),
-          history,
-          assetId,
-          serviceType: 'sora',
-        });
-
-      return;
-    }
 
     if (!externalApi || !externalApi.history) return;
+
+    const wallet = address ? { address, ethereumAddress: address } : rootGetters.selectedWallet;
+    const formattedAddress = BaseApi.formatAddress(wallet, networkName);
 
     const { type, url } = externalApi.history;
     const isNativeEvm = isRequireEvmAPI(networkName);
     const balances: TokenBalance[] = rootState.account.balances;
+
     const asset = isNativeEvm
       ? balances.find((el) => el.balances.some((asset) => asset.id === assetId))!
       : getUtilityAsset(rootState.account.balances, networkName)!;
@@ -68,11 +53,12 @@ const actions: ActionTree<State, State> & Actions = {
     const utilityId = isNativeEvm
       ? asset.balances.find((el) => el.name.toLowerCase() === networkName.toLowerCase() && el.isUtility)?.id
       : asset.assetId;
+
     const isUtility = isNativeEvm ? utilityId !== undefined : assetId === utilityId;
 
     // сейчас эндпоинт истории парсит только историю утилити токена
     // TODO: когда появится история других токенов отрефаткорить данную логику
-    if (isUtility && type !== 'etherscan') return;
+    if (!isSora(networkName)) if (!isUtility && type !== 'etherscan') return;
 
     const { id } = asset.balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
     const history = await fetchHistory(url, formattedAddress, type, networkName, id, isUtility);
@@ -80,7 +66,7 @@ const actions: ActionTree<State, State> & Actions = {
     if (history)
       commit(MutationTypes.SET_HISTORY, {
         networkName: networkName.toLowerCase(),
-        walletAddress: wallet.address,
+        walletAddress: BaseApi.formatAddress(wallet),
         history,
         assetId,
         serviceType: type,
@@ -93,11 +79,8 @@ const actions: ActionTree<State, State> & Actions = {
     const favoriteIndex = network.favorite.findIndex((el) => el === address);
     const isFavorite = favoriteIndex !== -1;
 
-    if (isFavorite) {
-      commit(MutationTypes.REMOVE_FAVORITE_NETWORK, { index: favoriteIndex, networksName: networkName });
-    } else {
-      commit(MutationTypes.SET_FAVORITE_NETWORK, { address, networksName: networkName });
-    }
+    if (isFavorite) commit(MutationTypes.REMOVE_FAVORITE_NETWORK, { index: favoriteIndex, networksName: networkName });
+    else commit(MutationTypes.SET_FAVORITE_NETWORK, { address, networksName: networkName });
 
     toggleFavoriteNetwork(networkName);
 

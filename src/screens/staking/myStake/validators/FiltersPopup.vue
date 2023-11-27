@@ -23,11 +23,11 @@
         <Switcher v-model="syncedOnchainIdentity" />
       </div>
 
-      <div class="row">
+      <!-- <div class="row">
         {{ $t('staking.notSlashed') }}
 
         <Switcher v-model="syncedNotSlashed" />
-      </div>
+      </div> -->
 
       <div class="row">
         {{ $t('staking.notOversubscribed') }}
@@ -35,11 +35,11 @@
         <Switcher v-model="syncedNotOversubscribed" />
       </div>
 
-      <div class="row">
+      <!-- <div class="row">
         {{ $t('staking.limit2Validators') }}
 
         <Switcher v-model="syncedLimitValidatorsIdentity" />
-      </div>
+      </div> -->
 
       <div class="label">{{ $t('staking.sort') }}</div>
 

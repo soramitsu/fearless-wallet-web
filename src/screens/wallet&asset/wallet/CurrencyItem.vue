@@ -99,7 +99,7 @@ import { Getter, Mutation } from 'vuex-class';
 import { APIItemState, NETWORK_STATUS } from '@extension-base//api/types/networks';
 import type { CustomEvent, Fn } from '@/interfaces';
 import type { SetHiddenAsset, SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { AccountJson, TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
@@ -121,6 +121,8 @@ export default class CurrencyItem extends Vue {
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
+
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
@@ -132,9 +134,24 @@ export default class CurrencyItem extends Vue {
   }
 
   get filteredBalances() {
-    return this.assetData.balances.filter(
-      ({ transferable, state }) => state === APIItemState.READY && transferable !== '0'
-    );
+    return this.assetData.balances.filter(({ state, name }) => {
+      if (this.selectedWallet.isMobile) {
+        const accounts: AccountJson[] = this.accounts;
+        const account = accounts.find(({ address }) => address === this.selectedWallet.address);
+        const network = this.getNetwork(name);
+
+        if (account && account.chains) {
+          return account.chains.some((halfchainId) => {
+            if (network && network.chainId)
+              return network.chainId.includes(halfchainId) && state === APIItemState.READY;
+
+            return false;
+          });
+        }
+      }
+
+      return state === APIItemState.READY;
+    });
   }
 
   get balancesLength() {
@@ -163,9 +180,6 @@ export default class CurrencyItem extends Vue {
   }
 
   get assetId() {
-    if (this.assetData.relayChain === 'ethereum' && !isNetworkGroup(this.selectedNetwork))
-      return this.assetData.balances.find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase())?.id;
-
     return this.assetData.assetId;
   }
 
@@ -188,6 +202,13 @@ export default class CurrencyItem extends Vue {
   get networkBadges() {
     if (this.isCurrentNetwork) {
       const { icon, name } = this.assetData.balances.find((balance) => {
+        const account = this.accounts.find(({ address }) => address === this.selectedWallet.address);
+        const network = this.getNetwork(balance.name);
+
+        if (account && account.chains) {
+          if (!account.chains.some((el) => network.chainId.includes(el))) return false;
+        }
+
         return filterBalanceItemsByNetwork(balance, this.selectedNetwork);
       })!;
 
@@ -214,7 +235,7 @@ export default class CurrencyItem extends Vue {
     if (!isNetworkGroup(this.selectedNetwork)) return this.networkJson?.networkStatus === NETWORK_STATUS.DISCONNECTED;
 
     // Если все сети токена в статусе DISCONNECTED, то показываем ошибку
-    const allNetworksDisconnected = this.assetData.balances.some(({ name }) => {
+    const allNetworksDisconnected = this.assetData.balances.every(({ name }) => {
       const network = this.getNetwork(name);
 
       return network.networkStatus === NETWORK_STATUS.DISCONNECTED;

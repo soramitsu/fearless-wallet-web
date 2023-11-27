@@ -20,6 +20,7 @@ export type AutoSelectNode = Record<NetworkName, boolean>;
 export type GetAutoSelectNodesValueByNetwork = (networkName: string) => boolean;
 export type GetFavoriteNetworkStatus = (networkName: string) => boolean;
 export type GetShowWarningNetworks = (assetId: string) => boolean;
+export type GetAccountMeta = (assetId: string) => Record<string, unknown>;
 
 // mutations
 export type SetAccountsProps = {

@@ -195,7 +195,7 @@ async function fetchSoraHistory(url: string, address: string) {
   } = await axios.post(url, {
     query: `{
         historyElements(
-          orderBy: id_DESC
+          orderBy: timestamp_DESC
           where: {
             address_eq: "${address}"
           }

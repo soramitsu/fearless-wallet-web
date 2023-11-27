@@ -278,7 +278,7 @@ export default class YourValidatorsManagement extends Vue {
     }
   }
 
-  openValidatorList(isSuggested: boolean) {
+  openValidatorList(isSuggested = false) {
     this.validators.forEach(
       (validator, index) => (this.state[validator.address].isSelect = isSuggested && index < this.maxNominations) // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
     );

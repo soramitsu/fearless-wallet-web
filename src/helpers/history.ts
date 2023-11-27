@@ -131,7 +131,7 @@ function getHistoryValue(
 
     const targetValue = +(element.data.targetAssetAmount ?? 0);
 
-    // fee в индексерес учетом decimals
+    // fee в индексере с учетом decimals
     const fee = getHumanTransferFee(historyElement, networkName);
 
     const result = withFee && element.method !== 'rewarded' ? +dataValue + fee : +dataValue;
@@ -223,6 +223,11 @@ function getEthereumExplorerApiKey(url: string): string | undefined {
     { name: 'etherscan', key: process.env.FL_WEB_ETHERSCAN_API_KEY },
     { name: 'bscscan', key: process.env.FL_WEB_BSCSCAN_API_KEY },
     { name: 'polygon', key: process.env.FL_WEB_POLYGONSCAN_API_KEY },
+    { name: 'arbiscan', key: process.env.FL_WEB_ARBISCAN_API_KEY },
+    { name: 'snowtrace', key: process.env.FL_WEB_SNOWTRACE_API_KEY },
+    { name: 'zkevm.polygonscan', key: process.env.FL_WEB_ZKEVM_POLYGONSCAN_API_KEY },
+    { name: 'moonriver.moonscan', key: process.env.FL_BLAST_API_MOONRIVER_KEY },
+    { name: 'moonbeam.moonscan', key: process.env.FL_BLAST_API_MOONBEAM_KEY },
   ];
 
   return keys.find(({ name }) => url.includes(name))?.key;

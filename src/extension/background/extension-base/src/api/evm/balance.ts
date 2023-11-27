@@ -7,7 +7,7 @@ import { setBalance } from '@extension-base/api/helpers';
 import type State from '@extension-base/background/handlers/State';
 
 async function getUtilityBalance(networkKey: string, address: string, state: State): Promise<string> {
-  const eth = state.getEvmApiMap[networkKey];
+  const eth = state.getEvmApi(networkKey);
 
   const balance = await eth.getBalance(address);
 
@@ -19,13 +19,13 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
   const asset = network.assets.find((el) => el.id === contractAddress);
 
   if (!asset) return;
-  const web3Api = state.getEvmApiMap[networkKey];
+  const web3Api = state.getEvmApi(networkKey);
   if (!web3Api) return;
 
   const contract = await getERC20Contract(contractAddress, web3Api);
   const { symbol, precision, id } = asset;
 
-  const balanceItem = {
+  const balanceItem: Partial<BalanceItem> = {
     state: APIItemState.PENDING,
     symbol,
     id,
@@ -35,7 +35,7 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
     frozen: '0',
     transferable: '0',
     total: '0',
-  } as BalanceItem;
+  };
 
   contract
     .balanceOf(address)
@@ -50,6 +50,7 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
       setBalance(networkKey, balanceItem, address, state);
     })
     .catch((ex) => {
+      console.info(ex);
       balanceItem.state = APIItemState.ERROR;
 
       setBalance(networkKey, balanceItem, address, state);
@@ -62,7 +63,7 @@ async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, 
   const network = state.networkMap[networkKey];
   const { id, symbol } = network.assets.find((el) => el.isUtility)!;
 
-  const balanceItem = {
+  const balanceItem: Partial<BalanceItem> = {
     state: APIItemState.PENDING,
     symbol,
     id,
@@ -72,7 +73,7 @@ async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, 
     frozen: '0',
     transferable: '0',
     total: '0',
-  } as BalanceItem;
+  };
 
   const address = getSubstrateAddress(ethereumAddress, state);
 
@@ -85,7 +86,8 @@ async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, 
 
       setBalance(networkKey, balanceItem, address, state);
     })
-    .catch(() => {
+    .catch((ex) => {
+      console.info(ex);
       balanceItem.state = APIItemState.ERROR;
 
       setBalance(networkKey, balanceItem, address, state);

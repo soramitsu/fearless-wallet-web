@@ -177,7 +177,7 @@ export default class Popup extends Vue {
     flex-direction: column;
     position: relative;
     top: 0;
-    min-height: 90px;
+    min-height: 52px;
     min-width: 230px;
     max-height: 410px;
     max-width: 480px;

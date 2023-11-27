@@ -16,6 +16,8 @@
           {{ $t(label) }}
         </SDropdownItem>
       </template>
+
+      <slot> {{ tooltip }} </slot>
     </SDropdown>
   </FCorners>
 </template>
@@ -29,10 +31,12 @@ type Props = {
   value?: string;
   options: Options;
   type?: string;
+  tooltip?: string;
 };
 
 const props = withDefaults(defineProps<Props>(), {
   type: 'button',
+  tooltip: 'Menu',
 });
 
 const filteredOptions = computed(() =>

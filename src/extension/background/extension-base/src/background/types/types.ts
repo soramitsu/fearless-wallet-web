@@ -57,6 +57,7 @@ export interface AccountJson extends FWKeyringMeta {
   //mobile properties
   isMobile?: boolean;
   wcTopic?: string;
+  chains?: string[];
 }
 
 export interface ApproveAuthRequest {

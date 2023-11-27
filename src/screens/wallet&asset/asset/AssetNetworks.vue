@@ -131,6 +131,7 @@ export default class AssetNetworks extends Vue {
       if (state !== APIItemState.READY) return false;
 
       if (this.selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
+
       if (this.selectedNetwork === FAVORITE_NETWORKS)
         return network.favorite.some((address) => address === this.selectedWallet.address);
 

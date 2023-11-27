@@ -43,6 +43,14 @@ module.exports = {
       def.FL_BLAST_API_GOERLI_KEY = JSON.stringify(process.env.FL_BLAST_API_GOERLI_KEY);
       def.FL_BLAST_API_POLYGON_KEY = JSON.stringify(process.env.FL_BLAST_API_POLYGON_KEY);
       def.FL_ALCHEMY_API_ETHEREUM_KEY = JSON.stringify(process.env.FL_ALCHEMY_API_ETHEREUM_KEY);
+      def.FL_BLAST_API_MOONBEAM_KEY = JSON.stringify(process.env.FL_BLAST_API_MOONBEAM_KEY);
+      def.FL_BLAST_API_MOONRIVER_KEY = JSON.stringify(process.env.FL_BLAST_API_MOONRIVER_KEY);
+      def.FL_BLAST_API_OKTC_MAINNET_KEY = JSON.stringify(process.env.FL_BLAST_API_OKTC_MAINNET_KEY);
+      def.FL_BLAST_API_OPTIMISM_MAINNET_KEY = JSON.stringify(process.env.FL_BLAST_API_OPTIMISM_MAINNET_KEY);
+      def.FL_WEB_ARBISCAN_API_KEY = JSON.stringify(process.env.FL_WEB_ARBISCAN_API_KEY);
+      def.FL_WEB_OPTIMISTIC_ETHERSCAN_API_KEY = JSON.stringify(process.env.FL_WEB_OPTIMISTIC_ETHERSCAN_API_KEY);
+      def.FL_WEB_SNOWTRACE_API_KEY = JSON.stringify(process.env.FL_WEB_SNOWTRACE_API_KEY);
+      def.FL_WEB_ZKEVM_POLYGONSCAN_API_KEY = JSON.stringify(process.env.FL_WEB_ZKEVM_POLYGONSCAN_API_KEY);
 
       return definitions;
     });

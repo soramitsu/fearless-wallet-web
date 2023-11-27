@@ -4,7 +4,7 @@
       <SIcon name="basic-menu-24" class="handle" />
     </div>
     <div class="img-container">
-      <ExternalLogo class="asset-icon" :name="assetData.icon" :width="42" />
+      <ExternalLogo class="asset-icon" :name="assetData.icon" :width="42" :alt="assetData.symbol" />
     </div>
 
     <div class="descriptions-column">
@@ -21,6 +21,7 @@
                 class="minor-network-img"
                 :key="name"
                 :name="icon"
+                :altName="name"
                 :width="12"
               />
 

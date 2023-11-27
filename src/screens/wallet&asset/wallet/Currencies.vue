@@ -12,7 +12,7 @@
       :size="80"
       class="scroll"
       style="height: calc(100%-170px)"
-      :keeps="30"
+      :keeps="40"
       :keepOffset="true"
       itemClass="virtual-item"
       @drop="onDrop"

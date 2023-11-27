@@ -1,12 +1,12 @@
 <template>
   <FCorners size="big" :topLeftCorner="false" :bottomRightCorner="false">
     <div class="nft">
-      <img :src="nft.image.cachedUrl" :alt="nft.collection?.name" loading="lazy" decoding="async" />
+      <img :src="nft.image.cachedUrl" :alt="nft.collection?.name" loading="lazy" width="240" height="240" />
       <div class="nft-info">
         <div class="titles">
-          <span v-if="isNft" class="title--overflow">{{ upperTitle }}</span>
-          <span class="title--main title--overflow">{{ title }}</span>
-          <span v-if="isNft" class="title--overflow">{{ subTitle }}</span>
+          <span v-if="isNft" class="title">{{ upperTitle }}</span>
+          <span class="title title--main">{{ title }}</span>
+          <span v-if="isNft" class="title">{{ subTitle }}</span>
         </div>
 
         <Icon v-if="isNft" icon="export-nft" width="42px" height="42px" class="share" />
@@ -16,7 +16,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import type { OwnedNft } from 'alchemy-sdk';
 
 type Props = {
@@ -24,11 +24,9 @@ type Props = {
 };
 const isNft = ref(false);
 const props = defineProps<Props>();
-const title = ref(props.nft.collection?.name ?? '');
-const subTitle = ref('#1 subtitle');
-const upperTitle = ref('#1 subtitle');
-
-onMounted(() => {});
+const title = ref(isNft.value ? props.nft.collection?.name : props.nft.name);
+const subTitle = ref(props.nft.description);
+const upperTitle = ref(isNft.value ? props.nft.collection?.name : '');
 </script>
 
 <style lang="scss">
@@ -61,7 +59,7 @@ onMounted(() => {});
   gap: 8px;
   max-width: 150px;
 
-  .title--overflow {
+  .title {
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;

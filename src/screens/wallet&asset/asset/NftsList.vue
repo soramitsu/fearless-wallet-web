@@ -22,6 +22,7 @@ const nfts = ref<OwnedNft[]>([]);
 
 onMounted(async () => {
   const res = await getNfts(selectedWallet.value.ethereumAddress);
+  console.info(res, 'NFT collection');
   if (res) nfts.value = res.ownedNfts;
 });
 </script>

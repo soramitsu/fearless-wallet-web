@@ -135,7 +135,7 @@ export default class State {
   public eventService = new EventService();
   public networkService = new NetworkService(this.eventService);
   public requestService = new RequestService(this, this.networkService);
-  public nftService = new NftService();
+  public nftService = new NftService(this);
   public walletConnectService = new WalletConnectService(this, this.requestService);
   public walletConnectDappService = new WalletConnectDAppService(this);
   public soraCardService = new SoraCardService(this.requestService);

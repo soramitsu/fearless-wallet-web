@@ -1,4 +1,4 @@
-import { type OwnedNftsResponse } from 'alchemy-sdk';
+import type { OwnedNftsResponse, Nft } from 'alchemy-sdk';
 import type {
   PairingSubjectType,
   RequestApproveConnectWalletSession,
@@ -245,4 +245,5 @@ export interface RequestSignatures {
 
   //Nfts
   'pri(nft.get.all)': [string, OwnedNftsResponse];
+  'pri(nft.subscribe)': [null, Nft[], Nft[]];
 }

@@ -4,7 +4,9 @@ type NftMeta = Partial<NftMetadata>;
 export type FearlessNft = {
   id: string;
   contract: string;
-  img: string;
+  img?: string;
+  type: string;
   isOwned: boolean;
+
   meta: NftMeta;
 };

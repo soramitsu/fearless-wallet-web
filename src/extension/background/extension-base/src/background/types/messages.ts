@@ -1,4 +1,5 @@
-import type { OwnedNftsResponse, Nft } from 'alchemy-sdk';
+import { type FearlessNft } from '@extension-base/services/nft-service/types';
+import type { OwnedNftsResponse } from 'alchemy-sdk';
 import type {
   PairingSubjectType,
   RequestApproveConnectWalletSession,
@@ -245,5 +246,5 @@ export interface RequestSignatures {
 
   //Nfts
   'pri(nft.get.all)': [string, OwnedNftsResponse];
-  'pri(nft.subscribe)': [null, Nft[], Nft[]];
+  'pri(nft.subscribe)': [null, FearlessNft[], FearlessNft[]];
 }

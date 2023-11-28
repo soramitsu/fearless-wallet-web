@@ -648,6 +648,11 @@
     "myStake": "My staking",
     "polkaswap": "Polkaswap"
   },
+  "nft": {
+    "owned": "Owned",
+    "type": "Type",
+    "id": "Token ID"
+  },
   "common": {
     "approve": "Approve",
     "sign": "Sign",
@@ -725,6 +730,7 @@
     "dontShowAgain": "Don't show me again",
     "iAmReady": "OK, I am ready",
     "all": "All",
+    "send": "Send",
     "name": "Name",
     "warning": "Warning",
     "iAgree": "I agree",
@@ -736,6 +742,7 @@
     "areYouSure": "Are you sure?",
     "searchByAddress": "Search by address or name",
     "networks": "Networks",
+    "network": "Network",
     "nothingFound": "Nothing found",
     "featureOff": "Temparary unavailable, we're working to bring it back."
   }

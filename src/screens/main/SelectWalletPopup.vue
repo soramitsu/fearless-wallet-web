@@ -19,11 +19,12 @@
         :isMobile="isMobile"
         :address="address"
         class="wallet"
+        data-testid="walletContent"
         @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible(...arguments, address)"
         @setWallet="updateSelectedWallet(address)"
       />
 
-      <BorderButton text="wallet.addWallet" iconName="plus-pink" @click="addWallet" />
+      <BorderButton text="wallet.addWallet" iconName="plus-pink" data-testid="addWalletBtn" @click="addWallet" />
     </div>
   </Popup>
 </template>

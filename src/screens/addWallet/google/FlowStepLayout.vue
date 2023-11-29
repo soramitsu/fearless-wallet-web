@@ -2,7 +2,13 @@
   <div class="add-wallet">
     <div class="header">
       <div class="icon-container">
-        <CircleButton v-if="showBackButton" backgroundColor="light-black" iconName="chevron-left" @click="back" />
+        <CircleButton
+          v-if="showBackButton"
+          backgroundColor="light-black"
+          iconName="chevron-left"
+          data-testid="backBtn"
+          @click="back"
+        />
       </div>
 
       <div class="steps">

@@ -20,6 +20,7 @@
         :disabled="isAllowedContinue"
         width="100%"
         :text="buttonText"
+        data-testid="proceedBtn"
         @click="proceed"
       />
     </template>

@@ -73,7 +73,7 @@ const mutations: MutationTree<State> & Mutations = {
     if (serviceType === 'sora') {
       const typedHistory = history as SoraHistoryElement[];
       const historyAssets = typedHistory.reduce((result, item) => {
-        const baseAssetId = item.data?.baseAssetId;
+        const baseAssetId = item.data?.baseAssetId ?? item.data?.assetId;
 
         const networkJson = state.networks.find(({ name }) => isSora(name));
         const asset = networkJson?.assets.find(({ currencyId }) => currencyId === baseAssetId);

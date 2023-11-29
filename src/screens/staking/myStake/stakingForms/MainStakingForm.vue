@@ -68,7 +68,7 @@
 
           <BondExtra v-if="isBondExtra" :stakingCurrency="stakingCurrency" :fee="fee" />
 
-          <Unbond v-else-if="isUnbond" :stakingCurrency="stakingCurrency" :fee="fee" />
+          <Unbond v-else-if="isUnbond" :stakingCurrency="stakingCurrency" :stakingNetwork="stakingNetwork" :fee="fee" />
 
           <WithdrawUnbonded v-else-if="isRedeem" :stakingCurrency="stakingCurrency" :fee="fee" />
 
@@ -234,7 +234,8 @@ export default class MainStakingForm extends Vue {
         (this.payoutAddress !== '' && !this.isValidPayoutAddress)
       )
         return this.$t('accounts.invalidAccountAddress');
-    }
+    } else if (!this.isValidAmountAsset)
+      return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
 
     return 'common.confirm';
   }

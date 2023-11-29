@@ -1,5 +1,5 @@
 <template>
-  <FCorners :topLeftCorner="showCorners" :bottomRightCorner="showCorners">
+  <FCorners :topLeftCorner="isButton" :bottomRightCorner="isButton">
     <SDropdown
       :type="type"
       buttonType="secondary"
@@ -17,7 +17,7 @@
         </SDropdownItem>
       </template>
 
-      <slot> {{ tooltip }} </slot>
+      <slot v-if="!isButton"> {{ tooltip }} </slot>
     </SDropdown>
   </FCorners>
 </template>
@@ -44,7 +44,7 @@ const filteredOptions = computed(() =>
 );
 
 const label = computed(() => props.options.find(({ value }) => value === props.value)?.label ?? '');
-const showCorners = computed(() => props.type === 'button');
+const isButton = computed(() => props.type === 'button');
 </script>
 
 <style lang="scss">

@@ -59,6 +59,7 @@ type SoraHistoryElement = {
     | 'rewarded'
     | 'batchAll'; // TODO
   data: {
+    assetId?: string;
     baseAssetId?: string;
     targetAssetId?: string;
     selectedMarket?: string;

@@ -555,7 +555,8 @@ export default class Bond extends Vue {
 .bond-form {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 155px);
+  justify-content: space-between;
+  height: 100%;
 
   .hint {
     padding: $default-padding;

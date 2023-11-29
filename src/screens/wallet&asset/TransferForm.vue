@@ -130,6 +130,7 @@
             :iconName="isFetchingFees ? 'loader' : ''"
             :iconType="isFetchingFees ? 'loading' : ''"
             :text="isFetchingFees ? '' : buttonText"
+            data-testid="continueBtn"
             @click="handlerContinueButton"
           />
         </div>

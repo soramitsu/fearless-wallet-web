@@ -7,6 +7,7 @@
       :placeholder="t('enterPassword')"
       :isError="isShortPassword"
       :showPassword="true"
+      data-testid="enterPasswordInput"
       class="row"
     />
 
@@ -17,10 +18,11 @@
       :placeholder="t('reEnterPassword')"
       :isError="isWrongPassword"
       :showPassword="true"
+      data-testid="reEnterPasswordInput"
       class="row"
     />
 
-    <Hint class="hint" iconName="notification" :text="hintText" />
+    <Hint class="hint" iconName="notification" :text="hintText" data-testid="hintText" />
 
     <Hint v-if="isGoogleFlow" class="hint" iconName="notification" :text="hintGoogleDriveText" />
   </div>

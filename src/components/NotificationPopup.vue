@@ -10,8 +10,8 @@
     <div class="notification-popup-content">
       <Icon v-if="showWarningIcon" icon="info-triangle" className="img" />
 
-      <div class="text">{{ $t(text) }}</div>
-      <div v-if="subtext" :class="classesSubtext">{{ $t(subtext) }}</div>
+      <div class="text" data-testid="notificationText">{{ $t(text) }}</div>
+      <div v-if="subtext" :class="classesSubtext" data-testid="notificationSubtext">{{ $t(subtext) }}</div>
 
       <slot></slot>
 
@@ -20,6 +20,7 @@
         class="button"
         size="medium"
         :text="acceptButtonText"
+        data-testid="acceptBtn"
         @click="$emit('handlerAccept')"
       />
 
@@ -28,6 +29,7 @@
         class="button reject-button"
         size="medium"
         :text="rejectButtonText"
+        data-testid="closeBtn"
         @click="$emit('handlerClose')"
       />
     </div>

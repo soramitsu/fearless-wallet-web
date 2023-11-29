@@ -32,6 +32,7 @@
           type="primary"
           :disabled="disabledButton"
           :border="false"
+          data-testid="sendExtrinsicBtn"
           @click="sendExtrinsic"
         />
       </template>

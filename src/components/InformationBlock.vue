@@ -2,7 +2,7 @@
   <div class="information-block">
     <Icon icon="info-triangle" className="img" />
 
-    <div class="info-text">
+    <div class="info-text" data-testid="infoText">
       {{ $t(text) }}
     </div>
   </div>

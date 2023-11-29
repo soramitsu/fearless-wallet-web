@@ -337,14 +337,9 @@ export class StakingService {
 
     if (!isReady) return { status: false };
 
-    if (type === 'bond') {
-      // после бонда не нужно лочить пару, тк следом идет операция номинейта валидаторов
-      apiSora.shouldPairBeLocked = false;
-
-      return this.bond(params as RequestBond);
-    }
-
     apiSora.shouldPairBeLocked = !isSavePass;
+
+    if (type === 'bond') return this.bondAndNominate(params as RequestBond);
 
     if (type === 'bondExtra') return this.bondExtra(params as RequestBondExtra);
 
@@ -368,11 +363,11 @@ export class StakingService {
     };
   }
 
-  public async bond(params: RequestBond): Promise<BasicTxResponse> {
-    const { amount, payoutAddress, from, isSavePass } = params;
+  public async bondAndNominate(params: RequestBond): Promise<BasicTxResponse> {
+    const { amount, payoutAddress, from, validators } = params;
 
     try {
-      await apiSora.staking.bond({ value: amount, controller: from, payee: payoutAddress }); // Controller аккаунт по умолчанию это Stash
+      await apiSora.staking.bondAndNominate({ value: amount, controller: from, payee: payoutAddress, validators }); // Controller аккаунт по умолчанию это Stash
     } catch (ex) {
       const message = `[STAKING] Bond failed: ${ex}`;
 
@@ -389,12 +384,7 @@ export class StakingService {
       };
     }
 
-    apiSora.shouldPairBeLocked = !isSavePass;
-
-    // nominate status
-    const { status } = await this.nominate(params);
-
-    return { status };
+    return { status: true };
   }
 
   public async bondExtra(params: RequestBondExtra): Promise<BasicTxResponse> {

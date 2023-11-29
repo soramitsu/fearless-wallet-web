@@ -2,7 +2,7 @@
   <Fragment>
     <AboveForm v-if="!showWalletSelect" :fullScreen="true" @closeHandler="onReject">
       <div class="auth-content">
-        <div class="scroll__container">
+        <div class="scroll__container" :class="heightClass">
           <Scroll>
             <div class="auth-confirmation">
               <WalletConnectHeader :title="title" :url="url" />
@@ -93,6 +93,7 @@ import { transformNamespaces } from '@/util/walletConnect';
 import { cut } from '@/helpers';
 import { Components } from '@/router/routes';
 import { WALLET_CONNECT_SUPPORTED_METHODS } from '@/extension/background/extension-base/src/services/wallet-connect-service/consts';
+import BaseApi from '@/util/BaseApi';
 const notificationPopupMessage = {
   subtext: 'walletConnect.unsupportedMethodsPopup',
   text: 'walletConnect.unsupportedMethod',
@@ -175,6 +176,8 @@ const onApprove = async () => {
   router.push(Components.Wallet);
 };
 
+const heightClass = computed(() => (BaseApi.useIsPopup() ? '' : 'scroll__container--popup'));
+
 const onReject = () => {
   rejectWalletConnectSession({ id: id.value });
 
@@ -211,6 +214,7 @@ const onReject = () => {
     line-height: 16px;
     place-self: flex-start;
   }
+
   &__logo {
     grid-area: logo;
     width: 24px;
@@ -233,6 +237,9 @@ const onReject = () => {
 .scroll__container {
   height: 460px;
   overflow-y: hidden;
+}
+.scroll__container--popup {
+  height: 100%;
 }
 .auth-confirmation {
   display: flex;

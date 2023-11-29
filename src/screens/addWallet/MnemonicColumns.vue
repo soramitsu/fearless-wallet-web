@@ -5,7 +5,7 @@
         <div class="mnemonic-number">
           {{ getNumberString(index + 1) }}
         </div>
-        <div>
+        <div data-testid="mnemonicElement">
           {{ mnemonicElement }}
         </div>
       </div>
@@ -16,7 +16,7 @@
         <div class="mnemonic-number">
           {{ getNumberString(midpoint + index + 1) }}
         </div>
-        <div>
+        <div data-testid="mnemonicElement">
           {{ mnemonicElement }}
         </div>
       </div>

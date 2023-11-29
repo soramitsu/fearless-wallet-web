@@ -1,8 +1,8 @@
 <template>
   <div :class="containerClasses">
-    <div class="fiat-balance">{{ fiatSymbol }}{{ $n(balance, 'price') }}</div>
+    <div class="fiat-balance" data-testid="fiatBalance">{{ fiatSymbol }}{{ $n(balance, 'price') }}</div>
 
-    <div v-if="changeWalletBalance" :class="percentClasses">{{ percentString }}</div>
+    <div v-if="changeWalletBalance" :class="percentClasses" data-testid="percent">{{ percentString }}</div>
   </div>
 </template>
 

@@ -34,7 +34,7 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import HistoryItem from './HistoryItem.vue';
-import type { AsyncFn, FilterHistory, GetHistory, HistoryElement } from '@/interfaces';
+import type { AsyncFn, FilterHistory, GetHistory, HistoryElement, SoraHistoryElement } from '@/interfaces';
 import type { FetchHistory, GetNetwork, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -46,13 +46,6 @@ import { isSora } from '@/helpers';
 
 @Component({ components: { HistoryItem } })
 export default class History extends Vue {
-  readonly historyDropdownOption = [
-    { label: 'assets.all', value: 'all' },
-    { label: 'assets.transfer', value: 'transfer' },
-    { label: 'assets.reward', value: 'reward' },
-    { label: 'assets.extrinsic', value: 'extrinsic' },
-  ];
-
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
 
@@ -62,6 +55,18 @@ export default class History extends Vue {
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Action(NetworksActionTypes.FETCH_HISTORY) fetchHistory!: AsyncFn<FetchHistory>;
+
+  get historyDropdownOption() {
+    const options = [
+      { label: 'assets.all', value: 'all' },
+      { label: 'assets.transfer', value: 'transfer' },
+      { label: 'assets.reward', value: 'reward' },
+    ];
+
+    if (!this.isSora) options.push({ label: 'assets.extrinsic', value: 'extrinsic' });
+
+    return options;
+  }
 
   get selectedNetwork() {
     return this.$route.params.selectedNetwork ?? '';
@@ -98,10 +103,25 @@ export default class History extends Vue {
     return this.getHistory(this.assetId, this.selectedNetwork.toLowerCase())?.nodes ?? [];
   }
 
+  get isSora() {
+    return isSora(this.selectedNetwork);
+  }
+
   get filteredHistory() {
     if (this.filterHistoryValue === 'all') return this.history;
 
     const field = this.filterHistoryValue as 'transfer' | 'reward' | 'extrinsic';
+
+    if (this.isSora) {
+      const value = field === 'reward' ? 'rewarded' : field;
+
+      const filteredHistory = (this.history as SoraHistoryElement[]).filter((historyItem) => {
+        return historyItem.method === value;
+      });
+
+      return filteredHistory;
+    }
+
     const filteredHistory = this.history.filter((historyItem) => historyItem[field]);
 
     return filteredHistory;
@@ -139,7 +159,7 @@ export default class History extends Vue {
   async loadHistory() {
     if (this.history.length !== 0) return;
 
-    if (!isSora(this.selectedNetwork) && !this.isEthereumNativeNetwork && !this.isMainNetwork) return;
+    if (!this.isSora && !this.isEthereumNativeNetwork && !this.isMainNetwork) return;
 
     this.showLoader = true;
 

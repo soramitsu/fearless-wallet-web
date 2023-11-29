@@ -17,6 +17,7 @@
         :key="index"
         :text="mnemonicElement"
         :class="addButtonClasses(mnemonicElement, index)"
+        data-testid="wordBtn"
         @click="updateSelectedMnemonicElements(mnemonicElement, index)"
       />
     </div>

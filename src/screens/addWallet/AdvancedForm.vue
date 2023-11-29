@@ -13,7 +13,13 @@
       class="row"
     />
 
-    <FInput v-model="substrateDP" class="row" placeholder="addWallet.substrateDP" size="big" />
+    <FInput
+      v-model="substrateDP"
+      class="row"
+      placeholder="addWallet.substrateDP"
+      size="big"
+      data-testid="substrateDP"
+    />
 
     <div class="example-prompt">{{ $t('addWallet.example', { example }) }}</div>
 
@@ -26,7 +32,14 @@
         size="big"
       />
 
-      <FInput v-model="ethereumDP" class="row" placeholder="addWallet.ethereumDP" :maxlength="25" size="big" />
+      <FInput
+        v-model="ethereumDP"
+        class="row"
+        placeholder="addWallet.ethereumDP"
+        :maxlength="25"
+        size="big"
+        data-testid="ethereumDP"
+      />
 
       <div class="example-prompt">{{ $t('addWallet.example', { example: ethereumDefaultDerivationPath }) }}</div>
     </template>

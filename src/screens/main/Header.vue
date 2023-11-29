@@ -2,7 +2,13 @@
   <header class="header">
     <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
       <div class="logo-container">
-        <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconName="chevron-left" @click.stop="back" />
+        <CircleButton
+          v-if="showBackIcon"
+          backgroundColor="light-black"
+          iconName="chevron-left"
+          data-testid="backBtn"
+          @click.stop="back"
+        />
 
         <Logo v-else size="small" />
       </div>

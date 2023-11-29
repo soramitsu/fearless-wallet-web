@@ -5,7 +5,7 @@
 
       <div v-else class="header-content">
         <div class="activity align-left">
-          <div v-if="props.showBackIcon" class="icon icon-back" @click="emit('handlerBack')">
+          <div v-if="props.showBackIcon" class="icon icon-back" data-testid="backBtn" @click="emit('handlerBack')">
             <Icon icon="chevron-left" />
           </div>
 

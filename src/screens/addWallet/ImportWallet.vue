@@ -7,6 +7,7 @@
       class="row"
       :options="optionsImport"
       :disabled="disabledSelect"
+      data-testid="sourceTypeSelect"
     />
 
     <FInput
@@ -19,6 +20,7 @@
       :placeholder="placeholderTypeImportValue"
       :maxlength="130"
       :height="170"
+      data-testid="textarea"
     />
 
     <template v-else>
@@ -30,6 +32,7 @@
           accept="application/JSON"
           :placeholder="placeholderTypeImportValue"
           :readonly="true"
+          data-testid="textFile"
         />
 
         <FInput
@@ -38,6 +41,7 @@
           placeholder="common.password"
           class="row"
           :showPassword="true"
+          data-testid="password"
         />
       </div>
     </template>

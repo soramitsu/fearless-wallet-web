@@ -6,7 +6,17 @@
           <Scroll>
             <div class="auth-confirmation">
               <WalletConnectHeader :title="title" :url="url" />
-              <AppPermissions v-if="isSupportNetwork" />
+
+              <ContentForm v-if="isSupportNetwork" class="permissions">
+                <h3 class="list__header">{{ $t('walletConnect.permissions.title') }}</h3>
+                <div class="list">
+                  <div v-for="(item, index) in permissionList" class="list__item" :key="index">
+                    <Icon icon="check" className="permission-icon" :iconColor="item.iconColor" />
+                    <span>{{ item.text }}</span>
+                  </div>
+                </div>
+              </ContentForm>
+
               <div v-else class="alert">
                 <Alert
                   headerText="walletConnect.requiredNetworkAlert.header"
@@ -81,7 +91,6 @@ import { useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
 import { Fragment } from 'vue-fragment';
 import WalletConnectHeader from './WalletConnectHeader.vue';
-import AppPermissions from './AppPermissions.vue';
 import WalletChooseForm from './WalletChooseForm.vue';
 import type { ChainData } from './types';
 import type { WalletConnectSessionRequest } from '@extension-base/services/wallet-connect-service/types';
@@ -98,11 +107,19 @@ const notificationPopupMessage = {
   subtext: 'walletConnect.unsupportedMethodsPopup',
   text: 'walletConnect.unsupportedMethod',
 };
+
 const showNotificationPopup = ref(false);
 const router = useRouter();
 const store = useStore();
 const notify = useNotify();
 const { t } = useI18n();
+
+const permissionList = [
+  { text: t('walletConnect.permissions.viewAddress'), iconColor: 'success' },
+  { text: t('walletConnect.permissions.viewBalances'), iconColor: 'success' },
+  { text: t('walletConnect.permissions.transferAssets'), iconColor: 'error' },
+];
+
 const wallets = ref<AccountJson[]>(
   (store.getters.getAccounts as AccountJson[]).filter((el) => el.ethereumAddress && !el.isMobile)
 );
@@ -297,5 +314,34 @@ const onReject = () => {
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
+}
+
+.permissions {
+  width: 100%;
+
+  .permission-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .list__header {
+    text-align: left;
+    padding: 16px 0 0 16px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    color: $default-white;
+  }
+
+  .list__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 16px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 19px;
+    color: $grayish-white;
+  }
 }
 </style>

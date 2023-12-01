@@ -599,6 +599,7 @@ export default class SwapForm extends Vue {
         isExchangeB: this.isExchangeB,
         marketType: this.marketType,
       });
+
       if (this.isExchangeB) this.sendAmount = amountA;
       else this.receiveAmount = amountB;
 
@@ -657,7 +658,7 @@ export default class SwapForm extends Vue {
   confirmationPasswordPopupClose(closeForm: boolean) {
     this.showConfirmationPasswordPopup = false;
 
-    if (closeForm) this.closeForm();
+    if (closeForm) this.step = 1;
   }
 
   handlerFilter(value: string) {

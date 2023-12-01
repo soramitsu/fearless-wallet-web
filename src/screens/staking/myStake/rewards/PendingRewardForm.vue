@@ -16,7 +16,7 @@
               <div class="descriptions">{{ $t('staking.validatorsPayoutRewards') }}</div>
 
               <ValidatorItem
-                v-for="validator in myValidatorRewards"
+                v-for="validator in myRewards"
                 :key="validator.address"
                 :validator="validator"
                 :rewardedCurrency="rewardedCurrency"
@@ -134,18 +134,16 @@ export default class PendingRewardForm extends Vue {
   }
 
   get btnText() {
-    if (this.step === 1) {
-      if (!this.isValidAmountAsset)
-        return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
+    if (this.step === 1) return 'staking.payoutAll';
 
-      return 'staking.payoutAll';
-    }
+    if (!this.isValidAmountAsset)
+      return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
 
     return 'common.confirm';
   }
 
   get disabledBtn() {
-    if (this.step === 1) return this.myValidatorRewards.length === 0;
+    if (this.step === 1) return this.myRewards.length === 0;
 
     return !this.isValidAmountAsset;
   }
@@ -166,7 +164,7 @@ export default class PendingRewardForm extends Vue {
     return this.stakingNetwork.payeeName;
   }
 
-  get myValidatorRewards() {
+  get myRewards() {
     return this.rewards?.validators;
   }
 
@@ -280,6 +278,8 @@ export default class PendingRewardForm extends Vue {
     this.step = 2;
 
     this.closeWarningPopup();
+
+    this.showConfirmationPasswordPopup = true;
   }
 
   closeWarningPopup() {

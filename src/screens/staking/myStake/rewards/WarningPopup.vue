@@ -7,8 +7,8 @@
     :showRejectButton="true"
     :closeByBackground="false"
     :headers="headers"
-    :handlerClose="handlerClose"
-    :handlerAccept="handlerAccept"
+    @handlerClose="handlerClose"
+    @handlerAccept="handlerAccept"
   />
 </template>
 
@@ -24,8 +24,8 @@ const headers = {
 };
 
 const props = withDefaults(defineProps<Props>(), {
-  handlerClose: () => null,
   handlerAccept: () => null,
+  handlerClose: () => null,
 });
 
 const handlerAccept = props.handlerAccept;

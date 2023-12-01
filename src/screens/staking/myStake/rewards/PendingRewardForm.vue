@@ -134,7 +134,12 @@ export default class PendingRewardForm extends Vue {
   }
 
   get btnText() {
-    if (this.step === 1) return 'staking.payoutAll';
+    if (this.step === 1) {
+      if (!this.isValidAmountAsset)
+        return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
+
+      return 'staking.payoutAll';
+    }
 
     return 'common.confirm';
   }
@@ -142,6 +147,10 @@ export default class PendingRewardForm extends Vue {
   get disabledBtn() {
     if (this.step === 1) return this.myValidatorRewards.length === 0;
 
+    return !this.isValidAmountAsset;
+  }
+
+  get isValidAmountAsset() {
     // для controller аккаунта подставляем баланс stash аккаунта
     const stakingCurrency: TokenBalance = this.stakingNetwork.isController
       ? {

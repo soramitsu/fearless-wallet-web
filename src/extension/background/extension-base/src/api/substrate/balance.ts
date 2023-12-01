@@ -212,9 +212,11 @@ export function subscribeBalance(
           unsub: () => null,
         };
 
+      const unsub = subscribeTokensBalance(addressForNetwork, networkName, apiProps.api!, state);
+
       return {
         networkName,
-        unsub: subscribeTokensBalance(addressForNetwork, networkName, apiProps.api!, state),
+        unsub,
       };
     });
 

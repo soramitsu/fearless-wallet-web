@@ -136,7 +136,7 @@ export class FWSubscription {
             }
 
             this.serviceInfo.address = address;
-            this.serviceInfo.ethereumAddress = address;
+            this.serviceInfo.ethereumAddress = ethereumAddress;
           }
 
           // если сетей нет в списке сетей на балансы которых нужно быть подписанными

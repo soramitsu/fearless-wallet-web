@@ -163,12 +163,10 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   get buttontext() {
-    if (this.step === 1) {
-      if (!this.isValidAmountAsset)
-        return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
+    if (this.step === 1) return 'common.edit';
 
-      return 'common.edit';
-    }
+    if (this.step === 6 && !this.isValidAmountAsset)
+      return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
 
     return 'common.confirm';
   }

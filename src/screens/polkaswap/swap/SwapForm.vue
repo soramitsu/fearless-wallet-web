@@ -662,6 +662,8 @@ export default class SwapForm extends Vue {
       this.sendAmount = '';
       this.receiveAmount = '';
       this.step = 1;
+
+      this.clearSwapInterval();
     }
   }
 

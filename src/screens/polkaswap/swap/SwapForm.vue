@@ -658,7 +658,11 @@ export default class SwapForm extends Vue {
   confirmationPasswordPopupClose(closeForm: boolean) {
     this.showConfirmationPasswordPopup = false;
 
-    if (closeForm) this.step = 1;
+    if (closeForm) {
+      this.sendAmount = '';
+      this.receiveAmount = '';
+      this.step = 1;
+    }
   }
 
   handlerFilter(value: string) {

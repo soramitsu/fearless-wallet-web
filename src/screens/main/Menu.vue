@@ -17,6 +17,10 @@ import { Components } from '@/router/routes';
 import MenuItem from '@/screens/main/MenuItem.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { type SelectedWallet } from '@/store';
+import { IS_PRODUCTION } from '@/consts/global';
+import { type NetworkName } from '@/interfaces';
+import { SORA_MAINNET } from '@/consts/sora';
+import { isSameString } from '@/helpers';
 
 type MenuItemType = 'Wallet' | 'Staking' | 'Polkaswap';
 
@@ -26,9 +30,18 @@ type MenuItemType = 'Wallet' | 'Staking' | 'Polkaswap';
 export default class Menu extends Vue {
   walletItems: string[] = [Components.Accounts, Components.Export, Components.Nodes];
   stakingItems: string[] = [Components.MyStake];
-  menuItems: MenuItemType[] = [Components.Wallet, Components.Staking, Components.Polkaswap];
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: NetworkName;
+
+  get menuItems() {
+    const array: MenuItemType[] = [Components.Wallet, Components.Staking];
+
+    if (IS_PRODUCTION || (!IS_PRODUCTION && !isSameString(this.selectedNetwork, SORA_MAINNET)))
+      array.push(Components.Polkaswap);
+
+    return array;
+  }
 
   get currentRouteName() {
     const route = this.$route.path.split('/')[2];

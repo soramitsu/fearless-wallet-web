@@ -1,10 +1,11 @@
 <template>
   <Fragment>
     <Tabs :activeTab="activeTab" :tabs="tabs" @update:activeTab="onActiveTabUpdate" />
-
-    <Scroll>
-      <router-view></router-view>
-    </Scroll>
+    <div class="scroll-container">
+      <Scroll>
+        <router-view></router-view>
+      </Scroll>
+    </div>
   </Fragment>
 </template>
 
@@ -47,5 +48,8 @@ const onActiveTabUpdate = (value: Components.SubstrateAuths | Components.WcAuths
 }
 .no-auths {
   padding: 20px;
+}
+.scroll-container {
+  height: calc(100% - 20px);
 }
 </style>

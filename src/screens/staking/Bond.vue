@@ -446,11 +446,10 @@ export default class Bond extends Vue {
   }
 
   async getSoraFees() {
-    const { StakingBond, StakingNominate } = await getSoraFees();
+    const { StakingBondAndNominate } = await getSoraFees();
 
-    // показываем комиссию бонд+номинейт, потому что делаем обе операции за раз
     // TODO: в сетях кроме соры, контроллер устанавливается отдельным вызовом, по этому нужно прибавлять и комиссию за StakingSetController
-    this.fee = (+StakingBond + +StakingNominate).toString();
+    this.fee = StakingBondAndNominate;
   }
 
   openValidatorList(isSuggested = false) {

@@ -10,6 +10,8 @@
       :iconClasses="['network-fee']"
     />
 
+    <InfoRow class="unbond-period" text="staking.unstakingPeriod" borderType="default" :value="period" />
+
     <div class="disclaimer">
       <Icon icon="wallet-2" class="img" />
 
@@ -29,7 +31,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { GetAssetPrice } from '@/store';
+import type { GetAssetPrice, NetworkParams } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -37,12 +39,13 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 @Component
 export default class Unbond extends Vue {
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
+  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @Prop({ type: String }) fee!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get asset() {
-    return this.stakingCurrency.symbol;
+    return this.stakingNetwork.asset;
   }
 
   get stakingAssetPrice() {
@@ -56,6 +59,10 @@ export default class Unbond extends Vue {
 
     return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
   }
+
+  get period() {
+    return `${this.stakingNetwork.unbondPeriod} ${this.$t('staking.days')}`;
+  }
 }
 </script>
 
@@ -63,6 +70,9 @@ export default class Unbond extends Vue {
 .unbond-form {
   .info-fee {
     margin-top: 10px;
+  }
+
+  .unbond-period {
     margin-bottom: 20px;
   }
 

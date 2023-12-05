@@ -467,6 +467,7 @@ export default class State {
     });
 
     if (this.ready) this.initNetworkStates();
+
     this.updateServiceInfo();
 
     this.networkMapSubject.next(this.networkMap);

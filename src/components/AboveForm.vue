@@ -14,7 +14,7 @@
           </div>
         </div>
 
-        <div class="header">{{ tHeader }}</div>
+        <div class="header" data-testid="header">{{ tHeader }}</div>
 
         <div class="activity align-right">
           <div v-if="props.showCloseIcon" class="icon" @click="emit('closeHandler')">

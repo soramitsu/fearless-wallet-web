@@ -1,5 +1,5 @@
 <template>
-  <div class="search-input-wrapper">
+  <div class="search-input-wrapper" data-testid="searchInput">
     <FInput v-model="vModel" :placeholder="placeholder" size="small" :style="inputStyle" />
 
     <SIcon name="basic-search-24" />

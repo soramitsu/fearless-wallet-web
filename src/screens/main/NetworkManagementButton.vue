@@ -1,10 +1,10 @@
 <template>
   <div :class="assetPageWrapperClasses">
-    <div class="network-management" :class="assetPageClasses" @click.stop="onToggle">
+    <div class="network-management" :class="assetPageClasses" data-testid="networkManagement" @click.stop="onToggle">
       <Icon v-if="isGroupIcon" :icon="icon" className="icon--network" width="16" height="16" />
       <ExternalLogo v-else :name="icon" :width="16" class="icon--network" />
 
-      <span class="network__title">{{ selectedNetwork }}</span>
+      <span class="network__title" data-testid="networkTitle">{{ selectedNetwork }}</span>
       <Icon icon="down" className="icon--down" width="10" height="9" />
     </div>
   </div>

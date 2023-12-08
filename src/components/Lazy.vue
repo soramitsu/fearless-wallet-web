@@ -1,5 +1,5 @@
 <template>
-  <div :ref="targetRef">
+  <div :ref="targetRef" data-testid="lazy">
     <slot v-if="shouldRender" />
 
     <Shimmer v-else-if="isTimeout" height="100%" width="100%" />

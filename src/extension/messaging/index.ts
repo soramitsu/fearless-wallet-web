@@ -40,8 +40,8 @@ function connect() {
       delete handlers[data.id];
     }
 
-    if (data.value && handler.subscriber) {
-      handler.subscriber(data.value);
+    if (data.subscription && handler.subscriber) {
+      handler.subscriber(data.subscription);
     } else if (data.error) {
       handler.reject(new Error(data.error));
     } else {

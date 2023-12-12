@@ -88,7 +88,7 @@ export default class Tabs {
     return authList[shortenUrl];
   }
 
-  async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<boolean> {
+  async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<string> {
     const cb = createSubscription<'pub(accounts.subscribe)'>(id, port);
 
     this.accountSubs[id] = {

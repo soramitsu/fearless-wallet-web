@@ -138,13 +138,11 @@ export class AuthRequestHandler {
   };
 
   public async authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<boolean> {
-    let authList = await this.getAuthList();
+    const authList = (await this.getAuthList()) ?? {};
 
     const accountAuthType = request.accountAuthType ?? 'substrate';
 
     request.accountAuthType = accountAuthType;
-
-    if (!authList) authList = {};
 
     const idStr = stripUrl(url);
     // Do not enqueue duplicate authorization requests.
@@ -153,32 +151,26 @@ export class AuthRequestHandler {
     assert(!isDuplicate, `The source ${url} has a pending authorization request`);
 
     const existedAuth = authList[idStr];
-
     const existedAccountAuthType = existedAuth?.accountAuthType;
     const confirmAnotherType = existedAccountAuthType !== 'both' && existedAccountAuthType !== request.accountAuthType;
 
-    if (request.reConfirm && existedAuth) request.origin = existedAuth.origin;
-
     // Reconfirm if check auth for empty list
     if (existedAuth) {
+      if (request.reConfirm) request.origin = existedAuth.origin;
+
       const inBlackList = !existedAuth.isAllowed;
 
-      if (inBlackList) {
-        throw new Error(`The source ${url} is not allowed to interact with this extension`);
-      }
+      if (inBlackList) throw new Error(`The source ${url} is not allowed to interact with this extension`);
 
       let allowedListByRequestType = [...existedAuth.authorizedAccounts];
 
-      if (accountAuthType === 'evm') {
+      if (accountAuthType === 'evm')
         allowedListByRequestType = allowedListByRequestType.filter((a) => isEthereumAddress(a));
-      } else if (accountAuthType === 'substrate') {
+      else if (accountAuthType === 'substrate')
         allowedListByRequestType = allowedListByRequestType.filter((a) => !isEthereumAddress(a));
-      }
 
-      if (!confirmAnotherType && !request.reConfirm && allowedListByRequestType.length !== 0) {
-        // Prevent appear confirmation popup
-        return false;
-      }
+      // Prevent appear confirmation popup
+      if (!confirmAnotherType && !request.reConfirm && allowedListByRequestType.length !== 0) return false;
     }
 
     return new Promise((resolve, reject): void => {
@@ -190,14 +182,12 @@ export class AuthRequestHandler {
         idStr,
         request,
         url,
-        accountAuthType: request.accountAuthType,
+        accountAuthType: 'both',
       };
 
       this.updateIconAuth();
 
-      if (Object.keys(this.authRequests).length < 2) {
-        this.requestService.popupOpen();
-      }
+      if (Object.keys(this.authRequests).length < 2) this.requestService.popupOpen();
     });
   }
 

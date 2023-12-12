@@ -78,7 +78,7 @@ export class AuthRequestHandler {
   public getAuthList(): Promise<AuthUrls> {
     return new Promise<AuthUrls>((resolve) => {
       this.getAuthorize((rs: AuthUrls) => {
-        resolve(rs);
+        resolve(rs ?? {});
       });
     });
   }
@@ -138,7 +138,7 @@ export class AuthRequestHandler {
   };
 
   public async authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<boolean> {
-    const authList = (await this.getAuthList()) ?? {};
+    const authList = await this.getAuthList();
 
     const accountAuthType = request.accountAuthType ?? 'substrate';
 

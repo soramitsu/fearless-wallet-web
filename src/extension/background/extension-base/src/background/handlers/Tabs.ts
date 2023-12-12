@@ -88,7 +88,7 @@ export default class Tabs {
     return authList[shortenUrl];
   }
 
-  async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<boolean> {
+  async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<string> {
     const cb = createSubscription<'pub(accounts.subscribe)'>(id, port);
 
     this.accountSubs[id] = {
@@ -101,8 +101,6 @@ export default class Tabs {
 
         const auths = await this.filterForAuthorizedAccounts(allAccounts, url);
 
-        console.log('auths', auths);
-
         cb(auths);
       }),
       url,
@@ -112,7 +110,7 @@ export default class Tabs {
       this.accountsUnsubscribe(url, { id });
     });
 
-    return true;
+    return id;
   }
 
   accountsUnsubscribe(url: string, { id }: RequestAccountUnsubscribe): boolean {

@@ -39,7 +39,7 @@ export function transformAccounts(accounts: SubjectInfo, anyType = false): Injec
         type,
       }): InjectedAccount => ({
         address,
-        genesisHash,
+        genesisHash: genesisHash ?? '',
         name,
         type,
       })
@@ -60,6 +60,7 @@ export function transformAddresses(addresses: SubjectInfo): InjectedAccount[] {
         address,
         name,
         type,
+        genesisHash: '',
       })
     );
 }

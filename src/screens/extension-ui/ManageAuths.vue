@@ -46,10 +46,12 @@ const onActiveTabUpdate = (value: Components.SubstrateAuths | Components.WcAuths
 .auth-items {
   height: calc(100% - 60px);
 }
+
 .no-auths {
   padding: 20px;
 }
+
 .scroll-container {
-  height: calc(100% - 20px);
+  height: calc(100% - 23px);
 }
 </style>

@@ -41,6 +41,7 @@ async function onDisconnect(networkName: string, state: State) {
   if (api.apiRetry < MAX_CONTINUE_RETRY) return;
 
   api.api?.disconnect();
+  api.provider?.disconnect();
 
   api.nodeIndex += 1;
 

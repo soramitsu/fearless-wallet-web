@@ -1,14 +1,16 @@
 <template>
-  <button class="button" @click="$emit('click')">{{ $t(text) }}</button>
+  <button class="button" @click="onClick">{{ $t(text) }}</button>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+type Props = {
+  text: string;
+};
 
-@Component
-export default class BadgeButton extends Vue {
-  @Prop({ type: String }) text!: string;
-}
+defineProps<Props>();
+
+const emit = defineEmits(['click']);
+const onClick = () => emit('click');
 </script>
 
 <style lang="scss" scoped>

@@ -8,7 +8,7 @@
       class="alert"
     />
 
-    <ContentForm v-if="showElectedValidators" :height="430" :bottomRightCorner="true">
+    <ContentForm :height="430" :bottomRightCorner="true">
       <Scroll>
         <div class="form-layout">
           <template v-if="showMyValidators">
@@ -95,10 +95,6 @@ export default class YourValidators extends Vue {
 
   get waitingValidators() {
     return this.stakingNetwork.myValidators.filter(({ isWaiting }) => isWaiting);
-  }
-
-  get showElectedValidators() {
-    return this.myActiveValidators.length !== 0 || this.inactiveValidators.length !== 0;
   }
 
   get showWaitingMyValidators() {

@@ -124,8 +124,9 @@ export function getSubstrateAddress(address: string, state: State) {
   if (!isEthereumAddress(address)) return address;
 
   const accounts = state.keyringService.getAllAccounts();
+
   const account = accounts.find(
-    ({ meta: { ethereumAddress } }) => (ethereumAddress as string).toLowerCase() === address.toLowerCase()
+    ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
   );
 
   return account?.address ?? address;

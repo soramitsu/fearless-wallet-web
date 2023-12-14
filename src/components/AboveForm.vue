@@ -14,7 +14,7 @@
           </div>
         </div>
 
-        <div class="header">{{ tHeader }}</div>
+        <div class="header" data-testid="header">{{ tHeader }}</div>
 
         <div class="activity align-right">
           <div v-if="props.showCloseIcon" class="icon" @click="emit('closeHandler')">
@@ -39,29 +39,28 @@ import { computed, withDefaults } from 'vue';
 import { useI18n } from 'vue-i18n-composable';
 import type { ComponentText } from '@/interfaces';
 
-const { t } = useI18n();
+type Props = {
+  header?: ComponentText;
+  blur?: boolean;
+  showAcceptIcon?: boolean;
+  showBackIcon?: boolean;
+  fullScreen?: boolean;
+  showCloseIcon?: boolean;
+  showAnimation?: boolean;
+};
 
+const { t } = useI18n();
 const emit = defineEmits(['handlerBack', 'closeHandler', 'saveChanges']);
-const props = withDefaults(
-  defineProps<{
-    header?: ComponentText;
-    blur?: boolean;
-    showAcceptIcon?: boolean;
-    showBackIcon?: boolean;
-    fullScreen?: boolean;
-    showCloseIcon?: boolean;
-    showAnimation?: boolean;
-  }>(),
-  {
-    header: '',
-    blur: false,
-    showAcceptIcon: false,
-    fullScreen: false,
-    showBackIcon: false,
-    showCloseIcon: true,
-    showAnimation: true,
-  }
-);
+
+const props = withDefaults(defineProps<Props>(), {
+  header: '',
+  blur: false,
+  showAcceptIcon: false,
+  fullScreen: false,
+  showBackIcon: false,
+  showCloseIcon: true,
+  showAnimation: true,
+});
 
 const tHeader = computed(() => {
   if (typeof props.header === 'string') return t(props.header);

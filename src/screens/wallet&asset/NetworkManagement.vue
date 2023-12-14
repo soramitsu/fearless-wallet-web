@@ -14,6 +14,7 @@
         :isNetworkGroup="true"
         :isAvailable="true"
         :isSelected="isGroupSelected"
+        data-testid="networkItem"
         @onChangeNetwork="toggleNetworkType"
       />
 

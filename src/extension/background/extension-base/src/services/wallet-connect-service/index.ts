@@ -23,17 +23,16 @@ import type { RequestService } from '@extension-base/services';
 export class WalletConnectService {
   private readonly state: State;
   private readonly requestService: RequestService;
+  private client?: WalletConnect;
+
   readonly eip155RequestHandler: Eip155Handler;
   readonly polkadotRequestHandler: PolkadotHandler;
-
-  private client?: WalletConnect;
-  public readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]> = new BehaviorSubject<SessionTypes.Struct[]>(
-    []
-  );
+  readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]>;
 
   constructor(state: State, requestService: RequestService) {
     this.state = state;
     this.requestService = requestService;
+    this.sessionSubject = new BehaviorSubject<SessionTypes.Struct[]>([]);
     this.eip155RequestHandler = new Eip155Handler(this.state, this, requestService);
     this.polkadotRequestHandler = new PolkadotHandler(this.state, this, requestService);
     this.initClient().catch(console.error);

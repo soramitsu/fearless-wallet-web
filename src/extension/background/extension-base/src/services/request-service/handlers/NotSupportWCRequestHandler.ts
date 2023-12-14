@@ -8,7 +8,7 @@ import {
 
 // WC = WalletConnect
 export class NotSupportWCRequestHandler {
-  readonly requestService: RequestService;
+  private readonly requestService: RequestService;
   readonly notSupportWCRequests: Record<string, RequestWalletConnectNotSupport> = {};
   public readonly notSupportWCSubject: BehaviorSubject<WalletConnectNotSupportRequest[]> = new BehaviorSubject<
     WalletConnectNotSupportRequest[]

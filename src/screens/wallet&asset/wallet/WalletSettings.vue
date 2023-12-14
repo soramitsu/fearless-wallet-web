@@ -11,6 +11,7 @@
           :class="classes"
           :label="label"
           :isActive="syncedActiveTabName === tabName"
+          data-testid="optTab"
           @click="openTab(tabName)"
         />
       </template>
@@ -33,6 +34,7 @@
         placeholder="common.search"
         width="185px"
         class="search"
+        data-testid="searchInput"
       />
 
       <CircleButton
@@ -41,6 +43,7 @@
         placement="left"
         :target="target"
         :iconName="iconName"
+        data-testid="filterBtn"
         @click="toggleAssetsManagementVisible"
       />
     </div>

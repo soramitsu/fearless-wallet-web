@@ -50,6 +50,7 @@
         :isGroupIcon="isGroup"
         :icon="selectedNetworkIcon"
         :selectedNetwork="networkManagementButtonText"
+        data-testid="selectNetwork"
         @onToggle="toggleSelectNetworkPopupVisible"
       />
 
@@ -74,6 +75,7 @@
         placement="left"
         target=".settings"
         tooltipText="header.settingsAndManagement"
+        data-testid="settings"
         @click="toggleSettingsVisible"
       />
 

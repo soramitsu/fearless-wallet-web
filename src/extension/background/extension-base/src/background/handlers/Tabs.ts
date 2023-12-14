@@ -90,6 +90,7 @@ export default class Tabs {
 
   async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<string> {
     const cb = createSubscription<'pub(accounts.subscribe)'>(id, port);
+
     this.accountSubs[id] = {
       subscription: accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
         const transformedAccounts = transformAccounts(accounts);

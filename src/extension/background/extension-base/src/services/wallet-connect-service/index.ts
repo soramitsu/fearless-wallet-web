@@ -20,10 +20,9 @@ import {
 import type State from '@extension-base/background/handlers/State';
 import type { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
 import type { RequestService } from '@extension-base/services';
-
 export class WalletConnectService {
-  readonly state: State;
-  readonly requestService: RequestService;
+  private readonly state: State;
+  private readonly requestService: RequestService;
   readonly eip155RequestHandler: Eip155Handler;
   readonly polkadotRequestHandler: PolkadotHandler;
 
@@ -159,20 +158,20 @@ export class WalletConnectService {
     const method = request.method as WalletConnectSigningMethod;
 
     try {
-      const { namespaces: _namespaces } = this.getSession(topic);
+      const { requiredNamespaces } = this.getSession(topic);
 
-      const namespaces = Object.keys(_namespaces);
-      const chains = Object.values(_namespaces)
+      const namespaces = Object.keys(requiredNamespaces);
+      const chains = Object.values(requiredNamespaces)
         .map((namespace) => namespace.chains)
         .flat();
 
       const [requestNamespace] = chainId.split(':');
 
-      if (!namespaces.includes(requestNamespace)) {
+      if (!namespaces.includes(requestNamespace) && namespaces.length) {
         throw Error(getSdkError('UNSUPPORTED_NAMESPACE_KEY').message);
       }
 
-      if (!chains.includes(chainId)) {
+      if (!chains.includes(chainId) && chainId.length) {
         throw Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + chainId);
       }
 

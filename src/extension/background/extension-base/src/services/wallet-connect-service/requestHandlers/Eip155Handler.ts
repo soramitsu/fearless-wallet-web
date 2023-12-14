@@ -9,9 +9,9 @@ import type State from '@extension-base/background/handlers/State';
 import type { RequestService } from '@extension-base/services/request-service';
 
 export default class Eip155RequestHandler {
-  readonly walletConnectService: WalletConnectService;
-  readonly state: State;
-  readonly requestService: RequestService;
+  private readonly walletConnectService: WalletConnectService;
+  private readonly state: State;
+  private readonly requestService: RequestService;
 
   constructor(state: State, walletConnectService: WalletConnectService, requestService: RequestService) {
     this.state = state;
@@ -26,7 +26,7 @@ export default class Eip155RequestHandler {
   }
 
   private handleError(topic: string, id: number, e: unknown) {
-    console.info(e);
+    console.info(e, 'WC ERROR');
     let message = (e as Error).message;
 
     if (message.includes('User Rejected Request')) {
@@ -65,13 +65,11 @@ export default class Eip155RequestHandler {
       this.requestService.evmRequestHandler
         .sign(requestEvent)
         .then(async ({ signature }) => {
-          const res = await this.walletConnectService.responseRequest({
+          this.walletConnectService.responseRequest({
             topic,
             response: formatJsonRpcResult(id, signature),
           });
-          console.info(res);
         })
-
         .catch((e: any) => {
           this.handleError(topic, id, e);
         });

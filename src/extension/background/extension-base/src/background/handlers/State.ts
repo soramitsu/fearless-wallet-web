@@ -133,7 +133,7 @@ export default class State {
   public keyringService = new KeyringService(this);
   public eventService = new EventService();
   public networkService = new NetworkService(this.eventService);
-  public requestService = new RequestService(this, this.networkService);
+  public requestService = new RequestService(this);
   public walletConnectService = new WalletConnectService(this, this.requestService);
   public walletConnectDappService = new WalletConnectDAppService(this);
   public soraCardService = new SoraCardService(this.requestService);

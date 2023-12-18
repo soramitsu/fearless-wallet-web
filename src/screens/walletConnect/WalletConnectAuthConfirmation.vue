@@ -139,7 +139,7 @@ const namespaces = computed<ChainData[]>(() => {
   const requiredNamespaces = request.value.request.params.requiredNamespaces;
   const optionalNamespaces = request.value.request.params.optionalNamespaces;
   const transformedRequiredNamespaces = transformNamespaces(requiredNamespaces, true);
-  if (transformedRequiredNamespaces.length === 0) return [];
+  if (transformedRequiredNamespaces.length === 0 && Object.keys(requiredNamespaces).length !== 0) return [];
   const transformedOptionalNamespaces = transformNamespaces(optionalNamespaces, false);
   const result = [...transformedRequiredNamespaces, ...transformedOptionalNamespaces];
   const arrSet = new Map();

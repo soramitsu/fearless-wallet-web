@@ -8,7 +8,6 @@ import {
   MetadataRequestHandler,
   SubstrateRequestHandler,
 } from '@extension-base/services/request-service/handlers';
-import type { NetworkService } from '@extension-base/services';
 import type {
   WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
@@ -31,9 +30,8 @@ import type {
 import type { WCSignRequest } from '@extension-base/services/request-service/types';
 
 export class RequestService {
-  readonly state: State;
+  private readonly state: State;
   readonly popupHandler: PopupHandler;
-  readonly networkService: NetworkService;
   readonly connectWCRequestHandler: ConnectWCRequestHandler;
   readonly notSupportWCRequestHandler: NotSupportWCRequestHandler;
   readonly metadataRequestHandler: MetadataRequestHandler;
@@ -41,14 +39,13 @@ export class RequestService {
   readonly substrateRequestHandler: SubstrateRequestHandler;
   readonly evmRequestHandler: EvmRequestHandler;
 
-  constructor(state: State, networkService: NetworkService) {
+  constructor(state: State) {
     this.state = state;
-    this.networkService = networkService;
     this.popupHandler = new PopupHandler(this);
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
-    this.authRequestHandler = new AuthRequestHandler(this.state, this, this.networkService);
+    this.authRequestHandler = new AuthRequestHandler(this.state, this);
     this.substrateRequestHandler = new SubstrateRequestHandler(this);
     this.evmRequestHandler = new EvmRequestHandler(this);
   }

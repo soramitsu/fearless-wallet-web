@@ -11,7 +11,7 @@
           placeholder="accounts.urlAddress"
           class="row"
           :errorDescriptions="errorMessage"
-          :isError="isError || isUrlDuplicate"
+          :isError="isError"
           :maxlength="150"
         />
       </div>
@@ -35,8 +35,8 @@ export default class EditNodeForm extends Vue {
   url = '';
   isError = false;
   @Prop(String) network!: string;
-  @Prop(String) _name!: string;
-  @Prop(String) _url!: string;
+  @Prop(String) nodeName!: string;
+  @Prop(String) nodeUrl!: string;
   @Prop(Boolean) isActive!: boolean;
   @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
@@ -50,10 +50,12 @@ export default class EditNodeForm extends Vue {
   }
 
   get isEdit() {
-    return this._name !== '';
+    return this.nodeUrl !== '';
   }
 
   get isUrlDuplicate() {
+    if (!this.networkJson) return false;
+
     return (
       this.networkJson.nodes.some(({ url }) => url === this.url) ||
       this.networkJson.customNodes.some(({ url }) => url === this.url)
@@ -68,7 +70,13 @@ export default class EditNodeForm extends Vue {
   isErrorUrlNode() {
     this.isError = false;
 
-    if (this.urlLength === 0) return;
+    if (this.urlLength === 0 || this.url === this.nodeUrl) return;
+
+    if (this.isUrlDuplicate) {
+      this.isError = true;
+
+      return;
+    }
 
     const explorers = this.networkJson.externalApi?.explorers;
     const isTooLengthTooSmall = this.urlLength < 7;
@@ -89,11 +97,11 @@ export default class EditNodeForm extends Vue {
   }
 
   get isUrlChanged() {
-    return this.url !== this._url;
+    return this.url !== this.nodeUrl;
   }
 
   get isNameChanged() {
-    return this.name !== this._name;
+    return this.name !== this.nodeUrl;
   }
 
   get buttonDisabled() {
@@ -101,8 +109,8 @@ export default class EditNodeForm extends Vue {
   }
 
   mounted() {
-    this.name = this._name;
-    this.url = this._url;
+    this.name = this.nodeName;
+    this.url = this.nodeUrl;
   }
 
   updateNodes() {
@@ -110,13 +118,14 @@ export default class EditNodeForm extends Vue {
 
     const prepData: Partial<NetworkJson> = {};
     const customNodeIndex = this.networkJson.customNodes.findIndex(
-      (el) => el.url === this._url && el.name === this._name
+      ({ url, name }) => url === this.nodeUrl && name === this.nodeName
     );
 
     prepData.customNodes = this.networkJson.customNodes ?? [];
+    const editedNode = { name: this.name, url: this.url };
 
-    if (customNodeIndex >= 0) prepData.customNodes[customNodeIndex] = { name: this.name, url: this.url };
-    else prepData.customNodes.push({ name: this.name, url: this.url });
+    if (customNodeIndex >= 0) prepData.customNodes[customNodeIndex] = editedNode;
+    else prepData.customNodes.push(editedNode);
 
     prepData.currentProvider = this.url;
 

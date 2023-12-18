@@ -10,7 +10,7 @@
     horizontalPlacement="right"
   >
     <div class="node-settings">
-      <div class="row" @click="$emit('openEditNodeForm')">
+      <div class="row" @click="$emit('openEditNodeForm', selectedNetwork, name, url)">
         <Icon icon="edit" className="edit-icon" />
 
         <div class="label">{{ $t('accounts.editNode') }}</div>
@@ -24,21 +24,20 @@
   </Popup>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useRoute } from 'vue-router/composables';
 
-@Component
-export default class NodeSettingsPopup extends Vue {
-  @Prop(Number) buttonTopClick!: number;
+type Props = { buttonTopClick: number; name?: string; url?: string };
+const props = defineProps<Props>();
+const route = useRoute();
 
-  get top() {
-    if (this.buttonTopClick < 300) {
-      return this.buttonTopClick + 18;
-    }
+const selectedNetwork = computed(() => route.params.network);
+const top = computed(() => {
+  const computedMargin = props.buttonTopClick < 300 ? 18 : -100;
 
-    return this.buttonTopClick - 110;
-  }
-}
+  return props.buttonTopClick + computedMargin;
+});
 </script>
 
 <style lang="scss" scoped>

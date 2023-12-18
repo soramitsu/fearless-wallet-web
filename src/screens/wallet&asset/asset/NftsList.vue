@@ -1,32 +1,35 @@
 <template>
   <Scroll>
-    <div v-if="nfts.length" class="nft-list">
-      <NftItem v-for="(nft, i) in nfts" :nft="nft" :key="i" />
+    <div class="nft-list">
+      <NftCollectionItem v-for="(nft, i) of nfts" :nft="nft" :key="i" />
     </div>
-    <div v-else class="no-nfts">
+    <!-- <div v-else class="no-nfts">
       <span>{{ 'There is no nfts, yet' }}</span>
-    </div>
+    </div> -->
   </Scroll>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue';
-import type { OwnedNft } from 'alchemy-sdk';
-import { useStore } from '@/store';
-import { getNfts } from '@/extension/messaging/nfts';
-import NftItem from '@/screens/wallet&asset/asset/NftItem.vue';
+import { onMounted, ref } from 'vue';
 
-const store = useStore();
-const selectedWallet = computed(() => store.getters.selectedWallet);
-const nfts = ref<OwnedNft[]>([]);
+// import { useStore } from '@/store';`
+import type { NftState } from '@extension-base/services/nft-service/types';
+import { getNftSubscribe } from '@/extension/messaging/nfts';
+import NftCollectionItem from '@/screens/wallet&asset/asset/NftCollectionItem.vue';
+
+// const store = useStore();
+const nfts = ref<NftState>({});
 
 onMounted(async () => {
-  const res = await getNfts(selectedWallet.value.ethereumAddress);
-  console.info(res, 'NFT collection');
-  if (res) nfts.value = res.ownedNfts;
+  const ownedNfts = await getNftSubscribe((data) => {
+    nfts.value = data;
+  });
+
+  nfts.value = ownedNfts;
 });
 </script>
-<style lang="scss">
+
+<style lang="scss" scoped>
 .nft-list {
   display: grid;
   grid-template-columns: max-content max-content;

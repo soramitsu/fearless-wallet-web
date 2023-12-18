@@ -81,7 +81,6 @@ import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset, GetNetwork } from '@/store';
 import type { AsyncFn, Fn, TabWallet, AssetsPrice } from '@/interfaces';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
-import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
@@ -108,7 +107,6 @@ import { isSameString } from '@/helpers';
 
 @Component({
   components: {
-    NFTs,
     SendForm,
     Currencies,
     ReceiveForm,

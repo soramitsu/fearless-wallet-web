@@ -1,6 +1,6 @@
-import { type OwnedNftsResponse } from 'alchemy-sdk';
+import type { NftState } from '@extension-base/services/nft-service/types';
 import { sendMessage } from '@/extension/messaging';
 
-export function getNfts(address: string): Promise<OwnedNftsResponse> {
-  return sendMessage('pri(nft.get.all)', address);
+export function getNftSubscribe(cb: (data: NftState) => void): Promise<NftState> {
+  return sendMessage('pri(nft.subscribe)', null, cb);
 }

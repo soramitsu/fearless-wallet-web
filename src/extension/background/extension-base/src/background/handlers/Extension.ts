@@ -1836,8 +1836,8 @@ export default class Extension extends FWExtensionBase {
         return this.isOnboardingRequired();
 
       //Nfts
-      case 'pri(nft.get.all)':
-        return this.state.nftService.getNfts(request as string);
+      case 'pri(nft.subscribe)':
+        return this.state.nftService.nftSubscribe(id, port);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

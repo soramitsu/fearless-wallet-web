@@ -1,6 +1,6 @@
 <template>
   <div class="accounts">
-    <FInput v-model="newName" placeholder="accounts.walletName" size="big" :maxlength="35" @blur="blurInputName" />
+    <FInput v-model="newName" placeholder="set new account name" size="big" :maxlength="35" @blur="blurInputName" />
 
     <template>
       <div class="row label">{{ $t('accounts.accountsDefaultSecrets') }}</div>

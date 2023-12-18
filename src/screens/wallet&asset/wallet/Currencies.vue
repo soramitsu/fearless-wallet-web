@@ -11,7 +11,6 @@
       handle=".handle"
       :size="80"
       class="scroll"
-      style="height: calc(100%-170px)"
       :keeps="40"
       :keepOffset="true"
       itemClass="virtual-item"
@@ -84,23 +83,19 @@ export default class Currencies extends Vue {
   }
 
   get filteredBalances() {
-    return this.balances;
+    if (this.showAssetsManagementForm) return this.balances;
+
+    return this.balances.filter(({ assetId }) => !this.hiddenAssets.includes(assetId));
   }
 
-  set filteredBalances(balances) {
-    this.setBalance({
-      details: balances,
-      reset: false,
-      saveSequence: true,
-    });
-  }
-  onDrop(props: any) {
+  onDrop(props: { list: TokenBalance[] }) {
     this.setBalance({
       details: props.list,
       reset: false,
       saveSequence: true,
     });
   }
+
   getAssetPrice(assetKey: string | undefined) {
     if (assetKey === undefined) return 0;
 
@@ -154,6 +149,7 @@ export default class Currencies extends Vue {
 }
 
 .scroll {
+  height: 100%;
   scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
 
   &::-webkit-scrollbar {

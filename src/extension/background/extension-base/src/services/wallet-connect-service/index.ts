@@ -166,11 +166,11 @@ export class WalletConnectService {
 
       const [requestNamespace] = chainId.split(':');
 
-      if (!namespaces.includes(requestNamespace) && namespaces.length) {
+      if (namespaces.length && !namespaces.includes(requestNamespace)) {
         throw Error(getSdkError('UNSUPPORTED_NAMESPACE_KEY').message);
       }
 
-      if (!chains.includes(chainId) && chainId.length) {
+      if (chainId.length && !chains.includes(chainId)) {
         throw Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + chainId);
       }
 

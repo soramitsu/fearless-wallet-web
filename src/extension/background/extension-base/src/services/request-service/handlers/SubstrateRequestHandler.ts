@@ -18,7 +18,7 @@ import { state } from '@extension-base/background/handlers';
 
 export class SubstrateRequestHandler {
   readonly logger: Logger;
-  readonly requestService: RequestService;
+  private readonly requestService: RequestService;
   readonly substrateRequests: Record<string, SignRequest> = {};
   public readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
 

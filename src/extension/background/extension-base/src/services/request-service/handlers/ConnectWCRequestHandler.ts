@@ -8,7 +8,7 @@ import type { Resolver } from '@extension-base/background/types/types';
 
 // WC = WalletConnect
 export class ConnectWCRequestHandler {
-  readonly requestService: RequestService;
+  private readonly requestService: RequestService;
   readonly connectWCRequests: Record<string, RequestWalletConnectSession> = {};
   public readonly connectWCSubject: BehaviorSubject<WalletConnectSessionRequest[]> = new BehaviorSubject<
     WalletConnectSessionRequest[]

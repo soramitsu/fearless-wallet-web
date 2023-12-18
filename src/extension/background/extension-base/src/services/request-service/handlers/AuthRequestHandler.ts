@@ -12,15 +12,14 @@ import type {
   AuthUrls,
   RequestAuthorizeTab,
 } from '@extension-base/background/types/types';
-import type { NetworkService, RequestService } from '@extension-base/services';
+import type { RequestService } from '@extension-base/services';
 import type State from '@extension-base/background/handlers/State';
 
 const AUTH_URLS_KEY = 'authUrls';
 
 export class AuthRequestHandler {
-  readonly requestService: RequestService;
-  readonly state: State;
-  readonly networkService: NetworkService;
+  private readonly requestService: RequestService;
+  private readonly state: State;
   readonly authRequests: Record<string, AuthRequest> = {};
   private authorizeCached: AuthUrls = {};
   private readonly authorizeStore = new AuthorizeStore();
@@ -28,14 +27,13 @@ export class AuthRequestHandler {
   private readonly evmChainSubject = new BehaviorSubject<AuthUrls>({});
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
 
-  constructor(state: State, requestService: RequestService, networkService: NetworkService) {
+  constructor(state: State, requestService: RequestService) {
     this.getAuthorize((auths) => {
       if (!auths) this.authorizeCached = {};
       else this.authorizeCached = auths;
     });
     this.state = state;
     this.requestService = requestService;
-    this.networkService = networkService;
   }
 
   public get numAuthRequests(): number {

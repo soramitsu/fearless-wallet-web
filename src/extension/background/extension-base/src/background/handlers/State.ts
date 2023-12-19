@@ -457,7 +457,7 @@ export default class State {
     this.selectedNetworks[currentAccount.address] = type;
 
     const unsub = this.subscription.getSubscription('balance');
-    unsub && unsub();
+    unsub?.();
 
     const networks = this.getActiveNetworks();
 

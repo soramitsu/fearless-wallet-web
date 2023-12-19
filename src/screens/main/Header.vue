@@ -345,6 +345,7 @@ export default class Header extends Vue {
     .wallet-name {
       display: flex;
       align-items: flex-start;
+      justify-content: center;
       flex-direction: column;
 
       .name {

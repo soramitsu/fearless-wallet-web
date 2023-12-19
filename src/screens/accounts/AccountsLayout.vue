@@ -4,9 +4,9 @@
       <div class="accounts-layout">
         <div class="navigation">
           <div class="left-part">
-            <Icon icon="arrow-left-circle" className="chevron" @click="back" />
+            <Icon icon="arrow-left-circle" className="chevron" data-testid="backBtn" @click="back" />
 
-            <div>{{ path }}</div>
+            <div data-testid="path">{{ path }}</div>
           </div>
 
           <CircleButton
@@ -15,6 +15,7 @@
             iconName="dots-vertical"
             backgroundColor="none"
             backgroundColorHover="light-black"
+            data-testid="dotsVertical"
             @click="openAccountSettingsPopup(network)"
           />
         </div>

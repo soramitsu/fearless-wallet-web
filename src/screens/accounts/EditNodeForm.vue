@@ -2,21 +2,37 @@
   <AboveForm :fullScreen="true" header="accounts.newNode" @closeHandler="$emit('closeForm')">
     <div class="add-node-form">
       <div>
-        <FInput v-model="network" placeholder="accounts.network" size="big" class="row" :readonly="true" />
+        <FInput
+          v-model="network"
+          placeholder="accounts.network"
+          size="big"
+          class="row"
+          data-testid="network"
+          :readonly="true"
+        />
 
-        <FInput v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
+        <FInput
+          v-model="name"
+          placeholder="common.name"
+          typeText="uppercase"
+          size="big"
+          class="row"
+          data-testid="name"
+          :maxlength="45"
+        />
 
         <ValidatedInput
           v-model="url"
           placeholder="accounts.urlAddress"
           class="row"
+          data-testid="urlAddress"
           :errorDescriptions="errorMessage"
           :isError="isError"
           :maxlength="150"
         />
       </div>
 
-      <FButton size="big" :text="buttonText" :disabled="buttonDisabled" @click="updateNodes" />
+      <FButton size="big" data-testid="addNodeBtn" :text="buttonText" :disabled="buttonDisabled" @click="updateNodes" />
     </div>
   </AboveForm>
 </template>

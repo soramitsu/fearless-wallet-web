@@ -11,13 +11,13 @@
   >
     <div class="wallet-details">
       <div class="row" @click="openWalletDetails">
-        <div class="label">Wallet Details</div>
+        <div class="label" data-testid="walletDetails">Wallet Details</div>
       </div>
       <div v-if="isExportPossible" class="row" @click="exportToGoogleDrive">
-        <div class="label google">Export to Google</div>
+        <div class="label google" data-testid="exportToGoogle">Export to Google</div>
       </div>
       <div class="row" @click="deleteWallet">
-        <div class="label delete">Delete Wallet</div>
+        <div class="label delete" data-testid="deleteWallet">Delete Wallet</div>
       </div>
     </div>
   </Popup>

@@ -1,7 +1,7 @@
 <template>
   <div class="export">
     <div class="description">
-      <div class="header">{{ $t('accounts.exportJson') }}</div>
+      <div class="header" data-testid="headerExport">{{ $t('accounts.exportJson') }}</div>
 
       <InformationBlock class="information" :text="warningText" />
     </div>
@@ -11,6 +11,7 @@
         v-model="password"
         errorDescriptions="common.invalidPassword"
         placeholder="accounts.passwordWallet"
+        data-testid="passwordExport"
         :isError="isWrongPassword"
         :showPassword="true"
         :readonly="noEthereumAccount"
@@ -22,6 +23,7 @@
         fontSize="big"
         width="100%"
         text="accounts.wantExportJson"
+        data-testid="wantExportJsonBtn"
         :disabled="noEthereumAccount"
         @click="checkPassword"
       />

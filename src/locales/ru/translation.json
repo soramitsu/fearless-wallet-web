@@ -682,6 +682,7 @@
     "offlineStatus": "Отсутствует интернет",
     "networkDisconnected": "Сеть отключена",
     "acceptContinue": "Принять и продолжить",
+    "copyToClipboard": "Скопировать в буфер обмена",
     "email": "Email",
     "start": "Начать",
     "next": "Далее",

@@ -669,6 +669,7 @@
     "confirm": "Confirm",
     "finish": "Finish",
     "copied": "Сopied",
+    "copyToClipboard": "Copy to clipboard",
     "copiedValue": "Сopied {value}",
     "understood": "Understood",
     "cancel": "Cancel",

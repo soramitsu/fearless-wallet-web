@@ -1,8 +1,8 @@
 <template>
-  <div :class="nodeItemClasses" @click="changeNode">
+  <div :class="nodeItemClasses" data-testid="nodeItem" @click="changeNode">
     <div>
-      <div class="name">{{ name }}</div>
-      <div class="url">{{ url }}</div>
+      <div class="name" data-testid="nodeName">{{ name }}</div>
+      <div class="url" data-testid="nodeUrl">{{ url }}</div>
     </div>
 
     <CircleButton
@@ -10,6 +10,7 @@
       :ref="dotsHorizontalRef"
       iconName="dots-horizontal"
       backgroundColor="light-black"
+      data-testid="nodeSettingsBtn"
       @click="openNodeSettingsPopup"
     />
   </div>

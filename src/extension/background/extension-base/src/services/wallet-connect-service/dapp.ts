@@ -37,7 +37,7 @@ export default class WalletConnectDAppService {
     this.app = await UniversalProvider.init({
       projectId: PROJECT_ID_EXTENSION,
       metadata: WALLET_CONNECT_METADATA,
-      logger: DEFAULT_LOGGER,
+      logger: process.env.NODE_ENV === 'development' ? DEFAULT_LOGGER : undefined,
       storage: new WalletConnectStorage(),
     });
 

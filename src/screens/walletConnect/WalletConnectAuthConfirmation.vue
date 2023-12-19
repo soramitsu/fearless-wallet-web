@@ -170,7 +170,7 @@ const isSupportNetwork = computed(() => namespaces.value.length !== 0);
 const isAbleToConnect = computed(() => !isSupportNetwork.value && !isSuitableWalletsExist.value);
 const alertContent = computed(() => {
   return {
-    header: 'walletConnect.walletConnectErrorAlerTitle',
+    header: 'walletConnect.walletConnectErrorAlertTitle',
     message: `walletConnect.${!isSuitableWalletsExist.value ? 'noSuitableWallets' : 'requiredNetworkAlert'}`,
   };
 });

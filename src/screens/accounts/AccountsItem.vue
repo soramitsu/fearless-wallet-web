@@ -1,12 +1,12 @@
 <template>
-  <div class="accounts-item">
+  <div class="accounts-item" data-testid="accountItem">
     <div class="left-part">
       <div class="img-container">
         <ExternalLogo :name="icon" class="img" />
       </div>
       <div class="description">
-        <div class="network-name">{{ getUpperValue(network) }}</div>
-        <div v-if="addressExist" class="address">{{ address }}</div>
+        <div class="network-name" data-testid="networkName">{{ getUpperValue(network) }}</div>
+        <div v-if="addressExist" class="address" data-testid="networkAddress">{{ address }}</div>
       </div>
     </div>
 
@@ -15,6 +15,7 @@
       :ref="circleButtonRef"
       iconName="dots-horizontal"
       backgroundColor="light-black"
+      data-testid="dots"
       @click="openAccountSettingsPopup(network)"
     />
 

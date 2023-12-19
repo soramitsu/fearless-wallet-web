@@ -9,7 +9,7 @@
 
       <div class="wallet-name">
         <div class="name" @click.stop="toggleSelectWalletPopupVisible">
-          <span class="wallet-title">{{ name }}</span>
+          <span class="wallet-title" data-testid="walletNameHeader">{{ name }}</span>
 
           <Rotate :isActive="syncedShowSelectWalletPopup">
             <SIcon name="chevron-bottom-16" />

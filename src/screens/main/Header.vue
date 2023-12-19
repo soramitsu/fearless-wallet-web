@@ -16,7 +16,7 @@
       <div class="wallet-name">
         <div class="name" @click.stop="toggleSelectWalletPopupVisible">
           <span class="wallet-title" data-testid="walletNameHeader">{{ name }}</span>
-
+          <Icon v-if="isMobile" icon="mobile" className="mobile" />
           <Rotate :isActive="syncedShowSelectWalletPopup">
             <SIcon name="chevron-bottom-16" />
           </Rotate>
@@ -239,6 +239,10 @@ export default class Header extends Vue {
     return !this.tabStatus || !this.tabStatus.isAuthorize ? 'header.notConnected' : 'header.connected';
   }
 
+  get isMobile() {
+    return !!this.selectedWallet.isMobile;
+  }
+
   copyAddress() {
     navigator.clipboard.writeText(this.address);
   }
@@ -418,6 +422,10 @@ export default class Header extends Vue {
 
   .fail-connect {
     background-color: $gray-color;
+  }
+  .mobile {
+    width: 18px;
+    height: 18px;
   }
 }
 </style>

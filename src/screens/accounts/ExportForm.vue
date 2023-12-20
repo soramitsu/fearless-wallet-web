@@ -10,13 +10,21 @@
             placeholder="common.sourceType"
             size="big"
             class="export-type-input"
+            data-testid="exportTypeInput"
             :readonly="true"
           />
 
-          <FInput v-model="substrateAddress" class="row" size="big" placeholder="Substrate" :readonly="true" />
+          <FInput
+            v-model="substrateAddress"
+            class="row"
+            size="big"
+            placeholder="Substrate"
+            data-testid="addressInput"
+            :readonly="true"
+          />
         </div>
 
-        <FButton size="big" fontSize="big" width="100%" text="Export" @click="proceed" />
+        <FButton size="big" fontSize="big" width="100%" text="Export" data-testid="exportBtn" @click="proceed" />
       </template>
     </div>
   </AboveForm>

@@ -7,7 +7,7 @@
         </div>
 
         <div>
-          <div class="network-name">{{ selectedNetworkUpper }}</div>
+          <div class="network-name" data-testid="networkName">{{ selectedNetworkUpper }}</div>
           <div class="address-wrapper" @click="copyAddress">
             <div class="address">{{ address }}</div>
 
@@ -24,7 +24,7 @@
       </div>
     </div>
 
-    <div class="row label">{{ $t('accounts.defaultNodes') }}</div>
+    <div class="row label" data-testid="defaultNodes">{{ $t('accounts.defaultNodes') }}</div>
 
     <div class="row">
       <NodeItem
@@ -37,10 +37,10 @@
         @changeNode="changeNode(url)"
       />
     </div>
-    <div class="custom-nodes">
+    <div class="custom-nodes" data-testid="customNodes">
       <div class="label">{{ $t('accounts.customNodes') }}</div>
 
-      <div class="add-node" @click="$emit('openEditNodeForm', selectedNetwork)">
+      <div class="add-node" data-testid="openEditNodeFormBtn" @click="$emit('openEditNodeForm', selectedNetwork)">
         <Icon icon="plus" className="plus" />
 
         <div>{{ $t('accounts.addNode') }}</div>
@@ -121,12 +121,16 @@ export default class Nodes extends Vue {
   }
 
   get defaultNodes() {
+    if (!this.networkJson) return [];
+
     if (isRequireEvmAPI(this.networkJson.name)) return this.networkJson.nodes.filter((el) => !el.url.startsWith('wss'));
 
     return this.networkJson.nodes ?? [];
   }
 
   get customNodes() {
+    if (!this.networkJson) return [];
+
     return this.networkJson.customNodes ?? [];
   }
 

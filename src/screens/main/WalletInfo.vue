@@ -1,15 +1,15 @@
 <template>
   <FCorners size="big">
     <div :class="contentClasses" @click="setWallet">
-      <div class="content">
-        <div class="name">{{ name }}</div>
+      <div class="content" data-testid="content">
+        <div class="name" data-testid="name">{{ name }}</div>
 
         <WalletBalance class="balance" :balance="balance" :changeWalletBalance="changeWalletBalance" />
       </div>
 
       <Icon v-if="isMobile" icon="mobile" className="mobile" />
 
-      <div v-if="showMenu" class="dots-container" :ref="dotsHorizontalRef">
+      <div v-if="showMenu" class="dots-container" :ref="dotsHorizontalRef" data-testid="dots">
         <Icon icon="dots-horizontal" className="dots" />
       </div>
     </div>

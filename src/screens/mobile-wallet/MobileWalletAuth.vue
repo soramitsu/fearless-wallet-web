@@ -4,8 +4,10 @@
       <template v-if="isQRPrep">
         <h2 class="header">{{ $t('mobileConnector.qrHeader') }}</h2>
 
-        <QR :payload="qr" />
+        <QR :payload="qr" showLogo />
       </template>
+
+      <Loader v-else />
 
       <MobileWalletPermissionPopup v-if="connectionStatus" :status="connectionStatus" />
     </AboveForm>
@@ -44,27 +46,26 @@ const showFinishForm = ref(false);
 onMounted(async () => {
   const res = await walletConnectDappInitSession();
 
-  if (res) {
-    qr.value = res;
+  if (!res) return;
 
-    walletConnectDappSubscribeSession(res, ({ status, message }) => {
-      if (status) showFinishForm.value = true;
+  qr.value = res;
 
-      if (!status) {
-        if (message === 'rejected') {
-          notify({
-            title: t('mobileConnector.rejected').toString(),
-            message: '',
-            type: 'warning',
-          });
+  walletConnectDappSubscribeSession(res, ({ status, message }) => {
+    if (status) showFinishForm.value = true;
+    else {
+      if (message === 'rejected') {
+        notify({
+          title: t('mobileConnector.rejected').toString(),
+          message: '',
+          type: 'warning',
+        });
 
-          return router.back();
-        }
-
-        if (message === 'duplicate') isWalletAlreadyExists.value = true;
+        return router.back();
       }
-    });
-  }
+
+      if (message === 'duplicate') isWalletAlreadyExists.value = true;
+    }
+  });
 });
 
 const connectionStatus = computed(() => {
@@ -73,7 +74,7 @@ const connectionStatus = computed(() => {
   return false;
 });
 
-const isQRPrep = computed(() => !connectionStatus.value && qr);
+const isQRPrep = computed(() => !connectionStatus.value && qr.value);
 
 const onClose = () => router.back();
 const onContinue = () => router.push({ name: Components.Wallet });

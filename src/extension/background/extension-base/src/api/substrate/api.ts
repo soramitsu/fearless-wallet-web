@@ -73,7 +73,6 @@ export async function initApi(network: NetworkJson, state: State): Promise<void>
   const networkName = name.toLowerCase();
 
   if (state.getSubstrateApiMap[networkName] === undefined) state.getSubstrateApiMap[networkName] = createApiObject();
-
   const { nodeIndex } = state.getSubstrateApiMap[networkName];
 
   const autoSelectNode = network.isManual ? null : nodes[nodeIndex].url;
@@ -91,6 +90,7 @@ export async function initApi(network: NetworkJson, state: State): Promise<void>
       const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS, undefined, 10000);
 
       const api = new ApiPromise({ provider, noInitWarn: true });
+      state.updateServiceInfo();
 
       eventListeners.forEach(([eventName, callback]) => api.on(eventName, callback));
 

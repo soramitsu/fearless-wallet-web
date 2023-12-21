@@ -20,21 +20,19 @@ import {
 import type State from '@extension-base/background/handlers/State';
 import type { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
 import type { RequestService } from '@extension-base/services';
-
 export class WalletConnectService {
-  readonly state: State;
-  readonly requestService: RequestService;
+  private readonly state: State;
+  private readonly requestService: RequestService;
+  private client?: WalletConnect;
+
   readonly eip155RequestHandler: Eip155Handler;
   readonly polkadotRequestHandler: PolkadotHandler;
-
-  private client?: WalletConnect;
-  public readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]> = new BehaviorSubject<SessionTypes.Struct[]>(
-    []
-  );
+  readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]>;
 
   constructor(state: State, requestService: RequestService) {
     this.state = state;
     this.requestService = requestService;
+    this.sessionSubject = new BehaviorSubject<SessionTypes.Struct[]>([]);
     this.eip155RequestHandler = new Eip155Handler(this.state, this, requestService);
     this.polkadotRequestHandler = new PolkadotHandler(this.state, this, requestService);
     this.initClient().catch(console.error);
@@ -159,20 +157,20 @@ export class WalletConnectService {
     const method = request.method as WalletConnectSigningMethod;
 
     try {
-      const { namespaces: _namespaces } = this.getSession(topic);
+      const { requiredNamespaces } = this.getSession(topic);
 
-      const namespaces = Object.keys(_namespaces);
-      const chains = Object.values(_namespaces)
+      const namespaces = Object.keys(requiredNamespaces);
+      const chains = Object.values(requiredNamespaces)
         .map((namespace) => namespace.chains)
         .flat();
 
       const [requestNamespace] = chainId.split(':');
 
-      if (!namespaces.includes(requestNamespace)) {
+      if (namespaces.length && !namespaces.includes(requestNamespace)) {
         throw Error(getSdkError('UNSUPPORTED_NAMESPACE_KEY').message);
       }
 
-      if (!chains.includes(chainId)) {
+      if (chainId.length && !chains.includes(chainId)) {
         throw Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + chainId);
       }
 

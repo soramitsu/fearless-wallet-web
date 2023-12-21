@@ -1560,10 +1560,6 @@ export default class Extension extends FWExtensionBase {
     return await this.state.balanceService.fetchBalance(address, networkName);
   }
 
-  private getWalletConnectSessionAvailableNetwork(address: string) {
-    return this.state.walletConnectDappService.availableNetworks(address);
-  }
-
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,

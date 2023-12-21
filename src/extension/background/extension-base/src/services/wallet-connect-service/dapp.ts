@@ -37,7 +37,7 @@ export default class WalletConnectDAppService {
     this.app = await UniversalProvider.init({
       projectId: PROJECT_ID_EXTENSION,
       metadata: WALLET_CONNECT_METADATA,
-      logger: DEFAULT_LOGGER,
+      logger: process.env.NODE_ENV === 'development' ? DEFAULT_LOGGER : undefined,
       storage: new WalletConnectStorage(),
     });
 
@@ -83,14 +83,14 @@ export default class WalletConnectDAppService {
             'polkadot:91b171bb158e2d3848fa23a9f1c25182', //dot
             'polkadot:7e4e32d0feafd4f9c9414b0be86373f9', //sora mainnet
           ],
-          events: ['chainChanged", "accountsChanged'],
+          events: [],
         },
       },
       optionalNamespaces: {
         polkadot: {
           methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
           chains: optionalChains,
-          events: ['chainChanged", "accountsChanged'],
+          events: [],
         },
       },
     });

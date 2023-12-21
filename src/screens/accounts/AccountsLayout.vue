@@ -4,9 +4,9 @@
       <div class="accounts-layout">
         <div class="navigation">
           <div class="left-part">
-            <Icon icon="arrow-left-circle" className="chevron" @click="back" />
+            <Icon icon="arrow-left-circle" className="chevron" data-testid="backBtn" @click="back" />
 
-            <div>{{ path }}</div>
+            <div data-testid="path">{{ path }}</div>
           </div>
 
           <CircleButton
@@ -15,6 +15,7 @@
             iconName="dots-vertical"
             backgroundColor="none"
             backgroundColorHover="light-black"
+            data-testid="dotsVertical"
             @click="openAccountSettingsPopup(network)"
           />
         </div>
@@ -47,8 +48,8 @@
 
     <EditNodeForm
       v-if="showEditNodeForm"
-      :_name="selectedNodeName"
-      :_url="selectedNodeUrl"
+      :nodeName="selectedNodeName"
+      :nodeUrl="selectedNodeUrl"
       :network="selectedNetwork"
       :isActive="selectedNodeIsActive"
       @closeForm="closeEditNodeForm"
@@ -57,6 +58,8 @@
     <NodeSettingsPopup
       v-if="showNodeSettingsPopup"
       :buttonTopClick="buttonTopClick"
+      :name="selectedNodeName"
+      :url="selectedNodeUrl"
       @handlerClose="closeNodeSettings"
       @openEditNodeForm="openEditNodeForm"
       @openNotificationPopup="openNotificationPopup"
@@ -244,9 +247,11 @@ export default class AccountsLayout extends Vue {
     this.buttonTopClick = buttonTop;
   }
 
-  openEditNodeForm(network: string) {
-    this.showEditNodeForm = true;
+  openEditNodeForm(network: string, name: string, url: string) {
     this.selectedNetwork = network || this.selectedNetwork;
+    this.selectedNodeName = name;
+    this.selectedNodeUrl = url;
+    this.showEditNodeForm = true;
 
     this.closeNodeSettings();
   }
@@ -299,11 +304,6 @@ export default class AccountsLayout extends Vue {
 
   closeNodeSettings() {
     this.showNodeSettingsPopup = false;
-
-    if (this.showEditNodeForm) {
-      this.selectedNodeName = '';
-      this.selectedNodeUrl = '';
-    }
   }
 
   closeAddEthereumAccountPopup() {

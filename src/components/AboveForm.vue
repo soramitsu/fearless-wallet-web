@@ -5,7 +5,7 @@
 
       <div v-else class="header-content">
         <div class="activity align-left">
-          <div v-if="props.showBackIcon" class="icon icon-back" @click="emit('handlerBack')">
+          <div v-if="props.showBackIcon" class="icon icon-back" data-testid="backBtn" @click="emit('handlerBack')">
             <Icon icon="chevron-left" />
           </div>
 
@@ -14,7 +14,7 @@
           </div>
         </div>
 
-        <div class="header">{{ tHeader }}</div>
+        <div class="header" data-testid="header">{{ tHeader }}</div>
 
         <div class="activity align-right">
           <div v-if="props.showCloseIcon" class="icon" @click="emit('closeHandler')">

@@ -2,7 +2,7 @@
   <AboveForm :fullScreen="true" @closeHandler="closeForm">
     <template v-slot:header>
       <div class="header-content">
-        <div :class="classesBackIcon" @click="back">
+        <div :class="classesBackIcon" data-testid="backBtn" @click="back">
           <Icon v-show="showBackIcon" icon="chevron-left" class="img" />
         </div>
 

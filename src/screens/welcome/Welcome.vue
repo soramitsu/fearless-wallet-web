@@ -6,11 +6,18 @@
           v-if="showBackWalletIcon"
           backgroundColor="light-black"
           iconName="chevron-left"
+          data-testid="backBtn"
           @click="backWallet"
         />
       </div>
 
-      <Logo class="description" size="big" text="common.fearlessWallet" :subtext="$t('welcome.deFiWallet')" />
+      <Logo
+        class="description"
+        size="big"
+        text="common.fearlessWallet"
+        :subtext="$t('welcome.deFiWallet')"
+        data-testid="headerText"
+      />
     </div>
 
     <div>
@@ -20,6 +27,7 @@
         size="big"
         fontSize="big"
         text="addWallet.createWallet"
+        data-testid="createWalletBtn"
         @click="openAddWalletComponent('create')"
       />
 
@@ -34,6 +42,7 @@
           iconType="big"
           :text="$t('welcome.connectMobile')"
           :border="false"
+          data-testid="connectMobileBtn"
           @click="openAddWalletMobile"
         />
 
@@ -47,6 +56,7 @@
           iconType="big"
           :text="$t('welcome.manageGoogle')"
           :border="false"
+          data-testid="googleManageBtn"
           @click="manageGoogle"
         />
 
@@ -60,20 +70,23 @@
           iconType="big"
           :text="$t('welcome.importWallet')"
           :border="false"
+          data-testid="importBtn"
           @click="openAddWalletComponent('import')"
         />
       </div>
 
-      <div class="privacy-policy">
+      <div class="privacy-policy" data-testid="infoPolicyText">
         {{ $t('welcome.agreeWith') }}
 
-        <span class="important-text" @click="openTermsAndConditions">
+        <span class="important-text" data-testid="termsAndConditionsLink" @click="openTermsAndConditions">
           {{ $t('common.termsConditions') }}
         </span>
 
         {{ $t('common.and') }}
 
-        <span class="important-text" @click="openPrivacyPolicy"> {{ $t('common.privacyPolicy') }}</span>
+        <span class="important-text" data-testid="privacyPolicyLink" @click="openPrivacyPolicy">
+          {{ $t('common.privacyPolicy') }}
+        </span>
       </div>
     </div>
   </div>

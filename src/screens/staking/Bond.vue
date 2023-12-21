@@ -6,105 +6,74 @@
     @handlerBack="handlerBack"
     @closeHandler="closeForm"
   >
-    <div class="bond-form">
-      <EditAddressBook v-if="showEditAddressBook" :network="network" :_address="newAddress" @setAddress="setAddress" />
-
-      <HistoryBook
-        v-else-if="showHistoryBook"
-        :network="network"
-        :assetId="stakingAssetId"
-        @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
-        @setRecipient="setPayoutAddress"
-        @setAddress="setAddress"
-      />
-
-      <div v-else-if="showMyWallets">
-        <WalletInfo
-          v-for="({ name, address, ethereumAddress, isMobile }, index) in filteredWallets"
-          :key="name + index"
-          :name="name"
-          :isSelected="getStatusWallet(address, ethereumAddress)"
-          :isMobile="isMobile"
-          :address="address"
-          :showMenu="false"
-          class="wallet"
-          @setWallet="setWallet(address, ethereumAddress)"
-        />
-      </div>
-
-      <div v-else>
-        <template v-if="step === 1">
-          <FInput v-model="accountName" placeholder="accounts.account" size="big" :readonly="true" />
-
-          <SelectInput
-            v-if="showAmountInput"
-            class="amount-input"
-            text="assets.amount"
-            :totalAmount="transferableAmount"
-            :value="amountValue"
-            :asset="stakingAssetName"
-            :assetId="stakingAssetId"
-            :amount="amount"
-            :showIcon="false"
-            @update:amount="updateAmount"
-            @setMax="setMax"
-          />
-
-          <Hint class="hint" iconName="notification" :text="textMinHint" />
-
-          <InputWithIcon
-            v-model="payoutAddressCut"
-            icon="close"
-            placeholder="staking.payoutAccount"
-            @click="setPayoutAddress"
-          />
-
-          <Hint class="hint" iconName="notification" text="staking.defaultPayout" />
-
-          <div class="activity-buttons">
-            <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
-
-            <BadgeButton text="common.paste" @click="paste" />
-
-            <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
-          </div>
-
-          <InfoRow
-            text="assets.networkFee"
-            borderType="default"
-            icon="info"
-            :value="`${fee} ${stakingAssetName}`"
-            :price="feeValueString"
-            :iconClasses="['staking-fee']"
-          />
-        </template>
-
-        <SelectionValidatorsForm
-          v-else-if="showSelectionValidatorsForm"
-          :step="step"
-          :validators="validators"
-          :maxNominations="maxNominations"
-          @openValidatorList="openValidatorList"
-          @updateSelectedValidators="updateSelectedValidators"
+    <Scroll>
+      <div class="bond-form">
+        <EditAddressBook
+          v-if="showEditAddressBook"
+          :network="network"
+          :_address="newAddress"
+          @setAddress="setAddress"
         />
 
-        <template v-if="step === 6">
-          <div class="asset-logo">
-            <Icon icon="asset-background" class="asset-background" :hover="false" />
+        <HistoryBook
+          v-else-if="showHistoryBook"
+          :network="network"
+          :assetId="stakingAssetId"
+          @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
+          @setRecipient="setPayoutAddress"
+          @setAddress="setAddress"
+        />
 
-            <AssetIcon :icon="stakingCurrency.icon" :shadowColor="stakingCurrency.color" class="asset-highlight" />
-          </div>
+        <div v-else-if="showMyWallets">
+          <WalletInfo
+            v-for="({ name, address, ethereumAddress, isMobile }, index) in filteredWallets"
+            :key="name + index"
+            :name="name"
+            :isSelected="getStatusWallet(address, ethereumAddress)"
+            :isMobile="isMobile"
+            :address="address"
+            :showMenu="false"
+            class="wallet"
+            @setWallet="setWallet(address, ethereumAddress)"
+          />
+        </div>
 
-          <ContentForm :height="200" :isStaticHeight="true" :bottomRightCorner="true">
-            <InfoRow
-              text="staking.selectedValidators"
-              :value="`${selectedValidatorsLength} (${$t('common.max')} ${maxNominations})`"
-              borderType="default"
+        <div v-else>
+          <template v-if="step === 1">
+            <FInput v-model="accountName" placeholder="accounts.account" size="big" :readonly="true" />
+
+            <SelectInput
+              v-if="showAmountInput"
+              class="amount-input"
+              text="assets.amount"
+              :totalAmount="transferableAmount"
+              :value="amountValue"
+              :asset="stakingAssetName"
+              :assetId="stakingAssetId"
+              :amount="amount"
+              :showIcon="false"
+              @update:amount="updateAmount"
+              @setMax="setMax"
             />
 
-            <InfoRow text="assets.amount" :value="amountString" borderType="default" :price="amountValueString" />
+            <Hint class="hint" iconName="notification" :text="textMinHint" />
 
-            <InfoRow text="accounts.account" :value="selectedAccountName" borderType="default" />
+            <InputWithIcon
+              v-model="payoutAddressCut"
+              icon="close"
+              placeholder="staking.payoutAccount"
+              @click="setPayoutAddress"
+            />
+
+            <Hint class="hint" iconName="notification" text="staking.defaultPayout" />
+
+            <div class="activity-buttons">
+              <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+
+              <BadgeButton text="common.paste" @click="paste" />
+
+              <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
+            </div>
 
             <InfoRow
               text="assets.networkFee"
@@ -112,62 +81,99 @@
               icon="info"
               :value="`${fee} ${stakingAssetName}`"
               :price="feeValueString"
-              :isIconPrepend="false"
               :iconClasses="['staking-fee']"
             />
-          </ContentForm>
-        </template>
+          </template>
 
-        <template v-if="step === 1 || step === 6">
-          <Tooltip text="staking.stakingFee" target=".staking-fee" placement="right" />
-        </template>
+          <SelectionValidatorsForm
+            v-else-if="showSelectionValidatorsForm"
+            :step="step"
+            :validators="validators"
+            :maxNominations="maxNominations"
+            @openValidatorList="openValidatorList"
+            @updateSelectedValidators="updateSelectedValidators"
+          />
 
-        <template v-if="step === 6">
-          <div class="descriptions-row">
-            <Icon icon="gift" class="icon" />
+          <template v-if="step === 6">
+            <div class="asset-logo">
+              <Icon icon="asset-background" class="asset-background" :hover="false" />
 
-            <div>
-              {{ $t('staking.stakedTokens') }}
+              <AssetIcon :icon="stakingCurrency.icon" :shadowColor="stakingCurrency.color" class="asset-highlight" />
             </div>
-          </div>
 
-          <div class="descriptions-row">
-            <Icon icon="information-rectangle" class="icon" />
+            <ContentForm :height="200" :isStaticHeight="true" :bottomRightCorner="true">
+              <InfoRow
+                text="staking.selectedValidators"
+                :value="`${selectedValidatorsLength} (${$t('common.max')} ${maxNominations})`"
+                borderType="default"
+              />
 
-            <div>
-              {{ $t('staking.unstakeTokens', days) }}
+              <InfoRow text="assets.amount" :value="amountString" borderType="default" :price="amountValueString" />
+
+              <InfoRow text="accounts.account" :value="selectedAccountName" borderType="default" />
+
+              <InfoRow
+                text="assets.networkFee"
+                borderType="default"
+                icon="info"
+                :value="`${fee} ${stakingAssetName}`"
+                :price="feeValueString"
+                :isIconPrepend="false"
+                :iconClasses="['staking-fee']"
+              />
+            </ContentForm>
+          </template>
+
+          <template v-if="step === 1 || step === 6">
+            <Tooltip text="staking.stakingFee" target=".staking-fee" placement="right" />
+          </template>
+
+          <template v-if="step === 6">
+            <div class="descriptions-row">
+              <Icon icon="gift" class="icon" />
+
+              <div>
+                {{ $t('staking.stakedTokens') }}
+              </div>
             </div>
-          </div>
 
-          <div class="descriptions-row">
-            <Icon icon="wallet-remove" class="icon" />
+            <div class="descriptions-row">
+              <Icon icon="information-rectangle" class="icon" />
 
-            <div>
-              {{ $t('staking.tokensUnstaking') }}
+              <div>
+                {{ $t('staking.unstakeTokens', days) }}
+              </div>
             </div>
-          </div>
 
-          <div class="descriptions-row">
-            <Icon icon="logout" class="icon" />
+            <div class="descriptions-row">
+              <Icon icon="wallet-remove" class="icon" />
 
-            <div>
-              {{ $t('staking.afterUnstaking') }}
+              <div>
+                {{ $t('staking.tokensUnstaking') }}
+              </div>
             </div>
-          </div>
-        </template>
+
+            <div class="descriptions-row">
+              <Icon icon="logout" class="icon" />
+
+              <div>
+                {{ $t('staking.afterUnstaking') }}
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <FButton
+          v-if="showBtn"
+          width="100%"
+          size="big"
+          fontSize="big"
+          :text="btnText"
+          :disabled="confirmBtnDisabled"
+          @click="confirm"
+        />
       </div>
-
-      <FButton
-        v-if="showBtn"
-        width="100%"
-        size="big"
-        fontSize="big"
-        :text="btnText"
-        :disabled="confirmBtnDisabled"
-        @click="confirm"
-      />
-    </div>
-
+    </Scroll>
     <ConfirmationPasswordPopup
       v-if="showConfirmationPasswordPopup"
       :currency="stakingCurrency"
@@ -554,8 +560,8 @@ export default class Bond extends Vue {
 .bond-form {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   height: 100%;
+  justify-content: space-between;
 
   .hint {
     padding: $default-padding;
@@ -564,7 +570,7 @@ export default class Bond extends Vue {
   .activity-buttons {
     display: flex;
     user-select: none;
-    margin-bottom: 15px;
+    margin-bottom: 5px;
   }
 
   .amount-input {

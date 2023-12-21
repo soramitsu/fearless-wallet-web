@@ -8,8 +8,8 @@ import { extractMetadata } from '@extension-base/services/request-service/helper
 import type { MetaRequest, Resolver, MetadataRequest } from '@extension-base/background/types/types';
 
 export class MetadataRequestHandler {
-  readonly requestService: RequestService;
-  readonly metaStore: MetadataStore = new MetadataStore();
+  private readonly requestService: RequestService;
+  private readonly metaStore: MetadataStore = new MetadataStore();
   readonly metaRequests: Record<string, MetaRequest> = {};
   public readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
 

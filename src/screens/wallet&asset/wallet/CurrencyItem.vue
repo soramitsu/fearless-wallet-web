@@ -34,7 +34,7 @@
 
         <Shimmer v-if="showShimmers" height="23px" width="60px" />
 
-        <div v-else-if="!showWarning" class="count-assets overflow" data-test-id="countAssets">
+        <div v-else-if="!showWarning" class="count-assets overflow" data-testid="countAssets">
           {{ totalAssetBalanceValue }}
         </div>
       </div>

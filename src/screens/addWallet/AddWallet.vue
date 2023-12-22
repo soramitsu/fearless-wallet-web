@@ -2,7 +2,13 @@
   <div class="add-wallet">
     <div class="header">
       <div class="icon-container">
-        <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconName="chevron-left" @click="back" />
+        <CircleButton
+          v-if="showBackIcon"
+          backgroundColor="light-black"
+          iconName="chevron-left"
+          data-testid="backBtn"
+          @click="back"
+        />
       </div>
 
       <div class="steps">
@@ -24,7 +30,7 @@
 
     <div class="content-wrapper">
       <div class="content">
-        <div class="content-header">{{ header }}</div>
+        <div class="content-header" data-testid="header">{{ header }}</div>
 
         <NicknameForm
           v-if="showNicknameForm"
@@ -86,6 +92,7 @@
           type="secondary"
           :border="false"
           :iconName="'reload'"
+          data-testid="resetAllBtn"
           @click="resetAll"
         />
 
@@ -97,6 +104,7 @@
           type="secondary"
           text="addWallet.skipConfirmation"
           :border="false"
+          data-testid="skipBtn"
           @click="skipStep"
         />
 
@@ -109,6 +117,7 @@
           :iconType="isLoading ? 'loading' : ''"
           :disabled="disabledProceed"
           :text="isLoading ? '' : buttonText"
+          data-testid="proceedBtn"
           @click="proceed"
         />
       </div>

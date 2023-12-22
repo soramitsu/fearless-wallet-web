@@ -1,6 +1,12 @@
 <template>
   <div class="finish">
-    <Logo class="description" size="big" text="addWallet.allDone" subtext="addWallet.stayFearless" />
+    <Logo
+      class="description"
+      size="big"
+      text="addWallet.allDone"
+      subtext="addWallet.stayFearless"
+      data-testid="finishLogo"
+    />
 
     <div class="row">
       <BorderButton
@@ -9,6 +15,7 @@
         iconColor="pink"
         class="follow-button"
         width="256px"
+        data-testid="twitterBtn"
         @click="openPage(URLS.TWITTER)"
       />
 
@@ -17,6 +24,7 @@
         iconName="telegram"
         iconColor="pink"
         width="256px"
+        data-testid="telegramBtn"
         @click="openPage(URLS.TELEGRAM)"
       />
     </div>
@@ -26,10 +34,17 @@
         iconName="medium"
         iconColor="pink"
         width="256px"
+        data-testid="mediumBtn"
         @click="openPage(URLS.MEDIUM)"
       />
 
-      <BorderButton text="common.learnWiki" iconName="file-dock" width="256px" @click="openPage(URLS.WIKI)" />
+      <BorderButton
+        text="common.learnWiki"
+        iconName="file-dock"
+        width="256px"
+        data-testid="wikiBtn"
+        @click="openPage(URLS.WIKI)"
+      />
     </div>
   </div>
 </template>

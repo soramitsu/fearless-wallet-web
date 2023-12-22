@@ -9,7 +9,7 @@
 
     <div class="descriptions-column">
       <div class="row first-row">
-        <div>{{ tokenName }}</div>
+        <div data-testid="tokenName">{{ tokenName }}</div>
 
         <template>
           <Shimmer v-if="showShimmers" height="14px" width="60px" />
@@ -30,24 +30,24 @@
         </template>
       </div>
       <div class="row second-row">
-        <div class="currency-name overflow">{{ assetData.symbol.toUpperCase() }}</div>
+        <div class="currency-name overflow" data-testid="currencyName">{{ assetData.symbol.toUpperCase() }}</div>
 
         <Shimmer v-if="showShimmers" height="23px" width="60px" />
 
-        <div v-else-if="!showWarning" class="count-assets overflow">
+        <div v-else-if="!showWarning" class="count-assets overflow" data-testid="countAssets">
           {{ totalAssetBalanceValue }}
         </div>
       </div>
       <div class="row third-row">
-        <div class="price row">
+        <div class="price row" data-testid="price">
           {{ assetPrice }}
 
-          <div :class="changePriceClasses">{{ assetPriceChange }}</div>
+          <div :class="changePriceClasses" data-testid="changePrice">{{ assetPriceChange }}</div>
         </div>
 
         <Shimmer v-if="showShimmers" height="14px" width="70px" />
 
-        <div v-else-if="!showWarning" class="total-balance overflow">
+        <div v-else-if="!showWarning" class="total-balance overflow" data-testid="totalBalance">
           {{ transferableFiatBalanceValue }}
         </div>
       </div>
@@ -68,6 +68,7 @@
           class="button send"
           tooltipText="assets.sendButtonText"
           target=".send"
+          data-testid="sendBtn"
           @click="$emit('toggleVisibleActivityForm', 'showSendForm', { mainNetwork, assetId })"
         />
 
@@ -77,6 +78,7 @@
           class="button receive"
           tooltipText="assets.receiveButtonText"
           target=".receive"
+          data-testid="receiveBtn"
           @click="$emit('toggleVisibleActivityForm', 'showReceiveForm', { mainNetwork, assetId })"
         />
 
@@ -87,6 +89,7 @@
           class="details"
           tooltipText="wallet.assetDetails"
           target=".details"
+          data-testid="detailsBtn"
         />
       </template>
     </div>

@@ -73,7 +73,6 @@ export async function initApi(network: NetworkJson, state: State): Promise<void>
   const networkName = name.toLowerCase();
 
   if (state.getSubstrateApiMap[networkName] === undefined) state.getSubstrateApiMap[networkName] = createApiObject();
-
   const { nodeIndex } = state.getSubstrateApiMap[networkName];
 
   const autoSelectNode = network.isManual ? null : nodes[nodeIndex].url;

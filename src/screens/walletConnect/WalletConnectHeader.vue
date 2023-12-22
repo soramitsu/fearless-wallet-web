@@ -1,7 +1,7 @@
 <template>
   <Fragment>
     <Favicon :url="url" :width="80" class="auth-favicon" />
-    <div class="header">{{ title }}</div>
+    <div class="header" data-testid="header">{{ title }}</div>
     <div v-if="subtext" class="subtext">{{ subtext }}</div>
   </Fragment>
 </template>

@@ -13,25 +13,25 @@
       <div v-if="showExport" class="row" @click="openNotificationPopup">
         <Icon icon="export" className="icon" />
 
-        <div class="label">{{ $t('accounts.export') }}</div>
+        <div class="label" data-testid="exportAccount">{{ $t('accounts.export') }}</div>
       </div>
 
       <div v-if="showNodeSwitch" class="row" @click="openNetwork">
         <Icon icon="currency-switch" className="icon" />
 
-        <div class="label">{{ $t('accounts.switchNode') }}</div>
+        <div class="label" data-testid="switchNode">{{ $t('accounts.switchNode') }}</div>
       </div>
 
       <div v-if="showCopyAddress" class="row" @click="copyAddress">
         <Icon icon="copy-2" className="icon" />
 
-        <div class="label">{{ $t('accounts.copyAddress') }}</div>
+        <div class="label" data-testid="copyAddress">{{ $t('accounts.copyAddress') }}</div>
       </div>
 
       <div v-if="haveExplorers" class="row" @click="openExplorer">
         <Icon icon="globus" className="icon" />
 
-        <div class="label">{{ buttonText }}</div>
+        <div class="label" data-testid="viewIn">{{ buttonText }}</div>
       </div>
     </div>
   </Popup>

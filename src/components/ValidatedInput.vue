@@ -14,7 +14,7 @@
       :type="type"
     />
 
-    <div v-show="showErrorText" class="error-descriptions">
+    <div v-show="showErrorText" class="error-descriptions" data-testid="errorDescriptions">
       <Icon v-if="errorWithIcon" icon="warning" className="warning" />
       {{ $t(errorDescriptions) }}
     </div>

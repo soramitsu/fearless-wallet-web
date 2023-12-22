@@ -13,7 +13,14 @@
     <div v-else class="finish-form">
       <FinishForm />
 
-      <FButton size="big" fontSize="big" width="100%" text="common.continue" @click="onContinue" />
+      <FButton
+        size="big"
+        fontSize="big"
+        width="100%"
+        text="common.continue"
+        data-testid="continueBtn"
+        @click="onContinue"
+      />
     </div>
   </Fragment>
 </template>

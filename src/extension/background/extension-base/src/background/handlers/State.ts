@@ -133,7 +133,7 @@ export default class State {
   public keyringService = new KeyringService(this);
   public eventService = new EventService();
   public networkService = new NetworkService(this.eventService);
-  public requestService = new RequestService(this, this.networkService);
+  public requestService = new RequestService(this);
   public walletConnectService = new WalletConnectService(this, this.requestService);
   public walletConnectDappService = new WalletConnectDAppService(this);
   public soraCardService = new SoraCardService(this.requestService);
@@ -318,16 +318,13 @@ export default class State {
       // update API map if network is active
       if (name in this.apis.substrate) {
         this.apis.substrate[name].api?.disconnect && this.apis.substrate[name].api?.disconnect();
-
         delete this.apis.substrate[name];
       }
 
       if (isEthereum && name in this.apis.evm) delete this.apis.evm[name];
 
-      if (currentProvider) {
-        if (isEthereum && isRequireEvmAPI(name)) this.initWeb3Api(data);
-        else initApi(data, this);
-      }
+      if (isEthereum && isRequireEvmAPI(name)) this.initWeb3Api(data);
+      else initApi(data, this);
     }
 
     this.networkMapSubject.next(this.networkMap);
@@ -375,14 +372,9 @@ export default class State {
   public initWeb3Api(network: NetworkJson | undefined) {
     if (network === undefined) return;
 
-    this.getCurrentAccount((value) => {
-      if (value?.ethereumAddress === '') return;
-
-      const { name } = network;
-      const currentProvider = getCurrentProvider(network);
-
-      if (currentProvider) this.apis.evm[name.toLowerCase()] = initWeb3Api(currentProvider);
-    });
+    const { name } = network;
+    const currentProvider = getCurrentProvider(network);
+    if (currentProvider) this.apis.evm[name.toLowerCase()] = initWeb3Api(currentProvider);
   }
 
   public refreshDotSamaApi(key: string) {
@@ -417,50 +409,66 @@ export default class State {
     return true;
   }
 
-  public getActiveNetworks(address: string) {
-    const selectedNetwork = this.selectedNetworks[address];
-
+  public getActiveNetworks() {
     const networks = Object.values(this.networkMap);
-    const activeNetworks =
-      selectedNetwork === ALL_NETWORKS
-        ? networks
-        : networks.filter(({ rank, name, favorite }) => {
-            if (selectedNetwork === POPULAR_NETWORKS) return rank !== undefined;
+    const uniqNetworks = new Set<NetworkJson>();
+    const selectedNetworks = Object.keys(this.selectedNetworks);
+    const isAllNetworkPicked = selectedNetworks.some((address) => this.selectedNetworks[address] === ALL_NETWORKS);
 
-            if (selectedNetwork === FAVORITE_NETWORKS) return favorite?.includes(address);
+    if (isAllNetworkPicked) return networks;
 
-            return name === selectedNetwork;
-          });
+    selectedNetworks.forEach((address) => {
+      const value = this.selectedNetworks[address];
 
-    return activeNetworks;
+      if (value === POPULAR_NETWORKS) {
+        const popular = networks.filter((el) => el.rank !== undefined);
+        popular.forEach((el) => uniqNetworks.add(el));
+
+        return;
+      }
+
+      if (value === FAVORITE_NETWORKS) {
+        const favorite = networks.filter((el) => el.favorite.length && el.favorite.includes(address));
+
+        favorite.forEach((el) => uniqNetworks.add(el));
+
+        return;
+      }
+
+      const singleNetwork = networks.find((network) => network.name === value);
+
+      if (singleNetwork) uniqNetworks.add(singleNetwork);
+    });
+    console.info(Array.from(uniqNetworks), 'set this to Active');
+
+    return Array.from(uniqNetworks);
   }
 
-  public async setActiveNetworks(type?: string) {
+  public async setActiveNetworks(type: string) {
     const currentAccount = await this.currentAccount;
 
     if (!currentAccount) return;
 
-    if (type) this.selectedNetworks[currentAccount.address] = type;
+    this.selectedNetworks[currentAccount.address] = type;
 
-    const networks = this.getActiveNetworks(currentAccount.address);
+    const unsub = this.subscription.getSubscription('balance');
+    unsub?.();
 
-    Object.keys(this.networkMap).forEach(async (key) => {
-      const isActive = networks.some(({ name }) => name.toLowerCase() === key.toLowerCase());
+    const networks = this.getActiveNetworks();
 
-      this.networkMap[key].active = isActive;
+    Object.keys(this.networkMap).forEach((key) => {
+      const _key = key.toLowerCase();
+      const network = this.networkMap[key];
+      network.active = networks.some(({ name }) => name.toLowerCase() === _key);
 
-      if (isActive) return;
+      const isActive = network.active;
 
-      const isEthereum = this.networkMap[key].isEthereum;
-
-      if (isEthereum && this.apis.evm[key]) {
-        this.apis.evm[key].destroy();
-
-        delete this.apis.evm[key];
-      } else if (this.apis.substrate[key]) {
-        this.apis.substrate[key].api?.disconnect();
-
-        delete this.apis.substrate[key];
+      if (!isActive && network.isEthereum && this.apis.evm[_key]) {
+        this.apis.evm[_key].destroy();
+        delete this.apis.evm[_key];
+      } else if (!isActive && this.apis.substrate[_key]) {
+        this.apis.substrate[_key].api?.disconnect();
+        delete this.apis.substrate[_key];
       }
     });
 
@@ -471,7 +479,6 @@ export default class State {
     this.networkMapSubject.next(this.networkMap);
 
     this.networkMapStore.set('NetworkMap', this.networkMap);
-    this.networkMapSubject.next(this.networkMap);
     storage.set({ selectedNetworks: this.selectedNetworks });
   }
 
@@ -745,8 +752,7 @@ export default class State {
       if (!this.selectedNetworks[el.address]) this.selectedNetworks[el.address] = ALL_NETWORKS;
     });
 
-    const currentAccount = await this.currentAccount;
-    const activeNetworks = this.getActiveNetworks(currentAccount?.address ?? '');
+    const activeNetworks = this.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((key) => {
       const isExists = activeNetworks.some(({ name }) => name === key);
@@ -762,7 +768,7 @@ export default class State {
     await this.eventService.waitCryptoReady;
     await this.prepNetworkJson();
 
-    this.initNetworkStates();
+    await this.initNetworkStates();
     this.onReady();
     this.updateServiceInfo();
   }
@@ -777,13 +783,11 @@ export default class State {
   public initNetworkStates() {
     const activeNetworks = Object.values(this.networkMap).filter(({ active }) => active);
 
-    activeNetworks.forEach((network) => {
+    for (const network of activeNetworks) {
       const { name, isEthereum } = network;
 
       if (isEthereum && isRequireEvmAPI(name)) {
-        if (!this.apis.evm[name] || !this.apis.evm[name].ready) {
-          this.initWeb3Api(network);
-        }
+        if (!this.apis.evm[name] || !this.apis.evm[name].ready) this.initWeb3Api(network);
       } else {
         const initSubstrateApies = () => {
           this.resetApiRetries();
@@ -795,7 +799,7 @@ export default class State {
           this.apis.substrate[name].api?.isReady.catch(initSubstrateApies);
         } else initSubstrateApies();
       }
-    });
+    }
   }
 
   public getWallets(): KeyringAddress[] {
@@ -829,8 +833,6 @@ export default class State {
   public setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null, updateNetworks = true): void {
     const cb = () => {
       if (updateNetworks) {
-        this.setActiveNetworks();
-
         // logic for Sora library
         if (data?.address && !data.isMobile) {
           const pair = this.keyringService.getPair(data?.address)!;
@@ -840,8 +842,9 @@ export default class State {
           // TODO добавить фича тогл
           this.subscribeTotalXorBalance();
         }
-      } else this.updateServiceInfo();
+      }
 
+      this.updateServiceInfo();
       callback();
     };
 
@@ -849,11 +852,7 @@ export default class State {
   }
 
   public saveCurrentAccountAddress(address: string, callback?: (account: CurrentAccountState) => void) {
-    if (address === '') {
-      this.setCurrentAccount(null);
-
-      return;
-    }
+    if (address === '') return this.setCurrentAccount(null);
 
     const {
       meta: { isMobile, name, ethereumAddress },

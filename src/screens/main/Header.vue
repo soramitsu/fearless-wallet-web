@@ -2,15 +2,21 @@
   <header class="header">
     <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
       <div class="logo-container">
-        <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconName="chevron-left" @click.stop="back" />
+        <CircleButton
+          v-if="showBackIcon"
+          backgroundColor="light-black"
+          iconName="chevron-left"
+          data-testid="backBtn"
+          @click.stop="back"
+        />
 
         <Logo v-else size="small" />
       </div>
 
       <div class="wallet-name">
         <div class="name" @click.stop="toggleSelectWalletPopupVisible">
-          <span class="wallet-title">{{ name }}</span>
-
+          <span class="wallet-title" data-testid="walletNameHeader">{{ name }}</span>
+          <Icon v-if="isMobile" icon="mobile" className="mobile" />
           <Rotate :isActive="syncedShowSelectWalletPopup">
             <SIcon name="chevron-bottom-16" />
           </Rotate>
@@ -44,6 +50,7 @@
         :isGroupIcon="isGroup"
         :icon="selectedNetworkIcon"
         :selectedNetwork="networkManagementButtonText"
+        data-testid="selectNetwork"
         @onToggle="toggleSelectNetworkPopupVisible"
       />
 
@@ -68,6 +75,7 @@
         placement="left"
         target=".settings"
         tooltipText="header.settingsAndManagement"
+        data-testid="settings"
         @click="toggleSettingsVisible"
       />
 
@@ -231,6 +239,10 @@ export default class Header extends Vue {
     return !this.tabStatus || !this.tabStatus.isAuthorize ? 'header.notConnected' : 'header.connected';
   }
 
+  get isMobile() {
+    return !!this.selectedWallet.isMobile;
+  }
+
   copyAddress() {
     navigator.clipboard.writeText(this.address);
   }
@@ -333,6 +345,7 @@ export default class Header extends Vue {
     .wallet-name {
       display: flex;
       align-items: flex-start;
+      justify-content: center;
       flex-direction: column;
 
       .name {
@@ -410,6 +423,10 @@ export default class Header extends Vue {
 
   .fail-connect {
     background-color: $gray-color;
+  }
+  .mobile {
+    width: 18px;
+    height: 18px;
   }
 }
 </style>

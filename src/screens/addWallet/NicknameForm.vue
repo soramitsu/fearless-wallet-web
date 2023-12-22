@@ -7,10 +7,11 @@
       size="big"
       :maxlength="35"
       :readonly="readonly"
+      data-testid="nicknameInput"
       class="input"
     />
 
-    <Hint class="hint" iconName="notification" text="addWallet.exampleNameWallet" />
+    <Hint class="hint" iconName="notification" text="addWallet.exampleNameWallet" data-testid="exampleText" />
   </div>
 </template>
 

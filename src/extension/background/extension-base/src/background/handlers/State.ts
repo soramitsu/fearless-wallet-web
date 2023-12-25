@@ -372,14 +372,9 @@ export default class State {
   public initWeb3Api(network: NetworkJson | undefined) {
     if (network === undefined) return;
 
-    this.getCurrentAccount((value) => {
-      if (value?.ethereumAddress === '') return;
-
-      const { name } = network;
-      const currentProvider = getCurrentProvider(network);
-
-      if (currentProvider) this.apis.evm[name.toLowerCase()] = initWeb3Api(currentProvider);
-    });
+    const { name } = network;
+    const currentProvider = getCurrentProvider(network);
+    if (currentProvider) this.apis.evm[name.toLowerCase()] = initWeb3Api(currentProvider);
   }
 
   public refreshDotSamaApi(key: string) {
@@ -773,7 +768,7 @@ export default class State {
     await this.eventService.waitCryptoReady;
     await this.prepNetworkJson();
 
-    this.initNetworkStates();
+    await this.initNetworkStates();
     this.onReady();
     this.updateServiceInfo();
   }
@@ -788,13 +783,11 @@ export default class State {
   public initNetworkStates() {
     const activeNetworks = Object.values(this.networkMap).filter(({ active }) => active);
 
-    activeNetworks.forEach((network) => {
+    for (const network of activeNetworks) {
       const { name, isEthereum } = network;
 
       if (isEthereum && isRequireEvmAPI(name)) {
-        if (!this.apis.evm[name] || !this.apis.evm[name].ready) {
-          this.initWeb3Api(network);
-        }
+        if (!this.apis.evm[name] || !this.apis.evm[name].ready) this.initWeb3Api(network);
       } else {
         const initSubstrateApies = () => {
           this.resetApiRetries();
@@ -806,7 +799,7 @@ export default class State {
           this.apis.substrate[name].api?.isReady.catch(initSubstrateApies);
         } else initSubstrateApies();
       }
-    });
+    }
   }
 
   public getWallets(): KeyringAddress[] {

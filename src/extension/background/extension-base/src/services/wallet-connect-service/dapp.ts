@@ -5,13 +5,14 @@ import { createSubscription } from '@extension-base/background/handlers/subscrip
 import {
   DEFAULT_LOGGER,
   PROJECT_ID_EXTENSION,
+  SUBSTRATE_EVM_HALF_CHAINID,
   WALLET_CONNECT_METADATA,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
 import { generateHalfGenesisHash } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
-import { isEthereumNetwork } from '@extension-base/background/utils/utils';
+import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
@@ -69,7 +70,7 @@ export default class WalletConnectDAppService {
     if (!this.app) await this.initApp();
 
     const optionalChains = this.state.networksJson.flatMap((network) => {
-      if (isEthereumNetwork(network.name) || !network.chainId) return [];
+      if (isRequireEvmAPI(network.name) || !network.chainId) return [];
       const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
 
       return [`polkadot:${halfChainId}`];
@@ -132,8 +133,22 @@ export default class WalletConnectDAppService {
   }
 
   onApproval(data: SessionTypes.Struct, cb: (data: PairingSubjectType) => void) {
-    const [, , address] = data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].accounts[0].split(':');
+    const accounts = data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].accounts;
+    const substrateAddress = accounts.find((el) => {
+      const [, chainId] = el.split(':');
+      if (!SUBSTRATE_EVM_HALF_CHAINID.includes(chainId)) return el;
+
+      return false;
+    }) as string;
+    const [, , address] = substrateAddress.split(':');
     const encodedAddress = this.state.keyringService.encodeAddress(address);
+    const ethAddress = accounts.find((el) => {
+      const [, chainId] = el.split(':');
+      if (SUBSTRATE_EVM_HALF_CHAINID.includes(chainId)) return el;
+
+      return false;
+    }) as string;
+    const [, , ethereumAddress] = ethAddress.split(':');
     const availableNetworks =
       data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].chains?.map((el) => el.split(':')[1]) ?? [];
 
@@ -144,7 +159,7 @@ export default class WalletConnectDAppService {
           name: data.peer.metadata.name,
           isMobile: true,
           wcTopic: data.topic,
-          ethereumAddress: '',
+          ethereumAddress,
           chains: availableNetworks,
         },
         'address'

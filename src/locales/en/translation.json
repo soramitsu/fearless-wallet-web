@@ -650,7 +650,8 @@
   "nft": {
     "owned": "Owned",
     "type": "Type",
-    "id": "Token ID"
+    "id": "Token ID",
+    "noNft": "There aren't any NFTs yet. Buy or mint NFTs to see them here."
   },
   "common": {
     "approve": "Approve",

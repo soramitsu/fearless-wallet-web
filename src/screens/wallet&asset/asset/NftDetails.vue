@@ -2,12 +2,7 @@
   <AboveForm :fullScreen="true" header="accounts.newNode" showBackIcon @closeHandler="onBack" @handlerBack="onBack">
     <Scroll>
       <div class="nft-details">
-        <img
-          src="https://nft-cdn.alchemy.com/eth-mainnet/7d6df468f05a22d24b2452442f443fb8"
-          class="nft-details__img"
-          width="500"
-          height="500"
-        />
+        <img :src="nft?.img" class="nft-details__img" :alt="nft?.id" width="500" height="500" />
         <p>{{ description }}</p>
 
         <InfoRow text="nft.owned" :value="owned" />
@@ -23,20 +18,22 @@
 <script lang="ts" setup>
 import { type FearlessNft } from '@extension-base/services/nft-service/types';
 import { useRouter } from 'vue-router/composables';
+import { computed } from 'vue';
 import { cut } from '@/helpers';
 
 type Props = {
-  nft?: FearlessNft;
+  address: string;
+  nft: FearlessNft;
 };
 
-defineProps<Props>();
-const description =
-  'Alako is DozerFriends’ super sleepy purple koala bear, dressed ready for a nap at any time. He’s just so tired…';
-const id = '';
-const type = 'erc-721';
-const contractAdress = 'f4342432';
-const owned = cut('0x34242342rdscsdfsdfdwr3243434', 5);
+const props = defineProps<Props>();
 const router = useRouter();
+
+const description = computed(() => props.nft.meta.name);
+const id = computed(() => props.nft.id);
+const type = computed(() => props.nft.type);
+const contractAdress = computed(() => props.address);
+const owned = computed(() => cut(props.address, 5));
 
 const onBack = () => {
   router.back();

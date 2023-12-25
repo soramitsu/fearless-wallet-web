@@ -1,7 +1,7 @@
 <template>
   <FCorners size="big" :topLeftCorner="false" :bottomRightCorner="false">
     <div class="nft">
-      <img :src="nft.image.cachedUrl" :alt="nft.collection?.name" loading="lazy" width="240" height="240" />
+      <img :src="nft.meta.image" :alt="nft.meta?.name" loading="lazy" width="240" height="240" />
       <div class="nft-info">
         <div class="titles">
           <span v-if="isNft" class="title">{{ upperTitle }}</span>
@@ -17,16 +17,17 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue';
-import type { OwnedNft } from 'alchemy-sdk';
+import type { FearlessNft } from '@extension-base/services/nft-service/types';
 
 type Props = {
-  nft: OwnedNft;
+  nft: FearlessNft;
 };
-const isNft = ref(false);
 const props = defineProps<Props>();
-const title = ref(isNft.value ? props.nft.collection?.name : props.nft.name);
-const subTitle = ref(props.nft.description);
-const upperTitle = ref(isNft.value ? props.nft.collection?.name : '');
+
+const isNft = ref(false);
+const title = ref(isNft.value ? props.nft.meta?.name : props.nft.meta.name);
+const subTitle = ref(props.nft.meta.description);
+const upperTitle = ref(isNft.value ? props.nft.meta.name : '');
 </script>
 
 <style lang="scss">

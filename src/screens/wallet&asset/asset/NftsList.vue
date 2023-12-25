@@ -1,16 +1,16 @@
 <template>
   <Scroll>
-    <div class="nft-list">
-      <NftCollectionItem v-for="(nft, i) of nfts" :nft="nft" :key="i" />
+    <div :class="containerClass">
+      <span v-if="isEmpty">{{ $t('nft.noNft') }}</span>
+      <template v-else>
+        <NftCollectionItem v-for="(nft, i) of nfts" :nft="nft" :key="i" />
+      </template>
     </div>
-    <!-- <div v-else class="no-nfts">
-      <span>{{ 'There is no nfts, yet' }}</span>
-    </div> -->
   </Scroll>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, computed } from 'vue';
 
 // import { useStore } from '@/store';`
 import type { NftState } from '@extension-base/services/nft-service/types';
@@ -19,12 +19,10 @@ import NftCollectionItem from '@/screens/wallet&asset/asset/NftCollectionItem.vu
 
 // const store = useStore();
 const nfts = ref<NftState>({});
-
+const isEmpty = computed(() => !Object.keys(nfts.value).length);
+const containerClass = computed(() => (isEmpty.value ? 'no-nfts' : 'nft-list'));
 onMounted(async () => {
-  const ownedNfts = await getNftSubscribe((data) => {
-    nfts.value = data;
-  });
-
+  const ownedNfts = await getNftSubscribe((data) => (nfts.value = data));
   nfts.value = ownedNfts;
 });
 </script>
@@ -42,5 +40,8 @@ onMounted(async () => {
   justify-content: center;
   align-items: center;
   height: 100%;
+  color: $grayish-white;
+  font-size: 16px;
+  font-weight: 400;
 }
 </style>

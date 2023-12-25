@@ -36,6 +36,7 @@ export class NftService {
     }
 
     this.nftMap[address] = nfts;
+
     this.nftSubject.next(this.nftMap);
   }
 
@@ -44,7 +45,9 @@ export class NftService {
 
     const subscription = this.nftSubject.subscribe((nfts: Record<string, NftState>): void => {
       this.state.currentAccount.then((account) => {
-        if (account && account.ethereumAddress) cb(nfts[account.ethereumAddress]);
+        if (account && account.ethereumAddress) {
+          return cb(nfts[account.ethereumAddress]);
+        }
       });
     });
 
@@ -52,6 +55,7 @@ export class NftService {
       unsubscribe(id);
       subscription.unsubscribe();
     });
+
     const account = await this.state.currentAccount;
 
     if (!account || !account.ethereumAddress) return {};

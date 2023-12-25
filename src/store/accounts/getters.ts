@@ -7,6 +7,7 @@ import type { Features } from '@/store/extension/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import store from '@/store';
 import { ALL_NETWORKS } from '@/consts/networks';
+import { type NftState } from '@/extension/background/extension-base/src/services/nft-service/types';
 
 export enum GettersTypes {
   selectedWallet = 'selectedWallet',
@@ -18,6 +19,7 @@ export enum GettersTypes {
   getEthAccounts = 'getEthAccounts',
   hiddenAssets = 'hiddenAssets',
   getBalances = 'getBalances',
+  getNfts = 'getNfts',
   getWallets = 'getWallets',
   getAutoSelectNodesValueByNetwork = 'getAutoSelectNodesValueByNetwork',
   GET_QR = 'getQR',
@@ -30,6 +32,7 @@ export enum GettersTypes {
 export type Getters = {
   [GettersTypes.selectedWallet](state: State, getters?: GetterTree<State, State> & Getters): SelectedWallet;
   [GettersTypes.getBalances](state: State, getters?: GetterTree<State, State> & Getters): TokenBalance[];
+  [GettersTypes.getNfts](state: State, getters?: GetterTree<State, State> & Getters): NftState;
   [GettersTypes.selectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.selectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.fiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
@@ -62,6 +65,10 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.getBalances]({ balances }): TokenBalance[] {
     return balances;
+  },
+
+  [GettersTypes.getNfts](state): NftState {
+    return state.nfts;
   },
 
   [GettersTypes.hiddenAssets]({ selectedWallet, hiddenAssets }): any {

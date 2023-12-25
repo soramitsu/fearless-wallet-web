@@ -1,6 +1,6 @@
 <template>
   <FCorners size="big" :topLeftCorner="false" :bottomRightCorner="false">
-    <div class="nft">
+    <div class="nft" @click="onClick">
       <img :src="nft.image" :alt="nft?.name" loading="lazy" width="240" height="240" />
       <div class="nft-info">
         <span class="title title--main">{{ title }}</span>
@@ -19,6 +19,10 @@ type Props = {
 
 const props = defineProps<Props>();
 const title = ref(props.nft?.name);
+
+const onClick = () => {
+  //TODO add router
+};
 </script>
 
 <style lang="scss">

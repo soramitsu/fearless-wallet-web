@@ -18,6 +18,7 @@ export enum MutationTypes {
   HIDE_POLKASWAP_ALERT = 'HIDE_POLKASWAP_ALERT',
   HIDE_NETWORK_WARNING = 'HIDE_NETWORK_WARNING',
   SET_BALANCE = 'SET_BALANCE',
+  SET_NFTS = 'SET_NFTS',
   SET_SORA_CARD_BANNER_VISIBILITY = 'SET_SORA_CARD_BANNER_VISIBILITY',
 }
 
@@ -126,6 +127,10 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_BALANCE](state, { details }) {
     state.balances = details;
+  },
+
+  [MutationTypes.SET_NFTS](state, nfts) {
+    state.nfts = nfts;
   },
 
   [MutationTypes.SET_HIDDEN_ASSET](state, { assetId, value }) {

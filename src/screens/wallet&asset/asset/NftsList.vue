@@ -10,21 +10,15 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref, computed } from 'vue';
-
-// import { useStore } from '@/store';`
+import { computed } from 'vue';
 import type { NftState } from '@extension-base/services/nft-service/types';
-import { getNftSubscribe } from '@/extension/messaging/nfts';
 import NftCollectionItem from '@/screens/wallet&asset/asset/NftCollectionItem.vue';
+import { useStore } from '@/store';
 
-// const store = useStore();
-const nfts = ref<NftState>({});
+const store = useStore();
+const nfts = computed<NftState>(() => store.getters.getNfts);
 const isEmpty = computed(() => !Object.keys(nfts.value).length);
 const containerClass = computed(() => (isEmpty.value ? 'no-nfts' : 'nft-list'));
-onMounted(async () => {
-  const ownedNfts = await getNftSubscribe((data) => (nfts.value = data));
-  nfts.value = ownedNfts;
-});
 </script>
 
 <style lang="scss" scoped>

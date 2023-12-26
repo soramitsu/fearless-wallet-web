@@ -44,15 +44,18 @@ const actions: ActionTree<State, State> & Actions = {
 
     const { type, url } = externalApi.history;
     const isNativeEvm = isRequireEvmAPI(networkName);
-    const balances: TokenBalance[] = rootState.account.balances;
+    const balances: TokenBalance[] = rootState.account.balances ?? [];
 
     const asset = isNativeEvm
-      ? balances.find((el) => el.balances.some((asset) => asset.id === assetId))!
-      : getUtilityAsset(rootState.account.balances, networkName)!;
+      ? balances.find(({ balances }) => balances.some((asset) => asset.id === assetId))
+      : getUtilityAsset(balances, networkName)!;
 
     const utilityId = isNativeEvm
-      ? asset.balances.find((el) => el.name.toLowerCase() === networkName.toLowerCase() && el.isUtility)?.id
-      : asset.assetId;
+      ? asset &&
+        asset.balances.find(
+          ({ name, isUtility }) => name && name.toLowerCase() === networkName.toLowerCase() && isUtility
+        )?.id
+      : asset && asset.assetId;
 
     const isUtility = isNativeEvm ? utilityId !== undefined : assetId === utilityId;
 
@@ -60,8 +63,11 @@ const actions: ActionTree<State, State> & Actions = {
     // TODO: когда появится история других токенов отрефаткорить данную логику
     if (!isSora(networkName)) if (!isUtility && type !== 'etherscan') return;
 
-    const { id } = asset.balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
-    const history = await fetchHistory(url, formattedAddress, type, networkName, id, isUtility);
+    const searchedAsset = asset && asset.balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase());
+
+    if (!searchedAsset) return;
+
+    const history = await fetchHistory(url, formattedAddress, type, networkName, searchedAsset.id, isUtility);
 
     if (history)
       commit(MutationTypes.SET_HISTORY, {

@@ -190,7 +190,7 @@ function getFormattedHistory(
       };
     });
 
-    return { nodes, pageInfo: { endCursor: '', startCursor: '' } };
+    return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
   }
 
   if (serviceType === 'subsquid' || serviceType === 'etherscan') {
@@ -201,7 +201,7 @@ function getFormattedHistory(
       };
     });
 
-    return { nodes, pageInfo: { endCursor: '', startCursor: '' } };
+    return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
   }
 
   if (serviceType === 'sora') {
@@ -212,7 +212,7 @@ function getFormattedHistory(
       };
     });
 
-    return { nodes, pageInfo: { endCursor: '', startCursor: '' } };
+    return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
   }
 
   return history as SubqueryHistory;

@@ -94,7 +94,8 @@ interface GiantsquidHistoryItem {
 }
 
 interface SubqueryHistory {
-  nodes: HistoryElement[]; // | SoraHistoryElement[]
+  timestamp: number;
+  nodes: HistoryElement[];
   pageInfo: {
     startCursor: string;
     endCursor: string;

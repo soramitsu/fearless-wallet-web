@@ -83,10 +83,6 @@ export default class HistoryBook extends Vue {
     return this.historyAddresses.length !== 0;
   }
 
-  get showRecent() {
-    return this.historyAddresses.length !== 0;
-  }
-
   get addressPrefix() {
     return this.getNetwork(this.network)?.addressPrefix;
   }

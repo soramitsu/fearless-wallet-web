@@ -48,11 +48,12 @@ const actions: ActionTree<State, State> & Actions = {
 
     const asset = isNativeEvm
       ? balances.find(({ balances }) => balances.some((asset) => asset.id === assetId))
-      : getUtilityAsset(balances, networkName)!;
+      : getUtilityAsset(balances, networkName);
+
+    if (!asset) return;
 
     const utilityId = isNativeEvm
-      ? asset &&
-        asset.balances.find(
+      ? asset.balances.find(
           ({ name, isUtility }) => name && name.toLowerCase() === networkName.toLowerCase() && isUtility
         )?.id
       : asset && asset.assetId;
@@ -63,7 +64,7 @@ const actions: ActionTree<State, State> & Actions = {
     // TODO: когда появится история других токенов отрефаткорить данную логику
     if (!isSora(networkName)) if (!isUtility && type !== 'etherscan') return;
 
-    const searchedAsset = asset && asset.balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase());
+    const searchedAsset = asset.balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase());
 
     if (!searchedAsset) return;
 

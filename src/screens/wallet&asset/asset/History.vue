@@ -142,9 +142,7 @@ export default class History extends Vue {
       return filteredHistory;
     }
 
-    const filteredHistory = this.historyItems.filter((historyItem) => historyItem[field]);
-
-    return filteredHistory;
+    return this.historyItems.filter((historyItem) => historyItem[field]);
   }
 
   get isMainNetwork() {
@@ -175,14 +173,13 @@ export default class History extends Vue {
 
     if (!this.isSora && !this.isEthereumNativeNetwork && !this.isMainNetwork) return;
 
-    this.showLoader = true;
+    if (this.historyItems.length === 0) this.showLoader = true;
 
-    await this.fetchHistory({
-      networkName: this.selectedNetwork,
-      assetId: this.assetId,
+    const options = { networkName: this.selectedNetwork, assetId: this.assetId };
+
+    this.fetchHistory(options).finally(() => {
+      this.showLoader = false;
     });
-
-    this.showLoader = false;
   }
 
   filterHistoryValueUpdate(name: FilterHistory) {

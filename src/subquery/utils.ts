@@ -92,3 +92,29 @@ export const computedSubsquidRequest = (address: string): string =>
     }
   }
 }`;
+
+export const computedSoraRequest = (address: string) =>
+  `{
+  historyElements(
+    orderBy: timestamp_DESC
+    where: {
+      address_eq: "${address}"
+    }
+  ) {
+    timestamp
+    id
+    address
+    blockHash
+    blockHeight
+    updatedAtBlock
+    networkFee
+    module
+    method
+    dataTo
+    dataFrom
+    data
+    execution {
+      success
+    }
+  }
+}`;

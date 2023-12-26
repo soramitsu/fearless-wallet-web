@@ -9,11 +9,17 @@ import type {
   NetworkName,
   EthereumHistoryResponse,
   EthereumTokenHistoryData,
+  SoraHistoryElement,
 } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { getEthereumExplorerApiKey } from '@/helpers/history';
 import { SEC1 } from '@/consts/time';
-import { computedGiantSquidRequest, computedSubqueryRequest, computedSubsquidRequest } from '@/subquery/utils';
+import {
+  computedGiantSquidRequest,
+  computedSoraRequest,
+  computedSubqueryRequest,
+  computedSubsquidRequest,
+} from '@/subquery/utils';
 
 async function fetchSubqueryHistory(
   url: string,
@@ -104,37 +110,14 @@ async function fetchEthereumHistory(url: string, address: string, contractAddres
 async function fetchSoraHistory(url: string, address: string) {
   const {
     data: { data },
-  } = await axios.post(url, {
-    query: `{
-        historyElements(
-          orderBy: timestamp_DESC
-          where: {
-            address_eq: "${address}"
-          }
-        ) {
-          timestamp
-          id
-          address
-          blockHash
-          blockHeight
-          updatedAtBlock
-          networkFee
-          module
-          method
-          dataTo
-          dataFrom
-          data
-          execution {
-            success
-          }
-        }
-      }`,
+  } = await axios.post<{ data: { historyElements: SoraHistoryElement[] } }>(url, {
+    query: computedSoraRequest(address),
   });
 
   return data?.historyElements;
 }
 
-async function fetchHistory(
+export async function fetchHistory(
   url: string,
   address: string,
   type: HistoryServiceType,
@@ -160,9 +143,11 @@ async function fetchHistory(
 
       return fetchGiantsquidHistory(url, formattedAddress);
     }
+
+    return [];
   } catch {
     console.info(`%c failed to load history for [[${networkName}]]-[[${address}]] `, 'background:orange;color:#fff');
+
+    return [];
   }
 }
-
-export { fetchHistory };

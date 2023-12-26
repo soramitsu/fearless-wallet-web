@@ -35,7 +35,7 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.FETCH_HISTORY]({ commit, getters, rootState, rootGetters }, { networkName, assetId, address }) {
-    const { externalApi } = getters.getNetwork(networkName) as Network;
+    const { externalApi }: Network = getters.getNetwork(networkName);
 
     if (!externalApi || !externalApi.history) return;
 
@@ -69,14 +69,13 @@ const actions: ActionTree<State, State> & Actions = {
 
     const history = await fetchHistory(url, formattedAddress, type, networkName, searchedAsset.id, isUtility);
 
-    if (history)
-      commit(MutationTypes.SET_HISTORY, {
-        networkName: networkName.toLowerCase(),
-        walletAddress: BaseApi.formatAddress(wallet),
-        history,
-        assetId,
-        serviceType: type,
-      });
+    commit(MutationTypes.SET_HISTORY, {
+      networkName: networkName.toLowerCase(),
+      walletAddress: BaseApi.formatAddress(wallet),
+      history,
+      assetId,
+      serviceType: type,
+    });
   },
 
   async [ActionTypes.TOGGLE_FAVORITE_NETWORK]({ state, commit }, { address, networkName }): Promise<boolean> {

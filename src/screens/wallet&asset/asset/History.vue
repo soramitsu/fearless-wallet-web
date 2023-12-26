@@ -55,7 +55,7 @@ import { isSora } from '@/helpers';
 export default class History extends Vue {
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
-
+  refreshTimeout = 30000;
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -171,7 +171,7 @@ export default class History extends Vue {
   }
 
   async loadHistory() {
-    if (this.historyTimespamp + 30000 > Date.now()) return false;
+    if (this.historyTimespamp + this.refreshTimeout > Date.now()) return false;
 
     if (!this.isSora && !this.isEthereumNativeNetwork && !this.isMainNetwork) return;
 

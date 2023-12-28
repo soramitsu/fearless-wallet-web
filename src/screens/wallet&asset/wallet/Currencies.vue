@@ -2,7 +2,7 @@
   <Scroll>
     <Loader v-if="isEmptyBalances" class="asset-loader" />
 
-    <div v-else-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText()) }}</div>
+    <div v-else-if="showAllAssetsHiddenText" class="info-text" data-testid="infoText">{{ $t(mainText()) }}</div>
 
     <Draggable v-else v-model="filteredBalances" handle=".handle" :key="selectedWallet.address">
       <CurrencyItem

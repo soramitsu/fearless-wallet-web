@@ -8,6 +8,7 @@
       :name="name"
       :key="name"
       :isActive="activeTab === name"
+      data-testid="tabButton"
       @click="$emit('update:activeTab', name)"
     />
   </div>

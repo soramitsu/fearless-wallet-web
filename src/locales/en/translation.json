@@ -352,10 +352,9 @@
       "message": "Message"
     },
     "unsupportedMethodsPopup": "Certain methods requested by Wallet Connect are not currently supported by the App. Although the connection can be established, certain functionalities of the dApp may not be available.",
-    "requiredNetworkAlert": {
-      "header": "Unable to connect to wallet:",
-      "message": "The requested blockchain network is not supported or available"
-    },
+    "walletConnectErrorAlertTitle": "Unable to connect",
+    "requiredNetworkAlert": "The requested blockchain network is not supported or available.",
+    "noSuitableWallets": "There are no suitable wallets available for connection. You must either import an existing wallet or create a new one.",
     "permissions": {
       "title": "App permissions",
       "viewAddress": "View your wallet address",
@@ -669,6 +668,7 @@
     "confirm": "Confirm",
     "finish": "Finish",
     "copied": "Сopied",
+    "copyToClipboard": "Copy to clipboard",
     "copiedValue": "Сopied {value}",
     "understood": "Understood",
     "cancel": "Cancel",

@@ -1,11 +1,11 @@
 <template>
-  <li class="network" :class="!isAvailable ? 'unavailable' : ''" @click="onSelect">
+  <li class="network" data-testid="networkItem" :class="!isAvailable ? 'unavailable' : ''" @click="onSelect">
     <Icon v-if="isNetworkGroup" icon="all-networks" width="24" height="24" className="network__icon" />
     <ExternalLogo v-else :name="network.icon" :width="24" class="img" />
 
     <span class="network__name" data-testid="networkName">{{ network.name }}</span>
 
-    <div class="network__state">
+    <div class="network__state" data-testid="isNetworkSelected">
       <Icon
         v-if="isNetworkSelected"
         icon="check"
@@ -15,7 +15,7 @@
         className="network__icon-state"
       />
 
-      <div data-testid="networkState" @click.stop="onToggleState">
+      <div data-testid="isNetworkFavorite" @click.stop="onToggleState">
         <Icon :icon="iconType" :iconColor="iconColorFavorite" width="18" height="18" className="network__icon-state" />
       </div>
     </div>

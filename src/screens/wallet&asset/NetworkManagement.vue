@@ -1,12 +1,20 @@
 <template>
   <AboveForm :header="getLocale('header')" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="management">
-      <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
+      <SearchInput
+        v-model="filterValue"
+        placeholder="common.searchNetwork"
+        class="search-input"
+        width="100%"
+        data-testid="networkSearch"
+      />
       <Tooltip text="common.copied" target=".search-input" placement="bottom" />
 
       <Tabs v-show="showTabs" :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
 
-      <div v-show="!isNetworksExists" class="network__list-no-found">{{ $t('header.networkManagement.nofound') }}</div>
+      <div v-show="!isNetworksExists" class="network__list-no-found" data-testid="networkNoFound">
+        {{ $t('header.networkManagement.nofound') }}
+      </div>
 
       <NetworkItem
         v-show="isNetworksExists"
@@ -14,7 +22,6 @@
         :isNetworkGroup="true"
         :isAvailable="true"
         :isSelected="isGroupSelected"
-        data-testid="networkItem"
         @onChangeNetwork="toggleNetworkType"
       />
 

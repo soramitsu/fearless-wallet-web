@@ -36,11 +36,12 @@ export default class AlchemyNftController {
       const address = nft.contract.address;
       const collection = collections.contracts.find((contract) => contract.address === address);
 
-      if (!ownedCollections[address]) {
+      if (collection && !ownedCollections[address]) {
         //init Collection
         ownedCollections[address] = {
-          name: collection?.openSeaMetadata.collectionName,
-          image: collection?.openSeaMetadata.imageUrl ?? collection?.image.cachedUrl,
+          name: collection.openSeaMetadata.collectionName,
+          address: collection.address,
+          image: collection.openSeaMetadata.imageUrl ?? collection?.image.cachedUrl,
           network: this.network,
           ownedNfts: [],
         };

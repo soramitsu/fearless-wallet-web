@@ -12,16 +12,19 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import { type NftCollection } from '@extension-base/services/nft-service/types';
+import { useRouter } from 'vue-router/composables';
+import { Components } from '@/router/routes';
 
 type Props = {
   nft: NftCollection;
 };
 
 const props = defineProps<Props>();
+const router = useRouter();
 const title = ref(props.nft?.name);
 
 const onClick = () => {
-  //TODO add router
+  router.push({ name: Components.NftCollection, params: { contract: props.nft.address } });
 };
 </script>
 

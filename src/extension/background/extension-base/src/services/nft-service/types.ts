@@ -13,6 +13,7 @@ export type NftCollection = {
   name?: string;
   image?: string;
   network?: string;
+  address: string;
   ownedNfts: FearlessNft[];
 };
 

@@ -1,6 +1,7 @@
 <template>
   <Scroll>
-    <div :class="containerClass">
+    <NftSettings v-if="showAssetsManagementForm" />
+    <div v-else :class="containerClass">
       <span v-if="isEmpty">{{ $t('nft.noNft') }}</span>
       <template v-else>
         <NftCollectionItem v-for="(nft, i) of nfts" :nft="nft" :key="i" />
@@ -14,7 +15,9 @@ import { computed } from 'vue';
 import type { NftState } from '@extension-base/services/nft-service/types';
 import NftCollectionItem from '@/screens/wallet&asset/asset/NftCollectionItem.vue';
 import { useStore } from '@/store';
+import NftSettings from '@/screens/wallet&asset/asset/NftSettings.vue';
 
+defineProps<{ showAssetsManagementForm: boolean }>();
 const store = useStore();
 const nfts = computed<NftState>(() => store.getters.getNfts);
 const isEmpty = computed(() => !Object.keys(nfts.value).length);

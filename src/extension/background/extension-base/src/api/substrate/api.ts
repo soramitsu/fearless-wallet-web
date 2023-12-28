@@ -90,7 +90,6 @@ export async function initApi(network: NetworkJson, state: State): Promise<void>
       const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS, undefined, 10000);
 
       const api = new ApiPromise({ provider, noInitWarn: true });
-      state.updateServiceInfo();
 
       eventListeners.forEach(([eventName, callback]) => api.on(eventName, callback));
 

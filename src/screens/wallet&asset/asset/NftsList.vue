@@ -19,7 +19,7 @@ import NftSettings from '@/screens/wallet&asset/asset/NftSettings.vue';
 
 defineProps<{ showAssetsManagementForm: boolean }>();
 const store = useStore();
-const nfts = computed<NftState>(() => store.getters.getNfts);
+const nfts = computed<NftState>(() => store.getters.nfts);
 const isEmpty = computed(() => !Object.keys(nfts.value).length);
 const containerClass = computed(() => (isEmpty.value ? 'no-nfts' : 'nft-list'));
 </script>

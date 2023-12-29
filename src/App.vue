@@ -106,6 +106,7 @@ export default class App extends Vue {
 
   async setupNfts() {
     const ownedNfts = await getNftSubscribe((data) => this.setNfts(data));
+
     this.setNfts(ownedNfts);
   }
 

@@ -19,7 +19,7 @@ export enum GettersTypes {
   getEthAccounts = 'getEthAccounts',
   hiddenAssets = 'hiddenAssets',
   getBalances = 'getBalances',
-  getNfts = 'getNfts',
+  nfts = 'nfts',
   getWallets = 'getWallets',
   getAutoSelectNodesValueByNetwork = 'getAutoSelectNodesValueByNetwork',
   GET_QR = 'getQR',
@@ -32,7 +32,7 @@ export enum GettersTypes {
 export type Getters = {
   [GettersTypes.selectedWallet](state: State, getters?: GetterTree<State, State> & Getters): SelectedWallet;
   [GettersTypes.getBalances](state: State, getters?: GetterTree<State, State> & Getters): TokenBalance[];
-  [GettersTypes.getNfts](state: State, getters?: GetterTree<State, State> & Getters): NftState;
+  [GettersTypes.nfts](state: State, getters?: GetterTree<State, State> & Getters): NftState;
   [GettersTypes.selectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.selectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.fiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
@@ -67,7 +67,7 @@ const getters: GetterTree<State, State> & Getters = {
     return balances;
   },
 
-  [GettersTypes.getNfts](state): NftState {
+  [GettersTypes.nfts](state): NftState {
     return state.nfts;
   },
 

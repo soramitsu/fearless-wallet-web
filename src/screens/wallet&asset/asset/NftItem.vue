@@ -1,7 +1,7 @@
 <template>
   <FCorners size="big" :topLeftCorner="false" :bottomRightCorner="false">
     <div class="nft">
-      <img :src="nft.meta.image" :alt="nft.meta?.name" loading="lazy" width="240" height="240" />
+      <img :src="nft.img" :alt="nft.meta?.name" loading="lazy" width="240" height="240" />
       <div class="nft-info">
         <div class="titles">
           <span v-if="isNft" class="title">{{ upperTitle }}</span>
@@ -21,13 +21,13 @@ import type { FearlessNft } from '@extension-base/services/nft-service/types';
 
 type Props = {
   nft: FearlessNft;
+  isNft: boolean;
 };
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), { isNft: false });
 
-const isNft = ref(false);
-const title = ref(isNft.value ? props.nft.meta?.name : props.nft.meta.name);
+const title = ref(props.isNft ? props.nft.meta?.name : props.nft.meta.name);
 const subTitle = ref(props.nft.meta.description);
-const upperTitle = ref(isNft.value ? props.nft.meta.name : '');
+const upperTitle = ref(props.isNft ? props.nft.meta.name : '');
 </script>
 
 <style lang="scss">

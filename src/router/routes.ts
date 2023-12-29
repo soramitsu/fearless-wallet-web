@@ -308,7 +308,7 @@ const routes: Array<RouteConfig> = [
             },
           },
           {
-            path: '/nfts/:access_token?',
+            path: '/nft-collections',
             name: Components.Nfts,
             component: NftsList,
             meta: {

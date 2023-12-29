@@ -13,6 +13,7 @@ import type {
   HistoryServiceType,
   GiantsquidHistoryItem,
   HistoryElement,
+  SoraHistoryElement,
 } from '@/interfaces';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { KeyringJson } from '@polkadot/ui-keyring/types';
@@ -55,7 +56,7 @@ export type SetAssetsPriceIntervalProps = {
   interval: NodeJS.Timer;
 };
 
-export type History = SubqueryHistory | GiantsquidHistoryItem[] | HistoryElement[];
+export type History = SubqueryHistory | GiantsquidHistoryItem[] | HistoryElement[] | SoraHistoryElement[];
 
 export type SetHistoryProps = {
   history: History;

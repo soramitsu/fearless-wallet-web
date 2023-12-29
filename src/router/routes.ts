@@ -180,6 +180,14 @@ const routes: Array<RouteConfig> = [
     component: WalletConnectInitAuth,
   },
   {
+    path: '/nfts/:contract',
+    name: Components.NftCollection,
+    component: NftCollection,
+    meta: {
+      title: 'wallet',
+    },
+  },
+  {
     path: '/meta',
     name: Components.MetaRequest,
     component: MetaRequest,
@@ -311,14 +319,6 @@ const routes: Array<RouteConfig> = [
             path: '/nft-collections',
             name: Components.Nfts,
             component: NftsList,
-            meta: {
-              title: 'wallet',
-            },
-          },
-          {
-            path: '/nfts/:contract',
-            name: Components.NftCollection,
-            component: NftCollection,
             meta: {
               title: 'wallet',
             },

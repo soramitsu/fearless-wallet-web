@@ -11,6 +11,7 @@ import SubstrateAuths from '@/screens/extension-ui/SubstrateAuths.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import NftsList from '@/screens/wallet&asset/asset/NftsList.vue';
 import NftCollection from '@/screens/wallet&asset/asset/NftCollection.vue';
+import NftDetails from '@/screens/wallet&asset/asset/NftDetails.vue';
 
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
@@ -86,6 +87,7 @@ export enum Components {
   Onboarding = 'Onboarding',
   Currencies = 'Currencies',
   Nfts = 'Nfts',
+  NftDetails = 'NftDetails',
   NftCollection = 'NftCollection',
 }
 
@@ -186,6 +188,19 @@ const routes: Array<RouteConfig> = [
     meta: {
       title: 'wallet',
     },
+  },
+  {
+    path: '/collection/:contract',
+    name: Components.NftCollection,
+    component: NftCollection,
+    meta: { title: 'wallet' },
+    children: [
+      {
+        path: ':id?',
+        name: Components.NftDetails,
+        component: NftDetails,
+      },
+    ],
   },
   {
     path: '/meta',

@@ -1,5 +1,5 @@
 <template>
-  <AboveForm fullScreen header="accounts.newNode">
+  <AboveForm :fullScreen="true" header="accounts.newNode">
     <NftItem v-for="(nft, index) in ownedNfts" :key="index" :nft="nft" isNft />
   </AboveForm>
 </template>
@@ -17,9 +17,7 @@ const store = useStore();
 const nfts = computed<NftState>(() => store.getters.nfts ?? []);
 const contract = computed(() => route.params.contract);
 const collections = computed(() => nfts.value[contract.value]);
-const ownedNfts = computed(() => {
-  return collections.value?.ownedNfts ?? [];
-});
+const ownedNfts = computed(() => collections.value?.ownedNfts ?? []);
 </script>
 
 <style lang="scss" scoped></style>

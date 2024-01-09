@@ -1,6 +1,6 @@
 <template>
   <FCorners size="big" :topLeftCorner="false" :bottomRightCorner="false">
-    <div class="nft">
+    <RouterLink tag="div" :to="{ name: Components.NftDetails, params: { id: contract } }">
       <img :src="nft.img" :alt="nft.meta?.name" loading="lazy" width="240" height="240" />
       <div class="nft-info">
         <div class="titles">
@@ -11,20 +11,25 @@
 
         <Icon v-if="isNft" icon="export-nft" width="42px" height="42px" class="share" />
       </div>
-    </div>
+    </RouterLink>
   </FCorners>
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import { useRoute } from 'vue-router/composables';
+import { RouterLink } from 'vue-router';
 import type { FearlessNft } from '@extension-base/services/nft-service/types';
+import { Components } from '@/router/routes';
 
 type Props = {
   nft: FearlessNft;
   isNft: boolean;
 };
-const props = withDefaults(defineProps<Props>(), { isNft: false });
 
+const route = useRoute();
+const props = withDefaults(defineProps<Props>(), { isNft: false });
+const contract = computed(() => route.params.contract);
 const title = ref(props.isNft ? props.nft.meta?.name : props.nft.meta.name);
 const subTitle = ref(props.nft.meta.description);
 const upperTitle = ref(props.isNft ? props.nft.meta.name : '');

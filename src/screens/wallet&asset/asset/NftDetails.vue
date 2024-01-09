@@ -2,13 +2,13 @@
   <AboveForm :fullScreen="true" header="accounts.newNode" showBackIcon @closeHandler="onBack" @handlerBack="onBack">
     <Scroll>
       <div class="nft-details">
-        <img :src="nft?.img" class="nft-details__img" :alt="nft?.id" width="500" height="500" />
-        <p>{{ description }}</p>
+        <img :src="nft.img" class="nft-details__img" :alt="nft?.id" width="500" height="500" />
+        <p>{{ nft.meta.description }}</p>
 
-        <InfoRow text="nft.owned" :value="owned" />
+        <InfoRow text="nft.owned" :value="nft.isOwned" />
         <InfoRow text="nft.id" :value="id" />
-        <InfoRow text="common.network" :value="contractAdress" />
-        <InfoRow text="nft.type" :value="type" />
+        <InfoRow text="common.network" :value="nft.meta.address" />
+        <InfoRow text="nft.type" :value="nft.type" />
         <FButton class="send-btn" text="common.send" width="100%" size="big" fontSize="big" />
       </div>
     </Scroll>
@@ -16,28 +16,22 @@
 </template>
 
 <script lang="ts" setup>
-import { type FearlessNft } from '@extension-base/services/nft-service/types';
-import { useRouter } from 'vue-router/composables';
+import { type NftState } from '@extension-base/services/nft-service/types';
+import { useRouter, useRoute } from 'vue-router/composables';
 import { computed } from 'vue';
-import { cut } from '@/helpers';
+import { useStore } from '@/store';
 
-type Props = {
-  address: string;
-  nft: FearlessNft;
-};
-
-const props = defineProps<Props>();
 const router = useRouter();
+const route = useRoute();
+const store = useStore();
+const id = computed(() => route.params.id);
+const nfts = computed<NftState>(() => store.getters.nfts ?? []);
+const contract = computed(() => route.params.contract);
+const collections = computed(() => nfts.value[contract.value]);
+const ownedNfts = computed(() => collections.value?.ownedNfts ?? []);
+const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value)!);
 
-const description = computed(() => props.nft.meta.name);
-const id = computed(() => props.nft.id);
-const type = computed(() => props.nft.type);
-const contractAdress = computed(() => props.address);
-const owned = computed(() => cut(props.address, 5));
-
-const onBack = () => {
-  router.back();
-};
+const onBack = () => router.back();
 </script>
 
 <style lang="scss" scoped>

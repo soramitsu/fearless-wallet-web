@@ -59,7 +59,7 @@ const mutations: MutationTree<State> & Mutations = {
           ...(state.history[assetId]?.[walletAddress] ?? []),
           [networkName]: {
             timestamp: Date.now(),
-            nodes: [...(nodes ?? []), ...(oldHistory?.nodes ?? [])],
+            nodes,
             pageInfo: {
               startCursor: oldStartCursor ?? startCursorProp,
               endCursor: endCursorProp,

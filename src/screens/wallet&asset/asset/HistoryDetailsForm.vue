@@ -313,7 +313,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   openExplorer() {
-    if (this.explorerType === 'etherscan') {
+    if (this.explorerType === 'etherscan' || this.explorerType === 'oklink') {
       if (this.explorerUrl) {
         const url = this.explorerUrl
           .replace('{type}', 'tx')

@@ -132,8 +132,9 @@
             <div class="descriptions-row">
               <Icon icon="gift" class="icon" />
 
+              <!-- TODO: staking Переделать, когда будут новые сети -->
               <div>
-                {{ $t('staking.stakedTokens') }}
+                {{ $t('staking.stakedTokens', { value: 6 + 'hours' }) }}
               </div>
             </div>
 
@@ -149,7 +150,7 @@
               <Icon icon="wallet-remove" class="icon" />
 
               <div>
-                {{ $t('staking.tokensUnstaking') }}
+                {{ $t('staking.unstakingDisclaimers1') }}
               </div>
             </div>
 
@@ -157,7 +158,7 @@
               <Icon icon="logout" class="icon" />
 
               <div>
-                {{ $t('staking.afterUnstaking') }}
+                {{ $t('staking.unstakingDisclaimers2') }}
               </div>
             </div>
           </template>

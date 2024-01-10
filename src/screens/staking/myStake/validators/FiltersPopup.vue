@@ -36,7 +36,7 @@
       </div>
 
       <!-- <div class="row">
-        {{ $t('staking.limit2Validators') }}
+        {{ $t('staking.validatorsIdentity') }}
 
         <Switcher v-model="syncedLimitValidatorsIdentity" />
       </div> -->

@@ -92,7 +92,38 @@ interface GiantsquidHistoryItem {
     };
   };
 }
-
+type X1HistoryTxList = {
+  txId: string;
+  methodId: string;
+  blockHash: string;
+  height: string;
+  transactionTime: string;
+  from: string;
+  to: string;
+  isFromContract: boolean;
+  isToContract: boolean;
+  amount: string;
+  transactionSymbol: string;
+  txFee: string;
+  state: string;
+  tokenId: string;
+  tokenContractAddress: string;
+  challengeStatus: string;
+  l1OriginHash: string;
+};
+type X1HistoryData = {
+  page: string;
+  limit: string;
+  totalPage: string;
+  chainFullName: string;
+  chainShortName: string;
+  transactionLists: X1HistoryTxList[];
+};
+type X1HistoryElement = {
+  code: string;
+  msg: string;
+  data: X1HistoryData[];
+};
 interface SubqueryHistory {
   timestamp: number;
   nodes: HistoryElement[];
@@ -129,4 +160,5 @@ export {
   HistoryElement,
   Transfer,
   SoraHistoryElement,
+  X1HistoryElement,
 };

@@ -1,18 +1,20 @@
 <template>
-  <FCorners size="big" :topLeftCorner="false" :bottomRightCorner="false">
-    <RouterLink tag="div" :to="{ name: Components.NftDetails, params: { id: contract } }">
-      <img :src="nft.img" :alt="nft.meta?.name" loading="lazy" width="240" height="240" />
-      <div class="nft-info">
-        <div class="titles">
-          <span v-if="isNft" class="title">{{ upperTitle }}</span>
-          <span class="title title--main">{{ title }}</span>
-          <span v-if="isNft" class="title">{{ subTitle }}</span>
-        </div>
+  <div>
+    <FCorners class="nft" size="big" :topLeftCorner="false" :bottomRightCorner="false">
+      <RouterLink tag="div" :to="{ name: Components.NftDetails, params: { id: contract } }">
+        <img :src="nft.img" :alt="nft.meta?.name" loading="lazy" width="240" height="240" />
+        <div class="nft-info">
+          <div class="titles">
+            <span v-if="isNft" class="title">{{ upperTitle }}</span>
+            <span class="title title--main">{{ title }}</span>
+            <span v-if="isNft" class="title">{{ subTitle }}</span>
+          </div>
 
-        <Icon v-if="isNft" icon="export-nft" width="42px" height="42px" class="share" />
-      </div>
-    </RouterLink>
-  </FCorners>
+          <Icon v-if="isNft" icon="export-nft" width="42px" height="42px" class="share" />
+        </div>
+      </RouterLink>
+    </FCorners>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -35,7 +37,7 @@ const subTitle = ref(props.nft.meta.description);
 const upperTitle = ref(props.isNft ? props.nft.meta.name : '');
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .nft {
   display: flex;
   width: 239px;

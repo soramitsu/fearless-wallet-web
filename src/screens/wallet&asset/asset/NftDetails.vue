@@ -9,7 +9,11 @@
         <InfoRow text="nft.id" :value="tokenId" />
         <InfoRow text="common.network" :value="meta.address" />
         <InfoRow text="nft.type" :value="type" />
-        <FButton class="send-btn" text="common.send" width="100%" size="big" fontSize="big" />
+
+        <div class="send-btn">
+          <FButton text="common.share" width="100%" size="big" type="secondary" fontSize="big" :border="false" />
+          <FButton v-if="isOwned" text="common.send" width="100%" size="big" fontSize="big" :border="false" />
+        </div>
       </div>
     </Scroll>
   </AboveForm>
@@ -33,6 +37,7 @@ const ownedNfts = computed(() => collections.value?.ownedNfts ?? []);
 const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value)!);
 const img = computed(() => nft.value?.img);
 const owned = computed(() => (nft.value?.isOwned ? 'owned' : 'not owned'));
+const isOwned = computed(() => nft.value?.isOwned);
 const meta = computed(() => nft.value?.meta ?? {});
 const type = computed(() => nft.value?.type);
 const tokenId = computed(() => cut(route.params.id, 5));
@@ -63,5 +68,7 @@ const onBack = () => router.back();
   width: 100%;
   position: sticky;
   bottom: 0;
+  display: flex;
+  gap: 5px;
 }
 </style>

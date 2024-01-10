@@ -10,6 +10,7 @@ import type {
   EthereumHistoryResponse,
   EthereumTokenHistoryData,
   SoraHistoryElement,
+  X1HistoryElement,
 } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { getEthereumExplorerApiKey } from '@/helpers/history';
@@ -107,6 +108,34 @@ async function fetchEthereumHistory(url: string, address: string, contractAddres
   });
 }
 
+export async function fetchX1History(url: string, address: string): Promise<HistoryElement[]> {
+  const prepUrl = `${url}&address=${address}`;
+  const headers = {
+    'OK-ACCESS-KEY': process.env.VUE_APP_FL_WEB_X1_TESTNET_API_KEY,
+  };
+  const res = await axios.get<X1HistoryElement>(prepUrl, { headers });
+  const result: HistoryElement[] = [];
+
+  res.data.data[0].transactionLists.forEach((el, index) => {
+    result.push({
+      address,
+      id: String(index),
+      timestamp: el.transactionTime,
+      transfer: {
+        amount: el.amount,
+        from: el.from,
+        hash: el.txId,
+        success: el.state === 'success',
+        eventIdx: +el.height,
+        to: el.to,
+        fee: el.txFee,
+      },
+    });
+  });
+
+  return result;
+}
+
 async function fetchSoraHistory(url: string, address: string) {
   const {
     data: { data },
@@ -127,6 +156,7 @@ export async function fetchHistory(
 ) {
   try {
     if (type === 'sora') return fetchSoraHistory(url, address);
+    if (type === 'oklink') return fetchX1History(url, address);
 
     if (type === 'etherscan') {
       const contractAddress = isUtility ? undefined : assetId;

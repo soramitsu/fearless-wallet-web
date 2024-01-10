@@ -21,6 +21,7 @@ import type {
   CheckControllerRequest,
   getRewardsRequest,
   StakingNetworkRequest,
+  CheckPayoutsFeeRequest,
 } from '@extension-base/services/staking-service/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type { SessionTypes } from '@walletconnect/types';
@@ -180,6 +181,7 @@ export interface RequestSignatures {
   'pri(staking.rewards)': [getRewardsRequest, RewardsResponse];
   'pri(staking.myStaking)': [StakingNetworkRequest, MyStakingInfoResponse];
   'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];
+  'pri(staking.checkPayoutsFee)': [CheckPayoutsFeeRequest, string];
 
   //ether
   'pri(balance)': [null, BalanceJson];

@@ -1,7 +1,7 @@
 <template>
   <div>
     <FCorners class="nft" size="big" :topLeftCorner="false" :bottomRightCorner="false">
-      <RouterLink tag="div" :to="{ name: Components.NftDetails, params: { id: contract } }">
+      <RouterLink tag="div" :to="{ name: Components.NftDetails, params: { id: nft.id, contract } }">
         <img :src="nft.img" :alt="nft.meta?.name" loading="lazy" width="240" height="240" />
         <div class="nft-info">
           <div class="titles">

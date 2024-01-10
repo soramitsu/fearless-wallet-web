@@ -194,13 +194,12 @@ const routes: Array<RouteConfig> = [
     name: Components.NftCollection,
     component: NftCollection,
     meta: { title: 'wallet' },
-    children: [
-      {
-        path: ':id?',
-        name: Components.NftDetails,
-        component: NftDetails,
-      },
-    ],
+  },
+  {
+    path: '/collection/:contract/:id',
+    name: Components.NftDetails,
+    component: NftDetails,
+    meta: { title: 'wallet' },
   },
   {
     path: '/meta',

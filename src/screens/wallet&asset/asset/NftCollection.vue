@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :fullScreen="true" :header="collections.name" @closeHandler="onClose">
+  <AboveForm :fullScreen="true" :header="header" @closeHandler="onClose">
     <Scroll>
       <div class="nft-list">
         <NftItem v-for="(nft, index) in ownedNfts" :key="index" :nft="nft" isNft />
@@ -14,12 +14,15 @@ import { useRoute, useRouter } from 'vue-router/composables';
 import { type NftState } from '@extension-base/services/nft-service/types';
 import { useStore } from '@/store';
 import NftItem from '@/screens/wallet&asset/asset/NftItem.vue';
+
 const route = useRoute();
 const router = useRouter();
 const store = useStore();
+
 const nfts = computed<NftState>(() => store.getters.nfts ?? []);
 const contract = computed(() => route.params.contract);
 const collections = computed(() => nfts.value[contract.value]);
+const header = computed(() => (collections.value ? collections.value.name : ''));
 const ownedNfts = computed(() => collections.value?.ownedNfts ?? []);
 const onClose = () => router.back();
 </script>

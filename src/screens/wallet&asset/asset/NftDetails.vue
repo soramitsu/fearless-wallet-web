@@ -2,13 +2,13 @@
   <AboveForm :fullScreen="true" header="accounts.newNode" showBackIcon @closeHandler="onBack" @handlerBack="onBack">
     <Scroll>
       <div class="nft-details">
-        <img :src="nft.img" class="nft-details__img" :alt="nft?.id" width="500" height="500" />
-        <p>{{ nft.meta.description }}</p>
+        <img v-if="img" :src="img" class="nft-details__img" :alt="id" width="500" height="500" />
+        <p>{{ meta.description }}</p>
 
-        <InfoRow text="nft.owned" :value="nft.isOwned" />
-        <InfoRow text="nft.id" :value="id" />
-        <InfoRow text="common.network" :value="nft.meta.address" />
-        <InfoRow text="nft.type" :value="nft.type" />
+        <InfoRow text="nft.owned" :value="owned" />
+        <InfoRow text="nft.id" :value="tokenId" />
+        <InfoRow text="common.network" :value="meta.address" />
+        <InfoRow text="nft.type" :value="type" />
         <FButton class="send-btn" text="common.send" width="100%" size="big" fontSize="big" />
       </div>
     </Scroll>
@@ -20,6 +20,7 @@ import { type NftState } from '@extension-base/services/nft-service/types';
 import { useRouter, useRoute } from 'vue-router/composables';
 import { computed } from 'vue';
 import { useStore } from '@/store';
+import { cut } from '@/helpers';
 
 const router = useRouter();
 const route = useRoute();
@@ -30,6 +31,11 @@ const contract = computed(() => route.params.contract);
 const collections = computed(() => nfts.value[contract.value]);
 const ownedNfts = computed(() => collections.value?.ownedNfts ?? []);
 const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value)!);
+const img = computed(() => nft.value?.img);
+const owned = computed(() => (nft.value?.isOwned ? 'owned' : 'not owned'));
+const meta = computed(() => nft.value?.meta ?? {});
+const type = computed(() => nft.value?.type);
+const tokenId = computed(() => cut(route.params.id, 5));
 
 const onBack = () => router.back();
 </script>

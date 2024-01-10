@@ -11,7 +11,7 @@ type Reward = {
 
 type Transfer = {
   amount: string;
-  eventIdx: number;
+  eventIdx?: number;
   fee: string;
   from: string;
   success: boolean;
@@ -148,6 +148,51 @@ enum TransactionType {
   sora = 'sora',
 }
 
+type ZetaHistoryItem = {
+  timestamp: string;
+  fee: {
+    type: 'maximum | actual';
+    value: string;
+  };
+  gas_limit: string;
+  block: number;
+  status: 'ok' | 'error';
+  method: null | 'transferFrom';
+  confirmations: number;
+  type: number;
+  exchange_rate: null | string;
+  to: {
+    ens_domain_name?: string;
+    hash: string;
+    implementation_name?: string;
+    is_contract: boolean;
+    is_verified: boolean;
+    name?: string;
+  };
+  tx_burnt_fee: string;
+  max_fee_per_gas: string;
+  result: 'success' | 'error';
+  hash: string;
+  gas_price: string;
+  priority_fee: string;
+  base_fee_per_gas: string;
+  from: {
+    ens_domain_name?: string;
+    hash: string;
+    implementation_name?: string;
+    is_contract: boolean;
+    is_verified: boolean;
+    name?: string;
+  };
+  token_transfers: null;
+  tx_types: ('token_transfer' | 'contract_creation' | 'contract_call' | 'token_creation' | 'coin_transfer')[];
+  gas_used: string;
+  value: string;
+  max_priority_fee_per_gas: string;
+};
+type ZetaHistory = {
+  items: ZetaHistoryItem[];
+};
 export {
   TransactionType,
   GetHistory,
@@ -161,4 +206,6 @@ export {
   Transfer,
   SoraHistoryElement,
   X1HistoryElement,
+  ZetaHistoryItem,
+  ZetaHistory,
 };

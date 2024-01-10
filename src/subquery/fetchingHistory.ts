@@ -11,6 +11,7 @@ import type {
   EthereumTokenHistoryData,
   SoraHistoryElement,
   X1HistoryElement,
+  ZetaHistory,
 } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { getEthereumExplorerApiKey } from '@/helpers/history';
@@ -126,7 +127,6 @@ export async function fetchX1History(url: string, address: string): Promise<Hist
         from: el.from,
         hash: el.txId,
         success: el.state === 'success',
-        eventIdx: +el.height,
         to: el.to,
         fee: el.txFee,
       },
@@ -146,6 +146,33 @@ async function fetchSoraHistory(url: string, address: string) {
   return data?.historyElements;
 }
 
+async function fetchZetaHistory(url: string, address: string) {
+  const prepUrl = `${url}${address}/transactions`;
+  const headers = {
+    'OK-ACCESS-KEY': process.env.VUE_APP_FL_WEB_X1_TESTNET_API_KEY,
+  };
+  const res = await axios.get<ZetaHistory>(prepUrl, { headers });
+  const result: HistoryElement[] = [];
+
+  res.data.items.forEach((el, index) => {
+    result.push({
+      address,
+      id: String(index),
+      timestamp: (new Date(el.timestamp).getTime() / 1000).toString(), //to seconds
+      transfer: {
+        amount: el.value,
+        from: el.from.hash,
+        hash: el.hash,
+        success: el.status === 'ok',
+        to: el.to.hash,
+        fee: el.fee.value,
+      },
+    });
+  });
+
+  return result;
+}
+
 export async function fetchHistory(
   url: string,
   address: string,
@@ -157,6 +184,7 @@ export async function fetchHistory(
   try {
     if (type === 'sora') return fetchSoraHistory(url, address);
     if (type === 'oklink') return fetchX1History(url, address);
+    if (type === 'zeta') return fetchZetaHistory(url, address);
 
     if (type === 'etherscan') {
       const contractAddress = isUtility ? undefined : assetId;

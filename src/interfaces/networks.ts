@@ -10,7 +10,7 @@ type SoraFees = {
 
 type NetworkName = string;
 
-type HistoryServiceType = 'subsquid' | 'giantsquid' | 'subquery' | 'etherscan' | 'sora' | 'oklink'; // TODO staking
+type HistoryServiceType = 'subsquid' | 'giantsquid' | 'subquery' | 'etherscan' | 'sora' | 'oklink' | 'zeta'; // TODO staking
 
 interface ExternalApiElement {
   url: string;

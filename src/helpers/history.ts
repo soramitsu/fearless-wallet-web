@@ -219,7 +219,7 @@ function getFormattedHistory(
     return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
   }
 
-  if (serviceType === 'sora' || serviceType === 'oklink') {
+  if (serviceType === 'sora' || serviceType === 'oklink' || serviceType === 'zeta') {
     const nodes: HistoryElement[] = (history as SoraHistoryElement[]).map((historyElement) => {
       return {
         ...historyElement,

@@ -43,7 +43,7 @@
             <template v-if="step === 1">
               <InputWithIcon
                 v-if="isTransfer"
-                v-model="syncedNetwork"
+                v-model="originNetwork"
                 class="row"
                 icon="rotate"
                 :placeholder="placeholderNetwork"

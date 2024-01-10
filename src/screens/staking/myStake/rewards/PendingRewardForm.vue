@@ -87,7 +87,7 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
 import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
-import { fetchBalance, getRewards, getSoraFees } from '@/extension/messaging';
+import { checkPayoutsFee, fetchBalance, getRewards } from '@/extension/messaging';
 import {
   type PayoutRewards,
   type RewardsResponse,
@@ -233,16 +233,9 @@ export default class PendingRewardForm extends Vue {
   }
 
   async created() {
+    await this.getRewards();
+
     this.getSoraFees();
-
-    this.showLoader = true;
-
-    this.rewards = await getRewards({
-      address: this.stakingNetwork.stashAddress,
-      network: this.network,
-    });
-
-    this.showLoader = false;
 
     if (this.stakingNetwork.isController)
       this.stashBalance = await fetchBalance({
@@ -251,10 +244,19 @@ export default class PendingRewardForm extends Vue {
       });
   }
 
-  async getSoraFees() {
-    const { StakingPayout } = await getSoraFees();
+  async getRewards() {
+    this.showLoader = true;
 
-    this.fee = StakingPayout;
+    this.rewards = await getRewards({
+      address: this.stakingNetwork.stashAddress,
+      network: this.network,
+    });
+
+    this.showLoader = false;
+  }
+
+  async getSoraFees() {
+    this.fee = await checkPayoutsFee({ payouts: this.rewards.payouts, network: this.network });
   }
 
   closeForm() {

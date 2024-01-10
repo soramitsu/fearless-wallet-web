@@ -11,7 +11,9 @@ import { toSvg } from 'jdenticon';
 import { Identicon as Ident } from '@polkadot/vue-identicon';
 import BaseApi from '@/util/BaseApi';
 
-defineProps<{ address: string }>();
+withDefaults(defineProps<{ address: string }>(), {
+  address: '',
+});
 
 const getJdenticon = (address: string) => toSvg(address, 24);
 const isEthereumAddress = (address: string) => BaseApi.isEthereumAddress(address);

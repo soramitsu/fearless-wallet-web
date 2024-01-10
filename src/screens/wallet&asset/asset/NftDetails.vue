@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :fullScreen="true" header="accounts.newNode" showBackIcon @closeHandler="onBack" @handlerBack="onBack">
+  <AboveForm :fullScreen="true" :header="meta.name" showBackIcon @closeHandler="onBack" @handlerBack="onBack">
     <Scroll>
       <div class="nft-details">
         <img v-if="img" :src="img" class="nft-details__img" :alt="id" width="500" height="500" />

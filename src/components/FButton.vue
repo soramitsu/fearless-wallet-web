@@ -255,12 +255,12 @@ export default class Button extends Vue {
 }
 
 .secondary {
-  background-color: $secondary-background-color !important;
+  background-color: $secondary-btn-color !important;
   color: #fff !important;
 }
 
 .secondary-hover:hover {
-  background-color: $secondary-background-hover-color !important;
+  background-color: $secondary-background-color !important;
   color: $default-white !important;
 }
 

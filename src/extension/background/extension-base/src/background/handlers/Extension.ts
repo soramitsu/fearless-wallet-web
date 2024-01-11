@@ -19,7 +19,6 @@ import {
   getBalanceItem,
   getEthereumAddress,
 } from '@extension-base/background/utils/utils';
-import { storage } from '@extension-base/stores/Storage';
 import {
   type StakingNetworkRequest,
   type StakingParamsRequest,
@@ -29,6 +28,7 @@ import {
   type RewardsResponse,
   type MakeStakingRequest,
   type StakingParamsResponse,
+  type CheckPayoutsFeeRequest,
 } from '@extension-base/services/staking-service/types';
 import { type MetadataDef } from '@polkadot/extension-inject/types';
 import { type SignerPayloadRaw, type SignerPayloadJSON } from '@polkadot/types/types';
@@ -250,19 +250,9 @@ export default class Extension extends FWExtensionBase {
       this.state.updateCurrentAccount(account?.address ?? '');
     }
 
-    this.cleanupDeletedAccount(address);
+    this.state.cleanupDeletedAccount(address);
 
     return true;
-  }
-
-  cleanupDeletedAccount(address: string) {
-    if (this.state.selectedNetworks[address]) {
-      delete this.state.selectedNetworks[address];
-
-      storage.set({ selectedNetworks: this.state.selectedNetworks });
-    }
-
-    this.state.balanceService.deleteBalance(address);
   }
 
   accountsValidatePassword({ address, password }: RequestAccountValidate): boolean {
@@ -1221,6 +1211,10 @@ export default class Extension extends FWExtensionBase {
     return result;
   }
 
+  public async checkPayoutsFee(params: CheckPayoutsFeeRequest) {
+    return await this.state.stakingService.checkPayoutsFee(params);
+  }
+
   async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
     return this.state.walletConnectService
       .connect(uri)
@@ -1706,6 +1700,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(staking.makeStaking)':
         return this.makeStaking(request as MakeStakingRequest);
+
+      case 'pri(staking.checkPayoutsFee)':
+        return this.checkPayoutsFee(request as CheckPayoutsFeeRequest);
 
       // price
       case 'pri(price.update.currency)':

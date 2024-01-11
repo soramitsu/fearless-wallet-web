@@ -24,7 +24,7 @@
       :class="rowClasses(value)"
       @click="toggle(value)"
     >
-      <div class="description">
+      <div class="description" data-testid="description">
         <template v-if="showIcon">
           <Identicon v-if="isAddressIconType(iconType)" :address="value" class="img" />
 
@@ -39,7 +39,7 @@
       <SIcon name="basic-check-mark-24" v-show="getIconVisible(value)" />
     </div>
 
-    <div v-if="showWarning" class="warning">Nothing found</div>
+    <div v-if="showWarning" class="warning" data-testid="warning">Nothing found</div>
   </Popup>
 </template>
 

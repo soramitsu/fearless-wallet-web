@@ -29,6 +29,7 @@
 
         <router-view
           :isEmptyBalances="isEmptyBalances"
+          :balances="filteredCurrencies"
           :showAssetsManagementForm="showAssetsManagementForm"
           :filterValue="filterValue"
           @toggleVisibleActivityForm="toggleVisibleActivityForm"

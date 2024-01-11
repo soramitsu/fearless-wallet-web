@@ -50,8 +50,8 @@ export default class Currencies extends Vue {
   @Prop(Boolean) isEmptyBalances!: boolean;
   @Prop(String) filterValue!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
+  @Prop(Array) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.prices) prices!: AssetsPrice;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
@@ -62,7 +62,7 @@ export default class Currencies extends Vue {
   }
 
   get showAllAssetsHiddenText() {
-    if (!this.isOnline) return true;
+    if (!this.isOnline || !this.balances) return true;
 
     if (this.showAssetsManagementForm) return false;
 

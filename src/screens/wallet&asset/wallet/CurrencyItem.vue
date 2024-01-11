@@ -119,7 +119,7 @@ import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 export default class CurrencyItem extends Vue {
   readonly countDisplayedNetworks = 5;
 
-  @Prop(Object) assetData!: TokenBalance;
+  @Prop({ type: Object, required: true }) assetData!: TokenBalance;
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
@@ -204,7 +204,7 @@ export default class CurrencyItem extends Vue {
 
   get networkBadges() {
     if (this.isCurrentNetwork) {
-      const { icon, name } = this.assetData.balances.find((balance) => {
+      const network = this.assetData.balances.find((balance) => {
         const account = this.accounts.find(({ address }) => address === this.selectedWallet.address);
         const network = this.getNetwork(balance.name);
 
@@ -213,9 +213,15 @@ export default class CurrencyItem extends Vue {
         }
 
         return filterBalanceItemsByNetwork(balance, this.selectedNetwork);
-      })!;
+      });
 
-      return [{ icon, name }];
+      if (network) {
+        const { icon, name } = network;
+
+        return [{ icon, name }];
+      }
+
+      return [];
     }
 
     if (this.isAdditional) return this.filteredBalances.splice(0, this.countDisplayedNetworks - 1);

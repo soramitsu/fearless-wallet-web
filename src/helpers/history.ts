@@ -246,17 +246,6 @@ function getFormattedHistory(
     return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
   }
 
-  if (serviceType === 'sora') {
-    const nodes: HistoryElement[] = (history as SoraHistoryElement[]).map((historyElement) => {
-      return {
-        ...historyElement,
-        timestamp: historyElement.timestamp.toString(),
-      };
-    });
-
-    return { nodes, pageInfo: { endCursor: '', startCursor: '' } };
-  }
-
   return history as SubqueryHistory;
 }
 

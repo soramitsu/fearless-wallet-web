@@ -59,7 +59,7 @@ export default class HistoryItem extends Vue {
   }
 
   get date() {
-    return getFormattedDate(this.historyElement);
+    return getFormattedDate(this.historyElement.timestamp);
   }
 
   get assetToUpperCase() {

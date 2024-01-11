@@ -56,9 +56,9 @@ import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { storage } from '@extension-base/stores/Storage';
 import { toSvg } from 'jdenticon';
+import { type AddressBook } from '@extension-base/background/types/types';
 import type { AsyncFn, GetHistory } from '@/interfaces';
 import type { FetchHistory, GetNetwork } from '@/store';
-import type { AddressBook } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { cut, isSora } from '@/helpers/';
@@ -84,10 +84,6 @@ export default class HistoryBook extends Vue {
     return this.historyAddresses.length !== 0;
   }
 
-  get showRecent() {
-    return this.historyAddresses.length !== 0;
-  }
-
   get addressPrefix() {
     return this.getNetwork(this.network)?.addressPrefix;
   }
@@ -103,15 +99,19 @@ export default class HistoryBook extends Vue {
 
     const history = this.getHistory(this.assetId, this.network.toLowerCase());
 
-    if (history === undefined) return [];
+    if (!history) return [];
 
     const addresses = isSora(this.network)
-      ? (history.nodes as SoraHistoryElement[])
-          .filter(({ method }) => method === 'transfer')
-          .map(({ data }) => BaseApi.encodeAddress(data?.to ?? '', this.addressPrefix)) ?? []
-      : history?.nodes
-          .filter((item) => getType(item) === TransactionType.transfer)
-          .map(({ transfer }) => BaseApi.encodeAddress(transfer?.to ?? '', this.addressPrefix)) ?? [];
+      ? (history.nodes as SoraHistoryElement[]).flatMap((item) => {
+          if (item.method !== 'transfer') return [];
+
+          return BaseApi.encodeAddress(item.data?.to ?? '', this.addressPrefix) ?? [];
+        })
+      : history?.nodes.flatMap((item) => {
+          if (getType(item) !== TransactionType.transfer) return [];
+
+          return BaseApi.encodeAddress(item.transfer?.to ?? '', this.addressPrefix) ?? [];
+        });
 
     return Array.from(new Set(addresses))
       .filter(
@@ -126,7 +126,7 @@ export default class HistoryBook extends Vue {
   get splitAddressBook() {
     const sortedAddressBook = this.book.sort(({ name: name1 }, { name: name2 }) => name1.localeCompare(name2));
 
-    const splitObj = sortedAddressBook.reduce((result, { address, name }) => {
+    const splitObj = sortedAddressBook.reduce<AddressBook>((result, { address, name }) => {
       const firstChar = name[0].toUpperCase();
       const addressByNetwork = BaseApi.encodeAddress(address, this.addressPrefix);
 
@@ -134,14 +134,14 @@ export default class HistoryBook extends Vue {
       else result[firstChar] = [{ name, address: addressByNetwork }];
 
       return result;
-    }, {} as Record<string, Record<string, string>[]>);
+    }, {});
 
     return Object.entries(splitObj);
   }
 
   @Watch('assetId')
   @Watch('selectedNetwork')
-  async networkWatcher() {
+  networkWatcher() {
     this.loadHistory();
   }
 
@@ -153,13 +153,10 @@ export default class HistoryBook extends Vue {
     this.addressBook = addressBook;
   }
 
-  async loadHistory() {
+  loadHistory() {
     if (this.historyAddresses.length !== 0) return;
 
-    await this.fetchHistory({
-      networkName: this.network,
-      assetId: this.assetId,
-    });
+    this.fetchHistory({ networkName: this.network, assetId: this.assetId });
   }
 
   getJdenticon(address: string) {

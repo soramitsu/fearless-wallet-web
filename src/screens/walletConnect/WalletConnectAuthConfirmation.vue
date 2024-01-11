@@ -2,20 +2,26 @@
   <Fragment>
     <AboveForm v-if="!showWalletSelect" :fullScreen="true" @closeHandler="onReject">
       <div class="auth-content">
-        <div class="scroll__container">
+        <div class="scroll__container" :class="heightClass">
           <Scroll>
             <div class="auth-confirmation">
               <WalletConnectHeader :title="title" :url="url" />
-              <AppPermissions v-if="isSupportNetwork" />
+
+              <ContentForm v-if="isAbleToConnect" class="permissions">
+                <h3 class="list__header">{{ $t('walletConnect.permissions.title') }}</h3>
+                <div class="list">
+                  <div v-for="(item, index) in permissionList" class="list__item" :key="index">
+                    <Icon icon="check" className="permission-icon" :iconColor="item.iconColor" />
+                    <span>{{ item.text }}</span>
+                  </div>
+                </div>
+              </ContentForm>
+
               <div v-else class="alert">
-                <Alert
-                  headerText="walletConnect.requiredNetworkAlert.header"
-                  message="walletConnect.requiredNetworkAlert.message"
-                  sizeText="small"
-                />
+                <Alert :headerText="alertContent.header" :message="alertContent.message" sizeText="small" />
               </div>
 
-              <ContentForm v-if="isSupportNetwork" class="width-100" @click.native="toggleWalletSelectForm">
+              <ContentForm v-if="isAbleToConnect" class="width-100" @click.native="toggleWalletSelectForm">
                 <div class="wallet">
                   <Icon icon="wallet-logo-transaction" class="wallet__logo" />
 
@@ -45,12 +51,12 @@
         <div class="controls">
           <FButton
             text="common.reject"
-            :type="isSupportNetwork ? 'secondary' : 'primary'"
+            :type="isAbleToConnect ? 'secondary' : 'primary'"
             :border="false"
             width="100%"
             @click="onReject"
           />
-          <FButton v-if="isSupportNetwork" text="common.approve" width="100%" @click="onApprove" />
+          <FButton v-if="isAbleToConnect" text="common.approve" width="100%" @click="onApprove" />
         </div>
       </div>
     </AboveForm>
@@ -81,7 +87,6 @@ import { useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
 import { Fragment } from 'vue-fragment';
 import WalletConnectHeader from './WalletConnectHeader.vue';
-import AppPermissions from './AppPermissions.vue';
 import WalletChooseForm from './WalletChooseForm.vue';
 import type { ChainData } from './types';
 import type { WalletConnectSessionRequest } from '@extension-base/services/wallet-connect-service/types';
@@ -93,19 +98,28 @@ import { transformNamespaces } from '@/util/walletConnect';
 import { cut } from '@/helpers';
 import { Components } from '@/router/routes';
 import { WALLET_CONNECT_SUPPORTED_METHODS } from '@/extension/background/extension-base/src/services/wallet-connect-service/consts';
+import BaseApi from '@/util/BaseApi';
 const notificationPopupMessage = {
   subtext: 'walletConnect.unsupportedMethodsPopup',
   text: 'walletConnect.unsupportedMethod',
 };
+
 const showNotificationPopup = ref(false);
 const router = useRouter();
 const store = useStore();
 const notify = useNotify();
 const { t } = useI18n();
+
+const permissionList = [
+  { text: t('walletConnect.permissions.viewAddress'), iconColor: 'success' },
+  { text: t('walletConnect.permissions.viewBalances'), iconColor: 'success' },
+  { text: t('walletConnect.permissions.transferAssets'), iconColor: 'error' },
+];
 const wallets = ref<AccountJson[]>(
   (store.getters.getAccounts as AccountJson[]).filter((el) => el.ethereumAddress && !el.isMobile)
 );
-const selectedAddress = ref<string>(wallets.value[0].ethereumAddress);
+
+const selectedAddress = ref<string>(wallets.value[0]?.ethereumAddress ?? '');
 const cutAddress = computed(() => cut(selectedAddress.value));
 const selectedWalletName = computed(
   () => wallets.value.find(({ ethereumAddress }) => ethereumAddress === selectedAddress.value)?.name ?? ''
@@ -151,8 +165,15 @@ const namespaces = computed<ChainData[]>(() => {
 
   return Array.from(arrSet.values()) as unknown as ChainData[];
 });
-
+const isSuitableWalletsExist = ref(wallets.value.length);
 const isSupportNetwork = computed(() => namespaces.value.length !== 0);
+const isAbleToConnect = computed(() => !isSupportNetwork.value && !isSuitableWalletsExist.value);
+const alertContent = computed(() => {
+  return {
+    header: 'walletConnect.walletConnectErrorAlertTitle',
+    message: `walletConnect.${!isSuitableWalletsExist.value ? 'noSuitableWallets' : 'requiredNetworkAlert'}`,
+  };
+});
 
 const onApprove = async () => {
   if (!isSupportAllMethods.value && !showNotificationPopup.value) {
@@ -174,6 +195,8 @@ const onApprove = async () => {
 
   router.push(Components.Wallet);
 };
+
+const heightClass = computed(() => (BaseApi.useIsPopup() ? '' : 'scroll__container--popup'));
 
 const onReject = () => {
   rejectWalletConnectSession({ id: id.value });
@@ -211,6 +234,7 @@ const onReject = () => {
     line-height: 16px;
     place-self: flex-start;
   }
+
   &__logo {
     grid-area: logo;
     width: 24px;
@@ -234,12 +258,16 @@ const onReject = () => {
   height: 460px;
   overflow-y: hidden;
 }
+.scroll__container--popup {
+  height: 100%;
+}
 .auth-confirmation {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: space-around;
   flex-direction: column;
   gap: 10px;
+  height: 100%;
 }
 .namespaces-form {
   width: 100%;
@@ -290,5 +318,34 @@ const onReject = () => {
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
+}
+
+.permissions {
+  width: 100%;
+
+  .permission-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .list__header {
+    text-align: left;
+    padding: 16px 0 0 16px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    color: $default-white;
+  }
+
+  .list__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 16px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 19px;
+    color: $grayish-white;
+  }
 }
 </style>

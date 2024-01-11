@@ -439,6 +439,7 @@ export default class State {
 
       if (singleNetwork) uniqNetworks.add(singleNetwork);
     });
+
     console.info(Array.from(uniqNetworks), 'set this to Active');
 
     return Array.from(uniqNetworks);
@@ -866,6 +867,16 @@ export default class State {
     };
 
     this.setCurrentAccount(accountInfo, () => callback?.(accountInfo));
+  }
+
+  cleanupDeletedAccount(address: string) {
+    if (this.selectedNetworks[address]) {
+      delete this.selectedNetworks[address];
+
+      storage.set({ selectedNetworks: this.selectedNetworks });
+    }
+
+    this.balanceService.deleteBalance(address);
   }
 
   public subscribeTotalXorBalance() {

@@ -65,7 +65,7 @@ function getClipboard() {
 }
 
 function getFormattedDate(timestamp: string | number, type: 's' | 'ms' = 's') {
-  const date = type === 's' ? new Date(secondsToMilliseconds(+timestamp)) : +timestamp;
+  const date = type === 's' ? secondsToMilliseconds(+timestamp) : +timestamp;
 
   if (isToday(date)) {
     return format(date, 'HH:mm');

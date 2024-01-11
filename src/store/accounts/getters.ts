@@ -60,8 +60,8 @@ const getters: GetterTree<State, State> & Getters = {
     return selectedWallet;
   },
 
-  [GettersTypes.getBalances]({ balances }): TokenBalance[] {
-    return balances;
+  [GettersTypes.getBalances](state): TokenBalance[] {
+    return state.balances;
   },
 
   [GettersTypes.hiddenAssets]({ selectedWallet, hiddenAssets }): any {

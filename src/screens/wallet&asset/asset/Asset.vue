@@ -9,13 +9,6 @@
     >
     </router-view>
 
-    <SendForm
-      v-if="showSendForm"
-      :_selectedNetwork="selectedAssetNetwork"
-      :_selectedAssetId="selectedAssetId"
-      @closeForm="toggleVisible('showSendForm', false)"
-    />
-
     <ReceiveForm
       v-if="showReceiveForm"
       :_selectedNetwork="selectedAssetNetwork"

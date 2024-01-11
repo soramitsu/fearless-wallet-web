@@ -8,7 +8,7 @@
     :value="value"
     :partialFee="partialFee"
     :recipient="recipient"
-    @closeForm="$emit('closeForm')"
+    @closeForm="closeForm"
     @update:assetId="updateAssetId"
     @update:selectedNetwork="updateSelectedNetwork"
     @update:amount="updateAmount"
@@ -61,7 +61,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
@@ -81,16 +81,14 @@ export default class SendForm extends Vue {
   amount = '';
   value = '';
 
-  @Prop(String) _selectedNetwork!: string;
-  @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get currency() {
     return this.balances.find(({ balances }) =>
-      balances.some((el) => el.id.toLowerCase() === this.assetId.toLowerCase())
-    )!;
+      balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase())
+    );
   }
 
   get isUtilityAsset() {
@@ -98,7 +96,8 @@ export default class SendForm extends Vue {
   }
 
   get partialFeeString() {
-    const { symbol } = getUtilityAsset(this.balances, this.selectedNetwork);
+    const utilityAsset = getUtilityAsset(this.balances, this.selectedNetwork);
+    const symbol = utilityAsset ? utilityAsset.symbol : '';
 
     return `${this.$n(+this.partialFee, 'decimalPrecise')} ${symbol.toUpperCase()}`;
   }
@@ -120,14 +119,14 @@ export default class SendForm extends Vue {
   }
 
   get selectedAsset() {
-    return this.currency.balances.find(
+    return this.currency?.balances?.find(
       (el) =>
         el.symbol.toLowerCase() === this.assetId.toLowerCase() || el.id.toLowerCase() === this.assetId.toLowerCase()
-    )!;
+    );
   }
 
   get selectedAssetUpper() {
-    return this.selectedAsset.symbol.toUpperCase();
+    return this.selectedAsset?.symbol.toUpperCase();
   }
 
   get totalString() {
@@ -137,13 +136,13 @@ export default class SendForm extends Vue {
   }
 
   created() {
-    this.assetId = this._selectedAssetId;
+    this.assetId = this.$route.params.assetId;
 
-    this.selectedNetwork = this._selectedNetwork;
+    this.selectedNetwork = this.$route.params.network;
   }
 
   closeForm() {
-    this.$emit('closeForm');
+    this.$router.back();
   }
 
   updateAssetId(value: string) {

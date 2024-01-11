@@ -40,12 +40,12 @@
       </div>
     </ContentForm>
 
-    <SendForm
+    <!-- <SendForm
       v-if="showSendForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :_selectedAssetId="selectedCurrency.assetId"
       @closeForm="toggleVisibleActivityForm('showSendForm', {}, false)"
-    />
+    /> -->
 
     <ReceiveForm
       v-if="showReceiveForm"

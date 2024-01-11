@@ -69,7 +69,7 @@
           tooltipText="assets.sendButtonText"
           target=".send"
           data-testid="sendBtn"
-          @click="$emit('toggleVisibleActivityForm', 'showSendForm', { mainNetwork, assetId })"
+          @click="onRoute('send')"
         />
 
         <CircleButton
@@ -79,7 +79,7 @@
           tooltipText="assets.receiveButtonText"
           target=".receive"
           data-testid="receiveBtn"
-          @click="$emit('toggleVisibleActivityForm', 'showReceiveForm', { mainNetwork, assetId })"
+          @click="onRoute('receive')"
         />
 
         <CircleButton
@@ -337,6 +337,13 @@ export default class CurrencyItem extends Vue {
       params: {
         assetId: this.assetData.assetId,
       },
+    });
+  }
+
+  onRoute(form: 'send' | 'receive') {
+    this.$router.push({
+      name: form === 'send' ? Components.SendForm : Components.ReceiveForm,
+      params: { assetId: this.assetId ?? '', network: this.mainNetwork ?? '' },
     });
   }
 }

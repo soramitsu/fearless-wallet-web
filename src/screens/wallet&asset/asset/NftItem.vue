@@ -10,7 +10,7 @@
             <span v-if="isNft" class="title">{{ subTitle }}</span>
           </div>
 
-          <Icon v-if="isNft" icon="export-nft" width="42px" height="42px" class="share" />
+          <Icon v-if="isNft" icon="export-nft" :hover="false" class="share" />
         </div>
       </RouterLink>
     </FCorners>
@@ -82,7 +82,10 @@ const upperTitle = ref(props.isNft ? props.nft.meta.name : '');
 }
 
 .share {
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
+  background-color: #ee0077;
+  border-radius: 50%;
+  padding: 5px;
 }
 </style>

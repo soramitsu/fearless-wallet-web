@@ -11,8 +11,25 @@
         <InfoRow text="nft.type" :value="type" />
 
         <div class="send-btn">
-          <FButton text="common.share" width="100%" size="big" type="secondary" fontSize="big" :border="false" />
-          <FButton v-if="isOwned" text="common.send" width="100%" size="big" fontSize="big" :border="false" />
+          <FButton
+            text="common.share"
+            iconName="export-nft"
+            width="100%"
+            size="big"
+            type="secondary"
+            fontSize="big"
+            :border="false"
+            :hover="false"
+          />
+          <FButton
+            v-if="isOwned"
+            iconName="telegram"
+            text="common.send"
+            width="100%"
+            size="big"
+            fontSize="big"
+            :border="false"
+          />
         </div>
       </div>
     </Scroll>

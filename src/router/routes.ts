@@ -13,6 +13,7 @@ import NftsList from '@/screens/wallet&asset/asset/NftsList.vue';
 import NftCollection from '@/screens/wallet&asset/asset/NftCollection.vue';
 import NftDetails from '@/screens/wallet&asset/asset/NftDetails.vue';
 
+const NftSendForm = () => import('@/screens/wallet&asset/asset/NftSendForm.vue');
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
@@ -89,6 +90,7 @@ export enum Components {
   Nfts = 'Nfts',
   NftDetails = 'NftDetails',
   NftCollection = 'NftCollection',
+  NftSendForm = 'NftSendForm',
 }
 
 const haveSelectedWallet = () => {
@@ -199,6 +201,12 @@ const routes: Array<RouteConfig> = [
     path: '/collection/:contract/:id',
     name: Components.NftDetails,
     component: NftDetails,
+    meta: { title: 'wallet' },
+  },
+  {
+    path: '/send-nft/:contract/:id',
+    name: Components.NftSendForm,
+    component: NftSendForm,
     meta: { title: 'wallet' },
   },
   {

@@ -17,7 +17,7 @@
       </template>
 
       <TabButton
-        v-else
+        v-else-if="notNftTabActive"
         tooltipText="wallet.turnVisibilityAssets"
         class="hide-zero"
         target=".hide-zero"
@@ -107,6 +107,10 @@ export default class ContentSettings extends Vue {
 
   get iconName() {
     return this.syncedShowAssetsManagementForm ? 'close' : 'filter';
+  }
+
+  get notNftTabActive() {
+    return this.syncedActiveTabName !== Components.Nfts;
   }
 
   openTab(name: TabWallet) {

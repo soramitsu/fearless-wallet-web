@@ -28,7 +28,7 @@ const onClick = () => {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .nft {
   display: flex;
   width: 239px;
@@ -75,5 +75,6 @@ const onClick = () => {
 .share {
   width: 42px;
   height: 42px;
+  color: #ee0077;
 }
 </style>

@@ -836,7 +836,7 @@ export default class TransferForm extends Vue {
   }
 
   handlerCloseSelectPopup() {
-    if (this.showSelectedAssetPopup) this.toggleValue('showSelectNetworkPopup');
+    if (this.showSelectedAssetPopup) this.toggleValue('showSelectedAssetPopup');
     else if (this.showSelectNetworkPopup) this.toggleValue('showSelectNetworkPopup');
     else this.toggleValue('showDestNetPopup');
   }

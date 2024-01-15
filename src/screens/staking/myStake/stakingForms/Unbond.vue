@@ -61,7 +61,7 @@ export default class Unbond extends Vue {
   }
 
   get period() {
-    return `${this.stakingNetwork.unbondPeriod} ${this.$t('staking.days')}`;
+    return `${this.stakingNetwork.unbondPeriod} ${this.$t('common.days')}`;
   }
 }
 </script>

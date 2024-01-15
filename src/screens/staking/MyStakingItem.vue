@@ -138,7 +138,7 @@ export default class MyStakingItem extends Vue {
   }
 
   get period() {
-    return `${this.unbondPeriod} ${this.$t('staking.days')}`;
+    return `${this.unbondPeriod} ${this.$t('common.days')}`;
   }
 
   get totalStake() {

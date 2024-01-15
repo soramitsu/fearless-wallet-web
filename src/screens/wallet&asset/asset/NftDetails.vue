@@ -29,6 +29,7 @@
             size="big"
             fontSize="big"
             :border="false"
+            @click="onSend"
           />
         </div>
       </div>
@@ -42,6 +43,7 @@ import { useRouter, useRoute } from 'vue-router/composables';
 import { computed } from 'vue';
 import { useStore } from '@/store';
 import { cut } from '@/helpers';
+import { Components } from '@/router/routes';
 
 const router = useRouter();
 const route = useRoute();
@@ -60,6 +62,7 @@ const type = computed(() => nft.value?.type);
 const tokenId = computed(() => cut(route.params.id, 5));
 
 const onBack = () => router.back();
+const onSend = () => router.push({ name: Components.NftSendForm, params: { id: id.value } });
 </script>
 
 <style lang="scss" scoped>

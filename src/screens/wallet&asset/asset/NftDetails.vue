@@ -16,11 +16,13 @@
             iconName="export-nft"
             width="100%"
             size="big"
-            type="secondary"
+            :type="shareBtnType"
             fontSize="big"
             :border="false"
             :hover="false"
+            @click="onShare"
           />
+
           <FButton
             v-if="isOwned"
             iconName="telegram"
@@ -60,9 +62,24 @@ const isOwned = computed(() => nft.value?.isOwned);
 const meta = computed(() => nft.value?.meta ?? {});
 const type = computed(() => nft.value?.type);
 const tokenId = computed(() => cut(route.params.id, 5));
+const shareBtnType = computed(() => (isOwned.value ? 'secondary' : 'primary'));
 
 const onBack = () => router.back();
 const onSend = () => router.push({ name: Components.NftSendForm, params: { id: id.value } });
+
+const onShare = () => {
+  const dataToShare = {
+    'My public address to recieve:': '',
+    collection: contract.value,
+    owned: '',
+    creator: '',
+    network: '',
+    'token Id': tokenId.value,
+    type: type.value,
+  };
+
+  navigator.clipboard.writeText(JSON.stringify(dataToShare));
+};
 </script>
 
 <style lang="scss" scoped>

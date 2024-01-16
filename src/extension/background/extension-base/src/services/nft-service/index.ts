@@ -4,10 +4,10 @@ import { Subject } from 'rxjs';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import AlchemyNftController from '@extension-base/services/nft-service/handlers/AlchemyNftSdk';
 import { PROD_NFT_NETWORKS } from '@extension-base/services/nft-service/consts';
-import type { NftState } from '@extension-base/services/nft-service/types';
+import type { NftState, NftTx } from '@extension-base/services/nft-service/types';
 import type { Port } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
-
+import { getContract } from '@/extension/background/extension-base/src/api/evm/utils/eth';
 export class NftService {
   private store: NftStore;
   private sdks: Partial<Record<Network, AlchemyNftController>> = {};
@@ -38,6 +38,24 @@ export class NftService {
     this.nftMap[address] = nfts;
 
     this.nftSubject.next(this.nftMap);
+  }
+
+  async sendNft(tx: NftTx) {
+    const api = this.state.getEvmApiByChainiD(tx.network as string);
+    const contract = await getContract(tx.contract, api, 'erc721');
+    console.info(contract);
+    // const gasLimit = await contract.estimateGas['safeTransferFrom(address,address,uint256)'](
+    //   PUBLIC_KEY,
+    //   USER_ADDRESS,
+    //   tokenId,
+    //   { gasPrice }
+    // );
+    //Call the safetransfer method
+    // const transaction = await contract['safeTransferFrom(address,address,uint256)'](PUBLIC_KEY, USER_ADDRESS, tokenId, {
+    //   gasLimit,
+    // });
+    //Wait for the transaction to complete
+    // await transaction.wait();
   }
 
   async nftSubscribe(id: string, port: Port): Promise<NftState> {

@@ -31,7 +31,7 @@
     </template>
 
     <template>
-      <FButton size="big" :disabled="isDisabled" class="button" :text="actionBtnName" @click="sendNft" />
+      <FButton size="big" :disabled="isDisabled" class="button" :text="actionBtnName" @click="onProceed" />
       <HistoryBook
         v-if="showHistoryBook"
         :network="network"
@@ -67,6 +67,8 @@ import type { AccountJson } from '@extension-base/background/types/types';
 import { getClipboard } from '@/helpers';
 import { useStore } from '@/store';
 import BaseApi from '@/util/BaseApi';
+import { sendNft } from '@/extension/messaging/nfts';
+import { type NftTx } from '@/extension/background/extension-base/src/services/nft-service/types';
 
 const store = useStore();
 
@@ -115,31 +117,18 @@ const handlerCloseSelectPopup = () => {};
 
 const options = computed(() => []);
 const toggleSelectNetworkPopup = () => (showSelectNetworkPopup.value = !showSelectNetworkPopup.value);
-// const optionsNetworks = computed(() => {
-//   // used only for transfer
-//   const walletBalance = this.currency?.balances ?? [];
 
-//   return walletBalance.reduce(
-//     (result, { name, icon }) => {
-//       return [
-//         ...result,
-//         {
-//           name: firstCharToUp(name),
-//           value: name.toLowerCase(),
-//           icon,
-//         },
-//       ];
-//     },
-//     [] as {
-//       name: string;
-//       value: string;
-//       icon: string;
-//     }[]
-//   );
-// });
+const tx = computed<NftTx>(() => ({
+  type: '',
+  contract: '',
+  to: '',
+  network: '',
+  tokenId: '',
+}));
 
-const sendNft = () => {
-  //sending
+const onProceed = () => {
+  if (showConfirmScreen.value) sendNft(tx.value);
+  else showConfirmScreen.value = true;
 };
 </script>
 

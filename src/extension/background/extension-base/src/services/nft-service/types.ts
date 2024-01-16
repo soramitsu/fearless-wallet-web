@@ -18,3 +18,11 @@ export type NftCollection = {
 };
 
 export type NftState = Record<string, NftCollection>;
+
+export type NftTx = {
+  type: string;
+  contract: string;
+  to: string;
+  network: string;
+  tokenId: string;
+};

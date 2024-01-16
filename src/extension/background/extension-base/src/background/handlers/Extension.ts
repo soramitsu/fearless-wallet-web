@@ -130,6 +130,7 @@ import type {
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { googleManage } from '@/controllers/googleController';
+import { type NftTx } from '@/extension/background/extension-base/src/services/nft-service/types';
 
 function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
   return (value as SignerPayloadJSON).genesisHash !== undefined;
@@ -1842,6 +1843,9 @@ export default class Extension extends FWExtensionBase {
       //Nfts
       case 'pri(nft.subscribe)':
         return this.state.nftService.nftSubscribe(id, port);
+
+      case 'pri(nft.send)':
+        return this.state.nftService.sendNft(request as NftTx);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

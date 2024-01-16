@@ -1,15 +1,23 @@
 import { type Network, Alchemy, NftFilters } from 'alchemy-sdk';
 import { type NftState } from '@extension-base/services/nft-service/types';
-// import type { FearlessNft } from '@extension-base/services/nft-service/types';
 
 export default class AlchemyNftController {
   sdk: Alchemy;
+  chainId: number | undefined = undefined;
 
   constructor(private network: Network) {
     this.sdk = new Alchemy({
       apiKey: process.env.FL_ALCHEMY_API_ETHEREUM_KEY,
       network,
     });
+
+    this.sdk.core.getNetwork().then((info) => (this.chainId = info.chainId));
+  }
+
+  async getChainId() {
+    const chainId = (await this.sdk.core.getNetwork()).chainId;
+
+    return chainId;
   }
 
   getNfts(address: string) {

@@ -1,4 +1,4 @@
-import { type NftState } from '@extension-base/services/nft-service/types';
+import { type NftTx, type NftState } from '@extension-base/services/nft-service/types';
 import type { OwnedNftsResponse } from 'alchemy-sdk';
 import type {
   PairingSubjectType,
@@ -249,4 +249,5 @@ export interface RequestSignatures {
   //Nfts
   'pri(nft.get.all)': [string, OwnedNftsResponse];
   'pri(nft.subscribe)': [null, NftState, NftState];
+  'pri(nft.send)': [NftTx, boolean];
 }

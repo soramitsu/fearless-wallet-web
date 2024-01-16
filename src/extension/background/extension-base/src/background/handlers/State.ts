@@ -168,6 +168,18 @@ export default class State {
     return this.getEvmApiMap[key.toLowerCase()];
   }
 
+  public getEvmApiByChainiD(chainId: string) {
+    const network = Object.values(this.networkMap).find((network) => network.chainId === chainId);
+
+    if (!network) throw new Error(`coudnt find the network with chainId ${chainId}`);
+
+    const api = this.getEvmApi(network.name);
+
+    if (!api) throw new Error(`api not init`);
+
+    return api;
+  }
+
   public get getEvmApiMap() {
     return this.apis.evm;
   }

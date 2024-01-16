@@ -6,7 +6,8 @@
         <NftCollectionItem v-for="(nft, i) of nfts" :nft="nft" :key="i" />
       </template>
     </div>
-    <NftSettings v-if="showAssetsManagementForm" />
+
+    <NftSettings v-if="showAssetsManagementForm" @handleClose="onClose" />
   </Scroll>
 </template>
 
@@ -17,11 +18,15 @@ import NftCollectionItem from '@/screens/wallet&asset/asset/NftCollectionItem.vu
 import { useStore } from '@/store';
 import NftSettings from '@/screens/wallet&asset/asset/NftSettings.vue';
 
+const emit = defineEmits(['toggleAssetsManagementForm']);
 defineProps<{ showAssetsManagementForm: boolean }>();
 const store = useStore();
+
 const nfts = computed<NftState>(() => store.getters.nfts);
 const isEmpty = computed(() => !Object.keys(nfts.value).length);
 const containerClass = computed(() => (isEmpty.value ? 'no-nfts' : 'nft-list'));
+
+const onClose = () => emit('toggleAssetsManagementForm', false);
 </script>
 
 <style lang="scss" scoped>

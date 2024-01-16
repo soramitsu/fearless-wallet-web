@@ -23,7 +23,7 @@
           :balances="filteredCurrencies"
           @update:filterValue="updateFilterValue"
           @update:activeTabName="updateActiveTabName"
-          @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
+          @update:showAssetsManagementForm="toggleAssetsManagementForm"
           @toggleCurrenciesVisible="toggleCurrenciesVisible"
         />
 
@@ -34,6 +34,7 @@
           :filterValue="filterValue"
           @toggleVisibleActivityForm="toggleVisibleActivityForm"
           @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
+          @toggleAssetsManagementForm="toggleAssetsManagementForm"
         />
       </div>
     </ContentForm>
@@ -315,7 +316,7 @@ export default class Wallet extends Vue {
     this.showNetworkManagement = !this.showNetworkManagement;
   }
 
-  toggleAssetsManagementFormVisible(value = true) {
+  toggleAssetsManagementForm(value = true) {
     this.showAssetsManagementForm = value;
   }
 

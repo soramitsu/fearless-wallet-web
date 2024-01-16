@@ -7,7 +7,7 @@
     :left="-40"
     :showBorder="true"
     headerText="Hide NFTs"
-    @handlerClose="$emit('handlerClose')"
+    @handlerClose="onClose"
   >
     <div class="nft-settings">
       <div class="form-item">
@@ -24,7 +24,8 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue';
-
+const emit = defineEmits(['handleClose']);
+const onClose = () => emit('handleClose');
 const spam = ref(false);
 const airdrop = ref(false);
 </script>

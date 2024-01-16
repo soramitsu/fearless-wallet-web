@@ -55,7 +55,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     uploadToGoogleFor:          ['master'],
     uploadToFirefoxFor:         ['master'],
     buildWithCred:              buildWithCred,
-    dojoProductType:            'fearless',
+    dojoProductType:            'fearless-web',
     sonarSrcPath:               'src',
     sonarTestsPath:             'tests'
 )

@@ -1,12 +1,12 @@
 <template>
   <Scroll>
-    <NftSettings v-if="showAssetsManagementForm" />
-    <div v-else :class="containerClass">
+    <div :class="containerClass">
       <span v-if="isEmpty">{{ $t('nft.noNft') }}</span>
       <template v-else>
         <NftCollectionItem v-for="(nft, i) of nfts" :nft="nft" :key="i" />
       </template>
     </div>
+    <NftSettings v-if="showAssetsManagementForm" />
   </Scroll>
 </template>
 

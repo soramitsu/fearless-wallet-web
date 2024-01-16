@@ -720,10 +720,16 @@ export default class State {
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
-    // this.networksJson = networks.filter((el) => isSora(el.name));
-    // this.networksJson = networks.filter((el) => el.name.toLowerCase() === 'kusama');
+    this.networksJson = networks.filter((el) => {
+      if (el.disabled) return false;
+      const isTestnet = !!el.options?.some((option) => option === 'testnet');
+      if (process.env.VUE_APP_TEST_ONLY !== undefined) return isTestnet;
 
-    this.networksJson = networks.filter((el) => !el.disabled);
+      if (process.env.NODE_ENV === 'production') return !isTestnet;
+
+      return true;
+    });
+
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
 

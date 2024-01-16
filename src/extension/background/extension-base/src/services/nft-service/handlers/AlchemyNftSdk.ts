@@ -3,15 +3,15 @@ import { type NftState } from '@extension-base/services/nft-service/types';
 
 export default class AlchemyNftController {
   sdk: Alchemy;
-  chainId: number | undefined = undefined;
+  chainId: number;
 
-  constructor(private network: Network) {
+  constructor(private network: Network, chainId: string) {
     this.sdk = new Alchemy({
       apiKey: process.env.FL_ALCHEMY_API_ETHEREUM_KEY,
       network,
     });
 
-    this.sdk.core.getNetwork().then((info) => (this.chainId = info.chainId));
+    this.chainId = +chainId;
   }
 
   async getChainId() {

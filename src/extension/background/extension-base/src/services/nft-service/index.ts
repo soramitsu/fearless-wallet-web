@@ -15,8 +15,8 @@ export class NftService {
   public nftSubject = new Subject<Record<string, NftState>>();
 
   constructor(private state: State) {
-    Object.values(PROD_NFT_NETWORKS).forEach((network) => {
-      this.sdks[network] = new AlchemyNftController(network);
+    Object.entries(PROD_NFT_NETWORKS).forEach(([chainId, network]) => {
+      this.sdks[network] = new AlchemyNftController(network, chainId);
     });
 
     state.currentAccount.then((res) => {

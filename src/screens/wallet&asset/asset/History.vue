@@ -9,7 +9,7 @@
 
       <Scroll>
         <div :class="historyContainerClasses">
-          <Loader v-if="isLoadingHistory" />
+          <Loader v-if="showLoader" />
 
           <template v-else-if="!isEmptyHistory">
             <HistoryItem
@@ -56,7 +56,6 @@ export default class History extends Vue {
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
   refreshTimeout = 30000;
-
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;

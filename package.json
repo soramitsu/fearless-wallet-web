@@ -17,7 +17,7 @@
     "build:extension:firefox": "EXTENSION_TYPE=firefox OUTPUT_DIR=firefox env-cmd -f .env.extension vue-cli-service build",
     "build:extension:firefox-test": "EXTENSION_TYPE=firefox VUE_APP_TEST_ONLY=true OUTPUT_DIR=firefox-test env-cmd -f .env.extension vue-cli-service --mode development build",
     "build:extension:zip": "yarn run build:extension && cd dist/extension/chrome && zip -r fearless-wallet-extension-chrome.zip . && cd ../../../",
-    "build:extension-dev:zip": "yarn run build:extension-dev && cd dist/extension/chrome-dev && zip -r fearless-wallet-extension-chrome.zip . && cd ../../../",
+    "build:extension-test:zip": "yarn run build:extension-test && cd dist/extension/chrome-test && zip -r fearless-wallet-extension-chrome.zip . && cd ../../../",
     "build:extension:firefox:zip": "yarn run build:extension:firefox && cd dist/extension/firefox && zip -r fearless-wallet-extension-firefox.zip . && cd ../../../",
     "build:extension:all": "yarn build:extension:zip && yarn build:extension-dev:zip && yarn build:extension:firefox:zip",
     "build-watch:extension": "EXTENSION_TYPE=chrome OUTPUT_DIR=chrome env-cmd -f .env.extension  vue-cli-service  --env.NODE_ENV=development build-watch --mode development",

@@ -120,7 +120,7 @@ export interface NetworkJson {
   nodes: Node[];
   addressPrefix: number;
   types: TypesForMobile;
-  options?: string[];
+  options?: ('testnet' | 'polkaswap' | 'ethereum' | 'crowdloans' | 'poolStaking')[];
   rank?: number;
   favorite: string[];
   xcm?: {

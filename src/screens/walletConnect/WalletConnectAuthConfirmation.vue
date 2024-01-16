@@ -7,7 +7,7 @@
             <div class="auth-confirmation">
               <WalletConnectHeader :title="title" :url="url" />
 
-              <ContentForm v-if="isSupportNetwork" class="permissions">
+              <ContentForm v-if="isAbleToConnect" class="permissions">
                 <h3 class="list__header">{{ $t('walletConnect.permissions.title') }}</h3>
                 <div class="list">
                   <div v-for="(item, index) in permissionList" class="list__item" :key="index">
@@ -18,14 +18,10 @@
               </ContentForm>
 
               <div v-else class="alert">
-                <Alert
-                  headerText="walletConnect.requiredNetworkAlert.header"
-                  message="walletConnect.requiredNetworkAlert.message"
-                  sizeText="small"
-                />
+                <Alert :headerText="alertContent.header" :message="alertContent.message" sizeText="small" />
               </div>
 
-              <ContentForm v-if="isSupportNetwork" class="width-100" @click.native="toggleWalletSelectForm">
+              <ContentForm v-if="isAbleToConnect" class="width-100" @click.native="toggleWalletSelectForm">
                 <div class="wallet">
                   <Icon icon="wallet-logo-transaction" class="wallet__logo" />
 
@@ -55,12 +51,12 @@
         <div class="controls">
           <FButton
             text="common.reject"
-            :type="isSupportNetwork ? 'secondary' : 'primary'"
+            :type="isAbleToConnect ? 'secondary' : 'primary'"
             :border="false"
             width="100%"
             @click="onReject"
           />
-          <FButton v-if="isSupportNetwork" text="common.approve" width="100%" @click="onApprove" />
+          <FButton v-if="isAbleToConnect" text="common.approve" width="100%" @click="onApprove" />
         </div>
       </div>
     </AboveForm>
@@ -119,11 +115,11 @@ const permissionList = [
   { text: t('walletConnect.permissions.viewBalances'), iconColor: 'success' },
   { text: t('walletConnect.permissions.transferAssets'), iconColor: 'error' },
 ];
-
 const wallets = ref<AccountJson[]>(
   (store.getters.getAccounts as AccountJson[]).filter((el) => el.ethereumAddress && !el.isMobile)
 );
-const selectedAddress = ref<string>(wallets.value[0].ethereumAddress);
+
+const selectedAddress = ref<string>(wallets.value[0]?.ethereumAddress ?? '');
 const cutAddress = computed(() => cut(selectedAddress.value));
 const selectedWalletName = computed(
   () => wallets.value.find(({ ethereumAddress }) => ethereumAddress === selectedAddress.value)?.name ?? ''
@@ -169,8 +165,15 @@ const namespaces = computed<ChainData[]>(() => {
 
   return Array.from(arrSet.values()) as unknown as ChainData[];
 });
-
+const isSuitableWalletsExist = computed(() => wallets.value.length !== 0);
 const isSupportNetwork = computed(() => namespaces.value.length !== 0);
+const isAbleToConnect = computed(() => isSupportNetwork.value && isSuitableWalletsExist.value);
+const alertContent = computed(() => {
+  return {
+    header: 'walletConnect.walletConnectErrorAlertTitle',
+    message: `walletConnect.${!isSuitableWalletsExist.value ? 'noSuitableWallets' : 'requiredNetworkAlert'}`,
+  };
+});
 
 const onApprove = async () => {
   if (!isSupportAllMethods.value && !showNotificationPopup.value) {
@@ -261,9 +264,10 @@ const onReject = () => {
 .auth-confirmation {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: space-around;
   flex-direction: column;
   gap: 10px;
+  height: 100%;
 }
 .namespaces-form {
   width: 100%;

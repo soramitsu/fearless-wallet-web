@@ -21,6 +21,7 @@ import type {
   RewardsResponse,
   RequestPayoutRewards,
   ValidatorStatuses,
+  CheckPayoutsFeeRequest,
 } from '@extension-base/services/staking-service/types';
 import { type NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
@@ -328,6 +329,13 @@ export class StakingService {
 
   public maxNominatorRewardedPerValidator() {
     return apiSora.staking.getMaxNominatorRewardedPerValidator();
+  }
+
+  public async checkPayoutsFee({ payouts, network }: CheckPayoutsFeeRequest) {
+    const precision = getUtilityProps(network, this.state).precision;
+    const fee = await apiSora.staking.getPayoutNetworkFee({ payouts });
+
+    return FPNumber.fromCodecValue(fee, precision).toString();
   }
 
   public async makeStaking({ params, type }: MakeStakingRequest): Promise<BasicTxResponse> {

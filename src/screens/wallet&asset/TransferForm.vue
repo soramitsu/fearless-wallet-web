@@ -43,7 +43,7 @@
             <template v-if="step === 1">
               <InputWithIcon
                 v-if="isTransfer"
-                v-model="syncedNetwork"
+                v-model="originNetwork"
                 class="row"
                 icon="rotate"
                 :placeholder="placeholderNetwork"
@@ -833,7 +833,7 @@ export default class TransferForm extends Vue {
   }
 
   handlerCloseSelectPopup() {
-    if (this.showSelectedAssetPopup) this.toggleValue('showSelectNetworkPopup');
+    if (this.showSelectedAssetPopup) this.toggleValue('showSelectedAssetPopup');
     else if (this.showSelectNetworkPopup) this.toggleValue('showSelectNetworkPopup');
     else this.toggleValue('showDestNetPopup');
   }

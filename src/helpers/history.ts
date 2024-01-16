@@ -10,7 +10,7 @@ import type {
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { TransactionType } from '@/interfaces';
 import { firstCharToUp, isSora } from '@/helpers';
-import store from '@/store';
+import { useStore } from '@/store';
 import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 
 function getType(historyElement: HistoryElement, networkName?: NetworkName): TransactionType {
@@ -68,6 +68,7 @@ function getTypeFormatted(historyElement: HistoryElement, address: string, netwo
 }
 
 function getHumanFeeValue(value: string, networkName: NetworkName) {
+  const store = useStore();
   const tokenBalances: TokenBalance[] = store.getters.getBalances;
   const network: NetworkJson = store.getters.getNetwork(networkName);
   const asset = network.assets.find((asset) => asset.isUtility);
@@ -79,6 +80,7 @@ function getHumanFeeValue(value: string, networkName: NetworkName) {
 }
 
 function getHumanValue(value: string | number, assetId: string, networkName: NetworkName) {
+  const store = useStore();
   const tokenBalances: TokenBalance[] = store.getters.getBalances;
   const { balances } = tokenBalances.find(({ assetId: id }) => id === assetId)!;
   const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
@@ -87,6 +89,9 @@ function getHumanValue(value: string | number, assetId: string, networkName: Net
 }
 
 function getHumanTransferFee(historyElement: HistoryElement, networkName: NetworkName) {
+  const store = useStore();
+  const network: NetworkJson = store.getters.getNetwork(networkName);
+  const historyType = network.externalApi?.history?.type;
   const type = getType(historyElement, networkName);
 
   if (type === TransactionType.sora) {
@@ -100,6 +105,8 @@ function getHumanTransferFee(historyElement: HistoryElement, networkName: Networ
 
   if (type === TransactionType.transfer) {
     const { fee } = transfer!;
+
+    if (historyType === 'oklink') return +fee;
 
     return getHumanFeeValue(fee, networkName);
   }
@@ -120,8 +127,19 @@ function getHistoryValue(
   address: string,
   withFee = false
 ) {
+  const store = useStore();
+  const network: NetworkJson = store.getters.getNetwork(networkName);
+  const historyType = network.externalApi?.history?.type;
   const signTransfer = getSignTransfer(historyElement, address, networkName);
   const type = getType(historyElement, networkName);
+
+  if (historyType === 'oklink') {
+    const amount = historyElement.transfer?.amount ? historyElement.transfer.amount : 0;
+    const fee = historyElement.transfer?.fee ? historyElement.transfer.fee : 0;
+    if (withFee) return { signTransfer, value: +amount + +fee };
+
+    return { signTransfer, value: +amount };
+  }
 
   if (type === TransactionType.sora) {
     const element = historyElement as SoraHistoryElement;
@@ -142,9 +160,7 @@ function getHistoryValue(
   const { transfer, reward, extrinsic } = historyElement;
 
   if (type === TransactionType.transfer && transfer) {
-    const { amount } = transfer;
-
-    const value = getHumanValue(amount, assetId, networkName);
+    const value = getHumanValue(transfer.amount, assetId, networkName);
     const fee = getHumanTransferFee(historyElement, networkName);
     const result = withFee ? value + fee : value;
 
@@ -152,8 +168,7 @@ function getHistoryValue(
   }
 
   if (type === TransactionType.reward && reward) {
-    const { amount } = reward;
-    const value = getHumanValue(amount, assetId, networkName);
+    const value = getHumanValue(reward.amount, assetId, networkName);
 
     return { signTransfer: '+', value };
   }
@@ -190,7 +205,7 @@ function getFormattedHistory(
       };
     });
 
-    return { nodes, pageInfo: { endCursor: '', startCursor: '' } };
+    return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
   }
 
   if (serviceType === 'subsquid' || serviceType === 'etherscan') {
@@ -201,10 +216,10 @@ function getFormattedHistory(
       };
     });
 
-    return { nodes, pageInfo: { endCursor: '', startCursor: '' } };
+    return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
   }
 
-  if (serviceType === 'sora') {
+  if (serviceType === 'sora' || serviceType === 'oklink' || serviceType === 'zeta') {
     const nodes: HistoryElement[] = (history as SoraHistoryElement[]).map((historyElement) => {
       return {
         ...historyElement,
@@ -212,7 +227,7 @@ function getFormattedHistory(
       };
     });
 
-    return { nodes, pageInfo: { endCursor: '', startCursor: '' } };
+    return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
   }
 
   return history as SubqueryHistory;

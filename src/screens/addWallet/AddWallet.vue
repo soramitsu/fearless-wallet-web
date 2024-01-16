@@ -46,7 +46,16 @@
           :selectedMnemonicElements="selectedMnemonicElements"
           @update:selectedMnemonicElements="updateSelectedMnemonicElements"
         >
-          <span class="copy__phrase" @click="onCopy">{{ $t('common.copyToClipboard') }}</span>
+          <BorderButton
+            class="copy__phrase"
+            size="small"
+            fontSize="small"
+            borderRadius="small"
+            width="186px"
+            type="secondary"
+            text="common.copyToClipboard"
+            @click="onCopy"
+          />
           <AdvancedButton @click="toggleAdvancedFormVisible" />
           <Tooltip text="common.copied" target=".copy__phrase" trigger="click" :arrow="true" />
         </CreateWallet>
@@ -833,6 +842,7 @@ export default class AddWallet extends Vue {
 .copy__phrase {
   text-decoration: underline;
   cursor: pointer;
+  margin: 0 auto;
 }
 .controls {
   display: flex;

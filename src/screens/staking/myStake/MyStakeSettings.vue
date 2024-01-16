@@ -51,7 +51,7 @@ export default class MyStakeSettings extends Vue {
         visibility: this.showAlertTab,
       },
       {
-        label: 'staking.history',
+        label: 'assets.history',
         tabName: 'history',
         classes: 'history-tab',
         target: '.history-tab',

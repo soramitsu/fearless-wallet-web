@@ -27,7 +27,7 @@
         <div class="row">
           <Icon icon="check" class="icon-check" />
 
-          {{ $t('staking.slashed') }}
+          {{ $t('staking.notSlashed') }}
         </div>
 
         <div class="row">
@@ -53,13 +53,7 @@
 
         <div class="sub-label">{{ $t('staking.yourValidatorsDisclaimer') }}</div>
 
-        <FButton
-          width="100%"
-          text="staking.selectYourself"
-          :border="false"
-          iconName="filter"
-          @click="openValidatorList"
-        />
+        <FButton width="100%" text="staking.yourself" :border="false" iconName="filter" @click="openValidatorList" />
       </div>
     </ContentForm>
   </div>

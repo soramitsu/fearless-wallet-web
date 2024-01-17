@@ -103,6 +103,7 @@
               <InfoRow
                 :text="`assets.${isTransfer ? 'networkFee' : 'originalNetworkFee'}`"
                 :value="syncedFeeCut"
+                :price="fiatFeeCut"
                 :iconClasses="['origin-fee']"
                 :isLoading="isFetchingFees"
                 icon="info"
@@ -112,6 +113,7 @@
                 v-if="isCrossChain"
                 text="assets.crossChainFee"
                 :value="destNetFeeCut"
+                :price="destNetFiatFeeCut"
                 :iconClasses="['cross-chain-fee']"
                 icon="info"
               />
@@ -318,8 +320,16 @@ export default class TransferForm extends Vue {
     return `${this.$n(+this.syncedFee, 'decimalPrecise')} ${this.originalNetworkUtilityAsset.toUpperCase()}`;
   }
 
+  get fiatFeeCut() {
+    return `${this.fiatSymbol}${this.$n(+this.syncedFee * this.assetPrice, 'price')}`;
+  }
+
   get destNetFeeCut() {
     return `${this.$n(+this.syncedDestNetFee, 'decimalPrecise')} ${this.sendAssetName.toUpperCase()}`;
+  }
+
+  get destNetFiatFeeCut() {
+    return `${this.fiatSymbol}${this.$n(+this.syncedDestNetFee * this.assetPrice, 'price')}`;
   }
 
   get firstIcon() {

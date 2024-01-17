@@ -9,7 +9,7 @@
 
       <Scroll>
         <div :class="historyContainerClasses">
-          <Loader v-if="isLoadingHistory" />
+          <Loader v-if="showLoader" />
 
           <template v-else-if="!isEmptyHistory">
             <HistoryItem
@@ -56,7 +56,6 @@ export default class History extends Vue {
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
   refreshTimeout = 30000;
-
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -105,7 +104,7 @@ export default class History extends Vue {
     return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
   }
 
-  get historyTimespamp() {
+  get historyTimestamp() {
     if (!this.history) return Number.MIN_VALUE;
 
     return this.history.timestamp;
@@ -170,7 +169,7 @@ export default class History extends Vue {
   }
 
   async loadHistory() {
-    if (this.historyTimespamp + this.refreshTimeout > Date.now()) return false;
+    if (this.historyTimestamp + this.refreshTimeout > Date.now()) return false;
 
     if (!this.isSora && !this.isEthereumNativeNetwork && !this.isMainNetwork) return;
 

@@ -125,7 +125,7 @@ export async function fetchX1History(url: string, address: string): Promise<Hist
     result.push({
       address,
       id: String(index),
-      timestamp: el.transactionTime,
+      timestamp: (new Date(+el.transactionTime).getTime() / 1000).toString(),
       transfer: {
         amount: el.amount,
         from: el.from,

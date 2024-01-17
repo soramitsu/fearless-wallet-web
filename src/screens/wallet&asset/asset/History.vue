@@ -104,7 +104,7 @@ export default class History extends Vue {
     return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
   }
 
-  get historyTimespamp() {
+  get historyTimestamp() {
     if (!this.history) return Number.MIN_VALUE;
 
     return this.history.timestamp;
@@ -169,7 +169,7 @@ export default class History extends Vue {
   }
 
   async loadHistory() {
-    if (this.historyTimespamp + this.refreshTimeout > Date.now()) return false;
+    if (this.historyTimestamp + this.refreshTimeout > Date.now()) return false;
 
     if (!this.isSora && !this.isEthereumNativeNetwork && !this.isMainNetwork) return;
 

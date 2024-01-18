@@ -34,6 +34,19 @@
         @setRecipient="setRecipient"
         @setAddress="setAddress"
       />
+      <div v-else-if="showMyWallets">
+        <WalletInfo
+          v-for="({ name, address, ethereumAddress, isMobile }, index) in filteredWallets"
+          :key="name + index"
+          :name="name"
+          :isSelected="getStatusWallet(ethereumAddress)"
+          :isMobile="isMobile"
+          :address="address"
+          :showMenu="false"
+          class="wallet"
+          @setWallet="setWallet(ethereumAddress)"
+        />
+      </div>
 
       <FButton
         v-if="!showHistoryBook"
@@ -54,6 +67,7 @@ import type { AccountJson } from '@extension-base/background/types/types';
 import { cut, getClipboard } from '@/helpers';
 import { useStore } from '@/store';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
+import WalletInfo from '@/screens/extension-ui/signing/WalletInfo.vue';
 import BaseApi from '@/util/BaseApi';
 import { sendNft } from '@/extension/messaging/nfts';
 import router from '@/router';
@@ -83,6 +97,18 @@ const isDisabled = computed(() => false);
 const setAddress = (address: string, showHistBook = false) => {
   newAddress.value = address;
   showHistoryBook.value = showHistBook;
+};
+
+const getStatusWallet = (ethereumAddress: string) => {
+  const currentAddress = ethereumAddress;
+
+  return currentAddress === to.value;
+};
+
+const setWallet = (ethereumAddress: string) => {
+  to.value = ethereumAddress;
+
+  toggleMyWalletsVisibility();
 };
 
 const showConfirmScreen = ref(false);

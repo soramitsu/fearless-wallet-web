@@ -4,7 +4,7 @@
       <FInput v-model="address" :placeholder="validatorName" size="big" :readonly="true" />
 
       <ContentForm :height="validatorFormHeight" :isStaticHeight="true" :bottomRightCorner="true" class="about-staking">
-        <div class="label">{{ $t('staking.staking') }}</div>
+        <div class="label">{{ $t('browserTabs.staking') }}</div>
 
         <InfoRow text="common.status" :value="status" :showBorder="!showSlashedWarning" />
 

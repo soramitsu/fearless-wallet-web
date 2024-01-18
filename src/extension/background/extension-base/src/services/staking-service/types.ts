@@ -115,6 +115,11 @@ export type MakeStakingRequest = {
   type: StakingOperation;
 };
 
+export type CheckPayoutsFeeRequest = {
+  payouts: Payouts;
+  network: NetworkName;
+};
+
 export interface FWValidatorInfoFull extends ValidatorInfoFull {
   name: string;
   description: string;

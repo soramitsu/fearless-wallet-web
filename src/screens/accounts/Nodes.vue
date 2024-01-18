@@ -121,12 +121,16 @@ export default class Nodes extends Vue {
   }
 
   get defaultNodes() {
+    if (!this.networkJson) return [];
+
     if (isRequireEvmAPI(this.networkJson.name)) return this.networkJson.nodes.filter((el) => !el.url.startsWith('wss'));
 
     return this.networkJson.nodes ?? [];
   }
 
   get customNodes() {
+    if (!this.networkJson) return [];
+
     return this.networkJson.customNodes ?? [];
   }
 

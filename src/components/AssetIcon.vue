@@ -4,20 +4,19 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 
-@Component
-export default class AssetIcon extends Vue {
-  @Prop({ type: String }) shadowColor!: string;
-  @Prop({ type: String }) icon!: string;
+type Props = {
+  shadowColor: string;
+  icon: string;
+};
 
-  get circleStyles() {
-    return {
-      filter: `drop-shadow(0px 6.53061px 25px #${this.shadowColor})`,
-    };
-  }
-}
+const props = defineProps<Props>();
+
+const circleStyles = computed(() => ({
+  filter: `drop-shadow(0px 6.53061px 25px #${props.shadowColor})`,
+}));
 </script>
 
 <style lang="scss" scoped>

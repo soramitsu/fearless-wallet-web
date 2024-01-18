@@ -824,7 +824,6 @@ export default class AddWallet extends Vue {
     height: 32px;
   }
 }
-
 .controls {
   display: flex;
   flex-flow: row nowrap;

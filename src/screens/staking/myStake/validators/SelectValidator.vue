@@ -19,9 +19,8 @@
         <Icon icon="filter" @click.native="openFiltersPopup" class="filter" />
       </div>
     </div>
-
-    <Scroll>
-      <div class="validators-items">
+    <div class="validators-items">
+      <Scroll>
         <template v-if="haveFilteredValidators">
           <ValidatorItem
             v-for="validator in filteredValidators"
@@ -32,8 +31,8 @@
         </template>
 
         <div v-else class="nothing-found">{{ $t('common.nothingFound') }}</div>
-      </div>
-    </Scroll>
+      </Scroll>
+    </div>
   </div>
 </template>
 
@@ -113,6 +112,8 @@ export default class SelectValidator extends Vue {
   padding: $default-padding;
   color: $default-white;
   text-align: left;
+  height: 100%;
+  overflow-y: hidden;
 
   .highlight {
     font-weight: 700;
@@ -123,7 +124,7 @@ export default class SelectValidator extends Vue {
   }
 
   .validators-items {
-    height: calc(100vh - 275px);
+    height: 100%;
 
     .nothing-found {
       display: flex;

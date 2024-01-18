@@ -2,12 +2,12 @@
   <AboveForm
     header="common.send"
     :fullScreen="true"
-    :showBackIcon="showConfirmScreen"
+    :showBackIcon="showBackIcon"
     @handlerBack="onBack"
     @closeHandler="onClose"
   >
     <div class="nft-send-form">
-      <div v-if="!showHistoryBook && !showMyWallets" class="container">
+      <div v-if="!showHistoryBook && !showMyWallets && !showConfirmScreen" class="container">
         <FInput v-model="recipientCut" icon="close" placeholder="assets.sendTo" @click="setRecipient" />
 
         <div class="activity-buttons row">
@@ -69,7 +69,6 @@ import { cut, getClipboard } from '@/helpers';
 import { useStore } from '@/store';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
-import BaseApi from '@/util/BaseApi';
 import { sendNft } from '@/extension/messaging/nfts';
 import router from '@/router';
 
@@ -91,10 +90,7 @@ const toggleMyWalletsVisibility = () => (showMyWallets.value = !showMyWallets.va
 const toggleHistoryBookVisibility = () => (showHistoryBook.value = !showHistoryBook.value);
 const recipientCut = computed(() => cut(to.value));
 
-const setRecipient = (address = '') => {
-  to.value = BaseApi.formatAddress({ address, ethereumAddress: address }, network.value);
-};
-
+const setRecipient = (address = '') => (to.value = address);
 const isDisabled = computed(() => false);
 
 const setAddress = (address: string, showHistBook = false) => {
@@ -102,11 +98,7 @@ const setAddress = (address: string, showHistBook = false) => {
   showHistoryBook.value = showHistBook;
 };
 
-const getStatusWallet = (ethereumAddress: string) => {
-  const currentAddress = ethereumAddress;
-
-  return currentAddress === to.value;
-};
+const getStatusWallet = (ethereumAddress: string) => ethereumAddress === to.value;
 
 const setWallet = (ethereumAddress: string) => {
   to.value = ethereumAddress;
@@ -139,14 +131,10 @@ const onProceed = () => {
   else showConfirmScreen.value = true;
 };
 
+const showBackIcon = computed(() => showHistoryBook.value || showMyWallets.value || showConfirmScreen.value);
+
 const onBack = () => {
-  if (showConfirmScreen.value) {
-    showConfirmScreen.value = false;
-
-    return;
-  }
-
-  router.back();
+  showConfirmScreen.value = showMyWallets.value = showHistoryBook.value = false;
 };
 
 const onClose = () => {

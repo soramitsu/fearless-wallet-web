@@ -1,7 +1,18 @@
 <template>
   <div class="create-wallet">
     <MnemonicBackupForm v-if="showMnemonicBackupForm" :mnemonicArray="mnemonicArray">
+      <BorderButton
+        class="copy__phrase"
+        size="small"
+        fontSize="small"
+        borderRadius="small"
+        width="186px"
+        type="secondary"
+        text="common.copyToClipboard"
+        @click="onCopy"
+      />
       <slot></slot>
+      <Tooltip text="common.copied" target=".copy__phrase" trigger="click" :arrow="true" />
     </MnemonicBackupForm>
 
     <MnemonicConfirmationForm
@@ -49,11 +60,20 @@ export default class CreateWallet extends Vue {
   updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {
     this.syncedSelectedMnemonicElements = value;
   }
+
+  onCopy() {
+    navigator.clipboard.writeText(this.mnemonic);
+  }
 }
 </script>
 
 <style lang="scss" scoped>
 .create-wallet {
   width: 100%;
+}
+.copy__phrase {
+  text-decoration: underline;
+  cursor: pointer;
+  margin: 0 auto;
 }
 </style>

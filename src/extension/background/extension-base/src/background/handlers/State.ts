@@ -838,6 +838,7 @@ export default class State {
           const pair = this.keyringService.getPair(data?.address)!;
 
           apiSora.account = { json: null as any, pair };
+          apiSora.bridgeProxy.sub.account = { json: null as any, pair };
 
           // TODO добавить фича тогл
           this.subscribeTotalXorBalance();

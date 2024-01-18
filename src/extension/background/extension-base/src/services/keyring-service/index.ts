@@ -170,9 +170,10 @@ export class KeyringService {
   saveAccountMeta(address: string, meta: FWKeyringMeta) {
     const pair = this.getPair(address);
 
-    if (!pair) return;
+    if (pair) return keyring.saveAccountMeta(pair, { ...pair.meta, ...meta });
 
-    keyring.saveAccountMeta(pair, { ...pair.meta, ...meta });
+    const account = this.getAddress(address);
+    if (account) this.saveAddress(address, { ...account.meta, ...meta }, 'address');
   }
 
   createFromUri(suri: string, keypairType: KeypairType, meta: FWKeyringMeta = {}) {

@@ -5,7 +5,6 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import tippy from 'tippy.js';
-import 'tippy.js/dist/tippy.css';
 import type { Placement, ComponentText } from '@/interfaces';
 import type { Props, Instance } from 'tippy.js';
 
@@ -16,7 +15,11 @@ export default class Tooltip extends Vue {
   @Prop({ default: '' }) text!: ComponentText;
   @Prop(String) target!: string;
   @Prop({ default: 'top' }) placement!: Placement;
+  @Prop({ default: false }) arrow!: boolean;
+
   @Prop({ default: 250 }) maxWidth!: number;
+  @Prop({ default: 1500 }) delay!: number;
+
   @Prop(String) trigger?: string;
 
   get language() {
@@ -42,12 +45,18 @@ export default class Tooltip extends Vue {
     const options: Partial<Props> = {
       content: content as string,
       placement: this.placement,
-      arrow: false,
+      arrow: this.arrow,
       animation: 'shift-toward-extreme',
-      delay: [1500, 0],
+      delay: [this.delay, 0],
       duration: 0,
       maxWidth: this.maxWidth,
       allowHTML: true,
+      onShow(instance) {
+        if (this.trigger === 'click')
+          setTimeout(() => {
+            instance.hide();
+          }, 1000);
+      },
     };
 
     if (this.trigger) {

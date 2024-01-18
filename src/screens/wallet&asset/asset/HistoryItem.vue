@@ -24,8 +24,8 @@ import { Getter } from 'vuex-class';
 import type { HistoryElement, NetworkName } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
-import { getType, getTypeFormatted, getHistoryValue, getSignTransfer, getFormattedDate } from '@/helpers/history';
-import { cut, isSora } from '@/helpers';
+import { getType, getTypeFormatted, getHistoryValue, getSignTransfer } from '@/helpers/history';
+import { getFormattedDate, cut, isSora } from '@/helpers';
 import { type SoraHistoryElement, TransactionType } from '@/interfaces/history';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
@@ -59,7 +59,7 @@ export default class HistoryItem extends Vue {
   }
 
   get date() {
-    return getFormattedDate(this.historyElement);
+    return getFormattedDate(this.historyElement.timestamp);
   }
 
   get assetToUpperCase() {
@@ -68,6 +68,14 @@ export default class HistoryItem extends Vue {
 
   get type() {
     return getType(this.historyElement);
+  }
+
+  get networkJson() {
+    return this.getNetwork(this.network);
+  }
+
+  get networkHistoryType() {
+    return this.networkJson.externalApi?.history?.type;
   }
 
   get value() {
@@ -93,9 +101,7 @@ export default class HistoryItem extends Vue {
       return cut(value);
     }
 
-    if (this.type === TransactionType.reward) {
-      return cut(reward!.validator);
-    }
+    if (this.type === TransactionType.reward) return cut(reward!.validator);
 
     // extrinsic
     return cut(extrinsic!.hash);

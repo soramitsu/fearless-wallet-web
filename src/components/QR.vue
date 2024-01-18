@@ -1,55 +1,62 @@
 <template>
   <div class="qr-wrapper">
-    <img :src="qr" :class="QRClasses" />
+    <img :src="qr" :class="qrClasses" />
 
-    <Icon v-if="showLogo" className="logo-qr" icon="logo-qr" />
+    <Icon v-if="showLogo" className="logo-qr" icon="logo-qr" :hover="false" />
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+<script lang="ts" setup>
 import QRCode from 'qrcode';
+import { watch, onMounted, ref, computed } from 'vue';
 
-@Component
-export default class QR extends Vue {
-  qr = '';
+type Props = {
+  payload?: string;
+  margin?: number;
+  width?: number;
+  foreground?: string;
+  background?: string;
+  showLogo?: boolean;
+};
+const qr = ref('');
+const props = withDefaults(defineProps<Props>(), {
+  margin: 5,
+  width: 300,
+  foreground: '#111111',
+  background: '#FFFFFF',
+  showLogo: false,
+});
 
-  @Prop(String) payload!: string;
-  @Prop({ default: 5 }) margin!: number;
-  @Prop({ default: 300 }) width!: number;
-  @Prop({ default: '#111111' }) foreground!: string;
-  @Prop({ default: '#FFFFFF' }) background!: string;
-  @Prop({ default: false }) showLogo!: string;
+const qrClasses = computed(() => {
+  return [
+    'qr-code',
+    {
+      'qr-code-margin': props.showLogo,
+    },
+  ];
+});
 
-  get QRClasses() {
-    return [
-      'qr-code',
-      {
-        'qr-code-margin': this.showLogo,
-      },
-    ];
-  }
+const createQR = async () => {
+  if (!props.payload) return;
 
-  async mounted() {
-    this.createQR();
-  }
+  qr.value = await QRCode.toDataURL(props.payload, {
+    margin: props.margin,
+    width: props.width,
+    maskPattern: 5,
+    errorCorrectionLevel: 'M',
+    color: {
+      dark: props.foreground,
+      light: props.background,
+    },
+  });
+};
 
-  @Watch('payload')
-  async createQR() {
-    if (!this.payload) return;
+onMounted(() => createQR());
 
-    this.qr = await QRCode.toDataURL(this.payload, {
-      margin: this.margin,
-      width: this.width,
-      maskPattern: 5,
-      errorCorrectionLevel: 'M',
-      color: {
-        dark: this.foreground,
-        light: this.background,
-      },
-    });
-  }
-}
+watch(
+  () => props.payload,
+  () => createQR()
+);
 </script>
 
 <style lang="scss" scoped>
@@ -65,16 +72,14 @@ export default class QR extends Vue {
   }
 
   .qr-code-margin {
-    margin-left: 65px;
     border-radius: 24px;
   }
 
   .logo-qr {
-    position: relative;
+    position: absolute;
     color: $pink-color;
     width: 65px;
     height: 30px;
-    left: calc(-50% + 32.5px);
   }
 }
 </style>

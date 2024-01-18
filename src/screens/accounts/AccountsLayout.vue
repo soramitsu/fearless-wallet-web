@@ -48,8 +48,8 @@
 
     <EditNodeForm
       v-if="showEditNodeForm"
-      :_name="selectedNodeName"
-      :_url="selectedNodeUrl"
+      :nodeName="selectedNodeName"
+      :nodeUrl="selectedNodeUrl"
       :network="selectedNetwork"
       :isActive="selectedNodeIsActive"
       @closeForm="closeEditNodeForm"
@@ -58,6 +58,8 @@
     <NodeSettingsPopup
       v-if="showNodeSettingsPopup"
       :buttonTopClick="buttonTopClick"
+      :name="selectedNodeName"
+      :url="selectedNodeUrl"
       @handlerClose="closeNodeSettings"
       @openEditNodeForm="openEditNodeForm"
       @openNotificationPopup="openNotificationPopup"
@@ -245,9 +247,11 @@ export default class AccountsLayout extends Vue {
     this.buttonTopClick = buttonTop;
   }
 
-  openEditNodeForm(network: string) {
-    this.showEditNodeForm = true;
+  openEditNodeForm(network: string, name: string, url: string) {
     this.selectedNetwork = network || this.selectedNetwork;
+    this.selectedNodeName = name;
+    this.selectedNodeUrl = url;
+    this.showEditNodeForm = true;
 
     this.closeNodeSettings();
   }
@@ -300,11 +304,6 @@ export default class AccountsLayout extends Vue {
 
   closeNodeSettings() {
     this.showNodeSettingsPopup = false;
-
-    if (this.showEditNodeForm) {
-      this.selectedNodeName = '';
-      this.selectedNodeUrl = '';
-    }
   }
 
   closeAddEthereumAccountPopup() {

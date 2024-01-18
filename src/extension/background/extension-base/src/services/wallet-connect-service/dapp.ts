@@ -5,13 +5,14 @@ import { createSubscription } from '@extension-base/background/handlers/subscrip
 import {
   DEFAULT_LOGGER,
   PROJECT_ID_EXTENSION,
+  SUBSTRATE_EVM_HALF_CHAINID,
   WALLET_CONNECT_METADATA,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
 import { generateHalfGenesisHash } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
-import { isEthereumNetwork } from '@extension-base/background/utils/utils';
+import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
@@ -37,7 +38,7 @@ export default class WalletConnectDAppService {
     this.app = await UniversalProvider.init({
       projectId: PROJECT_ID_EXTENSION,
       metadata: WALLET_CONNECT_METADATA,
-      logger: DEFAULT_LOGGER,
+      logger: process.env.NODE_ENV === 'development' ? DEFAULT_LOGGER : undefined,
       storage: new WalletConnectStorage(),
     });
 
@@ -69,7 +70,7 @@ export default class WalletConnectDAppService {
     if (!this.app) await this.initApp();
 
     const optionalChains = this.state.networksJson.flatMap((network) => {
-      if (isEthereumNetwork(network.name) || !network.chainId) return [];
+      if (isRequireEvmAPI(network.name) || !network.chainId) return [];
       const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
 
       return [`polkadot:${halfChainId}`];
@@ -83,14 +84,14 @@ export default class WalletConnectDAppService {
             'polkadot:91b171bb158e2d3848fa23a9f1c25182', //dot
             'polkadot:7e4e32d0feafd4f9c9414b0be86373f9', //sora mainnet
           ],
-          events: ['chainChanged", "accountsChanged'],
+          events: [],
         },
       },
       optionalNamespaces: {
         polkadot: {
           methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
           chains: optionalChains,
-          events: ['chainChanged", "accountsChanged'],
+          events: [],
         },
       },
     });
@@ -132,13 +133,35 @@ export default class WalletConnectDAppService {
   }
 
   onApproval(data: SessionTypes.Struct, cb: (data: PairingSubjectType) => void) {
-    const [, , address] = data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].accounts[0].split(':');
+    const accounts = data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].accounts;
+    const substrateAddress = accounts.find((el) => {
+      const [, chainId] = el.split(':');
+      if (!SUBSTRATE_EVM_HALF_CHAINID.includes(chainId)) return el;
+
+      return false;
+    }) as string;
+    const [, , address] = substrateAddress.split(':');
     const encodedAddress = this.state.keyringService.encodeAddress(address);
+    const ethAddress = accounts.find((el) => {
+      const [, chainId] = el.split(':');
+      if (SUBSTRATE_EVM_HALF_CHAINID.includes(chainId)) return el;
+
+      return false;
+    }) as string;
+    const [, , ethereumAddress] = ethAddress.split(':');
+    const availableNetworks =
+      data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].chains?.map((el) => el.split(':')[1]) ?? [];
 
     if (!this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress)) {
       this.state.keyringService.saveAddress(
         encodedAddress,
-        { name: data.peer.metadata.name, isMobile: true, wcTopic: data.topic, ethereumAddress: '' },
+        {
+          name: data.peer.metadata.name,
+          isMobile: true,
+          wcTopic: data.topic,
+          ethereumAddress,
+          chains: availableNetworks,
+        },
         'address'
       );
       this.state.updateCurrentAccount(encodedAddress);
@@ -157,6 +180,17 @@ export default class WalletConnectDAppService {
     this.app?.client.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') });
   }
 
+  availableNetworks(address: string) {
+    const pairing = this.state.keyringService.getAddress(address);
+    if (!pairing) return [];
+
+    const session = this.sessions.find((session) => session.topic === pairing.meta.wcTopic);
+
+    if (session) return session.namespaces['polkadot'].chains?.map((chain) => chain.split(':')[1]) ?? [];
+
+    return [];
+  }
+
   abortPairingAttempt() {
     this.app?.abortPairingAttempt();
   }
@@ -169,10 +203,13 @@ export default class WalletConnectDAppService {
       this.state.keyringService.forgetAddress(account?.address);
 
       if (current?.address === account.address) {
-        const accounts = this.state.keyringService.getAllAccounts();
+        const accounts = this.state.getSubstrateAccounts();
+
         if (accounts.length) this.state.updateCurrentAccount(accounts[0].address);
         else this.state.setCurrentAccount(null);
       }
+
+      this.state.cleanupDeletedAccount(account.address);
     }
   }
 

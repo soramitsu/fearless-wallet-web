@@ -45,7 +45,7 @@
 
         <InfoRow
           text="assets.networkFee"
-          :value="`${sumFee} ${stakingAssetName}`"
+          :value="`${fee} ${stakingAssetName}`"
           :price="feeValueString"
           borderType="default"
           icon="info"
@@ -65,7 +65,7 @@
       :currency="stakingCurrency"
       :amount="summaryRewards"
       :value="summaryRewardsValue"
-      :fee="sumFee"
+      :fee="fee"
       :feeValue="feeValue"
       :firstIcon="stakingAssetId"
       :tx="tx"
@@ -87,7 +87,7 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
 import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
-import { fetchBalance, getRewards, getSoraFees } from '@/extension/messaging';
+import { checkPayoutsFee, fetchBalance, getRewards } from '@/extension/messaging';
 import {
   type PayoutRewards,
   type RewardsResponse,
@@ -120,10 +120,6 @@ export default class PendingRewardForm extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Action(StakingActionTypes.GET_MY_STAKING_INFO) getMyStakingInfo!: AsyncFn<GetStakingNetworkProps>;
-
-  get sumFee() {
-    return (+this.fee * this.rewards.payouts.length).toString();
-  }
 
   get network() {
     return this.stakingNetwork.network;
@@ -217,7 +213,7 @@ export default class PendingRewardForm extends Vue {
   }
 
   get feeValue() {
-    return getCostOfAssets(this.sumFee, this.stakingAssetPrice).toString();
+    return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
   }
 
   get summaryRewardsValue() {
@@ -233,16 +229,9 @@ export default class PendingRewardForm extends Vue {
   }
 
   async created() {
+    await this.getRewards();
+
     this.getSoraFees();
-
-    this.showLoader = true;
-
-    this.rewards = await getRewards({
-      address: this.stakingNetwork.stashAddress,
-      network: this.network,
-    });
-
-    this.showLoader = false;
 
     if (this.stakingNetwork.isController)
       this.stashBalance = await fetchBalance({
@@ -251,10 +240,19 @@ export default class PendingRewardForm extends Vue {
       });
   }
 
-  async getSoraFees() {
-    const { StakingPayout } = await getSoraFees();
+  async getRewards() {
+    this.showLoader = true;
 
-    this.fee = StakingPayout;
+    this.rewards = await getRewards({
+      address: this.stakingNetwork.stashAddress,
+      network: this.network,
+    });
+
+    this.showLoader = false;
+  }
+
+  async getSoraFees() {
+    this.fee = await checkPayoutsFee({ payouts: this.rewards.payouts, network: this.network });
   }
 
   closeForm() {

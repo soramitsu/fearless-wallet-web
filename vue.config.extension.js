@@ -32,7 +32,7 @@ const pages = {
 module.exports = defineConfig({
   ...baseConfig,
   pages,
-  outputDir: `dist/extension/${env.EXTENSION_TYPE}`,
+  outputDir: `dist/extension/${env.OUTPUT_DIR}`,
   productionSourceMap: false,
   filenameHashing: false,
 

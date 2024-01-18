@@ -44,8 +44,9 @@
       {{ $t('common.about') }}
     </div>
 
+    <!-- TODO: staking Поправить, когда будут другие сети -->
     <div class="descriptions">
-      {{ $t('staking.about') }}
+      {{ $t('staking.about.sora') }}
     </div>
   </div>
 </template>

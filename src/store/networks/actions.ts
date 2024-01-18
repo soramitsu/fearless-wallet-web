@@ -35,7 +35,7 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.FETCH_HISTORY]({ commit, getters, rootState, rootGetters }, { networkName, assetId, address }) {
-    const { externalApi } = getters.getNetwork(networkName) as Network;
+    const { externalApi }: Network = getters.getNetwork(networkName);
 
     if (!externalApi || !externalApi.history) return;
 
@@ -44,15 +44,19 @@ const actions: ActionTree<State, State> & Actions = {
 
     const { type, url } = externalApi.history;
     const isNativeEvm = isRequireEvmAPI(networkName);
-    const balances: TokenBalance[] = rootState.account.balances;
+    const balances: TokenBalance[] = rootState.account.balances ?? [];
 
     const asset = isNativeEvm
-      ? balances.find((el) => el.balances.some((asset) => asset.id === assetId))!
-      : getUtilityAsset(rootState.account.balances, networkName)!;
+      ? balances.find(({ balances }) => balances.some((asset) => asset.id === assetId))
+      : getUtilityAsset(balances, networkName);
+
+    if (!asset) return;
 
     const utilityId = isNativeEvm
-      ? asset.balances.find((el) => el.name.toLowerCase() === networkName.toLowerCase() && el.isUtility)?.id
-      : asset.assetId;
+      ? asset.balances.find(
+          ({ name, isUtility }) => name && name.toLowerCase() === networkName.toLowerCase() && isUtility
+        )?.id
+      : asset && asset.assetId;
 
     const isUtility = isNativeEvm ? utilityId !== undefined : assetId === utilityId;
 
@@ -60,17 +64,19 @@ const actions: ActionTree<State, State> & Actions = {
     // TODO: когда появится история других токенов отрефаткорить данную логику
     if (!isSora(networkName)) if (!isUtility && type !== 'etherscan') return;
 
-    const { id } = asset.balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
-    const history = await fetchHistory(url, formattedAddress, type, networkName, id, isUtility);
+    const searchedAsset = asset.balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase());
 
-    if (history)
-      commit(MutationTypes.SET_HISTORY, {
-        networkName: networkName.toLowerCase(),
-        walletAddress: BaseApi.formatAddress(wallet),
-        history,
-        assetId,
-        serviceType: type,
-      });
+    if (!searchedAsset) return;
+
+    const history = await fetchHistory(url, formattedAddress, type, networkName, searchedAsset.id, isUtility);
+
+    commit(MutationTypes.SET_HISTORY, {
+      networkName: networkName.toLowerCase(),
+      walletAddress: BaseApi.formatAddress(wallet),
+      history,
+      assetId,
+      serviceType: type,
+    });
   },
 
   async [ActionTypes.TOGGLE_FAVORITE_NETWORK]({ state, commit }, { address, networkName }): Promise<boolean> {

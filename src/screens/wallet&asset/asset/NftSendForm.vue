@@ -7,7 +7,7 @@
     @closeHandler="onClose"
   >
     <div class="nft-send-form">
-      <div v-if="!showHistoryBook" class="container">
+      <div v-if="!showHistoryBook && !showMyWallets" class="container">
         <FInput v-model="recipientCut" icon="close" placeholder="assets.sendTo" @click="setRecipient" />
 
         <div class="activity-buttons row">
@@ -34,14 +34,15 @@
         @setRecipient="setRecipient"
         @setAddress="setAddress"
       />
-      <div v-else-if="showMyWallets">
+
+      <div v-if="showMyWallets">
         <WalletInfo
-          v-for="({ name, address, ethereumAddress, isMobile }, index) in filteredWallets"
-          :key="name + index"
+          v-for="{ name, ethereumAddress, isMobile } in filteredWallets"
+          :key="ethereumAddress"
           :name="name"
           :isSelected="getStatusWallet(ethereumAddress)"
           :isMobile="isMobile"
-          :address="address"
+          :address="ethereumAddress"
           :showMenu="false"
           class="wallet"
           @setWallet="setWallet(ethereumAddress)"
@@ -49,7 +50,7 @@
       </div>
 
       <FButton
-        v-if="!showHistoryBook"
+        v-if="!showHistoryBook && !showMyWallets"
         size="big"
         :disabled="isDisabled"
         class="button"
@@ -67,7 +68,7 @@ import type { AccountJson } from '@extension-base/background/types/types';
 import { cut, getClipboard } from '@/helpers';
 import { useStore } from '@/store';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
-import WalletInfo from '@/screens/extension-ui/signing/WalletInfo.vue';
+import WalletInfo from '@/screens/main/WalletInfo.vue';
 import BaseApi from '@/util/BaseApi';
 import { sendNft } from '@/extension/messaging/nfts';
 import router from '@/router';
@@ -81,7 +82,9 @@ const showMyWallets = ref(false);
 const network = ref('ethreum');
 const assetId = ref('');
 const wallets = computed<AccountJson[]>(() => store.getters.getAccounts);
-const filteredWallets = computed(() => wallets.value.filter(({ active }) => !active));
+const filteredWallets = computed(() =>
+  wallets.value.filter(({ active, ethereumAddress }) => !active && ethereumAddress)
+);
 const showMyWalletsButton = computed(() => filteredWallets.value.length !== 0);
 const paste = () => (to.value = getClipboard());
 const toggleMyWalletsVisibility = () => (showMyWallets.value = !showMyWallets.value);
@@ -168,5 +171,8 @@ const onClose = () => {
   display: flex;
   flex-flow: column;
   justify-content: space-between;
+}
+.wallet {
+  cursor: pointer;
 }
 </style>

@@ -563,17 +563,24 @@ export default class TransferForm extends Vue {
 
     const asset = getNativeAssetName(this.sendAssetName);
 
-    return this.originNet
-      .xcm!.availableDestinations.filter(({ assets }) => assets.some(({ symbol }) => symbol.toLowerCase() === asset))
-      .map(({ chainId }) => {
-        const { name, icon } = this.getNetwork(chainId);
+    return this.originNet.xcm!.availableDestinations.flatMap(({ assets, chainId }) => {
+      // TODO: удалить когда будет готов сора бридж
+      if (
+        this.originNet.name?.toLowerCase() === 'kusama' &&
+        chainId === '7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5'
+      )
+        return [];
 
-        return {
-          name: firstCharToUp(name),
-          value: name,
-          icon,
-        };
-      });
+      if (!assets.some(({ symbol }) => symbol.toLowerCase() === asset)) return [];
+
+      const { name, icon } = this.getNetwork(chainId);
+
+      return {
+        name: firstCharToUp(name),
+        value: name,
+        icon,
+      };
+    });
   }
 
   get sendAssetName() {

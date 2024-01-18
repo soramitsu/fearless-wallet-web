@@ -1,7 +1,13 @@
 <template>
-  <AboveForm>
-    <template v-if="!showHistoryBook">
-      <div class="container">
+  <AboveForm
+    header="common.send"
+    :fullScreen="true"
+    :showBackIcon="showConfirmScreen"
+    @handlerBack="onBack"
+    @closeHandler="onClose"
+  >
+    <div class="nft-send-form">
+      <div v-if="!showHistoryBook" class="container">
         <InputWithIcon
           v-model="network"
           class="row"
@@ -21,17 +27,14 @@
           <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
         </div>
       </div>
-    </template>
 
-    <template v-if="showConfirmScreen">
-      <img alt="nft" />
-      <InfoList>
-        <InfoItem v-for="(value, key) in nftDetails" :name="key" :value="value" :key="key" />
-      </InfoList>
-    </template>
+      <template v-if="showConfirmScreen">
+        <img alt="nft" />
+        <InfoList>
+          <InfoItem v-for="(value, key) in nftDetails" :name="key" :value="value" :key="key" />
+        </InfoList>
+      </template>
 
-    <template>
-      <FButton size="big" :disabled="isDisabled" class="button" :text="actionBtnName" @click="onProceed" />
       <HistoryBook
         v-if="showHistoryBook"
         :network="network"
@@ -57,18 +60,29 @@
         @toggleValue="toggleSelectedNetwork"
         @handlerClose="handlerCloseSelectPopup"
       />
-    </template>
+
+      <FButton
+        v-if="!showHistoryBook"
+        size="big"
+        :disabled="isDisabled"
+        class="button"
+        :text="actionBtnName"
+        @click="onProceed"
+      />
+    </div>
   </AboveForm>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
+import type { NftTx } from '@extension-base/services/nft-service/types';
 import type { AccountJson } from '@extension-base/background/types/types';
 import { getClipboard } from '@/helpers';
 import { useStore } from '@/store';
+import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import BaseApi from '@/util/BaseApi';
 import { sendNft } from '@/extension/messaging/nfts';
-import { type NftTx } from '@/extension/background/extension-base/src/services/nft-service/types';
+import router from '@/router';
 
 const store = useStore();
 
@@ -76,7 +90,7 @@ const to = ref('');
 const showHistoryBook = ref(false);
 const newAddress = ref('');
 const showMyWallets = ref(false);
-const network = ref('');
+const network = ref('ethreum');
 const assetId = ref('');
 const showSelectNetworkPopup = ref(false);
 const wallets = computed<AccountJson[]>(() => store.getters.getAccounts);
@@ -130,6 +144,20 @@ const onProceed = () => {
   if (showConfirmScreen.value) sendNft(tx.value);
   else showConfirmScreen.value = true;
 };
+
+const onBack = () => {
+  if (showConfirmScreen.value) {
+    showConfirmScreen.value = false;
+
+    return;
+  }
+
+  router.back();
+};
+
+const onClose = () => {
+  router.back();
+};
 </script>
 
 <style lang="scss" scoped>
@@ -142,5 +170,12 @@ const onProceed = () => {
   display: flex;
   flex-flow: column;
   gap: 10px;
+  height: 100%;
+}
+.nft-send-form {
+  height: 100%;
+  display: flex;
+  flex-flow: column;
+  justify-content: space-between;
 }
 </style>

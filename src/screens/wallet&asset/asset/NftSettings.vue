@@ -6,7 +6,7 @@
     :top="40"
     :left="-40"
     :showBorder="true"
-    headerText="Hide NFTs"
+    headerText="nft.hideNfts"
     @handlerClose="onClose"
   >
     <div class="nft-settings">

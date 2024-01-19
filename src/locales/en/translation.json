@@ -647,6 +647,7 @@
     "id": "Token ID",
     "spam": "Spam",
     "airdrop": "Airdrop",
+    "hideNfts": "Hide NFTs",
     "noNft": "There aren't any NFTs yet. Buy or mint NFTs to see them here."
   },
   "common": {

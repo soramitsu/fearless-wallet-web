@@ -26,3 +26,8 @@ export type NftTx = {
   network: string;
   tokenId: string;
 };
+
+export type NftSettings = {
+  spam: boolean;
+  airdrop: boolean;
+};

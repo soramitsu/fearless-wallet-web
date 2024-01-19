@@ -1,4 +1,4 @@
-import type { NftState, NftTx } from '@extension-base/services/nft-service/types';
+import type { NftSettings, NftState, NftTx } from '@extension-base/services/nft-service/types';
 import { sendMessage } from '@/extension/messaging';
 
 export function getNftSubscribe(cb: (data: NftState) => void): Promise<NftState> {
@@ -7,4 +7,8 @@ export function getNftSubscribe(cb: (data: NftState) => void): Promise<NftState>
 
 export function sendNft(tx: NftTx): Promise<boolean> {
   return sendMessage('pri(nft.send)', tx);
+}
+
+export function changeNftSettings(settings: NftSettings): Promise<void> {
+  return sendMessage('pri(nft.settings)', settings);
 }

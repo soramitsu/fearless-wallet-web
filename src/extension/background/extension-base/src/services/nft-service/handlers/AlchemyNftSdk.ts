@@ -1,16 +1,17 @@
 import { type Network, Alchemy, NftFilters } from 'alchemy-sdk';
 import { type NftState } from '@extension-base/services/nft-service/types';
+import { type NftService } from '@/extension/background/extension-base/src/services/nft-service';
 
 export default class AlchemyNftController {
   sdk: Alchemy;
   chainId: number;
-
-  constructor(private network: Network, chainId: string) {
+  nftService: NftService;
+  constructor(private network: Network, chainId: string, nftService: NftService) {
     this.sdk = new Alchemy({
       apiKey: process.env.FL_ALCHEMY_API_ETHEREUM_KEY,
       network,
     });
-
+    this.nftService = nftService;
     this.chainId = +chainId;
   }
 
@@ -19,15 +20,23 @@ export default class AlchemyNftController {
 
     return chainId;
   }
+  get excludeFilters() {
+    const filters: NftFilters[] = [];
+    Object.entries(this.nftService.hideSettings).forEach(([key, value]) => {
+      if (key === 'spam' && value) filters.push(NftFilters.SPAM);
+      if (key === 'airdrop' && value) filters.push(NftFilters.AIRDROPS);
+    });
 
+    return filters;
+  }
   getNfts(address: string) {
     return this.sdk.nft.getNftsForOwner(address, {
-      excludeFilters: [NftFilters.SPAM],
+      excludeFilters: this.excludeFilters,
     });
   }
 
   getCollectionsForOwner(address: string) {
-    return this.sdk.nft.getContractsForOwner(address, { excludeFilters: [NftFilters.SPAM] });
+    return this.sdk.nft.getContractsForOwner(address, { excludeFilters: this.excludeFilters });
   }
 
   getNftCollection(address: string) {

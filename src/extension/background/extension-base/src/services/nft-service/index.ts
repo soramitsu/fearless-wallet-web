@@ -4,7 +4,7 @@ import { Subject } from 'rxjs';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import AlchemyNftController from '@extension-base/services/nft-service/handlers/AlchemyNftSdk';
 import { PROD_NFT_NETWORKS } from '@extension-base/services/nft-service/consts';
-import type { NftState, NftTx } from '@extension-base/services/nft-service/types';
+import type { NftSettings, NftState, NftTx } from '@extension-base/services/nft-service/types';
 import type { Port } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import { getContract } from '@/extension/background/extension-base/src/api/evm/utils/eth';
@@ -14,9 +14,14 @@ export class NftService {
   private nftMap: Record<string, NftState> = {};
   public nftSubject = new Subject<Record<string, NftState>>();
 
+  hideSettings = {
+    spam: true,
+    airdrop: true,
+  };
+
   constructor(private state: State) {
     Object.entries(PROD_NFT_NETWORKS).forEach(([chainId, network]) => {
-      this.sdks[network] = new AlchemyNftController(network, chainId);
+      this.sdks[network] = new AlchemyNftController(network, chainId, this);
     });
 
     state.currentAccount.then((res) => {
@@ -38,6 +43,17 @@ export class NftService {
     this.nftMap[address] = nfts;
 
     this.nftSubject.next(this.nftMap);
+  }
+
+  changeSettings(settings: NftSettings) {
+    const isChanged = this.hideSettings.airdrop !== settings.airdrop || this.hideSettings.spam !== settings.spam;
+
+    if (isChanged) {
+      this.hideSettings = settings;
+      this.state.currentAccount.then((account) => {
+        if (account) this.getNftForAllNetworks(account.ethereumAddress);
+      });
+    }
   }
 
   async sendNft(tx: NftTx) {

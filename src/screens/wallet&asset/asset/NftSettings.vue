@@ -23,11 +23,30 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref, onBeforeUnmount, onMounted } from 'vue';
+import { changeNftSettings } from '@/extension/messaging/nfts';
+import { accountController } from '@/controllers';
+import { type NftSettings } from '@/extension/background/extension-base/src/services/nft-service/types';
+
 const emit = defineEmits(['handleClose']);
-const onClose = () => emit('handleClose');
+
 const spam = ref(false);
 const airdrop = ref(false);
+
+onMounted(() => {
+  const settings = accountController.getNftSettings();
+
+  airdrop.value = !!settings.airdrop;
+  spam.value = !!settings.spam;
+});
+
+onBeforeUnmount(() => {
+  const settings: NftSettings = { spam: spam.value, airdrop: airdrop.value };
+
+  changeNftSettings(settings);
+  accountController.setNftSettings(settings);
+});
+const onClose = () => emit('handleClose');
 </script>
 
 <style lang="scss" scoped>

@@ -1,20 +1,16 @@
 <template>
-  <div>
-    <FCorners class="nft" size="big" :topLeftCorner="false" :bottomRightCorner="false">
-      <div @click="onNavigate">
-        <img :src="nft.img" :alt="nft.meta?.name" loading="lazy" width="240" height="240" />
-        <div class="nft-info">
-          <div class="titles">
-            <span v-if="isNft" class="title">{{ upperTitle }}</span>
-            <span class="title title--main">{{ title }}</span>
-            <span v-if="isNft" class="title">{{ subTitle }}</span>
-          </div>
-
-          <Icon v-if="isNft" icon="export-nft" :hover="false" class="share" />
-        </div>
+  <FCorners class="nft" size="big" :topLeftCorner="false" :bottomRightCorner="false" @click.native="onNavigate">
+    <img :src="nft.image" :alt="nft.meta?.name" loading="lazy" width="240" height="240" />
+    <div class="nft-info">
+      <div class="titles">
+        <span v-if="isNft" class="title">{{ upperTitle }}</span>
+        <span class="title title--main">{{ title }}</span>
+        <span v-if="isNft" class="title">{{ subTitle }}</span>
       </div>
-    </FCorners>
-  </div>
+
+      <Icon v-if="isNft" icon="export-nft" :hover="false" className="share" @click.native.stop="$emit('share', nft)" />
+    </div>
+  </FCorners>
 </template>
 
 <script lang="ts" setup>
@@ -88,10 +84,10 @@ const onNavigate = () => {
 }
 
 .share {
-  width: 32px;
-  height: 32px;
+  width: 42px;
+  height: 42px;
+  padding: 10px;
   background-color: #ee0077;
   border-radius: 50%;
-  padding: 5px;
 }
 </style>

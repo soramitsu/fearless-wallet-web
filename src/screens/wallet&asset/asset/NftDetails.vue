@@ -2,7 +2,7 @@
   <AboveForm :fullScreen="true" :header="meta.name" showBackIcon @closeHandler="onBack" @handlerBack="onBack">
     <Scroll>
       <div class="nft-details">
-        <img v-if="img" :src="img" class="nft-details__img" :alt="id" width="500" height="500" />
+        <img v-if="image" :src="image" class="nft-details__img" :alt="id" width="500" height="500" />
         <p>{{ meta.description }}</p>
 
         <InfoRow text="nft.owned" :value="owned" />
@@ -16,6 +16,7 @@
             iconName="export-nft"
             width="100%"
             size="big"
+            class="share"
             :type="shareBtnType"
             fontSize="big"
             :border="false"
@@ -33,6 +34,7 @@
             :border="false"
             @click="onSend"
           />
+          <Tooltip text="common.copied" target=".share" trigger="click" arrow />
         </div>
       </div>
     </Scroll>
@@ -43,38 +45,40 @@
 import { type NftState } from '@extension-base/services/nft-service/types';
 import { useRouter, useRoute } from 'vue-router/composables';
 import { computed } from 'vue';
-import { useStore } from '@/store';
+import { type SelectedWallet, useStore } from '@/store';
 import { cut } from '@/helpers';
 import { Components } from '@/router/routes';
 
 const router = useRouter();
 const route = useRoute();
 const store = useStore();
+
 const id = computed(() => route.params.id);
 const nfts = computed<NftState>(() => store.getters.nfts ?? []);
 const contract = computed(() => route.params.contract);
 const collections = computed(() => nfts.value[contract.value]);
 const ownedNfts = computed(() => collections.value?.ownedNfts ?? []);
 const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value)!);
-const img = computed(() => nft.value?.img);
+const image = computed(() => nft.value?.image);
 const owned = computed(() => (nft.value?.isOwned ? 'owned' : 'not owned'));
 const isOwned = computed(() => nft.value?.isOwned);
 const meta = computed(() => nft.value?.meta ?? {});
 const type = computed(() => nft.value?.type);
 const tokenId = computed(() => cut(route.params.id, 5));
 const shareBtnType = computed(() => (isOwned.value ? 'secondary' : 'primary'));
+const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
 
 const onBack = () => router.back();
 const onSend = () => router.push({ name: Components.NftSendForm, params: { id: id.value } });
 
 const onShare = () => {
   const dataToShare = {
-    'My public address to recieve:': '',
+    'My public address to recieve:': selectedWallet.value.ethereumAddress,
     collection: contract.value,
-    owned: '',
-    creator: '',
-    network: '',
-    'token Id': tokenId.value,
+    owned: nft.value.ownedBy,
+    creator: nft.value.creator,
+    network: nft.value.network,
+    'token Id': route.params.id,
     type: type.value,
   };
 

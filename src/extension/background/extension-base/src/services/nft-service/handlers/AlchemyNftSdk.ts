@@ -23,8 +23,8 @@ export default class AlchemyNftController {
   get excludeFilters() {
     const filters: NftFilters[] = [];
     Object.entries(this.nftService.hideSettings).forEach(([key, value]) => {
-      if (key === 'spam' && value) filters.push(NftFilters.SPAM);
-      if (key === 'airdrop' && value) filters.push(NftFilters.AIRDROPS);
+      if (key === 'spam' && !value) filters.push(NftFilters.SPAM);
+      else if (key === 'airdrop' && !value) filters.push(NftFilters.AIRDROPS);
     });
 
     return filters;
@@ -39,14 +39,13 @@ export default class AlchemyNftController {
     return this.sdk.nft.getContractsForOwner(address, { excludeFilters: this.excludeFilters });
   }
 
-  getNftCollection(address: string) {
-    return this.sdk.nft.getNftsForContract(address);
-  }
-
   async fetchNftsForWallet(address: string): Promise<NftState> {
     const ownedNfts = await this.getNfts(address);
     const collections = await this.getCollectionsForOwner(address);
 
+    const network = Object.values(this.nftService.state.networkMap).find(
+      (net) => net.chainId === this.chainId.toString()
+    );
     const ownedCollections: NftState = {};
 
     for (const nft of ownedNfts.ownedNfts) {
@@ -59,7 +58,7 @@ export default class AlchemyNftController {
           name: collection.openSeaMetadata.collectionName,
           address: collection.address,
           image: collection.openSeaMetadata.imageUrl ?? collection?.image.cachedUrl,
-          network: this.network,
+          network: network?.name ?? this.network,
           ownedNfts: [],
         };
       }
@@ -69,9 +68,13 @@ export default class AlchemyNftController {
         isOwned: true,
         meta: {
           description: nft.description,
+          name: nft.name,
         }, //todo fill the req meta
         type: nft.tokenType,
-        img: nft.image.originalUrl ?? nft.image.cachedUrl,
+        image: nft.image.originalUrl ?? nft.image.cachedUrl ?? nft.image.pngUrl ?? '',
+        creator: '',
+        network: network?.name ?? this.network,
+        ownedBy: address,
       });
     }
 

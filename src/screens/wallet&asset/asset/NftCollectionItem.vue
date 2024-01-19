@@ -75,6 +75,7 @@ const onClick = () => {
 .share {
   width: 42px;
   height: 42px;
+  padding: 10px;
   color: #ee0077;
 }
 </style>

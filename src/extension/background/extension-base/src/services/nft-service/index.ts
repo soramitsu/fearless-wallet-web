@@ -19,7 +19,7 @@ export class NftService {
     airdrop: true,
   };
 
-  constructor(private state: State) {
+  constructor(public state: State) {
     Object.entries(PROD_NFT_NETWORKS).forEach(([chainId, network]) => {
       this.sdks[network] = new AlchemyNftController(network, chainId, this);
     });

@@ -62,11 +62,9 @@ async function getUtilityTransactionObject(params: TransferParams): Promise<Tran
 
   if (!web3Api) throw new Error(`Unknown network ${networkKey}`);
 
-  const { maxFeePerGas, maxPriorityFeePerGas } = await web3Api.getFeeData();
+  const { maxPriorityFeePerGas, gasPrice } = await web3Api.getFeeData();
 
   const transactionObject = {
-    maxFeePerGas,
-    maxPriorityFeePerGas,
     to,
     value: parseEther(amount),
   } as TransactionRequest;
@@ -75,7 +73,7 @@ async function getUtilityTransactionObject(params: TransferParams): Promise<Tran
   const block = await web3Api.provider.getBlock('latest');
 
   const baseFeePerGas = block?.baseFeePerGas;
-  const prepGasPrice = baseFeePerGas ?? maxPriorityFeePerGas ?? BigInt(0);
+  const prepGasPrice = gasPrice ?? maxPriorityFeePerGas ?? baseFeePerGas ?? BigInt(0);
   const estimateFee = prepGasPrice * gasLimit;
 
   transactionObject.gasLimit = gasLimit;

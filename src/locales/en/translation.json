@@ -645,6 +645,8 @@
     "owned": "Owned",
     "type": "Type",
     "id": "Token ID",
+    "spam": "Spam",
+    "airdrop": "Airdrop",
     "noNft": "There aren't any NFTs yet. Buy or mint NFTs to see them here."
   },
   "common": {

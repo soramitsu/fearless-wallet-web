@@ -11,11 +11,11 @@
   >
     <div class="nft-settings">
       <div class="form-item">
-        <span>Spam</span>
+        <span>{{ $t('nft.spam') }}</span>
         <Switcher v-model="nftSettings.spam" />
       </div>
       <div class="form-item">
-        <span>Airdrops</span>
+        <span>{{ $t('nft.airdrop') }}</span>
         <Switcher v-model="nftSettings.airdrop" />
       </div>
     </div>
@@ -23,23 +23,23 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, onBeforeUnmount, onMounted } from 'vue';
+import { ref, onBeforeUnmount, onMounted } from 'vue';
 import { changeNftSettings } from '@/extension/messaging/nfts';
 import { accountController } from '@/controllers';
 
 const emit = defineEmits(['handleClose']);
-const nftSettings = reactive({ spam: false, airdrop: false });
+const nftSettings = ref({ spam: false, airdrop: false });
 
 onMounted(() => {
   const settings = accountController.getNftSettings();
 
-  nftSettings.airdrop = !!settings.airdrop;
-  nftSettings.spam = !!settings.spam;
+  nftSettings.value.airdrop = !!settings.airdrop;
+  nftSettings.value.spam = !!settings.spam;
 });
 
 onBeforeUnmount(() => {
-  changeNftSettings(nftSettings);
-  accountController.setNftSettings(nftSettings);
+  changeNftSettings(nftSettings.value);
+  accountController.setNftSettings(nftSettings.value);
 });
 const onClose = () => emit('handleClose');
 </script>

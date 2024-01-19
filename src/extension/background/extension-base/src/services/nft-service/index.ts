@@ -4,17 +4,18 @@ import { Subject } from 'rxjs';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import AlchemyNftController from '@extension-base/services/nft-service/handlers/AlchemyNftSdk';
 import { PROD_NFT_NETWORKS } from '@extension-base/services/nft-service/consts';
+import { storage } from '@extension-base/stores/Storage';
+import { getContract } from '@extension-base/api/evm/utils/eth';
 import type { NftSettings, NftState, NftTx } from '@extension-base/services/nft-service/types';
 import type { Port } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
-import { getContract } from '@/extension/background/extension-base/src/api/evm/utils/eth';
 export class NftService {
   private store: NftStore;
   private sdks: Partial<Record<Network, AlchemyNftController>> = {};
   private nftMap: Record<string, NftState> = {};
   public nftSubject = new Subject<Record<string, NftState>>();
 
-  hideSettings = {
+  hideSettings: NftSettings = {
     spam: true,
     airdrop: true,
   };
@@ -24,11 +25,16 @@ export class NftService {
       this.sdks[network] = new AlchemyNftController(network, chainId, this);
     });
 
-    state.currentAccount.then((res) => {
-      if (res) this.getNftForAllNetworks(res.ethereumAddress);
-    });
-
     this.store = new NftStore();
+    this.init();
+  }
+
+  async init() {
+    const { nftSettings } = await storage.get(['nftSettings']);
+    if (nftSettings) this.hideSettings = nftSettings;
+
+    const account = await this.state.currentAccount;
+    if (account) this.getNftForAllNetworks(account.ethereumAddress);
   }
 
   async getNftForAllNetworks(address: string) {
@@ -50,6 +56,7 @@ export class NftService {
 
     if (isChanged) {
       this.hideSettings = settings;
+      storage.set({ nftSettings: this.hideSettings });
       this.state.currentAccount.then((account) => {
         if (account) this.getNftForAllNetworks(account.ethereumAddress);
       });

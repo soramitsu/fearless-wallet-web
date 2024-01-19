@@ -34,3 +34,8 @@ export type NftSettings = {
   spam: boolean;
   airdrop: boolean;
 };
+
+export type NftStoreState = {
+  nfts: NftState;
+  settings: NftSettings;
+};

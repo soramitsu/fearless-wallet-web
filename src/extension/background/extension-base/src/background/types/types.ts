@@ -1,4 +1,5 @@
 /* eslint-disable no-use-before-define */
+import { type NftSettings } from '@extension-base/services/nft-service/types';
 import type { ALLOWED_PATH } from '@extension-base/defaults';
 import type { Subscription } from 'rxjs';
 import type { JsonRpcProvider, WebSocketProvider } from 'ethers';
@@ -645,6 +646,7 @@ export interface IState {
   transaction: Record<string, TransactionHistoryItem[]>;
   addressBook: AddressBook;
   userType: UserType;
+  nftSettings: NftSettings;
   onboarding: {
     user: UserType;
     isRequired: boolean;

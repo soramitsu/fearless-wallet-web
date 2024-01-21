@@ -3,7 +3,7 @@
     <div :class="containerClass">
       <span v-if="isEmpty">{{ $t('nft.noNft') }}</span>
       <template v-else>
-        <NftCollectionItem v-for="(nft, i) of nfts" :nft="nft" :key="i" />
+        <NftCollectionItem v-for="(nft, i) of filteredNfts" :nft="nft" :key="i" />
       </template>
     </div>
 
@@ -17,13 +17,21 @@ import type { NftState } from '@extension-base/services/nft-service/types';
 import NftCollectionItem from '@/screens/wallet&asset/asset/NftCollectionItem.vue';
 import { useStore } from '@/store';
 import NftSettings from '@/screens/wallet&asset/asset/NftSettings.vue';
+import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 
 const emit = defineEmits(['toggleAssetsManagementForm']);
 defineProps<{ showAssetsManagementForm: boolean }>();
 const store = useStore();
 
 const nfts = computed<NftState>(() => store.getters.nfts);
-const isEmpty = computed(() => !Object.keys(nfts.value).length);
+const activeNetworkForSelectedWallet = computed<NetworkJson[]>(() => store.getters.activeNetworkForSelectedWallet);
+
+const filteredNfts = computed(() =>
+  Object.values(nfts.value).filter(({ network }) =>
+    activeNetworkForSelectedWallet.value.some(({ name }) => name === network)
+  )
+);
+const isEmpty = computed(() => !Object.keys(filteredNfts.value).length);
 const containerClass = computed(() => (isEmpty.value ? 'no-nfts' : 'nft-list'));
 
 const onClose = () => emit('toggleAssetsManagementForm', false);

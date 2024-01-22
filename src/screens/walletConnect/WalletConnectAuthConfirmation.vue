@@ -165,9 +165,9 @@ const namespaces = computed<ChainData[]>(() => {
 
   return Array.from(arrSet.values()) as unknown as ChainData[];
 });
-const isSuitableWalletsExist = ref(wallets.value.length);
+const isSuitableWalletsExist = computed(() => wallets.value.length !== 0);
 const isSupportNetwork = computed(() => namespaces.value.length !== 0);
-const isAbleToConnect = computed(() => !isSupportNetwork.value && !isSuitableWalletsExist.value);
+const isAbleToConnect = computed(() => isSupportNetwork.value && isSuitableWalletsExist.value);
 const alertContent = computed(() => {
   return {
     header: 'walletConnect.walletConnectErrorAlertTitle',

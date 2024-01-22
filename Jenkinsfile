@@ -1,4 +1,4 @@
-@Library('jenkins-library@feature/DOPS-2918/add-web-ext-builds-with-test-nets')
+@Library('jenkins-library')
 
 def buildWithCred  = [
     [$class: 'UsernamePasswordMultiBinding', credentialsId: 'OAUTH_CLIENT_UPLOAD', usernameVariable: 'OAUTH_CLIENT_ID_UPLOAD', passwordVariable: 'OAUTH_CLIENT_SECRET_UPLOAD'],
@@ -40,13 +40,14 @@ def pipeline = new org.js.AppArtifactsPipeline(
     nexusCredential:            'bot-fearless-rw',
     nexusProjectPath:           'fearless/extension',
     nexusNotification:           true,
-    nexusChatID:                "-1001727151155",
+    nexusChatID:                "-1001934877683",
     sonarProjectKey:            'fearless:fearless-wallet-web',
     sonarProjectName:           'fearless-wallet-web',
     sonarCredential:            'sonar_fearless_token',
     mozillaSlug:                'fearless-wallet',
     mozillaChannel:             'listed',
     distFolders:                ['./dist/extension/firefox','./dist/extension/chrome'],
+    distFoldersTestNets:        ['./dist/extension/chrome-test'],
     preBuildCmds:               ['apt-get update && apt-get install zip jq -y && yarn set version 3.4.1 && yarn install'],
     nexusFiles:                 [ '.zip'],
     chromeExtFile:              'fearless-wallet-extension-chrome.zip',

@@ -7,7 +7,7 @@ import { getAssetInfo } from '@extension-base/api/helpers';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
 import { type Extrinsic } from './utils/types';
 import { getPrecisionValue } from './utils';
-import { estimateSOraCrossChainFee, makeSoraCrossChain } from './soraBridge';
+import { estimateSoraCrossChainFee, makeSoraCrossChain } from './soraBridge';
 import type State from '@extension-base/background/handlers/State';
 import type { TokenBalance, BasicTxResponse } from '@extension-base/background/types/types';
 import type { AssetId, Interiors, NetworkName, RelayChainName } from '@/interfaces';
@@ -358,7 +358,7 @@ async function estimateCrossChainFee(props: CrossChainProps, state: State): Prom
   );
 
   if (isSora(originNet, true)) {
-    const originFee = await estimateSOraCrossChainFee(props, state);
+    const originFee = await estimateSoraCrossChainFee(props, state);
 
     return [originFee, crossChainFee];
   }
@@ -394,7 +394,7 @@ async function estimateCrossChainFee(props: CrossChainProps, state: State): Prom
 async function makeCrossChain(props: MakeCrossChainProps, state: State): Promise<void> {
   const { assetId, originNet, destinationNet, from, to, isSavePass, password, amount, tokenBalance, callback } = props;
 
-  if (isSora(originNet)) {
+  if (isSora(originNet, true)) {
     await makeSoraCrossChain(props, state);
 
     return;

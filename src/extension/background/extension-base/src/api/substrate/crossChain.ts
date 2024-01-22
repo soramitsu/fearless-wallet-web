@@ -358,7 +358,7 @@ async function estimateCrossChainFee(props: CrossChainProps, state: State): Prom
   );
 
   if (isSora(originNet, true)) {
-    const originFee = await estimateSOraCrossChainFee(props);
+    const originFee = await estimateSOraCrossChainFee(props, state);
 
     return [originFee, crossChainFee];
   }

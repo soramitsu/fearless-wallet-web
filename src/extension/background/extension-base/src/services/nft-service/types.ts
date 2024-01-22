@@ -26,8 +26,13 @@ export type NftTx = {
   type: string;
   contract: string;
   to: string;
+  from: string;
   network: string;
   tokenId: string;
+};
+export type CheckNFTTx = {
+  isApproved: boolean;
+  fee: string;
 };
 
 export type NftSettings = {

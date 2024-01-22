@@ -9,7 +9,8 @@
     <div class="nft-send-form">
       <div v-if="!showHistoryBook && !showMyWallets && !showConfirmScreen" class="container">
         <FInput v-model="recipientCut" icon="close" placeholder="assets.sendTo" @click="setRecipient" />
-
+        <span>Network fees</span>
+        <span>{{ fees.fees }}</span>
         <div class="activity-buttons row">
           <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
 
@@ -62,7 +63,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import { ref, computed, reactive, onMounted } from 'vue';
 import { useRoute } from 'vue-router/composables';
 import type { NftCollection, NftState, NftTx } from '@extension-base/services/nft-service/types';
 import type { AccountJson } from '@extension-base/background/types/types';
@@ -72,15 +73,15 @@ import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import InfoList from '@/screens/extension-ui/InfoList.vue';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
-import { sendNft } from '@/extension/messaging/nfts';
+import { checkNft, sendNft } from '@/extension/messaging/nfts';
 import router from '@/router';
 
 const store = useStore();
 
 const to = ref('');
+const fees = reactive({ fees: '0' });
 const showHistoryBook = ref(false);
 const showMyWallets = ref(false);
-const network = ref('ethreum');
 const assetId = ref('');
 const wallets = computed<AccountJson[]>(() => store.getters.getAccounts);
 const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
@@ -113,20 +114,6 @@ const setWallet = (ethereumAddress: string) => {
 const showConfirmScreen = ref(false);
 
 const actionBtnName = computed(() => `common.${showConfirmScreen.value ? 'confirm' : 'accept'}`);
-
-const tx = computed<NftTx>(() => ({
-  type: '',
-  contract: '',
-  to: '',
-  network: '',
-  tokenId: '',
-}));
-
-const onProceed = () => {
-  if (!showConfirmScreen.value) showConfirmScreen.value = true;
-  else sendNft(tx.value);
-};
-
 const showBackIcon = computed(() => showHistoryBook.value || showMyWallets.value || showConfirmScreen.value);
 
 const onBack = () => {
@@ -141,14 +128,14 @@ const route = useRoute();
 
 const id = computed(() => route.params.id);
 const contract = computed(() => route.params.contract);
-const nfts = computed<NftState>(() => store.getters.nfts ?? []);
+const nfts = computed<NftState>(() => store.getters.nfts ?? {});
 
 const collection = computed<NftCollection | undefined>(() => {
   return nfts.value[contract.value];
 });
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value));
-const image = computed(() => nft.value?.img ?? '');
+const image = computed(() => nft.value?.image ?? '');
 const nftDetails = computed(() => ({
   'send to': to.value,
   collection: contract.value,
@@ -156,6 +143,28 @@ const nftDetails = computed(() => ({
   network: collection.value?.network ?? '',
   type: nft.value?.type ?? '',
 }));
+const network = computed(() => nft.value?.network ?? '');
+
+const tx = computed<NftTx>(() => ({
+  type: nft.value?.type ?? '',
+  contract: contract.value,
+  to: to.value,
+  from: selectedWallet.value.ethereumAddress,
+  network: network.value,
+  tokenId: nft.value?.id ?? '',
+}));
+
+const onProceed = () => {
+  if (!showConfirmScreen.value) showConfirmScreen.value = true;
+  else {
+    sendNft(tx.value);
+  }
+};
+
+onMounted(async () => {
+  const checkData = await checkNft(tx.value);
+  fees.fees = checkData.fee;
+});
 </script>
 
 <style lang="scss" scoped>

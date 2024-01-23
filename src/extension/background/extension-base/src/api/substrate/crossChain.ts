@@ -3,11 +3,11 @@ import { FPNumber } from '@sora-substrate/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 import { isEthereumNetwork, getUtilityProps, getNativeAssetName } from '@extension-base/background/utils/utils';
 import { SignerType } from '@extension-base/background/types/types';
-import { getAssetInfo } from '@extension-base/api/helpers';
+import { getAssetBalance, getAssetInfo } from '@extension-base/api/helpers';
+import { estimateSoraCrossChainFee, makeSoraCrossChain, getSoraParaId } from '@extension-base/api/substrate/soraBridge';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
 import { type Extrinsic } from './utils/types';
 import { getPrecisionValue } from './utils';
-import { estimateSoraCrossChainFee, makeSoraCrossChain, getSoraParaId } from './soraBridge';
 import type State from '@extension-base/background/handlers/State';
 import type { TokenBalance, BasicTxResponse } from '@extension-base/background/types/types';
 import type { AssetId, Interiors, NetworkName, RelayChainName } from '@/interfaces';
@@ -251,7 +251,7 @@ async function createNativeCrossChainExtrinsic(
 
   await api.isReadyOrError;
 
-  const { precision } = tokenBalance.balances.find(({ name }) => name.toLowerCase() === originNet.toLowerCase())!;
+  const { precision } = getAssetBalance(originNet, tokenBalance);
 
   const precisionAmount = getPrecisionValue(amount, precision);
   const module = isNativeNetwork(destNet) ? 'limitedTeleportAssets' : 'limitedReserveTransferAssets';
@@ -277,8 +277,7 @@ async function createOrmlCrossChainExtrinsic(
 
   await api.isReadyOrError;
 
-  const { precision } = tokenBalance.balances.find(({ name }) => name.toLowerCase() === originNet.toLowerCase())!;
-
+  const { precision } = getAssetBalance(originNet, tokenBalance);
   const precisionAmount = getPrecisionValue(amount, precision);
 
   // В большинстве случаев используется xTokens, но он есть не всегда
@@ -350,9 +349,7 @@ async function estimateCrossChainFee(props: CrossChainProps, state: State): Prom
 
   const destEstimateFee = destFees?.destXcmFee?.find(({ symbol: _symbol }) => _symbol.toLowerCase() === asset);
 
-  const { precision: originPrecision } = tokenBalance.balances.find(
-    ({ name }) => name.toLowerCase() === originNet.toLowerCase()
-  )!;
+  const { precision: originPrecision } = getAssetBalance(originNet, tokenBalance);
 
   const crossChainFee = FPNumber.fromCodecValue(
     destEstimateFee?.feeInPlanks ?? '0',
@@ -383,7 +380,7 @@ async function estimateCrossChainFee(props: CrossChainProps, state: State): Prom
 
     const address = isEthereumNetwork(originNet) ? VALID_ETHEREUM_ADDRESS : VALID_SUBSTRATE_ADDRESS;
     const paymentInfo = await extrinsic?.paymentInfo(address);
-    const partialFee = paymentInfo ? +paymentInfo?.partialFee : 0;
+    const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
 
     const originFee = FPNumber.fromCodecValue(partialFee, utilityPrecision);
 

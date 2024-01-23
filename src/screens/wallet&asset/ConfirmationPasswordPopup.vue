@@ -334,7 +334,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (
       this.isStaking ||
       this.extrinsicType === 'swap' ||
-      (this.extrinsicType === 'crossChain' && (isSora(txCross.originNet) || isSora(txCross.destinationNet)))
+      (this.extrinsicType === 'crossChain' && isSora(txCross.originNet))
     )
       this.transactionState = results?.status ? 'success' : 'failed';
   }

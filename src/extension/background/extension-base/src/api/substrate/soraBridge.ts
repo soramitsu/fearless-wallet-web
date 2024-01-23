@@ -1,26 +1,26 @@
 import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import { SubNetworkId } from '@sora-substrate/util/build/bridgeProxy/sub/consts';
-import { type Extrinsic } from './utils/types';
+import { getAssetBalance, getAssetInfo } from '../helpers';
 import { type CrossChainProps, type MakeCrossChainProps } from './crossChain';
 import type State from '@extension-base/background/handlers/State';
 import type { Asset } from '@sora-substrate/util/src/assets/types';
 import { type NetworkName } from '@/interfaces';
 
-function getSoraParaId(network: NetworkName, state: State): string {
-  if (network.toLowerCase() === 'kusama') return state.networkMap['SORA Kusama parachain'].paraId!;
+const KUSAMA_PARACHAIN = 'SORA Kusama parachain';
+const ROCOCO_PARACHAIN = 'SORA Rococo parachain';
 
-  if (network.toLowerCase() === 'rococo') return state.networkMap['SORA Rococo parachain'].paraId!;
+function getSoraParaId(network: NetworkName, state: State): string {
+  if (network.toLowerCase() === 'kusama') return state.networkMap[KUSAMA_PARACHAIN].paraId!;
+
+  if (network.toLowerCase() === 'rococo') return state.networkMap[ROCOCO_PARACHAIN].paraId!;
 
   return '0';
 }
 
 function getSoraParams(props: CrossChainProps, state: State): [Asset, SubNetworkId] {
   const { originNet, tokenBalance, destinationNet, assetId } = props;
-  const { precision, symbol } = tokenBalance.balances.find(
-    ({ name }) => name.toLowerCase() === originNet.toLowerCase()
-  )!;
-
-  const { currencyId } = state.assetsMap.find(({ id }) => id === assetId)!;
+  const { precision, symbol } = getAssetBalance(originNet, tokenBalance);
+  const { currencyId } = getAssetInfo(assetId, state);
 
   const subNetworkId = destinationNet.toLowerCase() === 'kusama' ? SubNetworkId.Kusama : SubNetworkId.Rococo;
 
@@ -43,7 +43,7 @@ async function estimateSoraCrossChainFee(props: CrossChainProps, state: State): 
   return FPNumber.fromCodecValue(fee);
 }
 
-async function makeSoraCrossChain(props: MakeCrossChainProps, state: State): Promise<Extrinsic> {
+async function makeSoraCrossChain(props: MakeCrossChainProps, state: State): Promise<void> {
   const { originNet, amount, to } = props;
 
   const api = state.getSubstrateApiMap[originNet.toLowerCase()].api;

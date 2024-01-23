@@ -1,6 +1,15 @@
 <template>
   <FCorners class="nft" size="big" :topLeftCorner="false" :bottomRightCorner="false" @click.native="onNavigate">
-    <img :src="nft.image" :alt="nft.meta?.name" loading="lazy" width="240" height="240" />
+    <img v-if="nft.image" :src="nft.image" :alt="nft.meta?.name" loading="lazy" width="240" height="240" />
+    <img
+      v-else
+      class="image-placeholder"
+      src="@/assets/fearless-logo-animated.gif"
+      alt="fearless-logo"
+      width="240"
+      height="240"
+    />
+
     <div class="nft-info">
       <div class="titles">
         <span v-if="isNft" class="title">{{ upperTitle }}</span>
@@ -23,15 +32,17 @@ import router from '@/router';
 
 type Props = {
   nft: FearlessNft;
+  collectionName?: string;
   isNft: boolean;
 };
 
 const route = useRoute();
 const props = withDefaults(defineProps<Props>(), { isNft: false });
 const contract = computed(() => route.params.contract);
+
 const title = ref(props.isNft ? props.nft.meta?.name : props.nft.meta.name);
 const subTitle = ref(props.nft.meta.description);
-const upperTitle = ref(props.isNft ? props.nft.meta.name : '');
+const upperTitle = ref(props.collectionName ?? '');
 
 const onNavigate = () => {
   const route: RawLocation = { name: Components.NftDetails, params: { id: props.nft.id, contract: contract.value } };
@@ -89,5 +100,8 @@ const onNavigate = () => {
   padding: 10px;
   background-color: #ee0077;
   border-radius: 50%;
+}
+.image-placeholder {
+  width: 100%;
 }
 </style>

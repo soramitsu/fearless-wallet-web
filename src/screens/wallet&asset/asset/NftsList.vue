@@ -3,7 +3,7 @@
     <div :class="containerClass">
       <span v-if="isEmpty">{{ $t('nft.noNft') }}</span>
       <template v-else>
-        <NftCollectionItem v-for="(nft, i) of filteredNfts" :nft="nft" :key="i" />
+        <NftCollectionItem v-for="(nft, i) of filteredNfts" :collection="nft" :key="i" />
       </template>
     </div>
 

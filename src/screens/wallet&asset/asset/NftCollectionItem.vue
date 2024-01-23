@@ -1,7 +1,23 @@
 <template>
   <FCorners size="big" :topLeftCorner="false" :bottomRightCorner="false">
     <div class="nft" @click="onClick">
-      <img :src="nft.image" :alt="nft?.name" loading="lazy" width="240" height="240" />
+      <img
+        v-if="collection.image"
+        :src="collection.image"
+        :alt="collection?.name"
+        loading="lazy"
+        width="240"
+        height="240"
+      />
+      <img
+        v-else
+        class="image-placeholder"
+        src="@/assets/fearless-logo-animated.gif"
+        alt="fearless-logo"
+        width="240"
+        height="240"
+      />
+
       <div class="nft-info">
         <span class="title title--main">{{ title }}</span>
       </div>
@@ -16,15 +32,15 @@ import { useRouter } from 'vue-router/composables';
 import { Components } from '@/router/routes';
 
 type Props = {
-  nft: NftCollection;
+  collection: NftCollection;
 };
 
 const props = defineProps<Props>();
 const router = useRouter();
-const title = ref(props.nft?.name);
+const title = ref(props.collection?.name);
 
 const onClick = () => {
-  router.push({ name: Components.NftCollection, params: { contract: props.nft.address } });
+  router.push({ name: Components.NftCollection, params: { contract: props.collection.address } });
 };
 </script>
 
@@ -77,5 +93,8 @@ const onClick = () => {
   height: 42px;
   padding: 10px;
   color: #ee0077;
+}
+.image-placeholder {
+  width: 100%;
 }
 </style>

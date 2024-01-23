@@ -95,7 +95,6 @@ const route = useRoute();
 const router = useRouter();
 const { t, n } = useI18n();
 
-const to = ref('');
 const popupControls = reactive({
   showConfirmScreen: false,
   showConfirmationPasswordPopup: false,
@@ -107,6 +106,11 @@ const errors = reactive({
   unsufficientFunds: false,
   incorrenctRecipient: false,
 });
+const formInfo = reactive({
+  fee: '0',
+  to: '',
+  assetId: '',
+});
 const id = computed(() => route.params.id);
 const contract = computed(() => route.params.contract);
 const nfts = computed<NftState>(() => store.getters.nfts ?? {});
@@ -115,7 +119,6 @@ const collection = computed<NftCollection | undefined>(() => nfts.value[contract
 
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value));
-const fees = reactive({ fees: '0' });
 const assetId = ref('');
 const wallets = computed<AccountJson[]>(() => store.getters.getAccounts);
 const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
@@ -124,24 +127,24 @@ const filteredWallets = computed(() =>
   wallets.value.filter(({ active, ethereumAddress }) => !active && ethereumAddress)
 );
 const showMyWalletsButton = computed(() => filteredWallets.value.length !== 0);
-const paste = () => (to.value = getClipboard());
+const paste = () => (formInfo.to = getClipboard());
 const toggleMyWalletsVisibility = () => (popupControls.showMyWallets = !popupControls.showMyWallets);
 const toggleHistoryBookVisibility = () => (popupControls.showHistoryBook = !popupControls.showHistoryBook);
-const recipientCut = computed(() => cut(to.value));
+const recipientCut = computed(() => cut(formInfo.to));
 
-const isDisabled = computed(() => to.value === '' || errors.incorrenctRecipient || errors.unsufficientFunds);
+const isDisabled = computed(() => formInfo.to === '' || errors.incorrenctRecipient || errors.unsufficientFunds);
 
-const setRecipient = (address = '') => (to.value = address);
+const setRecipient = (address = '') => (formInfo.to = address);
 
 const setAddress = (address: string, showHistoryBook = false) => {
-  to.value = address;
+  formInfo.to = address;
   popupControls.showHistoryBook = showHistoryBook;
 };
 
-const getStatusWallet = (ethereumAddress: string) => ethereumAddress === to.value;
+const getStatusWallet = (ethereumAddress: string) => ethereumAddress === formInfo.to;
 
 const setWallet = (ethereumAddress: string) => {
-  to.value = ethereumAddress;
+  formInfo.to = ethereumAddress;
 
   toggleMyWalletsVisibility();
 };
@@ -172,7 +175,7 @@ const onClose = () => router.back();
 
 const image = computed(() => nft.value?.image ?? '');
 const nftDetails = computed(() => ({
-  'send to': to.value,
+  'send to': formInfo.to,
   collection: contract.value,
   owned: selectedWallet.value.ethereumAddress,
   network: collection.value?.network ?? '',
@@ -184,7 +187,7 @@ const network = computed(() => nft.value?.network ?? '');
 const tx = computed<NftTx>(() => ({
   type: nft.value?.type ?? '',
   contract: contract.value,
-  to: to.value,
+  to: formInfo.to,
   from: selectedWallet.value.ethereumAddress,
   network: nft.value?.network ?? '',
   tokenId: nft.value?.id ?? '',
@@ -204,14 +207,15 @@ const validateTx = async () => {
     if (checkData.error === 'unsufficientFunds') errors.unsufficientFunds = true;
   }
 
-  fees.fees = checkData.fee;
+  formInfo.fee = checkData.fee;
 };
 
 const showSendForm = computed(
   () => !popupControls.showHistoryBook && !popupControls.showMyWallets && !popupControls.showConfirmScreen
 );
 const showSubmitBtn = computed(() => !popupControls.showHistoryBook && !popupControls.showMyWallets);
-const formatFeeString = computed(() => `${n(+fees.fees, 'decimalPrecise')} ${assetSymbol.value?.toUpperCase()}`);
+const formatFeeString = computed(() => `${n(+formInfo.fee, 'decimalPrecise')} ${assetSymbol.value?.toUpperCase()}`);
+
 watch(tx, validateTx);
 onMounted(validateTx);
 

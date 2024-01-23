@@ -2,7 +2,14 @@
   <AboveForm :fullScreen="true" :header="header" @closeHandler="onClose">
     <Scroll>
       <div class="nft-list">
-        <NftItem v-for="(nft, index) in ownedNfts" :key="index" :nft="nft" isNft @share="onShare" />
+        <NftItem
+          v-for="(nft, index) in ownedNfts"
+          :collectionName="collection.name"
+          :key="index"
+          :nft="nft"
+          isNft
+          @share="onShare"
+        />
         <Tooltip text="common.copied" target=".share" trigger="click" arrow />
       </div>
     </Scroll>
@@ -22,9 +29,9 @@ const store = useStore();
 
 const nfts = computed<NftState>(() => store.getters.nfts ?? []);
 const contract = computed(() => route.params.contract);
-const collections = computed(() => nfts.value[contract.value]);
-const header = computed(() => (collections.value ? collections.value.name : ''));
-const ownedNfts = computed(() => collections.value?.ownedNfts ?? []);
+const collection = computed(() => nfts.value[contract.value]);
+const header = computed(() => (collection.value ? collection.value.name : ''));
+const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
 
 const onClose = () => router.back();

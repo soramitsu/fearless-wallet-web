@@ -20,15 +20,16 @@ export default class AlchemyNftController {
 
     return chainId;
   }
+
   get excludeFilters() {
     const filters: NftFilters[] = [];
-    Object.entries(this.nftService.hideSettings).forEach(([key, value]) => {
-      if (key === 'spam' && !value) filters.push(NftFilters.SPAM);
-      else if (key === 'airdrop' && !value) filters.push(NftFilters.AIRDROPS);
-    });
+
+    if (this.nftService.hideSettings.airdrop) filters.push(NftFilters.AIRDROPS);
+    if (this.nftService.hideSettings.spam) filters.push(NftFilters.SPAM);
 
     return filters;
   }
+
   getNfts(address: string) {
     return this.sdk.nft.getNftsForOwner(address, {
       excludeFilters: this.excludeFilters,
@@ -63,6 +64,8 @@ export default class AlchemyNftController {
         };
       }
 
+      const prepImg =
+        nft.contract.openSeaMetadata.imageUrl ?? nft.image.originalUrl ?? nft.image.cachedUrl ?? nft.image.pngUrl;
       ownedCollections[address].ownedNfts.push({
         id: nft.tokenId,
         isOwned: true,
@@ -71,7 +74,7 @@ export default class AlchemyNftController {
           name: nft.name,
         }, //todo fill the req meta
         type: nft.tokenType,
-        image: nft.image.originalUrl ?? nft.image.cachedUrl ?? nft.image.pngUrl ?? '',
+        image: prepImg,
         creator: '',
         network: network?.name ?? this.network,
         ownedBy: address,

@@ -3,7 +3,7 @@ import { type NftMetadata } from 'alchemy-sdk';
 type NftMeta = Partial<NftMetadata>;
 export type FearlessNft = {
   id: string;
-  image: string;
+  image?: string;
   type: string;
   isOwned: boolean;
   ownedBy: string;

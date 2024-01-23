@@ -59,11 +59,13 @@ export class NftService {
 
     if (isChanged) {
       this.hideSettings = settings;
-      storage.set({ nftSettings: this.hideSettings });
+
       this.state.currentAccount.then((account) => {
         if (account) this.getNftForAllNetworks(account.ethereumAddress);
       });
     }
+
+    storage.set({ nftSettings: this.hideSettings });
   }
 
   async sendNft(tx: NftTx): Promise<ResponseNftTransfer> {

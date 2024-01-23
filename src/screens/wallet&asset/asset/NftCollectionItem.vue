@@ -4,7 +4,7 @@
       <img
         v-if="collection.image"
         :src="collection.image"
-        :alt="collection?.name"
+        :alt="collection.name"
         loading="lazy"
         width="240"
         height="240"
@@ -19,14 +19,13 @@
       />
 
       <div class="nft-info">
-        <span class="title title--main">{{ title }}</span>
+        <span class="title title--main">{{ collection.name }}</span>
       </div>
     </div>
   </FCorners>
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
 import { type NftCollection } from '@extension-base/services/nft-service/types';
 import { useRouter } from 'vue-router/composables';
 import { Components } from '@/router/routes';
@@ -37,7 +36,6 @@ type Props = {
 
 const props = defineProps<Props>();
 const router = useRouter();
-const title = ref(props.collection?.name);
 
 const onClick = () => {
   router.push({ name: Components.NftCollection, params: { contract: props.collection.address } });
@@ -66,6 +64,7 @@ const onClick = () => {
   font-weight: 400;
   line-height: 15px;
   color: $grayish-white;
+  min-height: 55px;
 }
 
 .titles {

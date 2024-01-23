@@ -56,9 +56,9 @@ export default class AlchemyNftController {
       if (collection && !ownedCollections[address]) {
         //init Collection
         ownedCollections[address] = {
-          name: collection.openSeaMetadata.collectionName,
+          name: collection.openSeaMetadata.collectionName ?? collection.name ?? collection.displayNft.name ?? '',
           address: collection.address,
-          image: collection.openSeaMetadata.imageUrl ?? collection?.image.cachedUrl,
+          image: collection.openSeaMetadata.imageUrl ?? collection.image.cachedUrl,
           network: network?.name ?? this.network,
           ownedNfts: [],
         };

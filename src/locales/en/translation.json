@@ -193,6 +193,7 @@
     "googleExportSuccess": "The secret data has been successfully saved on Google Drive"
   },
   "assets": {
+    "soraCrossChainALert": "Currently, there's a min. amount 0.05 {asset} for bridging to ensure the stability and security of the SORA Network. We appreciate your understanding.",
     "all": "All",
     "locked": "Locked",
     "totalLocked": "Total locked",

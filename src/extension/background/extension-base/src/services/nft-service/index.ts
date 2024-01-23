@@ -7,10 +7,16 @@ import { PROD_NFT_NETWORKS } from '@extension-base/services/nft-service/consts';
 import { storage } from '@extension-base/stores/Storage';
 import { getContract } from '@extension-base/api/evm/utils/eth';
 import { parseEther, formatUnits, Wallet, type Contract } from 'ethers';
+import {
+  BasicTxErrorCode,
+  type Port,
+  type RequestNftTransfer,
+  type ResponseNftTransfer,
+} from '@extension-base/background/types/types';
 import type { CheckNftResponse, NftSettings, NftState, NftTx } from '@extension-base/services/nft-service/types';
-import type { Port, ResponseNftTransfer } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import { VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
+// import { getSubstrateAddress } from '@/extension/background/extension-base/src/background/utils/utils';
 
 export class NftService {
   private store: NftStore;
@@ -68,21 +74,25 @@ export class NftService {
     storage.set({ nftSettings: this.hideSettings });
   }
 
-  async sendNft(tx: NftTx): Promise<ResponseNftTransfer> {
+  async sendNft(tx: RequestNftTransfer): Promise<ResponseNftTransfer> {
     const { from, contract: contractAddress } = tx;
     const api = this.state.getEvmApi(tx.network);
-    const { privateKey } = this.state.accountExportPrivateKey({ address: from, password: '199527' });
-    const signer = new Wallet(privateKey, api);
     const contract = await getContract(contractAddress, api, 'erc721');
+    // const substrateAddress = getSubstrateAddress(from, this.state);
+    const pair = this.state.keyringService.getPair(from);
+
+    if (pair?.isLocked) {
+      const isUnlock = this.state.keyringService.unlockPair(pair, tx.password);
+
+      if (!isUnlock) {
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
+      }
+    }
 
     try {
       const checkData = await this.checkSend(tx);
-
-      // const data = contract.interface.encodeFunctionData('safeTransferFrom(address,address,uint256)', [
-      //   from,
-      //   tx.to,
-      //   tx.tokenId,
-      // ]);
+      const { privateKey } = this.state.accountExportPrivateKey({ address: from, password: tx.password });
+      const signer = new Wallet(privateKey, api);
 
       if (!checkData.isApproved) {
         const contractMaster = contract.connect(signer) as Contract;
@@ -104,21 +114,6 @@ export class NftService {
       };
     }
 
-    // const fees = api.estimateGas({
-    //   data,
-    //   to,
-    //   from,
-    //   value: parseEther('0'),
-    //   ...feeData,
-    // });
-
-    //Call the safetransfer method
-    // const transaction = await contract['safeTransferFrom(address,address,uint256)'](from, to, tokenId, {
-    //   gasLimit: parseEther('21000'),
-    // });
-    //Wait for the transaction to complete
-    // await transaction.wait();
-
     return {
       errors: [],
       status: true,
@@ -132,7 +127,6 @@ export class NftService {
 
     const contract = await getContract(contractAddress, api, 'erc721');
     const feeData = await api.getFeeData();
-    // const substrateAddress = getSubstrateAddress(from, this.state);
     // const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, utilityAsset.id);
     // console.log(tokenBalance);
 

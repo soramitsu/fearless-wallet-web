@@ -90,6 +90,7 @@ import {
   type BasicTxResponse,
   TransferErrorCode,
   type FetchBalanceRequest,
+  type RequestNftTransfer,
 } from '@extension-base/background/types/types';
 import {
   type RequestConnectWalletConnect,
@@ -1845,7 +1846,7 @@ export default class Extension extends FWExtensionBase {
         return this.state.nftService.nftSubscribe(id, port);
 
       case 'pri(nft.send)':
-        return this.state.nftService.sendNft(request as NftTx);
+        return this.state.nftService.sendNft(request as RequestNftTransfer);
 
       case 'pri(nft.checkSend)':
         return this.state.nftService.checkSend(request as NftTx);

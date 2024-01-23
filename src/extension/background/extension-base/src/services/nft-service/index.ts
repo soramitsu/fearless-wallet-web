@@ -106,8 +106,7 @@ export class NftService {
         await contractMaster.setApprovalForAll(tx.to, true);
       }
 
-      const transaction = await contractMaster['safeTransferFrom(address,address,uint256)'](from, tx.to, tx.tokenId);
-      await transaction.wait();
+      await contractMaster['safeTransferFrom(address,address,uint256)'](from, tx.to, tx.tokenId);
 
       return {
         errors: [],

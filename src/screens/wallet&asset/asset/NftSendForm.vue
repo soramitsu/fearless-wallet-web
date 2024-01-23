@@ -7,19 +7,23 @@
     @closeHandler="onClose"
   >
     <div class="nft-send-form">
-      <div
-        v-if="!popupControls.showHistoryBook && !popupControls.showMyWallets && !popupControls.showConfirmScreen"
-        class="container"
-      >
-        <FInput v-model="recipientCut" icon="close" placeholder="assets.sendTo" @click="setRecipient" />
-        <div class="activity-buttons row">
-          <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+      <template v-if="showSendForm">
+        <div class="container">
+          <FInput v-model="recipientCut" icon="close" placeholder="assets.sendTo" @click="setRecipient" />
+          <div class="activity-buttons row">
+            <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
 
-          <BadgeButton text="common.paste" @click="paste" />
+            <BadgeButton text="common.paste" @click="paste" />
 
-          <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
+            <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
+          </div>
         </div>
-      </div>
+
+        <div class="fees">
+          <span>{{ $t('common.networkFees') }}</span>
+          <span>{{ formatFeeString }}</span>
+        </div>
+      </template>
 
       <template v-if="popupControls.showConfirmScreen">
         <img :src="image" class="nft-img" alt="nft" width="180px" height="180px" />
@@ -36,6 +40,7 @@
         @setRecipient="setRecipient"
         @setAddress="setAddress"
       />
+
       <ConfirmationPasswordPopup
         v-if="popupControls.showConfirmationPasswordPopup"
         :tx="tx"
@@ -57,16 +62,8 @@
         />
       </div>
 
-      <div
-        v-if="!popupControls.showConfirmScreen && !popupControls.showHistoryBook && !popupControls.showMyWallets"
-        class="fees"
-      >
-        <span>{{ $t('common.networkFees') }}</span>
-        <span>{{ formatFeeString }}</span>
-      </div>
-
       <FButton
-        v-if="!popupControls.showHistoryBook && !popupControls.showMyWallets"
+        v-if="showSubmitBtn"
         size="big"
         :disabled="isDisabled"
         class="button"
@@ -152,7 +149,7 @@ const setWallet = (ethereumAddress: string) => {
 const assetSymbol = computed(() => {
   const network: NetworkJson = store.getters.getNetwork(nft.value?.network ?? '');
 
-  return network.assets.find((el) => el.isUtility)?.symbol ?? '';
+  return network?.assets.find((el) => el.isUtility)?.symbol ?? '';
 });
 
 const actionBtnName = computed(() => {
@@ -210,11 +207,15 @@ const validateTx = async () => {
   fees.fees = checkData.fee;
 };
 
+const showSendForm = computed(
+  () => !popupControls.showHistoryBook && !popupControls.showMyWallets && !popupControls.showConfirmScreen
+);
+const showSubmitBtn = computed(() => !popupControls.showHistoryBook && !popupControls.showMyWallets);
 const formatFeeString = computed(() => `${n(+fees.fees, 'decimalPrecise')} ${assetSymbol.value?.toUpperCase()}`);
 watch(tx, validateTx);
 onMounted(validateTx);
 
-const onConfirmClose = () => (popupControls.showConfirmScreen = true);
+const onConfirmClose = () => (popupControls.showConfirmationPasswordPopup = false);
 </script>
 
 <style lang="scss" scoped>

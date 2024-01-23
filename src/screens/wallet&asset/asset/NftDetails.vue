@@ -3,7 +3,7 @@
     <Scroll>
       <div class="nft-details">
         <img v-if="image" :src="image" class="nft-details__img" :alt="id" width="500" height="500" />
-        <p>{{ meta.description }}</p>
+        <p class="nft-details__desc">{{ meta.description }}</p>
 
         <InfoRow text="nft.owned" :value="owned" />
         <InfoRow text="nft.id" :value="tokenId" />
@@ -42,9 +42,9 @@
 </template>
 
 <script lang="ts" setup>
-import { type NftState } from '@extension-base/services/nft-service/types';
 import { useRouter, useRoute } from 'vue-router/composables';
 import { computed } from 'vue';
+import type { FearlessNft, NftState } from '@extension-base/services/nft-service/types';
 import { type SelectedWallet, useStore } from '@/store';
 import { cut } from '@/helpers';
 import { Components } from '@/router/routes';
@@ -56,8 +56,8 @@ const store = useStore();
 const id = computed(() => route.params.id);
 const nfts = computed<NftState>(() => store.getters.nfts ?? []);
 const contract = computed(() => route.params.contract);
-const collections = computed(() => nfts.value[contract.value]);
-const ownedNfts = computed(() => collections.value?.ownedNfts ?? []);
+const ownedNfts = computed<FearlessNft[]>(() => nfts.value[contract.value]?.ownedNfts ?? []);
+ownedNfts;
 const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value)!);
 const image = computed(() => nft.value?.image);
 const owned = computed(() => (nft.value?.isOwned ? 'owned' : 'not owned'));
@@ -73,9 +73,9 @@ const onSend = () => router.push({ name: Components.NftSendForm, params: { id: i
 
 const onShare = () => {
   const dataToShare = {
-    'My public address to recieve:': selectedWallet.value.ethereumAddress,
+    'My public address to recieve NFTs:': selectedWallet.value.ethereumAddress,
     collection: contract.value,
-    owned: nft.value.ownedBy,
+    owned: selectedWallet.value.ethereumAddress,
     creator: nft.value.creator,
     network: nft.value.network,
     'token Id': route.params.id,
@@ -103,6 +103,10 @@ const onShare = () => {
   &__desc {
     font-weight: 400;
     font-size: 14px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    color: $default-white;
+    overflow-wrap: anywhere;
   }
 }
 .send-btn {

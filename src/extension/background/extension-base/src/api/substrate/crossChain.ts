@@ -7,7 +7,7 @@ import { getAssetInfo } from '@extension-base/api/helpers';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
 import { type Extrinsic } from './utils/types';
 import { getPrecisionValue } from './utils';
-import { estimateSoraCrossChainFee, makeSoraCrossChain } from './soraBridge';
+import { estimateSoraCrossChainFee, makeSoraCrossChain, getSoraParaId } from './soraBridge';
 import type State from '@extension-base/background/handlers/State';
 import type { TokenBalance, BasicTxResponse } from '@extension-base/background/types/types';
 import type { AssetId, Interiors, NetworkName, RelayChainName } from '@/interfaces';
@@ -126,7 +126,9 @@ function getNativeTeleportParams(
   const isFromRelayChain = isRelayChain(originNet);
   const isToRelayChain = isRelayChain(destNet);
   const { xcm, parentId, name } = state.networkMap[originNetworkKey];
-  const paraId = state.networkMap[destNetworkKey]?.paraId ?? 0;
+  const paraId = isSora(destNet, true)
+    ? getSoraParaId(originNet, state)
+    : state.networkMap[destNetworkKey]?.paraId ?? '0';
   const xcmVersion = xcm!.xcmVersion.toUpperCase();
   const publicKey = decodeAddress(toAddress);
   const value = new BN(amount);

@@ -4,7 +4,15 @@ import { type Extrinsic } from './utils/types';
 import { type CrossChainProps, type MakeCrossChainProps } from './crossChain';
 import type State from '@extension-base/background/handlers/State';
 import type { Asset } from '@sora-substrate/util/src/assets/types';
-import { isSora } from '@/helpers';
+import { type NetworkName } from '@/interfaces';
+
+function getSoraParaId(network: NetworkName, state: State): string {
+  if (network.toLowerCase() === 'kusama') return state.networkMap['SORA Kusama parachain'].paraId!;
+
+  if (network.toLowerCase() === 'rococo') return state.networkMap['SORA Rococo parachain'].paraId!;
+
+  return '0';
+}
 
 function getSoraParams(props: CrossChainProps, state: State): [Asset, SubNetworkId] {
   const { originNet, tokenBalance, destinationNet, assetId } = props;
@@ -49,4 +57,4 @@ async function makeSoraCrossChain(props: MakeCrossChainProps, state: State): Pro
   await apiSora.bridgeProxy.sub.transfer(asset, to, amount, subNetwork);
 }
 
-export { makeSoraCrossChain, estimateSoraCrossChainFee };
+export { makeSoraCrossChain, estimateSoraCrossChainFee, getSoraParaId };

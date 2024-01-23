@@ -100,6 +100,8 @@
                 <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
               </div>
 
+              <slot name="step1Warning"></slot>
+
               <InfoRow
                 :text="`assets.${isTransfer ? 'networkFee' : 'originalNetworkFee'}`"
                 :value="syncedFeeCut"
@@ -122,7 +124,7 @@
               <Tooltip text="assets.feeDescription" target=".cross-chain-fee" placement="right" />
             </template>
 
-            <slot v-else-if="step === 2"></slot>
+            <slot name="step2" v-else-if="step === 2"></slot>
           </div>
 
           <FButton
@@ -252,6 +254,7 @@ export default class TransferForm extends Vue {
 
   @Prop(String) header!: string;
   @Prop(String) extrinsicType!: 'transfer' | 'crossChain';
+  @Prop({ default: false }) isDisableBtn!: boolean;
   @PropSync('recipient', { default: '' }) syncedRecipient!: string;
   @PropSync('assetId', { type: String }) syncedAssetId!: string;
   @PropSync('selectedNetwork', { type: String }) syncedNetwork!: string;
@@ -423,6 +426,8 @@ export default class TransferForm extends Vue {
   }
 
   get buttonDisabled() {
+    if (this.isDisableBtn) return true;
+
     if (this.isFetchingFees) return true;
 
     if (!navigator.onLine) return true;
@@ -564,13 +569,6 @@ export default class TransferForm extends Vue {
     const asset = getNativeAssetName(this.sendAssetName);
 
     return this.originNet.xcm!.availableDestinations.flatMap(({ assets, chainId }) => {
-      // TODO: удалить когда будет готов сора бридж
-      if (
-        this.originNet.name?.toLowerCase() === 'kusama' &&
-        chainId === '7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5'
-      )
-        return [];
-
       if (!assets.some(({ symbol }) => symbol.toLowerCase() === asset)) return [];
 
       const { name, icon } = this.getNetwork(chainId);

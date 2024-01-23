@@ -52,7 +52,6 @@ import { isSora } from '@/helpers';
 import { type SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { SORA_MAINNET, SORA_TEST } from '@/consts/sora';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
@@ -106,9 +105,6 @@ export default class AssetActionButtons extends Vue {
   }
 
   get showCrossChainButton() {
-    // TODO: удалить когда будет готов сора бридж
-    if (this.selectedNetwork === SORA_MAINNET || this.selectedNetwork === SORA_TEST) return false;
-
     if (this.selectedNetwork === '' || this.selectedWallet.isMobile) return false;
 
     const network = this.getNetwork(this.selectedNetwork);

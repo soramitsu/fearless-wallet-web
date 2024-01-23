@@ -330,7 +330,8 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     // функции выполняются через "@sora-substrate/util, для них не работают колбеки с подпиской
-    if (this.extrinsicType === 'swap' || this.isStaking) this.transactionState = results?.status ? 'success' : 'failed';
+    if (this.extrinsicType === 'swap' || this.extrinsicType === 'nft' || this.isStaking)
+      this.transactionState = results?.status ? 'success' : 'failed';
   }
 }
 </script>

@@ -32,9 +32,8 @@ export type NftTx = {
   password?: string;
 };
 export type CheckNftResponse = {
-  isApproved: boolean;
   fee: string;
-  error?: 'unsufficientFunds' | 'wrongpassword' | 'incorrenctRecipient';
+  error?: 'unsufficientFunds' | 'incorrenctRecipient';
 };
 
 export type NftSettings = {

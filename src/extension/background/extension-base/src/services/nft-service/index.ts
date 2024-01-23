@@ -13,10 +13,11 @@ import {
   type RequestNftTransfer,
   type ResponseNftTransfer,
 } from '@extension-base/background/types/types';
+import { getBalanceItem, getSubstrateAddress } from '@extension-base/background/utils/utils';
+import { FPNumber } from '@sora-substrate/util';
 import type { CheckNftResponse, NftSettings, NftState, NftTx } from '@extension-base/services/nft-service/types';
 import type State from '@extension-base/background/handlers/State';
 import { VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
-// import { getSubstrateAddress } from '@/extension/background/extension-base/src/background/utils/utils';
 
 export class NftService {
   private store: NftStore;
@@ -78,7 +79,6 @@ export class NftService {
     const { from, contract: contractAddress } = tx;
     const api = this.state.getEvmApi(tx.network);
     const contract = await getContract(contractAddress, api, 'erc721');
-    // const substrateAddress = getSubstrateAddress(from, this.state);
     const pair = this.state.keyringService.getPair(from);
 
     if (pair?.isLocked) {
@@ -90,21 +90,29 @@ export class NftService {
     }
 
     try {
-      const checkData = await this.checkSend(tx);
+      const res = await this.checkSend(tx);
+
+      if (res.error) {
+        return { status: false, errors: [{ message: 'Balance to low', code: BasicTxErrorCode.BALANCE_TO_LOW }] };
+      }
+
       const { privateKey } = this.state.accountExportPrivateKey({ address: from, password: tx.password });
       const signer = new Wallet(privateKey, api);
+      const isApproved: boolean = await contract.isApprovedForAll(contract, tx.to);
 
-      if (!checkData.isApproved) {
-        const contractMaster = contract.connect(signer) as Contract;
-        // const approve = await contractMaster.setApprovalForAll(tx.to, true);
-        const transaction = await contractMaster['safeTransferFrom(address,address,uint256)'](from, tx.to, tx.tokenId);
-        await transaction.wait();
+      const contractMaster = contract.connect(signer) as Contract;
 
-        return {
-          errors: [],
-          status: true,
-        };
+      if (!isApproved) {
+        await contractMaster.setApprovalForAll(tx.to, true);
       }
+
+      const transaction = await contractMaster['safeTransferFrom(address,address,uint256)'](from, tx.to, tx.tokenId);
+      await transaction.wait();
+
+      return {
+        errors: [],
+        status: true,
+      };
     } catch (e) {
       console.info(e);
 
@@ -122,16 +130,17 @@ export class NftService {
 
   async checkSend({ from, tokenId, network, contract: contractAddress }: NftTx): Promise<CheckNftResponse> {
     const api = this.state.getEvmApi(network);
-    // const networkJson = this.state.getNetworkByKey(network);
-    // const utilityAsset = networkJson.assets.find((el) => el.isUtility)!;
-
+    const networkJson = this.state.getNetworkByKey(network);
+    const utilityAsset = networkJson.assets.find((el) => el.isUtility)!;
     const contract = await getContract(contractAddress, api, 'erc721');
     const feeData = await api.getFeeData();
-    // const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, utilityAsset.id);
-    // console.log(tokenBalance);
+    const substrateAddress = getSubstrateAddress(from, this.state);
 
-    // const balance = getBalanceItem(tokenBalance.balances, network)!;
-    // console.log(balance);
+    const accountBalance = this.state.balanceService.getAccountBalance(substrateAddress);
+    const tokenBalance = accountBalance.find((el) => el.symbol === utilityAsset.symbol);
+    if (!tokenBalance) return { error: 'unsufficientFunds', fee: '0' };
+    const balance = getBalanceItem(tokenBalance.balances, network);
+
     const data = contract.interface.encodeFunctionData('safeTransferFrom(address,address,uint256)', [
       from,
       VALID_ETHEREUM_ADDRESS,
@@ -139,7 +148,6 @@ export class NftService {
     ]);
 
     try {
-      const isApproved: boolean = await contract.isApprovedForAll(contract, VALID_ETHEREUM_ADDRESS);
       const gasLimit = await api.estimateGas({
         data,
         to: VALID_ETHEREUM_ADDRESS,
@@ -151,14 +159,21 @@ export class NftService {
       const maxFeePerGas = feeData.maxPriorityFeePerGas ?? BigInt(0);
       const prepGasPrice = baseFeePerGas + maxFeePerGas;
       const estimateFee = prepGasPrice * gasLimit;
+      const formatFees = formatUnits(estimateFee);
+      const isUnsufficientFunds = new FPNumber(formatFees).isGreaterThan(new FPNumber(balance?.total ?? 0));
+
+      if (isUnsufficientFunds) {
+        return {
+          error: 'unsufficientFunds',
+          fee: formatFees,
+        };
+      }
 
       return {
-        isApproved,
         fee: formatUnits(estimateFee),
       };
     } catch (e) {
       return {
-        isApproved: false,
         fee: '0.0',
       };
     }

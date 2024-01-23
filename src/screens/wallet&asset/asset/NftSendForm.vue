@@ -62,7 +62,7 @@
         class="fees"
       >
         <span>{{ $t('common.networkFees') }}</span>
-        <span>{{ fees.fees }}</span>
+        <span>{{ formatFeeString }}</span>
       </div>
 
       <FButton
@@ -79,7 +79,8 @@
 
 <script lang="ts" setup>
 import { ref, computed, reactive, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router/composables';
+import { useRoute, useRouter } from 'vue-router/composables';
+import { useI18n } from 'vue-i18n-composable';
 import type { NftCollection, NftState, NftTx } from '@extension-base/services/nft-service/types';
 import type { AccountJson } from '@extension-base/background/types/types';
 import { cut, getClipboard } from '@/helpers';
@@ -90,9 +91,13 @@ import WalletInfo from '@/screens/main/WalletInfo.vue';
 import InfoList from '@/screens/extension-ui/InfoList.vue';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import { checkNft } from '@/extension/messaging/nfts';
-import router from '@/router';
+import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 
 const store = useStore();
+const route = useRoute();
+const router = useRouter();
+const { t, n } = useI18n();
+
 const to = ref('');
 const popupControls = reactive({
   showConfirmScreen: false,
@@ -100,6 +105,19 @@ const popupControls = reactive({
   showHistoryBook: false,
   showMyWallets: false,
 });
+
+const errors = reactive({
+  unsufficientFunds: false,
+  incorrenctRecipient: false,
+});
+const id = computed(() => route.params.id);
+const contract = computed(() => route.params.contract);
+const nfts = computed<NftState>(() => store.getters.nfts ?? {});
+
+const collection = computed<NftCollection | undefined>(() => nfts.value[contract.value]);
+
+const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
+const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value));
 const fees = reactive({ fees: '0' });
 const assetId = ref('');
 const wallets = computed<AccountJson[]>(() => store.getters.getAccounts);
@@ -114,7 +132,7 @@ const toggleMyWalletsVisibility = () => (popupControls.showMyWallets = !popupCon
 const toggleHistoryBookVisibility = () => (popupControls.showHistoryBook = !popupControls.showHistoryBook);
 const recipientCut = computed(() => cut(to.value));
 
-const isDisabled = computed(() => to.value === '');
+const isDisabled = computed(() => to.value === '' || errors.incorrenctRecipient || errors.unsufficientFunds);
 
 const setRecipient = (address = '') => (to.value = address);
 
@@ -131,7 +149,18 @@ const setWallet = (ethereumAddress: string) => {
   toggleMyWalletsVisibility();
 };
 
-const actionBtnName = computed(() => `common.${popupControls.showConfirmScreen ? 'confirm' : 'accept'}`);
+const assetSymbol = computed(() => {
+  const network: NetworkJson = store.getters.getNetwork(nft.value?.network ?? '');
+
+  return network.assets.find((el) => el.isUtility)?.symbol ?? '';
+});
+
+const actionBtnName = computed(() => {
+  if (errors.unsufficientFunds) return t('assets.insufficientBalance', { asset: assetSymbol.value.toUpperCase() });
+
+  return `common.${popupControls.showConfirmScreen ? 'confirm' : 'accept'}`;
+});
+
 const showBackIcon = computed(
   () => popupControls.showHistoryBook || popupControls.showMyWallets || popupControls.showConfirmScreen
 );
@@ -144,16 +173,6 @@ const onBack = () => {
 
 const onClose = () => router.back();
 
-const route = useRoute();
-
-const id = computed(() => route.params.id);
-const contract = computed(() => route.params.contract);
-const nfts = computed<NftState>(() => store.getters.nfts ?? {});
-
-const collection = computed<NftCollection | undefined>(() => nfts.value[contract.value]);
-
-const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
-const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value));
 const image = computed(() => nft.value?.image ?? '');
 const nftDetails = computed(() => ({
   'send to': to.value,
@@ -162,6 +181,7 @@ const nftDetails = computed(() => ({
   network: collection.value?.network ?? '',
   type: nft.value?.type ?? '',
 }));
+
 const network = computed(() => nft.value?.network ?? '');
 
 const tx = computed<NftTx>(() => ({
@@ -178,15 +198,21 @@ const onProceed = () => {
   else popupControls.showConfirmationPasswordPopup = true;
 };
 
-const fetchFees = async () => {
+const validateTx = async () => {
   if (!tx.value.network) return;
 
   const checkData = await checkNft(tx.value);
+
+  if (checkData.error) {
+    if (checkData.error === 'unsufficientFunds') errors.unsufficientFunds = true;
+  }
+
   fees.fees = checkData.fee;
 };
 
-watch(tx, fetchFees);
-onMounted(fetchFees);
+const formatFeeString = computed(() => `${n(+fees.fees, 'decimalPrecise')} ${assetSymbol.value?.toUpperCase()}`);
+watch(tx, validateTx);
+onMounted(validateTx);
 
 const onConfirmClose = () => (popupControls.showConfirmScreen = true);
 </script>

@@ -6,9 +6,9 @@ import AlchemyNftController from '@extension-base/services/nft-service/handlers/
 import { PROD_NFT_NETWORKS } from '@extension-base/services/nft-service/consts';
 import { storage } from '@extension-base/stores/Storage';
 import { getContract } from '@extension-base/api/evm/utils/eth';
-import { parseEther, formatUnits } from 'ethers';
-import type { NftSettings, NftState, NftTx } from '@extension-base/services/nft-service/types';
-import type { Port } from '@extension-base/background/types/types';
+import { parseEther, formatUnits, Wallet, type Contract } from 'ethers';
+import type { CheckNftResponse, NftSettings, NftState, NftTx } from '@extension-base/services/nft-service/types';
+import type { Port, ResponseNftTransfer } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import { VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
 
@@ -66,33 +66,40 @@ export class NftService {
     }
   }
 
-  async sendNft(tx: NftTx) {
-    // const { from, contract: contractAddress } = tx;
-    // const api = this.state.getEvmApi(tx.network);
-    // // const { privateKey } = this.state.accountExportPrivateKey({ address: from, password: '' });
-    // // const signer = new Wallet(privateKey, api);
-
-    // // const contract = await getContract(contractAddress, api, 'erc721');
-
-    // const feeData = await api.getFeeData();
-    // const data = contract.interface.encodeFunctionData('safeTransferFrom(address,address,uint256)', [
-    //   from,
-    //   to,
-    //   tokenId,
-    // ]);
+  async sendNft(tx: NftTx): Promise<ResponseNftTransfer> {
+    const { from, contract: contractAddress } = tx;
+    const api = this.state.getEvmApi(tx.network);
+    const { privateKey } = this.state.accountExportPrivateKey({ address: from, password: '199527' });
+    const signer = new Wallet(privateKey, api);
+    const contract = await getContract(contractAddress, api, 'erc721');
 
     try {
-      const checkTx = await this.checkSend(tx);
+      const checkData = await this.checkSend(tx);
 
-      if (!checkTx.isApproved) {
-        // const contractMaster = contract.connect(signer) as Contract;
-        // const approve = await contractMaster.setApprovalForAll(to, true);
-        // const transaction = await contractMaster['safeTransferFrom(address,address,uint256)'](from, to, tokenId);
+      // const data = contract.interface.encodeFunctionData('safeTransferFrom(address,address,uint256)', [
+      //   from,
+      //   tx.to,
+      //   tx.tokenId,
+      // ]);
+
+      if (!checkData.isApproved) {
+        const contractMaster = contract.connect(signer) as Contract;
+        // const approve = await contractMaster.setApprovalForAll(tx.to, true);
+        const transaction = await contractMaster['safeTransferFrom(address,address,uint256)'](from, tx.to, tx.tokenId);
+        await transaction.wait();
+
+        return {
+          errors: [],
+          status: true,
+        };
       }
     } catch (e) {
       console.info(e);
 
-      return false;
+      return {
+        errors: [],
+        status: false,
+      };
     }
 
     // const fees = api.estimateGas({
@@ -109,12 +116,26 @@ export class NftService {
     // });
     //Wait for the transaction to complete
     // await transaction.wait();
+
+    return {
+      errors: [],
+      status: true,
+    };
   }
 
-  async checkSend({ from, tokenId, network, contract: contractAddress }: NftTx) {
+  async checkSend({ from, tokenId, network, contract: contractAddress }: NftTx): Promise<CheckNftResponse> {
     const api = this.state.getEvmApi(network);
+    // const networkJson = this.state.getNetworkByKey(network);
+    // const utilityAsset = networkJson.assets.find((el) => el.isUtility)!;
+
     const contract = await getContract(contractAddress, api, 'erc721');
     const feeData = await api.getFeeData();
+    // const substrateAddress = getSubstrateAddress(from, this.state);
+    // const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, utilityAsset.id);
+    // console.log(tokenBalance);
+
+    // const balance = getBalanceItem(tokenBalance.balances, network)!;
+    // console.log(balance);
     const data = contract.interface.encodeFunctionData('safeTransferFrom(address,address,uint256)', [
       from,
       VALID_ETHEREUM_ADDRESS,
@@ -123,16 +144,21 @@ export class NftService {
 
     try {
       const isApproved: boolean = await contract.isApprovedForAll(contract, VALID_ETHEREUM_ADDRESS);
-      const fees = await api.estimateGas({
+      const gasLimit = await api.estimateGas({
         data,
         to: VALID_ETHEREUM_ADDRESS,
         value: parseEther('0'),
         ...feeData,
       });
+      const block = await api.provider.getBlock('latest');
+      const baseFeePerGas = block?.baseFeePerGas ?? BigInt(0);
+      const maxFeePerGas = feeData.maxPriorityFeePerGas ?? BigInt(0);
+      const prepGasPrice = baseFeePerGas + maxFeePerGas;
+      const estimateFee = prepGasPrice * gasLimit;
 
       return {
         isApproved,
-        fee: formatUnits(fees, 'gwei'),
+        fee: formatUnits(estimateFee),
       };
     } catch (e) {
       return {

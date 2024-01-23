@@ -12,7 +12,7 @@
 
         <div class="send-btn">
           <FButton
-            text="common.share"
+            text="common.copyMeta"
             iconName="export-nft"
             width="100%"
             size="big"

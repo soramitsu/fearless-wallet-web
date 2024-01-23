@@ -29,10 +29,12 @@ export type NftTx = {
   from: string;
   network: string;
   tokenId: string;
+  password?: string;
 };
-export type CheckNFTTx = {
+export type CheckNftResponse = {
   isApproved: boolean;
   fee: string;
+  error?: 'unsufficientFunds' | 'wrongpassword' | 'incorrenctRecipient';
 };
 
 export type NftSettings = {

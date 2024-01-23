@@ -73,7 +73,8 @@ import {
   type RequestSwap,
   BasicTxErrorCode,
 } from '@extension-base/background/types/types';
-import { type RequestStaking } from '@extension-base//services/staking-service/types';
+import { type RequestStaking } from '@extension-base/services/staking-service/types';
+import { type NftTx } from '@extension-base/services/nft-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { SwapOptions, StakingOperation } from '@/interfaces';
 import type { GetNetwork, GetNetworkGenesisHash, SelectedWallet } from '@/store';
@@ -84,6 +85,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { IS_EXTENSION } from '@/consts/global';
+import { sendNft } from '@/extension/messaging/nfts';
 
 @Component({
   components: { SignMobile },
@@ -106,8 +108,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) firstIcon!: string;
   @Prop(String) secondIcon!: string;
   @Prop(Object) currency?: TokenBalance;
-  @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain | RequestStaking | SwapOptions;
-  @Prop(String) extrinsicType!: 'transfer' | 'crossChain' | 'swap' | StakingOperation;
+  @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain | RequestStaking | SwapOptions | NftTx;
+  @Prop(String) extrinsicType!: 'transfer' | 'crossChain' | 'swap' | 'nft' | StakingOperation;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -298,7 +300,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.extrinsicType === 'crossChain') return makeCrossChain(this.request as RequestCrossChain, callback);
 
     if (this.extrinsicType === 'swap') return makeSwap(this.request as RequestSwap);
-
+    if (this.extrinsicType === 'nft') return sendNft(this.request as NftTx);
     if (this.isStaking)
       return makeStaking({
         type: this.extrinsicType,
@@ -315,7 +317,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     const results = await this.makeExtrinsic();
 
-    if (!results?.status) {
+    if (results && !results?.status) {
       const isErrorPassword = results?.errors?.some(({ code }) => code === BasicTxErrorCode.INVALID_PASSWORD) ?? false;
 
       if (isErrorPassword) {

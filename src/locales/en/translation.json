@@ -649,6 +649,7 @@
     "airdrop": "Airdrop",
     "hideNfts": "Hide NFTs",
     "noNft": "There aren't any NFTs yet. Buy or mint NFTs to see them here."
+
   },
   "common": {
     "approve": "Approve",
@@ -729,7 +730,7 @@
     "iAmReady": "OK, I am ready",
     "all": "All",
     "send": "Send",
-    "share": "Share",
+    "copyMeta": "Copy Metadata",
     "name": "Name",
     "warning": "Warning",
     "iAgree": "I agree",
@@ -744,6 +745,7 @@
     "network": "Network",
     "nothingFound": "Nothing found",
     "days": "days",
-    "featureOff": "Temparary unavailable, we're working to bring it back."
+    "featureOff": "Temparary unavailable, we're working to bring it back.",
+    "networkFees":"Network fee"
   }
 }

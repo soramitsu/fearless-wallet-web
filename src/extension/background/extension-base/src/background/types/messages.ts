@@ -2,7 +2,7 @@ import {
   type NftTx,
   type NftState,
   type NftSettings,
-  type CheckNFTTx,
+  type CheckNftResponse,
 } from '@extension-base/services/nft-service/types';
 import type { OwnedNftsResponse } from 'alchemy-sdk';
 import type {
@@ -89,6 +89,7 @@ import type {
   MobileSigningRequest,
   RequestSigningSubscribe,
   FetchBalanceRequest,
+  ResponseNftTransfer,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -254,7 +255,7 @@ export interface RequestSignatures {
   //Nfts
   'pri(nft.get.all)': [string, OwnedNftsResponse];
   'pri(nft.subscribe)': [null, NftState, NftState];
-  'pri(nft.send)': [NftTx, boolean];
-  'pri(nft.checkSend)': [NftTx, CheckNFTTx];
+  'pri(nft.send)': [NftTx, ResponseNftTransfer];
+  'pri(nft.checkSend)': [NftTx, CheckNftResponse];
   'pri(nft.settings)': [NftSettings, void];
 }

@@ -1,4 +1,4 @@
-import { type TokenBalance } from '../../background/types/types';
+import { type TokenBalance } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import type { Asset } from '@extension-base/types';

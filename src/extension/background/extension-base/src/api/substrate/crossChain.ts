@@ -5,9 +5,10 @@ import { isEthereumNetwork, getUtilityProps, getNativeAssetName } from '@extensi
 import { SignerType } from '@extension-base/background/types/types';
 import { getAssetBalance, getAssetInfo } from '@extension-base/api/helpers';
 import { estimateSoraCrossChainFee, makeSoraCrossChain, getSoraParaId } from '@extension-base/api/substrate/soraBridge';
-import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
-import { type Extrinsic } from './utils/types';
-import { getPrecisionValue } from './utils';
+import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
+import { type Extrinsic } from '@extension-base/api/substrate/utils/types';
+import { getPrecisionValue } from '@extension-base/api/substrate/utils';
+
 import type State from '@extension-base/background/handlers/State';
 import type { TokenBalance, BasicTxResponse } from '@extension-base/background/types/types';
 import type { AssetId, Interiors, NetworkName, RelayChainName } from '@/interfaces';
@@ -435,5 +436,3 @@ async function makeCrossChain(props: MakeCrossChainProps, state: State): Promise
 }
 
 export { estimateCrossChainFee, makeCrossChain };
-
-export type { Extrinsic };

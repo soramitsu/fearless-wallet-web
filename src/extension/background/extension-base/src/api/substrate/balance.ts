@@ -1,7 +1,7 @@
 import { type Subscription } from 'rxjs';
 import { type ApiPromise } from '@polkadot/api';
 import { isEthereumNetwork, getSubstrateAddress, getUtilityProps } from '@extension-base/background/utils/utils';
-import { APIItemState } from '@extension-base/api/types/networks';
+import { APIItemState, NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
 import { setBalance } from '@extension-base/api/helpers';
@@ -179,6 +179,7 @@ export function subscribeBalance(
         networkName: string;
         unsub: () => void;
       }>((res) => {
+        const network = state.networkMap[networkName];
         const isSoraNetwork = isSora(networkName);
         const timespan = Date.now();
 
@@ -192,8 +193,8 @@ export function subscribeBalance(
 
         const subscribeOnReady = () => {
           if (!apiProps.api) {
-            if (Date.now() - timespan > 60000) res({ networkName, unsub: () => {} });
-            else setTimeout(subscribeOnReady, 1000);
+            if (network?.networkStatus !== NETWORK_STATUS.DISCONNECTED) setTimeout(subscribeOnReady, 1000);
+            else res({ networkName, unsub: () => {} });
 
             return;
           }
@@ -204,13 +205,11 @@ export function subscribeBalance(
                 const unsub = subscribeTokensBalance(addressForNetwork, networkName, apiProps.api!, state);
                 res({ networkName, unsub });
               } catch (e) {
-                if (Date.now() - timespan > 60000) res({ networkName, unsub: () => {} });
-                else setTimeout(subscribeOnReady, 1000);
+                res({ networkName, unsub: () => {} });
               }
             })
             .catch(() => {
-              if (Date.now() - timespan > 60000) res({ networkName, unsub: () => {} });
-              else setTimeout(subscribeOnReady, 1000);
+              res({ networkName, unsub: () => {} });
             });
         };
 

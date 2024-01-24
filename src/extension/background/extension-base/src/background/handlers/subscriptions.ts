@@ -195,11 +195,15 @@ export class FWSubscription {
     newEvmNetworks: NetworkName[] | null,
     isFirstRun?: boolean
   ) {
-    console.info(`Start balance sub for: ${address}${isFirstRun ? `; isFirstRun: ${true}` : ''}`);
+    console.info(
+      `Start balance sub for: ${address}${isFirstRun ? `; isFirstRun: ${true}` : ''}`,
+      newEvmNetworks,
+      newNetworks
+    );
 
     if (isFirstRun) this.state.balanceService.generateDefaultBalance(address);
 
-    this.state.fetchEvmBalance(newEvmNetworks, ethereumAddress);
+    if (newEvmNetworks?.length) this.state.fetchEvmBalance(newEvmNetworks, ethereumAddress);
 
     const unsubList = subscribeBalance(address, ethereumAddress, newNetworks, this.state);
 

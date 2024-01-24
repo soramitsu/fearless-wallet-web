@@ -75,7 +75,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { type SelectedWallet } from '@/store';
@@ -96,7 +96,7 @@ export default class ReceiveForm extends Vue {
   @Prop(String) _selectedNetwork!: string;
   @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
   get assetNetworks() {
     const currency = this.balances.find(({ assetId }) => assetId === this.selectedAssetId)!;

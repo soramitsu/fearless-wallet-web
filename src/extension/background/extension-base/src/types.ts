@@ -129,6 +129,7 @@ export interface NetworkJson {
     availableDestinations: {
       chainId: string;
       assets: XcmAssets[];
+      bridgeParachainId: string;
     }[];
   };
 }

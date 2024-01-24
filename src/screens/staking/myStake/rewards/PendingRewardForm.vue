@@ -80,7 +80,7 @@ import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type { GetAssetPrice, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
@@ -113,8 +113,8 @@ export default class PendingRewardForm extends Vue {
   showLoader = false;
   rewards: RewardsResponse = { validators: [], payouts: [], sum: '0' };
 
-  @Prop({ type: Object }) stakingCurrency!: TokenBalance;
-  @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
+  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
+  @Prop({ type: Object }) rewardedCurrency!: TokenGroup;
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -146,7 +146,7 @@ export default class PendingRewardForm extends Vue {
 
   get isValidAmountAsset() {
     // для controller аккаунта подставляем баланс stash аккаунта
-    const stakingCurrency: TokenBalance = this.stakingNetwork.isController
+    const stakingCurrency: TokenGroup = this.stakingNetwork.isController
       ? {
           ...this.stakingCurrency,
           balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),

@@ -62,7 +62,7 @@ import type ValidatedInput from '@/components/ValidatedInput.vue';
 import type Input from '@/components/Input.vue';
 import type { AsyncFn, Fn } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { validatePhoneNumber } from '@/helpers';
 import { RESEND_INTERVAL, OTP_CODE_LENGTH, VerificationStatus, StepsKyc } from '@/consts/soraCard';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
@@ -96,7 +96,7 @@ export default class Phone extends Vue {
   @Ref('phoneNumber') readonly phoneNumberComponent!: ValidatedInput;
   @Ref('verificationCode') private readonly otpComponent!: ValidatedInput;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(SoraCardGettersTypes.authLogin) authLogin!: any;
   @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;
   @Getter(SoraCardGettersTypes.wantsToPassKycAgain) wantsToPassKycAgain!: boolean;

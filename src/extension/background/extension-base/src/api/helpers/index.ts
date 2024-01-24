@@ -1,4 +1,4 @@
-import { type TokenBalance } from '@extension-base/background/types/types';
+import { type TokenGroup } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import type { Asset } from '@extension-base/types';
@@ -16,7 +16,7 @@ export function getAssetInfo(assetId: string, state: State): Asset {
   return state.assetsMap.find(({ id }) => id === assetId)!;
 }
 
-export function getAssetBalance(network: NetworkName, tokenBalance: TokenBalance): BalanceItem {
+export function getAssetBalance(network: NetworkName, tokenBalance: TokenGroup): BalanceItem {
   return tokenBalance.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase())!;
 }
 

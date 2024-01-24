@@ -78,7 +78,7 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation, Action } from 'vuex-class';
-import { type AccountJson, type BalanceJson, type TokenBalance } from '@extension-base/background/types/types';
+import { type AccountJson, type BalanceJson, type TokenGroup } from '@extension-base/background/types/types';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset, GetNetwork } from '@/store';
@@ -137,7 +137,7 @@ export default class Wallet extends Vue {
   };
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
   @Getter(AccountsGettersTypes.getShowWarningNetwork) getShowWarningNetwork!: GetShowWarningNetworks;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;

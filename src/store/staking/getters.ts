@@ -1,5 +1,5 @@
 import type { GetStakingHistory, GetStakingNetwork, NetworkParams } from '@/store/staking/types';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import type { NetworkJson } from '@extension-base/types';
@@ -38,7 +38,7 @@ export type Getters = {
 
 const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.allStakingItems]({ allStakingNetworks }, getters, rootState, rootGetters): NetworkParams[] {
-    const accountBalances: TokenBalance[] = rootState.account.balances ?? [];
+    const accountBalances: TokenGroup[] = rootState.account.balances ?? [];
     const selectedWallet: SelectedWallet = rootState.account.selectedWallet;
     const selectedNetwork: string = rootGetters.selectedNetwork;
     const networks: NetworkJson[] = rootState.networks.networks;

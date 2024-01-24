@@ -65,7 +65,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { type TokenBalance } from '@extension-base/background/types/types';
+import { type TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { NetworkParams, GetAssetPrice } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -78,7 +78,7 @@ import { getUtilityAsset } from '@/helpers/currencies';
 export default class MyStakingItem extends Vue {
   @Prop(Object) networkParams!: NetworkParams;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 

@@ -192,7 +192,7 @@ import { getMoonbeamMoonriverAssetName, getNativeAssetName } from '@extension-ba
 import {
   type RequestCheckTransfer,
   type RequestCheckCrossChain,
-  type TokenBalance,
+  type TokenGroup,
   type AccountJson,
 } from '@extension-base/background/types/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
@@ -266,7 +266,7 @@ export default class TransferForm extends Vue {
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetworkInManagement!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];

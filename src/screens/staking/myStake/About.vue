@@ -56,7 +56,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { MyStakingTab } from '@/interfaces/common';
 import type { GetAssetPrice, GetStakingNetwork, SelectedWallet, GetStakingHistory } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
@@ -68,11 +68,11 @@ export default class About extends Vue {
   activeTabName: MyStakingTab = 'about';
   isLoading = false;
 
-  @Prop({ type: Object }) stakingCurrency!: TokenBalance;
-  @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
+  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
+  @Prop({ type: Object }) rewardedCurrency!: TokenGroup;
   @Prop({ type: String }) network!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;

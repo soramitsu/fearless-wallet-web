@@ -25,7 +25,7 @@
 import Draggable from 'vuedraggable';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { type TokenBalance, type BalanceJson } from '@extension-base/background/types/types';
+import { type TokenGroup, type BalanceJson } from '@extension-base/background/types/types';
 import type { SelectedWallet } from '@/store';
 import type { AsyncFn, AssetsPrice } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -47,7 +47,7 @@ type TimeoutSubscription = {
 export default class Currencies extends Vue {
   timeoutSubscriptions: TimeoutSubscription[] = [];
 
-  @Prop(Array) balances!: TokenBalance[];
+  @Prop(Array) balances!: TokenGroup[];
   @Prop(Boolean) isEmptyBalances!: boolean;
   @Prop(String) selectedNetwork!: string;
   @Prop(String) filterValue!: string;

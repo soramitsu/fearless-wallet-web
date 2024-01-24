@@ -46,7 +46,7 @@
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { SelectedWallet, GetAssetPrice, NetworkParams } from '@/store';
-import type { AccountJson, TokenBalance } from '@extension-base/background/types/types';
+import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { cut } from '@/helpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -55,7 +55,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 export default class Payee extends Vue {
   @Prop({ type: Number }) step!: number;
   @Prop({ type: String }) fee!: string;
-  @Prop({ type: Object }) stakingCurrency!: TokenBalance;
+  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @PropSync('payoutAddress', { type: String }) syncedPayoutAddress!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;

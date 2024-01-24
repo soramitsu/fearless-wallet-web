@@ -144,7 +144,7 @@
 <script lang="ts">
 import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { type AccountJson, type TokenBalance } from '@extension-base/background/types/types';
+import { type AccountJson, type TokenGroup } from '@extension-base/background/types/types';
 import type { GetAssetPrice, GetStakingNetwork, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -195,11 +195,11 @@ export default class MainStakingForm extends Vue {
   payoutAddress = '';
   newAddress = '';
 
-  @Prop({ type: Object }) stakingCurrency!: TokenBalance;
-  @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
+  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
+  @Prop({ type: Object }) rewardedCurrency!: TokenGroup;
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @Prop({ type: String }) type!: StakingOperation;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
@@ -324,7 +324,7 @@ export default class MainStakingForm extends Vue {
     const amount = this.isBondExtra ? this.amount : '0';
 
     // для controller аккаунта подставляем баланс stash аккаунта
-    const stakingCurrency: TokenBalance = this.stakingNetwork.isController
+    const stakingCurrency: TokenGroup = this.stakingNetwork.isController
       ? {
           ...this.stakingCurrency,
           balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),

@@ -1,4 +1,4 @@
-import { type AccountJson, type TokenBalance } from '@extension-base/background/types/types';
+import { type AccountJson, type TokenGroup } from '@extension-base/background/types/types';
 import type { SelectedWallet, SelectedNetworks, AutoSelectNode } from './types';
 import type { NetworkName, WalletAddress } from '@/interfaces';
 import { accountController } from '@/controllers';
@@ -9,7 +9,7 @@ export type State = {
   selectedFiat: string;
   selectedNetworks: SelectedNetworks;
   accounts: AccountJson[];
-  balances: TokenBalance[];
+  balances: TokenGroup[];
   hiddenAssets: Record<WalletAddress, string[]>;
   autoSelectNode: AutoSelectNode;
   isCustomSort: Record<string, boolean>;

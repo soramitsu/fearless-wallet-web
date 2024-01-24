@@ -5,7 +5,7 @@ import { APIItemState } from '@extension-base/api/types/networks';
 import type { NetworkName, AssetsPrice, BuyProvider } from '@/interfaces';
 import type { NetworkJson } from '@extension-base/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS, ALL_NETWORKS } from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
@@ -14,11 +14,11 @@ import { isSameString, isSora } from '@/helpers';
 import store from '@/store';
 import { getSummaryTransferableBalance, isNetworkGroup } from '@/helpers/common';
 
-export function getTransferableBalanceInNetwork(token: TokenBalance, network: string) {
+export function getTransferableBalanceInNetwork(token: TokenGroup, network: string) {
   return token.balances?.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
 }
 
-function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }: AssetsPrice, network: NetworkName) {
+function defaultSortingCurrencies(currencies: TokenGroup[], { tokenPriceMap }: AssetsPrice, network: NetworkName) {
   const relayChains = [];
 
   const currenciesThatReady = currencies.filter(({ balances }) =>
@@ -100,7 +100,7 @@ function getProviderUrl(name: BuyProvider, asset: string, address: string) {
   return provider[name];
 }
 
-function getCurrencyOptions(currencies: TokenBalance[]) {
+function getCurrencyOptions(currencies: TokenGroup[]) {
   return currencies.map(({ assetId: id, symbol: _symbol, icon, relayChain }) => {
     const assetUpper = _symbol.toUpperCase();
     const filteredOptions = currencies.filter(({ symbol }) => symbol === _symbol);
@@ -114,18 +114,18 @@ function getCurrencyOptions(currencies: TokenBalance[]) {
   });
 }
 
-function getUtilityAsset(balances: TokenBalance[], _network: NetworkName) {
+function getUtilityAsset(balances: TokenGroup[], _network: NetworkName) {
   return balances.find(({ balances }) =>
     balances.some(({ name, isUtility }) => isSameString(name, _network) && isUtility)
   )!;
 }
 
-const getXORCurrency = (balances: TokenBalance[]) => {
+const getXORCurrency = (balances: TokenGroup[]) => {
   return balances.find(({ symbol }) => symbol === SORA_UTILITY_ASSET && isSora(SORA_NETWORK_NAME))!;
 };
 
 function calcTransferableSendMinusFee(
-  currency: TokenBalance | undefined,
+  currency: TokenGroup | undefined,
   network: NetworkName,
   fee: string,
   destNetFee?: string
@@ -156,7 +156,7 @@ function calcTransferableSendMinusFee(
   return transferable;
 }
 
-function isValidAmountAsset(currency: TokenBalance | undefined, network: NetworkName, fee: string, amount: string) {
+function isValidAmountAsset(currency: TokenGroup | undefined, network: NetworkName, fee: string, amount: string) {
   const maxSendFP = new FPNumber(calcTransferableSendMinusFee(currency, network, fee));
 
   // если sendAsset !== Utility, то: если количество токенов равно нулю, то транзакция невалидна
@@ -185,7 +185,7 @@ function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: stri
 }
 
 export function getSummaryTransferableBalanceFilteredByActiveNetworks(
-  token: TokenBalance,
+  token: TokenGroup,
   network: string = ALL_NETWORKS
 ) {
   if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);

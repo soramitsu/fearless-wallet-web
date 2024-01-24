@@ -10,7 +10,7 @@ import { type Extrinsic } from '@extension-base/api/substrate/utils/types';
 import { getPrecisionValue } from '@extension-base/api/substrate/utils';
 
 import type State from '@extension-base/background/handlers/State';
-import type { TokenBalance, BasicTxResponse } from '@extension-base/background/types/types';
+import type { TokenGroup, BasicTxResponse } from '@extension-base/background/types/types';
 import type { AssetId, Interiors, NetworkName, RelayChainName } from '@/interfaces';
 
 import {
@@ -36,7 +36,7 @@ export interface CrossChainProps {
   to: string;
   from: string;
   amount: string;
-  tokenBalance: TokenBalance;
+  tokenBalance: TokenGroup;
 }
 
 export interface MakeCrossChainProps extends CrossChainProps {
@@ -243,7 +243,7 @@ async function createNativeCrossChainExtrinsic(
   destNet: NetworkName,
   toAddress: string,
   amount: string,
-  tokenBalance: TokenBalance,
+  tokenBalance: TokenGroup,
   state: State
 ): Promise<Extrinsic> {
   const api = state.getSubstrateApiMap[originNet.toLowerCase()]?.api;
@@ -269,7 +269,7 @@ async function createOrmlCrossChainExtrinsic(
   destNet: NetworkName,
   toAddress: string,
   amount: string,
-  tokenBalance: TokenBalance,
+  tokenBalance: TokenGroup,
   state: State
 ): Promise<Extrinsic> {
   const api = state.getSubstrateApiMap[originNet.toLowerCase()].api;
@@ -301,7 +301,7 @@ async function createCrossChainExtrinsic(
   destNet: NetworkName,
   toAddress: string,
   amount: string,
-  tokenBalance: TokenBalance,
+  tokenBalance: TokenGroup,
   state: State
 ): Promise<Extrinsic> {
   const originNetworkKey = state.getNetworkByKey(originNet)?.name;

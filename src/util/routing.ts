@@ -1,5 +1,5 @@
 import { type Route } from 'vue-router';
-import { type TokenBalance } from '@extension-base/background/types/types';
+import { type TokenGroup } from '@extension-base/background/types/types';
 import { Components } from '@/router/routes';
 import { setTitle } from '@/helpers/common';
 import { FEARLESS_TITLE } from '@/consts/global';
@@ -9,7 +9,7 @@ import { i18n } from '@/locales';
 const updateTitle = (to: Route) => {
   const { name, meta, params } = to;
   const store = useStore();
-  const balances: TokenBalance[] = store.getters.getBalances;
+  const balances: TokenGroup[] = store.getters.getBalances;
   const haveBalances = balances.length !== 0;
   const IsAssetsNetworkPage = name === Components.AssetNetworks;
   const IsAssetsHistoryPage = name === Components.AssetHistory;

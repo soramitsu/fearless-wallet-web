@@ -2,7 +2,7 @@ import { FPNumber } from '@sora-substrate/util';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { getAssetOptions, getPrecisionValue } from '@extension-base/api/substrate/utils';
 import { getUtilityProps, getSubstrateAddress } from '@extension-base/background/utils/utils';
-import { type BasicTxResponse, type TokenBalance, SignerType } from '@extension-base/background/types/types';
+import { type BasicTxResponse, type TokenGroup, SignerType } from '@extension-base/background/types/types';
 import { type Extrinsic } from '@extension-base/api/substrate/utils/types';
 import type State from '@extension-base/background/handlers/State';
 
@@ -12,7 +12,7 @@ type ExtrinsicTransferProps = {
   to: string;
   amount: string | undefined;
   networkKey: NetworkName;
-  tokenBalance: TokenBalance;
+  tokenBalance: TokenGroup;
 };
 
 export function createExtrinsicTransfer(props: ExtrinsicTransferProps, state: State): Extrinsic {
@@ -56,7 +56,7 @@ export async function estimateFee(
   networkKey: string,
   to: string,
   value: string | undefined,
-  tokenBalance: TokenBalance,
+  tokenBalance: TokenGroup,
   state: State
 ): Promise<string> {
   const apiProps = state.getSubstrateApiMap[networkKey.toLowerCase()];

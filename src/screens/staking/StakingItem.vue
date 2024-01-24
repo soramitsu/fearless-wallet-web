@@ -34,7 +34,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { APIItemState } from '@extension-base/api/types/networks';
-import { type TokenBalance } from '@extension-base/background/types/types';
+import { type TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { NetworkParams } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -45,7 +45,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 export default class StakingItem extends Vue {
   @Prop(Object) networkParams!: NetworkParams;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
   get network() {
     return this.networkParams.network;

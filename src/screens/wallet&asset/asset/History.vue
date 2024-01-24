@@ -43,7 +43,7 @@ import type {
   SubqueryHistory,
 } from '@/interfaces';
 import type { FetchHistory, GetNetwork, SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
@@ -56,11 +56,11 @@ export default class History extends Vue {
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
   refreshTimeout = 30000;
-  @Prop(Object) currency!: TokenBalance;
+  @Prop(Object) currency!: TokenGroup;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Action(NetworksActionTypes.FETCH_HISTORY) fetchHistory!: AsyncFn<FetchHistory>;
 
   get historyDropdownOption() {
@@ -148,9 +148,9 @@ export default class History extends Vue {
   get isMainNetwork() {
     if (this.selectedNetwork === '' || this.balances.length === 0) return false;
 
-    const { assetId } = getUtilityAsset(this.balances, this.selectedNetwork);
+    const { groupId } = getUtilityAsset(this.balances, this.selectedNetwork);
 
-    return this.assetId === assetId;
+    return this.assetId === groupId;
   }
 
   get isEthereumNativeNetwork() {

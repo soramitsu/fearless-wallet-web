@@ -123,7 +123,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { MyStakingTab, AsyncFn, GetHistory, HistoryElement } from '@/interfaces';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import MyStakeSettings from '@/screens/staking/myStake/MyStakeSettings.vue';
 import About from '@/screens/staking/myStake/About.vue';
 import Alerts from '@/screens/staking/myStake/Alerts.vue';
@@ -176,7 +176,7 @@ export default class MyStake extends Vue {
   historyElement: HistoryElement | Record<string, string> | null = null;
 
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
@@ -316,16 +316,16 @@ export default class MyStake extends Vue {
   get stakingAssetId() {
     if (this.balances.length === 0) return '';
 
-    const { assetId } = getUtilityAsset(this.balances, this.network);
+    const { groupId } = getUtilityAsset(this.balances, this.network);
 
-    return assetId;
+    return groupId;
   }
 
   get rewardedAssetId() {
     if (isSora(this.network)) {
-      const { assetId } = this.balances.find(({ symbol }) => symbol === SORA_REWARD_ASSET)!;
+      const { groupId } = this.balances.find(({ symbol }) => symbol === SORA_REWARD_ASSET)!;
 
-      return assetId;
+      return groupId;
     }
 
     // стейкается всегда утилити токен, он же является ревард токеном
@@ -333,11 +333,11 @@ export default class MyStake extends Vue {
   }
 
   get stakingCurrency() {
-    return this.balances.find(({ assetId }) => assetId === this.stakingAssetId);
+    return this.balances.find(({ groupId }) => groupId === this.stakingAssetId);
   }
 
   get rewardedCurrency() {
-    return this.balances.find(({ assetId }) => assetId === this.rewardedAssetId);
+    return this.balances.find(({ groupId }) => groupId === this.rewardedAssetId);
   }
 
   get history() {

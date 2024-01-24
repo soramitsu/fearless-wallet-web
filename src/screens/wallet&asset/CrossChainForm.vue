@@ -81,7 +81,7 @@ import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import TransferForm from './TransferForm.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetNetwork } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp, cut, isSora } from '@/helpers/';
 import { formattedNumber } from '@/helpers/numbers';
@@ -105,7 +105,7 @@ export default class CrossChainForm extends Vue {
   @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
@@ -150,8 +150,8 @@ export default class CrossChainForm extends Vue {
   }
 
   get currency() {
-    return this.balances.find(({ assetId, balances }) => {
-      return assetId === this.assetId || balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase());
+    return this.balances.find(({ groupId, balances }) => {
+      return groupId === this.assetId || balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase());
     });
   }
 

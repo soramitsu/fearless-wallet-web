@@ -190,7 +190,7 @@ export interface RequestAccountCreateSuri {
 
 export interface BalanceJson {
   reset?: boolean;
-  details: TokenBalance[];
+  details: TokenGroup[];
   saveSequence?: boolean;
 }
 
@@ -710,22 +710,20 @@ export type ResponseTotalBalances = {
   change: ChangeWalletBalance;
 };
 
-export interface TokenBalance {
+export interface TokenGroup {
   mainNetwork: string;
-  assetId: string;
+  groupId: string;
   priceId?: string;
   tokenName: string;
   symbol: string;
-  precision: number;
   relayChain: RelayChainName;
   icon: string;
   providers: BuyProvider[];
   balances: BalanceItem[];
   color?: string;
-  isUtility: boolean; // Это поле означает, что токен является утилити для какой-то из сетей
 }
 
-export type BalanceMap = Record<WalletAddress, TokenBalance[]>;
+export type BalanceMap = Record<WalletAddress, TokenGroup[]>;
 
 export type NetworkMap = Record<string, NetworkJson>;
 export type NotificationResponse = { message: string; title: string; status: boolean };

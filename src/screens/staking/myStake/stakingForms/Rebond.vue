@@ -19,13 +19,13 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { GetAssetPrice } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class Rebond extends Vue {
-  @Prop({ type: Object }) stakingCurrency!: TokenBalance;
+  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
   @Prop({ type: String }) fee!: string;
   @Prop({ type: String }) amount!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;

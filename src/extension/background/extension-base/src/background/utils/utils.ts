@@ -2,14 +2,14 @@ import { APIItemState } from '@extension-base/api/types/networks';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type State from '@extension-base/background/handlers/State';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { AssetName, NetworkName, RelayChainName } from '@/interfaces';
 import { MAIN_NETWORKS, ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import { ETHEREUM_UTILITY_ASSETS } from '@/consts/currencies';
 
 export function getMockCurrencies(networks: NetworkJson[]) {
-  const currencies = networks.reduce<TokenBalance[]>((result, network) => {
+  const currencies = networks.reduce<TokenGroup[]>((result, network) => {
     const { assets: networkAssets, name: mainNet, parentId, icon: networkIcon } = network;
     const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNet) as RelayChainName;
     const optionEthereum = !!network.options?.some((el) => el === 'ethereum');
@@ -33,20 +33,19 @@ export function getMockCurrencies(networks: NetworkJson[]) {
       }) => {
         const mainNetwork = MAIN_NETWORKS[symbol] ?? mainNet;
 
-        const currencyIndex = result.findIndex(({ assetId: _assetId, relayChain: _relayChain, symbol: _symbol }) => {
-          const isExistingAssetId = _assetId === assetId;
+        const currencyIndex = result.findIndex(({ groupId, relayChain: _relayChain, symbol: _symbol }) => {
+          const isExistingGroupId = groupId === assetId;
           const isExistingSymbol = _symbol === symbol;
           const isExistingAsset = isExistingSymbol && _relayChain === prepRelayChain;
 
-          return isExistingAssetId || isExistingAsset;
+          return isExistingGroupId || isExistingAsset;
         });
 
         if (currencyIndex === -1) {
           const newCurrency = {
             mainNetwork,
-            assetId,
+            groupId: assetId,
             priceId,
-            precision,
             symbol,
             tokenName,
             relayChain: prepRelayChain,
@@ -55,13 +54,12 @@ export function getMockCurrencies(networks: NetworkJson[]) {
             balances: [],
             color,
             currencyId,
-            isUtility: isUtility ?? false,
           };
 
           result.push(newCurrency);
         } else if (isUtility || isNative) {
           result[currencyIndex].mainNetwork = mainNetwork;
-          result[currencyIndex].assetId = assetId;
+          result[currencyIndex].groupId = assetId;
         }
 
         // Add mock balances

@@ -106,7 +106,7 @@ import { type FPNumber } from '@sora-substrate/util';
 import { NETWORK_STATUS } from '@extension-base//api/types/networks';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import type { AsyncFn } from '@/interfaces';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
 import { soraCardController } from '@/controllers';
@@ -127,7 +127,7 @@ export default class Preview extends Vue {
 
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
   @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;

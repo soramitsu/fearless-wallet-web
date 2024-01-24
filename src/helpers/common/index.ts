@@ -1,6 +1,6 @@
 import { APIItemState } from '@extension-base//api/types/networks';
 import { isSameString } from '..';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { addNumbers } from '@/helpers/numbers';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, NETWORKS_GROUPS, POPULAR_NETWORKS } from '@/consts/networks';
 import { type AssetsPrice, type ChangeWalletBalance, type NetworkName } from '@/interfaces';
@@ -11,13 +11,13 @@ export function isNetworkGroup(network: string) {
   return NETWORKS_GROUPS.some((group) => group.toLowerCase() === network.toLowerCase());
 }
 
-export function getTransferableBalanceInNetwork(token: TokenBalance, network: string) {
+export function getTransferableBalanceInNetwork(token: TokenGroup, network: string) {
   return token.balances?.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
 }
 
 export function getSummaryTransferableWalletBalance(
   address: string,
-  tokens: TokenBalance[],
+  tokens: TokenGroup[],
   price: AssetsPrice,
   network: NetworkName, // network name or group name
   networks: NetworkJson[]
@@ -52,7 +52,7 @@ export function getSummaryTransferableWalletBalance(
   }, 0);
 }
 
-export function getSummaryTransferableBalance(token: TokenBalance, network = ALL_NETWORKS) {
+export function getSummaryTransferableBalance(token: TokenGroup, network = ALL_NETWORKS) {
   if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
 
   // TODO: нужна проверка на то, входит ли сеть в группу
@@ -63,7 +63,7 @@ export function getSummaryTransferableBalance(token: TokenBalance, network = ALL
   }, 0);
 }
 
-export function getSummaryLockedBalance(token: TokenBalance) {
+export function getSummaryLockedBalance(token: TokenGroup) {
   return token.balances?.reduce((result, { state, locked }) => {
     if (state === APIItemState.READY && locked) result += +locked;
 
@@ -72,7 +72,7 @@ export function getSummaryLockedBalance(token: TokenBalance) {
 }
 
 export function getChangeWalletBalance(
-  tokens: TokenBalance[],
+  tokens: TokenGroup[],
   price: AssetsPrice,
   network: NetworkName // network name or group name
 ): ChangeWalletBalance {

@@ -754,7 +754,7 @@ export default class State {
     this.networkMap = result;
 
     this.getSubstrateAccounts().forEach((el) => {
-      //Migration from old network managment
+      //Migration from old network management
       if (!this.selectedNetworks[el.address]) this.selectedNetworks[el.address] = ALL_NETWORKS;
     });
 

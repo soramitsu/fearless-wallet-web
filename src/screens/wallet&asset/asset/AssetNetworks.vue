@@ -61,7 +61,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { type TokenBalance } from '@extension-base/background/types/types';
+import { type TokenGroup } from '@extension-base/background/types/types';
 import HistoryItem from './HistoryItem.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
@@ -115,13 +115,13 @@ export default class AssetNetworks extends Vue {
   activeTabName = 'Assets';
   showSelectFilterPopup = false;
 
-  @Prop(Object) currency!: TokenBalance;
+  @Prop(Object) currency!: TokenGroup;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
   get filteredNetworks() {
@@ -191,7 +191,7 @@ export default class AssetNetworks extends Vue {
     this.$router.push({
       name: Components.AssetHistory,
       params: {
-        assetId: this.currency.assetId,
+        assetId: this.currency.groupId,
         selectedNetwork: name.toLowerCase(),
       },
     });

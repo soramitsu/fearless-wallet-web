@@ -69,7 +69,7 @@ import {
   type RequestCheckCrossChain,
   type RequestTransfer,
   type RequestCrossChain,
-  type TokenBalance,
+  type TokenGroup,
   type RequestSwap,
   BasicTxErrorCode,
 } from '@extension-base/background/types/types';
@@ -106,7 +106,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop({ type: String, default: '0' }) feeValue!: string;
   @Prop(String) firstIcon!: string;
   @Prop(String) secondIcon!: string;
-  @Prop(Object) currency?: TokenBalance;
+  @Prop(Object) currency?: TokenGroup;
   @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain | RequestStaking | SwapOptions;
   @Prop(String) extrinsicType!: 'transfer' | 'crossChain' | 'swap' | StakingOperation;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
@@ -114,7 +114,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get classesInput() {
@@ -131,14 +131,14 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.extrinsicType === 'crossChain')
       return this.networks.find(({ name }) => name.toLowerCase() === this.firstIcon.toLowerCase())?.icon ?? '';
 
-    return this.balances.find(({ assetId }) => assetId === this.firstIcon)?.icon;
+    return this.balances.find(({ groupId }) => groupId === this.firstIcon)?.icon;
   }
 
   get secondIconUrl() {
     if (this.extrinsicType === 'crossChain')
       return this.networks.find(({ name }) => name.toLowerCase() === this.secondIcon.toLowerCase())?.icon ?? '';
 
-    return this.balances.find(({ assetId }) => assetId === this.secondIcon)?.icon;
+    return this.balances.find(({ groupId }) => groupId === this.secondIcon)?.icon;
   }
 
   get request() {

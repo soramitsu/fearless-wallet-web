@@ -13,6 +13,7 @@
         :key="assetKey"
         :selectedNetwork="selectedNetwork"
         :showAssetsManagementForm="showAssetsManagementForm"
+        :timeoutCallback="timeoutCallback"
         @toggleVisibleActivityForm="$emit('toggleVisibleActivityForm', ...arguments)"
         @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
       />
@@ -97,6 +98,16 @@ export default class Currencies extends Vue {
     if (this.prices.tokenPriceChange[assetKey]) return this.prices.tokenPriceChange[assetKey] / 100;
 
     return 0;
+  }
+
+  timeoutCallback(fn: () => void) {
+    this.timeoutSubscriptions.forEach(({ subscription }) => clearTimeout(subscription));
+
+    this.timeoutSubscriptions = [...this.timeoutSubscriptions, { fn }].map(({ fn }) => {
+      const subscription = setTimeout(() => fn(), 0);
+
+      return { subscription, fn };
+    });
   }
 
   mainText() {

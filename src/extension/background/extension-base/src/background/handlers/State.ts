@@ -983,7 +983,7 @@ export default class State {
   }
 
   async fetchEvmBalance(_networks: NetworkName[] | null, _ethereumAddress?: string) {
-    if (!this.ready) return;
+    if (!this.ready || _networks === null) return;
 
     const currentAccount = await this.currentAccount;
     const ethereumAddress = _ethereumAddress ?? currentAccount?.ethereumAddress ?? '';
@@ -992,7 +992,7 @@ export default class State {
 
     const fetchBalances = () => {
       const networks = Object.values(this.networkMap).filter(({ name, active }) => {
-        if (_networks !== null && !_networks.includes(name)) return false;
+        if (!_networks.includes(name)) return false;
 
         if (!active) return false;
 

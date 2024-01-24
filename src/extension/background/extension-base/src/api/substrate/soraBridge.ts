@@ -8,9 +8,12 @@ import { type NetworkName } from '@/interfaces';
 
 const KUSAMA_PARACHAIN = 'SORA Kusama parachain';
 const ROCOCO_PARACHAIN = 'SORA Rococo parachain';
+const POLKADOT_PARACHAIN = 'SORA Polkadot parachain';
 
 function getSoraParaId(network: NetworkName, state: State): string {
   if (network.toLowerCase() === 'kusama') return state.networkMap[KUSAMA_PARACHAIN].paraId!;
+
+  if (network.toLowerCase() === 'polkadot') return state.networkMap[POLKADOT_PARACHAIN].paraId!;
 
   if (network.toLowerCase() === 'rococo') return state.networkMap[ROCOCO_PARACHAIN].paraId!;
 
@@ -22,7 +25,12 @@ function getSoraParams(props: CrossChainProps, state: State): [Asset, SubNetwork
   const { precision, symbol } = getAssetBalance(originNet, tokenBalance);
   const { currencyId } = getAssetInfo(assetId, state);
 
-  const subNetworkId = destinationNet.toLowerCase() === 'kusama' ? SubNetworkId.Kusama : SubNetworkId.Rococo;
+  const subNetworkId =
+    destinationNet.toLowerCase() === 'kusama'
+      ? SubNetworkId.Kusama
+      : destinationNet.toLowerCase() === 'polkadot'
+      ? SubNetworkId.Polkadot
+      : SubNetworkId.Rococo;
 
   return [
     {

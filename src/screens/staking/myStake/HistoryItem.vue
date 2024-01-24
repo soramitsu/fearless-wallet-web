@@ -78,11 +78,11 @@ export default class HistoryItem extends Vue {
   }
 
   get currency() {
-    return this.balances.find(({ assetId }) => assetId === this.stakingAssetId);
+    return this.balances.find(({ groupId }) => groupId === this.stakingAssetId);
   }
 
   get rewardedCurrency() {
-    return this.balances.find(({ assetId }) => assetId === this.rewardedAssetId);
+    return this.balances.find(({ groupId }) => groupId === this.rewardedAssetId);
   }
 
   get assetPrice() {

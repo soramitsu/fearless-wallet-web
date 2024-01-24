@@ -125,9 +125,7 @@ export async function makeTransfer({
   await api?.isReady;
 
   const address = getSubstrateAddress(from, state);
-  const tokenBalance = state.balanceService
-    .getAccountBalance(address)
-    .find(({ assetId: _assetId }) => _assetId === assetId)!;
+  const tokenBalance = state.balanceService.getAccountBalance(address).find(({ groupId }) => groupId === assetId)!;
 
   const extrinsic = createExtrinsicTransfer(
     {

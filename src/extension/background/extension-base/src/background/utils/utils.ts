@@ -33,18 +33,18 @@ export function getMockCurrencies(networks: NetworkJson[]) {
       }) => {
         const mainNetwork = MAIN_NETWORKS[symbol] ?? mainNet;
 
-        const currencyIndex = result.findIndex(({ assetId: _assetId, relayChain: _relayChain, symbol: _symbol }) => {
-          const isExistingAssetId = _assetId === assetId;
+        const currencyIndex = result.findIndex(({ groupId, relayChain: _relayChain, symbol: _symbol }) => {
+          const isExistingGroupId = groupId === assetId;
           const isExistingSymbol = _symbol === symbol;
           const isExistingAsset = isExistingSymbol && _relayChain === prepRelayChain;
 
-          return isExistingAssetId || isExistingAsset;
+          return isExistingGroupId || isExistingAsset;
         });
 
         if (currencyIndex === -1) {
           const newCurrency = {
             mainNetwork,
-            assetId,
+            groupId: assetId,
             priceId,
             symbol,
             tokenName,
@@ -59,7 +59,7 @@ export function getMockCurrencies(networks: NetworkJson[]) {
           result.push(newCurrency);
         } else if (isUtility || isNative) {
           result[currencyIndex].mainNetwork = mainNetwork;
-          result[currencyIndex].assetId = assetId;
+          result[currencyIndex].groupId = assetId;
         }
 
         // Add mock balances

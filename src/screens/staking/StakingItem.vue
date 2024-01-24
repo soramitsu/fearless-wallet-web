@@ -56,7 +56,7 @@ export default class StakingItem extends Vue {
   }
 
   get stakingCurrency() {
-    return this.balances?.find(({ assetId }) => assetId === this.assetId);
+    return this.balances?.find(({ groupId }) => groupId === this.assetId);
   }
 
   get isLoading() {

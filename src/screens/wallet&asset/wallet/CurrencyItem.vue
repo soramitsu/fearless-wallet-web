@@ -195,7 +195,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get assetId() {
-    return this.assetData.assetId;
+    return this.assetData.groupId;
   }
 
   get tokenPrice() {
@@ -203,11 +203,11 @@ export default class CurrencyItem extends Vue {
   }
 
   get currencyVisible(): boolean {
-    return !this.hiddenAssets.includes(this.assetData.assetId);
+    return !this.hiddenAssets.includes(this.assetData.groupId);
   }
 
   set currencyVisible(value: boolean) {
-    this.setHiddenAssets({ assetId: this.assetData.assetId, value });
+    this.setHiddenAssets({ groupId: this.assetData.groupId, value });
   }
 
   get showCurrencyItem() {
@@ -336,7 +336,7 @@ export default class CurrencyItem extends Vue {
       this.$router.push({
         name: Components.AssetHistory,
         params: {
-          assetId: this.assetId ?? this.assetData.assetId,
+          assetId: this.assetId ?? this.assetData.groupId,
           selectedNetwork: this.redirectNetwork === '' ? this.computeActiveNetworks[0].name : this.redirectNetwork,
         },
       });
@@ -347,7 +347,7 @@ export default class CurrencyItem extends Vue {
     this.$router.push({
       name: Components.AssetNetworks,
       params: {
-        assetId: this.assetData.assetId,
+        assetId: this.assetData.groupId,
       },
     });
   }

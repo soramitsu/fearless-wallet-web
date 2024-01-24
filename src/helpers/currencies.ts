@@ -101,14 +101,14 @@ function getProviderUrl(name: BuyProvider, asset: string, address: string) {
 }
 
 function getCurrencyOptions(currencies: TokenGroup[]) {
-  return currencies.map(({ assetId: id, symbol: _symbol, icon, relayChain }) => {
+  return currencies.map(({ groupId, symbol: _symbol, icon, relayChain }) => {
     const assetUpper = _symbol.toUpperCase();
     const filteredOptions = currencies.filter(({ symbol }) => symbol === _symbol);
     const label = filteredOptions.length > 1 ? `${assetUpper} (${relayChain.toUpperCase()})` : assetUpper;
 
     return {
       name: getNativeAssetName(label).toUpperCase(),
-      value: id,
+      value: groupId,
       icon,
     };
   });

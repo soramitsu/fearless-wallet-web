@@ -267,13 +267,13 @@ export default class Bond extends Vue {
   get stakingAssetId() {
     if (this.balances.length === 0) return '';
 
-    const { assetId } = getUtilityAsset(this.balances, this.network);
+    const { groupId } = getUtilityAsset(this.balances, this.network);
 
-    return assetId;
+    return groupId;
   }
 
   get stakingCurrency() {
-    return this.balances.find(({ assetId }) => assetId === this.stakingAssetId);
+    return this.balances.find(({ groupId }) => groupId === this.stakingAssetId);
   }
 
   get accountName() {

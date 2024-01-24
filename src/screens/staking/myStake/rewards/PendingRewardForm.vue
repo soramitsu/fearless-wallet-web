@@ -193,11 +193,11 @@ export default class PendingRewardForm extends Vue {
   }
 
   get rewardedAssetId() {
-    return this.rewardedCurrency!.assetId;
+    return this.rewardedCurrency!.groupId;
   }
 
   get stakingAssetId() {
-    return this.stakingCurrency!.assetId;
+    return this.stakingCurrency!.groupId;
   }
 
   get stakingAssetPrice() {

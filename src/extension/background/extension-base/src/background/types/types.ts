@@ -712,7 +712,7 @@ export type ResponseTotalBalances = {
 
 export interface TokenGroup {
   mainNetwork: string;
-  assetId: string; // Group ID
+  groupId: string;
   priceId?: string;
   tokenName: string;
   symbol: string;

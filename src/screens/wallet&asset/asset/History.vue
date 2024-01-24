@@ -148,9 +148,9 @@ export default class History extends Vue {
   get isMainNetwork() {
     if (this.selectedNetwork === '' || this.balances.length === 0) return false;
 
-    const { assetId } = getUtilityAsset(this.balances, this.selectedNetwork);
+    const { groupId } = getUtilityAsset(this.balances, this.selectedNetwork);
 
-    return this.assetId === assetId;
+    return this.assetId === groupId;
   }
 
   get isEthereumNativeNetwork() {

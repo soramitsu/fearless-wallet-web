@@ -138,7 +138,7 @@ export default class Asset extends Vue {
   get currentCurrency() {
     return (
       this.balances.find(
-        ({ assetId: id, balances }) =>
+        ({ groupId: id, balances }) =>
           id === this.selectedAssetId || balances.some((el) => el.id === this.selectedAssetId)
       )! ?? {}
     );

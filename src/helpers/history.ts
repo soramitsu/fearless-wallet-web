@@ -82,7 +82,7 @@ function getHumanFeeValue(value: string, networkName: NetworkName) {
 function getHumanValue(value: string | number, assetId: string, networkName: NetworkName) {
   const store = useStore();
   const tokenBalances: TokenGroup[] = store.getters.getBalances;
-  const { balances } = tokenBalances.find(({ assetId: id }) => id === assetId)!;
+  const { balances } = tokenBalances.find(({ groupId }) => groupId === assetId)!;
   const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
 
   return +FPNumber.fromCodecValue(value, precision);

@@ -218,8 +218,8 @@ export default class Wallet extends Vue {
     const sequence = accountController.getSequenceAssetsByAddress(address);
 
     return balances.sort((currency1, currency2) => {
-      const index1 = sequence.indexOf(currency1.assetId);
-      const index2 = sequence.indexOf(currency2.assetId);
+      const index1 = sequence.indexOf(currency1.groupId);
+      const index2 = sequence.indexOf(currency2.groupId);
 
       return index1 - index2;
     });
@@ -322,37 +322,37 @@ export default class Wallet extends Vue {
 
   toggleCurrenciesVisible(allCurrenciesHidden: boolean) {
     if (allCurrenciesHidden) {
-      this.balances.forEach(({ assetId }) => this.setHiddenAssets({ assetId, value: true }));
+      this.balances.forEach(({ groupId }) => this.setHiddenAssets({ groupId, value: true }));
 
       return;
     }
 
     const nonZeroBalanceCb = ({ transferable }: BalanceItem) => transferable && +transferable > 0;
 
-    this.balances.forEach(({ assetId, balances }) => {
+    this.balances.forEach(({ groupId, balances }) => {
       const index = balances.findIndex(nonZeroBalanceCb);
       const isZeroBalance = index === -1;
 
-      if (isZeroBalance) this.setHiddenAssets({ assetId, value: false });
+      if (isZeroBalance) this.setHiddenAssets({ groupId, value: false });
     });
 
-    const assetsVisibleWithBalance = this.balances.filter(({ balances, assetId }) => {
+    const assetsVisibleWithBalance = this.balances.filter(({ balances, groupId }) => {
       const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
-      const isVisibleAsset = !this.hiddenAssets.includes(assetId);
+      const isVisibleAsset = !this.hiddenAssets.includes(groupId);
 
       return isVisibleAsset && haveAssets;
     });
 
-    const assetsInvisibleWithBalance = this.balances.filter(({ balances, assetId }) => {
+    const assetsInvisibleWithBalance = this.balances.filter(({ balances, groupId }) => {
       const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
-      const isHiddenAsset = this.hiddenAssets.includes(assetId);
+      const isHiddenAsset = this.hiddenAssets.includes(groupId);
 
       return isHiddenAsset && haveAssets;
     });
 
-    const assetsInvisibleWithoutBalance = this.balances.filter(({ balances, assetId }) => {
+    const assetsInvisibleWithoutBalance = this.balances.filter(({ balances, groupId }) => {
       const notHaveAssets = balances.findIndex(nonZeroBalanceCb) === -1;
-      const isHiddenAsset = this.hiddenAssets.includes(assetId);
+      const isHiddenAsset = this.hiddenAssets.includes(groupId);
 
       return isHiddenAsset && notHaveAssets;
     });

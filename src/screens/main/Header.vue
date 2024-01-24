@@ -165,8 +165,8 @@ export default class Header extends Vue {
 
   get currentCurrency(): TokenGroup | undefined {
     return this.balances.find(
-      ({ assetId: id, balances }) =>
-        id === this.selectedAssetId || balances.some((el) => el.id === this.selectedAssetId)
+      ({ groupId, balances }) =>
+        groupId === this.selectedAssetId || balances.some((el) => el.id === this.selectedAssetId)
     );
   }
 

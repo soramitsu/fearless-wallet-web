@@ -191,7 +191,7 @@ export default class AssetNetworks extends Vue {
     this.$router.push({
       name: Components.AssetHistory,
       params: {
-        assetId: this.currency.assetId,
+        assetId: this.currency.groupId,
         selectedNetwork: name.toLowerCase(),
       },
     });

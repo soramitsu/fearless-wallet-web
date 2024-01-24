@@ -316,16 +316,16 @@ export default class MyStake extends Vue {
   get stakingAssetId() {
     if (this.balances.length === 0) return '';
 
-    const { assetId } = getUtilityAsset(this.balances, this.network);
+    const { groupId } = getUtilityAsset(this.balances, this.network);
 
-    return assetId;
+    return groupId;
   }
 
   get rewardedAssetId() {
     if (isSora(this.network)) {
-      const { assetId } = this.balances.find(({ symbol }) => symbol === SORA_REWARD_ASSET)!;
+      const { groupId } = this.balances.find(({ symbol }) => symbol === SORA_REWARD_ASSET)!;
 
-      return assetId;
+      return groupId;
     }
 
     // стейкается всегда утилити токен, он же является ревард токеном
@@ -333,11 +333,11 @@ export default class MyStake extends Vue {
   }
 
   get stakingCurrency() {
-    return this.balances.find(({ assetId }) => assetId === this.stakingAssetId);
+    return this.balances.find(({ groupId }) => groupId === this.stakingAssetId);
   }
 
   get rewardedCurrency() {
-    return this.balances.find(({ assetId }) => assetId === this.rewardedAssetId);
+    return this.balances.find(({ groupId }) => groupId === this.rewardedAssetId);
   }
 
   get history() {

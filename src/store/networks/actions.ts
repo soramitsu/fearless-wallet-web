@@ -56,7 +56,7 @@ const actions: ActionTree<State, State> & Actions = {
       ? asset.balances.find(
           ({ name, isUtility }) => name && name.toLowerCase() === networkName.toLowerCase() && isUtility
         )?.id
-      : asset && asset.assetId;
+      : asset && asset.groupId;
 
     const isUtility = isNativeEvm ? utilityId !== undefined : assetId === utilityId;
 

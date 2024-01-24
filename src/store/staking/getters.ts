@@ -58,7 +58,7 @@ const getters: GetterTree<State, State> & Getters = {
       .map((params) => {
         if (accountBalances.length === 0) return { ...params };
 
-        const balances = accountBalances.find(({ assetId }) => isSameString(assetId, params.assetId))?.balances;
+        const balances = accountBalances.find(({ groupId }) => isSameString(groupId, params.assetId))?.balances;
 
         if (balances === undefined) return { ...params };
 

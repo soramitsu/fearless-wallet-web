@@ -81,7 +81,7 @@ export default class About extends Vue {
   get history() {
     return this.getStakingHistory(
       this.network,
-      this.stakingCurrency.assetId,
+      this.stakingCurrency.groupId,
       this.stakingNetwork.stashAddress,
       this.stakingNetwork.payeeAddress
     );

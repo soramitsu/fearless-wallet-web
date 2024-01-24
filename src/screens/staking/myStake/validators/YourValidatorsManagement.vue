@@ -125,7 +125,7 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   get stakingAssetId() {
-    return this.stakingCurrency.assetId;
+    return this.stakingCurrency.groupId;
   }
 
   get stakingAssetPrice() {

@@ -90,7 +90,7 @@ export default class ContentSettings extends Vue {
   }
 
   get allCurrenciesHidden() {
-    return this.balances.every(({ assetId }) => this.hiddenAssets.includes(assetId));
+    return this.balances.every(({ groupId }) => this.hiddenAssets.includes(groupId));
   }
 
   get toggleButtonText() {

@@ -66,7 +66,7 @@ export default class Currencies extends Vue {
 
     if (this.showAssetsManagementForm) return false;
 
-    const allHidden = this.balances.every(({ assetId }) => this.hiddenAssets.includes(assetId));
+    const allHidden = this.balances.every(({ groupId }) => this.hiddenAssets.includes(groupId));
 
     return this.balances.length === this.hiddenAssets.length || allHidden || !navigator.onLine;
   }

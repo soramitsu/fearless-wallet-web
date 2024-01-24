@@ -335,7 +335,7 @@ export default class MainStakingForm extends Vue {
   }
 
   get stakingAssetId() {
-    return this.stakingCurrency?.assetId;
+    return this.stakingCurrency?.groupId;
   }
 
   get stakingAssetName() {

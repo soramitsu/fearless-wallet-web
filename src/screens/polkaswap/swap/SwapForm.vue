@@ -381,7 +381,7 @@ export default class SwapForm extends Vue {
   }
 
   get sendCurrency() {
-    return this.balances.find(({ assetId }) => assetId === this.sendAssetId);
+    return this.balances.find(({ groupId }) => groupId === this.sendAssetId);
   }
 
   get sendAssetName(): string {
@@ -389,11 +389,11 @@ export default class SwapForm extends Vue {
   }
 
   get sendAssetIcon() {
-    return this.sendCurrency?.assetId ?? '';
+    return this.sendCurrency?.groupId ?? '';
   }
 
   get receiveCurrency() {
-    return this.balances.find(({ assetId: id }) => id === this.receiveAssetId);
+    return this.balances.find(({ groupId }) => groupId === this.receiveAssetId);
   }
 
   get receiveAssetName(): string {

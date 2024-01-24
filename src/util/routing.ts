@@ -18,7 +18,7 @@ const updateTitle = (to: Route) => {
     if (IsAssetsNetworkPage) {
       const assetId = params.assetId;
 
-      const symbol = balances.find(({ assetId: _assetId }) => _assetId === assetId)?.symbol;
+      const symbol = balances.find(({ groupId }) => groupId === assetId)?.symbol;
       const title = symbol ? `${FEARLESS_TITLE} | ${symbol.toUpperCase()}` : FEARLESS_TITLE;
 
       setTitle(title);
@@ -30,7 +30,7 @@ const updateTitle = (to: Route) => {
       const assetId = params.assetId;
       const network = params.selectedNetwork;
 
-      const symbol = balances.find(({ assetId: _assetId }) => _assetId === assetId)?.symbol;
+      const symbol = balances.find(({ groupId }) => groupId === assetId)?.symbol;
       const title = symbol ? `${FEARLESS_TITLE} | ${symbol.toUpperCase()} | ${network.toUpperCase()}` : FEARLESS_TITLE;
 
       setTitle(title);

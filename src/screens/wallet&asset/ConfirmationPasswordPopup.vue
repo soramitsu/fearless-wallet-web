@@ -131,14 +131,14 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.extrinsicType === 'crossChain')
       return this.networks.find(({ name }) => name.toLowerCase() === this.firstIcon.toLowerCase())?.icon ?? '';
 
-    return this.balances.find(({ assetId }) => assetId === this.firstIcon)?.icon;
+    return this.balances.find(({ groupId }) => groupId === this.firstIcon)?.icon;
   }
 
   get secondIconUrl() {
     if (this.extrinsicType === 'crossChain')
       return this.networks.find(({ name }) => name.toLowerCase() === this.secondIcon.toLowerCase())?.icon ?? '';
 
-    return this.balances.find(({ assetId }) => assetId === this.secondIcon)?.icon;
+    return this.balances.find(({ groupId }) => groupId === this.secondIcon)?.icon;
   }
 
   get request() {

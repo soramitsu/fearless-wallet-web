@@ -317,7 +317,8 @@ export default class State {
     if (this.networkMap[name].active) {
       // update API map if network is active
       if (name in this.apis.substrate) {
-        this.apis.substrate[name].api?.disconnect && this.apis.substrate[name].api?.disconnect();
+        this.apis.substrate[name].api?.disconnect();
+        this.apis.substrate[name].provider?.disconnect();
         delete this.apis.substrate[name];
       }
 
@@ -457,18 +458,20 @@ export default class State {
     const networks = this.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((key) => {
-      const _key = key.toLowerCase();
+      const networkKey = key.toLowerCase();
       const network = this.networkMap[key];
-      network.active = networks.some(({ name }) => name.toLowerCase() === _key);
+
+      network.active = networks.some(({ name }) => name.toLowerCase() === networkKey);
 
       const isActive = network.active;
 
-      if (!isActive && network.isEthereum && this.apis.evm[_key]) {
-        this.apis.evm[_key].destroy();
-        delete this.apis.evm[_key];
-      } else if (!isActive && this.apis.substrate[_key]) {
-        this.apis.substrate[_key].api?.disconnect();
-        delete this.apis.substrate[_key];
+      if (!isActive && network.isEthereum && this.apis.evm[networkKey]) {
+        this.apis.evm[networkKey].destroy();
+        delete this.apis.evm[networkKey];
+      } else if (!isActive && this.apis.substrate[networkKey]) {
+        this.apis.substrate[networkKey].api?.disconnect();
+        this.apis.substrate[networkKey].provider?.disconnect();
+        delete this.apis.substrate[networkKey];
       }
     });
 

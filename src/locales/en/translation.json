@@ -107,7 +107,7 @@
     "requesting": "Requesting permissions...",
     "connected": "Mobile wallet connected to Fearless Wallet Extension",
     "noAnswer": "No answer from your wallet received yet. Please make sure the wallet is open",
-    "signMobile": "To sign using a mobile device, make sure your mobile client is open on the Beacon dApp screen and click Sign.",
+    "signMobile": "Please, launch your mobile app, click “Sign” button and continue the process on it",
     "rateLimitWarning": {
       "title": "Too many transaction",
       "message": "Matrix node is busy, please try again later"
@@ -193,6 +193,7 @@
     "googleExportSuccess": "The secret data has been successfully saved on Google Drive"
   },
   "assets": {
+    "soraCrossChainALert": "Currently, there's a min. amount 0.05 {asset} for bridging to ensure the stability and security of the SORA Network. We appreciate your understanding.",
     "all": "All",
     "locked": "Locked",
     "totalLocked": "Total locked",

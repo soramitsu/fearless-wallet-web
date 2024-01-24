@@ -45,7 +45,7 @@
 
         <InfoRow
           text="assets.networkFee"
-          :value="`${sumFee} ${stakingAssetName}`"
+          :value="`${fee} ${stakingAssetName}`"
           :price="feeValueString"
           borderType="default"
           icon="info"
@@ -65,7 +65,7 @@
       :currency="stakingCurrency"
       :amount="summaryRewards"
       :value="summaryRewardsValue"
-      :fee="sumFee"
+      :fee="fee"
       :feeValue="feeValue"
       :firstIcon="stakingAssetId"
       :tx="tx"
@@ -120,10 +120,6 @@ export default class PendingRewardForm extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Action(StakingActionTypes.GET_MY_STAKING_INFO) getMyStakingInfo!: AsyncFn<GetStakingNetworkProps>;
-
-  get sumFee() {
-    return (+this.fee * this.rewards.payouts.length).toString();
-  }
 
   get network() {
     return this.stakingNetwork.network;
@@ -217,7 +213,7 @@ export default class PendingRewardForm extends Vue {
   }
 
   get feeValue() {
-    return getCostOfAssets(this.sumFee, this.stakingAssetPrice).toString();
+    return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
   }
 
   get summaryRewardsValue() {

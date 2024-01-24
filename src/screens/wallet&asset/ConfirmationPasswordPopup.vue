@@ -84,6 +84,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { IS_EXTENSION } from '@/consts/global';
+import { isSora } from '@/helpers';
 
 @Component({
   components: { SignMobile },
@@ -327,8 +328,15 @@ export default class ConfirmationPasswordPopup extends Vue {
       }
     }
 
+    const txCross = this.tx as RequestCheckCrossChain;
+
     // функции выполняются через "@sora-substrate/util, для них не работают колбеки с подпиской
-    if (this.extrinsicType === 'swap' || this.isStaking) this.transactionState = results?.status ? 'success' : 'failed';
+    if (
+      this.isStaking ||
+      this.extrinsicType === 'swap' ||
+      (this.extrinsicType === 'crossChain' && isSora(txCross.originNet))
+    )
+      this.transactionState = results?.status ? 'success' : 'failed';
   }
 }
 </script>

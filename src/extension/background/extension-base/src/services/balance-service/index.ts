@@ -174,7 +174,7 @@ export default class BalanceService {
   }
 
   getTokenBalance(address: string, assetId: string, relayChain?: string) {
-    // TODO проверить будет ли корерктно работать если заменить на поиск по groupId
+    // TODO проверить будет ли корррктно работать если заменить на поиск по groupId
     return this.balanceMap[address].find(
       (balance) =>
         balance.balances.some(({ id }) => id === assetId) &&

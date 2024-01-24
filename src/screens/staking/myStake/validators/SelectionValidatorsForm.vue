@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <Fragment>
     <OfferValidators v-if="step === 2" @openValidatorList="openValidatorList" />
 
     <SuggestedValidatorDisclaimer v-else-if="step === 3" />
@@ -32,7 +32,7 @@
       @update:sortByApy="updateSortByApy"
       @handlerClose="toggleFiltersPopupVisibility"
     />
-  </div>
+  </Fragment>
 </template>
 
 <script lang="ts">

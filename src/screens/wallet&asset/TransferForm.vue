@@ -100,9 +100,12 @@
                 <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
               </div>
 
+              <slot name="step1Warning"></slot>
+
               <InfoRow
                 :text="`assets.${isTransfer ? 'networkFee' : 'originalNetworkFee'}`"
                 :value="syncedFeeCut"
+                :price="fiatFeeCut"
                 :iconClasses="['origin-fee']"
                 :isLoading="isFetchingFees"
                 icon="info"
@@ -112,6 +115,7 @@
                 v-if="isCrossChain"
                 text="assets.crossChainFee"
                 :value="destNetFeeCut"
+                :price="destNetFiatFeeCut"
                 :iconClasses="['cross-chain-fee']"
                 icon="info"
               />
@@ -120,7 +124,7 @@
               <Tooltip text="assets.feeDescription" target=".cross-chain-fee" placement="right" />
             </template>
 
-            <slot v-else-if="step === 2"></slot>
+            <slot name="step2" v-else-if="step === 2"></slot>
           </div>
 
           <FButton
@@ -250,6 +254,7 @@ export default class TransferForm extends Vue {
 
   @Prop(String) header!: string;
   @Prop(String) extrinsicType!: 'transfer' | 'crossChain';
+  @Prop({ default: false }) isDisableBtn!: boolean;
   @PropSync('recipient', { default: '' }) syncedRecipient!: string;
   @PropSync('assetId', { type: String }) syncedAssetId!: string;
   @PropSync('selectedNetwork', { type: String }) syncedNetwork!: string;
@@ -318,8 +323,16 @@ export default class TransferForm extends Vue {
     return `${this.$n(+this.syncedFee, 'decimalPrecise')} ${this.originalNetworkUtilityAsset.toUpperCase()}`;
   }
 
+  get fiatFeeCut() {
+    return `${this.fiatSymbol}${this.$n(+this.syncedFee * this.assetPrice, 'price')}`;
+  }
+
   get destNetFeeCut() {
     return `${this.$n(+this.syncedDestNetFee, 'decimalPrecise')} ${this.sendAssetName.toUpperCase()}`;
+  }
+
+  get destNetFiatFeeCut() {
+    return `${this.fiatSymbol}${this.$n(+this.syncedDestNetFee * this.assetPrice, 'price')}`;
   }
 
   get firstIcon() {
@@ -413,6 +426,8 @@ export default class TransferForm extends Vue {
   }
 
   get buttonDisabled() {
+    if (this.isDisableBtn) return true;
+
     if (this.isFetchingFees) return true;
 
     if (!navigator.onLine) return true;
@@ -528,23 +543,19 @@ export default class TransferForm extends Vue {
     // used only for transfer
     const walletBalance = this.currency?.balances ?? [];
 
-    return walletBalance.reduce(
-      (result, { name, icon }) => {
-        return [
-          ...result,
-          {
-            name: firstCharToUp(name),
-            value: name.toLowerCase(),
-            icon,
-          },
-        ];
-      },
-      [] as {
-        name: string;
-        value: string;
-        icon: string;
-      }[]
-    );
+    return walletBalance.flatMap(({ name, icon }) => {
+      const network = this.getNetwork(name);
+
+      if (!network.active) return [];
+
+      return [
+        {
+          name: firstCharToUp(name),
+          value: name.toLowerCase(),
+          icon,
+        },
+      ];
+    });
   }
 
   get originNet() {
@@ -557,17 +568,17 @@ export default class TransferForm extends Vue {
 
     const asset = getNativeAssetName(this.sendAssetName);
 
-    return this.originNet
-      .xcm!.availableDestinations.filter(({ assets }) => assets.some(({ symbol }) => symbol.toLowerCase() === asset))
-      .map(({ chainId }) => {
-        const { name, icon } = this.getNetwork(chainId);
+    return this.originNet.xcm!.availableDestinations.flatMap(({ assets, chainId }) => {
+      if (!assets.some(({ symbol }) => symbol.toLowerCase() === asset)) return [];
 
-        return {
-          name: firstCharToUp(name),
-          value: name,
-          icon,
-        };
-      });
+      const { name, icon } = this.getNetwork(chainId);
+
+      return {
+        name: firstCharToUp(name),
+        value: name,
+        icon,
+      };
+    });
   }
 
   get sendAssetName() {
@@ -673,10 +684,15 @@ export default class TransferForm extends Vue {
     clearTimeout(this.timeoutSubscription);
 
     this.timeoutSubscription = setTimeout(async () => {
-      const { estimateFee, destEstimateFee } = await this.verifyTx();
+      try {
+        const { estimateFee, destEstimateFee } = await this.verifyTx();
 
-      this.syncedFee = estimateFee ?? '0';
-      this.syncedDestNetFee = destEstimateFee ?? '0';
+        this.syncedFee = estimateFee ?? '0';
+        this.syncedDestNetFee = destEstimateFee ?? '0';
+      } catch (e) {
+        this.syncedFee = '0';
+        this.syncedDestNetFee = '0';
+      }
     }, 2000);
   }
 

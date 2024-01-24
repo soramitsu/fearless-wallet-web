@@ -32,8 +32,6 @@ async function onDisconnect(networkName: string, state: State) {
   const netName = state.getNetworkByKey(networkName).name;
   const network = state.networkMap[netName];
 
-  if (!network.active) return;
-
   if (api === undefined) return;
 
   api.apiRetry += 1;

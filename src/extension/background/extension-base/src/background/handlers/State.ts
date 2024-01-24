@@ -337,6 +337,9 @@ export default class State {
   }
 
   public disableNetworkMap(networkKey: string): boolean {
+    //if it's already disconnected then return true
+    if (this.networkMap[networkKey].networkStatus === NETWORK_STATUS.DISCONNECTED) return true;
+
     if (this.networkMap[networkKey]?.isEthereum) delete this.apis.evm[networkKey];
     else delete this.apis.substrate[networkKey];
 
@@ -965,7 +968,7 @@ export default class State {
   }
 
   getTimespan(name: keyof Timespans, address: string) {
-    return this.timespans[name]?.[address] ?? 0;
+    return this.timespans[name]?.[address] ?? Number.MIN_VALUE;
   }
 
   saveTimespan(name: keyof Timespans, address: string, value: number) {
@@ -983,7 +986,7 @@ export default class State {
   }
 
   async fetchEvmBalance(_networks: NetworkName[] | null, _ethereumAddress?: string) {
-    if (!this.ready || _networks === null) return;
+    if (!this.ready) return;
 
     const currentAccount = await this.currentAccount;
     const ethereumAddress = _ethereumAddress ?? currentAccount?.ethereumAddress ?? '';
@@ -992,11 +995,9 @@ export default class State {
 
     const fetchBalances = () => {
       const networks = Object.values(this.networkMap).filter(({ name, active }) => {
-        if (!_networks.includes(name)) return false;
+        if (_networks !== null && !_networks.includes(name)) return false;
 
-        if (!active) return false;
-
-        if (!isRequireEvmAPI(name)) return false;
+        if (!active || !isRequireEvmAPI(name)) return false;
 
         return true;
       });

@@ -216,8 +216,6 @@ export default class NetworkManagement extends Vue {
 
     this.setSelectedNetwork(network);
 
-    updateCurrentNetwork(network);
-
     const prepNotification = this.$t(this.getLocale('groupSelected'), {
       group: this.$t(this.tabs[this.activeTab].label),
     }).toString();
@@ -232,8 +230,6 @@ export default class NetworkManagement extends Vue {
 
     this.setSelectedNetwork(network);
 
-    updateCurrentNetwork(network);
-
     const prepNotification = this.$t(this.getLocale('networkSelected'), { network }).toString();
 
     this.$notify({ title: prepNotification, message: '', type: 'success' });
@@ -241,8 +237,6 @@ export default class NetworkManagement extends Vue {
 
   async toggleFavorite(network: string) {
     const isFavorite = await this.setFavorite({ networkName: network, address: this.selectedWallet.address });
-
-    if (this.selectedNetwork === FAVORITE_NETWORKS) updateCurrentNetwork(this.selectedNetwork);
 
     const t = this.getLocale(isFavorite ? 'deleteFavorite' : 'addFavorite');
     const prepNotification = this.$t(t, { network });
@@ -252,6 +246,10 @@ export default class NetworkManagement extends Vue {
       message: '',
       type: 'success',
     });
+  }
+
+  beforeDestroy() {
+    updateCurrentNetwork(this.selectedNetwork);
   }
 }
 </script>

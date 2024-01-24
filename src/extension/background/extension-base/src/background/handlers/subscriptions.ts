@@ -207,13 +207,13 @@ export class FWSubscription {
       // ждем 20 секунд, потом отписываемся, за это время ответят большинство сетей
       // можно было бы дожидаться и await`ить все подписки разом, но некоторые сети очень долго отвечают
       setTimeout(() => {
-        unsubList.forEach(async (item) => {
-          const value = await item;
+        unsubList.forEach(async (subPromise) => {
+          const sub = await subPromise;
 
-          value.unsub();
+          sub.unsub();
         });
       }, 20000);
-    } else
+    } else {
       unsubList.forEach(async (item) => {
         const value = await item;
 
@@ -222,6 +222,7 @@ export class FWSubscription {
           func: value.unsub,
         });
       });
+    }
   }
 }
 

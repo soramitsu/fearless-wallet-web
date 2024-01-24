@@ -469,9 +469,9 @@ export default class State {
         this.apis.evm[networkKey].destroy();
         delete this.apis.evm[networkKey];
       } else if (!isActive && this.apis.substrate[networkKey]) {
-        this.apis.substrate[networkKey].api?.disconnect();
-        this.apis.substrate[networkKey].provider?.disconnect();
-        delete this.apis.substrate[networkKey];
+        this.apis.substrate[networkKey].provider?.disconnect().then(() => {
+          delete this.apis.substrate[networkKey];
+        });
       }
     });
 
@@ -805,7 +805,7 @@ export default class State {
         };
 
         if (this.apis.substrate[name]) {
-          this.apis.substrate[name].api?.isReady.catch(initSubstrateApies);
+          this.apis.substrate[name].api?.isReadyOrError.catch(initSubstrateApies);
         } else initSubstrateApies();
       }
     }

@@ -130,7 +130,7 @@ export default class LockedDetailsPopup extends Vue {
       flex-direction: column;
       justify-content: center;
       text-align: right;
-      max-width: 215px;
+      max-width: 250px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;

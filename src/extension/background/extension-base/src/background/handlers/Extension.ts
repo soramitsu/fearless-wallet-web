@@ -1017,12 +1017,15 @@ export default class Extension extends FWExtensionBase {
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
 
     const [fee, crossChainFee] = await estimateCrossChainFee(
-      assetId,
-      originNet,
-      destinationNet,
-      to,
-      amount!,
-      tokenBalance,
+      {
+        assetId,
+        originNet,
+        destinationNet,
+        amount: amount!,
+        from,
+        to,
+        tokenBalance,
+      },
       this.state
     );
 
@@ -1103,7 +1106,7 @@ export default class Extension extends FWExtensionBase {
 
       cb({
         status: false,
-        errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (ex as Error).message }],
+        errors: [{ code: TransferErrorCode.CROSSCHAIN_ERROR, message: (ex as Error).message }],
       });
 
       setTimeout(() => this.cancelSubscription(id), 500);

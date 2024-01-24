@@ -86,6 +86,7 @@ import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { IS_EXTENSION } from '@/consts/global';
 import { sendNft } from '@/extension/messaging/nfts';
+import { isSora } from '@/helpers';
 
 @Component({
   components: { SignMobile },
@@ -329,8 +330,15 @@ export default class ConfirmationPasswordPopup extends Vue {
       }
     }
 
+    const txCross = this.tx as RequestCheckCrossChain;
+
     // функции выполняются через "@sora-substrate/util, для них не работают колбеки с подпиской
-    if (this.extrinsicType === 'swap' || this.extrinsicType === 'nft' || this.isStaking)
+    if (
+      this.isStaking ||
+      this.extrinsicType === 'swap' ||
+      this.extrinsicType === 'nft' ||
+      (this.extrinsicType === 'crossChain' && isSora(txCross.originNet))
+    )
       this.transactionState = results?.status ? 'success' : 'failed';
   }
 }

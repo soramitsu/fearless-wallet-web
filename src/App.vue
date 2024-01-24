@@ -32,7 +32,7 @@ import {
   subscribePrice,
 } from '@/extension/messaging';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
-import { IS_EXTENSION, IS_PRODUCTION } from '@/consts/global';
+import { IS_EXTENSION, IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { getNftSubscribe } from '@/extension/messaging/nfts';
 
@@ -81,7 +81,7 @@ export default class App extends Vue {
   }
 
   async mounted() {
-    if (IS_PRODUCTION) {
+    if (IS_PRODUCTION || IS_TEST_ONLY) {
       const isRequired = await isOnboardingRequired();
 
       if (isRequired) this.$router.push({ name: Components.Onboarding });

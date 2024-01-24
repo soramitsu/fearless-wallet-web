@@ -1,4 +1,4 @@
-@Library('jenkins-library') 
+@Library('jenkins-library')
 
 def buildWithCred  = [
     [$class: 'UsernamePasswordMultiBinding', credentialsId: 'OAUTH_CLIENT_UPLOAD', usernameVariable: 'OAUTH_CLIENT_ID_UPLOAD', passwordVariable: 'OAUTH_CLIENT_SECRET_UPLOAD'],
@@ -29,8 +29,8 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'FL_WEB_OPTIMISTIC_ETHERSCAN_API_KEY', variable: 'FL_WEB_OPTIMISTIC_ETHERSCAN_API_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_WEB_ARBISCAN_API_KEY', variable: 'FL_WEB_ARBISCAN_API_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_WEB_SNOWTRACE_API_KEY', variable: 'FL_WEB_SNOWTRACE_API_KEY'],
-    [$class: 'StringBinding', credentialsId: 'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY', variable: 'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY']
-
+    [$class: 'StringBinding', credentialsId: 'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY', variable: 'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_OKLINK_API_KEY', variable: 'VUE_APP_FL_WEB_X1_TESTNET_API_KEY']
 ]
 
 def pipeline = new org.js.AppArtifactsPipeline(
@@ -47,6 +47,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     mozillaSlug:                'fearless-wallet',
     mozillaChannel:             'listed',
     distFolders:                ['./dist/extension/firefox','./dist/extension/chrome'],
+    distFoldersTestNets:        ['./dist/extension/chrome-test'],
     preBuildCmds:               ['apt-get update && apt-get install zip jq -y && yarn set version 3.4.1 && yarn install'],
     nexusFiles:                 [ '.zip'],
     chromeExtFile:              'fearless-wallet-extension-chrome.zip',
@@ -55,7 +56,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     uploadToGoogleFor:          ['master'],
     uploadToFirefoxFor:         ['master'],
     buildWithCred:              buildWithCred,
-    dojoProductType:            'fearless',
+    dojoProductType:            'fearless-web',
     sonarSrcPath:               'src',
     sonarTestsPath:             'tests'
 )

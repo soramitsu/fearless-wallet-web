@@ -51,8 +51,8 @@ export default class EditNodeForm extends Vue {
   url = '';
   isError = false;
   @Prop(String) network!: string;
-  @Prop(String) nodeName!: string;
-  @Prop(String) nodeUrl!: string;
+  @Prop({ type: String, default: '' }) nodeName!: string;
+  @Prop({ type: String, default: '' }) nodeUrl!: string;
   @Prop(Boolean) isActive!: boolean;
   @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;

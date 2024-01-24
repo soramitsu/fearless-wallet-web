@@ -23,7 +23,7 @@
       </template>
 
       <template v-else>
-        <Alert :message="noAccountsMessage" />
+        <Alert message="auth.noAccounts" />
 
         <FButton width="100%" text="common.understood" size="big" fontSize="big" @click="onReject" />
       </template>
@@ -41,7 +41,6 @@ import { type WalletInfo, useStore } from '@/store';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import BaseApi from '@/util/BaseApi';
 
-const noAccountsMessage = 'auth.noAccounts';
 const state = ref<Record<string, WalletInfo>>({});
 const selectAll = ref(true);
 

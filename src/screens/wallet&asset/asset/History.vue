@@ -34,7 +34,14 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import HistoryItem from './HistoryItem.vue';
-import type { AsyncFn, FilterHistory, GetHistory, HistoryElement, SoraHistoryElement } from '@/interfaces';
+import type {
+  AsyncFn,
+  FilterHistory,
+  GetHistory,
+  HistoryElement,
+  SoraHistoryElement,
+  SubqueryHistory,
+} from '@/interfaces';
 import type { FetchHistory, GetNetwork, SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -48,7 +55,7 @@ import { isSora } from '@/helpers';
 export default class History extends Vue {
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
-
+  refreshTimeout = 30000;
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -97,10 +104,23 @@ export default class History extends Vue {
     return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
   }
 
-  get history() {
-    if (!this.selectedNetwork) return [];
+  get historyTimestamp() {
+    if (!this.history) return Number.MIN_VALUE;
 
-    return this.getHistory(this.assetId, this.selectedNetwork.toLowerCase())?.nodes ?? [];
+    return this.history.timestamp;
+  }
+
+  get history(): SubqueryHistory | undefined {
+    if (!this.selectedNetwork)
+      return { nodes: [], pageInfo: { endCursor: '0', startCursor: '0' }, timestamp: Number.MIN_VALUE };
+
+    return this.getHistory(this.assetId, this.selectedNetwork.toLowerCase());
+  }
+
+  get historyItems(): HistoryElement[] {
+    if (!this.history) return [];
+
+    return this.history.nodes;
   }
 
   get isSora() {
@@ -108,29 +128,25 @@ export default class History extends Vue {
   }
 
   get filteredHistory() {
-    if (this.filterHistoryValue === 'all') return this.history;
+    if (this.filterHistoryValue === 'all') return this.historyItems;
 
     const field = this.filterHistoryValue as 'transfer' | 'reward' | 'extrinsic';
 
     if (this.isSora) {
       const value = field === 'reward' ? 'rewarded' : field;
 
-      const filteredHistory = (this.history as SoraHistoryElement[]).filter((historyItem) => {
+      const filteredHistory = (this.historyItems as SoraHistoryElement[]).filter((historyItem) => {
         return historyItem.method === value;
       });
 
       return filteredHistory;
     }
 
-    const filteredHistory = this.history.filter((historyItem) => historyItem[field]);
-
-    return filteredHistory;
+    return this.historyItems.filter((historyItem) => historyItem[field]);
   }
 
   get isMainNetwork() {
-    if (this.selectedNetwork === '') return false;
-
-    if (this.balances.length === 0) return false;
+    if (this.selectedNetwork === '' || this.balances.length === 0) return false;
 
     const { assetId } = getUtilityAsset(this.balances, this.selectedNetwork);
 
@@ -143,12 +159,8 @@ export default class History extends Vue {
 
   @Watch('selectedNetwork')
   @Watch('selectedWallet')
-  async watchSelectedNetwork() {
-    this.loadHistory();
-  }
-
   @Watch('isMainNetwork')
-  watchNetwork() {
+  async watchSelectedNetwork() {
     this.loadHistory();
   }
 
@@ -157,18 +169,17 @@ export default class History extends Vue {
   }
 
   async loadHistory() {
-    if (this.history.length !== 0) return;
+    if (this.historyTimestamp + this.refreshTimeout > Date.now()) return false;
 
     if (!this.isSora && !this.isEthereumNativeNetwork && !this.isMainNetwork) return;
 
-    this.showLoader = true;
+    if (this.historyItems.length === 0) this.showLoader = true;
 
-    await this.fetchHistory({
-      networkName: this.selectedNetwork,
-      assetId: this.assetId,
+    const options = { networkName: this.selectedNetwork, assetId: this.assetId };
+
+    this.fetchHistory(options).finally(() => {
+      this.showLoader = false;
     });
-
-    this.showLoader = false;
   }
 
   filterHistoryValueUpdate(name: FilterHistory) {

@@ -9,23 +9,55 @@
     horizontalPlacement="right"
   >
     <div class="settings">
-      <SettingMenuItem title="common.wc" icon="wallet-connect" @onOpen="open('WalletConnectInitAuth')" />
-      <SettingMenuItem v-if="isExtension" title="common.manageDApp" icon="mechanic-tool" @onOpen="openManageAuths" />
-      <SettingMenuItem title="header.settings.accounts" icon="account" @onOpen="open('Accounts')" />
+      <SettingMenuItem
+        title="common.wc"
+        icon="wallet-connect"
+        data-testid="walletConnect"
+        @onOpen="open('WalletConnectInitAuth')"
+      />
+      <SettingMenuItem
+        v-if="isExtension"
+        title="common.manageDApp"
+        icon="mechanic-tool"
+        data-testid="manageDApp"
+        @onOpen="openManageAuths"
+      />
+      <SettingMenuItem
+        title="header.settings.accounts"
+        icon="account"
+        data-testid="accounts"
+        @onOpen="open('Accounts')"
+      />
 
       <SettingMenuItem v-if="showSoraCard" title="soraCard.title" icon="card" @onOpen="open('SoraCard')" />
 
-      <SettingMenuItem title="header.settings.currency" icon="dollar-circle" @onOpen="openPopup('openFiatsPopup')" />
+      <SettingMenuItem
+        title="header.settings.currency"
+        icon="dollar-circle"
+        data-testid="currency"
+        @onOpen="openPopup('openFiatsPopup')"
+      />
 
       <SettingMenuItem
         title="header.settings.polkaswapDisclaimer"
         icon="polkaswap"
+        data-testid="polkaswapDisclaimer"
         @onOpen="open('PolkaswapDisclaimer')"
       />
 
-      <SettingMenuItem title="header.settings.language.text" icon="language" @onOpen="openPopup('openLanguagePopup')" />
+      <SettingMenuItem
+        title="header.settings.language.text"
+        icon="language"
+        data-testid="language"
+        @onOpen="openPopup('openLanguagePopup')"
+      />
 
-      <SettingMenuItem title="common.aboutApp" icon="info" @onOpen="openPopup('openAboutPopup')" />
+      <SettingMenuItem
+        title="common.aboutApp"
+        icon="info"
+        data-testid="aboutApp"
+        @onOpen="openPopup('openAboutPopup')"
+      />
     </div>
   </Popup>
 </template>

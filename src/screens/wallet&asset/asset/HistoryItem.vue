@@ -71,6 +71,14 @@ export default class HistoryItem extends Vue {
     return getType(this.historyElement);
   }
 
+  get networkJson() {
+    return this.getNetwork(this.network);
+  }
+
+  get networkHistoryType() {
+    return this.networkJson.externalApi?.history?.type;
+  }
+
   get value() {
     const values = getHistoryValue(this.historyElement, this.token.assetId, this.network, this.address, true);
 
@@ -94,9 +102,7 @@ export default class HistoryItem extends Vue {
       return cut(value);
     }
 
-    if (this.type === TransactionType.reward) {
-      return cut(reward!.validator);
-    }
+    if (this.type === TransactionType.reward) return cut(reward!.validator);
 
     // extrinsic
     return cut(extrinsic!.hash);

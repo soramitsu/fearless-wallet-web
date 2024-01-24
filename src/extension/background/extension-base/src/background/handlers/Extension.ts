@@ -28,6 +28,7 @@ import {
   type RewardsResponse,
   type MakeStakingRequest,
   type StakingParamsResponse,
+  type CheckPayoutsFeeRequest,
 } from '@extension-base/services/staking-service/types';
 import { type MetadataDef } from '@polkadot/extension-inject/types';
 import { type SignerPayloadRaw, type SignerPayloadJSON } from '@polkadot/types/types';
@@ -1014,12 +1015,15 @@ export default class Extension extends FWExtensionBase {
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
 
     const [fee, crossChainFee] = await estimateCrossChainFee(
-      assetId,
-      originNet,
-      destinationNet,
-      to,
-      amount!,
-      tokenBalance,
+      {
+        assetId,
+        originNet,
+        destinationNet,
+        amount: amount!,
+        from,
+        to,
+        tokenBalance,
+      },
       this.state
     );
 
@@ -1100,7 +1104,7 @@ export default class Extension extends FWExtensionBase {
 
       cb({
         status: false,
-        errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (ex as Error).message }],
+        errors: [{ code: TransferErrorCode.CROSSCHAIN_ERROR, message: (ex as Error).message }],
       });
 
       setTimeout(() => this.cancelSubscription(id), 500);
@@ -1208,6 +1212,10 @@ export default class Extension extends FWExtensionBase {
     this.savePass(address, ethereumAddress, isSavePass, false);
 
     return result;
+  }
+
+  public async checkPayoutsFee(params: CheckPayoutsFeeRequest) {
+    return await this.state.stakingService.checkPayoutsFee(params);
   }
 
   async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
@@ -1695,6 +1703,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(staking.makeStaking)':
         return this.makeStaking(request as MakeStakingRequest);
+
+      case 'pri(staking.checkPayoutsFee)':
+        return this.checkPayoutsFee(request as CheckPayoutsFeeRequest);
 
       // price
       case 'pri(price.update.currency)':

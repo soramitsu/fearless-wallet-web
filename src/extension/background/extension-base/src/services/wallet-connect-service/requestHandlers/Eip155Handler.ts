@@ -69,9 +69,7 @@ export default class Eip155RequestHandler {
             response: formatJsonRpcResult(id, signature),
           });
         })
-        .catch((e: any) => {
-          this.handleError(topic, id, e);
-        });
+        .catch((e: any) => this.handleError(topic, id, e));
     } else if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
       const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(request.params);
 

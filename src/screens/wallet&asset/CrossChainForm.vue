@@ -86,7 +86,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp, cut, isSora } from '@/helpers/';
 import { formattedNumber } from '@/helpers/numbers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { BRIDGE_MIN_VALUES } from '@/consts/sora';
+import { BRIDGE_MIN_VALUES_TO_SORA, BRIDGE_MIN_VALUES_FROM_SORA } from '@/consts/sora';
 
 @Component({
   components: { TransferForm },
@@ -110,20 +110,24 @@ export default class CrossChainForm extends Vue {
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
-  get minValueBridge() {
-    return BRIDGE_MIN_VALUES[this.originalNetwork.toLowerCase()];
+  get minValueBridgeToSora() {
+    return BRIDGE_MIN_VALUES_TO_SORA[this.originalNetwork.toLowerCase()];
+  }
+
+  get minValueBridgeFromSora() {
+    return BRIDGE_MIN_VALUES_FROM_SORA[this.destinationNetwork.toLowerCase()];
   }
 
   get showSoraAlert() {
     if (this.amount === '') return false;
 
-    if (!(isSora(this.destinationNetwork, true) || this.destinationNetwork.toLowerCase() === 'polkadot')) return false;
+    if (isSora(this.destinationNetwork, true)) return +this.amount < this.minValueBridgeToSora;
 
-    return +this.amount < this.minValueBridge;
+    return +this.amount < this.minValueBridgeFromSora;
   }
 
   get soraCrossChainALert() {
-    return this.$t('assets.soraCrossChainALert', { value: this.minValueBridge, asset: this.assetName });
+    return this.$t('assets.soraCrossChainALert', { value: this.minValueBridgeToSora, asset: this.assetName });
   }
 
   get directionText() {

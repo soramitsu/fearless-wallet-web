@@ -19,7 +19,8 @@ const SORA_ICON =
 
 const BRIDGE_MIN_VALUES: Record<string, number> = {
   kusama: 0.05,
-  polkadot: 1,
+  polkadot: 1.1,
+  'sora mainnet': 1.1,
 };
 
 export {

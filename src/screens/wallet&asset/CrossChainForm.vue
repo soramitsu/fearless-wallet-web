@@ -115,7 +115,9 @@ export default class CrossChainForm extends Vue {
   }
 
   get showSoraAlert() {
-    if (!isSora(this.destinationNetwork, true) || this.amount === '') return false;
+    if (this.amount === '') return false;
+
+    if (!(isSora(this.destinationNetwork, true) || this.destinationNetwork.toLowerCase() === 'polkadot')) return false;
 
     return +this.amount < this.minValueBridge;
   }

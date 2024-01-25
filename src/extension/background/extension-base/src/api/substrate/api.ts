@@ -105,7 +105,7 @@ export async function initApi(network: NetworkJson, state: State): Promise<void>
 
       eventListeners.forEach(([eventName, callback]) => state.apis.substrate[networkName].api?.on(eventName, callback));
     } catch {
-      console.warn(`Error while init api for ${networkName}`);
+      onDisconnect(networkName, state);
     }
   }
 }

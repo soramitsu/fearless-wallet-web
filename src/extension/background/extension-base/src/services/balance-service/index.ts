@@ -136,7 +136,7 @@ export default class BalanceService {
             balances[address],
             prices,
             ALL_NETWORKS,
-            this.state.networksJson
+            this.state.networksGithub
           );
 
           const change = getChangeWalletBalance(balances[address], prices, ALL_NETWORKS);
@@ -168,7 +168,7 @@ export default class BalanceService {
   public generateDefaultBalance(address: string) {
     if (address === '') return;
 
-    if (this.balanceMap?.[address] === undefined) this.balanceMap[address] = getMockCurrencies(this.state.networksJson);
+    if (this.balanceMap?.[address] === undefined) this.balanceMap[address] = getMockCurrencies(this.state.networkMap);
   }
 
   getTokenBalance(address: string, assetId: string, relayChain?: string) {

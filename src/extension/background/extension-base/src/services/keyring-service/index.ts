@@ -185,7 +185,7 @@ export class KeyringService {
 
     if (isEthereumNet) return ethereumAddress;
 
-    const network = this.state.networksJson.find(({ name }) => isSameString(name, networkName));
+    const network = this.state.networksGithub.find(({ name }) => isSameString(name, networkName));
     const prefix = network?.addressPrefix;
 
     // the only case for try/catch

@@ -112,7 +112,8 @@ export default class State {
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
   public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
-  public networksJson: NetworkJson[] = []; // from github
+  public networksJson: NetworkJson[] = []; // active networks from github
+  public networksGithub: NetworkJson[] = []; // from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJson>>();
   public selectedNetworks: Record<string, string> = {};
@@ -704,14 +705,16 @@ export default class State {
   }
 
   public async prepNetworkJson() {
-    const result: Record<string, NetworkJson> = {};
     const { data: networks } = await axios.get<NetworkJson[]>(URLS.CHAINS);
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
+    this.networksGithub = networks;
     this.networksJson = networks.filter((el) => {
       if (el.disabled) return false;
+
       const isTestnet = !!el.options?.some((option) => option === 'testnet');
+
       if (process.env.VUE_APP_TEST_ONLY !== undefined) return isTestnet;
 
       if (process.env.NODE_ENV === 'production') return !isTestnet;
@@ -739,7 +742,7 @@ export default class State {
 
       const favorite = networkFromStorage && networkFromStorage.favorite ? networkFromStorage.favorite : [];
 
-      result[network.name] = {
+      this.networkMap[network.name] = {
         ...network,
         key: network.name,
         isEthereum,
@@ -753,8 +756,7 @@ export default class State {
       };
     });
 
-    this.networkMapStore.set('NetworkMap', result);
-    this.networkMap = result;
+    this.networkMapStore.set('NetworkMap', this.networkMap);
 
     this.getSubstrateAccounts().forEach((el) => {
       //Migration from old network management

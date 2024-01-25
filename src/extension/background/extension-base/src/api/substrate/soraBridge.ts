@@ -6,18 +6,21 @@ import type State from '@extension-base/background/handlers/State';
 import type { Asset } from '@sora-substrate/util/src/assets/types';
 import { type NetworkName } from '@/interfaces';
 
-const KUSAMA_PARACHAIN = 'SORA Kusama parachain';
-const ROCOCO_PARACHAIN = 'SORA Rococo parachain';
-const POLKADOT_PARACHAIN = 'SORA Polkadot parachain';
+const KUSAMA_PARACHAIN_ID = '6d8d9f145c2177fa83512492cdd80a71e29f22473f4a8943a6292149ac319fb9';
+const POLKADOT_PARACHAIN_ID = 'e92d165ad41e41e215d09713788173aecfdbe34d3bed29409d33a2ef03980738';
+const ROCOCO_PARACHAIN_ID = '8685a8d3e57fa8024b91b8ead6cc97acf953889c6fb0a355602826a1e2db198f';
 
 function getSoraParaId(network: NetworkName, state: State): string {
-  if (network.toLowerCase() === 'kusama') return state.networkMap[KUSAMA_PARACHAIN].paraId!;
+  if (network.toLowerCase() === 'kusama')
+    return state.networksGithub.find(({ chainId }) => chainId === KUSAMA_PARACHAIN_ID)!.paraId!;
 
-  if (network.toLowerCase() === 'polkadot') return state.networkMap[POLKADOT_PARACHAIN].paraId!;
+  if (network.toLowerCase() === 'polkadot')
+    return state.networksGithub.find(({ chainId }) => chainId === POLKADOT_PARACHAIN_ID)!.paraId!;
 
-  if (network.toLowerCase() === 'rococo') return state.networkMap[ROCOCO_PARACHAIN].paraId!;
+  if (network.toLowerCase() === 'rococo')
+    return state.networksGithub.find(({ chainId }) => chainId === ROCOCO_PARACHAIN_ID)!.paraId!;
 
-  return '0';
+  return '-1';
 }
 
 function getSoraParams(props: CrossChainProps, state: State): [Asset, SubNetworkId] {

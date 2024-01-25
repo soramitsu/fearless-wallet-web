@@ -137,44 +137,54 @@ export default class WalletConnectDAppService {
     const accounts = data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].accounts;
     const substrateAddress = accounts.find((el) => {
       const [, chainId] = el.split(':');
-      if (!SUBSTRATE_EVM_HALF_CHAINID.includes(chainId)) return el;
 
-      return false;
-    }) as string;
+      return !SUBSTRATE_EVM_HALF_CHAINID.includes(chainId);
+    });
+
+    if (!substrateAddress) throw new Error("couldn't find substrate address");
+
     const [, , address] = substrateAddress.split(':');
     const encodedAddress = this.state.keyringService.encodeAddress(address);
     const ethAddress = accounts.find((el) => {
       const [, chainId] = el.split(':');
-      if (SUBSTRATE_EVM_HALF_CHAINID.includes(chainId)) return el;
 
-      return false;
-    }) as string;
-    const [, , ethereumAddress] = ethAddress.split(':');
+      return SUBSTRATE_EVM_HALF_CHAINID.includes(chainId);
+    });
+    let ethereumAddressWC;
+
+    if (ethAddress) {
+      const [, , ethereumAddress] = ethAddress.split(':');
+      ethereumAddressWC = ethereumAddress;
+    }
+
     const availableNetworks =
       data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].chains?.map((el) => el.split(':')[1]) ?? [];
+    const isDuplicate = this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress);
 
-    if (!this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress)) {
-      this.state.keyringService.saveAddress(
-        encodedAddress,
-        {
-          name: data.peer.metadata.name,
-          isMobile: true,
-          wcTopic: data.topic,
-          ethereumAddress,
-          chains: availableNetworks,
-        },
-        'address'
-      );
-      this.state.updateCurrentAccount(encodedAddress);
-
-      cb({ status: true });
-    } else {
+    if (isDuplicate) {
       this.disconnect(data.topic);
       cb({
         status: false,
         message: 'duplicate',
       });
+
+      return;
     }
+
+    this.state.keyringService.saveAddress(
+      encodedAddress,
+      {
+        name: data.peer.metadata.name,
+        isMobile: true,
+        wcTopic: data.topic,
+        ethereumAddress: ethereumAddressWC,
+        chains: availableNetworks,
+      },
+      'address'
+    );
+    this.state.updateCurrentAccount(encodedAddress);
+
+    cb({ status: true });
   }
 
   disconnect(topic: string) {

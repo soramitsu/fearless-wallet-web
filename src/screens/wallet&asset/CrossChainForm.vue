@@ -127,7 +127,9 @@ export default class CrossChainForm extends Vue {
   }
 
   get soraCrossChainALert() {
-    return this.$t('assets.soraCrossChainALert', { value: this.minValueBridgeToSora, asset: this.assetName });
+    const value = isSora(this.destinationNetwork, true) ? this.minValueBridgeToSora : this.minValueBridgeFromSora;
+
+    return this.$t('assets.soraCrossChainALert', { value, asset: this.assetName });
   }
 
   get directionText() {

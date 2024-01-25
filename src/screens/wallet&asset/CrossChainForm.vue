@@ -86,6 +86,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp, cut, isSora } from '@/helpers/';
 import { formattedNumber } from '@/helpers/numbers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { BRIDGE_MIN_VALUES } from '@/consts/sora';
 
 @Component({
   components: { TransferForm },
@@ -109,12 +110,18 @@ export default class CrossChainForm extends Vue {
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
+  get minValueBridge() {
+    return BRIDGE_MIN_VALUES[this.originalNetwork.toLowerCase()];
+  }
+
   get showSoraAlert() {
-    return isSora(this.destinationNetwork, true) && this.amount !== '' && +this.amount < 0.05;
+    if (!isSora(this.destinationNetwork, true) || this.amount === '') return false;
+
+    return +this.amount < this.minValueBridge;
   }
 
   get soraCrossChainALert() {
-    return this.$t('assets.soraCrossChainALert', { asset: this.assetName });
+    return this.$t('assets.soraCrossChainALert', { value: this.minValueBridge, asset: this.assetName });
   }
 
   get directionText() {

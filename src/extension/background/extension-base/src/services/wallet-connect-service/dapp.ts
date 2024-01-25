@@ -69,7 +69,7 @@ export default class WalletConnectDAppService {
   async initPairing() {
     if (!this.app) await this.initApp();
 
-    const optionalChains = this.state.networksJson.flatMap((network) => {
+    const optionalChains = this.state.networksGithub.flatMap((network) => {
       if (isRequireEvmAPI(network.name) || !network.chainId) return [];
       const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
 

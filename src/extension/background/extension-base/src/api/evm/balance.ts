@@ -54,6 +54,7 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
       balanceItem.state = APIItemState.ERROR;
 
       setBalance(networkKey, balanceItem, address, state);
+      state.disableNetworkMap(networkKey);
 
       console.info(`There is problem when fetching ${symbol} token balance on ${networkKey}`, ex);
     });
@@ -89,7 +90,7 @@ async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, 
     .catch((ex) => {
       console.info(ex);
       balanceItem.state = APIItemState.ERROR;
-
+      state.disableNetworkMap(networkKey);
       setBalance(networkKey, balanceItem, address, state);
     });
 }

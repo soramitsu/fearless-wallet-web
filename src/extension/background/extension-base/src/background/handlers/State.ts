@@ -112,8 +112,7 @@ export default class State {
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
   public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
-  public networksJson: NetworkJson[] = []; // active networks from github
-  public networksGithub: NetworkJson[] = []; // from github
+  public networksGithub: NetworkJson[] = []; // networks from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJson>>();
   public selectedNetworks: Record<string, string> = {};
@@ -156,7 +155,9 @@ export default class State {
   }
 
   public get assetsMap() {
-    return this.networksJson.map(({ assets }) => assets).flat();
+    return Object.values(this.networkMap)
+      .map(({ assets }) => assets)
+      .flat();
   }
 
   public get getSubstrateApiMap() {
@@ -713,17 +714,6 @@ export default class State {
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
     this.networksGithub = networks;
-    this.networksJson = networks.filter((el) => {
-      if (el.disabled) return false;
-
-      const isTestnet = !!el.options?.some((option) => option === 'testnet');
-
-      if (process.env.VUE_APP_TEST_ONLY !== undefined) return isTestnet;
-
-      if (process.env.NODE_ENV === 'production') return !isTestnet;
-
-      return true;
-    });
 
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
@@ -734,30 +724,42 @@ export default class State {
       });
     });
 
-    this.networksJson.forEach((network) => {
-      const [{ url: currentProvider }] = network.nodes;
-      const providers: Record<string, string> = {};
+    this.networksGithub
+      .filter((el) => {
+        if (el.disabled) return false;
 
-      network.nodes.forEach(({ name, url }) => (providers[name] = url));
+        const isTestnet = !!el.options?.some((option) => option === 'testnet');
 
-      const isEthereum = isEthereumNetwork(network.name);
-      const networkFromStorage = networksFromStorage ? networksFromStorage[network.name] : undefined;
+        if (process.env.VUE_APP_TEST_ONLY !== undefined) return isTestnet;
 
-      const favorite = networkFromStorage && networkFromStorage.favorite ? networkFromStorage.favorite : [];
+        if (process.env.NODE_ENV === 'production') return !isTestnet;
 
-      this.networkMap[network.name] = {
-        ...network,
-        key: network.name,
-        isEthereum,
-        genesisHash: `0x${network.chainId}`,
-        chainType: isEthereum ? 'ethereum' : 'substrate',
-        active: true,
-        customNodes: [],
-        favorite,
-        providers,
-        currentProvider,
-      };
-    });
+        return true;
+      })
+      .forEach((network) => {
+        const [{ url: currentProvider }] = network.nodes;
+        const providers: Record<string, string> = {};
+
+        network.nodes.forEach(({ name, url }) => (providers[name] = url));
+
+        const isEthereum = isEthereumNetwork(network.name);
+        const networkFromStorage = networksFromStorage ? networksFromStorage[network.name] : undefined;
+
+        const favorite = networkFromStorage && networkFromStorage.favorite ? networkFromStorage.favorite : [];
+
+        this.networkMap[network.name] = {
+          ...network,
+          key: network.name,
+          isEthereum,
+          genesisHash: `0x${network.chainId}`,
+          chainType: isEthereum ? 'ethereum' : 'substrate',
+          active: true,
+          customNodes: [],
+          favorite,
+          providers,
+          currentProvider,
+        };
+      });
 
     this.networkMapStore.set('NetworkMap', this.networkMap);
 

@@ -8,7 +8,9 @@ import type { AssetName, NetworkName, RelayChainName } from '@/interfaces';
 import { MAIN_NETWORKS, ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import { ETHEREUM_UTILITY_ASSETS } from '@/consts/currencies';
 
-export function getMockCurrencies(networks: NetworkJson[]) {
+export function getMockCurrencies(networkMap: Record<string, NetworkJson>) {
+  const networks = Object.values(networkMap);
+
   const currencies = networks.reduce<TokenGroup[]>((result, network) => {
     const { assets: networkAssets, name: mainNet, parentId, icon: networkIcon } = network;
     const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNet) as RelayChainName;
@@ -99,7 +101,7 @@ export function isRequireEvmAPI(network: string) {
 }
 
 export function getUtilityProps(_network: NetworkName, state: State) {
-  return state.networksJson.find(({ name }) => name.toLowerCase() === _network.toLowerCase())!.assets[0];
+  return state.networksGithub.find(({ name }) => name.toLowerCase() === _network.toLowerCase())!.assets[0];
 }
 
 export function getNativeAssetName(asset: AssetName) {

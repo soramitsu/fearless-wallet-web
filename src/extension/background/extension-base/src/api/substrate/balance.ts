@@ -214,7 +214,7 @@ export function subscribeBalance(
         };
 
         if (isSoraNetwork) {
-          apiProps.api?.isReady
+          apiProps.api?.isReadyOrError
             .then(() => {
               try {
                 const unsub = subscribeTokensBalance(addressForNetwork, networkName, apiProps.api!, state);

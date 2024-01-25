@@ -338,6 +338,9 @@ export default class State {
   }
 
   public disableNetworkMap(networkKey: string): boolean {
+    //if it's already disconnected then return true
+    if (this.networkMap[networkKey].networkStatus === NETWORK_STATUS.DISCONNECTED) return true;
+
     if (this.networkMap[networkKey]?.isEthereum) delete this.apis.evm[networkKey];
     else delete this.apis.substrate[networkKey];
 
@@ -470,9 +473,9 @@ export default class State {
         this.apis.evm[networkKey].destroy();
         delete this.apis.evm[networkKey];
       } else if (!isActive && this.apis.substrate[networkKey]) {
-        this.apis.substrate[networkKey].api?.disconnect();
-        this.apis.substrate[networkKey].provider?.disconnect();
-        delete this.apis.substrate[networkKey];
+        this.apis.substrate[networkKey].provider?.disconnect().then(() => {
+          delete this.apis.substrate[networkKey];
+        });
       }
     });
 
@@ -807,7 +810,7 @@ export default class State {
         };
 
         if (this.apis.substrate[name]) {
-          this.apis.substrate[name].api?.isReady.catch(initSubstrateApies);
+          this.apis.substrate[name].api?.isReadyOrError.catch(initSubstrateApies);
         } else initSubstrateApies();
       }
     }
@@ -967,7 +970,7 @@ export default class State {
   }
 
   getTimespan(name: keyof Timespans, address: string) {
-    return this.timespans[name]?.[address] ?? 0;
+    return this.timespans[name]?.[address] ?? Number.MIN_VALUE;
   }
 
   saveTimespan(name: keyof Timespans, address: string, value: number) {
@@ -996,9 +999,7 @@ export default class State {
       const networks = Object.values(this.networkMap).filter(({ name, active }) => {
         if (_networks !== null && !_networks.includes(name)) return false;
 
-        if (!active) return false;
-
-        if (!isRequireEvmAPI(name)) return false;
+        if (!active || !isRequireEvmAPI(name)) return false;
 
         return true;
       });

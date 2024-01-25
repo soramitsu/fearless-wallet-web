@@ -104,7 +104,7 @@ export default class Currencies extends Vue {
     this.timeoutSubscriptions.forEach(({ subscription }) => clearTimeout(subscription));
 
     this.timeoutSubscriptions = [...this.timeoutSubscriptions, { fn }].map(({ fn }) => {
-      const subscription = setTimeout(() => fn(), 300);
+      const subscription = setTimeout(() => fn(), 0);
 
       return { subscription, fn };
     });

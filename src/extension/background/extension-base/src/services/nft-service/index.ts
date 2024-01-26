@@ -21,7 +21,7 @@ import { VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
 
 export class NftService {
   private store: NftStore;
-  private sdks: Partial<Record<Network, AlchemyNftController>> = {};
+  private sdks: Record<string, AlchemyNftController> = {};
   private nftMap: Record<string, NftState> = {};
   public nftSubject = new Subject<Record<string, NftState>>();
 
@@ -58,11 +58,11 @@ export class NftService {
 
     for (const network of networks) {
       if (this.sdks[network]) {
-        const timespan = this.sdks[network]!.timespan;
+        const timespan = this.sdks[network].timespan;
 
         if (Date.now() - timespan > 30000 || timespan === Number.MAX_VALUE) {
-          const networkNfts = await this.sdks[network]?.fetchNftsForWallet(address);
-          this.sdks[network]!.timespan = Date.now();
+          const networkNfts = await this.sdks[network].fetchNftsForWallet(address);
+          this.sdks[network].timespan = Date.now();
           nfts = { ...nfts, ...networkNfts };
         }
       }

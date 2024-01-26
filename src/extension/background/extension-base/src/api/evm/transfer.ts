@@ -62,10 +62,12 @@ async function getUtilityTransactionObject(params: TransferParams): Promise<Tran
 
   if (!web3Api) throw new Error(`Unknown network ${networkKey}`);
 
-  const { maxPriorityFeePerGas, gasPrice } = await web3Api.getFeeData();
+  const { maxFeePerGas, maxPriorityFeePerGas } = await web3Api.getFeeData();
 
   const transactionObject = {
     to,
+    maxFeePerGas,
+    maxPriorityFeePerGas,
     value: parseEther(amount),
   } as TransactionRequest;
 
@@ -91,7 +93,7 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
 
   const parsedValue = parseUnits(amount, balance.precision);
   const data = erc20Contract.interface.encodeFunctionData('transfer', [to, parsedValue]);
-  const { maxPriorityFeePerGas } = await web3Api.getFeeData();
+  const { maxFeePerGas, maxPriorityFeePerGas } = await web3Api.getFeeData();
   const block = await web3Api.provider.getBlock('latest');
 
   const baseFeePerGas = block?.baseFeePerGas ?? BigInt(0);
@@ -101,6 +103,8 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
     to: contractAddress,
     from,
     data,
+    maxFeePerGas,
+    maxPriorityFeePerGas,
     value: parseEther('0.0'),
   };
 

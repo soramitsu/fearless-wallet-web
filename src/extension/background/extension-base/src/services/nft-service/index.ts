@@ -55,9 +55,12 @@ export class NftService {
   async getNftForAllNetworks(address: string) {
     const networks = Object.keys(this.sdks) as Network[];
     let nfts: NftState = {};
+    const activeNetworks = this.state.getActiveNetworks();
 
     for (const network of networks) {
-      if (this.sdks[network]) {
+      const isActive = activeNetworks.some((el) => +el.chainId === this.sdks[network].chainId);
+
+      if (this.sdks[network] && isActive) {
         const timespan = this.sdks[network].timespan;
 
         if (Date.now() - timespan > 30000 || timespan === Number.MAX_VALUE) {

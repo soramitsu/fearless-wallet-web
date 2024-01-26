@@ -205,13 +205,13 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.APPROVE_SIGN_PASSWORD]({ commit, dispatch }, { id, isSavePass, password }) {
-    ExtensionController.approveSignPassword(id, isSavePass, password);
+    ExtensionController.approveSignPassword(id, isSavePass, password).then(() => {
+      commit(MutationTypes.DELETE_REQUEST, 'signRequests');
 
-    commit(MutationTypes.DELETE_REQUEST, 'signRequests');
+      router.push({ name: Components.Wallet });
 
-    router.push({ name: Components.Wallet });
-
-    dispatch(ActionTypes.FETCH_TAB_STATUS);
+      dispatch(ActionTypes.FETCH_TAB_STATUS);
+    });
   },
 
   async [ActionTypes.SIGN_SIGNATURE]({ commit, dispatch }, { payload, id }) {

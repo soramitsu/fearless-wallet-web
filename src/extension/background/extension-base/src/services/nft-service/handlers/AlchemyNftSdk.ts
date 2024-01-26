@@ -6,6 +6,8 @@ export default class AlchemyNftController {
   sdk: Alchemy;
   chainId: number;
   nftService: NftService;
+  timespan: number;
+
   constructor(private network: Network, chainId: string, nftService: NftService) {
     this.sdk = new Alchemy({
       apiKey: process.env.FL_ALCHEMY_API_ETHEREUM_KEY,
@@ -13,12 +15,7 @@ export default class AlchemyNftController {
     });
     this.nftService = nftService;
     this.chainId = +chainId;
-  }
-
-  async getChainId() {
-    const chainId = (await this.sdk.core.getNetwork()).chainId;
-
-    return chainId;
+    this.timespan = Number.MAX_VALUE;
   }
 
   get excludeFilters() {

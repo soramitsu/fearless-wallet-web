@@ -21,7 +21,7 @@ import { VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
 
 export class NftService {
   private store: NftStore;
-  private sdks: Partial<Record<Network, AlchemyNftController>> = {};
+  private sdks: Record<string, AlchemyNftController> = {};
   private nftMap: Record<string, NftState> = {};
   public nftSubject = new Subject<Record<string, NftState>>();
 
@@ -47,17 +47,28 @@ export class NftService {
     if (account) this.getNftForAllNetworks(account.ethereumAddress);
   }
 
+  async fetchNfts() {
+    const account = await this.state.currentAccount;
+    if (account) this.getNftForAllNetworks(account.ethereumAddress);
+  }
+
   async getNftForAllNetworks(address: string) {
     const networks = Object.keys(this.sdks) as Network[];
     let nfts: NftState = {};
 
     for (const network of networks) {
-      const networkNfts = await this.sdks[network]?.fetchNftsForWallet(address);
-      nfts = { ...nfts, ...networkNfts };
+      if (this.sdks[network]) {
+        const timespan = this.sdks[network].timespan;
+
+        if (Date.now() - timespan > 30000 || timespan === Number.MAX_VALUE) {
+          const networkNfts = await this.sdks[network].fetchNftsForWallet(address);
+          this.sdks[network].timespan = Date.now();
+          nfts = { ...nfts, ...networkNfts };
+        }
+      }
     }
 
     this.nftMap[address] = nfts;
-
     this.nftSubject.next(this.nftMap);
   }
 

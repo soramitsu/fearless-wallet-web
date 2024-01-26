@@ -850,6 +850,7 @@ export default class State {
     if (isEthereumAddress(address)) return false;
 
     this.balanceService.generateDefaultBalance(address);
+    this.nftService.fetchNfts();
 
     this.saveCurrentAccountAddress(address, () => {
       this.keyringService.triggerWalletsSubscription();

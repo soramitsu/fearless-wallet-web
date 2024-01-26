@@ -23,19 +23,18 @@
           :balances="filteredCurrencies"
           @update:filterValue="updateFilterValue"
           @update:activeTabName="updateActiveTabName"
-          @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
+          @update:showAssetsManagementForm="toggleAssetsManagementForm"
           @toggleCurrenciesVisible="toggleCurrenciesVisible"
         />
 
-        <Currencies
-          v-if="showCurrencies"
+        <router-view
           :isEmptyBalances="isEmptyBalances"
           :balances="filteredCurrencies"
-          :selectedNetwork="selectedNetwork"
           :showAssetsManagementForm="showAssetsManagementForm"
           :filterValue="filterValue"
           @toggleVisibleActivityForm="toggleVisibleActivityForm"
           @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
+          @toggleAssetsManagementForm="toggleAssetsManagementForm"
         />
       </div>
     </ContentForm>
@@ -84,7 +83,6 @@ import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset, GetNetwork } from '@/store';
 import type { AsyncFn, Fn, TabWallet, AssetsPrice } from '@/interfaces';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
-import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
@@ -111,7 +109,6 @@ import { isSameString } from '@/helpers';
 
 @Component({
   components: {
-    NFTs,
     SendForm,
     Currencies,
     ReceiveForm,
@@ -129,7 +126,6 @@ export default class Wallet extends Vue {
   showSendForm = false;
   showReceiveForm = false;
   networkUnavailable = '';
-  activeTabName: TabWallet = 'currencies';
   filterValue = '';
   selectedCurrency!: {
     mainNetwork?: string;
@@ -152,6 +148,10 @@ export default class Wallet extends Vue {
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
   @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: Fn<SetHiddenAsset>;
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
+
+  get activeTabName() {
+    return this.$route.name;
+  }
 
   get contentFormHeight() {
     const subtractionNumber = this.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
@@ -316,7 +316,7 @@ export default class Wallet extends Vue {
     this.showNetworkManagement = !this.showNetworkManagement;
   }
 
-  toggleAssetsManagementFormVisible(value = true) {
+  toggleAssetsManagementForm(value = true) {
     this.showAssetsManagementForm = value;
   }
 
@@ -380,7 +380,9 @@ export default class Wallet extends Vue {
   }
 
   updateActiveTabName(name: TabWallet) {
-    this.activeTabName = name;
+    if (this.activeTabName === name) return;
+
+    this.$router.push({ name });
   }
 }
 </script>
@@ -391,7 +393,7 @@ export default class Wallet extends Vue {
   flex-direction: column;
 
   .content {
-    padding: $default-padding 0 0 $default-padding;
+    padding: $default-padding 0 $default-padding $default-padding;
     height: 100%;
     display: flex;
     flex-direction: column;

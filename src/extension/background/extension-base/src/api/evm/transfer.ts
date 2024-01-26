@@ -1,6 +1,6 @@
 import { type TransactionRequest, Wallet, parseEther, parseUnits } from 'ethers';
 import { type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
-import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
+import { getContract } from '@extension-base/api/evm/utils/eth';
 import { state } from '@extension-base/background/handlers';
 import { type BalanceItem } from '@extension-base/api/evm/types/ether';
 
@@ -87,7 +87,7 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
   const contractAddress = balance.id;
   const web3Api = state.getEvmApi(networkKey);
 
-  const erc20Contract = await getERC20Contract(contractAddress, web3Api);
+  const erc20Contract = await getContract(contractAddress, web3Api);
 
   const parsedValue = parseUnits(amount, balance.precision);
   const data = erc20Contract.interface.encodeFunctionData('transfer', [to, parsedValue]);

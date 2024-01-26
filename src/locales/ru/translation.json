@@ -634,6 +634,15 @@
     "myStake": "Мой стейкинг",
     "polkaswap": "Polkaswap"
   },
+  "nft": {
+    "owned": "Принадлежит",
+    "type": "Тип",
+    "id": "Id токена",
+    "spam": "Спам",
+    "airdrop": "Airdrop",
+    "hideNfts": "Спрятать NFTs",
+    "noNft": "Пока что тут нет никаких NFT. Купите или сминтите NFT, чтобы их увидеть тут."
+  },
   "common": {
     "wc": "Wallet Connect",
     "connect": "Подключить",

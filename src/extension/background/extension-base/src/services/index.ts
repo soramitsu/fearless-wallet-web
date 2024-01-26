@@ -6,3 +6,4 @@ export * from '@extension-base/services/request-service';
 export * from '@extension-base/services/onboarding-service';
 export * from '@extension-base/services/staking-service';
 export * from '@extension-base/services/wallet-connect-service';
+export * from '@extension-base/services/nft-service';

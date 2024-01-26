@@ -5,10 +5,12 @@ import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import type { SelectedWallet } from '@/store/accounts/types';
 import BaseApi from '@/util/BaseApi';
+import { ALL_NETWORKS, FAVORITE_NETWORKS, NETWORKS_GROUPS, POPULAR_NETWORKS } from '@/consts/networks';
 
 export enum GettersTypes {
   networks = 'networks',
   allNetworks = 'allNetworks',
+  activeNetworkForSelectedWallet = 'activeNetworkForSelectedWallet',
   getNetwork = 'getNetwork',
   getNetworkGenesisHash = 'getNetworkGenesisHash',
   prices = 'prices',
@@ -22,6 +24,12 @@ export enum GettersTypes {
 
 export type Getters = {
   [GettersTypes.networks](
+    state: State,
+    getters?: GetterTree<State, State> & Getters,
+    rootState?: any,
+    rootGetters?: any
+  ): NetworkJson[];
+  [GettersTypes.activeNetworkForSelectedWallet](
     state: State,
     getters?: GetterTree<State, State> & Getters,
     rootState?: any,
@@ -48,6 +56,21 @@ const getters: GetterTree<State, State> & Getters = {
     const haveEthereumAccount = rootGetters.selectedWallet.ethereumAddress !== '';
 
     return haveEthereumAccount ? state.networks : state.networks.filter(({ name }) => !BaseApi.isEthereumNetwork(name));
+  },
+
+  [GettersTypes.activeNetworkForSelectedWallet](state, getters, rootState, rootGetters): NetworkJson[] {
+    const selectedNetwork: string = rootGetters.selectedNetwork;
+    const selectedWallet: SelectedWallet = rootGetters.selectedWallet;
+    const activeNetworks = state.networks.filter((el) => el.active);
+
+    if (NETWORKS_GROUPS.includes(selectedNetwork)) {
+      if (selectedNetwork === ALL_NETWORKS) return activeNetworks;
+      if (selectedNetwork === POPULAR_NETWORKS) return activeNetworks.filter((el) => el.rank && el.active);
+      if (selectedNetwork === FAVORITE_NETWORKS)
+        return activeNetworks.filter((el) => el.favorite.includes(selectedWallet.address));
+    }
+
+    return activeNetworks.filter((el) => el.name.toLowerCase() === selectedNetwork.toLowerCase());
   },
 
   [GettersTypes.favoriteNetworksNames]({ networks }): { name: string; favorite: string[] }[] {

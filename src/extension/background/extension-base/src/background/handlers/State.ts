@@ -13,6 +13,7 @@ import {
   NetworkService,
   RequestService,
   WalletConnectService,
+  NftService,
 } from '@extension-base/services';
 import { api as apiSora, type FPNumber } from '@sora-substrate/util';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
@@ -134,6 +135,7 @@ export default class State {
   public eventService = new EventService();
   public networkService = new NetworkService(this.eventService);
   public requestService = new RequestService(this);
+  public nftService = new NftService(this);
   public walletConnectService = new WalletConnectService(this, this.requestService);
   public walletConnectDappService = new WalletConnectDAppService(this);
   public soraCardService = new SoraCardService(this.requestService);
@@ -166,6 +168,18 @@ export default class State {
 
   public getEvmApi(key: string) {
     return this.getEvmApiMap[key.toLowerCase()];
+  }
+
+  public getEvmApiByChainiD(chainId: string) {
+    const network = Object.values(this.networkMap).find((network) => network.chainId === chainId);
+
+    if (!network) throw new Error(`coudnt find the network with chainId ${chainId}`);
+
+    const api = this.getEvmApi(network.name);
+
+    if (!api) throw new Error(`api not init`);
+
+    return api;
   }
 
   public get getEvmApiMap() {

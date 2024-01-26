@@ -17,7 +17,7 @@
       </template>
 
       <TabButton
-        v-else
+        v-else-if="notNftTabActive"
         tooltipText="wallet.turnVisibilityAssets"
         class="hide-zero"
         target=".hide-zero"
@@ -27,7 +27,7 @@
       />
     </div>
 
-    <div v-if="isCurrenciesTab" class="settings-part">
+    <div class="settings-part">
       <SearchInput
         v-if="!syncedShowAssetsManagementForm"
         v-model="syncedFilterValue"
@@ -57,6 +57,7 @@ import type { TabWallet } from '@/interfaces/common';
 import type { SelectedWallet } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { Components } from '@/router/routes';
 
 interface TabsOptions {
   label: string;
@@ -71,8 +72,15 @@ export default class ContentSettings extends Vue {
   readonly tabsOptions: TabsOptions[] = [
     {
       label: 'wallet.currencies',
-      tabName: 'currencies',
+      tabName: Components.Currencies,
       tooltipText: 'wallet.fungibleTokens',
+      classes: 'currencies-tab',
+      target: '.currencies-tab',
+    },
+    {
+      label: 'wallet.nfts',
+      tabName: Components.Nfts,
+      tooltipText: 'wallet.nonFungibleTokens',
       classes: 'currencies-tab',
       target: '.currencies-tab',
     },
@@ -101,8 +109,8 @@ export default class ContentSettings extends Vue {
     return this.syncedShowAssetsManagementForm ? 'close' : 'filter';
   }
 
-  get isCurrenciesTab() {
-    return this.syncedActiveTabName === 'currencies';
+  get notNftTabActive() {
+    return this.syncedActiveTabName !== Components.Nfts;
   }
 
   openTab(name: TabWallet) {

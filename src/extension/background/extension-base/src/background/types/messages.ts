@@ -1,3 +1,10 @@
+import {
+  type NftTx,
+  type NftState,
+  type NftSettings,
+  type CheckNftResponse,
+} from '@extension-base/services/nft-service/types';
+import type { OwnedNftsResponse } from 'alchemy-sdk';
 import type {
   PairingSubjectType,
   RequestApproveConnectWalletSession,
@@ -82,6 +89,7 @@ import type {
   MobileSigningRequest,
   RequestSigningSubscribe,
   FetchBalanceRequest,
+  ResponseNftTransfer,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -243,4 +251,11 @@ export interface RequestSignatures {
   'pri(walletConnect.app.disconnect)': [null, string];
   'pri(walletConnect.app.subscribePairing)': [string, PairingSubjectType, PairingSubjectType];
   'pri(walletConnect.app.pairing)': [null, string];
+
+  //Nfts
+  'pri(nft.get.all)': [string, OwnedNftsResponse];
+  'pri(nft.subscribe)': [null, NftState, NftState];
+  'pri(nft.send)': [NftTx, ResponseNftTransfer];
+  'pri(nft.checkSend)': [NftTx, CheckNftResponse];
+  'pri(nft.settings)': [NftSettings, void];
 }

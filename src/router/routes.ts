@@ -8,7 +8,12 @@ import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import { type NetworkName } from '@/interfaces';
 import WcAuths from '@/screens/extension-ui/WcAuths.vue';
 import SubstrateAuths from '@/screens/extension-ui/SubstrateAuths.vue';
+import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
+import NftsList from '@/screens/wallet&asset/asset/NftsList.vue';
+import NftCollection from '@/screens/wallet&asset/asset/NftCollection.vue';
+import NftDetails from '@/screens/wallet&asset/asset/NftDetails.vue';
 
+const NftSendForm = () => import('@/screens/wallet&asset/asset/NftSendForm.vue');
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
@@ -81,6 +86,11 @@ export enum Components {
   SubstrateAuths = 'SubstrateAuths',
   WcAuths = 'WcAuths',
   Onboarding = 'Onboarding',
+  Currencies = 'Currencies',
+  Nfts = 'Nfts',
+  NftDetails = 'NftDetails',
+  NftCollection = 'NftCollection',
+  NftSendForm = 'NftSendForm',
 }
 
 const haveSelectedWallet = () => {
@@ -172,6 +182,24 @@ const routes: Array<RouteConfig> = [
     path: '/wc-sign',
     name: Components.WalletConnectSessionRequest,
     component: WalletConnectInitAuth,
+  },
+  {
+    path: '/collection/:contract',
+    name: Components.NftCollection,
+    component: NftCollection,
+    meta: { title: 'wallet' },
+  },
+  {
+    path: '/collection/:contract/:id',
+    name: Components.NftDetails,
+    component: NftDetails,
+    meta: { title: 'wallet' },
+  },
+  {
+    path: '/send-nft/:contract/:id',
+    name: Components.NftSendForm,
+    component: NftSendForm,
+    meta: { title: 'wallet' },
   },
   {
     path: '/meta',
@@ -282,6 +310,7 @@ const routes: Array<RouteConfig> = [
         props: (route) => ({ query: route.query.wallet }),
         name: Components.Wallet,
         component: Wallet,
+        redirect: { name: Components.Currencies },
         beforeEnter: (to, from, next) => {
           if (haveAuthRequests()) next({ name: Components.Authorize });
           else if (haveSignRequests()) next({ name: Components.Transaction });
@@ -291,6 +320,24 @@ const routes: Array<RouteConfig> = [
         meta: {
           title: 'wallet',
         },
+        children: [
+          {
+            path: '/currencies/:access_token?',
+            name: Components.Currencies,
+            component: Currencies,
+            meta: {
+              title: 'wallet',
+            },
+          },
+          {
+            path: '/nft-collections',
+            name: Components.Nfts,
+            component: NftsList,
+            meta: {
+              title: 'wallet',
+            },
+          },
+        ],
       },
       {
         path: 'accounts',
@@ -364,7 +411,7 @@ const routes: Array<RouteConfig> = [
     path: '*',
     component: Welcome,
     beforeEnter: (to, from, next) => {
-      if (haveSelectedWallet()) next({ name: Components.Wallet });
+      if (haveSelectedWallet()) next({ name: Components.Currencies });
       else next();
     },
   },

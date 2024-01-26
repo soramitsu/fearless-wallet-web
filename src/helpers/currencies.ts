@@ -11,7 +11,7 @@ import { FAVORITE_NETWORKS, POPULAR_NETWORKS, ALL_NETWORKS } from '@/consts/netw
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
 import { isSameString, isSora } from '@/helpers';
-import store from '@/store';
+import { useStore } from '@/store';
 import { getSummaryTransferableBalance, isNetworkGroup } from '@/helpers/common';
 
 export function getTransferableBalanceInNetwork(token: TokenGroup, network: string) {
@@ -168,8 +168,8 @@ function isValidAmountAsset(currency: TokenGroup | undefined, network: NetworkNa
 }
 
 function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: string) {
+  const store = useStore();
   const network: NetworkJson = store.getters.getNetwork(balance.name);
-
   const favoriteNetworks = store.getters.favoriteNetworksNames as { name: string; favorite: string[] }[];
   const { address }: Wallet = store.getters.selectedWallet;
 
@@ -188,15 +188,19 @@ export function getSummaryTransferableBalanceFilteredByActiveNetworks(
   token: TokenGroup,
   network: string = ALL_NETWORKS
 ) {
-  if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
+  if (!isNetworkGroup(network)) {
+    return getTransferableBalanceInNetwork(token, network);
+  }
+
+  const store = useStore();
 
   return (
-    token.balances?.reduce((result, { state, name, transferable }) => {
-      const network = store.getters.getNetwork(name) as NetworkJson;
+    token.balances?.reduce((sum, { state, name, transferable }) => {
+      const network: NetworkJson = store.getters.getNetwork(name);
 
-      if (state === APIItemState.READY && network.active && transferable) result += +transferable;
+      if (state === APIItemState.READY && network.active && transferable) sum += +transferable;
 
-      return result;
+      return sum;
     }, 0) ?? 0
   );
 }

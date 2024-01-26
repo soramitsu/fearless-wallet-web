@@ -9,6 +9,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
+import { type NftState } from '@extension-base/services/nft-service/types';
 import { ALL_NETWORKS } from './consts/networks';
 import { setTitle } from './helpers/common';
 import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
@@ -33,6 +34,7 @@ import {
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { IS_EXTENSION, IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
+import { getNftSubscribe } from '@/extension/messaging/nfts';
 
 @Component({})
 export default class App extends Vue {
@@ -42,6 +44,7 @@ export default class App extends Vue {
   @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: Fn<SetAssetsPriceProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: Fn<SetAccountsProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: Fn<string>;
+  @Mutation(AccountsMutationTypes.SET_NFTS) setNfts!: Fn<NftState>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
   @Action(NetworksActionTypes.FETCH_FIATS) fetchFiats!: AsyncFn;
   @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
@@ -67,6 +70,7 @@ export default class App extends Vue {
     this.setupWallet();
     this.setupNetworks();
     this.setupBalance();
+    this.setupNfts();
     this.fetchFiats();
     this.setupPrice();
     this.setupSWPing();
@@ -98,6 +102,12 @@ export default class App extends Vue {
     const balance = await subscribeBalance((balanceUpdates) => this.setBalance(balanceUpdates));
 
     this.setBalance(balance);
+  }
+
+  async setupNfts() {
+    const ownedNfts = await getNftSubscribe((data) => this.setNfts(data));
+
+    this.setNfts(ownedNfts);
   }
 
   async setupNetworks() {

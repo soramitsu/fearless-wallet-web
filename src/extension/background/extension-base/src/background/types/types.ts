@@ -1,4 +1,5 @@
 /* eslint-disable no-use-before-define */
+import { type NftTx, type NftSettings } from '@extension-base/services/nft-service/types';
 import type { ALLOWED_PATH } from '@extension-base/defaults';
 import type { Subscription } from 'rxjs';
 import type { JsonRpcProvider, WebSocketProvider } from 'ethers';
@@ -341,7 +342,11 @@ export interface RequestSwap extends PasswordRequestSign<RequestCheckSwap> {
 export type RequestTransfer = PasswordRequestSign<RequestCheckTransfer>;
 
 export type RequestCrossChain = PasswordRequestSign<RequestCheckCrossChain>;
-
+export type RequestNftTransfer = PasswordRequestSign<NftTx>;
+export type ResponseNftTransfer = {
+  errors: Array<BasicTxError>;
+  status: boolean;
+};
 export interface RequestAccountExportPrivateKey {
   address: string;
   password?: string;
@@ -645,6 +650,7 @@ export interface IState {
   transaction: Record<string, TransactionHistoryItem[]>;
   addressBook: AddressBook;
   userType: UserType;
+  nftSettings: NftSettings;
   onboarding: {
     user: UserType;
     isRequired: boolean;

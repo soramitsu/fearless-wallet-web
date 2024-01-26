@@ -23,7 +23,12 @@ const NATIVE_ETHEREUM_NETWORKS = [
 ];
 const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, ...NATIVE_ETHEREUM_NETWORKS];
 
-const RELAY_CHAINS = ['polkadot', 'kusama', 'westend', 'rococo'];
+const POLKADOT = 'polkadot';
+const KUSAMA = 'kusama';
+const WESTEND = 'westend';
+const ROCOCO = 'rococo';
+
+const RELAY_CHAINS = [POLKADOT, KUSAMA, WESTEND, ROCOCO];
 const NATIVE_PARACHAINS = [
   'statemint',
   'polkadot assethub',
@@ -115,4 +120,8 @@ export {
   SUBSTRATE_ETHEREUM_NETWORKS,
   EXPLORERS_BASE_URLS,
   EVM_EXPLORERS_BASE_URLS,
+  POLKADOT,
+  KUSAMA,
+  WESTEND,
+  ROCOCO,
 };

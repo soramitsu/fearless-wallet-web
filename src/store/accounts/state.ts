@@ -1,5 +1,5 @@
 import type { NftState } from '@extension-base/services/nft-service/types';
-import type { AccountJson, TokenBalance } from '@extension-base/background/types/types';
+import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
 import type { SelectedWallet, SelectedNetworks, AutoSelectNode } from './types';
 import type { NetworkName, WalletAddress } from '@/interfaces';
 import { accountController } from '@/controllers';
@@ -10,7 +10,7 @@ export type State = {
   selectedFiat: string;
   selectedNetworks: SelectedNetworks;
   accounts: AccountJson[];
-  balances: TokenBalance[];
+  balances: TokenGroup[];
   nfts: NftState;
   hiddenAssets: Record<WalletAddress, string[]>;
   autoSelectNode: AutoSelectNode;

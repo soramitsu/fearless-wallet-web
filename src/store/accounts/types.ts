@@ -42,7 +42,7 @@ export type AssetTipDataProps = {
 };
 
 export type SetHiddenAsset = {
-  assetId: string;
+  groupId: string;
   value: boolean;
 };
 

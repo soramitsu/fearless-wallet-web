@@ -17,6 +17,15 @@ const SORA_REWARD_ASSET = 'val';
 const SORA_ICON =
   'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg';
 
+const BRIDGE_MIN_VALUES_TO_SORA: Record<string, number> = {
+  kusama: 0.05,
+  polkadot: 1.1,
+};
+
+const BRIDGE_MIN_VALUES_FROM_SORA: Record<string, number> = {
+  polkadot: 1.1,
+};
+
 export {
   SORA_NETWORK_NAME,
   SORA_UTILITY_ASSET,
@@ -26,4 +35,6 @@ export {
   SORA_REWARD_ASSET,
   SORA_ICON,
   SORA_VAL_ASSET_ID,
+  BRIDGE_MIN_VALUES_TO_SORA,
+  BRIDGE_MIN_VALUES_FROM_SORA,
 };

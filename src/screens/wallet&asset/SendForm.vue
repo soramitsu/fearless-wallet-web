@@ -16,25 +16,27 @@
     @update:partialFee="updatePartialFee"
     @update:recipient="updateRecipient"
   >
-    <div>
-      <div class="row direction-column">
-        <FInput v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
+    <template v-slot:step2>
+      <div>
+        <div class="row direction-column">
+          <FInput v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
 
-        <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
+          <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
 
-        <FInput v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
-      </div>
-
-      <FCorners size="big" class="row">
-        <div class="summary">
-          <div class="summary-label">{{ $t('assets.summary') }}</div>
-
-          <InfoRow text="assets.assetsAmount" :value="amountString" :price="valueString" />
-          <InfoRow text="assets.fee" :value="partialFeeString" :price="fiatFeeString" />
-          <InfoRow v-if="isUtilityAsset" text="assets.total" :value="totalString" :price="fiatTotalString" />
+          <FInput v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
         </div>
-      </FCorners>
-    </div>
+
+        <FCorners size="big" class="row">
+          <div class="summary">
+            <div class="summary-label">{{ $t('assets.summary') }}</div>
+
+            <InfoRow text="assets.assetsAmount" :value="amountString" :price="valueString" />
+            <InfoRow text="assets.fee" :value="partialFeeString" :price="fiatFeeString" />
+            <InfoRow v-if="isUtilityAsset" text="assets.total" :value="totalString" :price="fiatTotalString" />
+          </div>
+        </FCorners>
+      </div>
+    </template>
   </TransferForm>
 </template>
 
@@ -42,7 +44,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { addNumbers } from '@/helpers/numbers';
@@ -65,7 +67,7 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
   get currency() {
     return this.balances.find(({ balances }) =>

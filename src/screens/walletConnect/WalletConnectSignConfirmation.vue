@@ -19,15 +19,28 @@
             errorDescriptions="common.invalidPassword"
             :showPassword="true"
             class="wc-request__input"
-            :isError="isPassValid"
+            :isError="state.isPassValid"
           />
-          <Checkbox :value="isSavePass" @change="onSavePass" size="medium" :label="$t(min15Label)" />
+          <Checkbox :value="state.isSavePass" @change="onSavePass" size="medium" :label="$t(min15Label)" />
         </div>
 
         <div class="controls">
-          <FButton text="common.cancel" type="secondary" :border="false" width="100%" @click="onReject" />
+          <FButton
+            text="common.cancel"
+            type="secondary"
+            :disabled="state.isSigning"
+            :border="false"
+            width="100%"
+            @click="onReject"
+          />
 
-          <FButton text="common.sign" width="100%" @click="onApprove" />
+          <FButton
+            text="common.sign"
+            :loading="state.isSigning"
+            :disabled="state.isSigning"
+            width="100%"
+            @click="onApprove"
+          />
         </div>
       </div>
     </div>
@@ -35,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue';
+import { computed, ref, onMounted, watch, reactive } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import {
   EIP155_SIGNING_METHODS,
@@ -57,9 +70,13 @@ const store = useStore();
 const router = useRouter();
 const notify = useNotify();
 const { t } = useI18n();
-const isSavePass = ref(false);
+const state = reactive({
+  isSavePass: false,
+  isSigning: false,
+  isPassValid: false,
+});
 const password = ref('');
-const isPassValid = ref(false);
+
 const requests = computed<WalletConnectTransactionRequest[]>(() => store.getters.wcSignList);
 const request = computed<WalletConnectTransactionRequest>(() => requests.value[0]);
 
@@ -97,13 +114,13 @@ const header = computed(() => {
 
   return 'common.wc';
 });
-const onSavePass = (value: boolean) => (isSavePass.value = value);
+const onSavePass = (value: boolean) => (state.isSavePass = value);
 
 onMounted(async () => {
   const res = await isSignLocked(address.value);
   isLocked.value = res.isLocked;
 
-  if (!res.isLocked) isSavePass.value = true;
+  if (!res.isLocked) state.isSavePass = true;
 });
 
 const onReject = () => {
@@ -113,7 +130,8 @@ const onReject = () => {
 
 const onError = (error: Error) => {
   if (error.message === BasicTxErrorCode.KEYRING_ERROR) {
-    isPassValid.value = true;
+    state.isPassValid = true;
+    state.isSigning = false;
 
     return;
   }
@@ -138,13 +156,13 @@ const onError = (error: Error) => {
 };
 
 const onApprove = async () => {
-  isPassValid.value = false;
-
+  state.isPassValid = false;
+  state.isSigning = true;
   const res = await walletConnectRequestApprove(
     address.value.toLowerCase(),
     password.value,
     request.value.topic,
-    isSavePass.value
+    state.isSavePass
   ).catch(onError);
 
   if (res) router.back();

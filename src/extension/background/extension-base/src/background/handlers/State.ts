@@ -113,7 +113,7 @@ export default class State {
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
   public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
-  public networksJson: NetworkJson[] = []; // from github
+  public networksGithub: NetworkJson[] = []; // networks from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJson>>();
   public selectedNetworks: Record<string, string> = {};
@@ -157,7 +157,9 @@ export default class State {
   }
 
   public get assetsMap() {
-    return this.networksJson.map(({ assets }) => assets).flat();
+    return Object.values(this.networkMap)
+      .map(({ assets }) => assets)
+      .flat();
   }
 
   public get getSubstrateApiMap() {
@@ -331,7 +333,8 @@ export default class State {
     if (this.networkMap[name].active) {
       // update API map if network is active
       if (name in this.apis.substrate) {
-        this.apis.substrate[name].api?.disconnect && this.apis.substrate[name].api?.disconnect();
+        this.apis.substrate[name].api?.disconnect();
+        this.apis.substrate[name].provider?.disconnect();
         delete this.apis.substrate[name];
       }
 
@@ -350,6 +353,9 @@ export default class State {
   }
 
   public disableNetworkMap(networkKey: string): boolean {
+    //if it's already disconnected then return true
+    if (this.networkMap[networkKey].networkStatus === NETWORK_STATUS.DISCONNECTED) return true;
+
     if (this.networkMap[networkKey]?.isEthereum) delete this.apis.evm[networkKey];
     else delete this.apis.substrate[networkKey];
 
@@ -471,18 +477,20 @@ export default class State {
     const networks = this.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((key) => {
-      const _key = key.toLowerCase();
+      const networkKey = key.toLowerCase();
       const network = this.networkMap[key];
-      network.active = networks.some(({ name }) => name.toLowerCase() === _key);
+
+      network.active = networks.some(({ name }) => name.toLowerCase() === networkKey);
 
       const isActive = network.active;
 
-      if (!isActive && network.isEthereum && this.apis.evm[_key]) {
-        this.apis.evm[_key].destroy();
-        delete this.apis.evm[_key];
-      } else if (!isActive && this.apis.substrate[_key]) {
-        this.apis.substrate[_key].api?.disconnect();
-        delete this.apis.substrate[_key];
+      if (!isActive && network.isEthereum && this.apis.evm[networkKey]) {
+        this.apis.evm[networkKey].destroy();
+        delete this.apis.evm[networkKey];
+      } else if (!isActive && this.apis.substrate[networkKey]) {
+        this.apis.substrate[networkKey].provider?.disconnect().then(() => {
+          delete this.apis.substrate[networkKey];
+        });
       }
     });
 
@@ -715,20 +723,11 @@ export default class State {
   }
 
   public async prepNetworkJson() {
-    const result: Record<string, NetworkJson> = {};
     const { data: networks } = await axios.get<NetworkJson[]>(URLS.CHAINS);
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
-    this.networksJson = networks.filter((el) => {
-      if (el.disabled) return false;
-      const isTestnet = !!el.options?.some((option) => option === 'testnet');
-      if (process.env.VUE_APP_TEST_ONLY !== undefined) return isTestnet;
-
-      if (process.env.NODE_ENV === 'production') return !isTestnet;
-
-      return true;
-    });
+    this.networksGithub = networks;
 
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
@@ -739,36 +738,47 @@ export default class State {
       });
     });
 
-    this.networksJson.forEach((network) => {
-      const [{ url: currentProvider }] = network.nodes;
-      const providers: Record<string, string> = {};
+    this.networksGithub
+      .filter((el) => {
+        if (el.disabled) return false;
 
-      network.nodes.forEach(({ name, url }) => (providers[name] = url));
+        const isTestnet = !!el.options?.some((option) => option === 'testnet');
 
-      const isEthereum = isEthereumNetwork(network.name);
-      const networkFromStorage = networksFromStorage ? networksFromStorage[network.name] : undefined;
+        if (process.env.VUE_APP_TEST_ONLY !== undefined) return isTestnet;
 
-      const favorite = networkFromStorage && networkFromStorage.favorite ? networkFromStorage.favorite : [];
+        if (process.env.NODE_ENV === 'production') return !isTestnet;
 
-      result[network.name] = {
-        ...network,
-        key: network.name,
-        isEthereum,
-        genesisHash: `0x${network.chainId}`,
-        chainType: isEthereum ? 'ethereum' : 'substrate',
-        active: true,
-        customNodes: [],
-        favorite,
-        providers,
-        currentProvider,
-      };
-    });
+        return true;
+      })
+      .forEach((network) => {
+        const [{ url: currentProvider }] = network.nodes;
+        const providers: Record<string, string> = {};
 
-    this.networkMapStore.set('NetworkMap', result);
-    this.networkMap = result;
+        network.nodes.forEach(({ name, url }) => (providers[name] = url));
+
+        const isEthereum = isEthereumNetwork(network.name);
+        const networkFromStorage = networksFromStorage ? networksFromStorage[network.name] : undefined;
+
+        const favorite = networkFromStorage && networkFromStorage.favorite ? networkFromStorage.favorite : [];
+
+        this.networkMap[network.name] = {
+          ...network,
+          key: network.name,
+          isEthereum,
+          genesisHash: `0x${network.chainId}`,
+          chainType: isEthereum ? 'ethereum' : 'substrate',
+          active: true,
+          customNodes: [],
+          favorite,
+          providers,
+          currentProvider,
+        };
+      });
+
+    this.networkMapStore.set('NetworkMap', this.networkMap);
 
     this.getSubstrateAccounts().forEach((el) => {
-      //Migration from old network managment
+      //Migration from old network management
       if (!this.selectedNetworks[el.address]) this.selectedNetworks[el.address] = ALL_NETWORKS;
     });
 
@@ -816,7 +826,7 @@ export default class State {
         };
 
         if (this.apis.substrate[name]) {
-          this.apis.substrate[name].api?.isReady.catch(initSubstrateApies);
+          this.apis.substrate[name].api?.isReadyOrError.catch(initSubstrateApies);
         } else initSubstrateApies();
       }
     }
@@ -976,7 +986,7 @@ export default class State {
   }
 
   getTimespan(name: keyof Timespans, address: string) {
-    return this.timespans[name]?.[address] ?? 0;
+    return this.timespans[name]?.[address] ?? Number.MIN_VALUE;
   }
 
   saveTimespan(name: keyof Timespans, address: string, value: number) {
@@ -1005,9 +1015,7 @@ export default class State {
       const networks = Object.values(this.networkMap).filter(({ name, active }) => {
         if (_networks !== null && !_networks.includes(name)) return false;
 
-        if (!active) return false;
-
-        if (!isRequireEvmAPI(name)) return false;
+        if (!active || !isRequireEvmAPI(name)) return false;
 
         return true;
       });

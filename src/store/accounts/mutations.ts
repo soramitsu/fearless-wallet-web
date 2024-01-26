@@ -133,12 +133,12 @@ const mutations: MutationTree<State> & Mutations = {
     state.nfts = nfts;
   },
 
-  [MutationTypes.SET_HIDDEN_ASSET](state, { assetId, value }) {
+  [MutationTypes.SET_HIDDEN_ASSET](state, { groupId, value }) {
     const address = state.selectedWallet.address;
     const hiddenAssets = state.hiddenAssets[address] ?? [];
 
     if (value) {
-      const index = state.hiddenAssets[address].findIndex((id) => id === assetId);
+      const index = state.hiddenAssets[address].findIndex((id) => id === groupId);
 
       hiddenAssets.splice(index, 1);
 
@@ -151,7 +151,7 @@ const mutations: MutationTree<State> & Mutations = {
     } else {
       state.hiddenAssets = {
         ...state.hiddenAssets,
-        [address]: Array.from(new Set([...hiddenAssets, assetId])),
+        [address]: Array.from(new Set([...hiddenAssets, groupId])),
       };
     }
 

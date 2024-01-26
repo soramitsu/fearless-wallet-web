@@ -1,4 +1,4 @@
-import { type AccountJson, type TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup, AccountJson } from '@extension-base/background/types/types';
 import type { GetterTree } from 'vuex';
 import type { SelectedWallet, WalletInfo, GetAutoSelectNodesValueByNetwork, GetShowWarningNetworks } from './types';
 import type { State } from './state';
@@ -31,7 +31,7 @@ export enum GettersTypes {
 
 export type Getters = {
   [GettersTypes.selectedWallet](state: State, getters?: GetterTree<State, State> & Getters): SelectedWallet;
-  [GettersTypes.getBalances](state: State, getters?: GetterTree<State, State> & Getters): TokenBalance[];
+  [GettersTypes.getBalances](state: State, getters?: GetterTree<State, State> & Getters): TokenGroup[];
   [GettersTypes.nfts](state: State, getters?: GetterTree<State, State> & Getters): NftState;
   [GettersTypes.selectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.selectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
@@ -63,7 +63,7 @@ const getters: GetterTree<State, State> & Getters = {
     return selectedWallet;
   },
 
-  [GettersTypes.getBalances]({ balances }): TokenBalance[] {
+  [GettersTypes.getBalances]({ balances }): TokenGroup[] {
     return balances;
   },
 

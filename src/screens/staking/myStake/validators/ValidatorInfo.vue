@@ -54,7 +54,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
 import type { GetAssetPrice, NetworkParams } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import Scroll from '@/components/Scroll.vue';
@@ -65,7 +65,7 @@ import Scroll from '@/components/Scroll.vue';
 export default class ValidatorInfo extends Vue {
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @Prop({ type: Object }) validator!: FWValidatorInfoFull;
-  @Prop({ type: Object }) stakingCurrency!: TokenBalance;
+  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
   @Prop({ type: Array }) validators!: FWValidatorInfoFull[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;

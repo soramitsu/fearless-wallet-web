@@ -81,11 +81,12 @@ import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import TransferForm from './TransferForm.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetNetwork } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp, cut, isSora } from '@/helpers/';
 import { formattedNumber } from '@/helpers/numbers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { BRIDGE_MIN_VALUES_TO_SORA, BRIDGE_MIN_VALUES_FROM_SORA } from '@/consts/sora';
 
 @Component({
   components: { TransferForm },
@@ -105,16 +106,30 @@ export default class CrossChainForm extends Vue {
   @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
+  get minValueBridgeToSora() {
+    return BRIDGE_MIN_VALUES_TO_SORA[this.originalNetwork.toLowerCase()];
+  }
+
+  get minValueBridgeFromSora() {
+    return BRIDGE_MIN_VALUES_FROM_SORA[this.destinationNetwork.toLowerCase()];
+  }
+
   get showSoraAlert() {
-    return isSora(this.destinationNetwork, true) && this.amount !== '' && +this.amount < 0.05;
+    if (this.amount === '') return false;
+
+    if (isSora(this.destinationNetwork, true)) return +this.amount < this.minValueBridgeToSora;
+
+    return +this.amount < this.minValueBridgeFromSora;
   }
 
   get soraCrossChainALert() {
-    return this.$t('assets.soraCrossChainALert', { asset: this.assetName });
+    const value = isSora(this.destinationNetwork, true) ? this.minValueBridgeToSora : this.minValueBridgeFromSora;
+
+    return this.$t('assets.soraCrossChainALert', { value, asset: this.assetName });
   }
 
   get directionText() {
@@ -150,8 +165,8 @@ export default class CrossChainForm extends Vue {
   }
 
   get currency() {
-    return this.balances.find(({ assetId, balances }) => {
-      return assetId === this.assetId || balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase());
+    return this.balances.find(({ groupId, balances }) => {
+      return groupId === this.assetId || balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase());
     });
   }
 

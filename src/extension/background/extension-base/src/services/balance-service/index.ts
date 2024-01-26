@@ -75,7 +75,7 @@ export default class BalanceService {
 
     const { address } = currentAccount;
 
-    const currencyIndex = this.balanceMap[address].findIndex(({ assetId }) => assetId === SORA_XOR_ASSET_ID);
+    const currencyIndex = this.balanceMap[address].findIndex(({ groupId }) => groupId === SORA_XOR_ASSET_ID);
 
     const token = this.balanceMap[address][currencyIndex];
     const index = token.balances.findIndex(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
@@ -88,15 +88,13 @@ export default class BalanceService {
     const accountAddress = getSubstrateAddress(address, this.state);
     const balancesByAddress = this.balanceMap[accountAddress];
 
-    const currencyIndex = balancesByAddress.findIndex(
-      ({ assetId: _assetId, symbol: _symbol, relayChain: _relayChain }) => {
-        const isExistingAssetId = _assetId === id;
-        const isExistingDisplayName = _symbol === symbol;
-        const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
+    const currencyIndex = balancesByAddress.findIndex(({ groupId, symbol: _symbol, relayChain: _relayChain }) => {
+      const isExistingAssetId = groupId === id;
+      const isExistingDisplayName = _symbol === symbol;
+      const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
 
-        return isExistingAssetId || isExistingAsset;
-      }
-    );
+      return isExistingAssetId || isExistingAsset;
+    });
 
     if (currencyIndex === -1) throw new Error(`Failed to find ${symbol} on ${networkKey}`);
 
@@ -138,7 +136,7 @@ export default class BalanceService {
             balances[address],
             prices,
             ALL_NETWORKS,
-            this.state.networksJson
+            this.state.networksGithub
           );
 
           const change = getChangeWalletBalance(balances[address], prices, ALL_NETWORKS);
@@ -170,7 +168,7 @@ export default class BalanceService {
   public generateDefaultBalance(address: string) {
     if (address === '') return;
 
-    if (this.balanceMap?.[address] === undefined) this.balanceMap[address] = getMockCurrencies(this.state.networksJson);
+    if (this.balanceMap?.[address] === undefined) this.balanceMap[address] = getMockCurrencies(this.state.networkMap);
   }
 
   getTokenBalance(address: string, assetId: string, relayChain?: string) {

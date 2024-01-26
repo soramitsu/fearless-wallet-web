@@ -25,7 +25,7 @@
 import Draggable from 'vuedraggable';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { type TokenBalance, type BalanceJson } from '@extension-base/background/types/types';
+import { type TokenGroup, type BalanceJson } from '@extension-base/background/types/types';
 import type { SelectedWallet } from '@/store';
 import type { AsyncFn, AssetsPrice } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -47,10 +47,10 @@ type TimeoutSubscription = {
 export default class Currencies extends Vue {
   timeoutSubscriptions: TimeoutSubscription[] = [];
 
+  @Prop(Array) balances!: TokenGroup[];
   @Prop(Boolean) isEmptyBalances!: boolean;
   @Prop(String) filterValue!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
-  @Prop(Array) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.prices) prices!: AssetsPrice;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
@@ -66,7 +66,7 @@ export default class Currencies extends Vue {
 
     if (this.showAssetsManagementForm) return false;
 
-    const allHidden = this.balances.every(({ assetId }) => this.hiddenAssets.includes(assetId));
+    const allHidden = this.balances.every(({ groupId }) => this.hiddenAssets.includes(groupId));
 
     return this.balances.length === this.hiddenAssets.length || allHidden || !navigator.onLine;
   }
@@ -104,7 +104,7 @@ export default class Currencies extends Vue {
     this.timeoutSubscriptions.forEach(({ subscription }) => clearTimeout(subscription));
 
     this.timeoutSubscriptions = [...this.timeoutSubscriptions, { fn }].map(({ fn }) => {
-      const subscription = setTimeout(() => fn(), 300);
+      const subscription = setTimeout(() => fn(), 0);
 
       return { subscription, fn };
     });

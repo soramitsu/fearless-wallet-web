@@ -2,17 +2,18 @@ import { FPNumber } from '@sora-substrate/util';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { getAssetOptions, getPrecisionValue } from '@extension-base/api/substrate/utils';
 import { getUtilityProps, getSubstrateAddress } from '@extension-base/background/utils/utils';
-import { type BasicTxResponse, type TokenBalance, SignerType } from '@extension-base/background/types/types';
+import { type BasicTxResponse, type TokenGroup, SignerType } from '@extension-base/background/types/types';
 import { type Extrinsic } from '@extension-base/api/substrate/utils/types';
 import type State from '@extension-base/background/handlers/State';
 
 import { type NetworkName } from '@/interfaces';
+import { ROCOCO } from '@/consts/networks';
 
 type ExtrinsicTransferProps = {
   to: string;
   amount: string | undefined;
   networkKey: NetworkName;
-  tokenBalance: TokenBalance;
+  tokenBalance: TokenGroup;
 };
 
 export function createExtrinsicTransfer(props: ExtrinsicTransferProps, state: State): Extrinsic {
@@ -30,6 +31,8 @@ export function createExtrinsicTransfer(props: ExtrinsicTransferProps, state: St
   try {
     switch (type) {
       case 'normal':
+        if (networkKey.toLowerCase() === ROCOCO) return api.tx.balances.transferKeepAlive(to, precisionAmount);
+
         return api.tx.balances.transfer(to, precisionAmount);
 
       case 'ormlChain':
@@ -56,7 +59,7 @@ export async function estimateFee(
   networkKey: string,
   to: string,
   value: string | undefined,
-  tokenBalance: TokenBalance,
+  tokenBalance: TokenGroup,
   state: State
 ): Promise<string> {
   const apiProps = state.getSubstrateApiMap[networkKey.toLowerCase()];
@@ -125,9 +128,7 @@ export async function makeTransfer({
   await api?.isReady;
 
   const address = getSubstrateAddress(from, state);
-  const tokenBalance = state.balanceService
-    .getAccountBalance(address)
-    .find(({ assetId: _assetId }) => _assetId === assetId)!;
+  const tokenBalance = state.balanceService.getAccountBalance(address).find(({ groupId }) => groupId === assetId)!;
 
   const extrinsic = createExtrinsicTransfer(
     {

@@ -1,7 +1,7 @@
 import { type Subscription } from 'rxjs';
 import { type ApiPromise } from '@polkadot/api';
 import { isEthereumNetwork, getSubstrateAddress, getUtilityProps } from '@extension-base/background/utils/utils';
-import { APIItemState } from '@extension-base/api/types/networks';
+import { APIItemState, NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
 import { setBalance } from '@extension-base/api/helpers';
@@ -18,7 +18,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
     parentId,
     assets,
     name: networkName,
-  } = state.networksJson.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())!;
+  } = state.networksGithub.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())!;
   const relayChain = CHAIN_IDS[parentId!] ?? (networkName as RelayChainName);
 
   if (networkName === 'Equilibrium') {
@@ -174,50 +174,67 @@ export function subscribeBalance(
 
       return newNetworks.some((net) => net.toLowerCase() === networkName.toLowerCase());
     })
-    .map(async ([networkName, apiProps]) => {
-      const isReady = isSora(networkName)
-        ? await new Promise((res) => {
-            // Sora сеть проверяем через setInterval
-            // потому, что instance api сохраняется в state.apis только, когда подключились к сети(см api.ts, onConnected)
-            // у остальных сетей такой проблемы нет, потому что api мы сохраняем сразу при создании
-            // если прошло 60 сек и api не появилось, отписываемся и резолвим false
+    .map(([networkName, apiProps]) => {
+      return new Promise<{
+        networkName: string;
+        unsub: () => void;
+      }>((res) => {
+        const network = state.networkMap[networkName];
+        const isSoraNetwork = isSora(networkName);
+        const timespan = Date.now();
 
-            const timespan = Date.now();
+        const addressForNetwork = isEthereumNetwork(networkName) ? ethereumAddress : address;
 
-            const interval = setInterval(async () => {
-              const isReady = await apiProps.api?.isReadyOrError;
+        if (addressForNetwork === '')
+          return {
+            networkName,
+            unsub: () => {},
+          };
 
-              if (isReady) {
-                clearInterval(interval);
-                res(isReady);
-              } else if (Date.now() - timespan > 60000) {
-                clearInterval(interval);
-                res(false);
+        const subscribeOnReady = () => {
+          if (!apiProps.api) {
+            if (network?.networkStatus !== NETWORK_STATUS.DISCONNECTED) setTimeout(subscribeOnReady, 1000);
+            else res({ networkName, unsub: () => {} });
+
+            return;
+          }
+
+          apiProps.api.isReadyOrError
+            .then(() => {
+              try {
+                const unsub = subscribeTokensBalance(addressForNetwork, networkName, apiProps.api!, state);
+                res({ networkName, unsub });
+              } catch (e) {
+                res({ networkName, unsub: () => {} });
               }
-            }, 1000);
-          })
-        : await apiProps.api?.isReadyOrError;
-
-      if (!isReady)
-        return {
-          networkName,
-          unsub: () => null,
+            })
+            .catch(() => {
+              res({ networkName, unsub: () => {} });
+            });
         };
 
-      const addressForNetwork = isEthereumNetwork(networkName) ? ethereumAddress : address;
+        if (isSoraNetwork) {
+          apiProps.api?.isReadyOrError
+            .then(() => {
+              try {
+                const unsub = subscribeTokensBalance(addressForNetwork, networkName, apiProps.api!, state);
+                res({ networkName, unsub });
+              } catch (e) {
+                res({ networkName, unsub: () => {} });
+              }
+            })
+            .catch(() => {
+              if (Date.now() - timespan > 60000) res({ networkName, unsub: () => {} });
+              else setTimeout(subscribeOnReady, 1000);
+            });
+        }
+        // Sora сеть проверяем через setInterval
+        // потому, что instance api сохраняется в state.apis только, когда подключились к сети(см api.ts, onConnected)
+        // у остальных сетей такой проблемы нет, потому что api мы сохраняем сразу при создании
+        // если прошло 60 сек и api не появилось, отписываемся и резолвим false
 
-      if (addressForNetwork === '')
-        return {
-          networkName,
-          unsub: () => null,
-        };
-
-      const unsub = subscribeTokensBalance(addressForNetwork, networkName, apiProps.api!, state);
-
-      return {
-        networkName,
-        unsub,
-      };
+        setTimeout(subscribeOnReady, 1000);
+      });
     });
 
   return unsubListPromises;

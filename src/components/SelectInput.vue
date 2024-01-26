@@ -47,7 +47,7 @@
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component
@@ -65,7 +65,7 @@ export default class SelectInput extends Vue {
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
   get showIconRotate() {
     return this.showIcon && !this.readonly;
@@ -124,7 +124,7 @@ export default class SelectInput extends Vue {
   }
 
   get assetIcon() {
-    return this.balances.find(({ assetId }) => assetId === this.assetId)?.icon;
+    return this.balances.find(({ groupId }) => groupId === this.assetId)?.icon;
   }
 
   get valueCut() {

@@ -196,7 +196,7 @@ import { Getter } from 'vuex-class';
 import { type RequestBond } from '@extension-base/services/staking-service/types';
 import type { GetAssetPrice, SelectedWallet, NetworkParams } from '@/store';
 import type { SelectionValidator } from '@/interfaces';
-import type { AccountJson, TokenBalance } from '@extension-base/background/types/types';
+import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -239,7 +239,7 @@ export default class Bond extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
 
   get showEditAddressBook() {
@@ -267,13 +267,13 @@ export default class Bond extends Vue {
   get stakingAssetId() {
     if (this.balances.length === 0) return '';
 
-    const { assetId } = getUtilityAsset(this.balances, this.network);
+    const { groupId } = getUtilityAsset(this.balances, this.network);
 
-    return assetId;
+    return groupId;
   }
 
   get stakingCurrency() {
-    return this.balances.find(({ assetId }) => assetId === this.stakingAssetId);
+    return this.balances.find(({ groupId }) => groupId === this.stakingAssetId);
   }
 
   get accountName() {

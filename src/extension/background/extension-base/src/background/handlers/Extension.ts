@@ -896,7 +896,7 @@ export default class Extension extends FWExtensionBase {
         amount: balance?.transferable || '0',
       });
 
-      fee = formatUnits(feeValue, 18);
+      fee = formatUnits(feeValue, balance.precision);
     } else {
       // Estimate with DotSama API
 

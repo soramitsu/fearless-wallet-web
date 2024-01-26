@@ -62,7 +62,7 @@ async function getUtilityTransactionObject(params: TransferParams): Promise<Tran
 
   if (!web3Api) throw new Error(`Unknown network ${networkKey}`);
 
-  const { maxPriorityFeePerGas, gasPrice } = await web3Api.getFeeData();
+  const { maxFeePerGas } = await web3Api.getFeeData();
 
   const transactionObject = {
     to,
@@ -72,8 +72,9 @@ async function getUtilityTransactionObject(params: TransferParams): Promise<Tran
   const gasLimit = await web3Api.provider.estimateGas(transactionObject);
   const block = await web3Api.provider.getBlock('latest');
 
-  const baseFeePerGas = block?.baseFeePerGas;
-  const prepGasPrice = gasPrice ?? maxPriorityFeePerGas ?? baseFeePerGas ?? BigInt(0);
+  const baseFeePerGas = block?.baseFeePerGas ?? BigInt(0);
+  const maxFeePerGasPrep = maxFeePerGas ?? BigInt(0);
+  const prepGasPrice = maxFeePerGasPrep + baseFeePerGas;
   const estimateFee = prepGasPrice * gasLimit;
 
   transactionObject.gasLimit = gasLimit;
@@ -91,12 +92,12 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
 
   const parsedValue = parseUnits(amount, balance.precision);
   const data = erc20Contract.interface.encodeFunctionData('transfer', [to, parsedValue]);
-  const { maxPriorityFeePerGas } = await web3Api.getFeeData();
+  const { maxFeePerGas } = await web3Api.getFeeData();
   const block = await web3Api.provider.getBlock('latest');
 
   const baseFeePerGas = block?.baseFeePerGas ?? BigInt(0);
-
-  const prepGasPrice = baseFeePerGas ?? maxPriorityFeePerGas;
+  const maxFeePerGasPrep = maxFeePerGas ?? BigInt(0);
+  const prepGasPrice = baseFeePerGas + maxFeePerGasPrep;
   const transactionObject: TransactionRequest = {
     to: contractAddress,
     from,

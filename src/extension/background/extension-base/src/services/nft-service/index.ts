@@ -86,7 +86,10 @@ export class NftService {
     storage.set({ nftSettings: this.hideSettings });
   }
 
-  async sendNft(tx: RequestNftTransfer): Promise<ResponseNftTransfer> {
+  async sendNft(
+    tx: RequestNftTransfer,
+    savePass: (address: string, ethereumAddress: string | undefined, isSavePass: boolean, isMobile: boolean) => void
+  ): Promise<ResponseNftTransfer> {
     const { from, contract: contractAddress } = tx;
     const api = this.state.getEvmApi(tx.network);
     const contract = await getContract(contractAddress, api, 'erc721');
@@ -118,6 +121,9 @@ export class NftService {
       }
 
       await contractMaster['safeTransferFrom(address,address,uint256)'](from, tx.to, tx.tokenId);
+      const substrateAddress = getSubstrateAddress(tx.from, this.state);
+
+      savePass(substrateAddress, tx.from, tx.isSavePass, false);
 
       return {
         errors: [],

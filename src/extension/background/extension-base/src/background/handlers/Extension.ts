@@ -883,18 +883,27 @@ export default class Extension extends FWExtensionBase {
     const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
 
     let fee = '0';
+    const errors: BasicTxError[] = [];
 
     // Estimate with EVM API
     if (isRequireEvmAPI(networkKey)) {
-      const { fee: feeValue } = await getEVMTransactionObject({
-        balance,
-        networkKey,
-        to,
-        from,
-        amount: balance?.transferable || '0',
-      });
+      try {
+        const { fee: feeValue } = await getEVMTransactionObject({
+          balance,
+          networkKey,
+          to,
+          from,
+          amount: balance?.transferable || '0',
+        });
 
-      fee = formatUnits(feeValue, 18);
+        fee = formatUnits(feeValue, 18);
+      } catch (e) {
+        console.warn(e);
+        errors.push({
+          message: 'common.estimateFeeError',
+          code: TransferErrorCode.TRANSFER_ERROR,
+        });
+      }
     } else {
       // Estimate with DotSama API
 
@@ -904,6 +913,7 @@ export default class Extension extends FWExtensionBase {
     return {
       destEstimateFee: '0',
       estimateFee: fee.toString(),
+      errors,
     };
   }
 

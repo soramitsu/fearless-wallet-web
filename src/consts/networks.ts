@@ -1,6 +1,8 @@
 import { type NetworkName } from '@/interfaces';
 
 const SUBSTRATE_ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
+const KUSAMA = 'kusama';
+const ROCOCO = 'rococo';
 const NATIVE_ETHEREUM_NETWORKS = [
   'ethereum',
   'ethereum goerli',
@@ -115,4 +117,6 @@ export {
   SUBSTRATE_ETHEREUM_NETWORKS,
   EXPLORERS_BASE_URLS,
   EVM_EXPLORERS_BASE_URLS,
+  ROCOCO,
+  KUSAMA,
 };

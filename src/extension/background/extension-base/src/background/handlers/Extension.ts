@@ -898,7 +898,7 @@ export default class Extension extends FWExtensionBase {
 
         fee = formatUnits(feeValue, 18);
       } catch (e) {
-        console.warn(e);
+        console.info(e);
         errors.push({
           message: 'common.estimateFeeError',
           code: TransferErrorCode.TRANSFER_ERROR,

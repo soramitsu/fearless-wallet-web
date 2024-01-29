@@ -6,7 +6,7 @@ export default class AlchemyNftController {
   sdk: Alchemy;
   chainId: number;
   nftService: NftService;
-  timespan: number;
+  timespan: Record<string, number>;
 
   constructor(private network: Network, chainId: string, nftService: NftService) {
     this.sdk = new Alchemy({
@@ -15,7 +15,7 @@ export default class AlchemyNftController {
     });
     this.nftService = nftService;
     this.chainId = +chainId;
-    this.timespan = Number.MAX_VALUE;
+    this.timespan = {};
   }
 
   get excludeFilters() {

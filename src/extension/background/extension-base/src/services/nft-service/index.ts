@@ -63,9 +63,9 @@ export class NftService {
       if (this.sdks[network] && isActive) {
         const timespan = this.sdks[network].timespan;
 
-        if (Date.now() - timespan > 30000 || timespan === Number.MAX_VALUE) {
+        if (!timespan[address] || Date.now() - timespan[address] > 30000) {
           const networkNfts = await this.sdks[network].fetchNftsForWallet(address);
-          this.sdks[network].timespan = Date.now();
+          this.sdks[network].timespan[address] = Date.now();
           nfts = { ...nfts, ...networkNfts };
         }
       }

@@ -64,11 +64,10 @@ export class NftService {
           const networkNfts = await this.sdks[network].fetchNftsForWallet(address);
           this.sdks[network].timespan[address] = Date.now();
           this.nftMap[address] = { ...this.nftMap[address], ...networkNfts };
+          this.nftSubject.next(this.nftMap);
         }
       }
     }
-
-    this.nftSubject.next(this.nftMap);
   }
 
   changeSettings(settings: NftSettings) {

@@ -112,6 +112,7 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
   try {
     gasLimit = await web3Api.estimateGas(transactionObject);
   } catch (e) {
+    //BNB on ethereum is working that way, remove if something better is comes up
     console.info(e);
     const tx = { ...transactionObject };
     delete tx.data;

@@ -44,6 +44,7 @@ export class NftService {
     if (nftSettings) this.hideSettings = nftSettings;
 
     const account = await this.state.currentAccount;
+
     if (account) this.getNftForAllNetworks(account.ethereumAddress);
   }
 
@@ -54,24 +55,19 @@ export class NftService {
 
   async getNftForAllNetworks(address: string) {
     const networks = Object.keys(this.sdks) as Network[];
-    let nfts: NftState = {};
-    const activeNetworks = this.state.getActiveNetworks();
 
     for (const network of networks) {
-      const isActive = activeNetworks.some((el) => +el.chainId === this.sdks[network].chainId);
-
-      if (this.sdks[network] && isActive) {
+      if (this.sdks[network]) {
         const timespan = this.sdks[network].timespan;
 
         if (!timespan[address] || Date.now() - timespan[address] > 30000) {
           const networkNfts = await this.sdks[network].fetchNftsForWallet(address);
           this.sdks[network].timespan[address] = Date.now();
-          nfts = { ...nfts, ...networkNfts };
+          this.nftMap[address] = { ...this.nftMap[address], ...networkNfts };
         }
       }
     }
 
-    this.nftMap[address] = nfts;
     this.nftSubject.next(this.nftMap);
   }
 

@@ -650,7 +650,6 @@
     "airdrop": "Airdrop",
     "hideNfts": "Hide NFTs",
     "noNft": "There aren't any NFTs yet. Buy or mint NFTs to see them here."
-
   },
   "common": {
     "approve": "Approve",
@@ -747,6 +746,7 @@
     "nothingFound": "Nothing found",
     "days": "days",
     "featureOff": "Temparary unavailable, we're working to bring it back.",
-    "networkFees":"Network fee"
+    "estimateFeeError": "Couldn't estimate fee",
+    "networkFees": "Network fee"
   }
 }

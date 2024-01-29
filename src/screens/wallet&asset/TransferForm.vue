@@ -194,6 +194,9 @@ import {
   type RequestCheckCrossChain,
   type TokenGroup,
   type AccountJson,
+  type ResponseCheckTransfer,
+  type ResponseCheckCrossChain,
+  TransferErrorCode,
 } from '@extension-base/background/types/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
@@ -250,6 +253,7 @@ export default class TransferForm extends Vue {
   newAddress = '';
   filterValue = '';
   isFetchingFees = false;
+  estimateFeeError = false;
   step = 1;
 
   @Prop(String) header!: string;
@@ -404,6 +408,7 @@ export default class TransferForm extends Vue {
       return 'common.confirm';
     }
 
+    if (this.estimateFeeError) return 'estimateFeeError';
     if (this.isSameAddress) return 'assets.isSameAddress';
 
     if (!this.isValidRecipientAddress && this.syncedRecipient !== '') return 'assets.incorrectAddress';
@@ -426,10 +431,7 @@ export default class TransferForm extends Vue {
   }
 
   get buttonDisabled() {
-    if (this.isDisableBtn) return true;
-
-    if (this.isFetchingFees) return true;
-
+    if (this.isFetchingFees || this.estimateFeeError) return true;
     if (!navigator.onLine) return true;
 
     if (this.step === 2) return false;
@@ -685,7 +687,14 @@ export default class TransferForm extends Vue {
 
     this.timeoutSubscription = setTimeout(async () => {
       try {
-        const { estimateFee, destEstimateFee } = await this.verifyTx();
+        const { estimateFee, destEstimateFee, errors } = await this.verifyTx();
+
+        if (errors) {
+          errors.forEach((error) => {
+            if (error.code === TransferErrorCode.TRANSFER_ERROR) this.estimateFeeError = true;
+            else this.estimateFeeError = false;
+          });
+        }
 
         this.syncedFee = estimateFee ?? '0';
         this.syncedDestNetFee = destEstimateFee ?? '0';
@@ -785,7 +794,7 @@ export default class TransferForm extends Vue {
     this.isFetchingFees = value;
   }
 
-  async verifyTx(_amount?: string) {
+  async verifyTx(_amount?: string): Promise<ResponseCheckTransfer | ResponseCheckCrossChain> {
     this.toggleLoading();
 
     // комиссия не зависит от адреса получателя, поэтому подставляем всегда мок

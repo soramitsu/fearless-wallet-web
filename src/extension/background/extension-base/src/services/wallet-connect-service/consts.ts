@@ -17,7 +17,7 @@ export const WALLET_CONNECT_METADATA: CoreTypes.Metadata = {
   ],
 };
 export const DEFAULT_WALLET_CONNECT_OPTIONS: SignClientTypes.Options = {
-  logger: process.env.NODE_ENV === 'development' ? 'debug' : undefined,
+  logger: undefined,
   projectId: PROJECT_ID_EXTENSION,
   relayUrl: RELAY_URL,
   metadata: WALLET_CONNECT_METADATA,

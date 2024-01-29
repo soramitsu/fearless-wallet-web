@@ -3,7 +3,6 @@ import { getInternalError, getSdkError } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
 import { createSubscription } from '@extension-base/background/handlers/subscriptions';
 import {
-  DEFAULT_LOGGER,
   PROJECT_ID_EXTENSION,
   SUBSTRATE_EVM_HALF_CHAINID,
   WALLET_CONNECT_METADATA,
@@ -38,7 +37,7 @@ export default class WalletConnectDAppService {
     this.app = await UniversalProvider.init({
       projectId: PROJECT_ID_EXTENSION,
       metadata: WALLET_CONNECT_METADATA,
-      logger: process.env.NODE_ENV === 'development' ? DEFAULT_LOGGER : undefined,
+      logger: undefined,
       storage: new WalletConnectStorage(),
     });
 

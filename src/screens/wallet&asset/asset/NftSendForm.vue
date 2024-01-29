@@ -35,7 +35,7 @@
       <HistoryBook
         v-if="popupControls.showHistoryBook"
         :network="network"
-        :assetId="assetId"
+        :assetId="formInfo.assetId"
         @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
         @setRecipient="setRecipient"
         @setAddress="setAddress"
@@ -75,7 +75,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, reactive, onMounted, watch } from 'vue';
+import { computed, reactive, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
 import type { NftCollection, NftState, NftTx } from '@extension-base/services/nft-service/types';
@@ -119,7 +119,6 @@ const collection = computed<NftCollection | undefined>(() => nfts.value[contract
 
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value));
-const assetId = ref('');
 const wallets = computed<AccountJson[]>(() => store.getters.getAccounts);
 const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
 

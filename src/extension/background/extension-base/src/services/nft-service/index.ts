@@ -55,9 +55,12 @@ export class NftService {
   async getNftForAllNetworks(address: string) {
     const networks = Object.keys(this.sdks) as Network[];
     let nfts: NftState = {};
+    const activeNetworks = this.state.getActiveNetworks();
 
     for (const network of networks) {
-      if (this.sdks[network]) {
+      const isActive = activeNetworks.some((el) => +el.chainId === this.sdks[network].chainId);
+
+      if (this.sdks[network] && isActive) {
         const timespan = this.sdks[network].timespan;
 
         if (Date.now() - timespan > 30000 || timespan === Number.MAX_VALUE) {
@@ -86,7 +89,10 @@ export class NftService {
     storage.set({ nftSettings: this.hideSettings });
   }
 
-  async sendNft(tx: RequestNftTransfer): Promise<ResponseNftTransfer> {
+  async sendNft(
+    tx: RequestNftTransfer,
+    savePass: (address: string, ethereumAddress: string | undefined, isSavePass: boolean, isMobile: boolean) => void
+  ): Promise<ResponseNftTransfer> {
     const { from, contract: contractAddress } = tx;
     const api = this.state.getEvmApi(tx.network);
     const contract = await getContract(contractAddress, api, 'erc721');
@@ -118,6 +124,9 @@ export class NftService {
       }
 
       await contractMaster['safeTransferFrom(address,address,uint256)'](from, tx.to, tx.tokenId);
+      const substrateAddress = getSubstrateAddress(tx.from, this.state);
+
+      savePass(substrateAddress, tx.from, tx.isSavePass, false);
 
       return {
         errors: [],

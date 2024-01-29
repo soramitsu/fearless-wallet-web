@@ -56,25 +56,33 @@ export async function handleTransfer({ callback, networkKey, privateKey, tx }: H
   setTimeout(() => state.fetchEvmBalance([networkKey]), 15000);
 }
 
+function calcEvmFees(maxFee: bigint | null, baseFee: bigint | null | undefined, gasLimit: bigint): bigint {
+  const baseFeePerGas = baseFee ?? BigInt(0);
+  const maxFeePerGasPrep = maxFee ?? BigInt(0);
+  const prepGasPrice = maxFeePerGasPrep + baseFeePerGas;
+
+  return prepGasPrice * gasLimit;
+}
+
 async function getUtilityTransactionObject(params: TransferParams): Promise<TransactionObject> {
   const { networkKey, to, amount } = params;
   const web3Api = state.getEvmApi(networkKey);
 
   if (!web3Api) throw new Error(`Unknown network ${networkKey}`);
 
-  const { maxPriorityFeePerGas, gasPrice } = await web3Api.getFeeData();
+  const { maxFeePerGas, maxPriorityFeePerGas } = await web3Api.getFeeData();
 
   const transactionObject = {
     to,
+    maxFeePerGas,
+    maxPriorityFeePerGas,
     value: parseEther(amount),
   } as TransactionRequest;
 
   const gasLimit = await web3Api.provider.estimateGas(transactionObject);
   const block = await web3Api.provider.getBlock('latest');
 
-  const baseFeePerGas = block?.baseFeePerGas;
-  const prepGasPrice = gasPrice ?? maxPriorityFeePerGas ?? baseFeePerGas ?? BigInt(0);
-  const estimateFee = prepGasPrice * gasLimit;
+  const estimateFee = calcEvmFees(maxFeePerGas, block?.baseFeePerGas, gasLimit);
 
   transactionObject.gasLimit = gasLimit;
   transactionObject.value = parseEther(amount);
@@ -91,22 +99,21 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
 
   const parsedValue = parseUnits(amount, balance.precision);
   const data = erc20Contract.interface.encodeFunctionData('transfer', [to, parsedValue]);
-  const { maxPriorityFeePerGas } = await web3Api.getFeeData();
+  const { maxFeePerGas, maxPriorityFeePerGas } = await web3Api.getFeeData();
   const block = await web3Api.provider.getBlock('latest');
 
-  const baseFeePerGas = block?.baseFeePerGas ?? BigInt(0);
-
-  const prepGasPrice = baseFeePerGas ?? maxPriorityFeePerGas;
   const transactionObject: TransactionRequest = {
     to: contractAddress,
     from,
     data,
+    maxFeePerGas,
+    maxPriorityFeePerGas,
     value: parseEther('0.0'),
   };
 
   const gasLimit = await web3Api.estimateGas(transactionObject);
 
-  const estimateFee = prepGasPrice * gasLimit;
+  const estimateFee = calcEvmFees(maxFeePerGas, block?.baseFeePerGas, gasLimit);
 
   transactionObject.gasLimit = gasLimit;
 

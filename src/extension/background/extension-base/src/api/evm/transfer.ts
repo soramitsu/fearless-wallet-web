@@ -56,6 +56,14 @@ export async function handleTransfer({ callback, networkKey, privateKey, tx }: H
   setTimeout(() => state.fetchEvmBalance([networkKey]), 15000);
 }
 
+function calcEvmFees(maxFee: bigint | null, baseFee: bigint | null | undefined, gasLimit: bigint): bigint {
+  const baseFeePerGas = baseFee ?? BigInt(0);
+  const maxFeePerGasPrep = maxFee ?? BigInt(0);
+  const prepGasPrice = maxFeePerGasPrep + baseFeePerGas;
+
+  return prepGasPrice * gasLimit;
+}
+
 async function getUtilityTransactionObject(params: TransferParams): Promise<TransactionObject> {
   const { networkKey, to, amount } = params;
   const web3Api = state.getEvmApi(networkKey);
@@ -74,10 +82,7 @@ async function getUtilityTransactionObject(params: TransferParams): Promise<Tran
   const gasLimit = await web3Api.provider.estimateGas(transactionObject);
   const block = await web3Api.provider.getBlock('latest');
 
-  const baseFeePerGas = block?.baseFeePerGas ?? BigInt(0);
-  const maxFeePerGasPrep = maxFeePerGas ?? BigInt(0);
-  const prepGasPrice = maxFeePerGasPrep + baseFeePerGas;
-  const estimateFee = prepGasPrice * gasLimit;
+  const estimateFee = calcEvmFees(maxFeePerGas, block?.baseFeePerGas, gasLimit);
 
   transactionObject.gasLimit = gasLimit;
   transactionObject.value = parseEther(amount);
@@ -97,9 +102,6 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
   const { maxFeePerGas, maxPriorityFeePerGas } = await web3Api.getFeeData();
   const block = await web3Api.provider.getBlock('latest');
 
-  const baseFeePerGas = block?.baseFeePerGas ?? BigInt(0);
-  const maxFeePerGasPrep = maxFeePerGas ?? BigInt(0);
-  const prepGasPrice = baseFeePerGas + maxFeePerGasPrep;
   const transactionObject: TransactionRequest = {
     to: contractAddress,
     from,
@@ -111,7 +113,7 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
 
   const gasLimit = await web3Api.estimateGas(transactionObject);
 
-  const estimateFee = prepGasPrice * gasLimit;
+  const estimateFee = calcEvmFees(maxFeePerGas, block?.baseFeePerGas, gasLimit);
 
   transactionObject.gasLimit = gasLimit;
 

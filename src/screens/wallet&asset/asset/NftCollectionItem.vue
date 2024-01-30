@@ -1,7 +1,7 @@
 <template>
   <FCorners size="big" :topLeftCorner="false" :bottomRightCorner="false">
     <div class="nft" @click="onClick">
-      <div v-if="collection.total" class="nft-counter">{{ collection.ownedNfts.length }}{{ collection.total }}</div>
+      <div v-if="collection.total" class="nft-counter">{{ counter }}</div>
 
       <img
         v-if="collection.image"
@@ -30,6 +30,7 @@
 <script lang="ts" setup>
 import { type NftCollection } from '@extension-base/services/nft-service/types';
 import { useRouter } from 'vue-router/composables';
+import { computed } from 'vue';
 import { Components } from '@/router/routes';
 
 type Props = {
@@ -38,6 +39,7 @@ type Props = {
 
 const props = defineProps<Props>();
 const router = useRouter();
+const counter = computed(() => `${props.collection.ownedNfts.length}/${props.collection.total}`);
 
 const onClick = () => {
   router.push({ name: Components.NftCollection, params: { contract: props.collection.address } });

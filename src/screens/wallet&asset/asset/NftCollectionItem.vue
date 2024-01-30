@@ -1,13 +1,15 @@
 <template>
   <FCorners size="big" :topLeftCorner="false" :bottomRightCorner="false">
     <div class="nft" @click="onClick">
+      <div v-if="collection.total" class="nft-counter">{{ collection.ownedNfts.length }}{{ collection.total }}</div>
+
       <img
         v-if="collection.image"
         :src="collection.image"
         :alt="collection.name"
         loading="lazy"
         width="240"
-        height="240"
+        height="200"
       />
       <img
         v-else
@@ -44,6 +46,7 @@ const onClick = () => {
 
 <style lang="scss" scoped>
 .nft {
+  position: relative;
   display: flex;
   width: 239px;
   background: $secondary-background-color;
@@ -66,7 +69,20 @@ const onClick = () => {
   color: $grayish-white;
   min-height: 55px;
 }
-
+.nft-counter {
+  position: absolute;
+  display: flex;
+  background-color: rgba(0, 0, 0, 0.54);
+  color: $gray-color;
+  border: 1px solid transparent;
+  border-radius: 30px;
+  z-index: 100;
+  right: 5px;
+  top: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 14px;
+}
 .titles {
   display: flex;
   flex-flow: column;

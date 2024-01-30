@@ -32,264 +32,186 @@
 
       <div class="control-form">
         <ValidatedInput
-          v-if="isLocked"
-          ref="passInput"
-          v-model="password"
+          v-if="state.isLocked"
+          ref="passInputComponent"
+          v-model="state.password"
           placeholder="common.password"
           size="big"
           :class="classesInput"
           errorDescriptions="common.invalidPassword"
-          :readonly="!isLocked"
-          :isError="isErrorPassword"
+          :readonly="!state.isLocked"
+          :isError="state.isErrorPassword"
           :showPassword="true"
           @keypress.native="keypress"
         />
 
-        <Checkbox :value="isSavePass" size="medium" :label="$t(min15Label)" @change="onSavePassChange" />
+        <Checkbox :value="state.isSavePass" size="medium" :label="min15Label" @change="onSavePassChange" />
 
         <div class="control-form-submit">
           <FButton
             size="big"
             type="secondary"
             class="button"
-            :disabled="isDisabled"
+            :disabled="state.isDisabled"
             :border="false"
             text="common.cancel"
             @click="onReject"
           />
 
-          <FButton size="big" :disabled="isDisabled" class="button" text="common.accept" @click="sendExtrinsic" />
+          <FButton size="big" :disabled="state.isDisabled" class="button" text="common.accept" @click="sendExtrinsic" />
         </div>
       </div>
     </div>
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Watch, Ref } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
+<script lang="ts" setup>
 import registry from '@extension-base/api/substrate/typeRegistry';
-import { type SignerPayloadJSON } from '@polkadot/types/types';
+import { reactive, ref, watch, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n-composable';
+import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { AccountJson, SigningRequest } from '@extension-base/background/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import type ValidatedInput from '@/components/ValidatedInput.vue';
+import type { ApprovePayload } from '@/store/extension/actions';
+import ValidatedInput from '@/components/ValidatedInput.vue';
 import BaseApi from '@/util/BaseApi';
 import Checkbox from '@/components/Checkbox.vue';
 import WalletInfo from '@/screens/extension-ui/signing/WalletInfo.vue';
 import InfoList from '@/screens/extension-ui/InfoList.vue';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
-import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
-import { ActionTypes as ExtensionActionTypes, type ApprovePayload } from '@/store/extension/actions';
-import { type AsyncFn } from '@/interfaces';
-import { Components } from '@/router/routes';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { type SelectedWallet } from '@/store';
+import { useStore, type SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
 import { isSignLocked, validatePassword } from '@/extension/messaging';
-import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { ExtensionController } from '@/controllers';
 
-@Component({
-  components: {
-    WalletInfo,
-    InfoItem,
-    InfoList,
-    Checkbox,
-    SignMobile,
-  },
-})
-export default class Transaction extends Vue {
-  readonly isExtension = IS_EXTENSION;
-  isLocked = true;
-  isSignPopupVisible = false;
-  isErrorPassword = false;
-  password = '';
-  isSavePass = false;
-  isDisabled = false;
+const state = reactive({
+  isLocked: true,
+  isSignPopupVisible: false,
+  isErrorPassword: false,
+  isSavePass: false,
+  isDisabled: false,
+  password: '',
+});
 
-  @Ref('passInput') readonly passInputComponent!: ValidatedInput;
-  @Getter(ExtensionGettersTypes.signRequestPayload) payload!: SignerPayloadJSON;
-  @Getter(ExtensionGettersTypes.signList) requests!: SigningRequest[];
-  @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: AsyncFn<string>;
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: AsyncFn<ApprovePayload>;
+const store = useStore();
+const { t } = useI18n();
 
-  get classesInput() {
-    return [
-      'row',
-      'password-input',
-      {
-        'password-input-margin': !this.isExtension,
-      },
-    ];
+const payload = computed<SignerPayloadJSON>(() => store.getters.signRequestPayload);
+const requests = computed<SigningRequest[]>(() => store.getters.signList);
+const accounts = computed<AccountJson[]>(() => store.getters.getAccounts);
+const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+
+const onSignApprove = (data: ApprovePayload) => {
+  store.dispatch('APPROVE_SIGN_PASSWORD', data);
+};
+
+const classesInput = ['row', 'password-input', { 'password-input-margin': !IS_EXTENSION }];
+const transactionAddress = computed(() => payload.value?.address ?? selectedWallet.value.address);
+const request = computed(() => requests.value[0]);
+const transactionId = computed(() => request.value.id);
+
+const isSignMobile = computed(() => {
+  const encodedAddress = BaseApi.encodeAddress(transactionAddress.value);
+
+  return accounts.value.some((account) => account.address === encodedAddress && account.isMobile);
+});
+
+const isSupportedNetwork = computed(() => {
+  if (isSignMobile.value) {
+    const encodedAddress = BaseApi.encodeAddress(transactionAddress.value);
+
+    const account = accounts.value.find((account) => account.address === encodedAddress && account.isMobile);
+
+    return account?.chains?.some((el) => payload.value.genesisHash.includes(el));
   }
 
-  get transactionId() {
-    return this.request.id;
+  return false;
+});
+
+const typedPayload = computed(() => {
+  registry.setSignedExtensions(payload.value.signedExtensions);
+
+  return registry.createType('ExtrinsicPayload', payload.value, { version: payload.value.version });
+});
+const address = computed(() => request.value.account.address);
+const accountName = computed(() => request.value.account.name);
+const specVersion = computed(() => typedPayload.value.specVersion.toNumber());
+const genesisHash = computed(() => typedPayload.value.genesisHash.toString());
+const nonce = computed(() => typedPayload.value.nonce.toString());
+const method = computed(() => typedPayload.value.method.toString());
+
+const mortalityAsString = (era: ExtrinsicEra, hexBlockNumber: string): string => {
+  if (era.isImmortalEra) return 'immortal';
+
+  const { birth, death } = BaseApi.mortalityDecode(era, hexBlockNumber);
+
+  return `mortal, valid from ${birth} to ${death}`;
+};
+
+const mortality = computed(() => mortalityAsString(typedPayload.value.era, payload.value.blockNumber));
+
+const txInfo = computed(() => ({
+  url: request.value.url,
+  nonce: nonce.value,
+  genesisHash: genesisHash.value,
+  specVersion: specVersion.value,
+  method: method.value,
+  mortality: mortality.value,
+}));
+
+const min15Label = computed((): string => t(state.isLocked ? 'assets.15min' : 'assets.15minExtend').toString());
+const passInputComponent = ref<ValidatedInput>();
+
+const onSignMobile = () => ExtensionController.approveSignPassword(transactionId.value, false);
+onMounted(async () => {
+  if (isSignMobile.value && isSupportedNetwork) onSignMobile();
+
+  if (!IS_EXTENSION || isSignMobile.value) return;
+
+  passInputComponent.value?.input.focus();
+
+  const { isLocked } = await isSignLocked(transactionAddress.value);
+
+  state.isLocked = isLocked;
+  state.isSavePass = !state.isLocked;
+
+  if (!isLocked) state.password = '000000';
+});
+
+watch(
+  () => state.password,
+  () => {
+    state.isErrorPassword = false;
   }
+);
 
-  get disabledButton() {
-    if (!this.isLocked) return false;
+const onSavePassChange = (value: boolean) => (state.isSavePass = value);
+const onReject = async () => store.dispatch('SIGN_CANCEL', request.value.id);
 
-    return this.password === '' || this.isErrorPassword;
-  }
+const sendExtrinsic = async () => {
+  state.isDisabled = true;
 
-  get transactionAddress() {
-    return this.payload?.address ?? this.selectedWallet.address;
-  }
+  if (state.isLocked) {
+    const isValidPass = await validatePassword(address.value, state.password);
 
-  get request() {
-    return this.requests[0];
-  }
+    if (!isValidPass) {
+      state.isErrorPassword = true;
+      state.isDisabled = false;
 
-  get isSignMobile() {
-    const encodedAddress = BaseApi.encodeAddress(this.transactionAddress);
-
-    return this.accounts.some((account) => account.address === encodedAddress && account.isMobile);
-  }
-
-  get isSupportedNetwork() {
-    if (this.isSignMobile) {
-      const encodedAddress = BaseApi.encodeAddress(this.transactionAddress);
-
-      const account = this.accounts.find((account) => account.address === encodedAddress && account.isMobile);
-
-      return account?.chains?.some((el) => this.payload.genesisHash.includes(el));
+      return;
     }
-
-    return false;
   }
 
-  get address() {
-    return this.request.account.address;
-  }
+  onSignApprove({
+    id: transactionId.value,
+    isSavePass: state.isSavePass,
+    password: state.password,
+  });
+};
 
-  get accountName() {
-    return this.request.account.name;
-  }
-
-  get txInfo() {
-    return {
-      url: this.request.url,
-      nonce: this.nonce,
-      genesisHash: this.genesisHash,
-      specVersion: this.specVersion,
-      method: this.method,
-      mortality: this.mortality,
-    };
-  }
-
-  get typedPayload() {
-    registry.setSignedExtensions(this.payload.signedExtensions);
-
-    return registry.createType('ExtrinsicPayload', this.payload, { version: this.payload.version });
-  }
-
-  get specVersion() {
-    return this.typedPayload.specVersion.toNumber();
-  }
-
-  get genesisHash() {
-    return this.typedPayload.genesisHash.toString();
-  }
-
-  get nonce() {
-    return this.typedPayload.nonce.toString();
-  }
-
-  get method() {
-    return this.typedPayload.method.toString();
-  }
-
-  get mortality(): string {
-    return this.mortalityAsString(this.typedPayload.era, this.payload.blockNumber);
-  }
-
-  get min15Label() {
-    return this.isLocked ? 'assets.15min' : 'assets.15minExtend';
-  }
-
-  async mounted() {
-    if (this.isSignMobile && this.isSupportedNetwork) this.onSignMobile();
-
-    if (!IS_EXTENSION || this.isSignMobile) return;
-
-    this.passInputComponent.input.focus();
-
-    const { isLocked } = await isSignLocked(this.transactionAddress);
-
-    this.isLocked = isLocked;
-    this.isSavePass = !this.isLocked;
-
-    if (!isLocked) this.password = '000000';
-  }
-
-  @Watch('password')
-  async resetStatusError() {
-    this.isErrorPassword = false;
-  }
-
-  @Watch('requests')
-  updateRoute(value: SigningRequest[]) {
-    if (value.length === 0) this.$router.push({ name: Components.Wallet });
-  }
-
-  mortalityAsString(era: ExtrinsicEra, hexBlockNumber: string): string {
-    if (era.isImmortalEra) return 'immortal';
-
-    const { birth, death } = BaseApi.mortalityDecode(era, hexBlockNumber);
-
-    return `mortal, valid from ${birth} to ${death}`;
-  }
-
-  onClose() {
-    this.isSignPopupVisible = false;
-  }
-
-  onSavePassChange(value: boolean) {
-    this.isSavePass = value;
-  }
-
-  async onReject() {
-    this.onSignCancel(this.request.id);
-  }
-
-  async onSignMobile() {
-    this.signTransactionJSON(this.transactionId);
-  }
-
-  keypress({ key }: KeyboardEvent) {
-    if (key === 'Enter') this.sendExtrinsic();
-  }
-
-  async signTransactionJSON(id: string) {
-    console.info(id);
-
-    ExtensionController.approveSignPassword(id, false);
-  }
-
-  async sendExtrinsic() {
-    this.isDisabled = true;
-
-    if (this.isLocked) {
-      const isValidPass = await validatePassword(this.address, this.password);
-
-      if (!isValidPass) {
-        this.isErrorPassword = true;
-        this.isDisabled = false;
-
-        return;
-      }
-    }
-
-    this.onSignApprove({
-      id: this.transactionId,
-      isSavePass: this.isSavePass,
-      password: this.password,
-    });
-  }
-}
+const keypress = ({ key }: KeyboardEvent) => {
+  if (key === 'Enter') sendExtrinsic();
+};
 </script>
 
 <style lang="scss" scoped>

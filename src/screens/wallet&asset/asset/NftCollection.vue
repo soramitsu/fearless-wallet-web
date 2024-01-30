@@ -1,17 +1,19 @@
 <template>
   <AboveForm :fullScreen="true" :header="header" @closeHandler="onClose">
     <InfiniteScroll class="nft-list" :canLoadMore="state.canLoadMore" @onScroll="onScroll">
-      <NftItem
-        v-for="nft in ownedNfts"
-        :collectionName="collection.name"
-        class="ownedNfts"
-        :key="nft.id"
-        :nft="nft"
-        isNft
-        @share="onShare"
-      />
+      <div class="nft-group">
+        <NftItem
+          v-for="nft in ownedNfts"
+          :collectionName="collection.name"
+          class="ownedNfts"
+          :key="nft.id"
+          :nft="nft"
+          isNft
+          @share="onShare"
+        />
+      </div>
       <span v-if="availableNfts.length">{{ additionalNftsHeader }}</span>
-      <div class="available-nfts">
+      <div class="nft-group">
         <NftItem
           v-for="nft in availableNfts"
           :collectionName="collection.name"
@@ -121,15 +123,15 @@ const onScroll = async () => {
   gap: 15px;
   flex-flow: column;
   align-items: self-start;
+
+  .nft-group {
+    display: flex;
+    flex-flow: row wrap;
+    gap: 15px;
+  }
 }
 
 .ownedNfts {
   margin-right: auto;
-}
-
-.available-nfts {
-  display: flex;
-  flex-flow: row wrap;
-  gap: 15px;
 }
 </style>

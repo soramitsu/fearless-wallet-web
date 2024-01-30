@@ -1858,7 +1858,12 @@ export default class Extension extends FWExtensionBase {
         return this.state.nftService.nftSubscribe(id, port);
 
       case 'pri(nft.send)':
-        return this.state.nftService.sendNft(request as RequestNftTransfer, this.savePass);
+        return this.state.nftService.sendNft(
+          request as RequestNftTransfer,
+          (address: string, ethereumAddress: string | undefined, isSave: boolean, isMobile: boolean) => {
+            this.savePass(address, ethereumAddress, isSave, isMobile);
+          }
+        );
 
       case 'pri(nft.checkSend)':
         return this.state.nftService.checkSend(request as NftTx);

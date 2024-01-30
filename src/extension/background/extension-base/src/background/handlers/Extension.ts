@@ -130,7 +130,6 @@ import type {
 } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
-import { googleManage } from '@/controllers/googleController';
 import { type NftSettings, type NftTx } from '@/extension/background/extension-base/src/services/nft-service/types';
 
 function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
@@ -654,11 +653,11 @@ export default class Extension extends FWExtensionBase {
   }
 
   initAuth({ type, wallet }: GoogleAuthTypes): void {
-    googleManage.authExtension(type, wallet);
+    this.state.googleService.authExtension(type, wallet);
   }
 
   async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse | null> {
-    return googleManage.verifyToken(token);
+    return this.state.googleService.verifyToken(token);
   }
 
   getToken(): void {
@@ -668,21 +667,21 @@ export default class Extension extends FWExtensionBase {
   }
 
   async getFiles({ token }: { token: string }): Promise<IGetFilesResponse> {
-    return googleManage.getFiles(token);
+    return this.state.googleService.getFiles(token);
   }
 
   async getFile({ id, token }: GoogleFileId): Promise<KeyringPair$Json> {
-    return googleManage.getFile(id, token);
+    return this.state.googleService.getFile(id, token);
   }
 
   async createFile({ json, options, token }: ICreateFile): Promise<FilesResponse> {
-    return googleManage.createFile({ json, options, token });
+    return this.state.googleService.createFile({ json, options, token });
   }
 
   deleteFile({ id }: GoogleFileId): void {
     if (!this.token) this.getToken();
 
-    googleManage.deleteFile(id, this.token);
+    this.state.googleService.deleteFile(id, this.token);
   }
 
   cancelAuthRequest(id: string) {
@@ -885,18 +884,27 @@ export default class Extension extends FWExtensionBase {
     const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
 
     let fee = '0';
+    const errors: BasicTxError[] = [];
 
     // Estimate with EVM API
     if (isRequireEvmAPI(networkKey)) {
-      const { fee: feeValue } = await getEVMTransactionObject({
-        balance,
-        networkKey,
-        to,
-        from,
-        amount: balance?.transferable || '0',
-      });
+      try {
+        const { fee: feeValue } = await getEVMTransactionObject({
+          balance,
+          networkKey,
+          to,
+          from,
+          amount: balance?.transferable || '0',
+        });
 
-      fee = formatUnits(feeValue, 18);
+        fee = formatUnits(feeValue, 18);
+      } catch (e) {
+        console.info(e);
+        errors.push({
+          message: 'common.estimateFeeError',
+          code: TransferErrorCode.TRANSFER_ERROR,
+        });
+      }
     } else {
       // Estimate with DotSama API
 
@@ -906,6 +914,7 @@ export default class Extension extends FWExtensionBase {
     return {
       destEstimateFee: '0',
       estimateFee: fee.toString(),
+      errors,
     };
   }
 

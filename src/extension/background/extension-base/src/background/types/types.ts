@@ -289,11 +289,13 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
 export interface ResponseCheckTransfer {
   estimateFee?: string;
   destEstimateFee: '0';
+  errors?: BasicTxError[];
 }
 
 export interface ResponseCheckCrossChain {
   estimateFee?: string;
   destEstimateFee?: string;
+  errors?: BasicTxError[];
 }
 
 export interface RequestCheckSwap extends BaseRequestSign {

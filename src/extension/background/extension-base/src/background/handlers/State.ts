@@ -29,28 +29,6 @@ import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { type KeyringAddress } from '@polkadot/ui-keyring/types';
 import { type SignerPayloadRaw } from '@polkadot/types/types';
-import {
-  type ServiceInfo,
-  type MobileSignRequest,
-  type MobileSigningRequest,
-  type ResponseSigning,
-  type AuthUrls,
-  type Resolver,
-  type AuthorizedAccountsDiff,
-  type RequestRpcSend,
-  type RequestRpcSubscribe,
-  type RequestRpcUnsubscribe,
-  type ResponseRpcListProviders,
-  type Port,
-  type IState,
-  type ActiveTabAuthorizeStatus,
-  type Providers,
-  type RequestAuthorizeCancel,
-  type ApiProps,
-  type RequestAccountExportPrivateKey,
-  type ResponseAccountExportPrivateKey,
-  type EvmApiMap,
-} from '@extension-base/background/types/types';
 import PricesService from '@extension-base/services/prices-service';
 import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
 import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
@@ -61,6 +39,28 @@ import CurrentAccountStore, {
 } from '@extension-base/stores/CurrentAccountStore';
 import WalletConnectDAppService from '@extension-base/services/wallet-connect-service/dapp';
 import axios from 'axios';
+import type {
+  ServiceInfo,
+  MobileSignRequest,
+  MobileSigningRequest,
+  ResponseSigning,
+  AuthUrls,
+  Resolver,
+  AuthorizedAccountsDiff,
+  RequestRpcSend,
+  RequestRpcSubscribe,
+  RequestRpcUnsubscribe,
+  ResponseRpcListProviders,
+  Port,
+  IState,
+  ActiveTabAuthorizeStatus,
+  Providers,
+  RequestAuthorizeCancel,
+  ApiProps,
+  RequestAccountExportPrivateKey,
+  ResponseAccountExportPrivateKey,
+  EvmApiMap,
+} from '@extension-base/background/types/types';
 import type { CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import type { ChainRegistry, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
@@ -69,7 +69,8 @@ import type { HexString } from '@polkadot/util/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { EXTENSION_ID } from '@/consts/global';
+import { GoogleService } from '@/extension/background/extension-base/src/services/google-service';
+import { EXTENSION_ID } from '@/extension/background/extension-base/src/const';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -132,6 +133,7 @@ export default class State {
     dAppName: '',
   };
   public keyringService = new KeyringService(this);
+  public googleService = new GoogleService();
   public eventService = new EventService();
   public networkService = new NetworkService(this.eventService);
   public requestService = new RequestService(this);

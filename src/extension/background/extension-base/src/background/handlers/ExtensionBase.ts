@@ -96,13 +96,10 @@ export default class FWExtensionBase {
 
   refreshAccountPasswordCache(pair: KeyringPair): number {
     const remainingTime = this.getRemainingTime(pair);
-
-    const { address, meta } = pair;
-
-    const ethereumAddress = meta.ethereumAddress as string;
+    const ethereumAddress = pair.meta.ethereumAddress as string;
 
     if (remainingTime < 0) {
-      this.cachedUnlocks[address] = 0;
+      this.cachedUnlocks[pair.address] = 0;
 
       this.state.keyringService.lockPair(pair);
 

@@ -70,19 +70,19 @@ async function getUtilityTransactionObject(params: TransferParams): Promise<Tran
 
   if (!web3Api) throw new Error(`Unknown network ${networkKey}`);
 
-  const { maxFeePerGas, maxPriorityFeePerGas } = await web3Api.getFeeData();
+  const { maxFeePerGas, maxPriorityFeePerGas, gasPrice } = await web3Api.getFeeData();
 
-  const transactionObject = {
+  const transactionObject: TransactionRequest = {
     to,
     maxFeePerGas,
     maxPriorityFeePerGas,
-    value: parseEther(amount),
+    value: parseEther('0.0'),
   } as TransactionRequest;
 
   const gasLimit = await web3Api.provider.estimateGas(transactionObject);
   const block = await web3Api.provider.getBlock('latest');
 
-  const estimateFee = calcEvmFees(maxFeePerGas, block?.baseFeePerGas, gasLimit);
+  const estimateFee = calcEvmFees(maxFeePerGas ?? gasPrice, block?.baseFeePerGas, gasLimit);
 
   transactionObject.gasLimit = gasLimit;
   transactionObject.value = parseEther(amount);
@@ -99,23 +99,30 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
 
   const parsedValue = parseUnits(amount, balance.precision);
   const data = erc20Contract.interface.encodeFunctionData('transfer', [to, parsedValue]);
-  const { maxFeePerGas, maxPriorityFeePerGas } = await web3Api.getFeeData();
+  const { maxFeePerGas, gasPrice } = await web3Api.getFeeData();
   const block = await web3Api.provider.getBlock('latest');
 
   const transactionObject: TransactionRequest = {
     to: contractAddress,
     from,
     data,
-    maxFeePerGas,
-    maxPriorityFeePerGas,
-    value: parseEther('0.0'),
   };
+  let gasLimit = BigInt(0);
 
-  const gasLimit = await web3Api.estimateGas(transactionObject);
+  try {
+    gasLimit = await web3Api.estimateGas(transactionObject);
+  } catch (e) {
+    //BNB on ethereum is working that way, remove if something better is comes up
+    console.info(e);
+    const tx = { ...transactionObject };
+    delete tx.data;
+    gasLimit = await web3Api.estimateGas(tx);
+  }
 
-  const estimateFee = calcEvmFees(maxFeePerGas, block?.baseFeePerGas, gasLimit);
+  const estimateFee = calcEvmFees(maxFeePerGas ?? gasPrice, block?.baseFeePerGas, gasLimit);
 
   transactionObject.gasLimit = gasLimit;
+  transactionObject.maxFeePerGas = maxFeePerGas;
 
   return { tx: transactionObject, fee: estimateFee };
 }
@@ -148,10 +155,10 @@ async function makeERC20Transfer(params: MakeTransferParams) {
   await handleTransfer(props);
 }
 
-export async function getEVMTransactionObject(params: TransferParams): Promise<TransactionObject> {
-  if (params.balance.isUtility) return await getUtilityTransactionObject(params);
+export function getEVMTransactionObject(params: TransferParams): Promise<TransactionObject> {
+  if (params.balance.isUtility) return getUtilityTransactionObject(params);
 
-  return await getERC20TransactionObject(params);
+  return getERC20TransactionObject(params);
 }
 
 export function makeEVMTransfer(params: MakeTransferParams): Promise<void> {

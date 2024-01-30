@@ -16,7 +16,6 @@ const IS_EXTENSION = chrome.extension !== undefined;
 const APP_VERSION = packages.version;
 const CONTENT_FORM_HEIGHT = 382;
 const FEARLESS_TITLE = 'FEARLESS';
-const EXTENSION_ID = 'nhlnehondigmgckngjomcpcefcdplmgc';
 
 export {
   FEARLESS_TITLE,
@@ -34,5 +33,4 @@ export {
   IS_EXTENSION,
   APP_VERSION,
   CONTENT_FORM_HEIGHT,
-  EXTENSION_ID,
 };

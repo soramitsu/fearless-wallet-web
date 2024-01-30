@@ -62,14 +62,20 @@ export default class AlchemyNftController {
   }
 
   async getCollectionPage(contract: string, pageKey?: string): Promise<AvailableNftResponse> {
-    const nfts = await this.sdk.nft.getNftsForContract(contract, { pageKey });
-    const fearlessNft: FearlessNft[] = [];
+    try {
+      const nfts = await this.sdk.nft.getNftsForContract(contract, { pageKey });
+      const fearlessNft: FearlessNft[] = [];
 
-    for (const nft of nfts.nfts) {
-      fearlessNft.push(this.convertNft(nft));
+      for (const nft of nfts.nfts) {
+        fearlessNft.push(this.convertNft(nft));
+      }
+
+      return { nfts: fearlessNft, pageKey: nfts.pageKey };
+    } catch (e) {
+      console.info(e);
+
+      return { nfts: [], pageKey: undefined };
     }
-
-    return { nfts: fearlessNft, pageKey: nfts.pageKey };
   }
 
   async fetchNftsForWallet(address: string): Promise<NftState> {

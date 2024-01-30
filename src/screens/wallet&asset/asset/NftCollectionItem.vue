@@ -17,7 +17,7 @@
         src="@/assets/fearless-logo-animated.gif"
         alt="fearless-logo"
         width="240"
-        height="240"
+        height="200"
       />
 
       <div class="nft-info">

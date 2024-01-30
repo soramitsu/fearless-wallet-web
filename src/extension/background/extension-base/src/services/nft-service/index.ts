@@ -15,6 +15,7 @@ import {
 } from '@extension-base/background/types/types';
 import { getBalanceItem, getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { FPNumber } from '@sora-substrate/util';
+import { calcEvmFees } from '@extension-base/api/evm/transfer';
 import type {
   AvailableNftPayload,
   CheckNftResponse,
@@ -24,7 +25,6 @@ import type {
 } from '@extension-base/services/nft-service/types';
 import type State from '@extension-base/background/handlers/State';
 import { VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
-import { calcEvmFees } from '@/extension/background/extension-base/src/api/evm/transfer';
 
 export class NftService {
   private store: NftStore;
@@ -49,15 +49,34 @@ export class NftService {
   async init() {
     const { nftSettings } = await storage.get(['nftSettings']);
     if (nftSettings) this.hideSettings = nftSettings;
-
-    const account = await this.state.currentAccount;
-    if (account) this.getNftForAllNetworks(account.ethereumAddress);
   }
 
-  async fetchNfts() {
-    const account = await this.state.currentAccount;
+  isNeedUpdate(address: string) {
+    const networks = Object.keys(this.sdks) as Network[];
 
-    if (account) this.getNftForAllNetworks(account.ethereumAddress);
+    for (const network of networks) {
+      const timespan = this.sdks[network].timespan;
+
+      if (!timespan[address] || timespan[address] + 30000 < Date.now()) return true;
+    }
+
+    return false;
+  }
+
+  resetTime(address: string) {
+    const networks = Object.keys(this.sdks) as Network[];
+
+    for (const network of networks) {
+      this.sdks[network].timespan[address] = Number.MAX_VALUE;
+    }
+
+    return false;
+  }
+
+  async fetchNfts(address?: string) {
+    if (!address) return;
+
+    this.getNftForAllNetworks(address);
   }
 
   availableNftsForContract({ network, contract, pageKey }: AvailableNftPayload) {
@@ -77,15 +96,17 @@ export class NftService {
     const networks = Object.keys(this.sdks) as Network[];
 
     for (const network of networks) {
-      if (this.sdks[network]) {
-        const timespan = this.sdks[network].timespan;
+      if (!this.sdks[network]) continue;
 
-        if (!timespan[address] || Date.now() - timespan[address] > 30000) {
-          const networkNfts = await this.sdks[network].fetchNftsForWallet(address);
-          this.sdks[network].timespan[address] = Date.now();
-          this.nftMap[address] = { ...this.nftMap[address], ...networkNfts };
-          this.nftSubject.next(this.nftMap[address]);
-        }
+      const timespan = this.sdks[network].timespan;
+
+      if (!timespan[address] || timespan[address] + 30000 > Date.now()) {
+        const networkNfts = await this.sdks[network].fetchNftsForWallet(address);
+        this.sdks[network].timespan[address] = Date.now();
+        this.nftMap[address] = { ...this.nftMap[address], ...networkNfts };
+        this.state.currentAccount.then((account) => {
+          if (account && account.ethereumAddress === address) this.nftSubject.next(this.nftMap[address]);
+        });
       }
     }
   }
@@ -155,11 +176,6 @@ export class NftService {
         status: false,
       };
     }
-
-    return {
-      errors: [],
-      status: true,
-    };
   }
 
   async checkSend({ from, tokenId, network, contract: contractAddress }: NftTx): Promise<CheckNftResponse> {
@@ -217,9 +233,13 @@ export class NftService {
   async publishNfts() {
     const account = await this.state.currentAccount;
 
-    if (account) {
+    if (account && account.ethereumAddress) {
       const nfts = this.nftMap[account.ethereumAddress];
+
       if (nfts) this.nftSubject.next(this.nftMap[account.ethereumAddress]);
+      if (this.isNeedUpdate(account.ethereumAddress)) this.fetchNfts(account.ethereumAddress);
+
+      return;
     }
 
     this.nftSubject.next({});
@@ -228,12 +248,10 @@ export class NftService {
   async nftSubscribe(id: string, port: Port): Promise<NftState> {
     const cb = createSubscription<'pri(nft.subscribe)'>(id, port);
 
-    const subscription = this.nftSubject.subscribe((nfts: NftState): void => {
-      this.state.currentAccount.then((account) => {
-        if (account?.ethereumAddress) {
-          return cb(nfts);
-        }
-      });
+    const subscription = this.nftSubject.subscribe({
+      next: (rs) => {
+        cb(rs);
+      },
     });
 
     port.onDisconnect.addListener((): void => {

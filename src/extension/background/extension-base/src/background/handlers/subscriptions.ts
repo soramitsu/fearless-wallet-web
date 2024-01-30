@@ -80,7 +80,7 @@ export class FWSubscription {
     const accountsExceptCurrent = this.state
       .getSubstrateAccounts()
       .filter((el) => el.address !== currentAccount?.address);
-
+    this.state.nftService.fetchNfts();
     accountsExceptCurrent.forEach((account) => {
       const ethAddress = (account.meta.ethereumAddress as string) ?? '';
 

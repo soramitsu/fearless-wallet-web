@@ -855,7 +855,7 @@ export default class State {
 
     this.saveCurrentAccountAddress(address, () => {
       this.keyringService.triggerWalletsSubscription();
-      this.nftService.fetchNfts();
+
       if (isNew) this.setActiveNetworks(this.selectedNetworks[address] ?? ALL_NETWORKS);
     });
 

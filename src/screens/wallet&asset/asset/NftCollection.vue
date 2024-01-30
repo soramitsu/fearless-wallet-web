@@ -2,18 +2,18 @@
   <AboveForm :fullScreen="true" :header="header" @closeHandler="onClose">
     <InfiniteScroll class="nft-list" :canLoadMore="state.canLoadMore" @onScroll="onScroll">
       <NftItem
-        v-for="(nft, index) in ownedNfts"
+        v-for="nft in ownedNfts"
         :collectionName="collection.name"
-        :key="index"
+        :key="nft.id"
         :nft="nft"
         isNft
         @share="onShare"
       />
 
       <NftItem
-        v-for="(nft, index) in availableNfts"
+        v-for="nft in availableNfts"
         :collectionName="collection.name"
-        :key="nft.id + index"
+        :key="nft.id"
         :nft="nft"
         isNft
         @share="onShare"
@@ -80,6 +80,12 @@ function onShare(nft: FearlessNft) {
 const onScroll = async () => {
   state.canLoadMore = false;
 
+  if (!network.value) {
+    state.canLoadMore = true;
+
+    return;
+  }
+
   const nfts = await fetchAvailableNftsForContract({
     contract: contract.value,
     network: network.value,
@@ -96,6 +102,7 @@ const onScroll = async () => {
     collection: nfts.nfts,
     pageKey: nfts.pageKey,
   };
+
   store.commit('SET_AVAILABLE_NFTS', avNfts);
 };
 </script>

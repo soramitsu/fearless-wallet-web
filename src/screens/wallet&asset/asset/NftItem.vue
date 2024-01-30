@@ -59,6 +59,7 @@ const onNavigate = () => {
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
   flex-direction: column;
+  cursor: pointer;
 }
 
 .nft-info {

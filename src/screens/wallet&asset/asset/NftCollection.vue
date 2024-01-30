@@ -40,10 +40,12 @@ const route = useRoute();
 const router = useRouter();
 const store = useStore();
 const { t } = useI18n();
+
 const contract = computed(() => route.params.contract);
 const availableNftsFromStore = computed<AvailableNftState>(() => store.getters.availableNfts);
-const nftCollectionFromStore = computed(() => {
-  if (availableNftsFromStore.value[contract.value]) return availableNftsFromStore.value[contract.value].collection;
+const nftCollectionFromStore = computed<FearlessNft[]>(() => {
+  const availableNfts = store.getters.availableNfts;
+  if (availableNfts[contract.value]) return availableNfts[contract.value].collection;
 
   return [];
 });
@@ -52,8 +54,10 @@ const state = reactive<{ pageKey?: string; canLoadMore: boolean }>({
   canLoadMore: true,
 });
 const nfts = computed<NftState>(() => store.getters.nfts ?? []);
-
 const collection = computed(() => nfts.value[contract.value]);
+const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
+const availableNfts = ref<FearlessNft[]>(nftCollectionFromStore.value);
+
 const header = computed(() => (collection.value ? collection.value.name : ''));
 const additionalNftsHeader = computed(() => t('nft.availableNfts', { name: collection.value.name }));
 const network = computed<string>(() => {
@@ -63,9 +67,6 @@ const network = computed<string>(() => {
 
   return '';
 });
-const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
-
-const availableNfts = ref<FearlessNft[]>(nftCollectionFromStore.value);
 const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
 
 const onClose = () => router.back();

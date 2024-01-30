@@ -157,7 +157,7 @@ const assetSymbol = computed(() => {
 const actionBtnName = computed(() => {
   if (errors.unsufficientFunds) return t('assets.insufficientBalance', { asset: assetSymbol.value.toUpperCase() });
 
-  return `common.${popupControls.showConfirmScreen ? 'confirm' : 'accept'}`;
+  return `common.${popupControls.showConfirmScreen ? 'confirm' : 'send'}`;
 });
 
 const showBackIcon = computed(

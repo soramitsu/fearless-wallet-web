@@ -54,6 +54,7 @@ const onNavigate = () => {
 .nft {
   display: flex;
   width: 239px;
+  height: fit-content;
   background: $secondary-background-color;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;

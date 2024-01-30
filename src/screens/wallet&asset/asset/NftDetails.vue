@@ -65,10 +65,12 @@ const store = useStore();
 const id = computed(() => route.params.id);
 const contract = computed(() => route.params.contract);
 const nft = computed<Partial<FearlessNft>>(() => {
+  const nftCollectionFromStore: FearlessNft[] = store.getters.availableNfts[contract.value]?.collection ?? [];
   const nfts = store.getters.nfts ?? {};
 
   const collection = nfts[contract.value] ?? {};
   const ownedNfts: FearlessNft[] = collection.ownedNfts ?? [];
+  if (nftCollectionFromStore.length) ownedNfts.push(...nftCollectionFromStore);
 
   return ownedNfts.find((ownedNft) => ownedNft.id === id.value) ?? {};
 });

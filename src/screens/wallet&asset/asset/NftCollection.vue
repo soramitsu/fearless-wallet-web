@@ -1,37 +1,64 @@
 <template>
   <AboveForm :fullScreen="true" :header="header" @closeHandler="onClose">
-    <Scroll>
-      <div class="nft-list">
-        <NftItem
-          v-for="(nft, index) in ownedNfts"
-          :collectionName="collection.name"
-          :key="index"
-          :nft="nft"
-          isNft
-          @share="onShare"
-        />
-        <Tooltip text="common.copied" target=".share" trigger="click" arrow />
-      </div>
-    </Scroll>
+    <InfiniteScroll class="nft-list" :canLoadMore="state.canLoadMore" @onScroll="onScroll">
+      <NftItem
+        v-for="(nft, index) in ownedNfts"
+        :collectionName="collection.name"
+        :key="index"
+        :nft="nft"
+        isNft
+        @share="onShare"
+      />
+
+      <NftItem
+        v-for="(nft, index) in availableNfts"
+        :collectionName="collection.name"
+        :key="nft.id + index"
+        :nft="nft"
+        isNft
+        @share="onShare"
+      />
+      <Tooltip text="common.copied" target=".share" trigger="click" arrow />
+    </InfiniteScroll>
   </AboveForm>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
-import { type FearlessNft, type NftState } from '@extension-base/services/nft-service/types';
+import { type AvailableNftState, type FearlessNft, type NftState } from '@extension-base/services/nft-service/types';
+import { fetchAvailableNftsForContract } from '@/extension/messaging/nfts';
 import { type SelectedWallet, useStore } from '@/store';
 import NftItem from '@/screens/wallet&asset/asset/NftItem.vue';
+import InfiniteScroll from '@/components/InfiniteScroll.vue';
 
 const route = useRoute();
 const router = useRouter();
 const store = useStore();
-
-const nfts = computed<NftState>(() => store.getters.nfts ?? []);
 const contract = computed(() => route.params.contract);
+const availableNftsFromStore = computed<AvailableNftState>(() => store.getters.availableNfts);
+const nftCollectionFromStore = computed(() => {
+  if (availableNftsFromStore.value[contract.value]) return availableNftsFromStore.value[contract.value].collection;
+
+  return [];
+});
+const state = reactive<{ pageKey?: string; canLoadMore: boolean }>({
+  pageKey: availableNftsFromStore.value[contract.value]?.pageKey,
+  canLoadMore: true,
+});
+const nfts = computed<NftState>(() => store.getters.nfts ?? []);
+
 const collection = computed(() => nfts.value[contract.value]);
 const header = computed(() => (collection.value ? collection.value.name : ''));
+const network = computed<string>(() => {
+  if (collection.value) {
+    return collection.value.network;
+  }
+
+  return '';
+});
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
+const availableNfts = ref<FearlessNft[]>(nftCollectionFromStore.value);
 const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
 
 const onClose = () => router.back();
@@ -49,11 +76,34 @@ function onShare(nft: FearlessNft) {
 
   navigator.clipboard.writeText(JSON.stringify(dataToShare));
 }
+
+const onScroll = async () => {
+  state.canLoadMore = false;
+
+  const nfts = await fetchAvailableNftsForContract({
+    contract: contract.value,
+    network: network.value,
+    pageKey: state.pageKey,
+  });
+
+  if (nfts.pageKey) state.canLoadMore = true;
+
+  state.pageKey = nfts.pageKey;
+  availableNfts.value.push(...nfts.nfts);
+  const avNfts: AvailableNftState = {};
+
+  avNfts[contract.value] = {
+    collection: nfts.nfts,
+    pageKey: nfts.pageKey,
+  };
+  store.commit('SET_AVAILABLE_NFTS', avNfts);
+};
 </script>
 
 <style lang="scss" scoped>
 .nft-list {
   display: flex;
   gap: 10px;
+  flex-flow: row wrap;
 }
 </style>

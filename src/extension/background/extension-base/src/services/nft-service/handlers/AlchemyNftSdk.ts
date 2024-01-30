@@ -1,5 +1,5 @@
-import { type Network, Alchemy, NftFilters } from 'alchemy-sdk';
-import { type NftState } from '@extension-base/services/nft-service/types';
+import { type Network, Alchemy, NftFilters, type Nft } from 'alchemy-sdk';
+import { type AvailableNftResponse, type FearlessNft, type NftState } from '@extension-base/services/nft-service/types';
 import { type NftService } from '@/extension/background/extension-base/src/services/nft-service';
 
 export default class AlchemyNftController {
@@ -37,6 +37,41 @@ export default class AlchemyNftController {
     return this.sdk.nft.getContractsForOwner(address, { excludeFilters: this.excludeFilters });
   }
 
+  get readableNetwork() {
+    return (
+      Object.values(this.nftService.state.networkMap).find(
+        (net) => net.chainId.toLowerCase() === this.chainId.toString()
+      )?.name ?? this.network
+    );
+  }
+
+  convertNft(nft: Nft): FearlessNft {
+    return {
+      id: nft.tokenId,
+      isOwned: false,
+      meta: {
+        description: nft.description,
+        name: nft.name,
+      },
+      type: nft.tokenType,
+      image: nft.image.cachedUrl ?? nft.image.pngUrl,
+      creator: nft.mint?.mintAddress,
+      network: this.readableNetwork,
+      ownedBy: '',
+    };
+  }
+
+  async getCollectionPage(contract: string, pageKey?: string): Promise<AvailableNftResponse> {
+    const nfts = await this.sdk.nft.getNftsForContract(contract, { pageKey });
+    const fearlessNft: FearlessNft[] = [];
+
+    for (const nft of nfts.nfts) {
+      fearlessNft.push(this.convertNft(nft));
+    }
+
+    return { nfts: fearlessNft, pageKey: nfts.pageKey };
+  }
+
   async fetchNftsForWallet(address: string): Promise<NftState> {
     const ownedNfts = await this.getNfts(address);
     const collections = await this.getCollectionsForOwner(address);
@@ -57,6 +92,7 @@ export default class AlchemyNftController {
           address: collection.address,
           image: collection.openSeaMetadata.imageUrl ?? collection.image.cachedUrl,
           network: network?.name ?? this.network,
+          total: collection.totalSupply,
           ownedNfts: [],
         };
       }
@@ -73,7 +109,7 @@ export default class AlchemyNftController {
         }, //todo fill the req meta
         type: nft.tokenType,
         image: prepImg,
-        creator: '',
+        creator: nft.mint?.mintAddress,
         network: network?.name ?? this.network,
         ownedBy: address,
       });

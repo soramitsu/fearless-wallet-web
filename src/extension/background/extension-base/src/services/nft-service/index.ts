@@ -15,7 +15,13 @@ import {
 } from '@extension-base/background/types/types';
 import { getBalanceItem, getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { FPNumber } from '@sora-substrate/util';
-import type { CheckNftResponse, NftSettings, NftState, NftTx } from '@extension-base/services/nft-service/types';
+import type {
+  AvailableNftPayload,
+  CheckNftResponse,
+  NftSettings,
+  NftState,
+  NftTx,
+} from '@extension-base/services/nft-service/types';
 import type State from '@extension-base/background/handlers/State';
 import { VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
 import { calcEvmFees } from '@/extension/background/extension-base/src/api/evm/transfer';
@@ -52,6 +58,19 @@ export class NftService {
     const account = await this.state.currentAccount;
 
     if (account) this.getNftForAllNetworks(account.ethereumAddress);
+  }
+
+  availableNftsForContract({ network, contract, pageKey }: AvailableNftPayload) {
+    const net = this.state.getNetworkByKey(network);
+    const key = PROD_NFT_NETWORKS[+net.chainId];
+
+    if (!this.sdks[key])
+      return {
+        nfts: [],
+        pageKey: undefined,
+      };
+
+    return this.sdks[key].getCollectionPage(contract, pageKey);
   }
 
   async getNftForAllNetworks(address: string) {

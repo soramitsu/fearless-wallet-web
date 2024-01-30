@@ -732,6 +732,7 @@
     "networks": "Networks",
     "nothingFound": "Nothing found",
     "days": "days",
-    "featureOff": "Temparary unavailable, we're working to bring it back."
+    "featureOff": "Temparary unavailable, we're working to bring it back.",
+    "estimateFeeError": "Couldn't estimate fee"
   }
 }

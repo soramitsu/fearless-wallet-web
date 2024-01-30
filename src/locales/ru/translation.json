@@ -723,6 +723,7 @@
     "networks": "Сети",
     "nothingFound": "Ничего не найдено",
     "days": "дней",
-    "featureOff": "Временно недоступно"
+    "featureOff": "Временно недоступно",
+    "estimateFeeError": "Не удалось посчитать фии"
   }
 }

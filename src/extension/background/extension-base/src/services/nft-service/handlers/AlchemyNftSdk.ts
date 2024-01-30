@@ -62,7 +62,8 @@ export default class AlchemyNftController {
       }
 
       const prepImg =
-        nft.contract.openSeaMetadata.imageUrl ?? nft.image.originalUrl ?? nft.image.cachedUrl ?? nft.image.pngUrl;
+        nft.image.originalUrl ?? nft.image.cachedUrl ?? nft.image.pngUrl ?? nft.contract.openSeaMetadata.imageUrl;
+
       ownedCollections[address].ownedNfts.push({
         id: nft.tokenId,
         isOwned: true,

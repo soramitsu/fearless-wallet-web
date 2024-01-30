@@ -26,7 +26,16 @@
       </template>
 
       <template v-if="popupControls.showConfirmScreen">
-        <img :src="image" class="nft-img" alt="nft" width="180px" height="180px" />
+        <img v-if="image" :src="image" class="nft-img" alt="nft" width="180px" height="180px" />
+        <img
+          v-else
+          class="nft-img"
+          src="@/assets/fearless-logo-animated.gif"
+          alt="nft-placeholder"
+          width="180px"
+          height="180px"
+        />
+
         <InfoList>
           <InfoItem v-for="(value, key) in nftDetails" :name="key" :value="value" :key="key" />
         </InfoList>

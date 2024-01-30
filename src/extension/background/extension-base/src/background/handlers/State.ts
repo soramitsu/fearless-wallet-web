@@ -852,11 +852,10 @@ export default class State {
     if (isEthereumAddress(address)) return false;
 
     this.balanceService.generateDefaultBalance(address);
-    this.nftService.fetchNfts();
 
     this.saveCurrentAccountAddress(address, () => {
       this.keyringService.triggerWalletsSubscription();
-
+      this.nftService.fetchNfts();
       if (isNew) this.setActiveNetworks(this.selectedNetworks[address] ?? ALL_NETWORKS);
     });
 

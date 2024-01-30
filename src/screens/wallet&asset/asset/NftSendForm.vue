@@ -45,6 +45,7 @@
         v-if="popupControls.showConfirmationPasswordPopup"
         :tx="tx"
         extrinsicType="nft"
+        :firstIcon="image"
         @close="onConfirmClose"
       />
 
@@ -197,17 +198,17 @@ const onProceed = () => {
   else popupControls.showConfirmationPasswordPopup = true;
 };
 
-const validateTx = async () => {
+function validateTx() {
   if (!tx.value.network) return;
 
-  const checkData = await checkNft(tx.value);
+  checkNft(tx.value).then((checkData) => {
+    if (checkData.error) {
+      if (checkData.error === 'unsufficientFunds') errors.unsufficientFunds = true;
+    }
 
-  if (checkData.error) {
-    if (checkData.error === 'unsufficientFunds') errors.unsufficientFunds = true;
-  }
-
-  formInfo.fee = checkData.fee;
-};
+    formInfo.fee = checkData.fee;
+  });
+}
 
 const showSendForm = computed(
   () => !popupControls.showHistoryBook && !popupControls.showMyWallets && !popupControls.showConfirmScreen

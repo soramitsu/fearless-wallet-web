@@ -120,6 +120,7 @@ export class FWSubscription {
           ) {
             if (addressHasChanged) {
               this.state.publishBalance();
+              this.state.nftService.publishNfts();
 
               // если адрес изменился, то подписываемся на все сети
               this.subscribeBalances(address, ethereumAddress, null, null);
@@ -195,12 +196,6 @@ export class FWSubscription {
     newEvmNetworks: NetworkName[] | null,
     isFirstRun?: boolean
   ) {
-    console.info(
-      `Start balance sub for: ${address}${isFirstRun ? `; isFirstRun: ${true}` : ''}`,
-      newEvmNetworks,
-      newNetworks
-    );
-
     if (isFirstRun) this.state.balanceService.generateDefaultBalance(address);
 
     if (newEvmNetworks?.length) this.state.fetchEvmBalance(newEvmNetworks, ethereumAddress);

@@ -56,7 +56,7 @@ export async function handleTransfer({ callback, networkKey, privateKey, tx }: H
   setTimeout(() => state.fetchEvmBalance([networkKey]), 15000);
 }
 
-function calcEvmFees(maxFee: bigint | null, baseFee: bigint | null | undefined, gasLimit: bigint): bigint {
+export function calcEvmFees(maxFee: bigint | null, baseFee: bigint | null | undefined, gasLimit: bigint): bigint {
   const baseFeePerGas = baseFee ?? BigInt(0);
   const maxFeePerGasPrep = maxFee ?? BigInt(0);
   const prepGasPrice = maxFeePerGasPrep + baseFeePerGas;

@@ -18,12 +18,13 @@ import { FPNumber } from '@sora-substrate/util';
 import type { CheckNftResponse, NftSettings, NftState, NftTx } from '@extension-base/services/nft-service/types';
 import type State from '@extension-base/background/handlers/State';
 import { VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
+import { calcEvmFees } from '@/extension/background/extension-base/src/api/evm/transfer';
 
 export class NftService {
   private store: NftStore;
   private sdks: Record<string, AlchemyNftController> = {};
   private nftMap: Record<string, NftState> = {};
-  public nftSubject = new Subject<Record<string, NftState>>();
+  public nftSubject = new Subject<NftState>();
 
   hideSettings: NftSettings = {
     spam: true,
@@ -44,12 +45,12 @@ export class NftService {
     if (nftSettings) this.hideSettings = nftSettings;
 
     const account = await this.state.currentAccount;
-
     if (account) this.getNftForAllNetworks(account.ethereumAddress);
   }
 
   async fetchNfts() {
     const account = await this.state.currentAccount;
+
     if (account) this.getNftForAllNetworks(account.ethereumAddress);
   }
 
@@ -64,7 +65,7 @@ export class NftService {
           const networkNfts = await this.sdks[network].fetchNftsForWallet(address);
           this.sdks[network].timespan[address] = Date.now();
           this.nftMap[address] = { ...this.nftMap[address], ...networkNfts };
-          this.nftSubject.next(this.nftMap);
+          this.nftSubject.next(this.nftMap[address]);
         }
       }
     }
@@ -151,8 +152,9 @@ export class NftService {
     const substrateAddress = getSubstrateAddress(from, this.state);
 
     const accountBalance = this.state.balanceService.getAccountBalance(substrateAddress);
-    const tokenBalance = accountBalance.find((el) => el.symbol === utilityAsset.symbol);
+    const tokenBalance = accountBalance.find((el) => el.symbol === utilityAsset.symbol && el.relayChain === 'ethereum');
     if (!tokenBalance) return { error: 'unsufficientFunds', fee: '0' };
+
     const balance = getBalanceItem(tokenBalance.balances, network);
 
     const data = contract.interface.encodeFunctionData('safeTransferFrom(address,address,uint256)', [
@@ -166,14 +168,12 @@ export class NftService {
         data,
         to: VALID_ETHEREUM_ADDRESS,
         value: parseEther('0'),
-        ...feeData,
       });
       const block = await api.provider.getBlock('latest');
-      const baseFeePerGas = block?.baseFeePerGas ?? BigInt(0);
-      const maxFeePerGas = feeData.maxPriorityFeePerGas ?? BigInt(0);
-      const prepGasPrice = baseFeePerGas + maxFeePerGas;
-      const estimateFee = prepGasPrice * gasLimit;
+
+      const estimateFee = calcEvmFees(feeData.maxFeePerGas ?? feeData.gasPrice, block?.baseFeePerGas, gasLimit);
       const formatFees = formatUnits(estimateFee);
+
       const isUnsufficientFunds = new FPNumber(formatFees).isGreaterThan(new FPNumber(balance?.total ?? 0));
 
       if (isUnsufficientFunds) {
@@ -187,19 +187,32 @@ export class NftService {
         fee: formatUnits(estimateFee),
       };
     } catch (e) {
+      console.info(e);
+
       return {
         fee: '0.0',
       };
     }
   }
 
+  async publishNfts() {
+    const account = await this.state.currentAccount;
+
+    if (account) {
+      const nfts = this.nftMap[account.ethereumAddress];
+      if (nfts) this.nftSubject.next(this.nftMap[account.ethereumAddress]);
+    }
+
+    this.nftSubject.next({});
+  }
+
   async nftSubscribe(id: string, port: Port): Promise<NftState> {
     const cb = createSubscription<'pri(nft.subscribe)'>(id, port);
 
-    const subscription = this.nftSubject.subscribe((nfts: Record<string, NftState>): void => {
+    const subscription = this.nftSubject.subscribe((nfts: NftState): void => {
       this.state.currentAccount.then((account) => {
-        if (account?.ethereumAddress && nfts?.[account.ethereumAddress]) {
-          return cb(nfts[account.ethereumAddress]);
+        if (account?.ethereumAddress) {
+          return cb(nfts);
         }
       });
     });

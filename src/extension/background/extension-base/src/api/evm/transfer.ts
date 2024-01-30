@@ -119,7 +119,7 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
     gasLimit = await web3Api.estimateGas(tx);
   }
 
-  const estimateFee = calcEvmFees(maxFeePerGas, block?.baseFeePerGas, gasLimit);
+  const estimateFee = calcEvmFees(maxFeePerGas ?? gasPrice, block?.baseFeePerGas, gasLimit);
 
   transactionObject.gasLimit = gasLimit;
   transactionObject.maxFeePerGas = maxFeePerGas;

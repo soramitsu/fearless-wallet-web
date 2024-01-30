@@ -7,6 +7,7 @@ import { type Extrinsic } from './crossChain';
 import type State from '@extension-base/background/handlers/State';
 
 import { type NetworkName } from '@/interfaces';
+import { KUSAMA, ROCOCO } from '@/consts/networks';
 
 type ExtrinsicTransferProps = {
   to: string;
@@ -17,19 +18,22 @@ type ExtrinsicTransferProps = {
 
 export function createExtrinsicTransfer(props: ExtrinsicTransferProps, state: State): Extrinsic {
   const { amount, tokenBalance, to, networkKey } = props;
-  const api = state.getSubstrateApiMap[networkKey.toLowerCase()].api;
+  const networkKeyLCase = networkKey.toLowerCase();
+
+  const api = state.getSubstrateApiMap[networkKeyLCase].api;
 
   if (!api) return null;
 
-  const { precision, type, id } = tokenBalance.balances.find(
-    ({ name }) => name.toLowerCase() === networkKey.toLowerCase()
-  )!;
+  const { precision, type, id } = tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKeyLCase)!;
   const ormlOptions = getAssetOptions(id, state.assetsMap);
   const precisionAmount = getPrecisionValue(amount, precision) as string;
 
   try {
     switch (type) {
       case 'normal':
+        if (networkKeyLCase === ROCOCO || networkKeyLCase === KUSAMA)
+          return api.tx.balances.transferKeepAlive(to, precisionAmount);
+
         return api.tx.balances.transfer(to, precisionAmount);
 
       case 'ormlChain':

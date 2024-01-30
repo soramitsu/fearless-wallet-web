@@ -99,7 +99,7 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
 
   const parsedValue = parseUnits(amount, balance.precision);
   const data = erc20Contract.interface.encodeFunctionData('transfer', [to, parsedValue]);
-  const { maxFeePerGas } = await web3Api.getFeeData();
+  const { maxFeePerGas, gasPrice } = await web3Api.getFeeData();
   const block = await web3Api.provider.getBlock('latest');
 
   const transactionObject: TransactionRequest = {
@@ -155,10 +155,10 @@ async function makeERC20Transfer(params: MakeTransferParams) {
   await handleTransfer(props);
 }
 
-export async function getEVMTransactionObject(params: TransferParams): Promise<TransactionObject> {
-  if (params.balance.isUtility) return await getUtilityTransactionObject(params);
+export function getEVMTransactionObject(params: TransferParams): Promise<TransactionObject> {
+  if (params.balance.isUtility) return getUtilityTransactionObject(params);
 
-  return await getERC20TransactionObject(params);
+  return getERC20TransactionObject(params);
 }
 
 export function makeEVMTransfer(params: MakeTransferParams): Promise<void> {

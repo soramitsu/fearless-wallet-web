@@ -275,8 +275,8 @@ const onConfirmClose = () => (popupControls.showConfirmationPasswordPopup = fals
   .nft-img {
     margin-left: auto;
     margin-right: auto;
-    width: 180px;
-    height: 180px;
+    width: 150px;
+    height: 150px;
   }
   .fees {
     display: flex;

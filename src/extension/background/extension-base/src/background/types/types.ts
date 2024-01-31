@@ -652,7 +652,7 @@ export interface IState {
   transaction: Record<string, TransactionHistoryItem[]>;
   addressBook: AddressBook;
   userType: UserType;
-  nftSettings: NftSettings;
+  nftSettings: Record<string, NftSettings>;
   onboarding: {
     user: UserType;
     isRequired: boolean;

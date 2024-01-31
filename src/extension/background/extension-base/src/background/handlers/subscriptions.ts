@@ -120,7 +120,6 @@ export class FWSubscription {
           ) {
             if (addressHasChanged) {
               this.state.publishBalance();
-              this.state.nftService.publishNfts();
 
               // если адрес изменился, то подписываемся на все сети
               this.subscribeBalances(address, ethereumAddress, null, null);
@@ -136,6 +135,7 @@ export class FWSubscription {
               );
             }
 
+            this.state.nftService.publishNfts();
             this.serviceInfo.address = address;
             this.serviceInfo.ethereumAddress = ethereumAddress;
           }

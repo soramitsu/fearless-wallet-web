@@ -3,9 +3,9 @@ import type {
   AvailableNftPayload,
   AvailableNftResponse,
   CheckNftResponse,
-  NftSettings,
   NftState,
   NftTx,
+  RequestSettingsChangePayload,
 } from '@extension-base/services/nft-service/types';
 import { sendMessage } from '@/extension/messaging';
 
@@ -25,6 +25,6 @@ export function checkNft(tx: NftTx): Promise<CheckNftResponse> {
   return sendMessage('pri(nft.checkSend)', tx);
 }
 
-export function changeNftSettings(settings: NftSettings): Promise<void> {
-  return sendMessage('pri(nft.settings)', settings);
+export function changeNftSettings(data: RequestSettingsChangePayload): Promise<void> {
+  return sendMessage('pri(nft.settings)', data);
 }

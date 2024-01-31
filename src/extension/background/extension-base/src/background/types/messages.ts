@@ -1,10 +1,10 @@
 import type {
   NftTx,
   NftState,
-  NftSettings,
   CheckNftResponse,
   AvailableNftPayload,
   AvailableNftResponse,
+  RequestSettingsChangePayload,
 } from '@extension-base/services/nft-service/types';
 import type { OwnedNftsResponse } from 'alchemy-sdk';
 import type {
@@ -260,5 +260,5 @@ export interface RequestSignatures {
   'pri(nft.send)': [NftTx, ResponseNftTransfer];
   'pri(nft.fetchNftsForContract)': [AvailableNftPayload, AvailableNftResponse];
   'pri(nft.checkSend)': [NftTx, CheckNftResponse];
-  'pri(nft.settings)': [NftSettings, void];
+  'pri(nft.settings)': [RequestSettingsChangePayload, void];
 }

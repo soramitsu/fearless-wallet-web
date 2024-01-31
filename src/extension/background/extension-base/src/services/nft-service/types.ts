@@ -20,16 +20,19 @@ export type NftCollection = {
   total?: string;
   ownedNfts: FearlessNft[];
 };
+
 export type AvailableNftPayload = {
   contract: string;
   network: string;
   pageKey?: string;
 };
+
 export type AvailableNftResponse = {
   nfts: FearlessNft[];
   pageKey?: string;
 };
 export type NftState = Record<string, NftCollection>;
+
 export type AvailableNftState = Record<string, { collection: FearlessNft[]; pageKey?: string }>;
 export type NftTx = {
   type: string;
@@ -40,6 +43,7 @@ export type NftTx = {
   tokenId: string;
   password?: string;
 };
+
 export type CheckNftResponse = {
   fee: string;
   error?: 'unsufficientFunds' | 'incorrenctRecipient';
@@ -48,6 +52,11 @@ export type CheckNftResponse = {
 export type NftSettings = {
   spam: boolean;
   airdrop: boolean;
+};
+
+export type RequestSettingsChangePayload = {
+  settings: NftSettings;
+  address: string;
 };
 
 export type NftStoreState = {

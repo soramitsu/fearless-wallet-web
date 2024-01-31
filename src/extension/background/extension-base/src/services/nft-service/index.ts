@@ -22,6 +22,7 @@ import type {
   NftSettings,
   NftState,
   NftTx,
+  RequestSettingsChangePayload,
 } from '@extension-base/services/nft-service/types';
 import type State from '@extension-base/background/handlers/State';
 import { VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
@@ -32,10 +33,7 @@ export class NftService {
   private nftMap: Record<string, NftState> = {};
   public nftSubject = new Subject<NftState>();
 
-  hideSettings: NftSettings = {
-    spam: true,
-    airdrop: true,
-  };
+  hideSettings: Record<string, NftSettings> = {};
 
   constructor(public state: State) {
     Object.entries(PROD_NFT_NETWORKS).forEach(([chainId, network]) => {
@@ -92,7 +90,7 @@ export class NftService {
     return this.sdks[key].getCollectionPage(contract, pageKey);
   }
 
-  async getNftForAllNetworks(address: string) {
+  async getNftForAllNetworks(address: string, force = false) {
     const networks = Object.keys(this.sdks) as Network[];
 
     for (const network of networks) {
@@ -100,7 +98,7 @@ export class NftService {
 
       const timespan = this.sdks[network].timespan;
 
-      if (!timespan[address] || timespan[address] + 30000 > Date.now()) {
+      if (!timespan[address] || timespan[address] + 30000 > Date.now() || force) {
         const networkNfts = await this.sdks[network].fetchNftsForWallet(address);
         this.sdks[network].timespan[address] = Date.now();
         this.nftMap[address] = { ...this.nftMap[address], ...networkNfts };
@@ -111,14 +109,18 @@ export class NftService {
     }
   }
 
-  changeSettings(settings: NftSettings) {
-    const isChanged = this.hideSettings.airdrop !== settings.airdrop || this.hideSettings.spam !== settings.spam;
+  changeSettings({ address, settings }: RequestSettingsChangePayload) {
+    if (!this.hideSettings[address]) this.hideSettings[address] = { airdrop: false, spam: true };
+
+    const addressSettings = this.hideSettings[address];
+
+    const isChanged = addressSettings.airdrop !== settings.airdrop || addressSettings.spam !== settings.spam;
 
     if (isChanged) {
-      this.hideSettings = settings;
+      this.hideSettings[address] = settings;
 
       this.state.currentAccount.then((account) => {
-        if (account) this.getNftForAllNetworks(account.ethereumAddress);
+        if (account) this.getNftForAllNetworks(account.ethereumAddress, true);
       });
     }
 

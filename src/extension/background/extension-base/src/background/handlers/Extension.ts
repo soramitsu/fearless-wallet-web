@@ -111,6 +111,11 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
+import type {
+  RequestSettingsChangePayload,
+  AvailableNftPayload,
+  NftTx,
+} from '@extension-base/services/nft-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
 import type { ProposalTypes, SessionTypes } from '@walletconnect/types';
@@ -130,11 +135,6 @@ import type {
 } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
-import {
-  type AvailableNftPayload,
-  type NftSettings,
-  type NftTx,
-} from '@/extension/background/extension-base/src/services/nft-service/types';
 
 function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
   return (value as SignerPayloadJSON).genesisHash !== undefined;
@@ -1876,7 +1876,7 @@ export default class Extension extends FWExtensionBase {
         return this.state.nftService.availableNftsForContract(request as AvailableNftPayload);
 
       case 'pri(nft.settings)':
-        return this.state.nftService.changeSettings(request as NftSettings);
+        return this.state.nftService.changeSettings(request as RequestSettingsChangePayload);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

@@ -23,22 +23,33 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onBeforeUnmount, onMounted } from 'vue';
+import { ref, onBeforeUnmount, onMounted, computed } from 'vue';
 import { changeNftSettings } from '@/extension/messaging/nfts';
 import { accountController } from '@/controllers';
-
+import { type SelectedWallet, useStore } from '@/store';
+const store = useStore();
 const emit = defineEmits(['handleClose']);
 const nftSettings = ref({ spam: false, airdrop: false });
-
+const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
 onMounted(() => {
   const settings = accountController.getNftSettings();
+
+  if (!Object.keys(settings).length) {
+    nftSettings.value.airdrop = false;
+    nftSettings.value.spam = true;
+
+    return;
+  }
 
   nftSettings.value.airdrop = !!settings.airdrop;
   nftSettings.value.spam = !!settings.spam;
 });
 
 onBeforeUnmount(() => {
-  changeNftSettings(nftSettings.value);
+  changeNftSettings({
+    address: selectedWallet.value.ethereumAddress,
+    settings: nftSettings.value,
+  });
   accountController.setNftSettings(nftSettings.value);
 });
 const onClose = () => emit('handleClose');

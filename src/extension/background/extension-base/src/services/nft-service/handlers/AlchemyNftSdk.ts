@@ -18,23 +18,30 @@ export default class AlchemyNftController {
     this.timespan = {};
   }
 
-  get excludeFilters() {
+  excludeFilters(address: string) {
     const filters: NftFilters[] = [];
 
-    if (this.nftService.hideSettings.airdrop) filters.push(NftFilters.AIRDROPS);
-    if (this.nftService.hideSettings.spam) filters.push(NftFilters.SPAM);
+    if (!this.nftService.hideSettings[address]) {
+      this.nftService.hideSettings[address] = {
+        airdrop: false,
+        spam: true,
+      };
+    }
+
+    if (this.nftService.hideSettings[address].airdrop) filters.push(NftFilters.AIRDROPS);
+    if (this.nftService.hideSettings[address].spam) filters.push(NftFilters.SPAM);
 
     return filters;
   }
 
   getNfts(address: string) {
     return this.sdk.nft.getNftsForOwner(address, {
-      excludeFilters: this.excludeFilters,
+      excludeFilters: this.excludeFilters(address),
     });
   }
 
   getCollectionsForOwner(address: string) {
-    return this.sdk.nft.getContractsForOwner(address, { excludeFilters: this.excludeFilters });
+    return this.sdk.nft.getContractsForOwner(address, { excludeFilters: this.excludeFilters(address) });
   }
 
   get readableNetwork() {

@@ -91,11 +91,15 @@ export class NftService {
   }
 
   async getNftForAllNetworks(address: string, force = false) {
-    const networks = Object.keys(this.sdks) as Network[];
+    const substrateAddress = getSubstrateAddress(address, this.state);
+    const activeNetworks = this.state.getActiveNetworksCurrentWallet(substrateAddress);
+    const chainIds = Array.from(activeNetworks).map((el) => +el.chainId);
+    const networks = Object.keys(this.sdks);
+
     let currentFetchMap: NftState = {};
 
     for (const network of networks) {
-      if (!this.sdks[network]) continue;
+      if (!this.sdks[network] && chainIds.some((el) => el !== this.sdks[network].chainId)) continue;
 
       const timespan = this.sdks[network].timespan;
 

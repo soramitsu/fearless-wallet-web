@@ -99,11 +99,13 @@ export class NftService {
       const timespan = this.sdks[network].timespan;
 
       if (!timespan[address] || timespan[address] + 30000 > Date.now() || force) {
-        const networkNfts = await this.sdks[network].fetchNftsForWallet(address);
         this.sdks[network].timespan[address] = Date.now();
-        this.nftMap[address] = { ...this.nftMap[address], ...networkNfts };
-        this.state.currentAccount.then((account) => {
-          if (account && account.ethereumAddress === address) this.nftSubject.next(this.nftMap[address]);
+
+        this.sdks[network].fetchNftsForWallet(address).then((networkNfts) => {
+          this.nftMap[address] = { ...this.nftMap[address], ...networkNfts };
+          this.state.currentAccount.then((account) => {
+            if (account && account.ethereumAddress === address) this.nftSubject.next(this.nftMap[address]);
+          });
         });
       }
     }

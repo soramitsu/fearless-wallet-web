@@ -101,6 +101,7 @@ import WalletInfo from '@/screens/main/WalletInfo.vue';
 import { checkNft } from '@/extension/messaging/nfts';
 import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 import ContentForm from '@/components/ContentForm.vue';
+import { Components } from '@/router/routes';
 
 const store = useStore();
 const route = useRoute();
@@ -246,7 +247,9 @@ const formatFeeString = computed(() => `${n(+formInfo.fee, 'decimalPrecise')} ${
 watch(tx, validateTx);
 onMounted(validateTx);
 
-const onConfirmClose = () => (popupControls.showConfirmationPasswordPopup = false);
+const onConfirmClose = () => {
+  router.push({ name: Components.Nfts });
+};
 </script>
 
 <style lang="scss" scoped>

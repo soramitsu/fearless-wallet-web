@@ -66,10 +66,10 @@ const onClick = () => {
   gap: 4px;
   padding: 20px;
   text-align: start;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 400;
   line-height: 15px;
-  color: $grayish-white;
+  color: #ffffff;
   min-height: 55px;
 }
 .nft-counter {

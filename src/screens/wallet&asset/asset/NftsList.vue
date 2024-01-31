@@ -13,23 +13,20 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import type { NftState } from '@extension-base/services/nft-service/types';
+import type { NftCollection } from '@extension-base/services/nft-service/types';
 import NftCollectionItem from '@/screens/wallet&asset/asset/NftCollectionItem.vue';
 import { useStore } from '@/store';
 import NftSettings from '@/screens/wallet&asset/asset/NftSettings.vue';
 import { type NetworkJson } from '@/extension/background/extension-base/src/types';
-
 const emit = defineEmits(['toggleAssetsManagementForm']);
 defineProps<{ showAssetsManagementForm: boolean }>();
 const store = useStore();
 
-const nfts = computed<NftState>(() => store.getters.nfts);
+const nfts = computed<NftCollection[]>(() => Object.values(store.getters.nfts));
 const activeNetworkForSelectedWallet = computed<NetworkJson[]>(() => store.getters.activeNetworkForSelectedWallet);
 
 const filteredNfts = computed(() =>
-  Object.values(nfts.value).filter(({ network }) =>
-    activeNetworkForSelectedWallet.value.some(({ name }) => name === network)
-  )
+  nfts.value.filter(({ network }) => activeNetworkForSelectedWallet.value.some(({ name }) => name === network))
 );
 const isEmpty = computed(() => !Object.keys(filteredNfts.value).length);
 const containerClass = computed(() => (isEmpty.value ? 'no-nfts' : 'nft-list'));

@@ -1,4 +1,4 @@
-import type { NftState } from '@extension-base/services/nft-service/types';
+import type { AvailableNftState, NftState } from '@extension-base/services/nft-service/types';
 import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
 import type { SelectedWallet, SelectedNetworks, AutoSelectNode } from './types';
 import type { NetworkName, WalletAddress } from '@/interfaces';
@@ -12,6 +12,8 @@ export type State = {
   accounts: AccountJson[];
   balances: TokenGroup[];
   nfts: NftState;
+  availableNfts: AvailableNftState;
+
   hiddenAssets: Record<WalletAddress, string[]>;
   autoSelectNode: AutoSelectNode;
   isCustomSort: Record<string, boolean>;
@@ -28,6 +30,7 @@ const state = (): State => {
     selectedNetworks: accountController.getSelectedNetwork(),
     balances: [],
     nfts: {},
+    availableNfts: {},
     hiddenAssets: accountController.getHiddenAssets(),
     accounts: accountController.getAccounts(),
     isCustomSort: accountController.getCustomSort(),

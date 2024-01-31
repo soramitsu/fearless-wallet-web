@@ -2,6 +2,7 @@ import type { MutationTree } from 'vuex';
 import type { SelectedWallet, SetAccountsProps, SetAutoSelectNode, SetHiddenAsset } from './types';
 import type { State } from './state';
 import type { BalanceJson } from '@extension-base/background/types/types';
+import type { AvailableNftState, NftState } from '@extension-base/services/nft-service/types';
 import { accountController } from '@/controllers';
 
 export enum MutationTypes {
@@ -19,6 +20,8 @@ export enum MutationTypes {
   HIDE_NETWORK_WARNING = 'HIDE_NETWORK_WARNING',
   SET_BALANCE = 'SET_BALANCE',
   SET_NFTS = 'SET_NFTS',
+  SET_AVAILABLE_NFTS = 'SET_AVAILABLE_NFTS',
+
   SET_SORA_CARD_BANNER_VISIBILITY = 'SET_SORA_CARD_BANNER_VISIBILITY',
 }
 
@@ -31,6 +34,8 @@ export type Mutations = {
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: SetAutoSelectNode): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
   [MutationTypes.DELETE_QR](state: State): void;
+  [MutationTypes.SET_NFTS](state: State, nfts: NftState): void;
+  [MutationTypes.SET_AVAILABLE_NFTS](state: State, nfts: AvailableNftState): void;
   [MutationTypes.SET_HIDDEN_ASSET](state: State, props: SetHiddenAsset): void;
   [MutationTypes.SET_CUSTOM_SORT](state: State, props: string): void;
   [MutationTypes.HIDE_POLKASWAP_ALERT](state: State, value: boolean): void;
@@ -131,6 +136,10 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_NFTS](state, nfts) {
     state.nfts = nfts;
+  },
+
+  [MutationTypes.SET_AVAILABLE_NFTS](state, nfts) {
+    state.availableNfts = nfts;
   },
 
   [MutationTypes.SET_HIDDEN_ASSET](state, { groupId, value }) {

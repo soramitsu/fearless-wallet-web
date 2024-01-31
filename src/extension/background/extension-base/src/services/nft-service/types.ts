@@ -7,7 +7,7 @@ export type FearlessNft = {
   type: string;
   isOwned: boolean;
   ownedBy: string;
-  creator: string;
+  creator?: string;
   network: string;
   meta: NftMeta;
 };
@@ -15,13 +15,22 @@ export type FearlessNft = {
 export type NftCollection = {
   name?: string;
   image?: string;
-  network?: string;
+  network: string;
   address: string;
+  total?: string;
   ownedNfts: FearlessNft[];
 };
-
+export type AvailableNftPayload = {
+  contract: string;
+  network: string;
+  pageKey?: string;
+};
+export type AvailableNftResponse = {
+  nfts: FearlessNft[];
+  pageKey?: string;
+};
 export type NftState = Record<string, NftCollection>;
-
+export type AvailableNftState = Record<string, { collection: FearlessNft[]; pageKey?: string }>;
 export type NftTx = {
   type: string;
   contract: string;

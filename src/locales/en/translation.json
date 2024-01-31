@@ -649,6 +649,8 @@
     "spam": "Spam",
     "airdrop": "Airdrop",
     "hideNfts": "Hide NFTs",
+    "collection": "Collection",
+    "availableNfts": "Available NFTs in the {name} collection",
     "noNft": "There aren't any NFTs yet. Buy or mint NFTs to see them here."
   },
   "common": {

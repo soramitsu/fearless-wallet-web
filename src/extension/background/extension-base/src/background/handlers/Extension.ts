@@ -130,7 +130,11 @@ import type {
 } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
-import { type NftSettings, type NftTx } from '@/extension/background/extension-base/src/services/nft-service/types';
+import {
+  type AvailableNftPayload,
+  type NftSettings,
+  type NftTx,
+} from '@/extension/background/extension-base/src/services/nft-service/types';
 
 function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
   return (value as SignerPayloadJSON).genesisHash !== undefined;
@@ -1858,10 +1862,18 @@ export default class Extension extends FWExtensionBase {
         return this.state.nftService.nftSubscribe(id, port);
 
       case 'pri(nft.send)':
-        return this.state.nftService.sendNft(request as RequestNftTransfer, this.savePass);
+        return this.state.nftService.sendNft(
+          request as RequestNftTransfer,
+          (address: string, ethereumAddress: string | undefined, isSave: boolean, isMobile: boolean) => {
+            this.savePass(address, ethereumAddress, isSave, isMobile);
+          }
+        );
 
       case 'pri(nft.checkSend)':
         return this.state.nftService.checkSend(request as NftTx);
+
+      case 'pri(nft.fetchNftsForContract)':
+        return this.state.nftService.availableNftsForContract(request as AvailableNftPayload);
 
       case 'pri(nft.settings)':
         return this.state.nftService.changeSettings(request as NftSettings);

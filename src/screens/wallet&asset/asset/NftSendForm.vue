@@ -26,10 +26,19 @@
       </template>
 
       <template v-if="popupControls.showConfirmScreen">
-        <img :src="image" class="nft-img" alt="nft" width="180px" height="180px" />
-        <InfoList>
-          <InfoItem v-for="(value, key) in nftDetails" :name="key" :value="value" :key="key" />
-        </InfoList>
+        <img v-if="image" :src="image" class="nft-img" alt="nft" width="180px" height="180px" />
+        <img
+          v-else
+          class="nft-img"
+          src="@/assets/fearless-logo-animated.gif"
+          alt="nft-placeholder"
+          width="180px"
+          height="180px"
+        />
+
+        <ContentForm>
+          <InfoRow v-for="(value, key) in nftDetails" :text="key" :value="value" :key="key" />
+        </ContentForm>
       </template>
 
       <HistoryBook
@@ -45,6 +54,7 @@
         v-if="popupControls.showConfirmationPasswordPopup"
         :tx="tx"
         extrinsicType="nft"
+        :firstIcon="image"
         @close="onConfirmClose"
       />
 
@@ -85,10 +95,9 @@ import { type SelectedWallet, useStore } from '@/store';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
-import InfoList from '@/screens/extension-ui/InfoList.vue';
-import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import { checkNft } from '@/extension/messaging/nfts';
 import { type NetworkJson } from '@/extension/background/extension-base/src/types';
+import ContentForm from '@/components/ContentForm.vue';
 
 const store = useStore();
 const route = useRoute();
@@ -157,7 +166,7 @@ const assetSymbol = computed(() => {
 const actionBtnName = computed(() => {
   if (errors.unsufficientFunds) return t('assets.insufficientBalance', { asset: assetSymbol.value.toUpperCase() });
 
-  return `common.${popupControls.showConfirmScreen ? 'confirm' : 'accept'}`;
+  return `common.${popupControls.showConfirmScreen ? 'confirm' : 'send'}`;
 });
 
 const showBackIcon = computed(
@@ -174,11 +183,11 @@ const onClose = () => router.back();
 
 const image = computed(() => nft.value?.image ?? '');
 const nftDetails = computed(() => ({
-  'send to': formInfo.to,
-  collection: contract.value,
-  owned: selectedWallet.value.ethereumAddress,
-  network: collection.value?.network ?? '',
-  type: nft.value?.type ?? '',
+  'assets.sendTo': recipientCut.value,
+  'nft.collection': cut(contract.value),
+  'nft.owned': cut(selectedWallet.value.ethereumAddress),
+  'common.network': collection.value?.network ?? '',
+  'nft.type': nft.value?.type ?? '',
 }));
 
 const network = computed(() => nft.value?.network ?? '');
@@ -197,17 +206,17 @@ const onProceed = () => {
   else popupControls.showConfirmationPasswordPopup = true;
 };
 
-const validateTx = async () => {
+function validateTx() {
   if (!tx.value.network) return;
 
-  const checkData = await checkNft(tx.value);
+  checkNft(tx.value).then((checkData) => {
+    if (checkData.error) {
+      if (checkData.error === 'unsufficientFunds') errors.unsufficientFunds = true;
+    }
 
-  if (checkData.error) {
-    if (checkData.error === 'unsufficientFunds') errors.unsufficientFunds = true;
-  }
-
-  formInfo.fee = checkData.fee;
-};
+    formInfo.fee = checkData.fee;
+  });
+}
 
 const showSendForm = computed(
   () => !popupControls.showHistoryBook && !popupControls.showMyWallets && !popupControls.showConfirmScreen

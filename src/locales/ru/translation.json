@@ -641,6 +641,8 @@
     "spam": "Спам",
     "airdrop": "Airdrop",
     "hideNfts": "Спрятать NFTs",
+    "collection": "Коллекция",
+    "availableNfts": "Имеющиеся NFT в коллекции {name}",
     "noNft": "Пока что тут нет никаких NFT. Купите или сминтите NFT, чтобы их увидеть тут."
   },
   "common": {

@@ -43,7 +43,7 @@
 
       <template v-else-if="isTransactionFinished">
         <div class="descriptions">
-          <ExternalLogo :name="firstIconUrl" :width="30" />
+          <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" />
 
           <template v-if="secondIcon">
             <SIcon name="arrows-arrow-right-24" />
@@ -133,7 +133,11 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.extrinsicType === 'crossChain')
       return this.networks.find(({ name }) => name.toLowerCase() === this.firstIcon.toLowerCase())?.icon ?? '';
 
-    return this.balances.find(({ groupId }) => groupId === this.firstIcon)?.icon;
+    const tokenGroup = this.balances.find(({ groupId }) => groupId === this.firstIcon);
+
+    if (tokenGroup) return tokenGroup.icon;
+
+    return this.firstIcon;
   }
 
   get secondIconUrl() {

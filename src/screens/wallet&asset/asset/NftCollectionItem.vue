@@ -70,7 +70,7 @@ const onClick = () => {
   font-weight: 400;
   line-height: 15px;
   color: #ffffff;
-  min-height: 55px;
+  height: 70px;
 }
 .nft-counter {
   position: absolute;

@@ -19,14 +19,18 @@ import { useStore } from '@/store';
 import NftSettings from '@/screens/wallet&asset/asset/NftSettings.vue';
 import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 const emit = defineEmits(['toggleAssetsManagementForm']);
-defineProps<{ showAssetsManagementForm: boolean }>();
+const props = defineProps<{ showAssetsManagementForm: boolean; filterValue: string }>();
 const store = useStore();
 
 const nfts = computed<NftCollection[]>(() => Object.values(store.getters.nfts));
 const activeNetworkForSelectedWallet = computed<NetworkJson[]>(() => store.getters.activeNetworkForSelectedWallet);
 
 const filteredNfts = computed(() =>
-  nfts.value.filter(({ network }) => activeNetworkForSelectedWallet.value.some(({ name }) => name === network))
+  nfts.value.filter(({ network, name }) =>
+    activeNetworkForSelectedWallet.value.some((net) => {
+      return net.name === network && name?.toLowerCase()?.includes(props.filterValue.toLowerCase());
+    })
+  )
 );
 const isEmpty = computed(() => !Object.keys(filteredNfts.value).length);
 const containerClass = computed(() => (isEmpty.value ? 'no-nfts' : 'nft-list'));

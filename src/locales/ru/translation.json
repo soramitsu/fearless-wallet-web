@@ -736,6 +736,7 @@
     "nothingFound": "Ничего не найдено",
     "days": "дней",
     "featureOff": "Временно недоступно",
-    "estimateFeeError": "Не удалось посчитать фии"
+    "estimateFeeError": "Не удалось посчитать фии",
+    "copyHash": "Скопировать hash"
   }
 }

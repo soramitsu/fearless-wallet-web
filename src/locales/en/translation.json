@@ -749,6 +749,7 @@
     "days": "days",
     "featureOff": "Temparary unavailable, we're working to bring it back.",
     "estimateFeeError": "Couldn't estimate fee",
-    "networkFees": "Network fee"
+    "networkFees": "Network fee",
+    "copyHash": "Copy hash"
   }
 }

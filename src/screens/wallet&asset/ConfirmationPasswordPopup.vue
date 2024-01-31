@@ -60,44 +60,46 @@
         <template v-else>
           <div class="icon-circle">
             <Icon
-              :icon="transactionState === 'failed' ? 'close' : 'check'"
+              :icon="isFailed ? 'close' : 'check'"
               className="icon__lock-green"
-              :iconColor="transactionState === 'failed' ? 'error' : 'success'"
+              :iconColor="isFailed ? 'error' : 'success'"
               class="icon-check"
             />
           </div>
+          <template v-if="isSuccess">
+            <FButton
+              text="common.copyHash"
+              class="copy-hash"
+              width="100%"
+              size="small"
+              fontSize="small"
+              type="secondary"
+              :border="false"
+              @click="copyHash"
+            />
 
-          <FButton
-            text="copy hash"
-            class="copy-hash"
-            width="100%"
-            size="small"
-            fontSize="small"
-            type="secondary"
-            :border="false"
-            @click="copyHash"
-          />
+            <FButton
+              text="accounts.etherscan"
+              width="100%"
+              size="small"
+              fontSize="small"
+              type="secondary"
+              :border="false"
+              @click="openExplorer"
+            />
 
-          <FButton
-            text="View in Explorer"
-            width="100%"
-            size="small"
-            fontSize="small"
-            type="secondary"
-            :border="false"
-            @click="openExplorer"
-          />
+            <FButton
+              text="common.close"
+              width="100%"
+              size="small"
+              fontSize="small"
+              type="secondary"
+              :border="false"
+              @click="close"
+            />
 
-          <FButton
-            text="common.close"
-            width="100%"
-            size="small"
-            fontSize="small"
-            type="secondary"
-            :border="false"
-            @click="close"
-          />
-          <Tooltip text="common.copied" target=".copy-hash" placement="top" trigger="click" />
+            <Tooltip text="common.copied" target=".copy-hash" placement="top" trigger="click" />
+          </template>
         </template>
       </template>
     </div>

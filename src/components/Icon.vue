@@ -1,6 +1,6 @@
 <template>
-  <svg :class="getSvgClasses" :width="width" :height="height" aria-hidden="true" data-testid="icon" @click="click">
-    <use :xlink:href="getIconName" :class="getUseClasses" @click="click" />
+  <svg :class="getSvgClasses" aria-hidden="true" data-testid="icon" @click="click">
+    <use :xlink:href="getIconName" :style="styles" :class="getUseClasses" @click="click" />
   </svg>
 </template>
 
@@ -22,6 +22,7 @@ const emit = defineEmits(['click']);
 const getIconColor = computed(() => `icon--${props.iconColor}`);
 const getUseClasses = computed(() => ['icon__inner', props.icon]);
 const getIconName = computed(() => `#icon-${props.icon}`);
+const styles = computed(() => `width:${props.width}; height:${props.height};`);
 
 const getSvgClasses = computed(() => {
   const classes = [

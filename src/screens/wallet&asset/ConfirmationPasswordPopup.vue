@@ -42,19 +42,44 @@
       <Loader v-if="isTransactionPending" />
 
       <template v-else-if="isTransactionFinished">
-        <div class="descriptions">
-          <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" />
+        <template v-if="extrinsicType !== 'nft'">
+          <div class="descriptions">
+            <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" />
 
-          <template v-if="secondIcon">
-            <SIcon name="arrows-arrow-right-24" />
+            <template v-if="secondIcon">
+              <SIcon name="arrows-arrow-right-24" />
 
-            <ExternalLogo :name="secondIconUrl" :width="30" />
-          </template>
-        </div>
+              <ExternalLogo :name="secondIconUrl" :width="30" />
+            </template>
+          </div>
+          <div class="transfer-amount">{{ transferAmountString }}</div>
 
-        <div class="transfer-amount">{{ transferAmountString }}</div>
+          <div class="transfer-value">{{ transferValueString }}</div>
+        </template>
 
-        <div class="transfer-value">{{ transferValueString }}</div>
+        <template v-else>
+          <!-- <div class="nft-finished"> -->
+          <div class="icon-circle">
+            <Icon
+              :icon="transactionState === 'failed' ? 'close' : 'check'"
+              className="icon__lock-green"
+              :iconColor="transactionState === 'failed' ? 'error' : 'success'"
+              class="icon-check"
+            />
+          </div>
+
+          <FButton
+            text="common.close"
+            width="100%"
+            size="small"
+            fontSize="small"
+            type="secondary"
+            :border="false"
+            data-testid="sendExtrinsicBtn"
+            @click="close"
+          />
+          <!-- </div> -->
+        </template>
       </template>
     </div>
   </Popup>
@@ -353,7 +378,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-around;
   padding: 0 25px;
   min-height: 175px;
 
@@ -410,6 +435,22 @@ export default class ConfirmationPasswordPopup extends Vue {
     width: 100%;
     display: flex;
     align-items: flex-start;
+  }
+  .nft-img {
+    margin-left: auto;
+    margin-right: auto;
+    width: 150px;
+    height: 150px;
+  }
+  .nft-finished {
+    display: flex;
+    flex-flow: column;
+    justify-content: space-between;
+  }
+  .icon-circle {
+    background-color: #ffffff08;
+    border-radius: 50%;
+    padding: 21px;
   }
 }
 </style>

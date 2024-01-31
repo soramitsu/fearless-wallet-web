@@ -133,7 +133,7 @@ export class NftService {
   ): Promise<ResponseNftTransfer> {
     const { from, contract: contractAddress } = tx;
     const api = this.state.getEvmApi(tx.network);
-    const contract = await getContract(contractAddress, api, 'erc721');
+    const contract = await getContract(contractAddress, api, tx.type === 'ERC721' ? 'ERC721' : 'ERC1155');
     const pair = this.state.keyringService.getPair(from);
 
     if (pair?.isLocked) {
@@ -144,34 +144,48 @@ export class NftService {
       }
     }
 
+    const res = await this.checkSend(tx);
+
+    if (res.error) {
+      return { status: false, errors: [{ message: 'Balance to low', code: BasicTxErrorCode.BALANCE_TO_LOW }] };
+    }
+
+    const { privateKey } = this.state.accountExportPrivateKey({ address: from, password: tx.password });
+    const signer = new Wallet(privateKey, api);
+    const isApproved: boolean = await contract.isApprovedForAll(contract, tx.to);
+    const contractMaster = contract.connect(signer) as Contract;
+    let txResponse;
+
     try {
-      const res = await this.checkSend(tx);
-
-      if (res.error) {
-        return { status: false, errors: [{ message: 'Balance to low', code: BasicTxErrorCode.BALANCE_TO_LOW }] };
-      }
-
-      const { privateKey } = this.state.accountExportPrivateKey({ address: from, password: tx.password });
-      const signer = new Wallet(privateKey, api);
-      const isApproved: boolean = await contract.isApprovedForAll(contract, tx.to);
-
-      const contractMaster = contract.connect(signer) as Contract;
-
       if (!isApproved) {
         await contractMaster.setApprovalForAll(tx.to, true);
       }
 
-      await contractMaster['safeTransferFrom(address,address,uint256)'](from, tx.to, tx.tokenId);
+      if (tx.type === 'ERC721') {
+        txResponse = await contractMaster['safeTransferFrom(address,address,uint256)'](from, tx.to, tx.tokenId);
+      } else if (tx.type === 'ERC1155') {
+        txResponse = await contractMaster['safeTransferFrom(address,address,uint256,uint256,bytes)'](
+          from,
+          tx.to,
+          tx.tokenId,
+          1,
+          res.data
+        );
+      }
+
+      this.getNftForAllNetworks(from, true);
       const substrateAddress = getSubstrateAddress(tx.from, this.state);
 
       savePass(substrateAddress, tx.from, tx.isSavePass, false);
 
       return {
         errors: [],
+        hash: txResponse.hash,
         status: true,
       };
     } catch (e) {
       console.info(e);
+      await contractMaster.setApprovalForAll(tx.to, false);
 
       return {
         errors: [],
@@ -180,17 +194,17 @@ export class NftService {
     }
   }
 
-  async checkSend({ from, tokenId, network, contract: contractAddress }: NftTx): Promise<CheckNftResponse> {
+  async checkSend({ from, tokenId, network, contract: contractAddress, type }: NftTx): Promise<CheckNftResponse> {
     const api = this.state.getEvmApi(network);
     const networkJson = this.state.getNetworkByKey(network);
     const utilityAsset = networkJson.assets.find((el) => el.isUtility)!;
-    const contract = await getContract(contractAddress, api, 'erc721');
+    const contract = await getContract(contractAddress, api, type === 'ERC721' ? 'ERC721' : 'ERC1155');
     const feeData = await api.getFeeData();
     const substrateAddress = getSubstrateAddress(from, this.state);
 
     const accountBalance = this.state.balanceService.getAccountBalance(substrateAddress);
     const tokenBalance = accountBalance.find((el) => el.symbol === utilityAsset.symbol && el.relayChain === 'ethereum');
-    if (!tokenBalance) return { error: 'unsufficientFunds', fee: '0' };
+    if (!tokenBalance) return { error: 'unsufficientFunds', fee: '0', data: '0x' };
 
     const balance = getBalanceItem(tokenBalance.balances, network);
 
@@ -216,17 +230,20 @@ export class NftService {
       if (isUnsufficientFunds) {
         return {
           error: 'unsufficientFunds',
+          data,
           fee: formatFees,
         };
       }
 
       return {
+        data,
         fee: formatUnits(estimateFee),
       };
     } catch (e) {
       console.info(e);
 
       return {
+        data,
         fee: '0.0',
       };
     }

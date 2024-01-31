@@ -41,8 +41,10 @@
         </ContentForm>
       </template>
 
+      <EditAddressBook v-if="showEditAddressBook" :network="network" :_address="formInfo.to" @setAddress="setAddress" />
+
       <HistoryBook
-        v-if="popupControls.showHistoryBook"
+        v-else-if="popupControls.showHistoryBook"
         :network="network"
         :assetId="formInfo.assetId"
         @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
@@ -93,6 +95,7 @@ import type { AccountJson } from '@extension-base/background/types/types';
 import { cut, getClipboard } from '@/helpers';
 import { type SelectedWallet, useStore } from '@/store';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
+import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import { checkNft } from '@/extension/messaging/nfts';
@@ -118,8 +121,11 @@ const errors = reactive({
 const formInfo = reactive({
   fee: '0',
   to: '',
+  newAddress: '',
   assetId: '',
 });
+
+const showEditAddressBook = computed(() => formInfo.newAddress !== '');
 const id = computed(() => route.params.id);
 const contract = computed(() => route.params.contract);
 const nfts = computed<NftState>(() => store.getters.nfts ?? {});
@@ -145,7 +151,7 @@ const isDisabled = computed(() => formInfo.to === '' || errors.incorrenctRecipie
 const setRecipient = (address = '') => (formInfo.to = address);
 
 const setAddress = (address: string, showHistoryBook = false) => {
-  formInfo.to = address;
+  formInfo.newAddress = address;
   popupControls.showHistoryBook = showHistoryBook;
 };
 
@@ -170,13 +176,20 @@ const actionBtnName = computed(() => {
 });
 
 const showBackIcon = computed(
-  () => popupControls.showHistoryBook || popupControls.showMyWallets || popupControls.showConfirmScreen
+  () =>
+    popupControls.showHistoryBook ||
+    showEditAddressBook.value ||
+    popupControls.showMyWallets ||
+    popupControls.showConfirmScreen
 );
 
 const onBack = () => {
   popupControls.showConfirmScreen = false;
   popupControls.showMyWallets = false;
-  popupControls.showHistoryBook = false;
+
+  if (showEditAddressBook.value) {
+    setAddress('', true);
+  } else popupControls.showHistoryBook = false;
 };
 
 const onClose = () => router.back();
@@ -219,9 +232,15 @@ function validateTx() {
 }
 
 const showSendForm = computed(
-  () => !popupControls.showHistoryBook && !popupControls.showMyWallets && !popupControls.showConfirmScreen
+  () =>
+    !popupControls.showHistoryBook &&
+    !showEditAddressBook.value &&
+    !popupControls.showMyWallets &&
+    !popupControls.showConfirmScreen
 );
-const showSubmitBtn = computed(() => !popupControls.showHistoryBook && !popupControls.showMyWallets);
+const showSubmitBtn = computed(
+  () => !popupControls.showHistoryBook && !showEditAddressBook.value && !popupControls.showMyWallets
+);
 const formatFeeString = computed(() => `${n(+formInfo.fee, 'decimalPrecise')} ${assetSymbol.value?.toUpperCase()}`);
 
 watch(tx, validateTx);

@@ -12,12 +12,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
+import type { NetworkJson } from '@extension-base/types';
 import type { NftCollection } from '@extension-base/services/nft-service/types';
 import NftCollectionItem from '@/screens/wallet&asset/asset/NftCollectionItem.vue';
-import { useStore } from '@/store';
+import { type SelectedWallet, useStore } from '@/store';
 import NftSettings from '@/screens/wallet&asset/asset/NftSettings.vue';
-import { type NetworkJson } from '@/extension/background/extension-base/src/types';
+import { fetchNfts } from '@/extension/messaging/nfts';
+
 const emit = defineEmits(['toggleAssetsManagementForm']);
 const props = defineProps<{ showAssetsManagementForm: boolean; filterValue: string }>();
 const store = useStore();
@@ -34,7 +36,10 @@ const filteredNfts = computed(() =>
 );
 const isEmpty = computed(() => !Object.keys(filteredNfts.value).length);
 const containerClass = computed(() => (isEmpty.value ? 'no-nfts' : 'nft-list'));
-
+onMounted(() => {
+  const selectedWallet: SelectedWallet = store.getters.selectedWallet;
+  fetchNfts(selectedWallet.ethereumAddress);
+});
 const onClose = () => emit('toggleAssetsManagementForm', false);
 </script>
 

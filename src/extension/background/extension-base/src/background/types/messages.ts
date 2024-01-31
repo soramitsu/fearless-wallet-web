@@ -257,6 +257,7 @@ export interface RequestSignatures {
   //Nfts
   'pri(nft.get.all)': [string, OwnedNftsResponse];
   'pri(nft.subscribe)': [null, NftState, NftState];
+  'pri(nft.fetch)': [string, void];
   'pri(nft.send)': [NftTx, ResponseNftTransfer];
   'pri(nft.fetchNftsForContract)': [AvailableNftPayload, AvailableNftResponse];
   'pri(nft.checkSend)': [NftTx, CheckNftResponse];

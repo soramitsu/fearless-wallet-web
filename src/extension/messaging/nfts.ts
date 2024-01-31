@@ -13,6 +13,10 @@ export function getNftSubscribe(cb: (data: NftState) => void): Promise<NftState>
   return sendMessage('pri(nft.subscribe)', null, cb);
 }
 
+export function fetchNfts(address: string): Promise<void> {
+  return sendMessage('pri(nft.fetch)', address);
+}
+
 export function sendNft(tx: NftTx): Promise<ResponseNftTransfer> {
   return sendMessage('pri(nft.send)', tx);
 }

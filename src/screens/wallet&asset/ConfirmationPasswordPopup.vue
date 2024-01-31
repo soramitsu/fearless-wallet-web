@@ -42,19 +42,65 @@
       <Loader v-if="isTransactionPending" />
 
       <template v-else-if="isTransactionFinished">
-        <div class="descriptions">
-          <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" />
+        <template v-if="extrinsicType !== 'nft'">
+          <div class="descriptions">
+            <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" />
 
-          <template v-if="secondIcon">
-            <SIcon name="arrows-arrow-right-24" />
+            <template v-if="secondIcon">
+              <SIcon name="arrows-arrow-right-24" />
 
-            <ExternalLogo :name="secondIconUrl" :width="30" />
+              <ExternalLogo :name="secondIconUrl" :width="30" />
+            </template>
+          </div>
+          <div class="transfer-amount">{{ transferAmountString }}</div>
+
+          <div class="transfer-value">{{ transferValueString }}</div>
+        </template>
+
+        <template v-else>
+          <div class="icon-circle">
+            <Icon
+              :icon="isFailed ? 'close' : 'check'"
+              className="icon__lock-green"
+              :iconColor="isFailed ? 'error' : 'success'"
+              class="icon-check"
+            />
+          </div>
+          <template v-if="isSuccess">
+            <FButton
+              text="common.copyHash"
+              class="copy-hash"
+              width="100%"
+              size="small"
+              fontSize="small"
+              type="secondary"
+              :border="false"
+              @click="copyHash"
+            />
+
+            <FButton
+              text="accounts.etherscan"
+              width="100%"
+              size="small"
+              fontSize="small"
+              type="secondary"
+              :border="false"
+              @click="openExplorer"
+            />
+
+            <FButton
+              text="common.close"
+              width="100%"
+              size="small"
+              fontSize="small"
+              type="secondary"
+              :border="false"
+              @click="close"
+            />
+
+            <Tooltip text="common.copied" target=".copy-hash" placement="top" trigger="click" />
           </template>
-        </div>
-
-        <div class="transfer-amount">{{ transferAmountString }}</div>
-
-        <div class="transfer-value">{{ transferValueString }}</div>
+        </template>
       </template>
     </div>
   </Popup>
@@ -72,6 +118,9 @@ import {
   type TokenGroup,
   type RequestSwap,
   BasicTxErrorCode,
+  type BasicTxResponse,
+  type ResponseMakeSwap,
+  type ResponseNftTransfer,
 } from '@extension-base/background/types/types';
 import { type RequestStaking } from '@extension-base/services/staking-service/types';
 import { type NftTx } from '@extension-base/services/nft-service/types';
@@ -97,6 +146,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   isErrorPassword = false;
   isLocked = true;
   isSavePass = false;
+  hash: string | undefined = undefined;
   signedPayload: null = null;
   transactionState: 'pending' | 'success' | 'failed' | null = null;
   showUnknownErrorPopup = false;
@@ -271,6 +321,12 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
   }
 
+  copyHash() {
+    if ('clipboard' in navigator) {
+      navigator.clipboard.writeText(this.hash ?? '');
+    }
+  }
+
   onSavePassChange(value: boolean) {
     this.isSavePass = value;
   }
@@ -286,7 +342,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     else this.makeExtrinsic();
   }
 
-  async makeExtrinsic() {
+  async makeExtrinsic(): Promise<BasicTxResponse | ResponseMakeSwap | ResponseNftTransfer | undefined> {
     const callback = (data: any) => {
       // TODO Выводить юзеру ошибку ???
       // TODO ошибку balanceTooLow по хорошему нужно обработать и показать
@@ -305,12 +361,23 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.extrinsicType === 'crossChain') return makeCrossChain(this.request as RequestCrossChain, callback);
 
     if (this.extrinsicType === 'swap') return makeSwap(this.request as RequestSwap);
+
     if (this.extrinsicType === 'nft') return sendNft(this.request as NftTx);
+
     if (this.isStaking)
       return makeStaking({
         type: this.extrinsicType,
         params: this.request as RequestStaking,
       });
+  }
+
+  openExplorer() {
+    const network = this.getNetwork((this.tx as NftTx).network);
+    const explorerUrl = network.externalApi?.explorers ? network?.externalApi?.explorers[0].url : '';
+
+    const hostname = new URL(explorerUrl).hostname;
+
+    window.open(`https://${hostname}/tx/${this.hash}`);
   }
 
   keypress({ key }: KeyboardEvent) {
@@ -321,6 +388,11 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.transactionState = 'pending';
 
     const results = await this.makeExtrinsic();
+
+    if (this.extrinsicType === 'nft') {
+      const result = results as ResponseNftTransfer;
+      this.hash = result.hash;
+    }
 
     if (results && !results?.status) {
       const isErrorPassword = results?.errors?.some(({ code }) => code === BasicTxErrorCode.INVALID_PASSWORD) ?? false;
@@ -353,7 +425,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-around;
+  gap: 5px;
   padding: 0 25px;
   min-height: 175px;
 
@@ -410,6 +483,22 @@ export default class ConfirmationPasswordPopup extends Vue {
     width: 100%;
     display: flex;
     align-items: flex-start;
+  }
+  .nft-img {
+    margin-left: auto;
+    margin-right: auto;
+    width: 150px;
+    height: 150px;
+  }
+  .nft-finished {
+    display: flex;
+    flex-flow: column;
+    justify-content: space-between;
+  }
+  .icon-circle {
+    background-color: #ffffff08;
+    border-radius: 50%;
+    padding: 21px;
   }
 }
 </style>

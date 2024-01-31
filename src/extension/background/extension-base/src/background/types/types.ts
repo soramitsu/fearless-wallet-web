@@ -347,6 +347,7 @@ export type RequestCrossChain = PasswordRequestSign<RequestCheckCrossChain>;
 export type RequestNftTransfer = PasswordRequestSign<NftTx>;
 export type ResponseNftTransfer = {
   errors: Array<BasicTxError>;
+  hash?: string;
   status: boolean;
 };
 export interface RequestAccountExportPrivateKey {

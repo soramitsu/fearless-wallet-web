@@ -506,6 +506,33 @@ export default class State {
     storage.set({ selectedNetworks: this.selectedNetworks });
   }
 
+  getActiveNetworksCurrentWallet(address: string) {
+    const uniqNetworks = new Set<NetworkJson>();
+    const networks = Object.values(this.networkMap);
+    const selectedNetwork = this.selectedNetworks[address];
+
+    if (selectedNetwork === POPULAR_NETWORKS) {
+      const popular = networks.filter((el) => el.rank !== undefined);
+      popular.forEach((el) => uniqNetworks.add(el));
+
+      return uniqNetworks;
+    }
+
+    if (selectedNetwork === FAVORITE_NETWORKS) {
+      const favorite = networks.filter((el) => el.favorite.length && el.favorite.includes(address));
+
+      favorite.forEach((el) => uniqNetworks.add(el));
+
+      return uniqNetworks;
+    }
+
+    const singleNetwork = networks.find((network) => network.name === selectedNetwork);
+
+    if (singleNetwork) uniqNetworks.add(singleNetwork);
+
+    return uniqNetworks;
+  }
+
   getCurrentTabStatus() {
     return this.currentTabStatus;
   }

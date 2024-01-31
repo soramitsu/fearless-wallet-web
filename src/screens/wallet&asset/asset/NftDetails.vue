@@ -3,7 +3,7 @@
     <Scroll>
       <div class="nft-details">
         <div v-if="isOwned" class="icon-ownership">
-          <Icon icon="check" iconColor="success" width="20px" height="20px" />
+          <Icon icon="check" className="icon-ownership-size" iconColor="success" width="20px" height="20px" />
         </div>
         <img v-if="image" :src="image" class="nft-details__img" :alt="id" width="500" height="500" />
         <img
@@ -152,5 +152,9 @@ const onShare = () => {
   pointer-events: none;
   right: 17px;
   top: 5px;
+  .icon-ownership-size {
+    width: 20px;
+    height: 20px;
+  }
 }
 </style>

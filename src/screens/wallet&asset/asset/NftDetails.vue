@@ -17,6 +17,7 @@
 
         <p class="nft-details__desc">{{ meta.description }}</p>
 
+        <InfoRow text="nft.collection" :value="collection.name" />
         <InfoRow v-if="nft.isOwned" text="nft.owned" :value="ownedBy" />
         <InfoRow text="nft.id" :value="tokenId" />
         <InfoRow text="common.network" :value="network" />
@@ -67,13 +68,12 @@ const store = useStore();
 const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
 const id = computed(() => route.params.id);
 const contract = computed(() => route.params.contract);
+const nfts = computed(() => store.getters.nfts ?? {});
+const collection = computed<NftCollection>(() => nfts.value[contract.value] ?? { ownedNfts: [] });
 const nft = computed<Partial<FearlessNft>>(() => {
   const nftCollectionFromStore: FearlessNft[] = store.getters.availableNfts[contract.value]?.collection ?? [];
-  const nfts = store.getters.nfts ?? {};
 
-  const collection: NftCollection = nfts[contract.value] ?? { ownedNfts: [] };
-
-  const ownedNfts: FearlessNft[] = [...collection.ownedNfts] ?? [];
+  const ownedNfts: FearlessNft[] = [...collection.value.ownedNfts] ?? [];
 
   return (
     ownedNfts.find((ownedNft) => ownedNft.id === id.value) ??

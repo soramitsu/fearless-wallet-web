@@ -123,7 +123,10 @@ const onShare = () => {
     width: 500px;
     height: 500px;
     margin: 0 auto;
+    clip-path: $big-clip-path-left-top-and-right-bottom;
+    border-radius: $default-border-radius;
   }
+
   &__img-placeholder {
     height: 300px;
   }

@@ -651,7 +651,8 @@
     "hideNfts": "Hide NFTs",
     "collection": "Collection",
     "availableNfts": "Available NFTs in the {name} collection",
-    "noNft": "There aren't any NFTs yet. Buy or mint NFTs to see them here."
+    "noNft": "There aren't any NFTs yet. Buy or mint NFTs to see them here.",
+    "txSuccessMessage": "Your NFT transfer has been successfully completed"
   },
   "common": {
     "approve": "Approve",

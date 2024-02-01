@@ -15,8 +15,8 @@ type BackgroundType = 'black' | 'light-black';
 @Component({})
 export default class ContentForm extends Vue {
   @Prop(Number) height!: number;
-  @Prop({ default: false }) isStaticHeight!: boolean;
-  @Prop({ default: false }) bottomRightCorner!: boolean;
+  @Prop({ type: Boolean, default: false }) isStaticHeight!: boolean;
+  @Prop({ type: Boolean, default: false }) bottomRightCorner!: boolean;
   @Prop({ default: 'light-black' }) backgroundColor!: BackgroundType;
 
   get contentFormStyle() {

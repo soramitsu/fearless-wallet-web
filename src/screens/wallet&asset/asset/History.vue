@@ -4,7 +4,12 @@
       <div class="history-settings">
         <div class="history-label">{{ $t('assets.history') }}:</div>
 
-        <Dropdown :value="filterHistoryValue" :options="historyDropdownOption" @handler="filterHistoryValueUpdate" />
+        <Dropdown
+          :value="filterHistoryValue"
+          :options="historyDropdownOption"
+          data-testid="historyFilter"
+          @handler="filterHistoryValueUpdate"
+        />
       </div>
 
       <Scroll>
@@ -19,11 +24,12 @@
               :token="currency"
               :network="selectedNetwork"
               :address="selectedWallet.address"
+              data-testid="historyItem"
               @click.native="openHistoryDetails(historyElement)"
             />
           </template>
 
-          <div v-else>{{ $t('assets.noHistory') }}</div>
+          <div v-else data-testid="noHistory">{{ $t('assets.noHistory') }}</div>
         </div>
       </Scroll>
     </div>

@@ -1,13 +1,15 @@
 <template>
   <Popup headerText="assets.lockedDetails" :showBorder="true" @handlerClose="$emit('closePopup')" sizeWidth="big">
     <div class="content">
-      <div v-for="{ name, value, fiat } in detailsBalance" :key="name" class="balance-row">
-        <div class="label">{{ $t(`assets.${name}`) }}</div>
+      <div v-for="{ name, value, fiat } in detailsBalance" :key="name" class="balance-row" data-testid="balanceRow">
+        <div class="label" data-testid="labelBalanceDetails">{{ $t(`assets.${name}`) }}</div>
 
         <div class="count">
-          <div class="value">{{ $n(value, 'decimalPrecise') }} {{ assetNameUpper }}</div>
+          <div class="value" data-testid="valueBalanceDetails">
+            {{ $n(value, 'decimalPrecise') }} {{ assetNameUpper }}
+          </div>
 
-          <div v-if="getFiatValueVisible(fiat)" class="fiat-value">
+          <div v-if="getFiatValueVisible(fiat)" class="fiat-value" data-testid="fiatValue">
             {{ prepFiatValue(fiat) }}
           </div>
         </div>

@@ -13,6 +13,7 @@
           placeholder="common.password"
           size="big"
           errorDescriptions="common.invalidPassword"
+          data-testid="passwordInput"
           :class="classesInput"
           :readonly="!isLocked"
           :isError="isErrorPassword"
@@ -52,9 +53,9 @@
               <ExternalLogo :name="secondIconUrl" :width="30" />
             </template>
           </div>
-          <div class="transfer-amount">{{ transferAmountString }}</div>
+          <div class="transfer-amount" data-testid="confirmedTransferAmount">{{ transferAmountString }}</div>
 
-          <div class="transfer-value">{{ transferValueString }}</div>
+          <div class="transfer-value" data-testid="confirmedTransferValue">{{ transferValueString }}</div>
         </template>
 
         <template v-else>

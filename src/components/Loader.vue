@@ -1,5 +1,5 @@
 <template>
-  <div class="loader">
+  <div class="loader" data-testid="loader">
     <div class="circle">
       <Icon icon="fw-logo" :className="['logo']" />
     </div>

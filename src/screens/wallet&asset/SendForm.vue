@@ -19,11 +19,23 @@
     <template v-slot:step2>
       <div>
         <div class="row direction-column">
-          <FInput v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
+          <FInput
+            v-model="selectedWallet.name"
+            placeholder="assets.from"
+            size="big"
+            :readonly="true"
+            data-testid="fromWallet"
+          />
 
           <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
 
-          <FInput v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
+          <FInput
+            v-model="formattedAddressTo"
+            placeholder="assets.to"
+            size="big"
+            :readonly="true"
+            data-testid="toAddress"
+          />
         </div>
 
         <FCorners size="big" class="row">

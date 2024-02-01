@@ -4,15 +4,15 @@
 
     <div class="column">
       <div class="first-row">
-        <div>{{ hash }}</div>
+        <div data-testid="hash">{{ hash }}</div>
 
-        <div>{{ value }} {{ assetToUpperCase }}</div>
+        <div data-testid="valueHistory">{{ value }} {{ assetToUpperCase }}</div>
       </div>
 
       <div class="second-row">
-        <div>{{ tModule }}</div>
+        <div data-testid="tModule">{{ tModule }}</div>
 
-        <div>{{ date }}</div>
+        <div data-testid="date">{{ date }}</div>
       </div>
     </div>
   </div>

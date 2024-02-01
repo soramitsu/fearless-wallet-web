@@ -22,11 +22,13 @@
 
           <Shimmer v-if="showShimmers" height="14px" width="120px" />
 
-          <div v-else class="asset__balance">{{ countAssetsString }}</div>
+          <div v-else class="asset__balance" data-testid="assetBalance">{{ countAssetsString }}</div>
 
           <Shimmer v-if="showShimmers" height="14px" width="120px" />
 
-          <span v-else class="asset__balance asset__balance--fiat">{{ transferableFiatBalanceInNetworkString }}</span>
+          <span v-else class="asset__balance asset__balance--fiat" data-testid="fiatAssetBalance">
+            {{ transferableFiatBalanceInNetworkString }}
+          </span>
 
           <div class="asset__locked" @click="toggleBalanceDetailsPopup">
             <div class="asset__locked-content">
@@ -34,9 +36,9 @@
 
               <Shimmer v-if="showShimmers" height="14px" width="60px" />
 
-              <span v-else>{{ lockedBalanceString }}</span>
+              <span v-else data-testid="lockedBalance">{{ lockedBalanceString }} </span>
 
-              <Icon icon="info" class="details-icon" />
+              <Icon icon="info" class="details-icon" data-testid="lockedDetails" />
             </div>
           </div>
         </div>

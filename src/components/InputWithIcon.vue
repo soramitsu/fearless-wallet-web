@@ -10,7 +10,7 @@
     />
 
     <Rotate v-if="icon === 'rotate'" :isActive="isActiveRotate" class="icon">
-      <SIcon name="chevron-bottom-16" />
+      <SIcon name="chevron-bottom-16" data-testid="rotate" />
     </Rotate>
 
     <div v-else-if="isCloseIcon" class="icon" @click="clickIcon">

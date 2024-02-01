@@ -12,11 +12,12 @@
             :class="classes"
             :label="label"
             :isActive="activeTabName === tabName"
+            data-testid="tabButton"
             @click="openTab(tabName)"
           />
 
           <div class="filter__icon" @click="toggleSelectFilterPopupVisibility">
-            <Icon icon="filter" className="filter" />
+            <Icon icon="filter" className="filter" data-testid="filter" />
           </div>
         </div>
 
@@ -30,6 +31,7 @@
               :price="getFiatInNetworkString(name)"
               :icon="icon"
               :isIconPrepend="true"
+              data-testid="assetRow"
               @openAsset="openAsset(name)"
             />
           </div>

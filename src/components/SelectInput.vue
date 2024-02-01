@@ -8,12 +8,13 @@
           v-model="amountInternal"
           placeholder="0.00"
           :readonly="readonly"
+          data-testid="amountInternal"
           @focus="setFocusValue(true)"
           @blur="setFocusValue(false)"
           @keypress="IsNumber"
         />
 
-        <div class="price">{{ fiatSymbol }}{{ valueCut }}</div>
+        <div class="price" data-testid="fiatAmount">{{ fiatSymbol }}{{ valueCut }}</div>
       </div>
 
       <div class="column right-column">
@@ -22,13 +23,13 @@
             <template v-if="asset !== ''">
               <ExternalLogo class="asset-icon" :name="assetIcon" :width="32" />
 
-              <div class="asset">{{ asset.toUpperCase() }}</div>
+              <div class="asset" data-testid="asset">{{ asset.toUpperCase() }}</div>
             </template>
 
             <div v-else class="select-label">Select</div>
 
             <Rotate v-if="showIconRotate" :isActive="syncedIsRotate" class="rotate-asset">
-              <SIcon name="chevron-bottom-16" />
+              <SIcon name="chevron-bottom-16" data-testid="rotateAsset" />
             </Rotate>
           </button>
         </FCorners>
@@ -36,7 +37,9 @@
         <div v-if="showBalance" class="balance">
           {{ $t('assets.balance') }}
 
-          <div :class="balanceValueClasses" @click="setMax">&nbsp;{{ $n(totalAmount, 'decimal') }}</div>
+          <div :class="balanceValueClasses" data-testid="balanceValue" @click="setMax">
+            &nbsp;{{ $n(totalAmount, 'decimal') }}
+          </div>
         </div>
       </div>
     </div>

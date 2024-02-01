@@ -36,7 +36,7 @@
           height="180px"
         />
 
-        <ContentForm>
+        <ContentForm bottomRightCorner>
           <InfoRow v-for="(value, key) in nftDetails" :text="key" :value="value" :key="key" />
         </ContentForm>
       </template>
@@ -198,7 +198,7 @@ const onClose = () => router.back();
 const image = computed(() => nft.value?.image ?? '');
 const nftDetails = computed(() => ({
   'assets.sendTo': recipientCut.value,
-  'nft.collection': cut(contract.value),
+  'nft.collection': collection.value?.name,
   'nft.owned': cut(selectedWallet.value.ethereumAddress),
   'common.network': collection.value?.network ?? '',
   'nft.type': nft.value?.type ?? '',

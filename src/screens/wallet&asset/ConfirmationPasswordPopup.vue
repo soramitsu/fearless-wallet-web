@@ -66,10 +66,14 @@
               class="icon-check"
             />
           </div>
+
           <template v-if="isSuccess">
+            <span class="nft-success-msg">{{ $t('nft.txSuccessMessage') }}</span>
             <FButton
               text="common.copyHash"
               class="copy-hash"
+              iconName="copy"
+              iconColor="pink"
               width="100%"
               size="small"
               fontSize="small"
@@ -80,6 +84,8 @@
 
             <FButton
               text="accounts.etherscan"
+              iconName="arrow-link"
+              iconColor="pink"
               width="100%"
               size="small"
               fontSize="small"
@@ -494,6 +500,11 @@ export default class ConfirmationPasswordPopup extends Vue {
     display: flex;
     flex-flow: column;
     justify-content: space-between;
+  }
+  .nft-success-msg {
+    color: $gray-color;
+    font-size: 16px;
+    font-weight: 400;
   }
   .icon-circle {
     background-color: #ffffff08;

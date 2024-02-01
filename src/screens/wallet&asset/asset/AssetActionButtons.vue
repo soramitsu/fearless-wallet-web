@@ -5,6 +5,7 @@
       :class="button.class"
       :text="button.text"
       :iconName="button.icon"
+      data-testid="basicBtn"
       @click="onToggleVisible(button.formName)"
       :key="index"
     />
@@ -14,6 +15,7 @@
       class="activity-button"
       text="assets.crossChain"
       iconName="cross-chain"
+      data-testid="crossChainBtn"
       @click="$emit('toggleVisible', 'showCrossChainForm')"
     />
 
@@ -22,6 +24,7 @@
       class="activity-button"
       text="assets.swap"
       iconName="swap"
+      data-testid="swapBtn"
       @click="openSoraSwap"
     />
 
@@ -30,6 +33,7 @@
       class="activity-button"
       text="assets.buy"
       iconName="plus-pink"
+      data-testid="buyBtn"
       @click="$emit('toggleVisible', 'showBuyPopup')"
     />
 
@@ -37,6 +41,7 @@
       v-if="isNeedPopupButton"
       class="activity-button activity-button--settings"
       iconName="three-dots-vertical"
+      data-testid="threeDotsVerticalBtn"
       @click="$emit('togglePopupButton')"
     />
   </div>

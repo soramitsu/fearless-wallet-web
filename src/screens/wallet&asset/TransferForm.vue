@@ -48,6 +48,7 @@
                 icon="rotate"
                 :placeholder="placeholderNetwork"
                 :isActiveRotate="showSelectNetworkPopup"
+                data-testid="transferNetwork"
                 @click="toggleValue('showSelectNetworkPopup')"
               />
 
@@ -58,6 +59,7 @@
                 size="big"
                 :placeholder="placeholderNetwork"
                 :readonly="true"
+                data-testid="network"
               />
 
               <SelectInput
@@ -89,13 +91,14 @@
                 class="row"
                 icon="close"
                 placeholder="assets.sendTo"
+                data-testid="sendToInput"
                 @click="setRecipient"
               />
 
               <div class="activity-buttons row">
-                <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+                <BadgeButton text="assets.history" data-testid="historyBtn" @click="toggleHistoryBookVisibility" />
 
-                <BadgeButton text="common.paste" @click="paste" />
+                <BadgeButton text="common.paste" data-testid="pasteBtn" @click="paste" />
 
                 <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
               </div>

@@ -1,5 +1,5 @@
 <template>
-  <div class="menu">
+  <div class="menu" data-testid="menu">
     <MenuItem
       v-for="menuItem in menuItems"
       :key="menuItem"

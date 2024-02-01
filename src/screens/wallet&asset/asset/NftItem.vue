@@ -12,18 +12,20 @@
 
     <div class="nft-info">
       <div class="titles">
-        <span v-if="isNft" class="title">{{ upperTitle }}</span>
+        <span class="title">{{ upperTitle }}</span>
         <span class="title title--main">{{ title }}</span>
-        <span v-if="isNft" class="title">{{ subTitle }}</span>
+        <span class="title">{{ subTitle }}</span>
       </div>
-
-      <Icon v-if="isNft" icon="export-nft" :hover="false" className="share" @click.native.stop="$emit('share', nft)" />
+      <div v-if="isOwned" class="icon-ownership">
+        <Icon icon="check" className="icon-ownership-size" iconColor="success" width="20px" height="20px" />
+      </div>
+      <Icon v-else icon="export-nft" :hover="false" className="share" @click.native.stop="$emit('share', nft)" />
     </div>
   </FCorners>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useRoute } from 'vue-router/composables';
 import { type RawLocation } from 'vue-router';
 import type { FearlessNft } from '@extension-base/services/nft-service/types';
@@ -33,16 +35,15 @@ import router from '@/router';
 type Props = {
   nft: FearlessNft;
   collectionName?: string;
-  isNft: boolean;
 };
-
 const route = useRoute();
-const props = withDefaults(defineProps<Props>(), { isNft: false });
-const contract = computed(() => route.params.contract);
+const props = defineProps<Props>();
 
-const title = ref(props.isNft ? props.nft.meta?.name : props.nft.meta.name);
-const subTitle = ref(props.nft.meta.description);
-const upperTitle = ref(props.collectionName ?? '');
+const contract = computed(() => route.params.contract);
+const isOwned = computed(() => props.nft.isOwned);
+const title = computed(() => props.nft?.meta?.name ?? '');
+const subTitle = computed(() => props.nft.meta.description ?? '');
+const upperTitle = computed(() => props.collectionName ?? '');
 
 const onNavigate = () => {
   const route: RawLocation = { name: Components.NftDetails, params: { id: props.nft.id, contract: contract.value } };
@@ -105,5 +106,18 @@ const onNavigate = () => {
 }
 .image-placeholder {
   width: 100%;
+}
+.icon-ownership {
+  background-color: #000000b2;
+  border-radius: 50%;
+  padding: 10px;
+  pointer-events: none;
+  right: 17px;
+  top: 5px;
+
+  &-size {
+    width: 20px;
+    height: 20px;
+  }
 }
 </style>

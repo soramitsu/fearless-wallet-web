@@ -62,12 +62,12 @@
 
       <div v-if="popupControls.showMyWallets">
         <WalletInfo
-          v-for="{ name, ethereumAddress, isMobile } in filteredWallets"
+          v-for="{ name, address, ethereumAddress, isMobile } in filteredWallets"
           :key="ethereumAddress"
           :name="name"
           :isSelected="getStatusWallet(ethereumAddress)"
           :isMobile="isMobile"
-          :address="ethereumAddress"
+          :address="address"
           :showMenu="false"
           class="wallet"
           @setWallet="setWallet(ethereumAddress)"

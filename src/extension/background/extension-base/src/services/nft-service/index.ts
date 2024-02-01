@@ -96,19 +96,19 @@ export class NftService {
     const chainIds = Array.from(activeNetworks).map((el) => +el.chainId);
     const networks = Object.keys(this.sdks);
 
-    let currentFetchMap: NftState = {};
+    const currentFetchMap: NftState = {};
 
     for (const network of networks) {
-      if (!this.sdks[network] && chainIds.some((el) => el !== this.sdks[network].chainId)) continue;
+      if (!this.sdks[network] || chainIds.some((el) => el !== this.sdks[network].chainId)) continue;
 
       const timespan = this.sdks[network].timespan;
 
-      if (force || !timespan[address] || timespan[address] + 30000 > Date.now()) {
+      if (force || !timespan[address] || timespan[address] + 10000 > Date.now()) {
         this.sdks[network].timespan[address] = Date.now();
 
         this.sdks[network].fetchNftsForWallet(address).then((networkNfts) => {
-          currentFetchMap = { ...currentFetchMap, ...networkNfts };
-          this.nftMap[address] = { ...currentFetchMap };
+          Object.assign(currentFetchMap, networkNfts);
+          this.nftMap[address] = JSON.parse(JSON.stringify(currentFetchMap));
 
           this.state.currentAccount.then((account) => {
             if (account && account.ethereumAddress === address) {
@@ -184,7 +184,10 @@ export class NftService {
         );
       }
 
-      this.getNftForAllNetworks(from, true);
+      txResponse.wait().then(() => {
+        this.getNftForAllNetworks(from, true);
+      });
+
       const substrateAddress = getSubstrateAddress(tx.from, this.state);
 
       savePass(substrateAddress, tx.from, tx.isSavePass, false);
@@ -230,6 +233,7 @@ export class NftService {
         data,
         to: VALID_ETHEREUM_ADDRESS,
         value: parseEther('0'),
+        maxFeePerGas: feeData.maxFeePerGas,
       });
       const block = await api.provider.getBlock('latest');
 

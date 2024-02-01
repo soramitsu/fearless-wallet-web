@@ -24,12 +24,11 @@ export default class AlchemyNftController {
     if (!this.nftService.hideSettings[address]) {
       this.nftService.hideSettings[address] = {
         airdrop: false,
-        spam: true,
+        spam: true, //it's dummy for now
       };
     }
 
     if (this.nftService.hideSettings[address].airdrop) filters.push(NftFilters.AIRDROPS);
-    if (this.nftService.hideSettings[address].spam) filters.push(NftFilters.SPAM);
 
     return filters;
   }

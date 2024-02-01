@@ -280,6 +280,8 @@ const onConfirmClose = () => {
     margin-right: auto;
     width: 150px;
     height: 150px;
+    clip-path: $big-clip-path-left-top-and-right-bottom;
+    border-radius: $default-border-radius;
   }
   .fees {
     display: flex;

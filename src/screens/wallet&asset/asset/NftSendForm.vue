@@ -19,10 +19,10 @@
           </div>
         </div>
 
-        <div class="fees">
-          <span>{{ $t('common.networkFees') }}</span>
-          <span>{{ formatFeeString }}</span>
-        </div>
+        <dl class="fees">
+          <dt>{{ $t('common.networkFees') }}</dt>
+          <dd>{{ formatFeeString }}</dd>
+        </dl>
       </template>
 
       <template v-if="popupControls.showConfirmScreen">

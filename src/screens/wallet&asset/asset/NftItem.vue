@@ -8,10 +8,18 @@
         <span class="title title--main">{{ title }}</span>
         <span class="title">{{ subTitle }}</span>
       </div>
+
       <div v-if="isOwned" class="icon-ownership">
-        <Icon icon="check" className="icon-ownership-size" iconColor="success" width="20px" height="20px" />
+        <Icon
+          icon="check"
+          className="icon-ownership-size"
+          :hover="false"
+          iconColor="success"
+          width="20px"
+          height="20px"
+        />
       </div>
-      <Icon v-else icon="export-nft" :hover="false" className="share" @click.native.stop="$emit('share', nft)" />
+      <Icon v-else icon="export-nft" className="share" @click.native.stop="$emit('share', nft)" />
     </div>
   </FCorners>
 </template>

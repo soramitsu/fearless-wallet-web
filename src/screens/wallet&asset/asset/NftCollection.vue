@@ -12,24 +12,29 @@
           @share="onShare"
         />
       </div>
-      <span v-if="availableNfts.length">{{ additionalNftsHeader }}</span>
-      <div class="nft-group">
-        <NftItem
-          v-for="nft in availableNfts"
-          :collectionName="collection.name"
-          :key="nft.id"
-          :nft="nft"
-          isNft
-          @share="onShare"
-        />
-      </div>
-      <Tooltip text="common.copied" target=".share" trigger="click" arrow />
+
+      <template v-if="isAvailableNfts">
+        <span>{{ additionalNftsHeader }}</span>
+
+        <div class="nft-group">
+          <NftItem
+            v-for="nft in availableNfts"
+            :collectionName="collection.name"
+            :key="nft.id"
+            :nft="nft"
+            isNft
+            @share="onShare"
+          />
+        </div>
+
+        <Tooltip ref="tooltip" text="common.copied" target=".share" trigger="click" arrow />
+      </template>
     </InfiniteScroll>
   </AboveForm>
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
 import { type AvailableNftState, type FearlessNft, type NftState } from '@extension-base/services/nft-service/types';
 import { useI18n } from 'vue-i18n-composable';
@@ -37,6 +42,7 @@ import { fetchAvailableNftsForContract } from '@/extension/messaging/nfts';
 import { type SelectedWallet, useStore } from '@/store';
 import NftItem from '@/screens/wallet&asset/asset/NftItem.vue';
 import InfiniteScroll from '@/components/InfiniteScroll.vue';
+import Tooltip from '@/components/Tooltip.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -55,11 +61,15 @@ const state = reactive<{ pageKey?: string; canLoadMore: boolean }>({
   pageKey: availableNftsFromStore.value[contract.value]?.pageKey,
   canLoadMore: true,
 });
+const tooltip = ref<Tooltip>();
 const nfts = computed<NftState>(() => store.getters.nfts ?? []);
 const collection = computed(() => nfts.value[contract.value]);
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 const availableNfts = ref<FearlessNft[]>(nftCollectionFromStore.value);
-
+const isAvailableNfts = computed(() => availableNfts.value.length);
+watch(availableNfts, () => {
+  tooltip.value?.createTooltip();
+});
 const header = computed(() => (collection.value ? collection.value.name : ''));
 const additionalNftsHeader = computed(() => t('nft.availableNfts', { name: collection.value.name }));
 const network = computed<string>(() => {

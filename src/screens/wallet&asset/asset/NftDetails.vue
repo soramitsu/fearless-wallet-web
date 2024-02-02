@@ -2,11 +2,11 @@
   <AboveForm :fullScreen="true" :header="meta.name" showBackIcon @closeHandler="onBack" @handlerBack="onBack">
     <Scroll>
       <div class="nft-details">
+        <img :src="image" class="nft-details__img" :alt="id" width="500" height="500" />
+
         <div v-if="isOwned" class="icon-ownership">
           <Icon icon="check" className="icon-ownership-size" iconColor="success" width="20px" height="20px" />
         </div>
-
-        <img :src="image" class="nft-details__img" :alt="id" width="500" height="500" />
 
         <p class="nft-details__desc">{{ meta.description }}</p>
 
@@ -120,9 +120,6 @@ const onShare = () => {
     border-radius: $default-border-radius;
   }
 
-  &__img-placeholder {
-    height: 300px;
-  }
   &__desc {
     font-weight: 400;
     font-size: 14px;
@@ -131,6 +128,21 @@ const onShare = () => {
     color: $default-white;
     overflow-wrap: anywhere;
   }
+  .icon-ownership {
+    background-color: #000000b2;
+    border-radius: 50%;
+    padding: 10px;
+    position: absolute;
+    cursor: auto;
+    pointer-events: none;
+    right: 17px;
+    top: 5px;
+
+    &-size {
+      width: 20px;
+      height: 20px;
+    }
+  }
 }
 .send-btn {
   width: 100%;
@@ -138,19 +150,5 @@ const onShare = () => {
   bottom: 0;
   display: flex;
   gap: 5px;
-}
-.icon-ownership {
-  background-color: #000000b2;
-  border-radius: 50%;
-  padding: 10px;
-  position: absolute;
-  cursor: auto;
-  pointer-events: none;
-  right: 17px;
-  top: 5px;
-  .icon-ownership-size {
-    width: 20px;
-    height: 20px;
-  }
 }
 </style>

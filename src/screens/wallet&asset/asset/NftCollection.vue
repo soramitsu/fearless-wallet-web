@@ -12,18 +12,23 @@
           @share="onShare"
         />
       </div>
-      <span v-if="availableNfts.length">{{ additionalNftsHeader }}</span>
-      <div class="nft-group">
-        <NftItem
-          v-for="nft in availableNfts"
-          :collectionName="collection.name"
-          :key="nft.id"
-          :nft="nft"
-          isNft
-          @share="onShare"
-        />
-      </div>
-      <Tooltip ref="tooltip" text="common.copied" target=".share" trigger="click" arrow />
+
+      <template v-if="isAvailableNfts">
+        <span>{{ additionalNftsHeader }}</span>
+
+        <div class="nft-group">
+          <NftItem
+            v-for="nft in availableNfts"
+            :collectionName="collection.name"
+            :key="nft.id"
+            :nft="nft"
+            isNft
+            @share="onShare"
+          />
+        </div>
+
+        <Tooltip ref="tooltip" text="common.copied" target=".share" trigger="click" arrow />
+      </template>
     </InfiniteScroll>
   </AboveForm>
 </template>
@@ -61,6 +66,7 @@ const nfts = computed<NftState>(() => store.getters.nfts ?? []);
 const collection = computed(() => nfts.value[contract.value]);
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 const availableNfts = ref<FearlessNft[]>(nftCollectionFromStore.value);
+const isAvailableNfts = computed(() => availableNfts.value.length);
 watch(availableNfts, () => {
   tooltip.value?.createTooltip();
 });

@@ -3,22 +3,7 @@
     <div class="nft" @click="onClick">
       <div v-if="collection.total" class="nft-counter">{{ counter }}</div>
 
-      <img
-        v-if="collection.image"
-        :src="collection.image"
-        :alt="collection.name"
-        loading="lazy"
-        width="240"
-        height="200"
-      />
-      <img
-        v-else
-        class="image-placeholder"
-        src="@/assets/fearless-logo-animated.gif"
-        alt="fearless-logo"
-        width="240"
-        height="200"
-      />
+      <img :src="image" :alt="collection.name" loading="lazy" width="240" height="200" />
 
       <div class="nft-info">
         <span class="title title--main">{{ collection.name }}</span>
@@ -40,6 +25,7 @@ type Props = {
 const props = defineProps<Props>();
 const router = useRouter();
 const counter = computed(() => `${props.collection.ownedNfts.length}/${props.collection.total}`);
+const image = computed(() => props.collection.image ?? require('@/assets/fearless-logo-animated.gif'));
 
 const onClick = () => {
   router.push({ name: Components.NftCollection, params: { contract: props.collection.address } });
@@ -111,8 +97,5 @@ const onClick = () => {
   height: 42px;
   padding: 10px;
   color: #ee0077;
-}
-.image-placeholder {
-  width: 100%;
 }
 </style>

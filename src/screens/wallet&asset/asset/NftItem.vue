@@ -1,14 +1,6 @@
 <template>
   <FCorners class="nft" size="big" :topLeftCorner="false" :bottomRightCorner="false" @click.native="onNavigate">
-    <img v-if="nft.image" :src="nft.image" :alt="nft.meta?.name" loading="lazy" width="240" height="240" />
-    <img
-      v-else
-      class="image-placeholder"
-      src="@/assets/fearless-logo-animated.gif"
-      alt="fearless-logo"
-      width="240"
-      height="240"
-    />
+    <img :src="image" :alt="nft.meta?.name" width="240" height="240" />
 
     <div class="nft-info">
       <div class="titles">
@@ -44,6 +36,7 @@ const isOwned = computed(() => props.nft.isOwned);
 const title = computed(() => props.nft?.meta?.name ?? '');
 const subTitle = computed(() => props.nft.meta.description ?? '');
 const upperTitle = computed(() => props.collectionName ?? '');
+const image = computed(() => props.nft.image ?? require('@/assets/fearless-logo-animated.gif'));
 
 const onNavigate = () => {
   const route: RawLocation = { name: Components.NftDetails, params: { id: props.nft.id, contract: contract.value } };
@@ -104,9 +97,7 @@ const onNavigate = () => {
   background-color: #ee0077;
   border-radius: 50%;
 }
-.image-placeholder {
-  width: 100%;
-}
+
 .icon-ownership {
   background-color: #000000b2;
   border-radius: 50%;

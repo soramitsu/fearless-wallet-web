@@ -26,15 +26,7 @@
       </template>
 
       <template v-if="popupControls.showConfirmScreen">
-        <img v-if="image" :src="image" class="nft-img" alt="nft" width="180px" height="180px" />
-        <img
-          v-else
-          class="nft-img"
-          src="@/assets/fearless-logo-animated.gif"
-          alt="nft-placeholder"
-          width="180px"
-          height="180px"
-        />
+        <img :src="image" class="nft-img" alt="nft" width="180px" height="180px" />
 
         <ContentForm bottomRightCorner>
           <InfoRow v-for="(value, key) in nftDetails" :text="key" :value="value" :key="key" />
@@ -137,6 +129,7 @@ const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value));
 const wallets = computed<AccountJson[]>(() => store.getters.getAccounts);
 const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+const image = computed(() => nft.value?.image ?? require('@/assets/fearless-logo-animated.gif'));
 
 const filteredWallets = computed(() =>
   wallets.value.filter(({ active, ethereumAddress }) => !active && ethereumAddress)
@@ -194,8 +187,6 @@ const onBack = () => {
 };
 
 const onClose = () => router.back();
-
-const image = computed(() => nft.value?.image ?? '');
 const nftDetails = computed(() => ({
   'assets.sendTo': recipientCut.value,
   'nft.collection': collection.value?.name,

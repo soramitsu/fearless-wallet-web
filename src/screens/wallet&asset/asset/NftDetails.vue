@@ -5,15 +5,8 @@
         <div v-if="isOwned" class="icon-ownership">
           <Icon icon="check" className="icon-ownership-size" iconColor="success" width="20px" height="20px" />
         </div>
-        <img v-if="image" :src="image" class="nft-details__img" :alt="id" width="500" height="500" />
-        <img
-          v-else
-          class="nft-details__img nft-details__img-placeholder"
-          src="@/assets/fearless-logo-animated.gif"
-          alt="nft__placeholder"
-          width="500"
-          height="300"
-        />
+
+        <img :src="image" class="nft-details__img" :alt="id" width="500" height="500" />
 
         <p class="nft-details__desc">{{ meta.description }}</p>
 
@@ -83,7 +76,7 @@ const nft = computed<Partial<FearlessNft>>(() => {
 });
 
 const network = computed(() => nft.value.network ?? '');
-const image = computed(() => nft.value.image);
+const image = computed(() => nft.value.image ?? require('@/assets/fearless-logo-animated.gif'));
 const ownedBy = computed(() => cut(selectedWallet.value.ethereumAddress));
 const meta = computed(() => nft.value.meta ?? {});
 const tokenId = computed(() => cut(id.value, 5));

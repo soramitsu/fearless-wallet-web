@@ -31,7 +31,7 @@ export class NftService {
   private store: NftStore;
   private refreshTime = 10000;
   private sdks: Record<string, AlchemyNftController> = {};
-  private nftMap: Record<string, NftState> = {};
+  public nftMap: Record<string, NftState> = {};
   public nftSubject = new Subject<NftState>();
 
   hideSettings: Record<string, NftSettings> = {};
@@ -78,7 +78,7 @@ export class NftService {
     this.getNftForAllNetworks(address);
   }
 
-  availableNftsForContract({ network, contract, pageKey }: AvailableNftPayload) {
+  availableNftsForContract({ network, contract, address, pageKey }: AvailableNftPayload) {
     const net = this.state.getNetworkByKey(network);
     const key = PROD_NFT_NETWORKS[+net.chainId];
 
@@ -88,7 +88,7 @@ export class NftService {
         pageKey: undefined,
       };
 
-    return this.sdks[key].getCollectionPage(contract, pageKey);
+    return this.sdks[key].getCollectionPage(contract, address, pageKey);
   }
 
   async getNftForAllNetworks(address: string, force = false) {

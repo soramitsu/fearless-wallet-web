@@ -24,6 +24,7 @@ export type NftCollection = {
 export type AvailableNftPayload = {
   contract: string;
   network: string;
+  address: string;
   pageKey?: string;
 };
 

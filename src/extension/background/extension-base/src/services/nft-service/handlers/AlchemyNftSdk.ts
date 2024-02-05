@@ -67,12 +67,15 @@ export default class AlchemyNftController {
     };
   }
 
-  async getCollectionPage(contract: string, pageKey?: string): Promise<AvailableNftResponse> {
+  async getCollectionPage(contract: string, address: string, pageKey?: string): Promise<AvailableNftResponse> {
     try {
       const nfts = await this.sdk.nft.getNftsForContract(contract, { pageKey });
+      const ids = this.nftService.nftMap[address][contract].ownedNfts.map((el) => el.id);
       const fearlessNft: FearlessNft[] = [];
 
       for (const nft of nfts.nfts) {
+        if (ids.some((id) => id === nft.tokenId)) continue;
+
         fearlessNft.push(this.convertNft(nft));
       }
 

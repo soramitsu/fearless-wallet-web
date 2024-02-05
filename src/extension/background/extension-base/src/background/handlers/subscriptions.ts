@@ -198,7 +198,8 @@ export class FWSubscription {
   ) {
     if (isFirstRun) this.state.balanceService.generateDefaultBalance(address);
 
-    if (newEvmNetworks?.length) this.state.fetchEvmBalance(newEvmNetworks, ethereumAddress);
+    if (newEvmNetworks?.length)
+      this.state.fetchEvmBalance({ _networks: newEvmNetworks, _ethereumAddress: ethereumAddress });
 
     const unsubList = subscribeBalance(address, ethereumAddress, newNetworks, this.state);
 

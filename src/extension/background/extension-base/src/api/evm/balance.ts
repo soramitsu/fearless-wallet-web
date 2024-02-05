@@ -7,7 +7,7 @@ import { setBalance } from '@extension-base/api/helpers';
 import type State from '@extension-base/background/handlers/State';
 
 async function getUtilityBalance(networkKey: string, address: string, state: State): Promise<string> {
-  const eth = state.getEvmApi(networkKey);
+  const eth = state.getEvmApi(networkKey)?.api;
 
   const balance = await eth.getBalance(address);
 
@@ -19,7 +19,9 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
   const asset = network.assets.find((el) => el.id === contractAddress);
 
   if (!asset) return;
-  const web3Api = state.getEvmApi(networkKey);
+
+  const web3Api = state.getEvmApi(networkKey)?.api;
+
   if (!web3Api) return;
 
   const contract = await getContract(contractAddress, web3Api);
@@ -97,10 +99,16 @@ async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, 
 
 export function fetchEvmAssetBalance(ethereumAddress: string, networkKey: string, assetId: string, state: State) {
   const network = state.networkMap[networkKey];
+
   const asset = network.assets.find((asset) => asset.id === assetId);
 
   if (!asset) throw new Error(`Asset ${assetId} is missing on ${networkKey}`);
 
-  if (asset.isUtility) fetchUtilityBalance(networkKey, ethereumAddress, state);
-  else fetchTokenBalance(ethereumAddress, networkKey, asset.id, state);
+  if (asset.isUtility) {
+    fetchUtilityBalance(networkKey, ethereumAddress, state);
+
+    return;
+  }
+
+  fetchTokenBalance(ethereumAddress, networkKey, asset.id, state);
 }

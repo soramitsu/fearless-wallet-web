@@ -14,6 +14,8 @@ import {
   RequestService,
   WalletConnectService,
   NftService,
+  GoogleService,
+  WalletConnectDAppService,
 } from '@extension-base/services';
 import { api as apiSora, type FPNumber } from '@sora-substrate/util';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
@@ -24,7 +26,7 @@ import { getCurrentProvider, getId } from '@extension-base/utils/utils';
 import { initApi } from '@extension-base/api/substrate/api';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
-import { isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { getSubstrateAddress, isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { type KeyringAddress } from '@polkadot/ui-keyring/types';
@@ -37,7 +39,6 @@ import CurrentAccountStore, {
   type CurrentAccountInfo,
   type CurrentAccountState,
 } from '@extension-base/stores/CurrentAccountStore';
-import WalletConnectDAppService from '@extension-base/services/wallet-connect-service/dapp';
 import axios from 'axios';
 import type {
   ServiceInfo,
@@ -59,28 +60,23 @@ import type {
   ApiProps,
   RequestAccountExportPrivateKey,
   ResponseAccountExportPrivateKey,
-  EvmApiMap,
+  EvmApiProps,
+  FetchEvmBalancePayload,
 } from '@extension-base/background/types/types';
 import type { CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import type { ChainRegistry, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
-import type { HexString } from '@polkadot/util/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { GoogleService } from '@/extension/background/extension-base/src/services/google-service';
 import { EXTENSION_ID } from '@/extension/background/extension-base/src/const';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
 type APIs = {
-  evm: EvmApiMap;
+  evm: Record<string, EvmApiProps>;
   substrate: Record<NetworkName, ApiProps>;
-};
-
-type Timespans = {
-  evmBalances?: Record<string, number>;
 };
 
 type EvmTimeouts = {
@@ -93,7 +89,6 @@ export type Passwords = {
 
 export default class State {
   public cron: FWCron;
-  public timespans: Timespans = {};
   public evmTimeouts: EvmTimeouts = {};
   public passwords: Passwords = {};
   public subscription: FWSubscription;
@@ -105,7 +100,6 @@ export default class State {
   private readonly currentAccountStore = new CurrentAccountStore();
   private readonly evmChainSubject = new Subject<AuthUrls>();
   private readonly authorizeUrlSubject = new Subject<AuthUrls>();
-  public signature: HexString | null = null;
   public defaultAuthAccountSelection: string[] = [];
   public apis: APIs = {
     substrate: {},
@@ -158,10 +152,12 @@ export default class State {
     this.init();
   }
 
+  public get networkValues() {
+    return Object.values(this.networkMap);
+  }
+
   public get assetsMap() {
-    return Object.values(this.networkMap)
-      .map(({ assets }) => assets)
-      .flat();
+    return this.networkValues.map(({ assets }) => assets).flat();
   }
 
   public get getSubstrateApiMap() {
@@ -173,7 +169,7 @@ export default class State {
   }
 
   public getEvmApiByChainiD(chainId: string) {
-    const network = Object.values(this.networkMap).find((network) => network.chainId === chainId);
+    const network = this.networkValues.find((network) => network.chainId === chainId);
 
     if (!network) throw new Error(`coudnt find the network with chainId ${chainId}`);
 
@@ -396,7 +392,7 @@ export default class State {
 
     const { name } = network;
     const currentProvider = getCurrentProvider(network);
-    if (currentProvider) this.apis.evm[name.toLowerCase()] = initWeb3Api(currentProvider);
+    if (currentProvider) this.apis.evm[name.toLowerCase()] = initWeb3Api(currentProvider, name.toLowerCase());
   }
 
   public refreshDotSamaApi(key: string) {
@@ -411,7 +407,7 @@ export default class State {
   }
 
   public getNetworkByKey(key: string): NetworkJson {
-    return Object.values(this.networkMap).find((network) => network.name.toLowerCase() === key.toLowerCase())!;
+    return this.networkValues.find((network) => network.name.toLowerCase() === key.toLowerCase())!;
   }
 
   public getNetworkGroupType() {
@@ -432,7 +428,7 @@ export default class State {
   }
 
   public getActiveNetworks() {
-    const networks = Object.values(this.networkMap);
+    const networks = this.networkValues;
     const uniqNetworks = new Set<NetworkJson>();
     const selectedNetworks = Object.keys(this.selectedNetworks);
     const isAllNetworkPicked = selectedNetworks.some((address) => this.selectedNetworks[address] === ALL_NETWORKS);
@@ -487,7 +483,7 @@ export default class State {
       const isActive = network.active;
 
       if (!isActive && network.isEthereum && this.apis.evm[networkKey]) {
-        this.apis.evm[networkKey].destroy();
+        this.apis.evm[networkKey].api.destroy();
         delete this.apis.evm[networkKey];
       } else if (!isActive && this.apis.substrate[networkKey]) {
         this.apis.substrate[networkKey].provider?.disconnect().then(() => {
@@ -501,14 +497,14 @@ export default class State {
     this.updateServiceInfo();
 
     this.networkMapSubject.next(this.networkMap);
-
+    this.fetchEvmBalance({});
     this.networkMapStore.set('NetworkMap', this.networkMap);
     storage.set({ selectedNetworks: this.selectedNetworks });
   }
 
   getActiveNetworksCurrentWallet(address: string) {
     const uniqNetworks = new Set<NetworkJson>();
-    const networks = Object.values(this.networkMap);
+    const networks = this.networkValues;
     const selectedNetwork = this.selectedNetworks[address];
 
     if (selectedNetwork === POPULAR_NETWORKS) {
@@ -840,13 +836,13 @@ export default class State {
   }
 
   public initNetworkStates() {
-    const activeNetworks = Object.values(this.networkMap).filter(({ active }) => active);
+    const activeNetworks = this.networkValues.filter(({ active }) => active);
 
     for (const network of activeNetworks) {
       const { name, isEthereum } = network;
 
       if (isEthereum && isRequireEvmAPI(name)) {
-        if (!this.apis.evm[name] || !this.apis.evm[name].ready) this.initWeb3Api(network);
+        if (!this.apis.evm[name] || !this.apis.evm[name].api.ready) this.initWeb3Api(network);
       } else {
         const initSubstrateApies = () => {
           this.resetApiRetries();
@@ -1014,16 +1010,6 @@ export default class State {
     return isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
   }
 
-  getTimespan(name: keyof Timespans, address: string) {
-    return this.timespans[name]?.[address] ?? Number.MIN_VALUE;
-  }
-
-  saveTimespan(name: keyof Timespans, address: string, value: number) {
-    if (!this.timespans[name]) this.timespans[name] = {};
-
-    this.timespans[name]![address] = value;
-  }
-
   getEvmTimeout(address: string) {
     return this.evmTimeouts[address] ?? 0;
   }
@@ -1032,42 +1018,40 @@ export default class State {
     this.evmTimeouts[address] = value;
   }
 
-  async fetchEvmBalance(_networks: NetworkName[] | null, _ethereumAddress?: string) {
+  async fetchEvmBalance({ _networks, _ethereumAddress, assetId, force }: FetchEvmBalancePayload) {
     if (!this.ready) return;
 
     const currentAccount = await this.currentAccount;
+
     const ethereumAddress = _ethereumAddress ?? currentAccount?.ethereumAddress ?? '';
 
     if (ethereumAddress === '') return;
 
-    const fetchBalances = () => {
-      const networks = Object.values(this.networkMap).filter(({ name, active }) => {
-        if (_networks !== null && !_networks.includes(name)) return false;
+    const substrateAddress = getSubstrateAddress(ethereumAddress, this);
 
-        if (!active || !isRequireEvmAPI(name)) return false;
+    const activeEvmNetworks = this.networkValues.filter(({ name, active }) => {
+      if (_networks && !_networks.includes(name)) return false;
 
-        return true;
+      if (!active || !isRequireEvmAPI(name)) return false;
+
+      return true;
+    });
+
+    if (!activeEvmNetworks.length) return;
+
+    activeEvmNetworks.forEach(({ assets, name }) => {
+      const api = this.getEvmApi(name);
+      const timeout = api.timeout[substrateAddress] ?? Number.MIN_VALUE;
+      const timeDiff = Date.now() - timeout;
+      const shouldSkipUpdate = timeDiff < REFRESH_TIME && !force;
+
+      if (shouldSkipUpdate) return;
+
+      assets.forEach(({ id }) => {
+        if (assetId && assetId !== id) return;
+
+        fetchEvmAssetBalance(ethereumAddress, name, id, this);
       });
-
-      networks.forEach(({ assets, name }) =>
-        assets.forEach(({ id }) => fetchEvmAssetBalance(ethereumAddress, name, id, this))
-      );
-
-      this.saveTimespan('evmBalances', ethereumAddress, Date.now());
-    };
-
-    const timespan = Date.now() - this.getTimespan('evmBalances', ethereumAddress);
-
-    if (timespan < REFRESH_TIME) {
-      if (this.getEvmTimeout(ethereumAddress) !== null) clearTimeout(this.getEvmTimeout(ethereumAddress));
-
-      const timeout = setTimeout(() => {
-        fetchBalances();
-
-        this.saveEvmTimeout(ethereumAddress);
-      }, REFRESH_TIME - timespan);
-
-      this.saveEvmTimeout(ethereumAddress, timeout);
-    } else fetchBalances();
+    });
   }
 }

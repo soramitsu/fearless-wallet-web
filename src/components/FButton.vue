@@ -23,7 +23,7 @@ import type { ComponentText } from '@/interfaces';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
-type Type = 'primary' | 'secondary' | 'link' | 'google' | 'warning';
+type Type = 'primary' | 'secondary' | 'thirdly' | 'link' | 'google' | 'warning';
 type TypeText = 'none' | 'uppercase';
 
 @Component
@@ -119,6 +119,18 @@ export default class Button extends Vue {
         this.border ? 'secondary-border' : 'secondary-border-none',
         {
           'secondary-hover': this.hover,
+          'secondary-border-hover': this.border && this.hover,
+        },
+      ];
+    }
+
+    if (this.type === 'thirdly') {
+      return [
+        ...classes,
+        'thirdly',
+        this.border ? 'secondary-border' : 'secondary-border-none',
+        {
+          'thirdly-hover': this.hover,
           'secondary-border-hover': this.border && this.hover,
         },
       ];
@@ -255,11 +267,19 @@ export default class Button extends Vue {
 }
 
 .secondary {
-  background-color: $secondary-btn-color !important;
+  background-color: $secondary-background-color !important;
   color: #fff !important;
 }
 
 .secondary-hover:hover {
+  background-color: $default-background-color !important;
+}
+.thirdly {
+  background-color: $secondary-btn-color !important;
+  color: #fff !important;
+}
+
+.thirdly-hover:hover {
   background-color: $secondary-background-color !important;
   color: $default-white !important;
 }

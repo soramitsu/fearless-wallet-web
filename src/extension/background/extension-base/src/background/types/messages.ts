@@ -92,6 +92,7 @@ import type {
   RequestSigningSubscribe,
   FetchBalanceRequest,
   ResponseNftTransfer,
+  FetchEvmBalancePayload,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -195,7 +196,7 @@ export interface RequestSignatures {
 
   //ether
   'pri(balance)': [null, BalanceJson];
-  'pri(fetch.evm.balance)': [null, void];
+  'pri(fetch.evm.balance)': [FetchEvmBalancePayload, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
   'pri(fetch.balance)': [FetchBalanceRequest, string];
 

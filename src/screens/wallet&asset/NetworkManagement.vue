@@ -58,6 +58,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Action, Getter, Mutation } from 'vuex-class';
 import { type AccountJson } from '@extension-base/background/types/types';
+import { isEthereumNetwork } from '@extension-base/background/utils/utils';
 import NetworkItem from './NetworkItem.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { Tab } from '@/interfaces/ui';
@@ -70,7 +71,6 @@ import { type SetFavoriteNetwork, type Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { updateCurrentNetwork } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
-import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/utils/utils';
 
 type Tabs = {
   [ALL_NETWORKS]: Tab;

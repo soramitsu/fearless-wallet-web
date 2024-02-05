@@ -91,6 +91,7 @@ import {
   TransferErrorCode,
   type FetchBalanceRequest,
   type RequestNftTransfer,
+  type FetchEvmBalancePayload,
 } from '@extension-base/background/types/types';
 import {
   type RequestConnectWalletConnect,
@@ -558,8 +559,6 @@ export default class Extension extends FWExtensionBase {
   }
 
   signingApproveSignature({ id, signature }: RequestSigningApproveSignature): boolean {
-    this.state.signature = signature;
-
     const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
@@ -704,10 +703,10 @@ export default class Extension extends FWExtensionBase {
     return this.state.balanceService.getBalance();
   }
 
-  private async fetchEvmBalance() {
+  private async fetchEvmBalance({ assetId }: FetchEvmBalancePayload) {
     if (!this.state.ready) return;
 
-    this.state.fetchEvmBalance(null);
+    this.state.fetchEvmBalance({ assetId });
   }
 
   private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {
@@ -1471,7 +1470,7 @@ export default class Extension extends FWExtensionBase {
     if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
 
     const { privateKey } = this.state.accountExportPrivateKey({ address: ethereumAddress, password });
-    const signer = new Wallet(privateKey, this.state.getEvmApi(network.name));
+    const signer = new Wallet(privateKey, this.state.getEvmApi(network.name)?.api);
 
     if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
       const txData = request.request.params.request.params[0] as { to: string; value: string };
@@ -1797,7 +1796,7 @@ export default class Extension extends FWExtensionBase {
         return this.getBalance();
 
       case 'pri(fetch.evm.balance)':
-        return this.fetchEvmBalance();
+        return this.fetchEvmBalance(request as FetchEvmBalancePayload);
 
       case 'pri(balance.subscription)':
         return this.subscribeBalance(id, port);

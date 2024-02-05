@@ -80,7 +80,8 @@ export default class AssetHistory extends Vue {
   }
 
   mounted() {
-    if (BaseApi.isEthereumNetwork(this.currency.mainNetwork)) fetchEvmBalance();
+    if (BaseApi.isEthereumNetwork(this.currency.mainNetwork))
+      fetchEvmBalance(this.selectedAssetId !== '0' ? this.selectedAssetId : undefined);
   }
 
   togglePopupButton() {

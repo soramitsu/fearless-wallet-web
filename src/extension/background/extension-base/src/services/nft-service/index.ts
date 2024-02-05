@@ -144,7 +144,7 @@ export class NftService {
     savePass: (address: string, ethereumAddress: string | undefined, isSavePass: boolean, isMobile: boolean) => void
   ): Promise<ResponseNftTransfer> {
     const { from, contract: contractAddress } = tx;
-    const api = this.state.getEvmApi(tx.network);
+    const api = this.state.getEvmApi(tx.network)?.api;
     const contract = await getContract(contractAddress, api, tx.type === 'ERC721' ? 'ERC721' : 'ERC1155');
     const pair = this.state.keyringService.getPair(from);
 
@@ -210,7 +210,7 @@ export class NftService {
   }
 
   async checkSend({ from, tokenId, network, contract: contractAddress, type }: NftTx): Promise<CheckNftResponse> {
-    const api = this.state.getEvmApi(network);
+    const api = this.state.getEvmApi(network)?.api;
     const networkJson = this.state.getNetworkByKey(network);
     const utilityAsset = networkJson.assets.find((el) => el.isUtility)!;
     const contract = await getContract(contractAddress, api, type === 'ERC721' ? 'ERC721' : 'ERC1155');

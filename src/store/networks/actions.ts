@@ -42,7 +42,9 @@ const actions: ActionTree<State, State> & Actions = {
     const wallet = address ? { address, ethereumAddress: address } : rootGetters.selectedWallet;
     const formattedAddress = BaseApi.formatAddress(wallet, networkName);
 
-    const { type, url } = externalApi.history;
+    const { type, url: historyUrl } = externalApi.history;
+    const url = isSora(networkName) ? externalApi.staking!.url : historyUrl; // TODO remove
+
     const isNativeEvm = isRequireEvmAPI(networkName);
     const balances: TokenGroup[] = rootState.account.balances ?? [];
 

@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="assets.receiveFunds" :fullScreen="true" @closeHandler="$emit('closeForm')">
+  <AboveForm header="assets.receiveFunds" :fullScreen="true" @closeHandler="closeForm">
     <div class="receive-form">
       <div>
         <InputWithIcon
@@ -72,7 +72,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
 import type { TokenGroup } from '@extension-base/background/types/types';
@@ -93,10 +93,16 @@ export default class ReceiveForm extends Vue {
   selectedNetwork = 'polkadot';
   showSelectNetworkPopup = false;
 
-  @Prop(String) _selectedNetwork!: string;
-  @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
+
+  get _selectedNetwork() {
+    return this.$route.params.network ?? '';
+  }
+
+  get selectedAssetId() {
+    return this.$route.params.assetId ?? '';
+  }
 
   get assetNetworks() {
     const currency = this.balances.find(({ groupId }) => groupId === this.selectedAssetId)!;
@@ -123,7 +129,7 @@ export default class ReceiveForm extends Vue {
   }
 
   closeForm() {
-    this.$emit('closeForm');
+    this.$router.back();
   }
 
   toggleSelectNetworkPopupVisible() {

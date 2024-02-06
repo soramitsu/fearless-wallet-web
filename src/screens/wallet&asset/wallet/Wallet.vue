@@ -32,26 +32,11 @@
           :balances="filteredCurrencies"
           :showAssetsManagementForm="showAssetsManagementForm"
           :filterValue="filterValue"
-          @toggleVisibleActivityForm="toggleVisibleActivityForm"
           @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
           @toggleAssetsManagementForm="toggleAssetsManagementForm"
         />
       </div>
     </ContentForm>
-
-    <SendForm
-      v-if="showSendForm"
-      :_selectedNetwork="selectedCurrency.mainNetwork"
-      :_selectedAssetId="selectedCurrency.assetId"
-      @closeForm="toggleVisibleActivityForm('showSendForm', {}, false)"
-    />
-
-    <ReceiveForm
-      v-if="showReceiveForm"
-      :_selectedNetwork="selectedCurrency.mainNetwork"
-      :selectedAssetId="selectedCurrency.assetId"
-      @closeForm="toggleVisibleActivityForm('showReceiveForm', {}, false)"
-    />
 
     <NetworkManagement
       v-if="showNetworkManagement"
@@ -123,8 +108,6 @@ import { isSameString } from '@/helpers';
 export default class Wallet extends Vue {
   showNetworkManagement = false;
   showAssetsManagementForm = false;
-  showSendForm = false;
-  showReceiveForm = false;
   networkUnavailable = '';
   filterValue = '';
   selectedCurrency!: {
@@ -362,17 +345,6 @@ export default class Wallet extends Vue {
       reset: false,
       saveSequence: true,
     });
-  }
-
-  toggleVisibleActivityForm(
-    field: 'showSendForm' | 'showReceiveForm',
-    currency: { mainNetwork?: string; assetId?: string },
-    value = true
-  ) {
-    this.selectedCurrency = currency;
-    this[field] = value;
-
-    if (!isNetworkGroup(this.selectedNetwork)) this.selectedCurrency.mainNetwork = this.selectedNetwork;
   }
 
   updateFilterValue(value: string) {

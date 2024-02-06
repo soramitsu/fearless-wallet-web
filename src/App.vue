@@ -9,7 +9,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import { type NftState } from '@extension-base/services/nft-service/types';
+import { type ChainNftState } from '@extension-base/services/nft-service/types';
 import { ALL_NETWORKS } from './consts/networks';
 import { setTitle } from './helpers/common';
 import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
@@ -44,7 +44,7 @@ export default class App extends Vue {
   @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: Fn<SetAssetsPriceProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: Fn<SetAccountsProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: Fn<string>;
-  @Mutation(AccountsMutationTypes.SET_NFTS) setNfts!: Fn<NftState>;
+  @Mutation(AccountsMutationTypes.SET_NFTS) setNfts!: Fn<ChainNftState>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
   @Action(NetworksActionTypes.FETCH_FIATS) fetchFiats!: AsyncFn;
   @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;

@@ -113,6 +113,8 @@ const onNavigate = () => {
   pointer-events: none;
   right: 17px;
   top: 5px;
+  width: 40px;
+  height: 40px;
 
   &-size {
     width: 20px;

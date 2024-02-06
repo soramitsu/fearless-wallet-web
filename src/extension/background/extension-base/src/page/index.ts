@@ -4,7 +4,8 @@
 import Injected from '@extension-base/page/Injected';
 import { MESSAGE_ORIGIN_PAGE } from '@extension-base/defaults';
 import { getId } from '@extension-base/utils/utils';
-import type { Handlers } from '@extension-base/page/types';
+import { FearlessWalletEvmProvider } from '@extension-base/page/FwEvmProvider';
+import type { EvmProvider, Handlers } from '@extension-base/page/types';
 import type {
   MessageTypes,
   MessageTypesWithNoSubscriptions,
@@ -16,13 +17,6 @@ import type {
   TransportRequestMessage,
   TransportResponseMessage,
 } from '@extension-base/background/types/types';
-
-// when sending a message from the injector to the extension, we
-//  - create an event - this we send to the loader
-//  - the loader takes this event and uses port.postMessage to background
-//  - on response, the loader creates a reponse event
-//  - this injector, listens on the events, maps it to the original
-//  - resolves/rejects the promise with the result (or sub data)
 
 const handlers: Handlers = {};
 
@@ -104,4 +98,8 @@ export function handleResponse<TMessageType extends MessageTypes>(
   } else {
     handler.resolve(data.response);
   }
+}
+
+export function initEvmProvider(version: string): EvmProvider {
+  return new FearlessWalletEvmProvider(sendMessage, version);
 }

@@ -35,6 +35,7 @@
   "main": "index.js",
   "dependencies": {
     "@json-rpc-tools/utils": "^1.7.6",
+    "@metamask/safe-event-emitter": "^3.0.0",
     "@polkadot/api": "^10.9.1",
     "@polkadot/extension-chains": "^0.46.5",
     "@polkadot/extension-dapp": "^0.46.5",
@@ -62,6 +63,7 @@
     "eventemitter3": "^5.0.1",
     "file-saver": "^2.0.5",
     "jdenticon": "^3.2.0",
+    "json-rpc-engine": "^6.1.0",
     "jwt-decode": "^3.1.2",
     "qrcode": "^1.5.1",
     "rlp": "^3.0.0",

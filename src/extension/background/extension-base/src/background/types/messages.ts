@@ -1,3 +1,4 @@
+import { type RequestArguments } from '@json-rpc-tools/utils';
 import type {
   NftTx,
   CheckNftResponse,
@@ -113,6 +114,12 @@ import type {
   SoraFees,
   OnboardingStories,
 } from '@/interfaces';
+import {
+  type RequestEvmEvents,
+  type EvmEvent,
+  type ResponseEvmProviderSend,
+  type RequestEvmProviderSend,
+} from '@/extension/background/extension-base/src/page/types';
 
 export interface RequestSignatures {
   // private/internal requests, i.e. from a popup
@@ -203,6 +210,10 @@ export interface RequestSignatures {
   'pri(price.update.currency)': [string, void];
   'pri(price.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];
   'pri(soraCard.token)': [null, boolean, string];
+  // Evm
+  'evm(events.subscribe)': [RequestEvmEvents, boolean, EvmEvent];
+  'evm(request)': [RequestArguments, unknown];
+  'evm(provider.send)': [RequestEvmProviderSend, string | number, ResponseEvmProviderSend];
 
   //OnBoarding
   'pri(onboarding.isRequired)': [null, boolean];

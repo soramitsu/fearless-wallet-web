@@ -197,6 +197,13 @@ export class KeyringService {
     }
   }
 
+  getSubstrateAccounts() {
+    const accounts = this.getAccounts().filter((el) => !isEthereumAddress(el.address));
+    const addresses = this.getAddresses();
+
+    return [...accounts, ...addresses];
+  }
+
   isSameAddress(wallet1: Wallet, wallet2: Wallet): boolean {
     return this.state.keyringService.formatAddress(wallet1) === this.state.keyringService.formatAddress(wallet2);
   }

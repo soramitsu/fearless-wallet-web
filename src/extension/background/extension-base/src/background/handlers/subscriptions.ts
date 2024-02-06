@@ -76,7 +76,7 @@ export class FWSubscription {
   async start() {
     this.logger.log('Starting subscription');
 
-    const currentAccount = await this.state.currentAccount;
+    const currentAccount = this.state.currentAccount;
     const accountsExceptCurrent = this.state
       .getSubstrateAccounts()
       .filter((el) => el.address !== currentAccount?.address);

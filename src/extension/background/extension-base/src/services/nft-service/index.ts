@@ -113,11 +113,11 @@ export class NftService {
 
           this.nftMap[address][sdk.chainId] = JSON.parse(JSON.stringify(networkNfts)) as NftState;
 
-          this.state.currentAccount.then((account) => {
-            if (account && account.ethereumAddress === address) {
-              this.nftSubject.next(this.nftMap[address]);
-            }
-          });
+          const account = this.state.currentAccount;
+
+          if (account && account.ethereumAddress === address) {
+            this.nftSubject.next(this.nftMap[address]);
+          }
         });
       }
     }
@@ -133,9 +133,8 @@ export class NftService {
     if (isChanged) {
       this.hideSettings[address] = settings;
 
-      this.state.currentAccount.then((account) => {
-        if (account) this.getNftForAllNetworks(account.ethereumAddress, true);
-      });
+      const currentAccount = this.state.currentAccount;
+      if (currentAccount) this.getNftForAllNetworks(currentAccount.ethereumAddress, true);
     }
 
     storage.set({ nftSettings: this.hideSettings });
@@ -268,7 +267,7 @@ export class NftService {
   }
 
   async publishNfts() {
-    const account = await this.state.currentAccount;
+    const account = this.state.currentAccount;
 
     if (account && account.ethereumAddress) {
       const nfts = this.nftMap[account.ethereumAddress];
@@ -296,7 +295,7 @@ export class NftService {
       subscription.unsubscribe();
     });
 
-    const account = await this.state.currentAccount;
+    const account = this.state.currentAccount;
 
     if (!account || !account.ethereumAddress || !this.nftMap[account.ethereumAddress]) return {};
 

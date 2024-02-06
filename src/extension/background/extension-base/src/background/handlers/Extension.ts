@@ -243,7 +243,7 @@ export default class Extension extends FWExtensionBase {
     const accounts = this.state.keyringService.getAccounts();
     const addresses = this.state.keyringService.getAddresses();
 
-    const currentAccount = await this.state.currentAccount;
+    const currentAccount = this.state.currentAccount;
 
     const isWasCurrentAccount = address === currentAccount?.address;
 
@@ -1181,7 +1181,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async checkController(params: CheckControllerRequest): Promise<boolean> {
-    const address = await this.state.getCurrentAddress('westend');
+    const address = this.state.getCurrentAddress('westend');
     const stashAddress = await this.state.stakingService.getStashByController(params.address);
 
     if (stashAddress === '') return true;

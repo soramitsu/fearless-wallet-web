@@ -35,11 +35,8 @@ import PricesService from '@extension-base/services/prices-service';
 import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
 import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
 import BalanceService from '@extension-base/services/balance-service';
-import CurrentAccountStore, {
-  type CurrentAccountInfo,
-  type CurrentAccountState,
-} from '@extension-base/stores/CurrentAccountStore';
 import axios from 'axios';
+import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   ServiceInfo,
   MobileSignRequest,
@@ -97,9 +94,11 @@ export default class State {
   public chainRegistryMap: Record<string, ChainRegistry> = {};
   public chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
   public readonly unsubscriptionMap: Record<string, () => void> = {};
-  private readonly currentAccountStore = new CurrentAccountStore();
   private readonly evmChainSubject = new Subject<AuthUrls>();
   private readonly authorizeUrlSubject = new Subject<AuthUrls>();
+  public networkMapSubject = new Subject<Record<string, NetworkJson>>();
+  public serviceInfoSubject = new Subject<ServiceInfo>();
+  public customTokenSubject = new Subject<CustomTokenJson>();
   public defaultAuthAccountSelection: string[] = [];
   public apis: APIs = {
     substrate: {},
@@ -110,11 +109,8 @@ export default class State {
   public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
   public networksGithub: NetworkJson[] = []; // networks from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
-  public networkMapSubject = new Subject<Record<string, NetworkJson>>();
   public selectedNetworks: Record<string, string> = {};
-  public serviceInfoSubject = new Subject<ServiceInfo>();
   public customTokenState: CustomTokenJson = { erc20: [] };
-  public customTokenSubject = new Subject<CustomTokenJson>();
   public customTokenStore = new CustomTokenStore();
   public mobileSignRequests: Record<string, MobileSignRequest> = {};
   public readonly mobileSignSubject = new BehaviorSubject<MobileSigningRequest[]>([]); //TODO MOVE TO. IT's ON HANDLER
@@ -126,23 +122,20 @@ export default class State {
     authorizeAccountsCount: 0,
     dAppName: '',
   };
-  public keyringService = new KeyringService(this);
-  public googleService = new GoogleService();
+
+  public onboardingService = new OnboardingService();
   public eventService = new EventService();
+  public keyringService = new KeyringService(this, this.eventService);
   public networkService = new NetworkService(this.eventService);
   public requestService = new RequestService(this);
   public nftService = new NftService(this);
   public walletConnectService = new WalletConnectService(this, this.requestService);
   public walletConnectDappService = new WalletConnectDAppService(this);
-  public soraCardService = new SoraCardService(this.requestService);
-  public onboardingService = new OnboardingService();
   public stakingService = new StakingService(this);
   public balanceService = new BalanceService(this);
   public pricesService = new PricesService(this);
-
-  public get knownMetadata(): MetadataDef[] {
-    return knownMetadata();
-  }
+  public soraCardService = new SoraCardService(this.requestService);
+  public googleService = new GoogleService();
 
   constructor() {
     this.injectFromStorage();
@@ -150,6 +143,10 @@ export default class State {
     this.cron = new FWCron(this);
     this.subscription = new FWSubscription(this, this.cron);
     this.init();
+  }
+
+  public get knownMetadata(): MetadataDef[] {
+    return knownMetadata();
   }
 
   public get networkValues() {
@@ -278,7 +275,7 @@ export default class State {
   }
 
   public async onInstall() {
-    const currentAccount = await this.currentAccount;
+    const currentAccount = this.currentAccount;
 
     if (currentAccount) {
       this.setCurrentAccount(currentAccount);
@@ -374,12 +371,10 @@ export default class State {
   }
 
   public updateServiceInfo() {
-    this.getCurrentAccount((currentAccountInfo) => {
-      this.serviceInfoSubject.next({
-        networkMap: this.networkMap,
-        apiMap: this.apis,
-        currentAccountInfo,
-      });
+    this.serviceInfoSubject.next({
+      networkMap: this.networkMap,
+      apiMap: this.apis,
+      currentAccountInfo: this.currentAccount,
     });
   }
 
@@ -416,7 +411,7 @@ export default class State {
 
   async setFavoriteNetwork(networkName: string): Promise<boolean> {
     const network = this.networkMap[networkName];
-    const currentAccount = await this.currentAccount;
+    const currentAccount = this.currentAccount;
 
     if (!currentAccount) return false;
 
@@ -463,7 +458,7 @@ export default class State {
   }
 
   public async setActiveNetworks(type: string) {
-    const currentAccount = await this.currentAccount;
+    const currentAccount = this.currentAccount;
 
     if (!currentAccount) return;
 
@@ -723,22 +718,12 @@ export default class State {
     });
   }
 
-  public getAccountAddress(): Promise<string> {
-    return new Promise((resolve) => {
-      this.getCurrentAccount((account) => resolve(account?.address ?? ''));
-    });
+  public getAccountAddress(): string {
+    return this.currentAccount?.address ?? '';
   }
 
   get currentAccount() {
-    return new Promise<CurrentAccountState>((res) => {
-      this.getCurrentAccount((value) => {
-        res(value);
-      });
-    });
-  }
-
-  public getCurrentAccount(update: (value: CurrentAccountState) => void = () => null): void {
-    this.currentAccountStore.get('CurrentAccountInfo', update);
+    return this.keyringService.currentAccount;
   }
 
   public async publishBalance() {
@@ -886,25 +871,23 @@ export default class State {
   }
 
   public setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null, updateNetworks = true): void {
-    const cb = () => {
-      if (updateNetworks) {
-        // logic for Sora library
-        if (data?.address && !data.isMobile) {
-          const pair = this.keyringService.getPair(data?.address)!;
+    this.keyringService.setCurrentAccount(data);
 
-          apiSora.account = { json: null as any, pair };
-          apiSora.bridgeProxy.sub.account = { json: null as any, pair };
+    if (updateNetworks) {
+      // logic for Sora library
+      if (data?.address && !data.isMobile) {
+        const pair = this.keyringService.getPair(data?.address)!;
 
-          // TODO добавить фича тогл
-          this.subscribeTotalXorBalance();
-        }
+        apiSora.account = { json: null as any, pair };
+        apiSora.bridgeProxy.sub.account = { json: null as any, pair };
+
+        // TODO добавить фича тогл
+        this.subscribeTotalXorBalance();
       }
+    }
 
-      this.updateServiceInfo();
-      callback();
-    };
-
-    this.currentAccountStore.set('CurrentAccountInfo', data, cb);
+    this.updateServiceInfo();
+    callback();
   }
 
   public saveCurrentAccountAddress(address: string, callback?: (account: CurrentAccountState) => void) {
@@ -1005,8 +988,8 @@ export default class State {
     return this.networkMapStore.subject;
   }
 
-  async getCurrentAddress(network: NetworkName, _currentAccount?: CurrentAccountState) {
-    const currentAccount = _currentAccount ?? (await this.currentAccount);
+  getCurrentAddress(network: NetworkName, _currentAccount?: CurrentAccountState): string {
+    const currentAccount = _currentAccount ?? this.currentAccount;
 
     return isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
   }
@@ -1022,7 +1005,7 @@ export default class State {
   async fetchEvmBalance({ _networks, _ethereumAddress, assetId, force }: FetchEvmBalancePayload) {
     if (!this.ready) return;
 
-    const currentAccount = await this.currentAccount;
+    const currentAccount = this.currentAccount;
 
     const ethereumAddress = _ethereumAddress ?? currentAccount?.ethereumAddress ?? '';
 

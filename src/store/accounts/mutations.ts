@@ -2,7 +2,7 @@ import type { MutationTree } from 'vuex';
 import type { SelectedWallet, SetAccountsProps, SetAutoSelectNode, SetHiddenAsset } from './types';
 import type { State } from './state';
 import type { BalanceJson } from '@extension-base/background/types/types';
-import type { AvailableNftState, NftState } from '@extension-base/services/nft-service/types';
+import type { AvailableNftState, ChainNftState } from '@extension-base/services/nft-service/types';
 import { accountController } from '@/controllers';
 
 export enum MutationTypes {
@@ -34,7 +34,7 @@ export type Mutations = {
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: SetAutoSelectNode): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
   [MutationTypes.DELETE_QR](state: State): void;
-  [MutationTypes.SET_NFTS](state: State, nfts: NftState): void;
+  [MutationTypes.SET_NFTS](state: State, nfts: ChainNftState): void;
   [MutationTypes.SET_AVAILABLE_NFTS](state: State, nfts: AvailableNftState): void;
   [MutationTypes.SET_HIDDEN_ASSET](state: State, props: SetHiddenAsset): void;
   [MutationTypes.SET_CUSTOM_SORT](state: State, props: string): void;

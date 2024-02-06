@@ -2,14 +2,14 @@ import { type ResponseNftTransfer } from '@extension-base/background/types/types
 import type {
   AvailableNftPayload,
   AvailableNftResponse,
+  ChainNftState,
   CheckNftResponse,
-  NftState,
   NftTx,
   RequestSettingsChangePayload,
 } from '@extension-base/services/nft-service/types';
 import { sendMessage } from '@/extension/messaging';
 
-export function getNftSubscribe(cb: (data: NftState) => void): Promise<NftState> {
+export function getNftSubscribe(cb: (data: ChainNftState) => void): Promise<ChainNftState> {
   return sendMessage('pri(nft.subscribe)', null, cb);
 }
 

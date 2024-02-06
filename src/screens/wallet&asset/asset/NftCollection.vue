@@ -109,6 +109,7 @@ const onScroll = async () => {
   const nfts = await fetchAvailableNftsForContract({
     contract: contract.value,
     network: network.value,
+    address: selectedWallet.value.ethereumAddress,
     pageKey: state.pageKey,
   });
 

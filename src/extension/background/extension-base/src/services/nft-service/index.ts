@@ -13,11 +13,12 @@ import {
   type RequestNftTransfer,
   type ResponseNftTransfer,
 } from '@extension-base/background/types/types';
-import { getBalanceItem, getSubstrateAddress } from '@extension-base/background/utils/utils';
+import { getBalanceItem, getEthereumAddress, getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { FPNumber } from '@sora-substrate/util';
 import { calcEvmFees } from '@extension-base/api/evm/transfer';
 import type {
   AvailableNftPayload,
+  ChainNftState,
   CheckNftResponse,
   NftSettings,
   NftState,
@@ -31,8 +32,8 @@ export class NftService {
   private store: NftStore;
   private refreshTime = 10000;
   private sdks: Record<string, AlchemyNftController> = {};
-  private nftMap: Record<string, NftState> = {};
-  public nftSubject = new Subject<NftState>();
+  public nftMap: Record<string, ChainNftState> = {};
+  public nftSubject = new Subject<ChainNftState>();
 
   hideSettings: Record<string, NftSettings> = {};
 
@@ -78,7 +79,7 @@ export class NftService {
     this.getNftForAllNetworks(address);
   }
 
-  availableNftsForContract({ network, contract, pageKey }: AvailableNftPayload) {
+  availableNftsForContract({ network, contract, address, pageKey }: AvailableNftPayload) {
     const net = this.state.getNetworkByKey(network);
     const key = PROD_NFT_NETWORKS[+net.chainId];
 
@@ -88,28 +89,29 @@ export class NftService {
         pageKey: undefined,
       };
 
-    return this.sdks[key].getCollectionPage(contract, pageKey);
+    return this.sdks[key].getCollectionPage(contract, address, pageKey);
   }
 
   async getNftForAllNetworks(address: string, force = false) {
     const substrateAddress = getSubstrateAddress(address, this.state);
     const activeNetworks = this.state.getActiveNetworksCurrentWallet(substrateAddress);
-    const chainIds = Array.from(activeNetworks).map((el) => +el.chainId);
+    const chainIds = Array.from(activeNetworks).map(({ chainId }) => chainId);
     const networks = Object.keys(this.sdks);
 
-    const currentFetchMap: NftState = {};
-
     for (const network of networks) {
-      if (!this.sdks[network] || chainIds.some((el) => el !== this.sdks[network].chainId)) continue;
+      const sdk = this.sdks[network];
 
-      const timespan = this.sdks[network].timespan;
+      if (!sdk || chainIds.some((el) => el !== sdk.chainId)) continue;
+
+      const timespan = sdk.timespan;
 
       if (force || !timespan[address] || timespan[address] + this.refreshTime > Date.now()) {
-        this.sdks[network].timespan[address] = Date.now();
+        sdk.timespan[address] = Date.now();
 
-        this.sdks[network].fetchNftsForWallet(address).then((networkNfts) => {
-          Object.assign(currentFetchMap, networkNfts);
-          this.nftMap[address] = JSON.parse(JSON.stringify(currentFetchMap));
+        sdk.fetchNftsForWallet(address).then((networkNfts) => {
+          if (!this.nftMap[address]) this.nftMap[address] = {};
+
+          this.nftMap[address][sdk.chainId] = JSON.parse(JSON.stringify(networkNfts)) as NftState;
 
           this.state.currentAccount.then((account) => {
             if (account && account.ethereumAddress === address) {
@@ -280,7 +282,7 @@ export class NftService {
     this.nftSubject.next({});
   }
 
-  async nftSubscribe(id: string, port: Port): Promise<NftState> {
+  async nftSubscribe(id: string, port: Port): Promise<ChainNftState> {
     const cb = createSubscription<'pri(nft.subscribe)'>(id, port);
 
     const subscription = this.nftSubject.subscribe({
@@ -299,5 +301,11 @@ export class NftService {
     if (!account || !account.ethereumAddress || !this.nftMap[account.ethereumAddress]) return {};
 
     return this.nftMap[account.ethereumAddress];
+  }
+
+  deleteSavedNfts(address: string) {
+    const ethereumAddress = getEthereumAddress(address, this.state);
+
+    delete this.nftMap[ethereumAddress];
   }
 }

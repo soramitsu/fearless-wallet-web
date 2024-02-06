@@ -12,6 +12,7 @@ import {
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
+import { type RequestArguments } from '@json-rpc-tools/utils';
 import type State from '@extension-base/background/handlers/State';
 import type {
   AccountSub,
@@ -86,6 +87,10 @@ export default class Tabs {
     const shortenUrl = stripUrl(url);
 
     return authList[shortenUrl];
+  }
+
+  public isEvmPublicRequest(type: string, request: RequestArguments) {
+    return type === 'evm(request)' && ['eth_chainId', 'net_version'].includes(request?.method);
   }
 
   async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<string> {
@@ -249,6 +254,97 @@ export default class Tabs {
     this.state.soraCardService.tokenSubject.next(token);
   }
 
+  private async getEvmCurrentAccount(url: string): Promise<string[]> {
+    return await new Promise((resolve) => {
+      this.getAuthInfo(url)
+        .then((authInfo) => {
+          const allAccounts = this.state.keyringService.getAccounts();
+          const accountList = transformAccountsV2(allAccounts, false, authInfo, 'evm').map((a) => a.address);
+          let accounts: string[] = [];
+
+          const address = this.state.keyringService.currentAccount.address;
+
+          if (address === ALL_ACCOUNT_KEY || !address) {
+            accounts = accountList;
+          } else {
+            if (accountList.includes(address)) {
+              const result = accountList.filter((adr) => adr !== address);
+
+              result.unshift(address);
+              accounts = result;
+            } else {
+              accounts = accountList;
+            }
+          }
+
+          resolve(accounts);
+        })
+        .catch(console.error);
+    });
+  }
+
+  private async evmSign(id: string, url: string, { method, params }: RequestArguments) {
+    const allowedAccounts = await this.getEvmCurrentAccount(url);
+    const signResult = await this.state.evmSign(id, url, method, params, allowedAccounts);
+
+    if (signResult) {
+      return signResult;
+    } else {
+      throw new EvmProviderError(EvmProviderErrorType.INVALID_PARAMS, 'Failed to sign message');
+    }
+  }
+
+  private async handleEvmRequest(id: string, url: string, request: RequestArguments): Promise<unknown> {
+    const { method } = request;
+
+    try {
+      switch (method) {
+        case 'eth_chainId':
+          return await this.getEvmCurrentChainId(url);
+        case 'net_version':
+          return parseInt(await this.getEvmCurrentChainId(url), 16);
+        case 'eth_accounts':
+          return await this.getEvmCurrentAccount(url);
+        case 'eth_sendTransaction':
+          return await this.evmSendTransaction(id, url, request);
+        case 'eth_sign':
+          return await this.evmSign(id, url, request);
+        case 'personal_sign':
+          return await this.evmSign(id, url, request);
+        case 'eth_signTypedData':
+          return await this.evmSign(id, url, request);
+        case 'eth_signTypedData_v1':
+          return await this.evmSign(id, url, request);
+        case 'eth_signTypedData_v3':
+          return await this.evmSign(id, url, request);
+        case 'eth_signTypedData_v4':
+          return await this.evmSign(id, url, request);
+        case 'wallet_requestPermissions':
+          await this.authorizeV2(url, { origin: '', accountAuthType: 'evm', reConfirm: true });
+
+          return await this.getEvmPermission(url, id);
+        case 'wallet_getPermissions':
+          return await this.getEvmPermission(url, id);
+        case 'wallet_addEthereumChain':
+          return await this.addEvmChain(id, url, request);
+        case 'wallet_switchEthereumChain':
+          return await this.switchEvmChain(id, url, request);
+        case 'wallet_watchAsset':
+          return await this.addEvmToken(id, url, request);
+
+        default:
+          return this.performWeb3Method(id, url, request);
+      }
+    } catch (e) {
+      if (e.code) {
+        throw e;
+      } else {
+        console.error(e);
+        throw new EvmProviderError(EvmProviderErrorType.INTERNAL_ERROR, e?.toString());
+      }
+    }
+  }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -302,7 +398,8 @@ export default class Tabs {
 
       case 'pub(rpc.subscribeConnected)':
         return this.rpcSubscribeConnected(request as null, id, port);
-
+      case 'evm(request)':
+        return await this.handleEvmRequest(id, url, request as RequestArguments);
       default:
         throw new Error(`Unable to handle message of type ${type}`);
     }

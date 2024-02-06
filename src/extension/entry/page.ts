@@ -6,7 +6,7 @@ import type { Message } from '@extension-base/types';
 import type { TransportRequestMessage } from '@extension-base/background/types/types';
 import { APP_VERSION } from '@/consts/global';
 import { type EIP6963ProviderDetail, type EIP6963ProviderInfo, type InjectedWindow } from '@/extension/entry/types';
-import { type EvmProvider } from '@/extension/background/extension-base/src/page/types';
+import { type FWEvmProvider } from '@/extension/background/extension-base/src/page/types';
 class Page {
   version: string = packages.version;
   private inject() {
@@ -22,20 +22,18 @@ class Page {
     };
   }
   // Inject EVM Provider
-  injectEvmExtension(evmProvider: EvmProvider): void {
+  injectEvmExtension(evmProvider: FWEvmProvider): void {
     // small helper with the typescript types, just cast window
     const windowInject = window as Window & InjectedWindow;
 
     // add our enable function
-    if (windowInject.FW) {
-      // Provider has been initialized in proxy mode
-      windowInject.FW = evmProvider;
+    if (windowInject.fearlessWallet) {
+      windowInject.fearlessWallet = evmProvider;
     } else {
-      // Provider has been initialized in direct mode
-      windowInject.FW = evmProvider;
+      windowInject.fearlessWallet = evmProvider;
     }
 
-    windowInject.dispatchEvent(new Event('subwallet#initialized'));
+    windowInject.dispatchEvent(new Event('fearlesswallet#initialized'));
 
     // Publish to global if window.ethereum is not available
     windowInject.addEventListener('load', () => {
@@ -48,7 +46,7 @@ class Page {
     });
   }
 
-  inject6963EIP = (provider: EvmProvider) => {
+  inject6963EIP = (provider: FWEvmProvider) => {
     // TODO: Need to confirm that infomation
     const info: EIP6963ProviderInfo = {
       uuid: 'd1dc1445-2b9c-4c17-877a-7790fadfcc05',
@@ -84,7 +82,6 @@ class Page {
 
   init() {
     this.setMaxListeners();
-    this.injectEvmExtension(initEvmProvider(this.version));
 
     redirectIfPhishing()
       .then((gotRedirected) => {
@@ -94,6 +91,8 @@ class Page {
         console.warn(`Unable to determine if the site is in the phishing list: ${(e as Error).message}`);
         this.inject();
       });
+
+    this.injectEvmExtension(initEvmProvider(this.version));
   }
 
   private setMaxListeners() {

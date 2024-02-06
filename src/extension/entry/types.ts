@@ -1,5 +1,5 @@
 import { type Injected } from '@polkadot/extension-inject/types';
-import { type EvmProvider } from '@extension-base/page/types';
+import { type FWEvmProvider } from '@extension-base/page/types';
 type This = typeof globalThis;
 
 export interface InjectedWindowProvider {
@@ -9,8 +9,8 @@ export interface InjectedWindowProvider {
 
 export interface InjectedWindow extends This {
   injectedWeb3: Record<string, InjectedWindowProvider>;
-  ethereum: EvmProvider;
-  FW: EvmProvider;
+  ethereum: FWEvmProvider;
+  fearlessWallet: FWEvmProvider;
 }
 
 export interface EIP6963ProviderInfo {
@@ -22,5 +22,5 @@ export interface EIP6963ProviderInfo {
 
 export interface EIP6963ProviderDetail {
   info: EIP6963ProviderInfo;
-  provider: EvmProvider;
+  provider: FWEvmProvider;
 }

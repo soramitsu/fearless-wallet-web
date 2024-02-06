@@ -3,6 +3,7 @@
 
 import { type JsonRpcPayload, type JsonRpcResponse } from '@json-rpc-tools/utils';
 import type {
+  EvmProvider,
   MessageTypesWithNoSubscriptions,
   MessageTypesWithNullRequest,
   MessageTypesWithSubscriptions,
@@ -33,13 +34,13 @@ export interface SendRequest {
   ): Promise<ResponseTypes[TMessageType]>;
 }
 
-export interface EvmProvider {
+export type FWEvmProvider = {
   provider?: EvmProvider;
   isMetaMask: boolean;
   isFearlessWallet: boolean;
   version: string;
   isConnected(): boolean;
-}
+};
 
 export type RequestEvmEvents = null;
 export type EvmEventType =

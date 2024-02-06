@@ -1,7 +1,7 @@
 // Copyright 2019-2022 @subwallet/extension-koni authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { type EvmProvider, type SendRequest } from '@extension-base/page/types';
+import { type FWEvmProvider, type SendRequest } from '@extension-base/page/types';
 import SafeEventEmitter from '@metamask/safe-event-emitter';
 import { type JsonRpcRequest, type JsonRpcResponse, type JsonRpcSuccess } from 'json-rpc-engine';
 import type { RequestArguments } from '@json-rpc-tools/utils';
@@ -11,17 +11,14 @@ export interface SendSyncJsonRpcRequest extends JsonRpcRequest<unknown> {
 
 let subscribeFlag = false;
 
-export class FearlessWalletEvmProvider extends SafeEventEmitter implements EvmProvider {
+export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvmProvider {
   public readonly isFearlessWallet = true;
   public readonly isMetaMask = false;
-  public readonly version;
-  protected sendMessage: SendRequest;
   protected _connected = false;
 
-  constructor(sendMessage: SendRequest, version: string) {
+  constructor(protected sendMessage: SendRequest, public readonly version: string) {
     super();
-    this.version = version;
-    this.sendMessage = sendMessage;
+
     this._connected = true;
   }
 
@@ -39,11 +36,18 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements EvmPr
     }
 
     this.sendMessage('evm(events.subscribe)', null, ({ payload, type }) => {
-      if (
-        ['connect', 'disconnect', 'accountsChanged', 'chainChanged', 'message', 'data', 'reconnect', 'error'].includes(
-          type
-        )
-      ) {
+      const messages = [
+        'connect',
+        'disconnect',
+        'accountsChanged',
+        'chainChanged',
+        'message',
+        'data',
+        'reconnect',
+        'error',
+      ];
+
+      if (messages.includes(type)) {
         if (type === 'connect') {
           this._connected = true;
         } else if (type === 'disconnect') {
@@ -52,7 +56,6 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements EvmPr
 
         const finalType = type === 'data' ? 'message' : type;
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         this.emit(finalType, payload);
       } else {
         console.warn('Can not handle event', type, payload);
@@ -97,27 +100,16 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements EvmPr
             .then(() => {
               // Return account list
               this.request<string[]>({ method: 'eth_accounts' })
-                .then((accounts) => {
-                  resolve(accounts as any);
-                })
-                .catch((e) => {
-                  reject(e);
-                });
+                .then((accounts) => resolve(accounts as any))
+                .catch((e) => reject(e));
             })
-            .catch((e) => {
-              reject(e);
-            });
+            .catch((e) => reject(e));
         });
       default:
         return new Promise((resolve, reject) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           this.sendMessage('evm(request)', { params, method })
-            .then((result) => {
-              resolve(result as T);
-            })
-            .catch((e: any) => {
-              reject(e);
-            });
+            .then((result) => resolve(result as T))
+            .catch((e) => reject(e));
         });
     }
   }
@@ -157,11 +149,7 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements EvmPr
 
   sendAsync<T>(payload: JsonRpcRequest<T>, callback: (error: Error | null, result?: JsonRpcResponse<T>) => void): void {
     this.request<T>(payload)
-      .then((result) => {
-        return callback(null, { result } as any);
-      })
-      .catch((e) => {
-        callback(e);
-      });
+      .then((result) => callback(null, { result } as any))
+      .catch((e) => callback(e));
   }
 }

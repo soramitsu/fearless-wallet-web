@@ -4,8 +4,8 @@
 import Injected from '@extension-base/page/Injected';
 import { MESSAGE_ORIGIN_PAGE } from '@extension-base/defaults';
 import { getId } from '@extension-base/utils/utils';
-import { FearlessWalletEvmProvider } from '@extension-base/page/FwEvmProvider';
-import type { EvmProvider, Handlers } from '@extension-base/page/types';
+import { FearlessWalletEvmProvider } from '@extension-base/page/FearlessWalletEvmProvider';
+import type { FWEvmProvider, Handlers } from '@extension-base/page/types';
 import type {
   MessageTypes,
   MessageTypesWithNoSubscriptions,
@@ -90,16 +90,21 @@ export function handleResponse<TMessageType extends MessageTypes>(
     delete handlers[data.id];
   }
 
-  if (data.subscription) {
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    (handler.subscriber as Function)(data.subscription);
-  } else if (data.error) {
-    handler.reject(new Error(data.error));
-  } else {
-    handler.resolve(data.response);
+  if (data.subscription && handler.subscriber) {
+    handler.subscriber(data.subscription);
+
+    return;
   }
+
+  if (data.error) {
+    handler.reject(new Error(data.error));
+
+    return;
+  }
+
+  handler.resolve(data.response);
 }
 
-export function initEvmProvider(version: string): EvmProvider {
+export function initEvmProvider(version: string): FWEvmProvider {
   return new FearlessWalletEvmProvider(sendMessage, version);
 }

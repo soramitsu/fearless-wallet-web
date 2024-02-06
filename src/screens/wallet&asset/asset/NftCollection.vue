@@ -36,12 +36,8 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
-import {
-  type NftCollection,
-  type AvailableNftState,
-  type FearlessNft,
-} from '@extension-base/services/nft-service/types';
 import { useI18n } from 'vue-i18n-composable';
+import type { NftCollection, AvailableNftState, FearlessNft } from '@extension-base/services/nft-service/types';
 import { fetchAvailableNftsForContract } from '@/extension/messaging/nfts';
 import { type SelectedWallet, useStore } from '@/store';
 import NftItem from '@/screens/wallet&asset/asset/NftItem.vue';

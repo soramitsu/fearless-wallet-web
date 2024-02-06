@@ -319,11 +319,21 @@ export default class TransferForm extends Vue {
     return this.extrinsicType === 'crossChain';
   }
 
+  get originalUtilityId() {
+    return this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
+  }
+
   get originalNetworkUtilityAsset() {
-    const utilityId = this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
-    const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === utilityId));
+    const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === this.originalUtilityId));
 
     return currency?.symbol ?? '';
+  }
+
+  get originalAssetPrice() {
+    const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === this.originalUtilityId));
+    const priceId = currency?.priceId ?? '';
+
+    return this.getAssetPrice(priceId).price;
   }
 
   get syncedFeeCut() {
@@ -331,7 +341,7 @@ export default class TransferForm extends Vue {
   }
 
   get fiatFeeCut() {
-    return `${this.fiatSymbol}${this.$n(+this.syncedFee * this.assetPrice, 'price')}`;
+    return `${this.fiatSymbol}${this.$n(+this.syncedFee * this.originalAssetPrice, 'price')}`;
   }
 
   get destNetFeeCut() {

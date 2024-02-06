@@ -514,7 +514,8 @@
     "depositLiquidity": "Deposit liquidity",
     "withdraw": "Withdraw",
     "withdrawLiquidity": "Withdraw liquidity",
-    "cancelLimitOrder": "Cancel Limit Order"
+    "cancelLimitOrder": "Cancel Limit Order",
+    "cancelLimitOrdersBatch": "Cancel Limit Orders Batch"
   },
   "staking": {
     "stakingFee": "The network fee in the NPoS consensus algorithm for Substrate based chains refers to the cost incurred by participants (validators and nominators) for using the network's resources and services.",

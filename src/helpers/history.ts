@@ -147,7 +147,7 @@ function getHistoryValue(
     const dataValue =
       element.data?.value ?? element.data?.amount ?? element.data?.baseAssetAmount ?? element.data?.maxAdditional ?? 0;
 
-    const targetValue = +(element.data.targetAssetAmount ?? 0);
+    const targetValue = +(element.data?.targetAssetAmount ?? 0);
 
     // fee в индексере с учетом decimals
     const fee = getHumanTransferFee(historyElement, networkName);

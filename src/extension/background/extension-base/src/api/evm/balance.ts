@@ -15,7 +15,7 @@ async function getUtilityBalance(networkKey: string, address: string, state: Sta
 }
 
 async function fetchTokenBalance(address: string, networkKey: string, contractAddress: string, state: State) {
-  const network = state.networkService.networkMap[networkKey];
+  const network = state.networkMap[networkKey];
   const asset = network.assets.find((el) => el.id === contractAddress);
 
   if (!asset) return;
@@ -63,7 +63,7 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
 }
 
 async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, state: State) {
-  const network = state.networkService.networkMap[networkKey];
+  const network = state.networkMap[networkKey];
   const { id, symbol } = network.assets.find((el) => el.isUtility)!;
 
   const balanceItem: Partial<BalanceItem> = {
@@ -98,7 +98,7 @@ async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, 
 }
 
 export function fetchEvmAssetBalance(ethereumAddress: string, networkKey: string, assetId: string, state: State) {
-  const network = state.networkService.networkMap[networkKey];
+  const network = state.networkMap[networkKey];
 
   const asset = network.assets.find((asset) => asset.id === assetId);
 

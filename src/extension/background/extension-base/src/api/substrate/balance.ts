@@ -179,7 +179,7 @@ export function subscribeBalance(
         networkName: string;
         unsub: () => void;
       }>((res) => {
-        const network = state.networkService.networkMap[networkName];
+        const network = state.networkMap[networkName];
         const isSoraNetwork = isSora(networkName);
         const timespan = Date.now();
 

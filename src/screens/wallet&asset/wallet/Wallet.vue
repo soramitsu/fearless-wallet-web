@@ -39,20 +39,6 @@
       </div>
     </ContentForm>
 
-    <!-- <SendForm
-      v-if="showSendForm"
-      :_selectedNetwork="selectedCurrency.mainNetwork"
-      :_selectedAssetId="selectedCurrency.assetId"
-      @closeForm="toggleVisibleActivityForm('showSendForm', {}, false)"
-    /> -->
-
-    <ReceiveForm
-      v-if="showReceiveForm"
-      :_selectedNetwork="selectedCurrency.mainNetwork"
-      :selectedAssetId="selectedCurrency.assetId"
-      @closeForm="toggleVisibleActivityForm('showReceiveForm', {}, false)"
-    />
-
     <NetworkManagement
       v-if="showNetworkManagement"
       :networks="networksWithWarning"

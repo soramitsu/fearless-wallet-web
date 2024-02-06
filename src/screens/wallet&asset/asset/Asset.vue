@@ -9,13 +9,6 @@
     >
     </router-view>
 
-    <ReceiveForm
-      v-if="showReceiveForm"
-      :_selectedNetwork="selectedAssetNetwork"
-      :selectedAssetId="selectedAssetId"
-      @closeForm="toggleVisible('showReceiveForm', false)"
-    />
-
     <CrossChainForm
       v-if="showCrossChainForm"
       :_originalNetwork="selectedAssetNetwork"

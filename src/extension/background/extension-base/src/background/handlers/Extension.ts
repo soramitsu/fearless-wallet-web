@@ -153,7 +153,7 @@ async function transformAccounts(accounts: SubjectInfo, state: State): Promise<A
       active: address === currentAccount?.address,
       name: meta.name ?? '',
       type,
-      network: state.selectedNetworks[address] ?? ALL_NETWORKS,
+      network: state.networkService.selectedNetworks[address] ?? ALL_NETWORKS,
       ...meta,
     };
   });

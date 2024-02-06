@@ -4,14 +4,21 @@
       <div class="history-settings">
         <div class="history-label">{{ $t('assets.history') }}:</div>
 
-        <Dropdown :value="filterHistoryValue" :options="historyDropdownOption" @handler="filterHistoryValueUpdate" />
+        <Dropdown
+          :value="filterHistoryValue"
+          :options="historyDropdownOption"
+          data-testid="historyFilter"
+          @handler="filterHistoryValueUpdate"
+        />
       </div>
 
       <Scroll>
         <div :class="historyContainerClasses">
           <Loader v-if="showLoader" />
 
-          <template v-else-if="!isEmptyHistory">
+          <div v-else-if="isEmptyHistory" data-testid="noHistory">{{ $t('assets.noHistory') }}</div>
+
+          <template v-else>
             <HistoryItem
               v-for="(historyElement, index) in filteredHistory"
               :key="index"
@@ -19,11 +26,10 @@
               :token="currency"
               :network="selectedNetwork"
               :address="selectedWallet.address"
+              data-testid="historyItem"
               @click.native="openHistoryDetails(historyElement)"
             />
           </template>
-
-          <div v-else>{{ $t('assets.noHistory') }}</div>
         </div>
       </Scroll>
     </div>
@@ -43,7 +49,7 @@ import type {
   SubqueryHistory,
 } from '@/interfaces';
 import type { FetchHistory, GetNetwork, SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
@@ -56,11 +62,12 @@ export default class History extends Vue {
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
   refreshTimeout = 30000;
-  @Prop(Object) currency!: TokenBalance;
+
+  @Prop(Object) currency!: TokenGroup;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Action(NetworksActionTypes.FETCH_HISTORY) fetchHistory!: AsyncFn<FetchHistory>;
 
   get historyDropdownOption() {
@@ -104,7 +111,7 @@ export default class History extends Vue {
     return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
   }
 
-  get historyTimespamp() {
+  get historyTimestamp() {
     if (!this.history) return Number.MIN_VALUE;
 
     return this.history.timestamp;
@@ -148,9 +155,9 @@ export default class History extends Vue {
   get isMainNetwork() {
     if (this.selectedNetwork === '' || this.balances.length === 0) return false;
 
-    const { assetId } = getUtilityAsset(this.balances, this.selectedNetwork);
+    const { groupId } = getUtilityAsset(this.balances, this.selectedNetwork);
 
-    return this.assetId === assetId;
+    return this.assetId === groupId;
   }
 
   get isEthereumNativeNetwork() {
@@ -169,7 +176,7 @@ export default class History extends Vue {
   }
 
   async loadHistory() {
-    if (this.historyTimespamp + this.refreshTimeout > Date.now()) return false;
+    if (this.historyTimestamp + this.refreshTimeout > Date.now()) return false;
 
     if (!this.isSora && !this.isEthereumNativeNetwork && !this.isMainNetwork) return;
 

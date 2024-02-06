@@ -26,7 +26,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { getFormattedDate } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -42,7 +42,7 @@ export default class HistoryItem extends Vue {
   @Prop({ type: String }) rewardedAssetId!: string;
   @Prop({ type: String }) network!: NetworkName;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
@@ -78,11 +78,11 @@ export default class HistoryItem extends Vue {
   }
 
   get currency() {
-    return this.balances.find(({ assetId }) => assetId === this.stakingAssetId);
+    return this.balances.find(({ groupId }) => groupId === this.stakingAssetId);
   }
 
   get rewardedCurrency() {
-    return this.balances.find(({ assetId }) => assetId === this.rewardedAssetId);
+    return this.balances.find(({ groupId }) => groupId === this.rewardedAssetId);
   }
 
   get assetPrice() {

@@ -66,18 +66,22 @@ async function fetchEthereumHistory(url: string, address: string, contractAddres
   const abort = new AbortController();
   const signal = abort.signal;
   const apikey = getEthereumExplorerApiKey(url);
+  const params: Record<string, unknown> = {
+    module: 'account',
+    action: contractAddress ? 'tokentx' : 'txlist',
+    contractAddress: contractAddress,
+    address,
+    page: 1,
+    offset: 300,
+    sort: 'desc',
+  };
+
+  if (!url.includes('optimistic')) {
+    params.apikey = apikey;
+  }
 
   const res = await axios.get<EthereumHistoryResponse<EthereumTokenHistoryData>>(url, {
-    params: {
-      module: 'account',
-      action: contractAddress ? 'tokentx' : 'txlist',
-      contractAddress: contractAddress,
-      address,
-      page: 1,
-      offset: 300,
-      sort: 'desc',
-      apikey,
-    },
+    params,
     signal,
   });
 
@@ -121,7 +125,7 @@ export async function fetchX1History(url: string, address: string): Promise<Hist
     result.push({
       address,
       id: String(index),
-      timestamp: el.transactionTime,
+      timestamp: (new Date(+el.transactionTime).getTime() / 1000).toString(),
       transfer: {
         amount: el.amount,
         from: el.from,

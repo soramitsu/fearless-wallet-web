@@ -48,6 +48,7 @@
                 icon="rotate"
                 :placeholder="placeholderNetwork"
                 :isActiveRotate="showSelectNetworkPopup"
+                data-testid="transferNetwork"
                 @click="toggleValue('showSelectNetworkPopup')"
               />
 
@@ -58,6 +59,7 @@
                 size="big"
                 :placeholder="placeholderNetwork"
                 :readonly="true"
+                data-testid="network"
               />
 
               <SelectInput
@@ -89,20 +91,24 @@
                 class="row"
                 icon="close"
                 placeholder="assets.sendTo"
+                data-testid="sendToInput"
                 @click="setRecipient"
               />
 
               <div class="activity-buttons row">
-                <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+                <BadgeButton text="assets.history" data-testid="historyBtn" @click="toggleHistoryBookVisibility" />
 
-                <BadgeButton text="common.paste" @click="paste" />
+                <BadgeButton text="common.paste" data-testid="pasteBtn" @click="paste" />
 
                 <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
               </div>
 
+              <slot name="step1Warning"></slot>
+
               <InfoRow
                 :text="`assets.${isTransfer ? 'networkFee' : 'originalNetworkFee'}`"
                 :value="syncedFeeCut"
+                :price="fiatFeeCut"
                 :iconClasses="['origin-fee']"
                 :isLoading="isFetchingFees"
                 icon="info"
@@ -112,6 +118,7 @@
                 v-if="isCrossChain"
                 text="assets.crossChainFee"
                 :value="destNetFeeCut"
+                :price="destNetFiatFeeCut"
                 :iconClasses="['cross-chain-fee']"
                 icon="info"
               />
@@ -120,7 +127,7 @@
               <Tooltip text="assets.feeDescription" target=".cross-chain-fee" placement="right" />
             </template>
 
-            <slot v-else-if="step === 2"></slot>
+            <slot name="step2" v-else-if="step === 2"></slot>
           </div>
 
           <FButton
@@ -188,8 +195,11 @@ import { getMoonbeamMoonriverAssetName, getNativeAssetName } from '@extension-ba
 import {
   type RequestCheckTransfer,
   type RequestCheckCrossChain,
-  type TokenBalance,
+  type TokenGroup,
   type AccountJson,
+  type ResponseCheckTransfer,
+  type ResponseCheckCrossChain,
+  TransferErrorCode,
 } from '@extension-base/background/types/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
@@ -246,10 +256,12 @@ export default class TransferForm extends Vue {
   newAddress = '';
   filterValue = '';
   isFetchingFees = false;
+  estimateFeeError = false;
   step = 1;
 
   @Prop(String) header!: string;
   @Prop(String) extrinsicType!: 'transfer' | 'crossChain';
+  @Prop({ default: false }) isDisableBtn!: boolean;
   @PropSync('recipient', { default: '' }) syncedRecipient!: string;
   @PropSync('assetId', { type: String }) syncedAssetId!: string;
   @PropSync('selectedNetwork', { type: String }) syncedNetwork!: string;
@@ -261,7 +273,7 @@ export default class TransferForm extends Vue {
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetworkInManagement!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
@@ -307,19 +319,37 @@ export default class TransferForm extends Vue {
     return this.extrinsicType === 'crossChain';
   }
 
+  get originalUtilityId() {
+    return this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
+  }
+
   get originalNetworkUtilityAsset() {
-    const utilityId = this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
-    const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === utilityId));
+    const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === this.originalUtilityId));
 
     return currency?.symbol ?? '';
+  }
+
+  get originalAssetPrice() {
+    const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === this.originalUtilityId));
+    const priceId = currency?.priceId ?? '';
+
+    return this.getAssetPrice(priceId).price;
   }
 
   get syncedFeeCut() {
     return `${this.$n(+this.syncedFee, 'decimalPrecise')} ${this.originalNetworkUtilityAsset.toUpperCase()}`;
   }
 
+  get fiatFeeCut() {
+    return `${this.fiatSymbol}${this.$n(+this.syncedFee * this.originalAssetPrice, 'price')}`;
+  }
+
   get destNetFeeCut() {
     return `${this.$n(+this.syncedDestNetFee, 'decimalPrecise')} ${this.sendAssetName?.toUpperCase()}`;
+  }
+
+  get destNetFiatFeeCut() {
+    return `${this.fiatSymbol}${this.$n(+this.syncedDestNetFee * this.assetPrice, 'price')}`;
   }
 
   get firstIcon() {
@@ -391,6 +421,7 @@ export default class TransferForm extends Vue {
       return 'common.confirm';
     }
 
+    if (this.estimateFeeError) return 'estimateFeeError';
     if (this.isSameAddress) return 'assets.isSameAddress';
 
     if (!this.isValidRecipientAddress && this.syncedRecipient !== '') return 'assets.incorrectAddress';
@@ -413,8 +444,7 @@ export default class TransferForm extends Vue {
   }
 
   get buttonDisabled() {
-    if (this.isFetchingFees) return true;
-
+    if (this.isFetchingFees || this.estimateFeeError) return true;
     if (!navigator.onLine) return true;
 
     if (this.step === 2) return false;
@@ -528,23 +558,19 @@ export default class TransferForm extends Vue {
     // used only for transfer
     const walletBalance = this.currency?.balances ?? [];
 
-    return walletBalance.reduce(
-      (result, { name, icon }) => {
-        return [
-          ...result,
-          {
-            name: firstCharToUp(name),
-            value: name.toLowerCase(),
-            icon,
-          },
-        ];
-      },
-      [] as {
-        name: string;
-        value: string;
-        icon: string;
-      }[]
-    );
+    return walletBalance.flatMap(({ name, icon }) => {
+      const network = this.getNetwork(name);
+
+      if (!network.active) return [];
+
+      return [
+        {
+          name: firstCharToUp(name),
+          value: name.toLowerCase(),
+          icon,
+        },
+      ];
+    });
   }
 
   get originNet() {
@@ -557,17 +583,17 @@ export default class TransferForm extends Vue {
 
     const asset = getNativeAssetName(this.sendAssetName);
 
-    return this.originNet
-      .xcm!.availableDestinations.filter(({ assets }) => assets.some(({ symbol }) => symbol.toLowerCase() === asset))
-      .map(({ chainId }) => {
-        const { name, icon } = this.getNetwork(chainId);
+    return this.originNet.xcm!.availableDestinations.flatMap(({ assets, chainId }) => {
+      if (!assets.some(({ symbol }) => symbol.toLowerCase() === asset)) return [];
 
-        return {
-          name: firstCharToUp(name),
-          value: name,
-          icon,
-        };
-      });
+      const { name, icon } = this.getNetwork(chainId);
+
+      return {
+        name: firstCharToUp(name),
+        value: name,
+        icon,
+      };
+    });
   }
 
   get sendAssetName() {
@@ -676,10 +702,22 @@ export default class TransferForm extends Vue {
 
     clearTimeout(this.timeoutSubscription);
     this.timeoutSubscription = setTimeout(async () => {
-      const { estimateFee, destEstimateFee } = await this.verifyTx();
+      try {
+        const { estimateFee, destEstimateFee, errors } = await this.verifyTx();
 
-      this.syncedFee = estimateFee ?? '0';
-      this.syncedDestNetFee = destEstimateFee ?? '0';
+        if (errors) {
+          errors.forEach((error) => {
+            if (error.code === TransferErrorCode.TRANSFER_ERROR) this.estimateFeeError = true;
+            else this.estimateFeeError = false;
+          });
+        }
+
+        this.syncedFee = estimateFee ?? '0';
+        this.syncedDestNetFee = destEstimateFee ?? '0';
+      } catch (e) {
+        this.syncedFee = '0';
+        this.syncedDestNetFee = '0';
+      }
     }, 2000);
   }
 
@@ -772,7 +810,7 @@ export default class TransferForm extends Vue {
     this.isFetchingFees = value;
   }
 
-  async verifyTx(_amount?: string) {
+  async verifyTx(_amount?: string): Promise<ResponseCheckTransfer | ResponseCheckCrossChain> {
     this.toggleLoading();
 
     // комиссия не зависит от адреса получателя, поэтому подставляем всегда мок

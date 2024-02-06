@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getBalanceItem } from '@extension-base/background/utils/utils';
 import jwtDecode from 'jwt-decode';
 import { FPNumber } from '@sora-substrate/util';
-import { type TokenBalance } from '@extension-base/background/types/types';
+import { type TokenGroup } from '@extension-base/background/types/types';
 import type { JwtPayload } from 'jwt-decode';
 import type { Status } from '@/consts/soraCard';
 import { IS_PRODUCTION } from '@/consts/global';
@@ -348,7 +348,7 @@ const subscribeCardToken = async (checkStatus: () => Promise<void>) => {
   return subscribeSoraCardToken(callback);
 };
 
-const calculateXOREuroBalance = ({ balances }: TokenBalance, xorPerEuroRatio: FPNumber): number => {
+const calculateXOREuroBalance = ({ balances }: TokenGroup, xorPerEuroRatio: FPNumber): number => {
   const balance = getBalanceItem(balances, SORA_NETWORK_NAME);
   const xorTotalBalance = balance?.muchTotal ?? FPNumber.ZERO;
   const xorBalanceInEuros = new FPNumber(xorTotalBalance).mul(xorPerEuroRatio).toNumber();
@@ -356,7 +356,7 @@ const calculateXOREuroBalance = ({ balances }: TokenBalance, xorPerEuroRatio: FP
   return xorBalanceInEuros;
 };
 
-const calculateXorRestPrice = ({ balances }: TokenBalance, xorPerEuroRatio: FPNumber): XorRestPrice => {
+const calculateXorRestPrice = ({ balances }: TokenGroup, xorPerEuroRatio: FPNumber): XorRestPrice => {
   const balance = getBalanceItem(balances, SORA_NETWORK_NAME);
   const xorTotalBalance = new FPNumber(balance?.total ?? 0);
 

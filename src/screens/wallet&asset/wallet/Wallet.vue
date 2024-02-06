@@ -23,19 +23,18 @@
           :balances="filteredCurrencies"
           @update:filterValue="updateFilterValue"
           @update:activeTabName="updateActiveTabName"
-          @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
+          @update:showAssetsManagementForm="toggleAssetsManagementForm"
           @toggleCurrenciesVisible="toggleCurrenciesVisible"
         />
 
-        <Currencies
-          v-if="showCurrencies"
+        <router-view
           :isEmptyBalances="isEmptyBalances"
           :balances="filteredCurrencies"
-          :selectedNetwork="selectedNetwork"
           :showAssetsManagementForm="showAssetsManagementForm"
           :filterValue="filterValue"
           @toggleVisibleActivityForm="toggleVisibleActivityForm"
           @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
+          @toggleAssetsManagementForm="toggleAssetsManagementForm"
         />
       </div>
     </ContentForm>
@@ -78,13 +77,12 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation, Action } from 'vuex-class';
-import { type AccountJson, type BalanceJson, type TokenBalance } from '@extension-base/background/types/types';
+import { type AccountJson, type BalanceJson, type TokenGroup } from '@extension-base/background/types/types';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset, GetNetwork } from '@/store';
 import type { AsyncFn, Fn, TabWallet, AssetsPrice } from '@/interfaces';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
-import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
@@ -111,7 +109,6 @@ import { isSameString } from '@/helpers';
 
 @Component({
   components: {
-    NFTs,
     SendForm,
     Currencies,
     ReceiveForm,
@@ -129,7 +126,6 @@ export default class Wallet extends Vue {
   showSendForm = false;
   showReceiveForm = false;
   networkUnavailable = '';
-  activeTabName: TabWallet = 'currencies';
   filterValue = '';
   selectedCurrency!: {
     mainNetwork?: string;
@@ -137,7 +133,7 @@ export default class Wallet extends Vue {
   };
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
   @Getter(AccountsGettersTypes.getShowWarningNetwork) getShowWarningNetwork!: GetShowWarningNetworks;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -152,6 +148,10 @@ export default class Wallet extends Vue {
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
   @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: Fn<SetHiddenAsset>;
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
+
+  get activeTabName() {
+    return this.$route.name;
+  }
 
   get contentFormHeight() {
     const subtractionNumber = this.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
@@ -218,8 +218,8 @@ export default class Wallet extends Vue {
     const sequence = accountController.getSequenceAssetsByAddress(address);
 
     return balances.sort((currency1, currency2) => {
-      const index1 = sequence.indexOf(currency1.assetId);
-      const index2 = sequence.indexOf(currency2.assetId);
+      const index1 = sequence.indexOf(currency1.groupId);
+      const index2 = sequence.indexOf(currency2.groupId);
 
       return index1 - index2;
     });
@@ -316,43 +316,43 @@ export default class Wallet extends Vue {
     this.showNetworkManagement = !this.showNetworkManagement;
   }
 
-  toggleAssetsManagementFormVisible(value = true) {
+  toggleAssetsManagementForm(value = true) {
     this.showAssetsManagementForm = value;
   }
 
   toggleCurrenciesVisible(allCurrenciesHidden: boolean) {
     if (allCurrenciesHidden) {
-      this.balances.forEach(({ assetId }) => this.setHiddenAssets({ assetId, value: true }));
+      this.balances.forEach(({ groupId }) => this.setHiddenAssets({ groupId, value: true }));
 
       return;
     }
 
     const nonZeroBalanceCb = ({ transferable }: BalanceItem) => transferable && +transferable > 0;
 
-    this.balances.forEach(({ assetId, balances }) => {
+    this.balances.forEach(({ groupId, balances }) => {
       const index = balances.findIndex(nonZeroBalanceCb);
       const isZeroBalance = index === -1;
 
-      if (isZeroBalance) this.setHiddenAssets({ assetId, value: false });
+      if (isZeroBalance) this.setHiddenAssets({ groupId, value: false });
     });
 
-    const assetsVisibleWithBalance = this.balances.filter(({ balances, assetId }) => {
+    const assetsVisibleWithBalance = this.balances.filter(({ balances, groupId }) => {
       const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
-      const isVisibleAsset = !this.hiddenAssets.includes(assetId);
+      const isVisibleAsset = !this.hiddenAssets.includes(groupId);
 
       return isVisibleAsset && haveAssets;
     });
 
-    const assetsInvisibleWithBalance = this.balances.filter(({ balances, assetId }) => {
+    const assetsInvisibleWithBalance = this.balances.filter(({ balances, groupId }) => {
       const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
-      const isHiddenAsset = this.hiddenAssets.includes(assetId);
+      const isHiddenAsset = this.hiddenAssets.includes(groupId);
 
       return isHiddenAsset && haveAssets;
     });
 
-    const assetsInvisibleWithoutBalance = this.balances.filter(({ balances, assetId }) => {
+    const assetsInvisibleWithoutBalance = this.balances.filter(({ balances, groupId }) => {
       const notHaveAssets = balances.findIndex(nonZeroBalanceCb) === -1;
-      const isHiddenAsset = this.hiddenAssets.includes(assetId);
+      const isHiddenAsset = this.hiddenAssets.includes(groupId);
 
       return isHiddenAsset && notHaveAssets;
     });
@@ -380,7 +380,9 @@ export default class Wallet extends Vue {
   }
 
   updateActiveTabName(name: TabWallet) {
-    this.activeTabName = name;
+    if (this.activeTabName === name) return;
+
+    this.$router.push({ name });
   }
 }
 </script>
@@ -391,7 +393,7 @@ export default class Wallet extends Vue {
   flex-direction: column;
 
   .content {
-    padding: $default-padding 0 0 $default-padding;
+    padding: $default-padding 0 $default-padding $default-padding;
     height: 100%;
     display: flex;
     flex-direction: column;

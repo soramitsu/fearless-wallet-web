@@ -1,8 +1,8 @@
 <template>
-  <div :class="menuItemClasses">
+  <div :class="menuItemClasses" data-testid="menuItemStatus">
     <Icon :icon="img" :className="iconClass" :hover="false" />
 
-    <div class="name">{{ $t(localeName) }}</div>
+    <div class="name" data-testid="menuItem">{{ $t(localeName) }}</div>
   </div>
 </template>
 

@@ -19,14 +19,14 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { type ValidatorReward } from '@extension-base/services/staking-service/types';
 import type { GetAssetPrice } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class ValidatorItem extends Vue {
   @Prop({ type: Object }) validator!: ValidatorReward;
-  @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
+  @Prop({ type: Object }) rewardedCurrency!: TokenGroup;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 

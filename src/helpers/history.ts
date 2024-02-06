@@ -7,7 +7,7 @@ import type {
   NetworkName,
   SoraHistoryElement,
 } from '@/interfaces';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { TransactionType } from '@/interfaces';
 import { firstCharToUp, isSora } from '@/helpers';
 import { useStore } from '@/store';
@@ -69,7 +69,7 @@ function getTypeFormatted(historyElement: HistoryElement, address: string, netwo
 
 function getHumanFeeValue(value: string, networkName: NetworkName) {
   const store = useStore();
-  const tokenBalances: TokenBalance[] = store.getters.getBalances;
+  const tokenBalances: TokenGroup[] = store.getters.getBalances;
   const network: NetworkJson = store.getters.getNetwork(networkName);
   const asset = network.assets.find((asset) => asset.isUtility);
   const token = tokenBalances.find(({ symbol }) => symbol === asset?.symbol);
@@ -81,8 +81,8 @@ function getHumanFeeValue(value: string, networkName: NetworkName) {
 
 function getHumanValue(value: string | number, assetId: string, networkName: NetworkName) {
   const store = useStore();
-  const tokenBalances: TokenBalance[] = store.getters.getBalances;
-  const { balances } = tokenBalances.find(({ assetId: id }) => id === assetId)!;
+  const tokenBalances: TokenGroup[] = store.getters.getBalances;
+  const { balances } = tokenBalances.find(({ groupId }) => groupId === assetId)!;
   const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
 
   return +FPNumber.fromCodecValue(value, precision);
@@ -147,7 +147,7 @@ function getHistoryValue(
     const dataValue =
       element.data?.value ?? element.data?.amount ?? element.data?.baseAssetAmount ?? element.data?.maxAdditional ?? 0;
 
-    const targetValue = +(element.data.targetAssetAmount ?? 0);
+    const targetValue = +(element.data?.targetAssetAmount ?? 0);
 
     // fee в индексере с учетом decimals
     const fee = getHumanTransferFee(historyElement, networkName);

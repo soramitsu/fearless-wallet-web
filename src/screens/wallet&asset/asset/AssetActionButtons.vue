@@ -7,6 +7,7 @@
       width="100%"
       text="assets.receiveButtonText"
       iconName="receive"
+      data-testid="basicBtn"
       @click="onRoute('receive')"
     />
 
@@ -15,6 +16,7 @@
       class="activity-button"
       text="assets.crossChain"
       iconName="cross-chain"
+      data-testid="crossChainBtn"
       @click="$emit('toggleVisible', 'showCrossChainForm')"
     />
 
@@ -23,6 +25,7 @@
       class="activity-button"
       text="assets.swap"
       iconName="swap"
+      data-testid="swapBtn"
       @click="openSoraSwap"
     />
 
@@ -31,6 +34,7 @@
       class="activity-button"
       text="assets.buy"
       iconName="plus-pink"
+      data-testid="buyBtn"
       @click="$emit('toggleVisible', 'showBuyPopup')"
     />
 
@@ -38,6 +42,7 @@
       v-if="isNeedPopupButton"
       class="activity-button activity-button--settings"
       iconName="three-dots-vertical"
+      data-testid="threeDotsVerticalBtn"
       @click="$emit('togglePopupButton')"
     />
   </div>
@@ -47,7 +52,7 @@ import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import type { NetworkJson } from '@extension-base/types';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { isSora } from '@/helpers';
 import { type SelectedWallet } from '@/store';
@@ -76,7 +81,7 @@ export default class AssetActionButtons extends Vue {
     },
   ];
 
-  @Prop(Object) currency!: TokenBalance;
+  @Prop(Object) currency!: TokenGroup;
   @Prop(Boolean) showBuyButton!: boolean;
   @Prop(String) assetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;

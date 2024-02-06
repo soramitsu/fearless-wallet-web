@@ -59,12 +59,12 @@ export async function createSwap(
 
   const tokenBalanceA = state.balanceService
     .getAccountBalance(currentAccount!.address)
-    .find(({ assetId }) => assetId === assetAId);
+    .find(({ groupId }) => groupId === assetAId);
   const aId = tokenBalanceA?.balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
 
   const tokenBalanceB = state.balanceService
     .getAccountBalance(currentAccount!.address)
-    .find(({ assetId }) => assetId === assetBId);
+    .find(({ groupId }) => groupId === assetBId);
   const aIB = tokenBalanceB?.balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
 
   const assetAAddress = getAssetOptions(aId!.id, state.assetsMap) as string;

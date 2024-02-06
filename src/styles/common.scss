@@ -21,12 +21,20 @@ $simple-orange-color: #ee7700;
 $success-color: #00ee77;
 $reject-color: #ed0e0e;
 $default-background-color: rgba(255, 255, 255, 0.1);
-$secondary-background-color: rgba(255, 255, 255, 0.05);
+$secondary-background-color: hsla(0, 0%, 100%, 0.05);
+$secondary-btn-color: hsl(0, 0%, 16%);
 
 $default-border: 1px solid $default-background-color;
 $secondary-border: 1px solid $secondary-background-color;
 
-$big-clip-path-left-top-and-right-bottom: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+$big-clip-path-left-top-and-right-bottom: polygon(
+  20px 0,
+  100% 0,
+  100% calc(100% - 20px),
+  calc(100% - 20px) 100%,
+  0 100%,
+  0 20px
+);
 $big-clip-path-left-top: polygon(20px 0, 100% 0, 100% calc(100% - 20px), 100% 100%, 0 100%, 0 20px);
 
 $medium-clip-path-left-top-and-right-bottom: polygon(

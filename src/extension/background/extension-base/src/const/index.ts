@@ -11,3 +11,4 @@ export const ONBOARDING_URL = IS_PRODUCTION
   : `${BASE_URL}/develop-free/appConfigs/onboarding/web.json`;
 
 export const FALLBACK_LANG = 'en-EN';
+export const EXTENSION_ID = 'nhlnehondigmgckngjomcpcefcdplmgc';

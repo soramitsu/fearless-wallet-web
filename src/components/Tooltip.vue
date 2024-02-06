@@ -51,6 +51,12 @@ export default class Tooltip extends Vue {
       duration: 0,
       maxWidth: this.maxWidth,
       allowHTML: true,
+      onShow(instance) {
+        if (this.trigger === 'click')
+          setTimeout(() => {
+            instance.hide();
+          }, 1000);
+      },
     };
 
     if (this.trigger) {

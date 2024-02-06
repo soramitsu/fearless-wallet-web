@@ -76,7 +76,7 @@ import { Getter, Action } from 'vuex-class';
 import { type FWValidatorInfoFull, type RequestNominate } from '@extension-base/services/staking-service/types';
 import type { AsyncFn, SelectionValidator } from '@/interfaces';
 import type { GetAssetPrice, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
 import YourValidators from '@/screens/staking/myStake/validators/YourValidators.vue';
 import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vue';
@@ -106,7 +106,7 @@ export default class YourValidatorsManagement extends Vue {
   stashBalance = '0';
 
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: Object }) stakingCurrency!: TokenBalance;
+  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -125,7 +125,7 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   get stakingAssetId() {
-    return this.stakingCurrency.assetId;
+    return this.stakingCurrency.groupId;
   }
 
   get stakingAssetPrice() {
@@ -144,7 +144,7 @@ export default class YourValidatorsManagement extends Vue {
 
   get isValidAmountAsset() {
     // для controller аккаунта подставляем баланс stash аккаунта
-    const stakingCurrency: TokenBalance = this.stakingNetwork.isController
+    const stakingCurrency: TokenGroup = this.stakingNetwork.isController
       ? {
           ...this.stakingCurrency,
           balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),

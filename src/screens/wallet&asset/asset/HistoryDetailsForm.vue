@@ -2,13 +2,13 @@
   <AboveForm header="Details" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="details">
       <div class="descriptions">
-        <div v-if="isExtrinsic || isSora" class="item">
+        <div v-if="isExtrinsic || isSora" class="item" data-testid="extrinsicHashLabel">
           Extrinsic Hash
 
-          <div class="item-value item-icon">
+          <div class="item-value item-icon" data-testid="extrinsicHash">
             {{ displayHash }}
 
-            <Icon icon="copy" className="copy" @click="copy(hash)" />
+            <Icon icon="copy" className="copy" data-testid="copyBtn" @click="copy(hash)" />
           </div>
         </div>
 

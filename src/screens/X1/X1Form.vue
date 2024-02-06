@@ -42,7 +42,7 @@ import { loadScript, unloadScript } from 'vue-plugin-load-script';
 import { Getter } from 'vuex-class';
 import { type FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { X1Api } from '@/util/x1';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
@@ -57,7 +57,7 @@ export default class X1Form extends Vue {
   loadingX1 = true;
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;
 
   get scrollClasses() {

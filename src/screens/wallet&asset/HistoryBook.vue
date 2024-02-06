@@ -13,7 +13,7 @@
                 <Identicon :address="address" />
 
                 <div class="full-description">
-                  <div class="address">{{ cut(address) }}</div>
+                  <div class="address" data-testid="address">{{ cut(address) }}</div>
                 </div>
               </div>
 

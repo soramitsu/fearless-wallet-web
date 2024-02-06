@@ -2,7 +2,7 @@ import { storage } from '@extension-base/stores/Storage';
 import axios from 'axios';
 import type { UserType } from './types';
 import type { OnBoardingStoriesLocales, OnboardingStories } from '@/interfaces';
-import { IS_PRODUCTION } from '@/consts/global';
+import { IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
 import { URLS } from '@/consts/urls';
 
 export class OnboardingService {
@@ -16,7 +16,7 @@ export class OnboardingService {
   }
 
   async init(): Promise<void> {
-    if (!IS_PRODUCTION) return;
+    if (!IS_PRODUCTION && !IS_TEST_ONLY) return;
 
     const { onboarding } = await storage.get(['onboarding']);
 

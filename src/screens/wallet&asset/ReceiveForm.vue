@@ -75,7 +75,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { type SelectedWallet } from '@/store';
@@ -94,7 +94,7 @@ export default class ReceiveForm extends Vue {
   showSelectNetworkPopup = false;
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
   get _selectedNetwork() {
     return this.$route.params.network ?? '';
@@ -105,7 +105,7 @@ export default class ReceiveForm extends Vue {
   }
 
   get assetNetworks() {
-    const currency = this.balances.find(({ assetId }) => assetId === this.selectedAssetId);
+    const currency = this.balances.find(({ groupId }) => groupId === this.selectedAssetId)!;
 
     return (
       currency?.balances

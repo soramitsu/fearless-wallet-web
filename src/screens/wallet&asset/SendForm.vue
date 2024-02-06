@@ -16,59 +16,52 @@
     @update:partialFee="updatePartialFee"
     @update:recipient="updateRecipient"
   >
-    <div>
-      <div class="row direction-column">
-        <FInput v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
+    <template v-slot:step2>
+      <div>
+        <div class="row direction-column">
+          <FInput
+            v-model="selectedWallet.name"
+            placeholder="assets.from"
+            size="big"
+            :readonly="true"
+            data-testid="fromWallet"
+          />
 
-        <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
+          <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
 
-        <FInput v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
-      </div>
-
-      <FCorners size="big" class="row">
-        <div class="summary">
-          <div class="summary-label">{{ $t('assets.summary') }}</div>
-
-          <div class="summary-row">
-            <div class="name">{{ $t('assets.assetsAmount') }}</div>
-
-            <div class="column">
-              <div>{{ amountString }}</div>
-
-              <div v-if="showValue" class="value">{{ valueString }}</div>
-            </div>
-          </div>
-
-          <div class="summary-row">
-            <div class="name">{{ $t('assets.fee') }}</div>
-
-            <div class="column">
-              <div>{{ partialFeeString }}</div>
-            </div>
-          </div>
-
-          <div v-if="isUtilityAsset" class="summary-row">
-            <div class="name">{{ $t('assets.total') }}</div>
-
-            <div class="column">
-              <div>{{ totalString }}</div>
-            </div>
-          </div>
+          <FInput
+            v-model="formattedAddressTo"
+            placeholder="assets.to"
+            size="big"
+            :readonly="true"
+            data-testid="toAddress"
+          />
         </div>
-      </FCorners>
-    </div>
+
+        <FCorners size="big" class="row">
+          <div class="summary">
+            <div class="summary-label">{{ $t('assets.summary') }}</div>
+
+            <InfoRow text="assets.assetsAmount" :value="amountString" :price="valueString" />
+            <InfoRow text="assets.fee" :value="partialFeeString" :price="fiatFeeString" />
+            <InfoRow v-if="isUtilityAsset" text="assets.total" :value="totalString" :price="fiatTotalString" />
+          </div>
+        </FCorners>
+      </div>
+    </template>
   </TransferForm>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { GetAssetPrice, SelectedWallet } from '@/store';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { addNumbers } from '@/helpers/numbers';
 import { getUtilityAsset } from '@/helpers/currencies';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component({
   components: { TransferForm },
@@ -83,7 +76,8 @@ export default class SendForm extends Vue {
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
   get currency() {
     return this.balances.find(({ balances }) =>
@@ -104,6 +98,14 @@ export default class SendForm extends Vue {
 
   get showValue() {
     return this.value !== '0';
+  }
+
+  get assetPrice() {
+    return this.getAssetPrice(this.currency?.priceId ?? '')?.price ?? 0;
+  }
+
+  get fiatFeeString() {
+    return `${this.fiatSymbol}${this.$n(+this.partialFee * this.assetPrice, 'price')}`;
   }
 
   get valueString() {
@@ -129,10 +131,16 @@ export default class SendForm extends Vue {
     return this.selectedAsset?.symbol.toUpperCase();
   }
 
-  get totalString() {
-    const total = +addNumbers([this.amount, this.partialFee]);
+  get total() {
+    return +addNumbers([this.amount, this.partialFee]);
+  }
 
-    return `${this.$n(total, 'decimalPrecise')} ${this.selectedAssetUpper}`;
+  get totalString() {
+    return `${this.$n(this.total, 'decimalPrecise')} ${this.selectedAssetUpper}`;
+  }
+
+  get fiatTotalString() {
+    return `${this.fiatSymbol}${this.$n(this.total * this.assetPrice, 'price')}`;
   }
 
   created() {

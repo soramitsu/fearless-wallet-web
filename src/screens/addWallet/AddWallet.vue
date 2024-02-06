@@ -46,18 +46,7 @@
           :selectedMnemonicElements="selectedMnemonicElements"
           @update:selectedMnemonicElements="updateSelectedMnemonicElements"
         >
-          <BorderButton
-            class="copy__phrase"
-            size="small"
-            fontSize="small"
-            borderRadius="small"
-            width="186px"
-            type="secondary"
-            text="common.copyToClipboard"
-            @click="onCopy"
-          />
           <AdvancedButton @click="toggleAdvancedFormVisible" />
-          <Tooltip text="common.copied" target=".copy__phrase" trigger="click" :arrow="true" />
         </CreateWallet>
 
         <ImportWallet
@@ -762,10 +751,6 @@ export default class AddWallet extends Vue {
 
     this.step -= 1;
   }
-
-  onCopy() {
-    navigator.clipboard.writeText(this.mnemonic);
-  }
 }
 </script>
 
@@ -838,11 +823,6 @@ export default class AddWallet extends Vue {
     width: 32px;
     height: 32px;
   }
-}
-.copy__phrase {
-  text-decoration: underline;
-  cursor: pointer;
-  margin: 0 auto;
 }
 .controls {
   display: flex;

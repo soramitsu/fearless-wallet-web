@@ -22,11 +22,13 @@
 
           <Shimmer v-if="showShimmers" height="14px" width="120px" />
 
-          <div v-else class="asset__balance">{{ countAssetsString }}</div>
+          <div v-else class="asset__balance" data-testid="assetBalance">{{ countAssetsString }}</div>
 
           <Shimmer v-if="showShimmers" height="14px" width="120px" />
 
-          <span v-else class="asset__balance asset__balance--fiat">{{ transferableFiatBalanceInNetworkString }}</span>
+          <span v-else class="asset__balance asset__balance--fiat" data-testid="fiatAssetBalance">
+            {{ transferableFiatBalanceInNetworkString }}
+          </span>
 
           <div class="asset__locked" @click="toggleBalanceDetailsPopup">
             <div class="asset__locked-content">
@@ -34,9 +36,9 @@
 
               <Shimmer v-if="showShimmers" height="14px" width="60px" />
 
-              <span v-else>{{ lockedBalanceString }}</span>
+              <span v-else data-testid="lockedBalance">{{ lockedBalanceString }} </span>
 
-              <Icon icon="info" class="details-icon" />
+              <Icon icon="info" class="details-icon" data-testid="lockedDetails" />
             </div>
           </div>
         </div>
@@ -66,7 +68,7 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { APIItemState } from '@extension-base/api/types/networks';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import type { AssetPrice } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers/currencies';
@@ -85,7 +87,7 @@ export default class AssetInfo extends Vue {
   showDetailsPopup = false;
 
   @Prop(Object) price!: AssetPrice;
-  @Prop(Object) currency!: TokenBalance;
+  @Prop(Object) currency!: TokenGroup;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
 

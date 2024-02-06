@@ -58,6 +58,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Action, Getter, Mutation } from 'vuex-class';
 import { type AccountJson } from '@extension-base/background/types/types';
+import { isEthereumNetwork } from '@extension-base/background/utils/utils';
 import NetworkItem from './NetworkItem.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { Tab } from '@/interfaces/ui';
@@ -70,7 +71,6 @@ import { type SetFavoriteNetwork, type Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { updateCurrentNetwork } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
-import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/utils/utils';
 
 type Tabs = {
   [ALL_NETWORKS]: Tab;
@@ -216,8 +216,6 @@ export default class NetworkManagement extends Vue {
 
     this.setSelectedNetwork(network);
 
-    updateCurrentNetwork(network);
-
     const prepNotification = this.$t(this.getLocale('groupSelected'), {
       group: this.$t(this.tabs[this.activeTab].label),
     }).toString();
@@ -232,8 +230,6 @@ export default class NetworkManagement extends Vue {
 
     this.setSelectedNetwork(network);
 
-    updateCurrentNetwork(network);
-
     const prepNotification = this.$t(this.getLocale('networkSelected'), { network }).toString();
 
     this.$notify({ title: prepNotification, message: '', type: 'success' });
@@ -241,8 +237,6 @@ export default class NetworkManagement extends Vue {
 
   async toggleFavorite(network: string) {
     const isFavorite = await this.setFavorite({ networkName: network, address: this.selectedWallet.address });
-
-    if (this.selectedNetwork === FAVORITE_NETWORKS) updateCurrentNetwork(this.selectedNetwork);
 
     const t = this.getLocale(isFavorite ? 'deleteFavorite' : 'addFavorite');
     const prepNotification = this.$t(t, { network });
@@ -252,6 +246,10 @@ export default class NetworkManagement extends Vue {
       message: '',
       type: 'success',
     });
+  }
+
+  beforeDestroy() {
+    updateCurrentNetwork(this.selectedNetwork);
   }
 }
 </script>

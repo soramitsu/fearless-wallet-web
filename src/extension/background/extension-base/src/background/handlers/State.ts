@@ -931,6 +931,7 @@ export default class State {
       storage.set({ selectedNetworks: this.selectedNetworks });
     }
 
+    this.nftService.deleteSavedNfts(address);
     this.balanceService.deleteBalance(address);
   }
 

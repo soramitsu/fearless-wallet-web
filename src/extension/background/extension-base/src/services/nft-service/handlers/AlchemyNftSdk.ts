@@ -45,7 +45,7 @@ export default class AlchemyNftController {
 
   get readableNetwork() {
     return (
-      Object.values(this.nftService.state.networkMap).find(
+      Object.values(this.nftService.state.networkService.networkMap).find(
         (net) => net.chainId.toLowerCase() === this.chainId.toString()
       )?.name ?? this.network
     );
@@ -91,7 +91,7 @@ export default class AlchemyNftController {
     const ownedNfts = await this.getNfts(address);
     const collections = await this.getCollectionsForOwner(address);
 
-    const network = Object.values(this.nftService.state.networkMap).find(
+    const network = Object.values(this.nftService.state.networkService.networkMap).find(
       (net) => net.chainId === this.chainId.toString()
     );
     const ownedCollections: NftState = {};

@@ -79,8 +79,8 @@ function getConcreteAsset(
   isNative: boolean,
   state: State
 ) {
-  const networkKey = state.getNetworkByKey(originNet)?.name;
-  const { parentId } = state.networkMap[networkKey];
+  const networkKey = state.networkService.getNetworkByKey(originNet)?.name;
+  const { parentId } = state.networkService.networkMap[networkKey];
 
   // This Polkadot or Kusama
   if (parentId === undefined)
@@ -122,14 +122,14 @@ function getNativeTeleportParams(
   xcmAssetId: AssetId,
   state: State
 ) {
-  const originNetworkKey = state.getNetworkByKey(originNet)?.name;
-  const destNetworkKey = state.getNetworkByKey(destNet)?.name;
+  const originNetworkKey = state.networkService.getNetworkByKey(originNet)?.name;
+  const destNetworkKey = state.networkService.getNetworkByKey(destNet)?.name;
   const isFromRelayChain = isRelayChain(originNet);
   const isToRelayChain = isRelayChain(destNet);
-  const { xcm, parentId, name } = state.networkMap[originNetworkKey];
+  const { xcm, parentId, name } = state.networkService.networkMap[originNetworkKey];
   const paraId = isSora(destNet, true)
     ? getSoraParaId(originNet, state)
-    : state.networkMap[destNetworkKey]?.paraId ?? '0';
+    : state.networkService.networkMap[destNetworkKey]?.paraId ?? '0';
   const xcmVersion = xcm!.xcmVersion.toUpperCase();
   const publicKey = decodeAddress(toAddress);
   const value = new BN(amount);
@@ -187,11 +187,11 @@ function getOrmlTeleportParams(
   xcmAssetId: AssetId,
   state: State
 ) {
-  const originNetworkKey = state.getNetworkByKey(originNet)?.name;
-  const destNetworkKey = state.getNetworkByKey(destNet)?.name;
+  const originNetworkKey = state.networkService.getNetworkByKey(originNet)?.name;
+  const destNetworkKey = state.networkService.getNetworkByKey(destNet)?.name;
   const isToRelayChain = isRelayChain(destNet);
-  const { xcm, parentId, name } = state.networkMap[originNetworkKey];
-  const paraId = state.networkMap[destNetworkKey]?.paraId ?? 0;
+  const { xcm, parentId, name } = state.networkService.networkMap[originNetworkKey];
+  const paraId = state.networkService.networkMap[destNetworkKey]?.paraId ?? 0;
   const xcmVersion = xcm!.xcmVersion.toUpperCase();
   const publicKey = decodeAddress(toAddress);
   const value = new BN(amount);
@@ -304,15 +304,15 @@ async function createCrossChainExtrinsic(
   tokenBalance: TokenGroup,
   state: State
 ): Promise<Extrinsic> {
-  const originNetworkKey = state.getNetworkByKey(originNet)?.name;
-  const destNetworkKey = state.getNetworkByKey(destNet)?.name;
+  const originNetworkKey = state.networkService.getNetworkByKey(originNet)?.name;
+  const destNetworkKey = state.networkService.getNetworkByKey(destNet)?.name;
   const { symbol } = getAssetInfo(assetId, state);
-  const { xcm } = state.networkMap[originNetworkKey];
+  const { xcm } = state.networkService.networkMap[originNetworkKey];
 
   // Структура assets в availableDestinations всегда одинаковая
   // id у конкретного токена(например DOT), для всех сетей внутри availableDestinations одинаковый
   // Поэтому просто берем первый попавшийся элемент из массива availableDestinations, берем его assets и ищем нужный токен внутри assets
-  const { chainId: destChainId } = state.networkMap[destNetworkKey];
+  const { chainId: destChainId } = state.networkService.networkMap[destNetworkKey];
   const { assets } = xcm!.availableDestinations.find(({ chainId }) => chainId === destChainId)!;
   const { id: xcmAssetId } = assets.find(
     ({ symbol: _symbol }) => _symbol.toLowerCase() === getNativeAssetName(symbol)

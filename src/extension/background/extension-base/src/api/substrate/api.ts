@@ -29,8 +29,8 @@ function onConnected(networkName: string, state: State) {
 
 async function onDisconnect(networkName: string, state: State) {
   const api = state.getSubstrateApiMap[networkName.toLowerCase()];
-  const netName = state.getNetworkByKey(networkName).name;
-  const network = state.networkMap[netName];
+  const netName = state.networkService.getNetworkByKey(networkName).name;
+  const network = state.networkService.networkMap[netName];
 
   if (api === undefined) {
     state.subscription.getSubscription(networkName)?.(); //clean up;

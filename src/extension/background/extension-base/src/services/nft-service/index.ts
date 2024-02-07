@@ -1,5 +1,4 @@
-import { type Network } from 'alchemy-sdk';
-import NftStore from '@extension-base/stores/Nfts';
+import { NftFilters, type Network } from 'alchemy-sdk';
 import { Subject } from 'rxjs';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import AlchemyNftController from '@extension-base/services/nft-service/handlers/AlchemyNftSdk';
@@ -29,7 +28,6 @@ import type State from '@extension-base/background/handlers/State';
 import { VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
 
 export class NftService {
-  private store: NftStore;
   private refreshTime = 10000;
   private sdks: Record<string, AlchemyNftController> = {};
   public nftMap: Record<string, ChainNftState> = {};
@@ -42,7 +40,6 @@ export class NftService {
       this.sdks[network] = new AlchemyNftController(network, chainId, this);
     });
 
-    this.store = new NftStore();
     this.init();
   }
 
@@ -77,6 +74,21 @@ export class NftService {
     if (!address) return;
 
     this.getNftForAllNetworks(address);
+  }
+
+  excludeFilters(address: string) {
+    const filters: NftFilters[] = [];
+
+    if (!this.hideSettings[address]) {
+      this.hideSettings[address] = {
+        airdrop: false,
+        spam: true, //it's dummy for now
+      };
+    }
+
+    if (this.hideSettings[address].airdrop) filters.push(NftFilters.AIRDROPS);
+
+    return filters;
   }
 
   availableNftsForContract({ network, contract, address, pageKey }: AvailableNftPayload) {

@@ -1,4 +1,4 @@
-import { type Network, Alchemy, NftFilters, type Nft } from 'alchemy-sdk';
+import { type Network, Alchemy, type Nft } from 'alchemy-sdk';
 import { type NftService } from '@extension-base/services/nft-service';
 import type { AvailableNftResponse, FearlessNft, NftState } from '@extension-base/services/nft-service/types';
 
@@ -18,29 +18,14 @@ export default class AlchemyNftController {
     this.timespan = {};
   }
 
-  excludeFilters(address: string) {
-    const filters: NftFilters[] = [];
-
-    if (!this.nftService.hideSettings[address]) {
-      this.nftService.hideSettings[address] = {
-        airdrop: false,
-        spam: true, //it's dummy for now
-      };
-    }
-
-    if (this.nftService.hideSettings[address].airdrop) filters.push(NftFilters.AIRDROPS);
-
-    return filters;
-  }
-
   getNfts(address: string) {
     return this.sdk.nft.getNftsForOwner(address, {
-      excludeFilters: this.excludeFilters(address),
+      excludeFilters: this.nftService.excludeFilters(address),
     });
   }
 
   getCollectionsForOwner(address: string) {
-    return this.sdk.nft.getContractsForOwner(address, { excludeFilters: this.excludeFilters(address) });
+    return this.sdk.nft.getContractsForOwner(address, { excludeFilters: this.nftService.excludeFilters(address) });
   }
 
   get readableNetwork() {

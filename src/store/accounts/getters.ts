@@ -69,8 +69,8 @@ const getters: GetterTree<State, State> & Getters = {
     return selectedWallet;
   },
 
-  [GettersTypes.getBalances]({ balances }): TokenGroup[] {
-    return balances;
+  [GettersTypes.getBalances](state): TokenGroup[] {
+    return state.balances;
   },
 
   [GettersTypes.nfts](state): NftCollection[] {

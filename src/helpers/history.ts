@@ -1,4 +1,5 @@
 import { FPNumber } from '@sora-substrate/util';
+import { type NetworkJson } from '@extension-base/types';
 import type {
   HistoryElement,
   GiantsquidHistoryItem,
@@ -11,7 +12,6 @@ import type { TokenGroup } from '@extension-base/background/types/types';
 import { TransactionType } from '@/interfaces';
 import { firstCharToUp, isSora } from '@/helpers';
 import { useStore } from '@/store';
-import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 
 function getType(historyElement: HistoryElement, networkName?: NetworkName): TransactionType {
   if (isSora(networkName ?? '')) return TransactionType.sora;

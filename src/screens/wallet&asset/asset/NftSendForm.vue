@@ -82,6 +82,7 @@
 import { computed, reactive, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
+import { type NetworkJson } from '@extension-base/types';
 import type { NftCollection, NftState, NftTx } from '@extension-base/services/nft-service/types';
 import type { AccountJson } from '@extension-base/background/types/types';
 import { cut, getClipboard } from '@/helpers';
@@ -91,7 +92,6 @@ import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import { checkNft } from '@/extension/messaging/nfts';
-import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 import ContentForm from '@/components/ContentForm.vue';
 import { Components } from '@/router/routes';
 

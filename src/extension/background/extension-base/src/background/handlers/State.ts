@@ -34,6 +34,7 @@ import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
 import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
 import BalanceService from '@extension-base/services/balance-service';
 import axios from 'axios';
+import { EXTENSION_ID } from '@extension-base/const';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   ServiceInfo,
@@ -65,7 +66,6 @@ import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { EXTENSION_ID } from '@/extension/background/extension-base/src/const';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 

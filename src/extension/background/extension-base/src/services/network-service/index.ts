@@ -2,7 +2,7 @@ import { Subject } from 'rxjs';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import { type NetworkJson } from '@extension-base/types';
 import { type NETWORK_STATUS } from '@extension-base/api/types/networks';
-import { storage } from '@/extension/background/extension-base/src/stores/Storage';
+import { storage } from '@extension-base/stores/Storage';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 
 export class NetworkService {

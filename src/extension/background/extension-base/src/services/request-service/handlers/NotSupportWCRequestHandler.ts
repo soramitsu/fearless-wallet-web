@@ -6,7 +6,6 @@ import {
   type WalletConnectNotSupportRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 
-// WC = WalletConnect
 export class NotSupportWCRequestHandler {
   private readonly requestService: RequestService;
   readonly notSupportWCRequests: Record<string, RequestWalletConnectNotSupport> = {};

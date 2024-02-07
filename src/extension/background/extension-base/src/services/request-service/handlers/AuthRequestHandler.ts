@@ -29,9 +29,9 @@ export class AuthRequestHandler {
 
   constructor(state: State, requestService: RequestService) {
     this.getAuthorize((auths) => {
-      if (!auths) this.authorizeCached = {};
-      else this.authorizeCached = auths;
+      this.authorizeCached = auths ?? {};
     });
+
     this.state = state;
     this.requestService = requestService;
   }
@@ -40,8 +40,12 @@ export class AuthRequestHandler {
     return Object.keys(this.authRequests).length;
   }
 
+  private get authValues() {
+    return Object.values(this.authRequests);
+  }
+
   private get allAuthRequests(): AuthorizeRequest[] {
-    return Object.values(this.authRequests).map(({ id, request, url }): AuthorizeRequest => ({ id, request, url }));
+    return this.authValues.map(({ id, request, url }): AuthorizeRequest => ({ id, request, url }));
   }
 
   private updateIconAuth(shouldClose?: boolean): void {
@@ -144,7 +148,7 @@ export class AuthRequestHandler {
 
     const idStr = stripUrl(url);
     // Do not enqueue duplicate authorization requests.
-    const isDuplicate = Object.values(this.authRequests).some((request) => request.idStr === idStr);
+    const isDuplicate = this.authValues.some((request) => request.idStr === idStr);
 
     assert(!isDuplicate, `The source ${url} has a pending authorization request`);
 
@@ -218,7 +222,7 @@ export class AuthRequestHandler {
   }
 
   public resetWallet() {
-    for (const request of Object.values(this.authRequests)) {
+    for (const request of this.authValues) {
       request.reject(new Error('Reset wallet'));
     }
 

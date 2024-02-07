@@ -21,7 +21,7 @@ export class SubstrateRequestHandler {
   private readonly keyringService: KeyringService;
 
   readonly substrateRequests: Record<string, SignRequest> = {};
-  public readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
+  public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
 
   constructor(requestService: RequestService, keyringService: KeyringService) {
     this.requestService = requestService;

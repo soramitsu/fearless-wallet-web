@@ -87,8 +87,6 @@ export default class State {
   public chainRegistryMap: Record<string, ChainRegistry> = {};
   public chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
   public readonly unsubscriptionMap: Record<string, () => void> = {};
-  private readonly evmChainSubject = new Subject<AuthUrls>();
-  private readonly authorizeUrlSubject = new Subject<AuthUrls>();
   public serviceInfoSubject = new Subject<ServiceInfo>();
   public customTokenSubject = new Subject<CustomTokenJson>();
   public defaultAuthAccountSelection: string[] = [];
@@ -349,9 +347,7 @@ export default class State {
     this.updateServiceInfo();
 
     this.requestService.getAuthorize((data) => {
-      if (this.networkMap[networkKey].isEthereum) this.evmChainSubject.next(data);
-
-      this.authorizeUrlSubject.next(data);
+      this.requestService.setAuthorize(data);
     });
 
     return true;

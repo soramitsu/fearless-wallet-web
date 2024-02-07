@@ -7,9 +7,7 @@ import type { Resolver, ResponseSigning } from '@extension-base/background/types
 export default class EvmRequestHandler {
   private readonly requestService: RequestService;
   private wcRequests: Record<string, WCSignRequest> = {};
-  public readonly signSubject: BehaviorSubject<WalletConnectTransactionRequest[]> = new BehaviorSubject<
-    WalletConnectTransactionRequest[]
-  >([]);
+  public readonly signSubject = new BehaviorSubject<WalletConnectTransactionRequest[]>([]);
 
   constructor(requestService: RequestService) {
     this.requestService = requestService;
@@ -36,7 +34,9 @@ export default class EvmRequestHandler {
 
       this.requestService.updateIcon();
       this.requestService.popupOpen();
+
       const values = this.signSubject.getValue();
+
       this.signSubject.next([...values, request]);
     });
   }

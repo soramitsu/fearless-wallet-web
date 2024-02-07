@@ -80,7 +80,7 @@ export class NftService {
   }
 
   availableNftsForContract({ network, contract, address, pageKey }: AvailableNftPayload) {
-    const net = this.state.getNetworkByKey(network);
+    const net = this.state.networkService.getNetworkByKey(network);
     const key = PROD_NFT_NETWORKS[+net.chainId];
 
     if (!this.sdks[key])
@@ -212,7 +212,7 @@ export class NftService {
 
   async checkSend({ from, tokenId, network, contract: contractAddress, type }: NftTx): Promise<CheckNftResponse> {
     const api = this.state.getEvmApi(network)?.api;
-    const networkJson = this.state.getNetworkByKey(network);
+    const networkJson = this.state.networkService.getNetworkByKey(network);
     const utilityAsset = networkJson.assets.find((el) => el.isUtility)!;
     const contract = await getContract(contractAddress, api, type === 'ERC721' ? 'ERC721' : 'ERC1155');
     const feeData = await api.getFeeData();

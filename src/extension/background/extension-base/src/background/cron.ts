@@ -132,18 +132,18 @@ export class FWCron {
     const { evm, substrate } = this.state.getApiMap;
 
     Object.entries(substrate).forEach(([key, { apiStatus }]) => {
-      this.state.updateNetworkStatus(key, apiStatus);
+      this.state.networkService.updateNetworkStatus(key, apiStatus);
     });
 
     Object.entries(evm).forEach(async ([key, api]) => {
-      if (!navigator.onLine) this.state.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
+      if (!navigator.onLine) this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
       else {
         try {
           await api.api.provider._waitUntilReady();
 
-          this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
+          this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
         } catch {
-          this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
+          this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
         }
       }
     });

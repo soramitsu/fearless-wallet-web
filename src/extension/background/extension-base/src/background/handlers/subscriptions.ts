@@ -28,6 +28,7 @@ type SubscriptionMap = {
 
 export class FWSubscription {
   private serviceSubscription: Subscription | undefined;
+  public readonly unsubscriptionMap: Record<string, () => void> = {};
   private serviceInfo: {
     networks: { substrate: NetworkName[]; evm: NetworkName[] };
     address: string;
@@ -76,8 +77,8 @@ export class FWSubscription {
   async start() {
     this.logger.log('Starting subscription');
 
-    const currentAccount = this.state.currentAccount;
-    const accountsExceptCurrent = this.state
+    const currentAccount = await this.state.currentAccount;
+    const accountsExceptCurrent = this.state.keyringService
       .getSubstrateAccounts()
       .filter((el) => el.address !== currentAccount?.address);
     this.state.nftService.fetchNfts();

@@ -18,7 +18,6 @@ import {
   WalletConnectDAppService,
 } from '@extension-base/services';
 import { api as apiSora, type FPNumber } from '@sora-substrate/util';
-import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import { storage } from '@extension-base/stores/Storage';
 import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
 import { initWeb3Api } from '@extension-base/api/evm';
@@ -29,7 +28,6 @@ import { FWCron } from '@extension-base/background/cron';
 import { getSubstrateAddress, isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
-import { type KeyringAddress } from '@polkadot/ui-keyring/types';
 import { type SignerPayloadRaw } from '@polkadot/types/types';
 import PricesService from '@extension-base/services/prices-service';
 import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
@@ -106,9 +104,7 @@ export default class State {
   };
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
-  public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
   public networksGithub: NetworkJson[] = []; // networks from github
-  readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public selectedNetworks: Record<string, string> = {};
   public customTokenState: CustomTokenJson = { erc20: [] };
   public customTokenStore = new CustomTokenStore();
@@ -126,7 +122,7 @@ export default class State {
   public onboardingService = new OnboardingService();
   public eventService = new EventService();
   public keyringService = new KeyringService(this, this.eventService);
-  public networkService = new NetworkService(this.eventService);
+  public networkService = new NetworkService();
   public requestService = new RequestService(this);
   public nftService = new NftService(this);
   public walletConnectService = new WalletConnectService(this, this.requestService);
@@ -150,7 +146,7 @@ export default class State {
   }
 
   public get networkValues() {
-    return Object.values(this.networkMap);
+    return this.networkService.networkValues;
   }
 
   public get assetsMap() {
@@ -220,19 +216,16 @@ export default class State {
   }
 
   async injectFromStorage() {
-    const { defaultAuthAccountSelection, fiatSymbol, injectedProviders, providers, selectedNetworks } =
-      await this.getFromStorage([
-        'fiatSymbol',
-        'authUrls',
-        'selectedNetworks',
-        'defaultAuthAccountSelection',
-        'injectedProviders',
-        'providers',
-        'windows',
-      ]);
+    const { defaultAuthAccountSelection, fiatSymbol, injectedProviders, providers } = await this.getFromStorage([
+      'fiatSymbol',
+      'authUrls',
+      'defaultAuthAccountSelection',
+      'injectedProviders',
+      'providers',
+      'windows',
+    ]);
 
     if (fiatSymbol) this.pricesService.setFiatSymbol(fiatSymbol);
-    if (selectedNetworks) this.selectedNetworks = selectedNetworks;
     if (injectedProviders) this.injectedProviders = new Map(injectedProviders);
     if (providers) this.providers = providers;
     if (defaultAuthAccountSelection && defaultAuthAccountSelection.length)
@@ -283,7 +276,7 @@ export default class State {
       return;
     }
 
-    const accounts = this.getSubstrateAccounts();
+    const accounts = this.keyringService.getSubstrateAccounts();
 
     if (accounts.length === 0) this.setCurrentAccount(null);
     else {
@@ -301,6 +294,10 @@ export default class State {
         isMobile: isMobile as boolean,
       });
     }
+  }
+
+  get networkMap() {
+    return this.networkService.networkMap;
   }
 
   public upsertNetworkMap(data: NetworkJson): boolean {
@@ -339,8 +336,7 @@ export default class State {
       else initApi(data, this);
     }
 
-    this.networkMapSubject.next(this.networkMap);
-    this.networkMapStore.set('NetworkMap', this.networkMap);
+    this.networkService.updateNetworks();
 
     this.updateServiceInfo();
 
@@ -357,9 +353,8 @@ export default class State {
     this.networkMap[networkKey].active = false;
     this.networkMap[networkKey].networkStatus = NETWORK_STATUS.DISCONNECTED;
 
-    this.networkMapSubject.next(this.networkMap);
+    this.networkService.updateNetworks();
     this.updateServiceInfo();
-    this.networkMapStore.set('NetworkMap', this.networkMap);
 
     this.requestService.getAuthorize((data) => {
       if (this.networkMap[networkKey].isEthereum) this.evmChainSubject.next(data);
@@ -396,13 +391,9 @@ export default class State {
       this.getSubstrateApiMap[key].apiRetry = 0;
     }
 
-    const network = this.getNetworkByKey(key);
+    const network = this.networkService.getNetworkByKey(key);
 
     initApi(network, this);
-  }
-
-  public getNetworkByKey(key: string): NetworkJson {
-    return this.networkValues.find((network) => network.name.toLowerCase() === key.toLowerCase())!;
   }
 
   public getNetworkGroupType() {
@@ -422,52 +413,17 @@ export default class State {
     return true;
   }
 
-  public getActiveNetworks() {
-    const networks = this.networkValues;
-    const uniqNetworks = new Set<NetworkJson>();
-    const selectedNetworks = Object.keys(this.selectedNetworks);
-    const isAllNetworkPicked = selectedNetworks.some((address) => this.selectedNetworks[address] === ALL_NETWORKS);
-
-    if (isAllNetworkPicked) return networks;
-
-    selectedNetworks.forEach((address) => {
-      const value = this.selectedNetworks[address];
-
-      if (value === POPULAR_NETWORKS) {
-        const popular = networks.filter((el) => el.rank !== undefined);
-        popular.forEach((el) => uniqNetworks.add(el));
-
-        return;
-      }
-
-      if (value === FAVORITE_NETWORKS) {
-        const favorite = networks.filter((el) => el.favorite.length && el.favorite.includes(address));
-
-        favorite.forEach((el) => uniqNetworks.add(el));
-
-        return;
-      }
-
-      const singleNetwork = networks.find((network) => network.name === value);
-
-      if (singleNetwork) uniqNetworks.add(singleNetwork);
-    });
-    console.info(Array.from(uniqNetworks), 'set this to Active');
-
-    return Array.from(uniqNetworks);
-  }
-
   public async setActiveNetworks(type: string) {
     const currentAccount = this.currentAccount;
 
     if (!currentAccount) return;
 
-    this.selectedNetworks[currentAccount.address] = type;
+    this.networkService.selectedNetworks[currentAccount.address] = type;
 
     const unsub = this.subscription.getSubscription('balance');
     unsub?.();
 
-    const networks = this.getActiveNetworks();
+    const networks = this.networkService.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((key) => {
       const networkKey = key.toLowerCase();
@@ -491,16 +447,15 @@ export default class State {
 
     this.updateServiceInfo();
 
-    this.networkMapSubject.next(this.networkMap);
+    this.networkService.updateNetworks();
     this.fetchEvmBalance({});
-    this.networkMapStore.set('NetworkMap', this.networkMap);
-    storage.set({ selectedNetworks: this.selectedNetworks });
+    this.networkService.saveSelectedNetworks();
   }
 
   getActiveNetworksCurrentWallet(address: string) {
     const uniqNetworks = new Set<NetworkJson>();
     const networks = this.networkValues;
-    const selectedNetwork = this.selectedNetworks[address];
+    const selectedNetwork = this.networkService.selectedNetworks[address];
 
     if (selectedNetwork === POPULAR_NETWORKS) {
       const popular = networks.filter((el) => el.rank !== undefined);
@@ -549,17 +504,6 @@ export default class State {
 
   public getAllAddresses(): string[] {
     return Object.keys(accounts.subject.value);
-  }
-
-  public updateNetworkStatus(key: string, status: NETWORK_STATUS) {
-    const networkKey = this.getNetworkByKey(key)?.name ?? '';
-
-    if (this.networkMap[networkKey].networkStatus === status) return;
-
-    this.networkMap[networkKey].networkStatus = status;
-
-    this.networkMapSubject.next(this.networkMap);
-    this.networkMapStore.set('NetworkMap', this.networkMap);
   }
 
   private signMobileComplete = (
@@ -689,15 +633,6 @@ export default class State {
     return provider.unsubscribe(request.type, request.method, request.subscriptionId);
   }
 
-  findNetworkKeyByChainId(_chainId?: string | null): [string | undefined, NetworkJson | undefined] {
-    if (!_chainId) return [undefined, undefined];
-
-    const rs = Object.entries(this.networkMap).find(([, chainInfo]) => chainInfo.chainId === _chainId);
-
-    if (rs) return rs;
-    else return [undefined, undefined];
-  }
-
   saveMetadata(meta: MetadataDef): void {
     this.requestService.saveMetadata(meta);
 
@@ -732,23 +667,34 @@ export default class State {
     return this.balanceService.updateBalance(balance);
   }
 
+  fetchXcmInfo() {
+    axios
+      .get<XcmLocations>(URLS.XCM_LOCATIONS)
+      .then(({ data }) => {
+        this.xcmLocations = data;
+      })
+      .catch(() => {
+        this.xcmLocations = [];
+      });
+
+    axios
+      .get<XcmFees>(URLS.XCM_FEES)
+      .then(({ data }) => {
+        this.xcmFees = data;
+      })
+      .catch(() => {
+        this.xcmFees = [];
+      });
+  }
+
   public async prepNetworkJson() {
     const { data: networks } = await axios.get<NetworkJson[]>(URLS.CHAINS);
-    const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
-    const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
-    this.networksGithub = networks;
+    const networksFromStorage = await this.networkService.getStoredNetworks();
 
-    this.xcmLocations = xcmLocations;
-    this.xcmFees = xcmFees;
+    this.networkService.networksGithub = networks;
 
-    const networksFromStorage = await new Promise<Record<string, NetworkJson>>((res) => {
-      this.networkMapStore.get('NetworkMap', (accountsFromStorage) => {
-        res(accountsFromStorage);
-      });
-    });
-
-    this.networksGithub
+    this.networkService.networksGithub
       .filter((el) => {
         if (el.disabled) return false;
 
@@ -785,14 +731,15 @@ export default class State {
         };
       });
 
-    this.networkMapStore.set('NetworkMap', this.networkMap);
+    this.networkService.updateNetworkStore();
 
-    this.getSubstrateAccounts().forEach((el) => {
+    this.keyringService.getSubstrateAccounts().forEach((el) => {
       //Migration from old network management
-      if (!this.selectedNetworks[el.address]) this.selectedNetworks[el.address] = ALL_NETWORKS;
+      if (!this.networkService.selectedNetworks[el.address])
+        this.networkService.selectedNetworks[el.address] = ALL_NETWORKS;
     });
 
-    const activeNetworks = this.getActiveNetworks();
+    const activeNetworks = this.networkService.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((key) => {
       const isExists = activeNetworks.some(({ name }) => name === key);
@@ -800,13 +747,16 @@ export default class State {
       this.networkMap[key].active = isExists;
     });
 
-    this.getSubstrateAccounts().forEach(({ address }) => this.balanceService.generateDefaultBalance(address));
+    this.keyringService
+      .getSubstrateAccounts()
+      .forEach(({ address }) => this.balanceService.generateDefaultBalance(address));
     this.ready = true; //Set true if chain json is parsed and data is preped for init apis
   }
 
   public async init() {
     await this.eventService.waitCryptoReady;
     await this.prepNetworkJson();
+    this.fetchXcmInfo();
 
     await this.initNetworkStates();
     this.onReady();
@@ -842,18 +792,8 @@ export default class State {
     }
   }
 
-  public getWallets(): KeyringAddress[] {
-    return [...this.keyringService.getAccounts(), ...this.keyringService.getAddresses()];
-  }
-
-  public getNetworkGenesisHashByKey(key: string) {
-    const network = this.networkMap[key];
-
-    return network && network.genesisHash;
-  }
-
   public updateNetworkForNewWallet(address: string) {
-    this.setActiveNetworks(this.selectedNetworks[address] ?? ALL_NETWORKS);
+    this.setActiveNetworks(this.networkService.selectedNetworks[address] ?? ALL_NETWORKS);
   }
 
   public updateCurrentAccount(address: string, isNew = true): boolean {
@@ -864,7 +804,7 @@ export default class State {
     this.saveCurrentAccountAddress(address, () => {
       this.keyringService.triggerWalletsSubscription();
 
-      if (isNew) this.setActiveNetworks(this.selectedNetworks[address] ?? ALL_NETWORKS);
+      if (isNew) this.setActiveNetworks(this.networkService.selectedNetworks[address] ?? ALL_NETWORKS);
     });
 
     return true;
@@ -908,10 +848,10 @@ export default class State {
   }
 
   cleanupDeletedAccount(address: string) {
-    if (this.selectedNetworks[address]) {
-      delete this.selectedNetworks[address];
+    if (this.networkService.selectedNetworks[address]) {
+      delete this.networkService.selectedNetworks[address];
 
-      storage.set({ selectedNetworks: this.selectedNetworks });
+      storage.set({ selectedNetworks: this.networkService.selectedNetworks });
     }
 
     this.nftService.deleteSavedNfts(address);
@@ -930,13 +870,6 @@ export default class State {
     } catch (ex) {
       console.error('failed subscribe or unsubscribe to XOR balance');
     }
-  }
-
-  public getSubstrateAccounts() {
-    const accounts = this.keyringService.getAccounts().filter((el) => !isEthereumAddress(el.address));
-    const addresses = this.keyringService.getAddresses();
-
-    return [...accounts, ...addresses];
   }
 
   public accountExportPrivateKey({
@@ -984,12 +917,8 @@ export default class State {
     this.ready = true;
   }
 
-  public subscribeNetworkMap() {
-    return this.networkMapStore.subject;
-  }
-
-  getCurrentAddress(network: NetworkName, _currentAccount?: CurrentAccountState): string {
-    const currentAccount = _currentAccount ?? this.currentAccount;
+  async getCurrentAddress(network: NetworkName, _currentAccount?: CurrentAccountState) {
+    const currentAccount = _currentAccount ?? (await this.currentAccount);
 
     return isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
   }

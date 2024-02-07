@@ -66,7 +66,7 @@ export class StakingService {
     validators: FWValidatorInfoFull[],
     _minBond?: number
   ): Promise<MyStakingInfo> {
-    const _address = this.state.getCurrentAddress(network);
+    const _address = await this.state.getCurrentAddress(network);
     const currentWallet = { address: _address, ethereumAddress: _address };
     const stashByController = await this.state.stakingService.getStashByController(_address);
     const stashAddress =

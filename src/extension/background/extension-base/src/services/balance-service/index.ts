@@ -132,7 +132,7 @@ export default class BalanceService {
             balances[address],
             prices,
             ALL_NETWORKS,
-            this.state.networksGithub
+            this.state.networkService.networksGithub
           );
 
           const change = getChangeWalletBalance(balances[address], prices, ALL_NETWORKS);

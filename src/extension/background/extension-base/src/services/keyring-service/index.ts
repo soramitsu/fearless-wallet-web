@@ -208,7 +208,7 @@ export class KeyringService {
 
     if (isEthereumNet) return ethereumAddress;
 
-    const network = this.state.networksGithub.find(({ name }) => isSameString(name, networkName));
+    const network = this.state.networkService.networksGithub.find(({ name }) => isSameString(name, networkName));
     const prefix = network?.addressPrefix;
 
     // the only case for try/catch
@@ -218,6 +218,13 @@ export class KeyringService {
     } catch {
       return ethereumAddress;
     }
+  }
+
+  getSubstrateAccounts() {
+    const accounts = this.getAccounts().filter((el) => !isEthereumAddress(el.address));
+    const addresses = this.getAddresses();
+
+    return [...accounts, ...addresses];
   }
 
   isSameAddress(wallet1: Wallet, wallet2: Wallet): boolean {

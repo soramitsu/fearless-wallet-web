@@ -68,7 +68,7 @@ export class WalletConnectDAppService {
   async initPairing() {
     if (!this.app) await this.initApp();
 
-    const optionalChains = this.state.networksGithub.flatMap((network) => {
+    const optionalChains = this.state.networkService.networksGithub.flatMap((network) => {
       if (isRequireEvmAPI(network.name) || !network.chainId) return [];
       const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
 
@@ -213,7 +213,7 @@ export class WalletConnectDAppService {
       this.state.keyringService.forgetAddress(account?.address);
 
       if (current?.address === account.address) {
-        const accounts = this.state.getSubstrateAccounts();
+        const accounts = this.state.keyringService.getSubstrateAccounts();
 
         if (accounts.length) this.state.updateCurrentAccount(accounts[0].address);
         else this.state.setCurrentAccount(null);

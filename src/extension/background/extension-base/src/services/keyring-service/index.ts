@@ -3,6 +3,9 @@ import { isEthereumAddress } from '@polkadot/util-crypto';
 import { getSubstrateAddress, isEthereumNetwork } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
+import { BehaviorSubject } from 'rxjs';
+import CurrentAccountStore, { type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import { type EventService } from '@extension-base/services';
 import type State from '@extension-base/background/handlers/State';
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
@@ -15,10 +18,30 @@ type Wallet = {
 };
 
 export class KeyringService {
-  constructor(readonly state: State) {}
+  private readonly currentAccountStore = new CurrentAccountStore();
+  readonly currentAccountSubject = new BehaviorSubject<CurrentAccountState>(null);
+
+  constructor(readonly state: State, eventService: EventService) {
+    eventService.waitCryptoReady
+      .then(() => {
+        this.currentAccountStore.get('CurrentAccountInfo', (rs) => {
+          rs && this.currentAccountSubject.next(rs);
+        });
+      })
+      .catch(console.error);
+  }
 
   get addressesSubjectValue() {
     return keyring.addresses.subject.value;
+  }
+
+  get currentAccount(): CurrentAccountState {
+    return this.currentAccountSubject.value;
+  }
+
+  setCurrentAccount(currentAccountData: CurrentAccountState) {
+    this.currentAccountSubject.next(currentAccountData);
+    this.currentAccountStore.set('CurrentAccountInfo', currentAccountData);
   }
 
   loadAll(store: KeyringStore, type: KeypairType = 'sr25519') {
@@ -205,6 +228,6 @@ export class KeyringService {
   }
 
   isSameAddress(wallet1: Wallet, wallet2: Wallet): boolean {
-    return this.state.keyringService.formatAddress(wallet1) === this.state.keyringService.formatAddress(wallet2);
+    return this.formatAddress(wallet1) === this.formatAddress(wallet2);
   }
 }

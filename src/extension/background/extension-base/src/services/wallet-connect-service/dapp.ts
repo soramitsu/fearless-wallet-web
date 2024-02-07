@@ -209,7 +209,7 @@ export class WalletConnectDAppService {
     const account = this.state.keyringService.getAddresses().find((el) => el.meta.wcTopic === topic);
 
     if (account) {
-      const current = await this.state.currentAccount;
+      const current = this.state.currentAccount;
       this.state.keyringService.forgetAddress(account?.address);
 
       if (current?.address === account.address) {

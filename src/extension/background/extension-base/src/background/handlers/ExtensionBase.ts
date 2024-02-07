@@ -60,15 +60,15 @@ export default class FWExtensionBase {
           if (isRequireEvmAPI(network)) this.state.refreshWeb3Api(network);
         });
 
-      this.state.getCurrentAccount((account) =>
+      if (this.state.currentAccount) {
         this.state.setCurrentAccount(
           {
-            ...account!,
+            ...this.state.currentAccount,
             ethereumAddress: (meta.ethereumAddress as string) ?? '',
           },
           cb
-        )
-      );
+        );
+      }
 
       this.state.updateServiceInfo();
     }

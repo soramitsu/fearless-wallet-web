@@ -243,7 +243,7 @@ export default class Extension extends FWExtensionBase {
     const accounts = this.state.keyringService.getAccounts();
     const addresses = this.state.keyringService.getAddresses();
 
-    const currentAccount = await this.state.currentAccount;
+    const currentAccount = this.state.currentAccount;
 
     const isWasCurrentAccount = address === currentAccount?.address;
 

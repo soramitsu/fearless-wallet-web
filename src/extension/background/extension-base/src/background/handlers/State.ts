@@ -94,7 +94,6 @@ export default class State {
   public readonly unsubscriptionMap: Record<string, () => void> = {};
   private readonly evmChainSubject = new Subject<AuthUrls>();
   private readonly authorizeUrlSubject = new Subject<AuthUrls>();
-  public networkMapSubject = new Subject<Record<string, NetworkJson>>();
   public serviceInfoSubject = new Subject<ServiceInfo>();
   public customTokenSubject = new Subject<CustomTokenJson>();
   public defaultAuthAccountSelection: string[] = [];
@@ -104,8 +103,6 @@ export default class State {
   };
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
-  public networksGithub: NetworkJson[] = []; // networks from github
-  public selectedNetworks: Record<string, string> = {};
   public customTokenState: CustomTokenJson = { erc20: [] };
   public customTokenStore = new CustomTokenStore();
   public mobileSignRequests: Record<string, MobileSignRequest> = {};

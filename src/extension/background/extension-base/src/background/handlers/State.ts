@@ -74,17 +74,12 @@ type APIs = {
   substrate: Record<NetworkName, ApiProps>;
 };
 
-type EvmTimeouts = {
-  [address in string]: NodeJS.Timer | null;
-};
-
 export type Passwords = {
   [address in string]: string | undefined;
 };
 
 export default class State {
   public cron: FWCron;
-  public evmTimeouts: EvmTimeouts = {};
   public passwords: Passwords = {};
   public subscription: FWSubscription;
   public injectedProviders: Map<Port, ProviderInterface> = new Map();
@@ -658,12 +653,6 @@ export default class State {
     return this.keyringService.currentAccount;
   }
 
-  public async publishBalance() {
-    const balance = await this.balanceService.getBalance();
-
-    return this.balanceService.updateBalance(balance);
-  }
-
   fetchXcmInfo() {
     axios
       .get<XcmLocations>(URLS.XCM_LOCATIONS)
@@ -918,14 +907,6 @@ export default class State {
     const currentAccount = _currentAccount ?? (await this.currentAccount);
 
     return isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
-  }
-
-  getEvmTimeout(address: string) {
-    return this.evmTimeouts[address] ?? 0;
-  }
-
-  saveEvmTimeout(address: string, value: NodeJS.Timer | null = null) {
-    this.evmTimeouts[address] = value;
   }
 
   async fetchEvmBalance({ _networks, _ethereumAddress, assetId, force }: FetchEvmBalancePayload) {

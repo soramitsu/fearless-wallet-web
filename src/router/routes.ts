@@ -38,6 +38,9 @@ const AssetNetworks = () =>
 const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetHistory.vue');
 
 const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
+const SendForm = () => import('@/screens/wallet&asset/SendForm.vue');
+const ReceiveForm = () => import('@/screens/wallet&asset/ReceiveForm.vue');
+
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
 const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/Disclaimer.vue');
 
@@ -70,6 +73,8 @@ export enum Components {
   Polkaswap = 'Polkaswap',
   PolkaswapDisclaimer = 'PolkaswapDisclaimer',
   SoraSwap = 'SoraSwap',
+  SendForm = 'SendForm',
+  ReceiveForm = 'ReceiveForm',
   SoraCard = 'SoraCard',
   Staking = 'Staking',
   MyStake = 'MyStake',
@@ -215,6 +220,22 @@ const routes: Array<RouteConfig> = [
     component: Transaction,
     meta: {
       title: 'transaction',
+    },
+  },
+  {
+    path: '/send/:assetId/:network',
+    name: Components.SendForm,
+    component: SendForm,
+    meta: {
+      title: 'send',
+    },
+  },
+  {
+    path: '/receive/:assetId/:network',
+    name: Components.ReceiveForm,
+    component: ReceiveForm,
+    meta: {
+      title: 'receive',
     },
   },
   {

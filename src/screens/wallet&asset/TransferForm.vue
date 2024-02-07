@@ -345,7 +345,7 @@ export default class TransferForm extends Vue {
   }
 
   get destNetFeeCut() {
-    return `${this.$n(+this.syncedDestNetFee, 'decimalPrecise')} ${this.sendAssetName.toUpperCase()}`;
+    return `${this.$n(+this.syncedDestNetFee, 'decimalPrecise')} ${this.sendAssetName?.toUpperCase()}`;
   }
 
   get destNetFiatFeeCut() {
@@ -427,7 +427,7 @@ export default class TransferForm extends Vue {
     if (!this.isValidRecipientAddress && this.syncedRecipient !== '') return 'assets.incorrectAddress';
 
     if (!this.isValidSendAsset)
-      return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetName.toUpperCase() } };
+      return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetName?.toUpperCase() } };
 
     if (!this.isValidTransferByUtility)
       return { text: 'assets.insufficientBalance', localeProps: { asset: this.utilityAssetName.toUpperCase() } };
@@ -483,9 +483,9 @@ export default class TransferForm extends Vue {
   }
 
   get currency() {
-    return this.balances.find(({ balances }) => {
-      return balances.some((el) => el.id.toLowerCase() === this.syncedAssetId.toLowerCase());
-    })!;
+    return this.balances?.find(({ balances }) =>
+      balances.some((el) => el.id.toLowerCase() === this.syncedAssetId.toLowerCase())
+    );
   }
 
   get currencyBalance() {
@@ -579,7 +579,7 @@ export default class TransferForm extends Vue {
 
   get optionsDestNet() {
     // used only for crossChain
-    if (this.isTransfer) return [];
+    if (this.isTransfer || !this.sendAssetName) return [];
 
     const asset = getNativeAssetName(this.sendAssetName);
 
@@ -597,7 +597,9 @@ export default class TransferForm extends Vue {
   }
 
   get sendAssetName() {
-    return this.currency!.symbol;
+    if (this.currency === undefined) return '';
+
+    return this.currency.symbol;
   }
 
   get isValidSendAsset() {
@@ -608,7 +610,7 @@ export default class TransferForm extends Vue {
     if (this.syncedFee === '') return false;
 
     // этот кейс проверяется в this.isValidSendAsset, когда sendAsset это utility asset для сети
-    if (this.sendAssetName.toLowerCase() === this.utilityAssetName) return true;
+    if (this.sendAssetName?.toLowerCase() === this.utilityAssetName) return true;
 
     // проверяем, что utility достаточно на оплату комиссии
     return FPNumber.gte(new FPNumber(this.calcTransferableUtility()), new FPNumber(this.syncedFee));
@@ -696,8 +698,9 @@ export default class TransferForm extends Vue {
   @Watch('syncedRecipient')
   @Watch('syncedAmount')
   async calculateEstimates() {
-    clearTimeout(this.timeoutSubscription);
+    if (!this.currency) return;
 
+    clearTimeout(this.timeoutSubscription);
     this.timeoutSubscription = setTimeout(async () => {
       try {
         const { estimateFee, destEstimateFee, errors } = await this.verifyTx();

@@ -286,7 +286,7 @@ export default class State {
       return;
     }
 
-    const accounts = this.getSubstrateAccounts();
+    const accounts = this.keyringService.getSubstrateAccounts();
 
     if (accounts.length === 0) this.setCurrentAccount(null);
     else {
@@ -802,7 +802,7 @@ export default class State {
 
     this.networkMapStore.set('NetworkMap', this.networkMap);
 
-    this.getSubstrateAccounts().forEach((el) => {
+    this.keyringService.getSubstrateAccounts().forEach((el) => {
       //Migration from old network management
       if (!this.selectedNetworks[el.address]) this.selectedNetworks[el.address] = ALL_NETWORKS;
     });
@@ -815,7 +815,9 @@ export default class State {
       this.networkMap[key].active = isExists;
     });
 
-    this.getSubstrateAccounts().forEach(({ address }) => this.balanceService.generateDefaultBalance(address));
+    this.keyringService
+      .getSubstrateAccounts()
+      .forEach(({ address }) => this.balanceService.generateDefaultBalance(address));
     this.ready = true; //Set true if chain json is parsed and data is preped for init apis
   }
 
@@ -947,13 +949,6 @@ export default class State {
     } catch (ex) {
       console.error('failed subscribe or unsubscribe to XOR balance');
     }
-  }
-
-  public getSubstrateAccounts() {
-    const accounts = this.keyringService.getAccounts().filter((el) => !isEthereumAddress(el.address));
-    const addresses = this.keyringService.getAddresses();
-
-    return [...accounts, ...addresses];
   }
 
   public accountExportPrivateKey({

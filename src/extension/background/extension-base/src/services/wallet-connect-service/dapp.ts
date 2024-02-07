@@ -213,7 +213,7 @@ export class WalletConnectDAppService {
       this.state.keyringService.forgetAddress(account?.address);
 
       if (current?.address === account.address) {
-        const accounts = this.state.getSubstrateAccounts();
+        const accounts = this.state.keyringService.getSubstrateAccounts();
 
         if (accounts.length) this.state.updateCurrentAccount(accounts[0].address);
         else this.state.setCurrentAccount(null);

@@ -64,6 +64,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { type TokenGroup } from '@extension-base/background/types/types';
+import { APIItemState } from '@extension-base/api/types/networks';
 import HistoryItem from './HistoryItem.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
@@ -73,7 +74,6 @@ import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
 import { Components } from '@/router/routes';
 import { NetworksController } from '@/controllers';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 import { fetchEvmBalance } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { type GetHistory } from '@/interfaces';

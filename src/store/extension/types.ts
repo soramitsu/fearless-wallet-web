@@ -3,12 +3,12 @@ import {
   type AuthorizeRequest,
   type MetadataRequest,
   type SigningRequest,
-} from '@/extension/background/extension-base/src/background/types/types';
+} from '@extension-base/background/types/types';
 import {
   type WalletConnectSessionRequest,
   type WalletConnectNotSupportRequest,
   type WalletConnectTransactionRequest,
-} from '@/extension/background/extension-base/src/services/wallet-connect-service/types';
+} from '@extension-base/services/wallet-connect-service/types';
 
 export interface Features {
   fiat: {

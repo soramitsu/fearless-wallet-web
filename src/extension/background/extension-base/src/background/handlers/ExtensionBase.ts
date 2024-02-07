@@ -20,9 +20,8 @@ import { type DerivationPath } from '@/interfaces';
 export default class FWExtensionBase {
   protected token: string;
   public cachedUnlocks: CachedUnlocks;
-  protected state: State;
 
-  constructor(state: State) {
+  constructor(protected state: State) {
     this.cachedUnlocks = {};
     this.state = state;
     this.token = '';

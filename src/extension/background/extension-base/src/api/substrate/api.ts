@@ -71,7 +71,7 @@ async function onReady(networkName: string, state: State) {
     state.subscribeTotalXorBalance();
   }
 
-  const account = await state.currentAccount;
+  const account = state.currentAccount;
 
   if (!account) return;
 

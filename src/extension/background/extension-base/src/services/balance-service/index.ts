@@ -118,7 +118,13 @@ export default class BalanceService {
 
     this.updateBalanceStore(networkKey, item);
 
-    this.state.lazyNext('setBalanceItem', () => this.state.publishBalance());
+    this.state.lazyNext('setBalanceItem', () => this.publishBalance());
+  }
+
+  public async publishBalance() {
+    const balance = await this.getBalance();
+
+    return this.updateBalance(balance);
   }
 
   async getTotalBalances(): Promise<ResponseTotalBalances[]> {

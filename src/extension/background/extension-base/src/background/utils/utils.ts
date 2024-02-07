@@ -101,7 +101,8 @@ export function isRequireEvmAPI(network: string) {
 }
 
 export function getUtilityProps(_network: NetworkName, state: State) {
-  return state.networksGithub.find(({ name }) => name.toLowerCase() === _network.toLowerCase())!.assets[0];
+  return state.networkService.networksGithub.find(({ name }) => name.toLowerCase() === _network.toLowerCase())!
+    .assets[0];
 }
 
 export function getNativeAssetName(asset: AssetName) {

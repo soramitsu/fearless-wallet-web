@@ -153,7 +153,7 @@ async function transformAccounts(accounts: SubjectInfo, state: State): Promise<A
       active: address === currentAccount?.address,
       name: meta.name ?? '',
       type,
-      network: state.selectedNetworks[address] ?? ALL_NETWORKS,
+      network: state.networkService.selectedNetworks[address] ?? ALL_NETWORKS,
       ...meta,
     };
   });
@@ -243,7 +243,7 @@ export default class Extension extends FWExtensionBase {
     const accounts = this.state.keyringService.getAccounts();
     const addresses = this.state.keyringService.getAddresses();
 
-    const currentAccount = await this.state.currentAccount;
+    const currentAccount = this.state.currentAccount;
 
     const isWasCurrentAccount = address === currentAccount?.address;
 
@@ -1129,10 +1129,6 @@ export default class Extension extends FWExtensionBase {
     return { status: true };
   }
 
-  private getNetworkMap(): Record<string, NetworkJson> {
-    return this.state.networkMap;
-  }
-
   private createMobileWallet({ address, meta }: RequestAddressCreate) {
     this.state.keyringService.saveAddress(address, meta, 'address');
 
@@ -1141,7 +1137,7 @@ export default class Extension extends FWExtensionBase {
 
   private subscribeNetworkMap(id: string, port: Port): Record<string, NetworkJson> {
     const cb = createSubscription<'pri(networkMap.getSubscription)'>(id, port);
-    const networkMapSubscription = this.state.subscribeNetworkMap().subscribe({
+    const networkMapSubscription = this.state.networkService.subscribeNetworkMap().subscribe({
       next: (rs) => {
         cb(rs);
       },
@@ -1153,7 +1149,7 @@ export default class Extension extends FWExtensionBase {
       this.cancelSubscription(id);
     });
 
-    return this.getNetworkMap();
+    return this.state.networkMap;
   }
 
   private async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {

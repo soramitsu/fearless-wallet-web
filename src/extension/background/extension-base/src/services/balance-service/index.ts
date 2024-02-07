@@ -1,4 +1,3 @@
-import { logger as createLogger } from '@polkadot/util';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { storage } from '@extension-base/stores/Storage';
 import { Subject } from 'rxjs';
@@ -6,7 +5,6 @@ import { type FPNumber } from '@sora-substrate/util';
 import { getMockCurrencies, getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
 import { fetchBalance } from '@extension-base/api/substrate/balance';
-import type { Logger } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { BalanceMap, BalanceJson, ResponseTotalBalances } from '@extension-base/background/types/types';
@@ -17,14 +15,12 @@ import { getSummaryTransferableWalletBalance, getChangeWalletBalance } from '@/h
 import { type NetworkName } from '@/interfaces';
 
 export default class BalanceService {
-  private logger: Logger;
   private balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
   private state: State;
 
   constructor(state: State) {
     this.state = state;
-    this.logger = this.logger = createLogger('Balance-service');
   }
 
   getAccountBalance(address: string) {
@@ -38,10 +34,10 @@ export default class BalanceService {
   }
 
   public updateBalanceStore(networkKey: string, item: Partial<BalanceItem>) {
-    this.state.getCurrentAccount((currentAccountInfo) => {
-      if (currentAccountInfo)
-        this.updateBalanceStorage(networkKey, currentAccountInfo.address, item).catch((e) => console.warn(e));
-    });
+    const currentAccount = this.state.currentAccount;
+
+    if (currentAccount)
+      this.updateBalanceStorage(networkKey, currentAccount.address, item).catch((e) => console.warn(e));
   }
   // Balance
   private async updateBalanceStorage(chain: string, address: string, item: Partial<BalanceItem>) {
@@ -69,7 +65,7 @@ export default class BalanceService {
   }
 
   public async updateXorTotalBalance(muchTotal: FPNumber): Promise<void> {
-    const currentAccount = await this.state.currentAccount;
+    const currentAccount = this.state.currentAccount;
 
     if (!currentAccount) return;
 
@@ -136,7 +132,7 @@ export default class BalanceService {
             balances[address],
             prices,
             ALL_NETWORKS,
-            this.state.networksGithub
+            this.state.networkService.networksGithub
           );
 
           const change = getChangeWalletBalance(balances[address], prices, ALL_NETWORKS);
@@ -154,7 +150,7 @@ export default class BalanceService {
   }
 
   public async getBalance(): Promise<BalanceJson> {
-    const account = await this.state.currentAccount;
+    const account = this.state.currentAccount;
 
     if (account) {
       return new Promise((resolve) => {

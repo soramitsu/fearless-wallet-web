@@ -19,17 +19,6 @@ import {
   getBalanceItem,
   getEthereumAddress,
 } from '@extension-base/background/utils/utils';
-import {
-  type StakingNetworkRequest,
-  type StakingParamsRequest,
-  type MyStakingInfoResponse,
-  type CheckControllerRequest,
-  type getRewardsRequest,
-  type RewardsResponse,
-  type MakeStakingRequest,
-  type StakingParamsResponse,
-  type CheckPayoutsFeeRequest,
-} from '@extension-base/services/staking-service/types';
 import { type MetadataDef } from '@polkadot/extension-inject/types';
 import { type SignerPayloadRaw, type SignerPayloadJSON } from '@polkadot/types/types';
 import {
@@ -113,6 +102,17 @@ import {
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
 import type {
+  StakingNetworkRequest,
+  StakingParamsRequest,
+  MyStakingInfoResponse,
+  CheckControllerRequest,
+  getRewardsRequest,
+  RewardsResponse,
+  MakeStakingRequest,
+  StakingParamsResponse,
+  CheckPayoutsFeeRequest,
+} from '@extension-base/services/staking-service/types';
+import type {
   RequestSettingsChangePayload,
   AvailableNftPayload,
   NftTx,
@@ -142,15 +142,13 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 }
 
 async function transformAccounts(accounts: SubjectInfo, state: State): Promise<AccountJson[]> {
-  const currentAccount = await state.currentAccount;
-
   return Object.values(accounts).flatMap(({ json: { address, meta }, type }) => {
     if (isEthereumAddress(address)) return [];
 
     return {
       address,
       ethereumAddress: meta.ethereumAddress as string,
-      active: address === currentAccount?.address,
+      active: address === state.currentAccount?.address,
       name: meta.name ?? '',
       type,
       network: state.networkService.selectedNetworks[address] ?? ALL_NETWORKS,

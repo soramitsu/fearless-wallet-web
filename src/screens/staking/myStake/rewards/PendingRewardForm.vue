@@ -79,6 +79,7 @@
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
+import { type PayoutRewards, type RewardsResponse } from '@extension-base/services/staking-service/types';
 import type { GetAssetPrice, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -88,10 +89,6 @@ import { getCostOfAssets } from '@/controllers/transferHelpers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
 import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
 import { checkPayoutsFee, fetchBalance, getRewards } from '@/extension/messaging';
-import {
-  type PayoutRewards,
-  type RewardsResponse,
-} from '@/extension/background/extension-base/src/services/staking-service/types';
 import { isValidAmountAsset } from '@/helpers/currencies';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { type AsyncFn } from '@/interfaces';

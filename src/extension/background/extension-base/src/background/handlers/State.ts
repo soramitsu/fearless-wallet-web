@@ -302,10 +302,9 @@ export default class State {
 
   public upsertNetworkMap(data: NetworkJson): boolean {
     const { name, currentProvider, chain, paraId, decimals, customNodes, isEthereum } = data;
-    const networkMap = this.networkMap;
 
-    if (name in networkMap) {
-      const network = networkMap[name];
+    if (name in this.networkMap) {
+      const network = this.networkMap[name];
       //make network active if it was disabled previously
       network.active = true;
       // update provider for existed network
@@ -320,10 +319,10 @@ export default class State {
       network.paraId = paraId;
     } else {
       // insert
-      networkMap[name] = data;
+      this.networkMap[name] = data;
     }
 
-    if (networkMap[name].active) {
+    if (this.networkMap[name].active) {
       // update API map if network is active
       if (name in this.apis.substrate) {
         this.apis.substrate[name].api?.disconnect();
@@ -345,15 +344,14 @@ export default class State {
   }
 
   public disableNetworkMap(networkKey: string): boolean {
-    const networkMap = this.networkMap;
     //if it's already disconnected then return true
-    if (networkMap[networkKey].networkStatus === NETWORK_STATUS.DISCONNECTED) return true;
+    if (this.networkMap[networkKey].networkStatus === NETWORK_STATUS.DISCONNECTED) return true;
 
-    if (networkMap[networkKey]?.isEthereum) delete this.apis.evm[networkKey];
+    if (this.networkMap[networkKey]?.isEthereum) delete this.apis.evm[networkKey];
     else delete this.apis.substrate[networkKey];
 
-    networkMap[networkKey].active = false;
-    networkMap[networkKey].networkStatus = NETWORK_STATUS.DISCONNECTED;
+    this.networkMap[networkKey].active = false;
+    this.networkMap[networkKey].networkStatus = NETWORK_STATUS.DISCONNECTED;
 
     this.networkService.updateNetworks();
     this.updateServiceInfo();

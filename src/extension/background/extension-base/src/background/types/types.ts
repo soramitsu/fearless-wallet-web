@@ -94,11 +94,6 @@ export interface SigningRequest {
   url: string;
 }
 
-export interface MobileSigningRequest {
-  id: string;
-  request: SignerPayloadRaw;
-}
-
 export interface MobileSignRequest extends Resolver<ResponseSigning> {
   id: string;
   request: SignerPayloadRaw;

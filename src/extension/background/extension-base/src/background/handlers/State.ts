@@ -1,4 +1,4 @@
-import { BehaviorSubject, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { assert, u8aToHex } from '@polkadot/util';
@@ -36,7 +36,6 @@ import { EXTENSION_ID } from '@extension-base/const';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   ServiceInfo,
-  MobileSigningRequest,
   AuthUrls,
   AuthorizedAccountsDiff,
   RequestRpcSend,
@@ -89,7 +88,6 @@ export default class State {
   };
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
-  public readonly mobileSignSubject = new BehaviorSubject<MobileSigningRequest[]>([]); //TODO MOVE TO. IT's ON HANDLER
   public lazyMap: Record<string, unknown> = {};
   public soraFees: SoraFees = {} as SoraFees;
   public ready = false;

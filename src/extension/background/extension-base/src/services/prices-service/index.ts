@@ -2,8 +2,8 @@ import PriceStore from '@extension-base/stores/Price';
 import { REFRESH_PRICE_INTERVAL } from '@extension-base/const/intervals';
 import { storage } from '@extension-base/stores/Storage';
 import axios from 'axios';
+import { type NetworkService } from '@extension-base/services';
 import type { PriceJson } from '@extension-base/background/types/types';
-import { type NetworkService } from '@/extension/background/extension-base/src/services/network-service';
 
 export type Prices = {
   json: PriceJson;

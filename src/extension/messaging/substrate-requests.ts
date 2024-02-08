@@ -1,12 +1,10 @@
 import type {
   SigningRequest,
   ResponseSigningIsLocked,
-  MobileSigningRequest,
   ResponseAuthorizeList,
   AuthorizeRequest,
   MetadataRequest,
 } from '@extension-base/background/types/types';
-
 import type { HexString } from '@polkadot/util/types';
 import { sendMessage } from '@/extension/messaging/index';
 
@@ -72,16 +70,4 @@ export function rejectMetaRequest(id: string): Promise<boolean> {
 
 export function subscribeMetadataRequests(cb: (accounts: MetadataRequest[]) => void): Promise<boolean> {
   return sendMessage('pri(metadata.requests)', null, cb);
-}
-
-export function cancelMobileSignRequest(id: string): Promise<boolean> {
-  return sendMessage('pri(mobileSigning.cancel)', { id });
-}
-
-export function approveSignMobileSignature(id: string, signature: HexString): Promise<boolean> {
-  return sendMessage('pri(mobileSigning.approve.signature)', { id, signature });
-}
-
-export function subscribeMobileSigningRequests(cb: (req: MobileSigningRequest[]) => void): Promise<boolean> {
-  return sendMessage('pri(mobileSigning.tx)', null, cb);
 }

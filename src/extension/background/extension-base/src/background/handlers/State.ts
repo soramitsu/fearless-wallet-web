@@ -1,4 +1,4 @@
-import { BehaviorSubject, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { assert, u8aToHex } from '@polkadot/util';
@@ -19,16 +19,14 @@ import {
 } from '@extension-base/services';
 import { api as apiSora, type FPNumber } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
-import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
 import { initWeb3Api } from '@extension-base/api/evm';
-import { getCurrentProvider, getId } from '@extension-base/utils/utils';
+import { getCurrentProvider } from '@extension-base/utils/utils';
 import { initApi } from '@extension-base/api/substrate/api';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
 import { getSubstrateAddress, isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
-import { type SignerPayloadRaw } from '@polkadot/types/types';
 import PricesService from '@extension-base/services/prices-service';
 import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
 import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
@@ -38,11 +36,7 @@ import { EXTENSION_ID } from '@extension-base/const';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   ServiceInfo,
-  MobileSignRequest,
-  MobileSigningRequest,
-  ResponseSigning,
   AuthUrls,
-  Resolver,
   AuthorizedAccountsDiff,
   RequestRpcSend,
   RequestRpcSubscribe,
@@ -59,7 +53,6 @@ import type {
   EvmApiProps,
   FetchEvmBalancePayload,
 } from '@extension-base/background/types/types';
-import type { CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import type { ChainRegistry, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
@@ -84,11 +77,8 @@ export default class State {
   public subscription: FWSubscription;
   public injectedProviders: Map<Port, ProviderInterface> = new Map();
   public providers: Providers = {};
-  public chainRegistryMap: Record<string, ChainRegistry> = {};
-  public chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
   public readonly unsubscriptionMap: Record<string, () => void> = {};
   public serviceInfoSubject = new Subject<ServiceInfo>();
-  public customTokenSubject = new Subject<CustomTokenJson>();
   public defaultAuthAccountSelection: string[] = [];
   public apis: APIs = {
     substrate: {},
@@ -96,10 +86,6 @@ export default class State {
   };
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
-  public customTokenState: CustomTokenJson = { erc20: [] };
-  public customTokenStore = new CustomTokenStore();
-  public mobileSignRequests: Record<string, MobileSignRequest> = {};
-  public readonly mobileSignSubject = new BehaviorSubject<MobileSigningRequest[]>([]); //TODO MOVE TO. IT's ON HANDLER
   public lazyMap: Record<string, unknown> = {};
   public soraFees: SoraFees = {} as SoraFees;
   public ready = false;
@@ -199,10 +185,6 @@ export default class State {
 
   public isReady() {
     return this.ready;
-  }
-
-  public allMobileSignRequests(): MobileSigningRequest[] {
-    return Object.values(this.mobileSignRequests).map(({ id, request }): MobileSigningRequest => ({ id, request }));
   }
 
   async injectFromStorage() {
@@ -494,30 +476,6 @@ export default class State {
     return Object.keys(accounts.subject.value);
   }
 
-  private signMobileComplete = (
-    id: string,
-    resolve: (result: ResponseSigning) => void,
-    reject: (error: Error) => void
-  ): Resolver<ResponseSigning> => {
-    const complete = (): void => {
-      delete this.mobileSignRequests[id];
-      const allSignRequests = this.allMobileSignRequests();
-
-      this.mobileSignSubject.next(allSignRequests);
-    };
-
-    return {
-      reject: (error: Error): void => {
-        complete();
-        reject(error);
-      },
-      resolve: (result: ResponseSigning): void => {
-        complete();
-        resolve(result);
-      },
-    };
-  };
-
   async removeAuthorization(url: string): Promise<AuthUrls> {
     const entries = await this.requestService.getAuthList();
     const entry = entries[url];
@@ -539,10 +497,6 @@ export default class State {
     });
 
     return this.requestService.setAuthorize(entries);
-  }
-
-  getMobileSignRequest(id: string): MobileSignRequest {
-    return this.mobileSignRequests[id];
   }
 
   // List all providers the extension is exposing
@@ -625,20 +579,6 @@ export default class State {
     this.requestService.saveMetadata(meta);
 
     addMetadata(meta);
-  }
-
-  signMobile(request: SignerPayloadRaw): Promise<ResponseSigning> {
-    const id = getId();
-
-    return new Promise((resolve, reject): void => {
-      this.mobileSignRequests[id] = {
-        ...this.signMobileComplete(id, resolve, reject),
-        id,
-        request,
-      };
-
-      this.mobileSignSubject.next([{ id, request }]);
-    });
   }
 
   public getAccountAddress(): string {

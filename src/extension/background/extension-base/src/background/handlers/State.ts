@@ -32,7 +32,7 @@ import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
 import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
 import BalanceService from '@extension-base/services/balance-service';
 import axios from 'axios';
-import { EXTENSION_ID } from '@extension-base/const';
+import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   ServiceInfo,
@@ -78,10 +78,7 @@ export default class State {
   public injectedProviders: Map<Port, ProviderInterface> = new Map();
   public providers: Providers = {};
   public readonly unsubscriptionMap: Record<string, () => void> = {};
-  private readonly evmChainSubject = new Subject<AuthUrls>();
-  private readonly authorizeUrlSubject = new Subject<AuthUrls>();
   public serviceInfoSubject = new Subject<ServiceInfo>();
-  public defaultAuthAccountSelection: string[] = [];
   public apis: APIs = {
     substrate: {},
     evm: {},
@@ -101,14 +98,14 @@ export default class State {
   public eventService = new EventService();
   public keyringService = new KeyringService(this, this.eventService);
   public networkService = new NetworkService();
-  public requestService = new RequestService(this);
-  public nftService = new NftService(this);
+  public requestService = new RequestService(this.keyringService);
   public walletConnectService = new WalletConnectService(this, this.requestService);
   public walletConnectDappService = new WalletConnectDAppService(this);
-  public stakingService = new StakingService(this);
   public balanceService = new BalanceService(this);
-  public pricesService = new PricesService(this);
+  public pricesService = new PricesService(this.networkService);
+  public nftService = new NftService(this);
   public soraCardService = new SoraCardService(this.requestService);
+  public stakingService = new StakingService(this);
   public googleService = new GoogleService();
 
   constructor() {
@@ -128,7 +125,7 @@ export default class State {
   }
 
   public get assetsMap() {
-    return this.networkValues.map(({ assets }) => assets).flat();
+    return this.networkService.assetsMap;
   }
 
   public get getSubstrateApiMap() {
@@ -137,6 +134,10 @@ export default class State {
 
   public getEvmApi(key: string) {
     return this.getEvmApiMap[key.toLowerCase()];
+  }
+
+  get authSubject() {
+    return this.requestService.authSubject;
   }
 
   public getEvmApiByChainiD(chainId: string) {
@@ -190,27 +191,15 @@ export default class State {
   }
 
   async injectFromStorage() {
-    const { defaultAuthAccountSelection, fiatSymbol, injectedProviders, providers } = await this.getFromStorage([
-      'fiatSymbol',
-      'authUrls',
-      'defaultAuthAccountSelection',
-      'injectedProviders',
-      'providers',
-      'windows',
-    ]);
+    const { injectedProviders, providers } = await this.getFromStorage(['injectedProviders', 'providers']);
 
-    if (fiatSymbol) this.pricesService.setFiatSymbol(fiatSymbol);
     if (injectedProviders) this.injectedProviders = new Map(injectedProviders);
     if (providers) this.providers = providers;
-    if (defaultAuthAccountSelection && defaultAuthAccountSelection.length)
-      this.defaultAuthAccountSelection = defaultAuthAccountSelection;
   }
 
-  approvePolkaswap = async (authorizedAccounts: string[]): Promise<void> => {
+  async approvePolkaswap(authorizedAccounts: string[]): Promise<void> {
     this.soraCardService.approvePolkaswap(authorizedAccounts);
-
-    this.updateDefaultAuthAccounts(authorizedAccounts);
-  };
+  }
 
   public updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
     if (!tab || !tab.url) {
@@ -224,10 +213,8 @@ export default class State {
     }
 
     const url = new URL(tab.url);
-    const tabHostName =
-      url.hostname === EXTENSION_ID || url.hostname === '39fb1478-3519-4b4e-8eba-15e6e594494c'
-        ? 'header.currentExtensionPage'
-        : url.hostname;
+    const isSelf = url.hostname === EXTENSION_ID || url.hostname === EXTENSION_HOSTNAME;
+    const tabHostName = isSelf ? 'header.currentExtensionPage' : url.hostname;
 
     this.requestService.getAuthorize((authUrls) => {
       const authorizeUrl = Object.keys(authUrls).filter((url) => url === tabHostName);
@@ -331,9 +318,7 @@ export default class State {
     this.updateServiceInfo();
 
     this.requestService.getAuthorize((data) => {
-      if (this.networkMap[networkKey].isEthereum) this.evmChainSubject.next(data);
-
-      this.authorizeUrlSubject.next(data);
+      this.requestService.setAuthorize(data);
     });
 
     return true;
@@ -468,12 +453,6 @@ export default class State {
     reject(new Error('Cancelled'));
 
     return true;
-  }
-
-  updateDefaultAuthAccounts(defaultAuthAccountSelection: string[]) {
-    this.defaultAuthAccountSelection = defaultAuthAccountSelection;
-
-    storage.set({ defaultAuthAccountSelection });
   }
 
   public getAllAddresses(): string[] {

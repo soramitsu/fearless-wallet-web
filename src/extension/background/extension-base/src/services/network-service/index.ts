@@ -25,6 +25,10 @@ export class NetworkService {
     return Object.values(this.networkMap);
   }
 
+  get assetsMap() {
+    return this.networkValues.map(({ assets }) => assets).flat();
+  }
+
   updateNetworks() {
     this.networkMapSubject.next(this.networkMap);
     this.updateNetworkStore();

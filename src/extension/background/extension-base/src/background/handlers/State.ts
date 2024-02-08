@@ -47,10 +47,8 @@ import type {
   ActiveTabAuthorizeStatus,
   Providers,
   RequestAuthorizeCancel,
-  ApiProps,
   RequestAccountExportPrivateKey,
   ResponseAccountExportPrivateKey,
-  EvmApiProps,
   FetchEvmBalancePayload,
 } from '@extension-base/background/types/types';
 import type { ChainRegistry, NetworkJson } from '@extension-base/types';
@@ -61,11 +59,6 @@ import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
-
-type APIs = {
-  evm: Record<string, EvmApiProps>;
-  substrate: Record<NetworkName, ApiProps>;
-};
 
 export type Passwords = {
   [address in string]: string | undefined;
@@ -82,10 +75,6 @@ export default class State {
   private readonly authorizeUrlSubject = new Subject<AuthUrls>();
   public serviceInfoSubject = new Subject<ServiceInfo>();
   public defaultAuthAccountSelection: string[] = [];
-  public apis: APIs = {
-    substrate: {},
-    evm: {},
-  };
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
   public lazyMap: Record<string, unknown> = {};
@@ -131,10 +120,6 @@ export default class State {
     return this.networkValues.map(({ assets }) => assets).flat();
   }
 
-  public get getSubstrateApiMap() {
-    return this.apis.substrate;
-  }
-
   public getEvmApi(key: string) {
     return this.getEvmApiMap[key.toLowerCase()];
   }
@@ -150,13 +135,16 @@ export default class State {
 
     return api;
   }
+  public get getSubstrateApiMap() {
+    return this.networkService.apis.substrate;
+  }
 
   public get getEvmApiMap() {
-    return this.apis.evm;
+    return this.networkService.apis.evm;
   }
 
   public get getApiMap() {
-    return this.apis;
+    return this.networkService.apis;
   }
 
   public createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
@@ -298,13 +286,13 @@ export default class State {
 
     if (this.networkMap[name].active) {
       // update API map if network is active
-      if (name in this.apis.substrate) {
-        this.apis.substrate[name].api?.disconnect();
-        this.apis.substrate[name].provider?.disconnect();
-        delete this.apis.substrate[name];
+      if (name in this.getSubstrateApiMap) {
+        this.getSubstrateApiMap[name].api?.disconnect();
+        this.getSubstrateApiMap[name].provider?.disconnect();
+        delete this.getSubstrateApiMap[name];
       }
 
-      if (isEthereum && name in this.apis.evm) delete this.apis.evm[name];
+      if (isEthereum && name in this.getEvmApiMap) delete this.getEvmApiMap[name];
 
       if (isEthereum && isRequireEvmAPI(name)) this.initWeb3Api(data);
       else initApi(data, this);
@@ -321,8 +309,8 @@ export default class State {
     //if it's already disconnected then return true
     if (this.networkMap[networkKey].networkStatus === NETWORK_STATUS.DISCONNECTED) return true;
 
-    if (this.networkMap[networkKey]?.isEthereum) delete this.apis.evm[networkKey];
-    else delete this.apis.substrate[networkKey];
+    if (this.networkMap[networkKey]?.isEthereum) delete this.getEvmApiMap[networkKey];
+    else delete this.getSubstrateApiMap[networkKey];
 
     this.networkMap[networkKey].active = false;
     this.networkMap[networkKey].networkStatus = NETWORK_STATUS.DISCONNECTED;
@@ -342,7 +330,7 @@ export default class State {
   public updateServiceInfo() {
     this.serviceInfoSubject.next({
       networkMap: this.networkMap,
-      apiMap: this.apis,
+      apiMap: this.getApiMap,
       currentAccountInfo: this.currentAccount,
     });
   }
@@ -356,7 +344,8 @@ export default class State {
 
     const { name } = network;
     const currentProvider = getCurrentProvider(network);
-    if (currentProvider) this.apis.evm[name.toLowerCase()] = initWeb3Api(currentProvider, name.toLowerCase());
+
+    if (currentProvider) this.getEvmApiMap[name.toLowerCase()] = initWeb3Api(currentProvider, name.toLowerCase());
   }
 
   public refreshDotSamaApi(key: string) {
@@ -407,12 +396,12 @@ export default class State {
 
       const isActive = network.active;
 
-      if (!isActive && network.isEthereum && this.apis.evm[networkKey]) {
-        this.apis.evm[networkKey].api.destroy();
-        delete this.apis.evm[networkKey];
-      } else if (!isActive && this.apis.substrate[networkKey]) {
-        this.apis.substrate[networkKey].provider?.disconnect().then(() => {
-          delete this.apis.substrate[networkKey];
+      if (!isActive && network.isEthereum && this.getEvmApiMap[networkKey]) {
+        this.getEvmApiMap[networkKey].api.destroy();
+        delete this.getEvmApiMap[networkKey];
+      } else if (!isActive && this.getSubstrateApiMap[networkKey]) {
+        this.getSubstrateApiMap[networkKey].provider?.disconnect().then(() => {
+          delete this.getSubstrateApiMap[networkKey];
         });
       }
     });
@@ -703,7 +692,7 @@ export default class State {
       const { name, isEthereum } = network;
 
       if (isEthereum && isRequireEvmAPI(name)) {
-        if (!this.apis.evm[name] || !this.apis.evm[name].api.ready) this.initWeb3Api(network);
+        if (!this.getEvmApiMap[name] || !this.getEvmApiMap[name].api.ready) this.initWeb3Api(network);
       } else {
         const initSubstrateApies = () => {
           this.resetApiRetries();
@@ -711,8 +700,8 @@ export default class State {
           initApi(network, this);
         };
 
-        if (this.apis.substrate[name]) {
-          this.apis.substrate[name].api?.isReadyOrError.catch(initSubstrateApies);
+        if (this.getSubstrateApiMap[name]) {
+          this.getSubstrateApiMap[name].api?.isReadyOrError.catch(initSubstrateApies);
         } else initSubstrateApies();
       }
     }

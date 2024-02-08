@@ -191,15 +191,6 @@ export default class Extension extends FWExtensionBase {
 
     this.state.updateAuthorizedAccounts(authorizedAccountsDiff);
 
-    //  cycle through default account selection for auth and remove any occurence of the account
-    if (!isEthereumAddress(address)) {
-      const newDefaultAuthAccounts = this.state.defaultAuthAccountSelection.filter(
-        (defaultSelectionAddress) => defaultSelectionAddress !== address
-      );
-
-      this.state.updateDefaultAuthAccounts(newDefaultAuthAccounts);
-    }
-
     if (type === 'native') {
       const pair = this.state.keyringService.getAccount(address);
       const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
@@ -209,7 +200,7 @@ export default class Extension extends FWExtensionBase {
       }
 
       this.state.walletConnectService.sessions.forEach((session) => {
-        const evm = session.namespaces['eip155'] ?? [];
+        const evm = session.namespaces[WALLET_CONNECT_EIP155_NAMESPACE] ?? [];
 
         if (evm && evm.accounts && evm.accounts.length) {
           const [, , evmAddress] = evm.accounts[0].split(':');
@@ -219,7 +210,7 @@ export default class Extension extends FWExtensionBase {
           }
         }
 
-        const polkadot = session.namespaces['polkadot'];
+        const polkadot = session.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE];
 
         if (polkadot && polkadot.accounts && polkadot.accounts.length) {
           const [, , substaddress] = polkadot.accounts[0].split(':');
@@ -355,9 +346,7 @@ export default class Extension extends FWExtensionBase {
   authorizeSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(authorize.requests)'>(id, port);
 
-    const subscription = this.state.requestService.authSubject.subscribe((requests: AuthorizeRequest[]): void =>
-      cb(requests)
-    );
+    const subscription = this.state.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);

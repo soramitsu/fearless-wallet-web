@@ -88,7 +88,6 @@ import type {
   ResponseMakeSwap,
   RequestUpdateMeta,
   ResponseTotalBalances,
-  MobileSigningRequest,
   RequestSigningSubscribe,
   FetchBalanceRequest,
   ResponseNftTransfer,
@@ -161,9 +160,6 @@ export interface RequestSignatures {
   'pri(signing.cancel)': [RequestSigningCancel, boolean];
   'pri(signing.isLocked)': [RequestSigningIsLocked, ResponseSigningIsLocked];
   'pri(signing.requests)': [null, boolean, SigningRequest[]];
-  'pri(mobileSigning.tx)': [null, boolean, MobileSigningRequest[]];
-  'pri(mobileSigning.approve.signature)': [RequestSigningApproveSignature, boolean];
-  'pri(mobileSigning.cancel)': [RequestSigningCancel, boolean];
 
   'pri(window.open)': [AllowedPath, boolean];
   'pri(google.auth)': [GoogleAuthTypes, void];

@@ -20,7 +20,6 @@ import {
   getEthereumAddress,
 } from '@extension-base/background/utils/utils';
 import { type MetadataDef } from '@polkadot/extension-inject/types';
-import { type SignerPayloadRaw, type SignerPayloadJSON } from '@polkadot/types/types';
 import {
   isProposalExpired,
   isSupportWalletConnectNamespace,
@@ -31,12 +30,10 @@ import registry from '@extension-base/api/substrate/typeRegistry';
 import {
   type RequestUpdateMeta,
   type PriceJson,
-  type RequestMobileSign,
   type RequestSigningIsLocked,
   type NotificationResponse,
   type ResponseCheckTransfer,
   type SigningRequest,
-  type MobileSigningRequest,
   type ActiveTabAuthorizeStatus,
   type BalanceJson,
   type BasicTxError,
@@ -101,6 +98,7 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
+import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type {
   StakingNetworkRequest,
   StakingParamsRequest,
@@ -314,20 +312,6 @@ export default class Extension extends FWExtensionBase {
 
     const { resolve } = queued;
     resolve({ authorizedAccounts, result: true });
-
-    return true;
-  }
-
-  async mobileSignApprove({ id }: RequestMobileSign): Promise<boolean> {
-    const queued = this.state.getMobileSignRequest(id);
-
-    assert(queued, 'Unable to find request');
-
-    const { resolve, reject } = queued;
-    this.state.walletConnectDappService
-      .onRequestRaw(queued.request)
-      .then(({ signature }) => resolve({ signature, id }))
-      .catch(() => reject(new Error('USER REJECTED')));
 
     return true;
   }
@@ -576,35 +560,12 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  mobileSigningCancel({ id }: RequestSigningCancel): boolean {
-    const queued = this.state.getMobileSignRequest(id);
-
-    assert(queued, 'Unable to find request');
-
-    queued.reject(new Error('Cancelled'));
-
-    return true;
-  }
-
   signingSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(signing.requests)'>(id, port);
 
     const subscription = this.state.requestService.signSubject.subscribe((requests: SigningRequest[]): void =>
       cb(requests)
     );
-
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
-
-    return true;
-  }
-
-  mobileSigningSubscribe(id: string, port: Port): boolean {
-    const cb = createSubscription<'pri(mobileSigning.tx)'>(id, port);
-
-    const subscription = this.state.mobileSignSubject.subscribe((req: MobileSigningRequest[]): void => cb(req));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -1751,16 +1712,6 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(signing.requests)':
         return this.signingSubscribe(id, port);
-
-      case 'pri(mobileSigning.cancel)':
-        return this.mobileSigningCancel(request as RequestSigningCancel);
-
-      // mobileSigning
-      case 'pri(mobileSigning.tx)':
-        return this.mobileSigningSubscribe(id, port);
-
-      case 'pri(mobileSigning.approve.signature)':
-        return this.mobileSignApprove(request as RequestMobileSign);
 
       // google
       case 'pri(google.get.files)':

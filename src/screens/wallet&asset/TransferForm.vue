@@ -100,7 +100,12 @@
 
                 <BadgeButton text="common.paste" data-testid="pasteBtn" @click="paste" />
 
-                <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
+                <BadgeButton
+                  v-if="showMyWalletsButton"
+                  text="assets.myWallets"
+                  data-testid="myWalletsBtn"
+                  @click="toggleMyWalletsVisibility"
+                />
               </div>
 
               <slot name="step1Warning"></slot>

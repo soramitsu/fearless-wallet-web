@@ -1,13 +1,19 @@
 <template>
   <div class="activity">
-    <BorderButton class="activity-button" text="assets.sendButtonText" iconName="send" @click="onRoute('send')" />
+    <BorderButton
+      class="activity-button"
+      text="assets.sendButtonText"
+      iconName="send"
+      data-testid="sendBtn"
+      @click="onRoute('send')"
+    />
 
     <BorderButton
       class="activity-button"
       width="100%"
       text="assets.receiveButtonText"
       iconName="receive"
-      data-testid="basicBtn"
+      data-testid="receiveBtn"
       @click="onRoute('receive')"
     />
 

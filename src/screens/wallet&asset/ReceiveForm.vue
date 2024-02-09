@@ -6,6 +6,7 @@
           v-model="selectedNetwork"
           placeholder="assets.network"
           icon="rotate"
+          data-testid="selectedNetwork"
           :ref="selectNetworkInputRef"
           :isActiveRotate="showSelectNetworkPopup"
           @click="toggleSelectNetworkPopupVisible"
@@ -15,14 +16,14 @@
           <div class="address-wrapper">
             <span>{{ $t('assets.walletAddress') }}</span>
 
-            <div class="address">
+            <div class="address" data-testid="cutAddress">
               {{ cutAddress }}
 
-              <Icon icon="copy" className="copy-icon" @click="copyAddress" />
+              <Icon icon="copy" className="copy-icon" data-testid="copyAddress" @click="copyAddress" />
             </div>
           </div>
 
-          <QR class="qr" ref="qr" :showLogo="true" :width="200" :payload="address" />
+          <QR class="qr" ref="qr" data-testid="qr" :showLogo="true" :width="200" :payload="address" />
         </div>
 
         <Tooltip text="common.copied" target=".copy-icon" placement="bottom" trigger="click" />
@@ -35,6 +36,7 @@
           text="assets.saveQR"
           width="260px"
           iconName="receive-white"
+          data-testid="saveQR"
           @click="saveQR"
         />
 
@@ -44,6 +46,7 @@
           width="260px"
           text="assets.copyQR"
           iconName="share"
+          data-testid="copyQR"
           @click="copyQR"
         />
 

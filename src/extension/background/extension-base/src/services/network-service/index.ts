@@ -3,6 +3,7 @@ import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import { type NetworkJson } from '@extension-base/types';
 import { type NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { storage } from '@extension-base/stores/Storage';
+import { type APIs } from '@extension-base/services/network-service/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 
 export class NetworkService {
@@ -11,6 +12,10 @@ export class NetworkService {
   public networksGithub: NetworkJson[] = []; // networks from github
   public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
   public selectedNetworks: Record<string, string>;
+  public apis: APIs = {
+    substrate: {},
+    evm: {},
+  };
 
   constructor() {
     this.networkMapSubject = new Subject<Record<string, NetworkJson>>();

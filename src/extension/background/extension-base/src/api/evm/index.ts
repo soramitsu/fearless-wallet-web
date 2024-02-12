@@ -8,7 +8,7 @@ const initListeners = (provider: EvmProvider, key: string) => {
     provider.removeAllListeners();
     provider.destroy();
 
-    delete state.apis.evm[key];
+    delete state.getEvmApiMap[key];
   });
 };
 

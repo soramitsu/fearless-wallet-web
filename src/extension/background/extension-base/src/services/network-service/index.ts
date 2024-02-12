@@ -3,8 +3,11 @@ import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import { type NetworkJson } from '@extension-base/types';
 import { type NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { storage } from '@extension-base/stores/Storage';
-import { type APIs } from '@extension-base/services/network-service/types';
+import { EvmApiHandler } from '@extension-base/services/network-service/handlers/EvmApiHandler';
+import { SubstrateApiHandler } from '@extension-base/services/network-service/handlers/SubstrateApiHandler';
+import type State from '@/extension/background/extension-base/src/background/handlers/State';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
+import { type ApiMap } from '@/extension/background/extension-base/src/background/types/types';
 
 export class NetworkService {
   private networkMapSubject: Subject<Record<string, NetworkJson>>;
@@ -12,15 +15,16 @@ export class NetworkService {
   public networksGithub: NetworkJson[] = []; // networks from github
   public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
   public selectedNetworks: Record<string, string>;
-  public apis: APIs = {
-    substrate: {},
-    evm: {},
-  };
+  substrateApiHandler: SubstrateApiHandler;
+  evmApiHandler: EvmApiHandler;
 
-  constructor() {
+  constructor(state: State) {
     this.networkMapSubject = new Subject<Record<string, NetworkJson>>();
     this.networkMapStore = new NetworkMapStore();
     this.selectedNetworks = {};
+    this.substrateApiHandler = new SubstrateApiHandler(this, state);
+    this.evmApiHandler = new EvmApiHandler(this);
+
     storage.get(['selectedNetworks']).then(({ selectedNetworks }) => {
       if (selectedNetworks) this.selectedNetworks = selectedNetworks;
     });
@@ -49,6 +53,13 @@ export class NetworkService {
 
   updateNetworkStore() {
     this.networkMapStore.set('NetworkMap', this.networkMap);
+  }
+
+  get getApiMap(): ApiMap {
+    return {
+      substrate: this.substrateApiHandler.api,
+      evm: this.evmApiHandler.api,
+    };
   }
 
   subscribeNetworkMap() {

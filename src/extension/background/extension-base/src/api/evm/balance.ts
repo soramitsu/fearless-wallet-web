@@ -2,7 +2,6 @@ import { ethers } from 'ethers';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { type BalanceItem } from '@extension-base/api/evm/types/ether';
 import { getContract } from '@extension-base/api/evm/utils/eth';
-import { getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { setBalance } from '@extension-base/api/helpers';
 import type State from '@extension-base/background/handlers/State';
 
@@ -78,7 +77,7 @@ async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, 
     total: '0',
   };
 
-  const address = getSubstrateAddress(ethereumAddress, state);
+  const address = state.keyringService.getSubstrateAddress(ethereumAddress);
 
   getUtilityBalance(networkKey, ethereumAddress, state)
     .then((balance) => {

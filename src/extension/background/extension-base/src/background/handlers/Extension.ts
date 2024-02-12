@@ -13,7 +13,6 @@ import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
 import {
-  getSubstrateAddress,
   isRequireEvmAPI,
   uniqueStringArray,
   getBalanceItem,
@@ -785,7 +784,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   validatePairPassword(address: string, password: string | undefined) {
-    const substrateAddress = getSubstrateAddress(address, this.state);
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
     const errors = [] as Array<BasicTxError>;
     const substratePair = this.state.keyringService.getPair(substrateAddress);
 
@@ -829,7 +828,7 @@ export default class Extension extends FWExtensionBase {
 
   private async checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
     const { from, networkKey, to, assetId, relayChain, amount } = request;
-    const substrateAddress = getSubstrateAddress(from, this.state);
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
 
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
     const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
@@ -883,7 +882,7 @@ export default class Extension extends FWExtensionBase {
       }
     }
 
-    const substrateAddress = getSubstrateAddress(from, this.state);
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
     const ethereumAddress = getEthereumAddress(from, this.state);
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
     const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
@@ -973,7 +972,7 @@ export default class Extension extends FWExtensionBase {
 
     if (destinationNet === '') return { estimateFee: '0', destEstimateFee: '0' };
 
-    const substrateAddress = getSubstrateAddress(from, this.state);
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
 
     const [fee, crossChainFee] = await estimateCrossChainFee(
@@ -1021,7 +1020,7 @@ export default class Extension extends FWExtensionBase {
       }
     }
 
-    const substrateAddress = getSubstrateAddress(from, this.state);
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
     const ethereumAddress = getEthereumAddress(from, this.state);
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
 
@@ -1162,7 +1161,7 @@ export default class Extension extends FWExtensionBase {
       }
     }
 
-    const address = getSubstrateAddress(from, this.state);
+    const address = this.state.keyringService.getSubstrateAddress(from);
     const ethereumAddress = this.state.keyringService.getAccount(address)?.meta.ethereumAddress as string | undefined;
 
     const result = await this.state.stakingService.makeStaking(request);
@@ -1297,7 +1296,7 @@ export default class Extension extends FWExtensionBase {
       const accounts: string[] = [];
 
       const chains = uniqueStringArray(namespace.chains);
-      const substrateAddress = getSubstrateAddress(selectedAccounts[0], this.state);
+      const substrateAddress = this.state.keyringService.getSubstrateAddress(selectedAccounts[0]);
 
       chains.forEach((chain) => {
         if (key === WALLET_CONNECT_EIP155_NAMESPACE) {
@@ -1392,7 +1391,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async wcRequestApprove({ address, password, topic, isSavePass }: RequestApproveWalletConnect) {
-    const substrateAddress = getSubstrateAddress(address, this.state);
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
     const ethereumAddress = getEthereumAddress(substrateAddress, this.state);
 
     if (password === '') {

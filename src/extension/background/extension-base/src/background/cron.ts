@@ -115,21 +115,21 @@ export class FWCron {
   recoverApiMap = async () => {
     if (!navigator.onLine) return;
 
-    const { evm, substrate } = this.state.getApiMap;
+    const { evm, substrate } = this.state.networkService.getApiMap;
 
-    Object.keys(evm).forEach((network) => this.state.refreshWeb3Api(network));
+    Object.keys(evm).forEach((network) => this.state.networkService.evmApiHandler.refreshEvmApi(network));
 
     Object.entries(substrate).forEach(async ([network, apiProp]) => {
       if (!apiProp?.api?.isConnected) {
         await apiProp.api?.disconnect();
 
-        this.state.refreshDotSamaApi(network);
+        this.state.networkService.substrateApiHandler.refreshDotSamaApi(network);
       }
     });
   };
 
   updateApiMapStatus = async () => {
-    const { evm, substrate } = this.state.getApiMap;
+    const { evm, substrate } = this.state.networkService.getApiMap;
 
     Object.entries(substrate).forEach(([key, { apiStatus }]) => {
       this.state.networkService.updateNetworkStatus(key, apiStatus);

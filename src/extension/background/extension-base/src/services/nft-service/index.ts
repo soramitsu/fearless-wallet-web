@@ -12,7 +12,7 @@ import {
   type RequestNftTransfer,
   type ResponseNftTransfer,
 } from '@extension-base/background/types/types';
-import { getBalanceItem, getEthereumAddress, getSubstrateAddress } from '@extension-base/background/utils/utils';
+import { getBalanceItem, getEthereumAddress } from '@extension-base/background/utils/utils';
 import { FPNumber } from '@sora-substrate/util';
 import { calcEvmFees } from '@extension-base/api/evm/transfer';
 import type {
@@ -105,7 +105,7 @@ export class NftService {
   }
 
   async getNftForAllNetworks(address: string, force = false) {
-    const substrateAddress = getSubstrateAddress(address, this.state);
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
     const activeNetworks = this.state.getActiveNetworksCurrentWallet(substrateAddress);
     const chainIds = Array.from(activeNetworks).map(({ chainId }) => chainId);
     const networks = Object.keys(this.sdks);
@@ -202,7 +202,7 @@ export class NftService {
         this.getNftForAllNetworks(from, true);
       });
 
-      const substrateAddress = getSubstrateAddress(tx.from, this.state);
+      const substrateAddress = this.state.keyringService.getSubstrateAddress(tx.from);
 
       savePass(substrateAddress, tx.from, tx.isSavePass, false);
 
@@ -228,7 +228,7 @@ export class NftService {
     const utilityAsset = networkJson.assets.find((el) => el.isUtility)!;
     const contract = await getContract(contractAddress, api, type === 'ERC721' ? 'ERC721' : 'ERC1155');
     const feeData = await api.getFeeData();
-    const substrateAddress = getSubstrateAddress(from, this.state);
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
 
     const accountBalance = this.state.balanceService.getAccountBalance(substrateAddress);
     const tokenBalance = accountBalance.find((el) => el.symbol === utilityAsset.symbol && el.relayChain === 'ethereum');

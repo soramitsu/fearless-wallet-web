@@ -9,6 +9,7 @@ import {
   SubstrateRequestHandler,
 } from '@extension-base/services/request-service/handlers';
 import { type KeyringService } from '@extension-base/services';
+import { assert } from '@polkadot/util';
 import type {
   WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
@@ -26,6 +27,8 @@ import type {
   AccountJson,
   AuthorizeRequest,
   MetadataRequest,
+  AuthorizedAccountsDiff,
+  RequestAuthorizeCancel,
 } from '@extension-base/background/types/types';
 import type { WCSignRequest } from '@extension-base/services/request-service/types';
 
@@ -225,5 +228,41 @@ export class RequestService {
       this.numNotSupportWCRequests +
       this.numSignWCRequests
     );
+  }
+
+  async removeAuthorization(url: string): Promise<AuthUrls> {
+    const entries = await this.getAuthList();
+    const entry = entries[url];
+
+    assert(entry, `The source ${url} is not known`);
+
+    delete entries[url];
+
+    this.setAuthorize(entries);
+
+    return entries;
+  }
+
+  async updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
+    const entries = await this.getAuthList();
+
+    authorizedAccountDiff.forEach(([url, authorizedAccountDiff]) => {
+      entries[url].authorizedAccounts = authorizedAccountDiff;
+    });
+
+    return this.setAuthorize(entries);
+  }
+
+  async authorizeCancel({ id }: RequestAuthorizeCancel): Promise<boolean> {
+    const queued = await this.getAuthRequest(id);
+
+    assert(queued, 'Unable to find request');
+
+    const { reject } = queued;
+
+    // Reject without error meaning cancel
+    reject(new Error('Cancelled'));
+
+    return true;
   }
 }

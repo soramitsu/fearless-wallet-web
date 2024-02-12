@@ -183,7 +183,7 @@ export default class Extension extends FWExtensionBase {
       });
     });
 
-    this.state.updateAuthorizedAccounts(authorizedAccountsDiff);
+    this.state.requestService.updateAuthorizedAccounts(authorizedAccountsDiff);
 
     if (type === 'native') {
       const pair = this.state.keyringService.getAccount(address);
@@ -302,7 +302,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async authorizeUpdate({ authorizedAccounts, url }: RequestUpdateAuthorizedAccounts): Promise<void> {
-    return this.state.updateAuthorizedAccounts([[url, authorizedAccounts]]);
+    return this.state.requestService.updateAuthorizedAccounts([[url, authorizedAccounts]]);
   }
 
   async getAuthList(): Promise<ResponseAuthorizeList> {
@@ -590,7 +590,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async deleteAuthRequest(requestId: string): Promise<void> {
-    this.state.authorizeCancel({ id: requestId });
+    this.state.requestService.authorizeCancel({ id: requestId });
   }
 
   updateCurrentTabs({ tabs }: RequestActiveTabsUrlUpdate) {
@@ -630,7 +630,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   cancelAuthRequest(id: string) {
-    this.state.authorizeCancel({ id });
+    this.state.requestService.authorizeCancel({ id });
   }
 
   private createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {

@@ -10,9 +10,9 @@ import { type ApiProps } from '@extension-base/background/types/types';
 import { api as apiSora } from '@sora-substrate/util';
 import { connection as soraConnection } from '@sora-substrate/connection';
 import type State from '@extension-base/background/handlers/State';
+import type { NetworkName } from '@/interfaces';
 import { isSora } from '@/helpers';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
-import { type NetworkName } from '@/interfaces/networks';
 
 export class SubstrateApiHandler {
   readonly networkService: NetworkService;
@@ -34,9 +34,9 @@ export class SubstrateApiHandler {
     const autoSelectNode = network.isManual ? null : nodes[nodeIndex].url;
     const currentProvider = autoSelectNode ?? network.currentProvider;
     const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [
-      ['connected', () => this.onConnected.call(this, networkName)],
-      ['disconnected', () => this.onDisconnect.call(this, name)],
-      ['ready', () => this.onReady.call(this, networkName)],
+      ['connected', () => this.onConnected(networkName)],
+      ['disconnected', () => this.onDisconnect(name)],
+      ['ready', () => this.onReady(networkName)],
       ['error', () => null],
     ];
 
@@ -132,5 +132,12 @@ export class SubstrateApiHandler {
     const network = this.networkService.getNetworkByKey(key);
 
     this.initApi(network);
+  }
+
+  resetApiRetries() {
+    Object.values(this.api).forEach((api) => {
+      api.nodeIndex = 0;
+      api.apiRetry = 0;
+    });
   }
 }

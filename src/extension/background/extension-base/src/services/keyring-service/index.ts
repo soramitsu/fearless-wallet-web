@@ -239,6 +239,15 @@ export class KeyringService {
     return account?.address ?? address;
   }
 
+  getEthereumAddress(address: string) {
+    if (isEthereumAddress(address)) return address;
+
+    const accounts = this.getAllAccounts();
+    const account = accounts.find(({ address: _address }) => _address === address);
+
+    return (account?.meta.ethereumAddress as string) ?? '';
+  }
+
   isSameAddress(wallet1: Wallet, wallet2: Wallet): boolean {
     return this.formatAddress(wallet1) === this.formatAddress(wallet2);
   }

@@ -1,4 +1,3 @@
-import UniversalProvider from '@walletconnect/universal-provider';
 import { getInternalError, getSdkError } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
 import { createSubscription } from '@extension-base/background/handlers/subscriptions';
@@ -12,6 +11,7 @@ import WalletConnectStorage from '@extension-base/services/wallet-connect-servic
 import { generateHalfGenesisHash } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
 import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import Provider from '@walletconnect/universal-provider';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
@@ -19,9 +19,9 @@ import type { SessionTypes } from '@walletconnect/types';
 import type { AppSessionInitResponse, PairingSubjectType } from '@extension-base/services/wallet-connect-service/types';
 import type { Port } from '@extension-base/background/types/types';
 
-export default class WalletConnectDAppService {
+export class WalletConnectDAppService {
   state: State;
-  private app?: UniversalProvider;
+  private app?: Provider;
 
   public readonly uriSubject: BehaviorSubject<string> = new BehaviorSubject<string>('');
   public readonly pairingSubject: BehaviorSubject<Record<string, AppSessionInitResponse>> = new BehaviorSubject<
@@ -34,7 +34,7 @@ export default class WalletConnectDAppService {
   }
 
   private async initApp() {
-    this.app = await UniversalProvider.init({
+    this.app = await Provider.init({
       projectId: PROJECT_ID_EXTENSION,
       metadata: WALLET_CONNECT_METADATA,
       logger: undefined,
@@ -68,7 +68,7 @@ export default class WalletConnectDAppService {
   async initPairing() {
     if (!this.app) await this.initApp();
 
-    const optionalChains = this.state.networksGithub.flatMap((network) => {
+    const optionalChains = this.state.networkService.networksGithub.flatMap((network) => {
       if (isRequireEvmAPI(network.name) || !network.chainId) return [];
       const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
 
@@ -209,11 +209,11 @@ export default class WalletConnectDAppService {
     const account = this.state.keyringService.getAddresses().find((el) => el.meta.wcTopic === topic);
 
     if (account) {
-      const current = await this.state.currentAccount;
+      const current = this.state.currentAccount;
       this.state.keyringService.forgetAddress(account?.address);
 
       if (current?.address === account.address) {
-        const accounts = this.state.getSubstrateAccounts();
+        const accounts = this.state.keyringService.getSubstrateAccounts();
 
         if (accounts.length) this.state.updateCurrentAccount(accounts[0].address);
         else this.state.setCurrentAccount(null);

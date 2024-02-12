@@ -19,19 +19,7 @@ import {
   getBalanceItem,
   getEthereumAddress,
 } from '@extension-base/background/utils/utils';
-import {
-  type StakingNetworkRequest,
-  type StakingParamsRequest,
-  type MyStakingInfoResponse,
-  type CheckControllerRequest,
-  type getRewardsRequest,
-  type RewardsResponse,
-  type MakeStakingRequest,
-  type StakingParamsResponse,
-  type CheckPayoutsFeeRequest,
-} from '@extension-base/services/staking-service/types';
 import { type MetadataDef } from '@polkadot/extension-inject/types';
-import { type SignerPayloadRaw, type SignerPayloadJSON } from '@polkadot/types/types';
 import {
   isProposalExpired,
   isSupportWalletConnectNamespace,
@@ -42,12 +30,10 @@ import registry from '@extension-base/api/substrate/typeRegistry';
 import {
   type RequestUpdateMeta,
   type PriceJson,
-  type RequestMobileSign,
   type RequestSigningIsLocked,
   type NotificationResponse,
   type ResponseCheckTransfer,
   type SigningRequest,
-  type MobileSigningRequest,
   type ActiveTabAuthorizeStatus,
   type BalanceJson,
   type BasicTxError,
@@ -91,6 +77,7 @@ import {
   TransferErrorCode,
   type FetchBalanceRequest,
   type RequestNftTransfer,
+  type FetchEvmBalancePayload,
 } from '@extension-base/background/types/types';
 import {
   type RequestConnectWalletConnect,
@@ -111,6 +98,18 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
+import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
+import type {
+  StakingNetworkRequest,
+  StakingParamsRequest,
+  MyStakingInfoResponse,
+  CheckControllerRequest,
+  getRewardsRequest,
+  RewardsResponse,
+  MakeStakingRequest,
+  StakingParamsResponse,
+  CheckPayoutsFeeRequest,
+} from '@extension-base/services/staking-service/types';
 import type {
   RequestSettingsChangePayload,
   AvailableNftPayload,
@@ -141,18 +140,16 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 }
 
 async function transformAccounts(accounts: SubjectInfo, state: State): Promise<AccountJson[]> {
-  const currentAccount = await state.currentAccount;
-
   return Object.values(accounts).flatMap(({ json: { address, meta }, type }) => {
     if (isEthereumAddress(address)) return [];
 
     return {
       address,
       ethereumAddress: meta.ethereumAddress as string,
-      active: address === currentAccount?.address,
+      active: address === state.currentAccount?.address,
       name: meta.name ?? '',
       type,
-      network: state.selectedNetworks[address] ?? ALL_NETWORKS,
+      network: state.networkService.selectedNetworks[address] ?? ALL_NETWORKS,
       ...meta,
     };
   });
@@ -194,15 +191,6 @@ export default class Extension extends FWExtensionBase {
 
     this.state.updateAuthorizedAccounts(authorizedAccountsDiff);
 
-    //  cycle through default account selection for auth and remove any occurence of the account
-    if (!isEthereumAddress(address)) {
-      const newDefaultAuthAccounts = this.state.defaultAuthAccountSelection.filter(
-        (defaultSelectionAddress) => defaultSelectionAddress !== address
-      );
-
-      this.state.updateDefaultAuthAccounts(newDefaultAuthAccounts);
-    }
-
     if (type === 'native') {
       const pair = this.state.keyringService.getAccount(address);
       const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
@@ -212,7 +200,7 @@ export default class Extension extends FWExtensionBase {
       }
 
       this.state.walletConnectService.sessions.forEach((session) => {
-        const evm = session.namespaces['eip155'] ?? [];
+        const evm = session.namespaces[WALLET_CONNECT_EIP155_NAMESPACE] ?? [];
 
         if (evm && evm.accounts && evm.accounts.length) {
           const [, , evmAddress] = evm.accounts[0].split(':');
@@ -222,7 +210,7 @@ export default class Extension extends FWExtensionBase {
           }
         }
 
-        const polkadot = session.namespaces['polkadot'];
+        const polkadot = session.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE];
 
         if (polkadot && polkadot.accounts && polkadot.accounts.length) {
           const [, , substaddress] = polkadot.accounts[0].split(':');
@@ -242,7 +230,7 @@ export default class Extension extends FWExtensionBase {
     const accounts = this.state.keyringService.getAccounts();
     const addresses = this.state.keyringService.getAddresses();
 
-    const currentAccount = await this.state.currentAccount;
+    const currentAccount = this.state.currentAccount;
 
     const isWasCurrentAccount = address === currentAccount?.address;
 
@@ -319,20 +307,6 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async mobileSignApprove({ id }: RequestMobileSign): Promise<boolean> {
-    const queued = this.state.getMobileSignRequest(id);
-
-    assert(queued, 'Unable to find request');
-
-    const { resolve, reject } = queued;
-    this.state.walletConnectDappService
-      .onRequestRaw(queued.request)
-      .then(({ signature }) => resolve({ signature, id }))
-      .catch(() => reject(new Error('USER REJECTED')));
-
-    return true;
-  }
-
   async authorizeUpdate({ authorizedAccounts, url }: RequestUpdateAuthorizedAccounts): Promise<void> {
     return this.state.updateAuthorizedAccounts([[url, authorizedAccounts]]);
   }
@@ -372,9 +346,7 @@ export default class Extension extends FWExtensionBase {
   authorizeSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(authorize.requests)'>(id, port);
 
-    const subscription = this.state.requestService.authSubject.subscribe((requests: AuthorizeRequest[]): void =>
-      cb(requests)
-    );
+    const subscription = this.state.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -558,8 +530,6 @@ export default class Extension extends FWExtensionBase {
   }
 
   signingApproveSignature({ id, signature }: RequestSigningApproveSignature): boolean {
-    this.state.signature = signature;
-
     const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
@@ -579,35 +549,12 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  mobileSigningCancel({ id }: RequestSigningCancel): boolean {
-    const queued = this.state.getMobileSignRequest(id);
-
-    assert(queued, 'Unable to find request');
-
-    queued.reject(new Error('Cancelled'));
-
-    return true;
-  }
-
   signingSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(signing.requests)'>(id, port);
 
     const subscription = this.state.requestService.signSubject.subscribe((requests: SigningRequest[]): void =>
       cb(requests)
     );
-
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
-
-    return true;
-  }
-
-  mobileSigningSubscribe(id: string, port: Port): boolean {
-    const cb = createSubscription<'pri(mobileSigning.tx)'>(id, port);
-
-    const subscription = this.state.mobileSignSubject.subscribe((req: MobileSigningRequest[]): void => cb(req));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -704,10 +651,10 @@ export default class Extension extends FWExtensionBase {
     return this.state.balanceService.getBalance();
   }
 
-  private async fetchEvmBalance() {
+  private async fetchEvmBalance({ assetId }: FetchEvmBalancePayload) {
     if (!this.state.ready) return;
 
-    this.state.fetchEvmBalance(null);
+    this.state.fetchEvmBalance({ assetId });
   }
 
   private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {
@@ -1130,10 +1077,6 @@ export default class Extension extends FWExtensionBase {
     return { status: true };
   }
 
-  private getNetworkMap(): Record<string, NetworkJson> {
-    return this.state.networkMap;
-  }
-
   private createMobileWallet({ address, meta }: RequestAddressCreate) {
     this.state.keyringService.saveAddress(address, meta, 'address');
 
@@ -1142,7 +1085,7 @@ export default class Extension extends FWExtensionBase {
 
   private subscribeNetworkMap(id: string, port: Port): Record<string, NetworkJson> {
     const cb = createSubscription<'pri(networkMap.getSubscription)'>(id, port);
-    const networkMapSubscription = this.state.subscribeNetworkMap().subscribe({
+    const networkMapSubscription = this.state.networkService.subscribeNetworkMap().subscribe({
       next: (rs) => {
         cb(rs);
       },
@@ -1154,7 +1097,7 @@ export default class Extension extends FWExtensionBase {
       this.cancelSubscription(id);
     });
 
-    return this.getNetworkMap();
+    return this.state.networkMap;
   }
 
   private async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {
@@ -1471,7 +1414,7 @@ export default class Extension extends FWExtensionBase {
     if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
 
     const { privateKey } = this.state.accountExportPrivateKey({ address: ethereumAddress, password });
-    const signer = new Wallet(privateKey, this.state.getEvmApi(network.name));
+    const signer = new Wallet(privateKey, this.state.getEvmApi(network.name)?.api);
 
     if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
       const txData = request.request.params.request.params[0] as { to: string; value: string };
@@ -1759,16 +1702,6 @@ export default class Extension extends FWExtensionBase {
       case 'pri(signing.requests)':
         return this.signingSubscribe(id, port);
 
-      case 'pri(mobileSigning.cancel)':
-        return this.mobileSigningCancel(request as RequestSigningCancel);
-
-      // mobileSigning
-      case 'pri(mobileSigning.tx)':
-        return this.mobileSigningSubscribe(id, port);
-
-      case 'pri(mobileSigning.approve.signature)':
-        return this.mobileSignApprove(request as RequestMobileSign);
-
       // google
       case 'pri(google.get.files)':
         return this.getFiles(request as { token: string });
@@ -1797,7 +1730,7 @@ export default class Extension extends FWExtensionBase {
         return this.getBalance();
 
       case 'pri(fetch.evm.balance)':
-        return this.fetchEvmBalance();
+        return this.fetchEvmBalance(request as FetchEvmBalancePayload);
 
       case 'pri(balance.subscription)':
         return this.subscribeBalance(id, port);

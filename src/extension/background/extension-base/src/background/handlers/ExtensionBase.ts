@@ -20,9 +20,8 @@ import { type DerivationPath } from '@/interfaces';
 export default class FWExtensionBase {
   protected token: string;
   public cachedUnlocks: CachedUnlocks;
-  protected state: State;
 
-  constructor(state: State) {
+  constructor(protected state: State) {
     this.cachedUnlocks = {};
     this.state = state;
     this.token = '';
@@ -60,15 +59,15 @@ export default class FWExtensionBase {
           if (isRequireEvmAPI(network)) this.state.refreshWeb3Api(network);
         });
 
-      this.state.getCurrentAccount((account) =>
+      if (this.state.currentAccount) {
         this.state.setCurrentAccount(
           {
-            ...account!,
+            ...this.state.currentAccount,
             ethereumAddress: (meta.ethereumAddress as string) ?? '',
           },
           cb
-        )
-      );
+        );
+      }
 
       this.state.updateServiceInfo();
     }

@@ -32,7 +32,7 @@ interface MakeTransferParams extends TransferParams {
 }
 
 export async function handleTransfer({ callback, networkKey, privateKey, tx }: HandleTransferProps): Promise<void> {
-  const web3Api = state.getEvmApi(networkKey);
+  const web3Api = state.getEvmApi(networkKey)?.api;
   const signer = new Wallet(privateKey, web3Api);
 
   try {
@@ -52,8 +52,6 @@ export async function handleTransfer({ callback, networkKey, privateKey, tx }: H
       ],
     });
   }
-
-  setTimeout(() => state.fetchEvmBalance([networkKey]), 15000);
 }
 
 export function calcEvmFees(maxFee: bigint | null, baseFee: bigint | null | undefined, gasLimit: bigint): bigint {
@@ -66,7 +64,7 @@ export function calcEvmFees(maxFee: bigint | null, baseFee: bigint | null | unde
 
 async function getUtilityTransactionObject(params: TransferParams): Promise<TransactionObject> {
   const { networkKey, to, amount } = params;
-  const web3Api = state.getEvmApi(networkKey);
+  const web3Api = state.getEvmApi(networkKey)?.api;
 
   if (!web3Api) throw new Error(`Unknown network ${networkKey}`);
 
@@ -93,7 +91,7 @@ async function getUtilityTransactionObject(params: TransferParams): Promise<Tran
 async function getERC20TransactionObject(params: TransferParams): Promise<TransactionObject> {
   const { balance, networkKey, to, from, amount } = params;
   const contractAddress = balance.id;
-  const web3Api = state.getEvmApi(networkKey);
+  const web3Api = state.getEvmApi(networkKey)?.api;
 
   const erc20Contract = await getContract(contractAddress, web3Api);
 
@@ -162,7 +160,11 @@ export function getEVMTransactionObject(params: TransferParams): Promise<Transac
 }
 
 export function makeEVMTransfer(params: MakeTransferParams): Promise<void> {
-  if (params.balance.isUtility) return makeUtilityTransfer(params);
+  const transfer = params.balance.isUtility ? makeUtilityTransfer(params) : makeERC20Transfer(params);
 
-  return makeERC20Transfer(params);
+  return transfer.then(() => {
+    setTimeout(() => {
+      state.fetchEvmBalance({ _ethereumAddress: params.from, assetId: params.balance.id, force: true });
+    }, 10000);
+  });
 }

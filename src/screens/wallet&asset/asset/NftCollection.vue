@@ -4,7 +4,7 @@
       <div class="nft-group">
         <NftItem
           v-for="nft in ownedNfts"
-          :collectionName="collection.name"
+          :collectionName="name"
           class="ownedNfts"
           :key="nft.id"
           :nft="nft"
@@ -19,7 +19,7 @@
         <div class="nft-group">
           <NftItem
             v-for="nft in availableNfts"
-            :collectionName="collection.name"
+            :collectionName="name"
             :key="nft.id"
             :nft="nft"
             isNft
@@ -36,8 +36,8 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
-import { type AvailableNftState, type FearlessNft, type NftState } from '@extension-base/services/nft-service/types';
 import { useI18n } from 'vue-i18n-composable';
+import type { NftCollection, AvailableNftState, FearlessNft } from '@extension-base/services/nft-service/types';
 import { fetchAvailableNftsForContract } from '@/extension/messaging/nfts';
 import { type SelectedWallet, useStore } from '@/store';
 import NftItem from '@/screens/wallet&asset/asset/NftItem.vue';
@@ -62,8 +62,9 @@ const state = reactive<{ pageKey?: string; canLoadMore: boolean }>({
   canLoadMore: true,
 });
 const tooltip = ref<Tooltip>();
-const nfts = computed<NftState>(() => store.getters.nfts ?? []);
-const collection = computed(() => nfts.value[contract.value]);
+const nfts = computed<NftCollection[]>(() => store.getters.nfts ?? []);
+const collection = computed(() => nfts.value.find((el) => el.address === contract.value));
+const name = computed(() => collection.value?.name);
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 const availableNfts = ref<FearlessNft[]>(nftCollectionFromStore.value);
 const isAvailableNfts = computed(() => availableNfts.value.length);
@@ -71,7 +72,7 @@ watch(availableNfts, () => {
   tooltip.value?.createTooltip();
 });
 const header = computed(() => (collection.value ? collection.value.name : ''));
-const additionalNftsHeader = computed(() => t('nft.availableNfts', { name: collection.value.name }));
+const additionalNftsHeader = computed(() => t('nft.availableNfts', { name: collection.value?.name }));
 const network = computed<string>(() => {
   if (collection.value) {
     return collection.value.network;
@@ -109,6 +110,7 @@ const onScroll = async () => {
   const nfts = await fetchAvailableNftsForContract({
     contract: contract.value,
     network: network.value,
+    address: selectedWallet.value.ethereumAddress,
     pageKey: state.pageKey,
   });
 

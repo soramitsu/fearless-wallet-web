@@ -18,7 +18,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
     parentId,
     assets,
     name: networkName,
-  } = state.networksGithub.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())!;
+  } = state.networkService.networksGithub.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())!;
   const relayChain = CHAIN_IDS[parentId!] ?? (networkName as RelayChainName);
 
   if (networkName === 'Equilibrium') {

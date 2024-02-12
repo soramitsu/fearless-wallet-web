@@ -504,7 +504,18 @@
     "payoutStakers": "Payout stakers",
     "withdrawUnbonded": "Redeem",
     "rewarded": "Reward",
-    "batchAll": "batchAll"
+    "batchAll": "Batch All",
+    "getRewards": "Get rewards",
+    "swapTransfer": "Swap transfer",
+    "transferToSidechain": "Transfer to Sidechain",
+    "register": "Register",
+    "reserve": "Reserve",
+    "deposit": "Deposit",
+    "depositLiquidity": "Deposit liquidity",
+    "withdraw": "Withdraw",
+    "withdrawLiquidity": "Withdraw liquidity",
+    "cancelLimitOrder": "Cancel Limit Order",
+    "cancelLimitOrdersBatch": "Cancel Limit Orders Batch"
   },
   "staking": {
     "stakingFee": "The network fee in the NPoS consensus algorithm for Substrate based chains refers to the cost incurred by participants (validators and nominators) for using the network's resources and services.",

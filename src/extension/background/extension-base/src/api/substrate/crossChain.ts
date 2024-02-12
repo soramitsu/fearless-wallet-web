@@ -79,7 +79,7 @@ function getConcreteAsset(
   isNative: boolean,
   state: State
 ) {
-  const networkKey = state.getNetworkByKey(originNet)?.name;
+  const networkKey = state.networkService.getNetworkByKey(originNet)?.name;
   const { parentId } = state.networkMap[networkKey];
 
   // This Polkadot or Kusama
@@ -122,8 +122,8 @@ function getNativeTeleportParams(
   xcmAssetId: AssetId,
   state: State
 ) {
-  const originNetworkKey = state.getNetworkByKey(originNet)?.name;
-  const destNetworkKey = state.getNetworkByKey(destNet)?.name;
+  const originNetworkKey = state.networkService.getNetworkByKey(originNet)?.name;
+  const destNetworkKey = state.networkService.getNetworkByKey(destNet)?.name;
   const isFromRelayChain = isRelayChain(originNet);
   const isToRelayChain = isRelayChain(destNet);
   const { xcm, parentId, name } = state.networkMap[originNetworkKey];
@@ -187,8 +187,8 @@ function getOrmlTeleportParams(
   xcmAssetId: AssetId,
   state: State
 ) {
-  const originNetworkKey = state.getNetworkByKey(originNet)?.name;
-  const destNetworkKey = state.getNetworkByKey(destNet)?.name;
+  const originNetworkKey = state.networkService.getNetworkByKey(originNet)?.name;
+  const destNetworkKey = state.networkService.getNetworkByKey(destNet)?.name;
   const isToRelayChain = isRelayChain(destNet);
   const { xcm, parentId, name } = state.networkMap[originNetworkKey];
   const paraId = state.networkMap[destNetworkKey]?.paraId ?? 0;
@@ -304,8 +304,8 @@ async function createCrossChainExtrinsic(
   tokenBalance: TokenGroup,
   state: State
 ): Promise<Extrinsic> {
-  const originNetworkKey = state.getNetworkByKey(originNet)?.name;
-  const destNetworkKey = state.getNetworkByKey(destNet)?.name;
+  const originNetworkKey = state.networkService.getNetworkByKey(originNet)?.name;
+  const destNetworkKey = state.networkService.getNetworkByKey(destNet)?.name;
   const { symbol } = getAssetInfo(assetId, state);
   const { xcm } = state.networkMap[originNetworkKey];
 

@@ -7,7 +7,10 @@ import {
   type WalletConnectSessionRequest,
   type WalletConnectSigningMethod,
 } from '@extension-base/services/wallet-connect-service/types';
-import { findChainInfoByHalfGenesisHash, findChainInfoByChainId } from '@extension-base/services/chain-service/helpers';
+import {
+  findChainInfoByHalfGenesisHash,
+  findChainInfoByChainId,
+} from '@extension-base/services/network-service/helpers';
 import {
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,

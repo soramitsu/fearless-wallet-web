@@ -8,13 +8,13 @@ import {
   MetadataRequestHandler,
   SubstrateRequestHandler,
 } from '@extension-base/services/request-service/handlers';
+import { type KeyringService } from '@extension-base/services';
 import type {
   WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
-import type State from '@extension-base/background/handlers/State';
 import type {
   SigningRequest,
   AuthRequest,
@@ -30,7 +30,7 @@ import type {
 import type { WCSignRequest } from '@extension-base/services/request-service/types';
 
 export class RequestService {
-  private readonly state: State;
+  readonly keyringService: KeyringService;
   readonly popupHandler: PopupHandler;
   readonly connectWCRequestHandler: ConnectWCRequestHandler;
   readonly notSupportWCRequestHandler: NotSupportWCRequestHandler;
@@ -39,14 +39,14 @@ export class RequestService {
   readonly substrateRequestHandler: SubstrateRequestHandler;
   readonly evmRequestHandler: EvmRequestHandler;
 
-  constructor(state: State) {
-    this.state = state;
+  constructor(keyringService: KeyringService) {
+    this.keyringService = keyringService;
     this.popupHandler = new PopupHandler(this);
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
-    this.authRequestHandler = new AuthRequestHandler(this.state, this);
-    this.substrateRequestHandler = new SubstrateRequestHandler(this);
+    this.authRequestHandler = new AuthRequestHandler(this);
+    this.substrateRequestHandler = new SubstrateRequestHandler(this, this.keyringService);
     this.evmRequestHandler = new EvmRequestHandler(this);
   }
 

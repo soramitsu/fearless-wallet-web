@@ -13,17 +13,19 @@ import {
   type SigningRequest,
 } from '@extension-base/background/types/types';
 import { getId, isInternalRequest } from '@extension-base/utils';
-import { type RequestService } from '@extension-base/services';
-import { state } from '@extension-base/background/handlers';
+import { type KeyringService, type RequestService } from '@extension-base/services';
 
 export class SubstrateRequestHandler {
   readonly logger: Logger;
   private readonly requestService: RequestService;
+  private readonly keyringService: KeyringService;
+
   readonly substrateRequests: Record<string, SignRequest> = {};
   public readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
 
-  constructor(requestService: RequestService) {
+  constructor(requestService: RequestService, keyringService: KeyringService) {
     this.requestService = requestService;
+    this.keyringService = keyringService;
     this.logger = createLogger('SubstrateRequestHandler');
   }
 
@@ -97,7 +99,7 @@ export class SubstrateRequestHandler {
     payload: SignerPayloadJSON
   ): Promise<ResponseSigning> {
     return new Promise((resolve, reject): void => {
-      const existingAccount = state.keyringService.getAccounts().find((el) => el.address === address);
+      const existingAccount = this.keyringService.getAccounts().find((el) => el.address === address);
       if (!existingAccount) return reject();
 
       const account: AccountJson = {

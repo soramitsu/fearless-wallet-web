@@ -1,4 +1,5 @@
 import { FPNumber } from '@sora-substrate/util';
+import { type NetworkJson } from '@extension-base/types';
 import type {
   HistoryElement,
   GiantsquidHistoryItem,
@@ -11,7 +12,6 @@ import type { TokenGroup } from '@extension-base/background/types/types';
 import { TransactionType } from '@/interfaces';
 import { firstCharToUp, isSora } from '@/helpers';
 import { useStore } from '@/store';
-import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 
 function getType(historyElement: HistoryElement, networkName?: NetworkName): TransactionType {
   if (isSora(networkName ?? '')) return TransactionType.sora;
@@ -147,7 +147,7 @@ function getHistoryValue(
     const dataValue =
       element.data?.value ?? element.data?.amount ?? element.data?.baseAssetAmount ?? element.data?.maxAdditional ?? 0;
 
-    const targetValue = +(element.data.targetAssetAmount ?? 0);
+    const targetValue = +(element.data?.targetAssetAmount ?? 0);
 
     // fee в индексере с учетом decimals
     const fee = getHumanTransferFee(historyElement, networkName);

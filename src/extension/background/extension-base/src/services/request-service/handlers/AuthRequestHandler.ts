@@ -13,13 +13,12 @@ import type {
   RequestAuthorizeTab,
 } from '@extension-base/background/types/types';
 import type { RequestService } from '@extension-base/services';
-import type State from '@extension-base/background/handlers/State';
 
 const AUTH_URLS_KEY = 'authUrls';
 
 export class AuthRequestHandler {
   private readonly requestService: RequestService;
-  private readonly state: State;
+
   readonly authRequests: Record<string, AuthRequest> = {};
   private authorizeCached: AuthUrls = {};
   private readonly authorizeStore = new AuthorizeStore();
@@ -27,12 +26,11 @@ export class AuthRequestHandler {
   private readonly evmChainSubject = new BehaviorSubject<AuthUrls>({});
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
 
-  constructor(state: State, requestService: RequestService) {
+  constructor(requestService: RequestService) {
     this.getAuthorize((auths) => {
       if (!auths) this.authorizeCached = {};
       else this.authorizeCached = auths;
     });
-    this.state = state;
     this.requestService = requestService;
   }
 
@@ -115,8 +113,6 @@ export class AuthRequestHandler {
       };
 
       this.setAuthorize(this.authorizeCached);
-
-      this.state.updateDefaultAuthAccounts(authorizedAccounts);
 
       delete this.authRequests[id];
 

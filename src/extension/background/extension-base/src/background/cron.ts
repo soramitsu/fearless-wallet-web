@@ -55,18 +55,13 @@ export class FWCron {
   };
 
   init = () => {
-    this.state.getCurrentAccount((currentAccount) => {
-      if (!this.state.isReady) return;
-      if (!currentAccount?.address) return;
+    if (!this.state.isReady) return;
+    if (!this.state.currentAccount?.address) return;
 
-      if (
-        Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
-        Object.keys(this.state.getEvmApiMap).length !== 0
-      ) {
-        this.state.pricesService.refreshPrice();
-        this.updateApiMapStatus();
-      }
-    });
+    if (Object.keys(this.state.getSubstrateApiMap).length !== 0 || Object.keys(this.state.getEvmApiMap).length !== 0) {
+      this.state.pricesService.refreshPrice();
+      this.updateApiMapStatus();
+    }
   };
 
   start = () => {
@@ -76,18 +71,13 @@ export class FWCron {
 
     this.addCron('refreshJsons', () => this.state.init(), CRON_UPDATE_JSON_INTERVAL, false);
 
-    this.state.getCurrentAccount((currentAccount) => {
-      if (!currentAccount?.address) return;
+    if (!this.state.currentAccount?.address) return;
 
-      if (
-        Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
-        Object.keys(this.state.getEvmApiMap).length !== 0
-      ) {
-        this.addCron('refreshPrice', () => this.state.pricesService.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
-        this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
-        this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
-      }
-    });
+    if (Object.keys(this.state.getSubstrateApiMap).length !== 0 || Object.keys(this.state.getEvmApiMap).length !== 0) {
+      this.addCron('refreshPrice', () => this.state.pricesService.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
+      this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
+      this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
+    }
 
     this.status = 'running';
   };
@@ -142,18 +132,18 @@ export class FWCron {
     const { evm, substrate } = this.state.getApiMap;
 
     Object.entries(substrate).forEach(([key, { apiStatus }]) => {
-      this.state.updateNetworkStatus(key, apiStatus);
+      this.state.networkService.updateNetworkStatus(key, apiStatus);
     });
 
     Object.entries(evm).forEach(async ([key, api]) => {
-      if (!navigator.onLine) this.state.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
+      if (!navigator.onLine) this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
       else {
         try {
-          await api.provider._waitUntilReady();
+          await api.api.provider._waitUntilReady();
 
-          this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
+          this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
         } catch {
-          this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
+          this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
         }
       }
     });

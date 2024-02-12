@@ -80,7 +80,7 @@ const image = computed(() => nft.value.image ?? require('@/assets/fearless-logo-
 const ownedBy = computed(() => cut(selectedWallet.value.ethereumAddress));
 const meta = computed(() => nft.value.meta ?? {});
 const tokenId = computed(() => cut(id.value, 5));
-const shareBtnType = computed(() => (nft.value.isOwned ? 'secondary' : 'primary'));
+const shareBtnType = computed(() => (nft.value.isOwned ? 'thirdly' : 'primary'));
 const isOwned = computed(() => !!nft.value.isOwned);
 const onBack = () => router.back();
 const onSend = () => router.push({ name: Components.NftSendForm, params: { id: id.value } });
@@ -137,6 +137,8 @@ const onShare = () => {
     pointer-events: none;
     right: 17px;
     top: 5px;
+    width: 40px;
+    height: 40px;
 
     &-size {
       width: 20px;

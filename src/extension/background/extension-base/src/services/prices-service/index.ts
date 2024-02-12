@@ -2,7 +2,7 @@ import PriceStore from '@extension-base/stores/Price';
 import { REFRESH_PRICE_INTERVAL } from '@extension-base/const/intervals';
 import { storage } from '@extension-base/stores/Storage';
 import axios from 'axios';
-import type State from '@extension-base/background/handlers/State';
+import { type NetworkService } from '@extension-base/services';
 import type { PriceJson } from '@extension-base/background/types/types';
 
 export type Prices = {
@@ -11,27 +11,31 @@ export type Prices = {
 };
 
 export default class PricesService {
+  private readonly priceStore: PriceStore;
   public prices: Prices = {
     json: {
       tokenPriceMap: {},
       currency: 'usd',
       priceMap: {},
       tokenPriceChange: {},
-    },
+    }, //TODO covert to behavior subject
     timestamp: 0,
   };
   private priceStoreReady = false;
   public fiatSymbol = 'usd';
-  private readonly priceStore: PriceStore;
-  state: State;
+  networkService: NetworkService;
 
-  constructor(state: State) {
-    this.state = state;
+  constructor(networkService: NetworkService) {
+    this.networkService = networkService;
     this.priceStore = new PriceStore();
+
+    storage.get(['fiatSymbol']).then(({ fiatSymbol }) => {
+      if (fiatSymbol) this.fiatSymbol = fiatSymbol;
+    });
   }
 
   get priceIds() {
-    const assets = this.state.assetsMap.flatMap(({ priceId }) => (priceId ? [priceId] : []));
+    const assets = this.networkService.assetsMap.flatMap(({ priceId }) => (priceId ? [priceId] : []));
 
     return Array.from(new Set(assets));
   }

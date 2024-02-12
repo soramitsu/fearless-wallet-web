@@ -94,11 +94,6 @@ export interface SigningRequest {
   url: string;
 }
 
-export interface MobileSigningRequest {
-  id: string;
-  request: SignerPayloadRaw;
-}
-
 export interface MobileSignRequest extends Resolver<ResponseSigning> {
   id: string;
   request: SignerPayloadRaw;
@@ -263,7 +258,18 @@ export interface ApiProps {
   nodeIndex: number;
   isEthereum: boolean;
 }
-
+export interface EvmApiProps {
+  api: EvmProvider;
+  apiRetry?: number;
+  nodeIndex?: number;
+  timeout: Record<string, number>;
+}
+export type FetchEvmBalancePayload = {
+  _networks?: NetworkName[];
+  _ethereumAddress?: string;
+  assetId?: string;
+  force?: boolean;
+};
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type BaseRequestSign = {};
 
@@ -402,7 +408,7 @@ export interface RequestAccountExport {
 
 export type EvmProvider = JsonRpcProvider | WebSocketProvider;
 
-export type EvmApiMap = Record<string, EvmProvider>;
+export type EvmApiMap = Record<string, EvmApiProps>;
 
 export interface ApiMap {
   substrate: Record<string, ApiProps>;

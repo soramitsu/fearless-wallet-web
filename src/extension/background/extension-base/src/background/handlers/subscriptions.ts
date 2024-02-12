@@ -28,6 +28,7 @@ type SubscriptionMap = {
 
 export class FWSubscription {
   private serviceSubscription: Subscription | undefined;
+  public readonly unsubscriptionMap: Record<string, () => void> = {};
   private serviceInfo: {
     networks: { substrate: NetworkName[]; evm: NetworkName[] };
     address: string;
@@ -77,7 +78,7 @@ export class FWSubscription {
     this.logger.log('Starting subscription');
 
     const currentAccount = await this.state.currentAccount;
-    const accountsExceptCurrent = this.state
+    const accountsExceptCurrent = this.state.keyringService
       .getSubstrateAccounts()
       .filter((el) => el.address !== currentAccount?.address);
     this.state.nftService.fetchNfts();
@@ -119,7 +120,7 @@ export class FWSubscription {
             newEvmNetworksWithoutSubscribe.length !== 0
           ) {
             if (addressHasChanged) {
-              this.state.publishBalance();
+              this.state.balanceService.publishBalance();
 
               // если адрес изменился, то подписываемся на все сети
               this.subscribeBalances(address, ethereumAddress, null, null);
@@ -198,7 +199,8 @@ export class FWSubscription {
   ) {
     if (isFirstRun) this.state.balanceService.generateDefaultBalance(address);
 
-    if (newEvmNetworks?.length) this.state.fetchEvmBalance(newEvmNetworks, ethereumAddress);
+    if (newEvmNetworks?.length)
+      this.state.fetchEvmBalance({ _networks: newEvmNetworks, _ethereumAddress: ethereumAddress });
 
     const unsubList = subscribeBalance(address, ethereumAddress, newNetworks, this.state);
 

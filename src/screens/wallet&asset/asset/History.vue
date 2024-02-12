@@ -16,7 +16,9 @@
         <div :class="historyContainerClasses">
           <Loader v-if="showLoader" />
 
-          <template v-else-if="!isEmptyHistory">
+          <div v-else-if="isEmptyHistory" data-testid="noHistory">{{ $t('assets.noHistory') }}</div>
+
+          <template v-else>
             <HistoryItem
               v-for="(historyElement, index) in filteredHistory"
               :key="index"
@@ -28,8 +30,6 @@
               @click.native="openHistoryDetails(historyElement)"
             />
           </template>
-
-          <div v-else data-testid="noHistory">{{ $t('assets.noHistory') }}</div>
         </div>
       </Scroll>
     </div>
@@ -62,6 +62,7 @@ export default class History extends Vue {
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
   refreshTimeout = 30000;
+
   @Prop(Object) currency!: TokenGroup;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;

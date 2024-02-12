@@ -1,15 +1,18 @@
 import { JsonRpcProvider, WebSocketProvider } from 'ethers';
-import { type EvmProvider } from '@extension-base/background/types/types';
+import { type EvmApiProps, type EvmProvider } from '@extension-base/background/types/types';
 import { getEvmApiKey } from '@extension-base/const/networks';
+import { state } from '@extension-base/background/handlers';
 
-const initListeners = (provider: EvmProvider) => {
+const initListeners = (provider: EvmProvider, key: string) => {
   provider.on('error', () => {
     provider.removeAllListeners();
     provider.destroy();
+
+    delete state.getEvmApiMap[key];
   });
 };
 
-export const initWeb3Api = (url: string): EvmProvider => {
+export const initWeb3Api = (url: string, key: string): EvmApiProps => {
   const apiKey = getEvmApiKey(url);
   const providerUrl = `${url}${apiKey ?? ''}`;
 
@@ -20,7 +23,10 @@ export const initWeb3Api = (url: string): EvmProvider => {
       })
     : new WebSocketProvider(providerUrl);
 
-  initListeners(provider);
+  initListeners(provider, key);
 
-  return provider;
+  return {
+    api: provider,
+    timeout: {},
+  };
 };

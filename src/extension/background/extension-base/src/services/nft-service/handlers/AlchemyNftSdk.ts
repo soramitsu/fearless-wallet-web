@@ -1,10 +1,10 @@
-import { type Network, Alchemy, NftFilters, type Nft } from 'alchemy-sdk';
-import { type AvailableNftResponse, type FearlessNft, type NftState } from '@extension-base/services/nft-service/types';
-import { type NftService } from '@/extension/background/extension-base/src/services/nft-service';
+import { type Network, Alchemy, type Nft } from 'alchemy-sdk';
+import { type NftService } from '@extension-base/services/nft-service';
+import type { AvailableNftResponse, FearlessNft, NftState } from '@extension-base/services/nft-service/types';
 
 export default class AlchemyNftController {
   sdk: Alchemy;
-  chainId: number;
+  chainId: string;
   nftService: NftService;
   timespan: Record<string, number>;
 
@@ -14,33 +14,18 @@ export default class AlchemyNftController {
       network,
     });
     this.nftService = nftService;
-    this.chainId = +chainId;
+    this.chainId = chainId;
     this.timespan = {};
-  }
-
-  excludeFilters(address: string) {
-    const filters: NftFilters[] = [];
-
-    if (!this.nftService.hideSettings[address]) {
-      this.nftService.hideSettings[address] = {
-        airdrop: false,
-        spam: true, //it's dummy for now
-      };
-    }
-
-    if (this.nftService.hideSettings[address].airdrop) filters.push(NftFilters.AIRDROPS);
-
-    return filters;
   }
 
   getNfts(address: string) {
     return this.sdk.nft.getNftsForOwner(address, {
-      excludeFilters: this.excludeFilters(address),
+      excludeFilters: this.nftService.excludeFilters(address),
     });
   }
 
   getCollectionsForOwner(address: string) {
-    return this.sdk.nft.getContractsForOwner(address, { excludeFilters: this.excludeFilters(address) });
+    return this.sdk.nft.getContractsForOwner(address, { excludeFilters: this.nftService.excludeFilters(address) });
   }
 
   get readableNetwork() {
@@ -67,12 +52,15 @@ export default class AlchemyNftController {
     };
   }
 
-  async getCollectionPage(contract: string, pageKey?: string): Promise<AvailableNftResponse> {
+  async getCollectionPage(contract: string, address: string, pageKey?: string): Promise<AvailableNftResponse> {
     try {
       const nfts = await this.sdk.nft.getNftsForContract(contract, { pageKey });
+      const ids = this.nftService.nftMap[address][this.chainId][contract].ownedNfts.map((el) => el.id);
       const fearlessNft: FearlessNft[] = [];
 
       for (const nft of nfts.nfts) {
+        if (ids.some((id) => id === nft.tokenId)) continue;
+
         fearlessNft.push(this.convertNft(nft));
       }
 
@@ -97,8 +85,9 @@ export default class AlchemyNftController {
       const address = nft.contract.address;
       const collection = collections.contracts.find((contract) => contract.address === address);
 
-      if (collection && !ownedCollections[address]) {
+      if (collection && (!ownedCollections[this.chainId] || !ownedCollections[address])) {
         //init Collection
+
         ownedCollections[address] = {
           name: collection.openSeaMetadata.collectionName ?? collection.name ?? collection.displayNft.name ?? '',
           address: collection.address,

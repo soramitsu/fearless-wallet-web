@@ -2,7 +2,7 @@ import { APIItemState } from '@extension-base/api/types/networks';
 import { storage } from '@extension-base/stores/Storage';
 import { Subject } from 'rxjs';
 import { type FPNumber } from '@sora-substrate/util';
-import { getMockCurrencies, getSubstrateAddress } from '@extension-base/background/utils/utils';
+import { getMockCurrencies } from '@extension-base/background/utils/utils';
 import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
 import { fetchBalance } from '@extension-base/api/substrate/balance';
 import type State from '@extension-base/background/handlers/State';
@@ -81,7 +81,7 @@ export default class BalanceService {
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
     const { reserved, free, locked, frozen, total, transferable, state, id, relayChain, symbol } = item;
-    const accountAddress = getSubstrateAddress(address, this.state);
+    const accountAddress = this.state.keyringService.getSubstrateAddress(address);
     const balancesByAddress = this.balanceMap[accountAddress];
 
     const currencyIndex = balancesByAddress.findIndex(({ groupId, symbol: _symbol, relayChain: _relayChain }) => {

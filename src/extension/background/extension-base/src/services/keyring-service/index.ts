@@ -1,6 +1,6 @@
 import { keyring } from '@polkadot/ui-keyring';
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import { getSubstrateAddress, isEthereumNetwork } from '@extension-base/background/utils/utils';
+import { isEthereumNetwork } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { BehaviorSubject } from 'rxjs';
@@ -151,7 +151,7 @@ export class KeyringService {
 
     const { address } = pair;
     const isEthereum = isEthereumAddress(address);
-    const substrateAddress = getSubstrateAddress(address, this.state);
+    const substrateAddress = this.getSubstrateAddress(address);
 
     const substratePair = isEthereum ? this.getPair(substrateAddress) : pair;
     const ethereumAddress = isEthereum ? address : (substratePair?.meta.ethereumAddress as string | undefined);
@@ -225,6 +225,18 @@ export class KeyringService {
     const addresses = this.getAddresses();
 
     return [...accounts, ...addresses];
+  }
+
+  getSubstrateAddress(address: string) {
+    if (!isEthereumAddress(address)) return address;
+
+    const accounts = this.getAllAccounts();
+
+    const account = accounts.find(
+      ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
+    );
+
+    return account?.address ?? address;
   }
 
   isSameAddress(wallet1: Wallet, wallet2: Wallet): boolean {

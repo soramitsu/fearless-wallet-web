@@ -24,7 +24,7 @@ import { getCurrentProvider } from '@extension-base/utils/utils';
 import { initApi } from '@extension-base/api/substrate/api';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
-import { getSubstrateAddress, isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import PricesService from '@extension-base/services/prices-service';
@@ -826,7 +826,7 @@ export default class State {
 
     if (ethereumAddress === '') return;
 
-    const substrateAddress = getSubstrateAddress(ethereumAddress, this);
+    const substrateAddress = this.keyringService.getSubstrateAddress(ethereumAddress);
 
     const activeEvmNetworks = this.networkValues.filter(({ name, active }) => {
       if (_networks && !_networks.includes(name)) return false;

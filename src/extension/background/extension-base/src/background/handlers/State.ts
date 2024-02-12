@@ -19,9 +19,6 @@ import {
 } from '@extension-base/services';
 import { api as apiSora, type FPNumber } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
-import { initWeb3Api } from '@extension-base/api/evm';
-import { getCurrentProvider } from '@extension-base/utils/utils';
-import { initApi } from '@extension-base/api/substrate/api';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
 import { isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
@@ -86,7 +83,7 @@ export default class State {
   public onboardingService = new OnboardingService();
   public eventService = new EventService();
   public keyringService = new KeyringService(this, this.eventService);
-  public networkService = new NetworkService();
+  public networkService = new NetworkService(this);
   public requestService = new RequestService(this.keyringService);
   public walletConnectService = new WalletConnectService(this, this.requestService);
   public walletConnectDappService = new WalletConnectDAppService(this);
@@ -137,15 +134,11 @@ export default class State {
     return api;
   }
   public get getSubstrateApiMap() {
-    return this.networkService.apis.substrate;
+    return this.networkService.substrateApiHandler.api;
   }
 
   public get getEvmApiMap() {
-    return this.networkService.apis.evm;
-  }
-
-  public get getApiMap() {
-    return this.networkService.apis;
+    return this.networkService.evmApiHandler.api;
   }
 
   public createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
@@ -281,8 +274,8 @@ export default class State {
 
       if (isEthereum && name in this.getEvmApiMap) delete this.getEvmApiMap[name];
 
-      if (isEthereum && isRequireEvmAPI(name)) this.initWeb3Api(data);
-      else initApi(data, this);
+      if (isEthereum && isRequireEvmAPI(name)) this.networkService.evmApiHandler.initEvmApi(data);
+      else this.networkService.substrateApiHandler.initApi(data);
     }
 
     this.networkService.updateNetworks();
@@ -315,33 +308,9 @@ export default class State {
   public updateServiceInfo() {
     this.serviceInfoSubject.next({
       networkMap: this.networkMap,
-      apiMap: this.getApiMap,
+      apiMap: this.networkService.getApiMap,
       currentAccountInfo: this.currentAccount,
     });
-  }
-
-  public refreshWeb3Api(network: string) {
-    this.initWeb3Api(this.networkMap[network]);
-  }
-
-  public initWeb3Api(network: NetworkJson | undefined) {
-    if (network === undefined) return;
-
-    const { name } = network;
-    const currentProvider = getCurrentProvider(network);
-
-    if (currentProvider) this.getEvmApiMap[name.toLowerCase()] = initWeb3Api(currentProvider, name.toLowerCase());
-  }
-
-  public refreshDotSamaApi(key: string) {
-    if (this.getSubstrateApiMap[key]) {
-      this.getSubstrateApiMap[key].nodeIndex = 0;
-      this.getSubstrateApiMap[key].apiRetry = 0;
-    }
-
-    const network = this.networkService.getNetworkByKey(key);
-
-    initApi(network, this);
   }
 
   public getNetworkGroupType() {
@@ -671,12 +640,13 @@ export default class State {
       const { name, isEthereum } = network;
 
       if (isEthereum && isRequireEvmAPI(name)) {
-        if (!this.getEvmApiMap[name] || !this.getEvmApiMap[name].api.ready) this.initWeb3Api(network);
+        if (!this.getEvmApiMap[name] || !this.getEvmApiMap[name].api.ready)
+          this.networkService.evmApiHandler.initEvmApi(network);
       } else {
         const initSubstrateApies = () => {
           this.resetApiRetries();
 
-          initApi(network, this);
+          this.networkService.substrateApiHandler.initApi(network);
         };
 
         if (this.getSubstrateApiMap[name]) {

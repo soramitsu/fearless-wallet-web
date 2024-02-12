@@ -56,7 +56,7 @@ export default class FWExtensionBase {
     if (meta.ethereumAddress) {
       const cb = () =>
         Object.keys(this.state.networkMap).forEach((network) => {
-          if (isRequireEvmAPI(network)) this.state.refreshWeb3Api(network);
+          if (isRequireEvmAPI(network)) this.state.networkService.evmApiHandler.refreshEvmApi(network);
         });
 
       if (this.state.currentAccount) {

@@ -12,7 +12,7 @@ import {
   type RequestNftTransfer,
   type ResponseNftTransfer,
 } from '@extension-base/background/types/types';
-import { getBalanceItem, getEthereumAddress } from '@extension-base/background/utils/utils';
+import { getBalanceItem } from '@extension-base/background/utils/utils';
 import { FPNumber } from '@sora-substrate/util';
 import { calcEvmFees } from '@extension-base/api/evm/transfer';
 import type {
@@ -315,7 +315,7 @@ export class NftService {
   }
 
   deleteSavedNfts(address: string) {
-    const ethereumAddress = getEthereumAddress(address, this.state);
+    const ethereumAddress = this.state.keyringService.getEthereumAddress(address);
 
     delete this.nftMap[ethereumAddress];
   }

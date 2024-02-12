@@ -12,12 +12,7 @@ import { createSubscription, unsubscribe } from '@extension-base/background/hand
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
-import {
-  isRequireEvmAPI,
-  uniqueStringArray,
-  getBalanceItem,
-  getEthereumAddress,
-} from '@extension-base/background/utils/utils';
+import { isRequireEvmAPI, uniqueStringArray, getBalanceItem } from '@extension-base/background/utils/utils';
 import { type MetadataDef } from '@polkadot/extension-inject/types';
 import {
   isProposalExpired,
@@ -188,7 +183,7 @@ export default class Extension extends FWExtensionBase {
       });
     });
 
-    this.state.updateAuthorizedAccounts(authorizedAccountsDiff);
+    this.state.requestService.updateAuthorizedAccounts(authorizedAccountsDiff);
 
     if (type === 'native') {
       const pair = this.state.keyringService.getAccount(address);
@@ -307,7 +302,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async authorizeUpdate({ authorizedAccounts, url }: RequestUpdateAuthorizedAccounts): Promise<void> {
-    return this.state.updateAuthorizedAccounts([[url, authorizedAccounts]]);
+    return this.state.requestService.updateAuthorizedAccounts([[url, authorizedAccounts]]);
   }
 
   async getAuthList(): Promise<ResponseAuthorizeList> {
@@ -595,7 +590,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async deleteAuthRequest(requestId: string): Promise<void> {
-    this.state.authorizeCancel({ id: requestId });
+    this.state.requestService.authorizeCancel({ id: requestId });
   }
 
   updateCurrentTabs({ tabs }: RequestActiveTabsUrlUpdate) {
@@ -635,7 +630,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   cancelAuthRequest(id: string) {
-    this.state.authorizeCancel({ id });
+    this.state.requestService.authorizeCancel({ id });
   }
 
   private createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
@@ -883,7 +878,7 @@ export default class Extension extends FWExtensionBase {
     }
 
     const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
-    const ethereumAddress = getEthereumAddress(from, this.state);
+    const ethereumAddress = this.state.keyringService.getEthereumAddress(from);
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
     const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
 
@@ -1021,7 +1016,7 @@ export default class Extension extends FWExtensionBase {
     }
 
     const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
-    const ethereumAddress = getEthereumAddress(from, this.state);
+    const ethereumAddress = this.state.keyringService.getEthereumAddress(from);
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
@@ -1392,7 +1387,7 @@ export default class Extension extends FWExtensionBase {
 
   async wcRequestApprove({ address, password, topic, isSavePass }: RequestApproveWalletConnect) {
     const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
-    const ethereumAddress = getEthereumAddress(substrateAddress, this.state);
+    const ethereumAddress = this.state.keyringService.getEthereumAddress(substrateAddress);
 
     if (password === '') {
       const eth = this.state.keyringService.getPair(ethereumAddress);

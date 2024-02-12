@@ -12,12 +12,7 @@ import { createSubscription, unsubscribe } from '@extension-base/background/hand
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
-import {
-  isRequireEvmAPI,
-  uniqueStringArray,
-  getBalanceItem,
-  getEthereumAddress,
-} from '@extension-base/background/utils/utils';
+import { isRequireEvmAPI, uniqueStringArray, getBalanceItem } from '@extension-base/background/utils/utils';
 import { type MetadataDef } from '@polkadot/extension-inject/types';
 import {
   isProposalExpired,
@@ -883,7 +878,7 @@ export default class Extension extends FWExtensionBase {
     }
 
     const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
-    const ethereumAddress = getEthereumAddress(from, this.state);
+    const ethereumAddress = this.state.keyringService.getEthereumAddress(from);
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
     const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
 
@@ -1021,7 +1016,7 @@ export default class Extension extends FWExtensionBase {
     }
 
     const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
-    const ethereumAddress = getEthereumAddress(from, this.state);
+    const ethereumAddress = this.state.keyringService.getEthereumAddress(from);
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
@@ -1392,7 +1387,7 @@ export default class Extension extends FWExtensionBase {
 
   async wcRequestApprove({ address, password, topic, isSavePass }: RequestApproveWalletConnect) {
     const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
-    const ethereumAddress = getEthereumAddress(substrateAddress, this.state);
+    const ethereumAddress = this.state.keyringService.getEthereumAddress(substrateAddress);
 
     if (password === '') {
       const eth = this.state.keyringService.getPair(ethereumAddress);

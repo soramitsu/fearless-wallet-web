@@ -1,5 +1,4 @@
 import { APIItemState } from '@extension-base/api/types/networks';
-import { isEthereumAddress } from '@polkadot/util-crypto';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type State from '@extension-base/background/handlers/State';
 import type { TokenGroup } from '@extension-base/background/types/types';
@@ -119,15 +118,6 @@ export function getMoonbeamMoonriverAssetName(asset: AssetName, network: Network
   return isEthereumNetwork(network) && !Object.values(ETHEREUM_UTILITY_ASSETS).includes(assetLower)
     ? `xc${assetLower}`
     : assetLower;
-}
-
-export function getEthereumAddress(address: string, state: State) {
-  if (isEthereumAddress(address)) return address;
-
-  const accounts = state.keyringService.getAllAccounts();
-  const account = accounts.find(({ address: _address }) => _address === address);
-
-  return (account?.meta.ethereumAddress as string) ?? '';
 }
 
 export const uniqueStringArray = (array: string[]): string[] => {

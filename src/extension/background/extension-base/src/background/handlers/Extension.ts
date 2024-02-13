@@ -133,22 +133,6 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
   return (value as SignerPayloadJSON).genesisHash !== undefined;
 }
 
-async function transformAccounts(accounts: SubjectInfo, state: State): Promise<AccountJson[]> {
-  return Object.values(accounts).flatMap(({ json: { address, meta }, type }) => {
-    if (isEthereumAddress(address)) return [];
-
-    return {
-      address,
-      ethereumAddress: meta.ethereumAddress as string,
-      active: address === state.currentAccount?.address,
-      name: meta.name ?? '',
-      type,
-      network: state.networkService.selectedNetworks[address] ?? ALL_NETWORKS,
-      ...meta,
-    };
-  });
-}
-
 export default class Extension extends FWExtensionBase {
   constructor(state: State) {
     super(state);
@@ -256,13 +240,29 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
+  convertAccounts(accounts: SubjectInfo): AccountJson[] {
+    return Object.values(accounts).flatMap(({ json: { address, meta }, type }) => {
+      if (isEthereumAddress(address)) return [];
+
+      return {
+        address,
+        ethereumAddress: meta.ethereumAddress as string,
+        active: address === this.state.currentAccount?.address,
+        name: meta.name ?? '',
+        type,
+        network: this.state.networkService.selectedNetworks[address] ?? ALL_NETWORKS,
+        ...meta,
+      };
+    });
+  }
+
   async addressesSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(addresses.subscribe)'>(id, port);
 
-    const transformedAddresses = transformAccounts(this.state.keyringService.addressSubject.value, this.state);
+    const transformedAddresses = this.convertAccounts(this.state.keyringService.addressSubject.value);
 
     const subscription = this.state.keyringService.addressSubject.subscribe((addresses: SubjectInfo): void => {
-      transformAccounts(addresses, this.state).then(cb);
+      cb(this.convertAccounts(addresses));
     });
 
     port.onDisconnect.addListener((): void => {
@@ -276,10 +276,10 @@ export default class Extension extends FWExtensionBase {
   async accountsSubscribe(id: string, port: Port): Promise<AccountJson[]> {
     const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
 
-    const transformedAccounts = transformAccounts(this.state.keyringService.accountSubject.value, this.state);
+    const transformedAccounts = this.convertAccounts(this.state.keyringService.accountSubject.value);
 
     const subscription = this.state.keyringService.accountSubject.subscribe((accounts: SubjectInfo): void => {
-      transformAccounts(accounts, this.state).then(cb);
+      cb(this.convertAccounts(accounts));
     });
 
     port.onDisconnect.addListener((): void => {
@@ -1125,7 +1125,7 @@ export default class Extension extends FWExtensionBase {
     if (stashAddress === '') return true;
 
     // Если для address существует stashAddress и он отличается от address, тогда address уже является контроллер аккаунтом
-    const isValidController = this.state.keyringService.isSameAddress(
+    const isValidController = this.state.isSameAddress(
       { address: stashAddress, ethereumAddress: stashAddress },
       { address, ethereumAddress: address }
     );

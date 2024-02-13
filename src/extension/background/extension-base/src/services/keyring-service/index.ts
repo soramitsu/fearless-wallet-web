@@ -1,27 +1,21 @@
 import { keyring } from '@polkadot/ui-keyring';
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import { isEthereumNetwork } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { BehaviorSubject } from 'rxjs';
 import CurrentAccountStore, { type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import { type EventService } from '@extension-base/services';
-import type State from '@extension-base/background/handlers/State';
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-keyring/types';
 import type { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
 import { isSameString } from '@/helpers';
-type Wallet = {
-  address: string;
-  ethereumAddress: string;
-};
 
 export class KeyringService {
   private readonly currentAccountStore = new CurrentAccountStore();
   readonly currentAccountSubject = new BehaviorSubject<CurrentAccountState>(null);
 
-  constructor(readonly state: State, eventService: EventService) {
+  constructor(eventService: EventService) {
     eventService.waitCryptoReady
       .then(() => {
         this.currentAccountStore.get('CurrentAccountInfo', (rs) => {
@@ -203,23 +197,6 @@ export class KeyringService {
     keyring.createFromUri(suri, meta, keypairType);
   }
 
-  formatAddress({ address, ethereumAddress }: Wallet, networkName: string = 'westend'): string {
-    const isEthereumNet = isEthereumNetwork(networkName);
-
-    if (isEthereumNet) return ethereumAddress;
-
-    const network = this.state.networkService.networksGithub.find(({ name }) => isSameString(name, networkName));
-    const prefix = network?.addressPrefix;
-
-    // the only case for try/catch
-    // if the user used ethereum account instead of a substratum account(via json or private key)
-    try {
-      return this.encodeAddress(address, prefix);
-    } catch {
-      return ethereumAddress;
-    }
-  }
-
   getSubstrateAccounts() {
     const accounts = this.getAccounts().filter((el) => !isEthereumAddress(el.address));
     const addresses = this.getAddresses();
@@ -246,9 +223,5 @@ export class KeyringService {
     const account = accounts.find(({ address: _address }) => _address === address);
 
     return (account?.meta.ethereumAddress as string) ?? '';
-  }
-
-  isSameAddress(wallet1: Wallet, wallet2: Wallet): boolean {
-    return this.formatAddress(wallet1) === this.formatAddress(wallet2);
   }
 }

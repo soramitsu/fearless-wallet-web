@@ -52,7 +52,10 @@ import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
-
+type Wallet = {
+  address: string;
+  ethereumAddress: string;
+};
 export type Passwords = {
   [address in string]: string | undefined;
 };
@@ -78,7 +81,7 @@ export default class State {
 
   public onboardingService = new OnboardingService();
   public eventService = new EventService();
-  public keyringService = new KeyringService(this, this.eventService);
+  public keyringService = new KeyringService(this.eventService);
   public networkService = new NetworkService(this, this.keyringService);
   public requestService = new RequestService(this.keyringService);
   public walletConnectService = new WalletConnectService(this, this.requestService);
@@ -631,5 +634,25 @@ export default class State {
         fetchEvmAssetBalance(ethereumAddress, name, id, this);
       });
     });
+  }
+
+  formatAddress({ address, ethereumAddress }: Wallet, networkName: string = 'westend'): string {
+    const isEthereumNet = isEthereumNetwork(networkName);
+
+    if (isEthereumNet) return ethereumAddress;
+
+    const network = this.networkService.networkMap[networkName.toLowerCase()];
+
+    // the only case for try/catch
+    // if the user used ethereum account instead of a substratum account(via json or private key)
+    try {
+      return this.keyringService.encodeAddress(address, network?.addressPrefix);
+    } catch {
+      return ethereumAddress;
+    }
+  }
+
+  isSameAddress(wallet1: Wallet, wallet2: Wallet): boolean {
+    return this.formatAddress(wallet1) === this.formatAddress(wallet2);
   }
 }

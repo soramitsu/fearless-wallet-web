@@ -1,13 +1,12 @@
 const { env } = require('process');
 const packageJson = require('../../package.json');
 
-const makeManifest = (browser) => {
+module.exports = (browser) => {
   const baseContentSecurityPolicy =
-    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self';  style-src 'unsafe-inline';img-src 'self' https://raw.githubusercontent.com https://cdn.elearningindustry.com data:; frame-src https://soracard.com/; connect-src https: wss: ws:";
+    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self';  style-src 'unsafe-inline';img-src 'self' https: data:; frame-src https://soracard.com/; connect-src https: wss: ws:";
 
   const firefoxBase = {
     manifest_version: 2,
-
     permissions: ['storage', 'tabs', 'identity', '*://www.googleapis.com/*', 'clipboardRead'],
     background: {
       scripts: ['background.js'],
@@ -80,5 +79,3 @@ const makeManifest = (browser) => {
     ...(browser === 'chrome' ? chromiumBase : firefoxBase),
   };
 };
-
-module.exports = makeManifest;

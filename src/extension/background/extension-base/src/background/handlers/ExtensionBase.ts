@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { getSubstrateAddress, isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import type {
   CachedUnlocks,
   RequestAccountExport,
@@ -56,7 +56,7 @@ export default class FWExtensionBase {
     if (meta.ethereumAddress) {
       const cb = () =>
         Object.keys(this.state.networkMap).forEach((network) => {
-          if (isRequireEvmAPI(network)) this.state.refreshWeb3Api(network);
+          if (isRequireEvmAPI(network)) this.state.networkService.evmApiHandler.refreshEvmApi(network);
         });
 
       if (this.state.currentAccount) {
@@ -115,7 +115,7 @@ export default class FWExtensionBase {
   }
 
   signingIsLocked({ address }: RequestSigningIsLocked): ResponseSigningIsLocked {
-    const substrateAddress = getSubstrateAddress(address, this.state);
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
     const pair = this.state.keyringService.getPair(substrateAddress);
 
     assert(pair, 'Unable to find pair');

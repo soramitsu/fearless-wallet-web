@@ -19,12 +19,8 @@ import {
 } from '@extension-base/services';
 import { api as apiSora, type FPNumber } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
-import { initWeb3Api } from '@extension-base/api/evm';
-import { getCurrentProvider } from '@extension-base/utils/utils';
-import { initApi } from '@extension-base/api/substrate/api';
-import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
-import { getSubstrateAddress, isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import PricesService from '@extension-base/services/prices-service';
@@ -36,8 +32,6 @@ import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   ServiceInfo,
-  AuthUrls,
-  AuthorizedAccountsDiff,
   RequestRpcSend,
   RequestRpcSubscribe,
   RequestRpcUnsubscribe,
@@ -46,7 +40,6 @@ import type {
   IState,
   ActiveTabAuthorizeStatus,
   Providers,
-  RequestAuthorizeCancel,
   RequestAccountExportPrivateKey,
   ResponseAccountExportPrivateKey,
   FetchEvmBalancePayload,
@@ -86,7 +79,7 @@ export default class State {
   public onboardingService = new OnboardingService();
   public eventService = new EventService();
   public keyringService = new KeyringService(this, this.eventService);
-  public networkService = new NetworkService();
+  public networkService = new NetworkService(this, this.keyringService);
   public requestService = new RequestService(this.keyringService);
   public walletConnectService = new WalletConnectService(this, this.requestService);
   public walletConnectDappService = new WalletConnectDAppService(this);
@@ -125,27 +118,12 @@ export default class State {
     return this.requestService.authSubject;
   }
 
-  public getEvmApiByChainiD(chainId: string) {
-    const network = this.networkValues.find((network) => network.chainId === chainId);
-
-    if (!network) throw new Error(`coudnt find the network with chainId ${chainId}`);
-
-    const api = this.getEvmApi(network.name);
-
-    if (!api) throw new Error(`api not init`);
-
-    return api;
-  }
   public get getSubstrateApiMap() {
-    return this.networkService.apis.substrate;
+    return this.networkService.substrateApiHandler.api;
   }
 
   public get getEvmApiMap() {
-    return this.networkService.apis.evm;
-  }
-
-  public get getApiMap() {
-    return this.networkService.apis;
+    return this.networkService.evmApiHandler.api;
   }
 
   public createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
@@ -250,63 +228,19 @@ export default class State {
   }
 
   public upsertNetworkMap(data: NetworkJson): boolean {
-    const { name, currentProvider, chain, paraId, decimals, customNodes, isEthereum } = data;
-
-    if (name in this.networkMap) {
-      const network = this.networkMap[name];
-      //make network active if it was disabled previously
-      network.active = true;
-      // update provider for existed network
-      network.customNodes = customNodes;
-
-      if (currentProvider !== network.currentProvider && currentProvider) network.currentProvider = currentProvider;
-
-      network.chain = chain;
-
-      if (decimals) network.decimals = decimals;
-
-      network.paraId = paraId;
-    } else {
-      // insert
-      this.networkMap[name] = data;
-    }
-
-    if (this.networkMap[name].active) {
-      // update API map if network is active
-      if (name in this.getSubstrateApiMap) {
-        this.getSubstrateApiMap[name].api?.disconnect();
-        this.getSubstrateApiMap[name].provider?.disconnect();
-        delete this.getSubstrateApiMap[name];
-      }
-
-      if (isEthereum && name in this.getEvmApiMap) delete this.getEvmApiMap[name];
-
-      if (isEthereum && isRequireEvmAPI(name)) this.initWeb3Api(data);
-      else initApi(data, this);
-    }
-
-    this.networkService.updateNetworks();
-
-    this.updateServiceInfo();
-
-    return true;
+    return this.networkService.upsertNetworkMap(data, () => {
+      this.updateServiceInfo();
+    });
   }
 
   public disableNetworkMap(networkKey: string): boolean {
     //if it's already disconnected then return true
-    if (this.networkMap[networkKey].networkStatus === NETWORK_STATUS.DISCONNECTED) return true;
+    this.networkService.disableNetworkMap(networkKey, () => {
+      this.updateServiceInfo();
 
-    if (this.networkMap[networkKey]?.isEthereum) delete this.getEvmApiMap[networkKey];
-    else delete this.getSubstrateApiMap[networkKey];
-
-    this.networkMap[networkKey].active = false;
-    this.networkMap[networkKey].networkStatus = NETWORK_STATUS.DISCONNECTED;
-
-    this.networkService.updateNetworks();
-    this.updateServiceInfo();
-
-    this.requestService.getAuthorize((data) => {
-      this.requestService.setAuthorize(data);
+      this.requestService.getAuthorize((data) => {
+        this.requestService.setAuthorize(data);
+      });
     });
 
     return true;
@@ -315,37 +249,9 @@ export default class State {
   public updateServiceInfo() {
     this.serviceInfoSubject.next({
       networkMap: this.networkMap,
-      apiMap: this.getApiMap,
+      apiMap: this.networkService.getApiMap,
       currentAccountInfo: this.currentAccount,
     });
-  }
-
-  public refreshWeb3Api(network: string) {
-    this.initWeb3Api(this.networkMap[network]);
-  }
-
-  public initWeb3Api(network: NetworkJson | undefined) {
-    if (network === undefined) return;
-
-    const { name } = network;
-    const currentProvider = getCurrentProvider(network);
-
-    if (currentProvider) this.getEvmApiMap[name.toLowerCase()] = initWeb3Api(currentProvider, name.toLowerCase());
-  }
-
-  public refreshDotSamaApi(key: string) {
-    if (this.getSubstrateApiMap[key]) {
-      this.getSubstrateApiMap[key].nodeIndex = 0;
-      this.getSubstrateApiMap[key].apiRetry = 0;
-    }
-
-    const network = this.networkService.getNetworkByKey(key);
-
-    initApi(network, this);
-  }
-
-  public getNetworkGroupType() {
-    return this.getNetworkGroupType;
   }
 
   async setFavoriteNetwork(networkName: string): Promise<boolean> {
@@ -391,7 +297,7 @@ export default class State {
       }
     });
 
-    if (this.ready) this.initNetworkStates();
+    if (this.ready) this.networkService.initNetworkApis();
 
     this.updateServiceInfo();
 
@@ -431,44 +337,8 @@ export default class State {
     return this.currentTabStatus;
   }
 
-  async authorizeCancel({ id }: RequestAuthorizeCancel): Promise<boolean> {
-    const queued = await this.requestService.getAuthRequest(id);
-
-    assert(queued, 'Unable to find request');
-
-    const { reject } = queued;
-
-    // Reject without error meaning cancel
-    reject(new Error('Cancelled'));
-
-    return true;
-  }
-
   public getAllAddresses(): string[] {
     return Object.keys(accounts.subject.value);
-  }
-
-  async removeAuthorization(url: string): Promise<AuthUrls> {
-    const entries = await this.requestService.getAuthList();
-    const entry = entries[url];
-
-    assert(entry, `The source ${url} is not known`);
-
-    delete entries[url];
-
-    this.requestService.setAuthorize(entries);
-
-    return entries;
-  }
-
-  async updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
-    const entries = await this.requestService.getAuthList();
-
-    authorizedAccountDiff.forEach(([url, authorizedAccountDiff]) => {
-      entries[url].authorizedAccounts = authorizedAccountDiff;
-    });
-
-    return this.requestService.setAuthorize(entries);
   }
 
   // List all providers the extension is exposing
@@ -581,109 +451,18 @@ export default class State {
       });
   }
 
-  public async prepNetworkJson() {
-    const { data: networks } = await axios.get<NetworkJson[]>(URLS.CHAINS);
-
-    const networksFromStorage = await this.networkService.getStoredNetworks();
-
-    this.networkService.networksGithub = networks;
-
-    this.networkService.networksGithub
-      .filter((el) => {
-        if (el.disabled) return false;
-
-        const isTestnet = !!el.options?.some((option) => option === 'testnet');
-
-        if (process.env.VUE_APP_TEST_ONLY !== undefined) return isTestnet;
-
-        if (process.env.NODE_ENV === 'production') return !isTestnet;
-
-        return true;
-      })
-      .forEach((network) => {
-        const [{ url: currentProvider }] = network.nodes;
-        const providers: Record<string, string> = {};
-
-        network.nodes.forEach(({ name, url }) => (providers[name] = url));
-
-        const isEthereum = isEthereumNetwork(network.name);
-        const networkFromStorage = networksFromStorage ? networksFromStorage[network.name] : undefined;
-
-        const favorite = networkFromStorage && networkFromStorage.favorite ? networkFromStorage.favorite : [];
-
-        this.networkMap[network.name] = {
-          ...network,
-          key: network.name,
-          isEthereum,
-          genesisHash: `0x${network.chainId}`,
-          chainType: isEthereum ? 'ethereum' : 'substrate',
-          active: true,
-          customNodes: [],
-          favorite,
-          providers,
-          currentProvider,
-        };
-      });
-
-    this.networkService.updateNetworkStore();
-
-    this.keyringService.getSubstrateAccounts().forEach((el) => {
-      //Migration from old network management
-      if (!this.networkService.selectedNetworks[el.address])
-        this.networkService.selectedNetworks[el.address] = ALL_NETWORKS;
-    });
-
-    const activeNetworks = this.networkService.getActiveNetworks();
-
-    Object.keys(this.networkMap).forEach((key) => {
-      const isExists = activeNetworks.some(({ name }) => name === key);
-
-      this.networkMap[key].active = isExists;
-    });
-
+  public async init() {
+    await this.eventService.waitCryptoReady;
+    await this.networkService.initNetworkMap();
     this.keyringService
       .getSubstrateAccounts()
       .forEach(({ address }) => this.balanceService.generateDefaultBalance(address));
     this.ready = true; //Set true if chain json is parsed and data is preped for init apis
-  }
-
-  public async init() {
-    await this.eventService.waitCryptoReady;
-    await this.prepNetworkJson();
     this.fetchXcmInfo();
 
-    await this.initNetworkStates();
+    await this.networkService.initNetworkApis();
     this.onReady();
     this.updateServiceInfo();
-  }
-
-  resetApiRetries() {
-    Object.values(this.getSubstrateApiMap).forEach((api) => {
-      api.nodeIndex = 0;
-      api.apiRetry = 0;
-    });
-  }
-
-  public initNetworkStates() {
-    const activeNetworks = this.networkValues.filter(({ active }) => active);
-
-    for (const network of activeNetworks) {
-      const { name, isEthereum } = network;
-
-      if (isEthereum && isRequireEvmAPI(name)) {
-        if (!this.getEvmApiMap[name] || !this.getEvmApiMap[name].api.ready) this.initWeb3Api(network);
-      } else {
-        const initSubstrateApies = () => {
-          this.resetApiRetries();
-
-          initApi(network, this);
-        };
-
-        if (this.getSubstrateApiMap[name]) {
-          this.getSubstrateApiMap[name].api?.isReadyOrError.catch(initSubstrateApies);
-        } else initSubstrateApies();
-      }
-    }
   }
 
   public updateNetworkForNewWallet(address: string) {
@@ -826,7 +605,7 @@ export default class State {
 
     if (ethereumAddress === '') return;
 
-    const substrateAddress = getSubstrateAddress(ethereumAddress, this);
+    const substrateAddress = this.keyringService.getSubstrateAddress(ethereumAddress);
 
     const activeEvmNetworks = this.networkValues.filter(({ name, active }) => {
       if (_networks && !_networks.includes(name)) return false;

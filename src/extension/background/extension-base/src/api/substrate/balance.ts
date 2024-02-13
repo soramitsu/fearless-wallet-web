@@ -1,6 +1,6 @@
 import { type Subscription } from 'rxjs';
 import { type ApiPromise } from '@polkadot/api';
-import { isEthereumNetwork, getSubstrateAddress, getUtilityProps } from '@extension-base/background/utils/utils';
+import { isEthereumNetwork, getUtilityProps } from '@extension-base/background/utils/utils';
 import { APIItemState, NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import { FPNumber } from '@sora-substrate/util';
@@ -60,7 +60,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
       // У Equilibrium system.account это "особенный" паллет, балансы возвращаются разом для всех токенов
       // Причем возвращаются только не нулевые балансы
       // Поэтому нужно пройтись по остальным(нулевым) балансам и проставить для них статуc Ready, тк по факту мы их "получили" и знаем, что они = 0
-      const substrateAddress = getSubstrateAddress(address, state);
+      const substrateAddress = state.keyringService.getSubstrateAddress(address);
 
       assets.forEach(({ id, symbol }) => {
         if (!notZeroBalances.includes(id))
@@ -116,7 +116,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
             : balances;
 
         const { frozen, locked, reserved, total, transferable } = formatBalance(balance, precision);
-        const substrateAddress = getSubstrateAddress(address, state);
+        const substrateAddress = state.keyringService.getSubstrateAddress(address);
 
         setBalance(
           networkKey,

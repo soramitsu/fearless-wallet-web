@@ -1,5 +1,6 @@
 /* eslint-disable no-use-before-define */
 import { type NftTx, type NftSettings } from '@extension-base/services/nft-service/types';
+import { type SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { ALLOWED_PATH } from '@extension-base/defaults';
 import type { Subscription } from 'rxjs';
 import type { JsonRpcProvider, WebSocketProvider } from 'ethers';
@@ -748,4 +749,11 @@ export type EvmAppState = {
   chainId?: string;
   isConnected?: boolean;
   web3?: JsonRpcProvider;
+};
+
+export type TransformAccountPayload = {
+  accounts: SubjectInfo;
+  anyType?: boolean;
+  authInfo?: AuthUrlInfo;
+  accountAuthType?: AccountAuthType;
 };

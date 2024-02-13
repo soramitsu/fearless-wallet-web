@@ -29,6 +29,10 @@ export class KeyringService {
     return keyring.addresses.subject.value;
   }
 
+  get accountSubjectValue() {
+    return keyring.accounts.subject.value;
+  }
+
   get currentAccount(): CurrentAccountState {
     return this.currentAccountSubject.value;
   }

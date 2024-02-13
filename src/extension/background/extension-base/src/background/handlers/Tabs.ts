@@ -16,10 +16,8 @@ import { type RequestArguments } from '@json-rpc-tools/utils';
 import { type JsonRpcProvider, type JsonRpcPayload } from 'ethers';
 import { type RequestEvmProviderSend, type EvmEventType } from '@extension-base/page/types';
 import { CRON_GET_API_MAP_STATUS } from '@extension-base/const/intervals';
-import { canDerive } from '@extension-base/utils';
 import type State from '@extension-base/background/handlers/State';
 import type {
-  AccountAuthType,
   AccountSub,
   AuthUrlInfo,
   AuthUrls,
@@ -48,41 +46,6 @@ import type {
   MetadataDef,
   ProviderMeta,
 } from '@polkadot/extension-inject/types';
-
-type TransformAccountPayload = {
-  accounts: SubjectInfo;
-  anyType?: boolean;
-  authInfo?: AuthUrlInfo;
-  accountAuthType?: AccountAuthType;
-};
-
-function transformAccountsV2({ accounts, anyType, authInfo }: TransformAccountPayload): InjectedAccount[] {
-  const accountSelected = authInfo
-    ? authInfo.isAllowed
-      ? Object.keys(authInfo.isAllowedMap).filter((address) => authInfo.isAllowedMap[address])
-      : []
-    : [];
-
-  return Object.values(accounts)
-    .filter(({ type, json: { address } }) => {
-      if (accountSelected.includes(address)) return true;
-
-      return anyType ? true : canDerive(type);
-    })
-    .map(
-      ({
-        json: {
-          address,
-          meta: { name },
-        },
-        type,
-      }): InjectedAccount => ({
-        address,
-        name,
-        type,
-      })
-    );
-}
 
 type EvmEmitterCallback = (eventName: EvmEventType, payload: unknown) => void;
 export default class Tabs {
@@ -115,7 +78,7 @@ export default class Tabs {
   }
 
   async accountsListAuthorized(url: string, { anyType }: RequestAccountList): Promise<InjectedAccount[]> {
-    const transformedAccounts = transformAccounts(accountsObservable.subject.getValue(), anyType);
+    const transformedAccounts = transformAccounts({ accounts: this.state.keyringService.accountSubjectValue, anyType });
     const transformedAddresses = transformAddresses(this.state.keyringService.addressesSubjectValue);
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
 
@@ -141,7 +104,7 @@ export default class Tabs {
 
     this.accountSubs[id] = {
       subscription: accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
-        const transformedAccounts = transformAccounts(accounts);
+        const transformedAccounts = transformAccounts({ accounts });
         const transformedMobileAccount = transformAddresses(this.state.keyringService.addressesSubjectValue);
         const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
 
@@ -460,7 +423,7 @@ export default class Tabs {
       this.getAuthInfo(url)
         .then((authInfo) => {
           const allAccounts = this.state.keyringService.accountSubject.value;
-          const accountList = transformAccountsV2({
+          const accountList = transformAccounts({
             accounts: allAccounts,
             anyType: false,
             authInfo,

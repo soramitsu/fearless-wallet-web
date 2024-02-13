@@ -1,7 +1,7 @@
 import { assert } from '@polkadot/util';
-import { canDerive } from '@extension-base/utils/utils';
+import { type TransformAccountPayload } from '@extension-base/background/types/types';
 import type { InjectedAccount } from '@polkadot/extension-inject/types';
-import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { SingleAddress, SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 export function withErrorLog(fn: () => unknown): void {
   try {
@@ -26,20 +26,33 @@ export function stripUrl(url: string): string {
   return parts[2];
 }
 
-export function transformAccounts(accounts: SubjectInfo, anyType = false): InjectedAccount[] {
+export function transformAccounts({ accounts, accountAuthType, authInfo }: TransformAccountPayload): InjectedAccount[] {
+  const accountSelected = authInfo
+    ? authInfo.isAllowed
+      ? Object.keys(authInfo.isAllowedMap).filter((address) => authInfo.isAllowedMap[address])
+      : []
+    : [];
+
+  const authTypeFilter = ({ type }: SingleAddress): boolean => {
+    if (accountAuthType === 'substrate') return type !== 'ethereum';
+    if (accountAuthType === 'evm') return type === 'ethereum';
+
+    return true;
+  };
+
   return Object.values(accounts)
-    .filter(({ type }) => (anyType ? true : canDerive(type)))
+    .filter(authTypeFilter)
+    .filter(({ json: { address } }) => accountSelected.includes(address))
     .sort((a, b) => (a.json.meta.whenCreated || 0) - (b.json.meta.whenCreated || 0))
     .map(
       ({
         json: {
           address,
-          meta: { genesisHash, name },
+          meta: { name },
         },
         type,
       }): InjectedAccount => ({
         address,
-        genesisHash: genesisHash ?? '',
         name,
         type,
       })

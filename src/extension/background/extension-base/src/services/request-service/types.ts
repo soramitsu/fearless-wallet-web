@@ -7,8 +7,9 @@ export type WCSignRequest = Resolver<ResponseSigning> & {
   request: WalletConnectTransactionRequest;
 };
 
-export type GetDAppChainInfoPayload = {
+export type DAppChainInfoPayload = {
   accessType: AccountAuthType;
   autoActive?: boolean;
+  defaultChain?: string;
   url?: string;
 };

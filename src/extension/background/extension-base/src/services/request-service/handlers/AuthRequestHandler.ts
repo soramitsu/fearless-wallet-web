@@ -4,6 +4,8 @@ import { stripUrl } from '@extension-base/background/handlers/helpers';
 import AuthorizeStore from '@extension-base/stores/Authorize';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { getId } from '@extension-base/utils';
+import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { type DAppChainInfoPayload } from '@extension-base/services/request-service/types';
 import type {
   Resolver,
   AuthorizeRequest,
@@ -12,12 +14,14 @@ import type {
   AuthUrls,
   RequestAuthorizeTab,
 } from '@extension-base/background/types/types';
-import type { RequestService } from '@extension-base/services';
+import type { NetworkService, RequestService } from '@extension-base/services';
+import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 
 const AUTH_URLS_KEY = 'authUrls';
 
 export class AuthRequestHandler {
   private readonly requestService: RequestService;
+  private readonly networkService: NetworkService;
 
   readonly authRequests: Record<string, AuthRequest> = {};
   private authorizeCached: AuthUrls = {};
@@ -26,12 +30,11 @@ export class AuthRequestHandler {
   private readonly evmNetworkSubject = new BehaviorSubject<AuthUrls>({});
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
 
-  constructor(requestService: RequestService) {
-    this.getAuthorize((auths) => {
-      this.authorizeCached = auths ?? {};
-    });
+  constructor(requestService: RequestService, networkService: NetworkService) {
+    this.getAuthorize((auths) => (this.authorizeCached = auths ?? {}));
 
     this.requestService = requestService;
+    this.networkService = networkService;
   }
 
   public get numAuthRequests(): number {
@@ -217,6 +220,31 @@ export class AuthRequestHandler {
     });
   }
 
+  getDAppNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {
+    const networks = this.networkService.networkMap;
+    const defaultChain = options.defaultChain;
+    let needEnableChains: string[] = [];
+
+    let chainInfo: NetworkJson | undefined;
+
+    if (['both', 'evm'].includes(options.accessType)) {
+      const evmChains = Object.values(networks).filter(({ name }) => isRequireEvmAPI(name));
+
+      chainInfo =
+        (defaultChain
+          ? networks[defaultChain]
+          : evmChains.find((chain) => networks[chain.name.toLowerCase()]?.active)) || evmChains[0];
+
+      if (options.autoActive && !needEnableChains.includes(chainInfo?.name)) {
+        needEnableChains.push(chainInfo?.name);
+      }
+    }
+
+    needEnableChains = needEnableChains.filter((slug) => !networks[slug]?.active);
+    needEnableChains.length > 0 && this.networkService.enableNetworks(needEnableChains);
+
+    return chainInfo;
+  }
   public resetWallet() {
     for (const request of this.authValues) {
       request.reject(new Error('Reset wallet'));

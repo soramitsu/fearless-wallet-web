@@ -8,7 +8,7 @@ import {
   MetadataRequestHandler,
   SubstrateRequestHandler,
 } from '@extension-base/services/request-service/handlers';
-import { type KeyringService } from '@extension-base/services';
+import { type NetworkService, type KeyringService } from '@extension-base/services';
 import { assert } from '@polkadot/util';
 import { type NetworkJson } from '@extension-base/types';
 import type {
@@ -28,11 +28,10 @@ import type {
   AccountJson,
   AuthorizeRequest,
   MetadataRequest,
-  AccountAuthType,
   AuthorizedAccountsDiff,
   RequestAuthorizeCancel,
 } from '@extension-base/background/types/types';
-import type { WCSignRequest } from '@extension-base/services/request-service/types';
+import type { DAppChainInfoPayload, WCSignRequest } from '@extension-base/services/request-service/types';
 
 export class RequestService {
   readonly keyringService: KeyringService;
@@ -44,14 +43,14 @@ export class RequestService {
   readonly substrateRequestHandler: SubstrateRequestHandler;
   readonly evmRequestHandler: EvmRequestHandler;
 
-  constructor(keyringService: KeyringService) {
+  constructor(keyringService: KeyringService, networkService: NetworkService) {
     this.keyringService = keyringService;
     this.popupHandler = new PopupHandler(this);
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
     this.substrateRequestHandler = new SubstrateRequestHandler(this, this.keyringService);
-    this.authRequestHandler = new AuthRequestHandler(this);
+    this.authRequestHandler = new AuthRequestHandler(this, networkService);
     this.substrateRequestHandler = new SubstrateRequestHandler(this, this.keyringService);
     this.evmRequestHandler = new EvmRequestHandler(this);
   }
@@ -175,16 +174,8 @@ export class RequestService {
     return this.evmRequestHandler.getSignWCRequest(topic);
   }
 
-  public getDAppChainInfo(options: {
-    accessType: AccountAuthType;
-    autoActive?: boolean;
-    defaultChain?: string;
-    url?: string;
-  }): NetworkJson | undefined {
-    console.info(options);
-
-    return undefined;
-    // return this.authRequestHandler.getDAppChainInfo(options);
+  public getDAppNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {
+    return this.authRequestHandler.getDAppNetworkInfo(options);
   }
   // WalletConnect Connect requests
   public getConnectWCRequest(id: string) {

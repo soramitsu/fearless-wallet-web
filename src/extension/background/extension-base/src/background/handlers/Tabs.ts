@@ -261,7 +261,7 @@ export default class Tabs {
 
   async getEvmState(url: string): Promise<EvmAppState> {
     let currentChain: string | undefined;
-    let autoActiveChain = false;
+    let autoActive = false;
 
     if (url) {
       const authInfo = await this.getAuthInfo(url);
@@ -270,11 +270,11 @@ export default class Tabs {
         currentChain = authInfo?.currentEvmNetworkKey;
       }
 
-      if (authInfo?.isAllowed) autoActiveChain = true;
+      if (authInfo?.isAllowed) autoActive = true;
     }
 
-    const currentEvmNetwork = this.state.requestService.getDAppChainInfo({
-      autoActive: autoActiveChain,
+    const currentEvmNetwork = this.state.requestService.getDAppNetworkInfo({
+      autoActive,
       accessType: 'evm',
       defaultChain: currentChain,
       url,

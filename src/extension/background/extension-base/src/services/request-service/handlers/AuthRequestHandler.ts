@@ -180,7 +180,7 @@ export class AuthRequestHandler {
         idStr,
         request,
         url,
-        accountAuthType: 'both',
+        accountAuthType,
       };
 
       this.updateIconAuth();

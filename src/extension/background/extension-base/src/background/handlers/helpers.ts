@@ -26,13 +26,7 @@ export function stripUrl(url: string): string {
   return parts[2];
 }
 
-export function transformAccounts({ accounts, accountAuthType, authInfo }: TransformAccountPayload): InjectedAccount[] {
-  const accountSelected = authInfo
-    ? authInfo.isAllowed
-      ? Object.keys(authInfo.isAllowedMap).filter((address) => authInfo.isAllowedMap[address])
-      : []
-    : [];
-
+export function transformAccounts({ accounts, accountAuthType }: TransformAccountPayload): InjectedAccount[] {
   const authTypeFilter = ({ type }: SingleAddress): boolean => {
     if (accountAuthType === 'substrate') return type !== 'ethereum';
     if (accountAuthType === 'evm') return type === 'ethereum';
@@ -42,7 +36,6 @@ export function transformAccounts({ accounts, accountAuthType, authInfo }: Trans
 
   return Object.values(accounts)
     .filter(authTypeFilter)
-    .filter(({ json: { address } }) => accountSelected.includes(address))
     .sort((a, b) => (a.json.meta.whenCreated || 0) - (b.json.meta.whenCreated || 0))
     .map(
       ({
@@ -51,11 +44,7 @@ export function transformAccounts({ accounts, accountAuthType, authInfo }: Trans
           meta: { name },
         },
         type,
-      }): InjectedAccount => ({
-        address,
-        name,
-        type,
-      })
+      }): InjectedAccount => ({ address, name, type })
     );
 }
 

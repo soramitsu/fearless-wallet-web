@@ -81,7 +81,6 @@ export default class Tabs {
     const transformedAccounts = transformAccounts({ accounts: this.state.keyringService.accountSubjectValue, anyType });
     const transformedAddresses = transformAddresses(this.state.keyringService.addressesSubjectValue);
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
-
     const filteredAuths = await this.filterForAuthorizedAccounts(totalAccounts, url);
 
     return filteredAuths;

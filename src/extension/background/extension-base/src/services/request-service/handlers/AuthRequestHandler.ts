@@ -23,7 +23,7 @@ export class AuthRequestHandler {
   private authorizeCached: AuthUrls = {};
   private readonly authorizeStore = new AuthorizeStore();
   private readonly authorizeUrlSubject = new BehaviorSubject<AuthUrls>({});
-  private readonly evmChainSubject = new BehaviorSubject<AuthUrls>({});
+  private readonly evmNetworkSubject = new BehaviorSubject<AuthUrls>({});
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
 
   constructor(requestService: RequestService) {
@@ -55,7 +55,7 @@ export class AuthRequestHandler {
     this.authorizeStore.set(AUTH_URLS_KEY, data, () => {
       this.authorizeCached = data;
 
-      this.evmChainSubject.next(this.authorizeCached);
+      this.evmNetworkSubject.next(this.authorizeCached);
       this.authorizeUrlSubject.next(this.authorizeCached);
       callback && callback();
     });
@@ -68,7 +68,7 @@ export class AuthRequestHandler {
     } else {
       this.authorizeStore.get('authUrls', (data) => {
         this.authorizeCached = data || {};
-        this.evmChainSubject.next(this.authorizeCached);
+        this.evmNetworkSubject.next(this.authorizeCached);
         this.authorizeUrlSubject.next(this.authorizeCached);
         update(this.authorizeCached);
       });
@@ -194,7 +194,7 @@ export class AuthRequestHandler {
   }
 
   public get subscribeEvmChainChange() {
-    return this.evmChainSubject;
+    return this.evmNetworkSubject;
   }
 
   public get subscribeAuthorizeUrlSubject() {

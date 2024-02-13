@@ -742,3 +742,10 @@ export type BalanceMap = Record<WalletAddress, TokenGroup[]>;
 
 export type NetworkMap = Record<string, NetworkJson>;
 export type NotificationResponse = { message: string; title: string; status: boolean };
+
+export type EvmAppState = {
+  networkKey?: string;
+  chainId?: string;
+  isConnected?: boolean;
+  web3?: JsonRpcProvider;
+};

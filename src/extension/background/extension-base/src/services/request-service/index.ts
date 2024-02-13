@@ -10,6 +10,7 @@ import {
 } from '@extension-base/services/request-service/handlers';
 import { type KeyringService } from '@extension-base/services';
 import { assert } from '@polkadot/util';
+import { type NetworkJson } from '@extension-base/types';
 import type {
   WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
@@ -27,6 +28,7 @@ import type {
   AccountJson,
   AuthorizeRequest,
   MetadataRequest,
+  AccountAuthType,
   AuthorizedAccountsDiff,
   RequestAuthorizeCancel,
 } from '@extension-base/background/types/types';
@@ -48,6 +50,7 @@ export class RequestService {
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
+    this.substrateRequestHandler = new SubstrateRequestHandler(this, this.keyringService);
     this.authRequestHandler = new AuthRequestHandler(this);
     this.substrateRequestHandler = new SubstrateRequestHandler(this, this.keyringService);
     this.evmRequestHandler = new EvmRequestHandler(this);
@@ -172,6 +175,17 @@ export class RequestService {
     return this.evmRequestHandler.getSignWCRequest(topic);
   }
 
+  public getDAppChainInfo(options: {
+    accessType: AccountAuthType;
+    autoActive?: boolean;
+    defaultChain?: string;
+    url?: string;
+  }): NetworkJson | undefined {
+    console.info(options);
+
+    return undefined;
+    // return this.authRequestHandler.getDAppChainInfo(options);
+  }
   // WalletConnect Connect requests
   public getConnectWCRequest(id: string) {
     return this.connectWCRequestHandler.getConnectWCRequest(id);

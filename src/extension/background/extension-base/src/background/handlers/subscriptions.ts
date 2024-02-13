@@ -230,8 +230,6 @@ export class FWSubscription {
 // clear a previous subscriber
 export function unsubscribe(id: string): void {
   if (subscriptions[id]) {
-    console.info(`Unsubscribing from ${id}`);
-
     delete subscriptions[id];
   } else {
     console.error(`Unable to unsubscribe from ${id}`);

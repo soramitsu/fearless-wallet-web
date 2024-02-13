@@ -469,13 +469,16 @@ export default class Tabs {
     try {
       switch (method) {
         case 'eth_chainId':
-          return await this.getEvmCurrentChainId(url);
+          return this.getEvmCurrentChainId(url);
 
         case 'net_version':
           return this.getNetworkVersion(url);
 
         case 'eth_accounts':
-          return await this.getEvmCurrentAccount(url);
+          return this.getEvmCurrentAccount(url);
+
+        case 'wallet_requestPermissions':
+          return this.authorize(url, { origin: '', accountAuthType: 'evm', reConfirm: true });
         default:
           //TODO default method for evm
           return null;

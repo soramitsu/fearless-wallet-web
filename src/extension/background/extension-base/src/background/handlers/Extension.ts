@@ -291,12 +291,11 @@ export default class Extension extends FWExtensionBase {
   }
 
   authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): boolean {
-    const queued = this.state.requestService.getAuthRequest(id);
+    const authRequest = this.state.requestService.getAuthRequest(id);
 
-    assert(queued, 'Unable to find request');
+    assert(authRequest, 'Unable to find request');
 
-    const { resolve } = queued;
-    resolve({ authorizedAccounts, result: true });
+    authRequest.resolve({ authorizedAccounts, result: true });
 
     return true;
   }

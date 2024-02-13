@@ -71,6 +71,7 @@ export interface AuthorizeRequest {
   id: string;
   request: RequestAuthorizeTab;
   url: string;
+  accountAuthType: AccountAuthType;
 }
 
 export interface ServiceInfo {
@@ -93,6 +94,11 @@ export interface SigningRequest {
   id: string;
   request: RequestSign;
   url: string;
+}
+
+export interface MobileSigningRequest {
+  id: string;
+  request: SignerPayloadRaw;
 }
 
 export interface MobileSignRequest extends Resolver<ResponseSigning> {

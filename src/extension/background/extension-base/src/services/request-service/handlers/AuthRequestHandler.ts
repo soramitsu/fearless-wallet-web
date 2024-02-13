@@ -14,7 +14,7 @@ import type {
   AuthUrls,
   RequestAuthorizeTab,
 } from '@extension-base/background/types/types';
-import type { NetworkService, RequestService } from '@extension-base/services';
+import type { KeyringService, NetworkService, RequestService } from '@extension-base/services';
 import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 
 const AUTH_URLS_KEY = 'authUrls';
@@ -22,6 +22,7 @@ const AUTH_URLS_KEY = 'authUrls';
 export class AuthRequestHandler {
   private readonly requestService: RequestService;
   private readonly networkService: NetworkService;
+  private readonly keyringService: KeyringService;
 
   readonly authRequests: Record<string, AuthRequest> = {};
   private authorizeCached: AuthUrls = {};
@@ -30,11 +31,12 @@ export class AuthRequestHandler {
   private readonly evmNetworkSubject = new BehaviorSubject<AuthUrls>({});
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
 
-  constructor(requestService: RequestService, networkService: NetworkService) {
+  constructor(requestService: RequestService, networkService: NetworkService, keyringService: KeyringService) {
     this.getAuthorize((auths) => (this.authorizeCached = auths ?? {}));
 
     this.requestService = requestService;
     this.networkService = networkService;
+    this.keyringService = keyringService;
   }
 
   public get numAuthRequests(): number {
@@ -46,7 +48,14 @@ export class AuthRequestHandler {
   }
 
   private get allAuthRequests(): AuthorizeRequest[] {
-    return this.authValues.map(({ id, request, url }): AuthorizeRequest => ({ id, request, url }));
+    return this.authValues.map(
+      ({ id, request, url, accountAuthType }): AuthorizeRequest => ({
+        id,
+        request,
+        url,
+        accountAuthType: accountAuthType ?? 'substrate',
+      })
+    );
   }
 
   private updateIconAuth(shouldClose?: boolean): void {
@@ -112,8 +121,8 @@ export class AuthRequestHandler {
         authorizedAccounts,
         count: 0,
         isAllowed: true,
-        isAllowedMap: {},
         accountAuthType,
+        isAllowedMap: {},
         id: idStr,
         origin,
         url,
@@ -172,6 +181,23 @@ export class AuthRequestHandler {
 
       // Prevent appear confirmation popup
       if (!confirmAnotherType && !request.reConfirm && allowedListByRequestType.length !== 0) return false;
+    } else {
+      // Auto auth for web app
+
+      authList[idStr] = {
+        count: 0,
+        id: idStr,
+        isAllowed: true,
+        origin,
+        url,
+        isAllowedMap: {},
+        authorizedAccounts: [],
+        accountAuthType: 'both',
+      };
+
+      this.setAuthorize(authList);
+
+      return true;
     }
 
     return new Promise((resolve, reject): void => {

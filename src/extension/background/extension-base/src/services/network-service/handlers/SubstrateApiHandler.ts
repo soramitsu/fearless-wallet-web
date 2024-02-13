@@ -40,18 +40,21 @@ export class SubstrateApiHandler {
       ['error', () => null],
     ];
 
-    if (isSora(networkName)) soraConnection.open(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
-    else {
-      try {
-        const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS, undefined, 10000);
+    if (isSora(networkName)) {
+      soraConnection.open(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
 
-        this.api[networkName].api = new ApiPromise({ provider, noInitWarn: true });
-        this.api[networkName].provider = provider;
+      return;
+    }
 
-        eventListeners.forEach(([eventName, callback]) => this.api[networkName].api?.on(eventName, callback));
-      } catch {
-        this.onDisconnect(networkName);
-      }
+    try {
+      const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS, undefined, 10000);
+
+      this.api[networkName].api = new ApiPromise({ provider, noInitWarn: true });
+      this.api[networkName].provider = provider;
+
+      eventListeners.forEach(([eventName, callback]) => this.api[networkName].api?.on(eventName, callback));
+    } catch {
+      this.onDisconnect(networkName);
     }
   }
 

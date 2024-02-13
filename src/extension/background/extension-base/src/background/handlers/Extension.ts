@@ -1125,7 +1125,7 @@ export default class Extension extends FWExtensionBase {
     if (stashAddress === '') return true;
 
     // Если для address существует stashAddress и он отличается от address, тогда address уже является контроллер аккаунтом
-    const isValidController = this.state.keyringService.isSameAddress(
+    const isValidController = this.state.isSameAddress(
       { address: stashAddress, ethereumAddress: stashAddress },
       { address, ethereumAddress: address }
     );

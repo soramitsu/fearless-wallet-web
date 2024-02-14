@@ -9,20 +9,6 @@
     >
     </router-view>
 
-    <SendForm
-      v-if="showSendForm"
-      :_selectedNetwork="selectedAssetNetwork"
-      :_selectedAssetId="selectedAssetId"
-      @closeForm="toggleVisible('showSendForm', false)"
-    />
-
-    <ReceiveForm
-      v-if="showReceiveForm"
-      :_selectedNetwork="selectedAssetNetwork"
-      :selectedAssetId="selectedAssetId"
-      @closeForm="toggleVisible('showReceiveForm', false)"
-    />
-
     <CrossChainForm
       v-if="showCrossChainForm"
       :_originalNetwork="selectedAssetNetwork"
@@ -69,7 +55,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NETWORKS_GROUPS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common/index';
 
-type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
+type ShowField = 'showCrossChainForm' | 'showBuyPopup';
 
 @Component({
   components: {
@@ -85,8 +71,6 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'sh
 })
 export default class Asset extends Vue {
   historyElement: HistoryElement | Record<string, string> | null = null;
-  showSendForm = false;
-  showReceiveForm = false;
   showCrossChainForm = false;
   showBuyPopup = false;
   showTipPopup = false;

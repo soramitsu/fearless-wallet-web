@@ -427,23 +427,17 @@ export default class Tabs {
             anyType: false,
             authInfo,
             accountAuthType: 'evm',
-          }).map((a) => a.address);
+          }).map(({ address }) => address);
           let accounts: string[] = [];
 
           const address = this.state.currentAccount?.ethereumAddress;
 
-          if (!address) {
-            accounts = accountList;
-          } else {
-            if (accountList.includes(address)) {
-              const result = accountList.filter((adr) => adr !== address);
+          if (address && accountList.includes(address)) {
+            const result = accountList.filter((adr) => adr !== address);
 
-              result.unshift(address);
-              accounts = result;
-            } else {
-              accounts = accountList;
-            }
-          }
+            result.unshift(address);
+            accounts = result;
+          } else accounts = accountList;
 
           resolve(accounts);
         })
@@ -454,13 +448,69 @@ export default class Tabs {
   async getEvmCurrentChainId(url: string): Promise<string> {
     const evmState = await this.getEvmState(url);
 
-    return evmState.chainId || '0x0';
+    return evmState.chainId || '0x1';
   }
 
   async getNetworkVersion(url: string) {
     const chainId = await this.getEvmCurrentChainId(url);
 
     return parseInt(chainId, 16);
+  }
+
+  private checkAndHandleProviderStatus(provider: JsonRpcProvider | undefined) {
+    if (!provider || !provider?.ready) {
+      Object.values(this.evmEventEmitterMap).forEach((m) => {
+        Object.values(m).forEach((emitter) => {
+          emitter('disconnect', 'CHAIN_DISCONNECTED');
+        });
+      });
+
+      throw new Error('CHAIN_DISCONNECTED');
+    }
+  }
+
+  private async performWeb3Method(
+    id: string,
+    url: string,
+    { method, params }: RequestArguments,
+    callback?: (result: unknown) => void
+  ) {
+    const provider = await this.getEvmProvider(url);
+
+    this.checkAndHandleProviderStatus(provider);
+
+    return new Promise((resolve, reject) => {
+      provider?.send(method, params).then((result) => {
+        const err = result?.error;
+
+        if (err) {
+          reject(err);
+        } else {
+          const rs = result?.result as unknown;
+
+          callback && callback(rs);
+          resolve(rs);
+        }
+      });
+    });
+  }
+
+  private async switchEvmNetwork(url: string, { params }: RequestArguments) {
+    const chainId = params[0].chainId as string;
+    const chainIdDec = parseInt(chainId, 16);
+
+    const evmState = await this.getEvmState(url);
+
+    if (evmState.chainId === chainId) {
+      return null;
+    }
+
+    const [networkKey] = this.state.networkService.findNetworkKeyByChainId(chainIdDec.toString());
+
+    if (networkKey) await this.state.switchEvmNetworkByUrl(stripUrl(url), networkKey);
+    else throw new Error('Unknown network');
+
+    return null;
   }
 
   private async handleEvmRequest(id: string, url: string, request: RequestArguments): Promise<unknown> {
@@ -479,9 +529,12 @@ export default class Tabs {
 
         case 'wallet_requestPermissions':
           return this.authorize(url, { origin: '', accountAuthType: 'evm', reConfirm: true });
+
+        case 'wallet_switchEthereumChain':
+          return await this.switchEvmNetwork(url, request);
+
         default:
-          //TODO default method for evm
-          return null;
+          return this.performWeb3Method(id, url, request);
       }
     } catch (e) {
       console.error(e);

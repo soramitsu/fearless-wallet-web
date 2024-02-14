@@ -10,7 +10,7 @@ export interface InjectedWindowProvider {
 export interface InjectedWindow extends This {
   injectedWeb3: Record<string, InjectedWindowProvider>;
   ethereum: FWEvmProvider;
-  fearlessWallet: FWEvmProvider;
+  fearlesswallet: FWEvmProvider;
 }
 
 export interface EIP6963ProviderInfo {

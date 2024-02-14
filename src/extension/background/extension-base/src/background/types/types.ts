@@ -552,6 +552,7 @@ export interface AuthRequest extends Resolver<AuthResponse> {
   request: RequestAuthorizeTab;
   url: string;
   accountAuthType?: AccountAuthType;
+  currentEvmNetworkKey?: string;
 }
 
 export interface ResponseSigning {
@@ -763,3 +764,17 @@ export type TransformAccountPayload = {
   authInfo?: AuthUrlInfo;
   accountAuthType?: AccountAuthType;
 };
+
+export interface AddNetworkRequestExternal {
+  // currently only support adding pure Evm network
+  chainId: string;
+  rpcUrls: string[];
+  chainName: string;
+  blockExplorerUrls?: string[];
+  requestId?: string;
+  nativeCurrency: {
+    name: string;
+    symbol: string;
+    decimals: number;
+  };
+}

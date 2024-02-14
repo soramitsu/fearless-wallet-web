@@ -1,6 +1,3 @@
-// Copyright 2019-2022 @subwallet/extension-koni authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
 import { type FWEvmProvider, type SendRequest } from '@extension-base/page/types';
 import SafeEventEmitter from '@metamask/safe-event-emitter';
 import { type JsonRpcRequest, type JsonRpcResponse, type JsonRpcSuccess } from 'json-rpc-engine';
@@ -12,8 +9,6 @@ export interface SendSyncJsonRpcRequest extends JsonRpcRequest<unknown> {
 let subscribeFlag = false;
 
 export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvmProvider {
-  public readonly isFearlessWallet = true;
-  public readonly isMetaMask = false;
   protected _connected = false;
 
   constructor(protected sendMessage: SendRequest, public readonly version: string) {
@@ -48,11 +43,8 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
       ];
 
       if (messages.includes(type)) {
-        if (type === 'connect') {
-          this._connected = true;
-        } else if (type === 'disconnect') {
-          this._connected = false;
-        }
+        if (type === 'connect') this._connected = true;
+        else if (type === 'disconnect') this._connected = false;
 
         const finalType = type === 'data' ? 'message' : type;
 
@@ -61,12 +53,8 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
         console.warn('Can not handle event', type, payload);
       }
     })
-      .then(() => {
-        subscribeFlag = true;
-      })
-      .catch(() => {
-        subscribeFlag = false;
-      });
+      .then(() => (subscribeFlag = true))
+      .catch(() => (subscribeFlag = false));
 
     subscribeFlag = true;
   }
@@ -75,14 +63,14 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
     return this.request<string[]>({ method: 'eth_requestAccounts' });
   }
 
-  public override on(eventName: string | symbol, listener: (...args: any[]) => void): this {
+  public override on(eventName: string | symbol, listener: (...args: unknown[]) => void): this {
     this.subscribeExtensionEvents();
     super.on(eventName, listener);
 
     return this;
   }
 
-  public override once(eventName: string | symbol, listener: (...args: any[]) => void): this {
+  public override once(eventName: string | symbol, listener: (...args: unknown[]) => void): this {
     this.subscribeExtensionEvents();
     super.once(eventName, listener);
 
@@ -99,8 +87,8 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
           this.sendMessage('pub(authorize.tab)', { origin, accountAuthType: 'evm' })
             .then(() => {
               // Return account list
-              this.request<string[]>({ method: 'eth_accounts' })
-                .then((accounts) => resolve(accounts as any))
+              this.request<T>({ method: 'eth_accounts' })
+                .then((accounts) => resolve(accounts))
                 .catch((e) => reject(e));
             })
             .catch((e) => reject(e));
@@ -138,7 +126,9 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
   send(methodOrPayload: unknown, callbackOrArgs?: unknown): unknown {
     if (typeof methodOrPayload === 'string' && (!callbackOrArgs || Array.isArray(callbackOrArgs))) {
       return this.request({ method: methodOrPayload, params: callbackOrArgs });
-    } else if (methodOrPayload && typeof methodOrPayload === 'object' && typeof callbackOrArgs === 'function') {
+    }
+
+    if (methodOrPayload && typeof methodOrPayload === 'object' && typeof callbackOrArgs === 'function') {
       return this.request(methodOrPayload as JsonRpcRequest<unknown>).then((rs) => {
         (callbackOrArgs as (...args: unknown[]) => void)(rs);
       });

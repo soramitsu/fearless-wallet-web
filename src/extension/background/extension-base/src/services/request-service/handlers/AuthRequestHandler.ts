@@ -174,10 +174,12 @@ export class AuthRequestHandler {
 
       let allowedListByRequestType = [...existedAuth.authorizedAccounts];
 
-      if (accountAuthType === 'evm')
-        allowedListByRequestType = allowedListByRequestType.filter((a) => isEthereumAddress(a));
-      else if (accountAuthType === 'substrate')
-        allowedListByRequestType = allowedListByRequestType.filter((a) => !isEthereumAddress(a));
+      allowedListByRequestType = allowedListByRequestType.filter((a) => {
+        if (accountAuthType === 'evm') return isEthereumAddress(a);
+        if (accountAuthType === 'substrate') return !isEthereumAddress(a);
+
+        return true;
+      });
 
       // Prevent appear confirmation popup
       if (!confirmAnotherType && !request.reConfirm && allowedListByRequestType.length !== 0) return false;
@@ -192,7 +194,7 @@ export class AuthRequestHandler {
         url,
         isAllowedMap: {},
         authorizedAccounts: [],
-        accountAuthType: 'both',
+        accountAuthType,
       };
 
       this.setAuthorize(authList);
@@ -209,7 +211,8 @@ export class AuthRequestHandler {
         idStr,
         request,
         url,
-        accountAuthType,
+        accountAuthType: existedAuth && existedAuth.accountAuthType !== accountAuthType ? 'both' : accountAuthType,
+        currentEvmNetworkKey: existedAuth ? existedAuth.currentEvmNetworkKey : '0x1',
       };
 
       this.updateIconAuth();

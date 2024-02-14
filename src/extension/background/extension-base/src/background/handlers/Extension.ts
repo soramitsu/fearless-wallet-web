@@ -72,6 +72,7 @@ import {
   type FetchBalanceRequest,
   type RequestNftTransfer,
   type FetchEvmBalancePayload,
+  type AuthUrls,
 } from '@extension-base/background/types/types';
 import {
   type RequestConnectWalletConnect,
@@ -304,8 +305,36 @@ export default class Extension extends FWExtensionBase {
     return this.state.requestService.updateAuthorizedAccounts([[url, authorizedAccounts]]);
   }
 
+  authList() {
+    return new Promise<AuthUrls>((resolve) => {
+      this.state.requestService.getAuthorize((authUrls: AuthUrls) => {
+        const addressList = Object.keys(this.state.keyringService.getAllAccounts());
+        const urlList = Object.keys(authUrls);
+
+        if (Object.keys(authUrls[urlList[0]].isAllowedMap).toString() !== addressList.toString()) {
+          urlList.forEach((url) => {
+            const authUrl = authUrls[url];
+            const keys = Object.keys(authUrl.isAllowedMap);
+
+            addressList.forEach((address) => {
+              if (!keys.includes(address)) authUrl.isAllowedMap[address] = false;
+            });
+
+            keys.forEach((address) => {
+              if (!addressList.includes(address)) delete authUrl.isAllowedMap[address];
+            });
+          });
+
+          this.state.requestService.setAuthorize(authUrls);
+        }
+
+        resolve(authUrls);
+      });
+    });
+  }
+
   async getAuthList(): Promise<ResponseAuthorizeList> {
-    const list = await this.state.requestService.getAuthList();
+    const list = await this.authList();
 
     return { list };
   }

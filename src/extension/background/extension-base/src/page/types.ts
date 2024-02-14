@@ -36,8 +36,6 @@ export interface SendRequest {
 
 export type FWEvmProvider = {
   provider?: EvmProvider;
-  isMetaMask: boolean;
-  isFearlessWallet: boolean;
   version: string;
   isConnected(): boolean;
 };

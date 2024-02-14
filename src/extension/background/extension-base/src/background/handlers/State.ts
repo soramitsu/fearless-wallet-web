@@ -655,4 +655,20 @@ export default class State {
   isSameAddress(wallet1: Wallet, wallet2: Wallet): boolean {
     return this.formatAddress(wallet1) === this.formatAddress(wallet2);
   }
+
+  public async switchEvmNetworkByUrl(shortenUrl: string, networkKey: string): Promise<void> {
+    const authUrls = await this.requestService.getAuthList();
+    const network = this.networkService.getNetworkByKey(networkKey);
+
+    if (authUrls[shortenUrl]) {
+      if (!network.active) {
+        await this.networkService.enableNetworks([networkKey]);
+      }
+
+      authUrls[shortenUrl].currentEvmNetworkKey = networkKey;
+      this.requestService.setAuthorize(authUrls);
+    } else {
+      throw new Error(`Not found ${shortenUrl} in auth list`);
+    }
+  }
 }

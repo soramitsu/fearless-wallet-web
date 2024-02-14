@@ -81,6 +81,8 @@ const EVM_EXPLORERS_BASE_URLS: Record<string, string> = {
 const EXPLORERS_BASE_URLS: Record<string, string> = {
   'polkadot assethub': 'assethub-polkadot',
   'kusama assethub': 'assethub-kusama',
+  'sora mainnet': 'sora',
+  'sora testnet': 'sora',
 } as const;
 
 const ETHEREUM_ADDRESS_LENGTH = 42;

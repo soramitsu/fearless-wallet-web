@@ -21,7 +21,8 @@ import type {
   RewardsResponse,
   RequestPayoutRewards,
   ValidatorStatuses,
-  CheckPayoutsFeeRequest,
+  GetPayoutsFeeRequest,
+  GetNominateNetworkFeeRequest,
 } from '@extension-base/services/staking-service/types';
 import { type NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
@@ -68,16 +69,14 @@ export class StakingService {
   ): Promise<MyStakingInfo> {
     const _address = await this.state.getCurrentAddress(network);
     const currentWallet = { address: _address, ethereumAddress: _address };
-    const stashByController = await this.state.stakingService.getStashByController(_address);
-    const stashAddress =
-      stashByController !== '' ? stashByController : this.state.keyringService.formatAddress(currentWallet);
+    const stashByController = await this.getStashByController(_address);
+    const stashAddress = stashByController !== '' ? stashByController : this.state.formatAddress(currentWallet);
 
     const stashWallet = { address: stashAddress, ethereumAddress: stashAddress };
 
-    const isController =
-      stashByController !== '' && !this.state.keyringService.isSameAddress(stashWallet, currentWallet);
+    const isController = stashByController !== '' && !this.state.isSameAddress(stashWallet, currentWallet);
 
-    const address = isController ? this.state.keyringService.formatAddress(stashWallet) : _address;
+    const address = isController ? this.state.formatAddress(stashWallet) : _address;
 
     const stakingInfo = await apiSora.staking.getMyStakingInfo(address);
     const { addressBook } = await storage.get(['addressBook']);
@@ -94,7 +93,7 @@ export class StakingService {
     const stashName = stashAccountName ?? stashBookName ?? stashAddress;
 
     const payeeAddress = isControllerAndPayeeController
-      ? this.state.keyringService.formatAddress(currentWallet, network)
+      ? this.state.formatAddress(currentWallet, network)
       : isControllerAndPayeeStaked || isControllerAndPayeeStash
       ? stashAddress
       : stakingInfo.payee;
@@ -112,11 +111,11 @@ export class StakingService {
     )?.name;
     const controllerName = controllerAccountName ?? controllerBookName ?? controllerAddress;
 
-    const isOtherPayee = payeeAddress !== this.state.keyringService.formatAddress(stashWallet, network);
+    const isOtherPayee = payeeAddress !== this.state.formatAddress(stashWallet, network);
 
     const isOtherController = isController
       ? false
-      : controllerAddress !== this.state.keyringService.formatAddress(stashWallet, network);
+      : controllerAddress !== this.state.formatAddress(stashWallet, network);
 
     const result = {
       ...stakingInfo,
@@ -154,7 +153,7 @@ export class StakingService {
   ): Promise<ValidatorStatuses> {
     const substrateAddress = getSubstrateAddress(_address, this.state);
     const ethereumAddress = getEthereumAddress(_address, this.state);
-    const address = this.state.keyringService.formatAddress({ address: substrateAddress, ethereumAddress }, network);
+    const address = this.state.formatAddress({ address: substrateAddress, ethereumAddress }, network);
     const max = this.maxNominatorRewardedPerValidator();
     const activeEra = await apiSora.staking.getCurrentEra();
     const submittedIn = (await apiSora.staking.getNominations(address))?.submittedIn;
@@ -331,9 +330,16 @@ export class StakingService {
     return apiSora.staking.getMaxNominatorRewardedPerValidator();
   }
 
-  public async checkPayoutsFee({ payouts, network }: CheckPayoutsFeeRequest) {
+  public async getPayoutsFee({ payouts, network }: GetPayoutsFeeRequest) {
     const precision = getUtilityProps(network, this.state).precision;
     const fee = await apiSora.staking.getPayoutNetworkFee({ payouts });
+
+    return FPNumber.fromCodecValue(fee, precision).toString();
+  }
+
+  public async getNominateNetworkFee({ validators, network }: GetNominateNetworkFeeRequest) {
+    const precision = getUtilityProps(network, this.state).precision;
+    const fee = await apiSora.staking.getNominateNetworkFee({ validators });
 
     return FPNumber.fromCodecValue(fee, precision).toString();
   }

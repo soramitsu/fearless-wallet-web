@@ -28,7 +28,8 @@ import {
   type RewardsResponse,
   type MakeStakingRequest,
   type StakingParamsResponse,
-  type CheckPayoutsFeeRequest,
+  type GetPayoutsFeeRequest,
+  type GetNominateNetworkFeeRequest,
 } from '@extension-base/services/staking-service/types';
 import { type MetadataDef } from '@polkadot/extension-inject/types';
 import { type SignerPayloadRaw, type SignerPayloadJSON } from '@polkadot/types/types';
@@ -1187,7 +1188,7 @@ export default class Extension extends FWExtensionBase {
     if (stashAddress === '') return true;
 
     // Если для address существует stashAddress и он отличается от address, тогда address уже является контроллер аккаунтом
-    const isValidController = this.state.keyringService.isSameAddress(
+    const isValidController = this.state.isSameAddress(
       { address: stashAddress, ethereumAddress: stashAddress },
       { address, ethereumAddress: address }
     );
@@ -1228,8 +1229,12 @@ export default class Extension extends FWExtensionBase {
     return result;
   }
 
-  public async checkPayoutsFee(params: CheckPayoutsFeeRequest) {
-    return await this.state.stakingService.checkPayoutsFee(params);
+  async getPayoutsFee(params: GetPayoutsFeeRequest) {
+    return this.state.stakingService.getPayoutsFee(params);
+  }
+
+  async getNominateNetworkFee(params: GetNominateNetworkFeeRequest) {
+    return this.state.stakingService.getNominateNetworkFee(params);
   }
 
   async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
@@ -1718,8 +1723,11 @@ export default class Extension extends FWExtensionBase {
       case 'pri(staking.makeStaking)':
         return this.makeStaking(request as MakeStakingRequest);
 
-      case 'pri(staking.checkPayoutsFee)':
-        return this.checkPayoutsFee(request as CheckPayoutsFeeRequest);
+      case 'pri(staking.getPayoutsFee)':
+        return this.getPayoutsFee(request as GetPayoutsFeeRequest);
+
+      case 'pri(staking.getNominateNetworkFee)':
+        return this.getNominateNetworkFee(request as GetNominateNetworkFeeRequest);
 
       // price
       case 'pri(price.update.currency)':

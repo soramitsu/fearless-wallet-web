@@ -87,11 +87,11 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
 import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
-import { checkPayoutsFee, fetchBalance, getRewards } from '@/extension/messaging';
 import {
   type PayoutRewards,
   type RewardsResponse,
 } from '@/extension/background/extension-base/src/services/staking-service/types';
+import { getPayoutsFee, fetchBalance, getRewards } from '@/extension/messaging';
 import { isValidAmountAsset } from '@/helpers/currencies';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { type AsyncFn } from '@/interfaces';
@@ -252,7 +252,7 @@ export default class PendingRewardForm extends Vue {
   }
 
   async getSoraFees() {
-    this.fee = await checkPayoutsFee({ payouts: this.rewards.payouts, network: this.network });
+    this.fee = await getPayoutsFee({ payouts: this.rewards.payouts, network: this.network });
   }
 
   closeForm() {

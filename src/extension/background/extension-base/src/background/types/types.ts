@@ -1,5 +1,6 @@
 /* eslint-disable no-use-before-define */
 import { type NftTx, type NftSettings } from '@extension-base/services/nft-service/types';
+import { chrome } from '@polkadot/extension-inject/chrome';
 import type { ALLOWED_PATH } from '@extension-base/defaults';
 import type { Subscription } from 'rxjs';
 import type { JsonRpcProvider, WebSocketProvider } from 'ethers';

@@ -102,7 +102,8 @@ import type {
   RewardsResponse,
   MakeStakingRequest,
   StakingParamsResponse,
-  CheckPayoutsFeeRequest,
+  GetPayoutsFeeRequest,
+  GetNominateNetworkFeeRequest,
 } from '@extension-base/services/staking-service/types';
 import type {
   RequestSettingsChangePayload,
@@ -1166,8 +1167,12 @@ export default class Extension extends FWExtensionBase {
     return result;
   }
 
-  public async checkPayoutsFee(params: CheckPayoutsFeeRequest) {
-    return await this.state.stakingService.checkPayoutsFee(params);
+  async getPayoutsFee(params: GetPayoutsFeeRequest) {
+    return this.state.stakingService.getPayoutsFee(params);
+  }
+
+  async getNominateNetworkFee(params: GetNominateNetworkFeeRequest) {
+    return this.state.stakingService.getNominateNetworkFee(params);
   }
 
   async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
@@ -1656,8 +1661,11 @@ export default class Extension extends FWExtensionBase {
       case 'pri(staking.makeStaking)':
         return this.makeStaking(request as MakeStakingRequest);
 
-      case 'pri(staking.checkPayoutsFee)':
-        return this.checkPayoutsFee(request as CheckPayoutsFeeRequest);
+      case 'pri(staking.getPayoutsFee)':
+        return this.getPayoutsFee(request as GetPayoutsFeeRequest);
+
+      case 'pri(staking.getNominateNetworkFee)':
+        return this.getNominateNetworkFee(request as GetNominateNetworkFeeRequest);
 
       // price
       case 'pri(price.update.currency)':

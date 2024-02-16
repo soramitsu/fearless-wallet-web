@@ -71,7 +71,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { type FWValidatorInfoFull, type RequestNominate } from '@extension-base/services/staking-service/types';
 import type { AsyncFn, SelectionValidator } from '@/interfaces';
@@ -83,7 +83,7 @@ import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vu
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import { fetchBalance, getSoraFees } from '@/extension/messaging';
+import { fetchBalance, getNominateNetworkFee } from '@/extension/messaging';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { isValidAmountAsset } from '@/helpers/currencies';
@@ -232,6 +232,11 @@ export default class YourValidatorsManagement extends Vue {
     } as RequestNominate;
   }
 
+  @Watch('selectedValidators')
+  async srcWatcher() {
+    this.fee = await getNominateNetworkFee({ validators: this.selectedValidators, network: this.network });
+  }
+
   async mounted() {
     // TODO staking
     const isSlashed = false;
@@ -251,19 +256,11 @@ export default class YourValidatorsManagement extends Vue {
       });
     });
 
-    this.getSoraFees();
-
     if (this.stakingNetwork.isController)
       this.stashBalance = await fetchBalance({
         address: this.stakingNetwork.stashAddress,
         networkName: this.stakingNetwork.network,
       });
-  }
-
-  async getSoraFees() {
-    const { StakingNominate } = await getSoraFees();
-
-    this.fee = StakingNominate.toString();
   }
 
   closeForm() {

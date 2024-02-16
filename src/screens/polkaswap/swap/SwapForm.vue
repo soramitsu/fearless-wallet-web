@@ -410,11 +410,11 @@ export default class SwapForm extends Vue {
 
   get optionsCurrency() {
     const filter = this.filterValue.toLowerCase();
-    const currenciesFilteredByNetwork = this.balances.filter(
+    const tokensGroupFilteredByNetwork = this.balances.filter(
       ({ mainNetwork }) => mainNetwork.toLowerCase() === this.soraNetworkName.toLowerCase()
     );
 
-    return getCurrencyOptions(currenciesFilteredByNetwork).filter(({ name, value }) => {
+    return getCurrencyOptions(tokensGroupFilteredByNetwork).filter(({ name, value }) => {
       if (!name.toLowerCase().includes(filter)) return false;
 
       const id = this.isSendAssetType ? this.receiveAssetId : this.sendAssetId;

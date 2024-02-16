@@ -136,6 +136,7 @@ function getHistoryValue(
   if (historyType === 'oklink') {
     const amount = historyElement.transfer?.amount ? historyElement.transfer.amount : 0;
     const fee = historyElement.transfer?.fee ? historyElement.transfer.fee : 0;
+
     if (withFee) return { signTransfer, value: +amount + +fee };
 
     return { signTransfer, value: +amount };

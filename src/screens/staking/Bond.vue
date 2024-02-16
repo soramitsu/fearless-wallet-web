@@ -79,8 +79,8 @@
               text="assets.networkFee"
               borderType="default"
               icon="info"
-              :value="`${fee} ${stakingAssetName}`"
-              :price="feeValueString"
+              :value="`${feeMax} ${stakingAssetName}`"
+              :price="feeMaxValueString"
               :iconClasses="['staking-fee']"
             />
           </template>
@@ -175,6 +175,7 @@
         />
       </div>
     </Scroll>
+
     <ConfirmationPasswordPopup
       v-if="showConfirmationPasswordPopup"
       :currency="stakingCurrency"
@@ -191,7 +192,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { type RequestBond } from '@extension-base/services/staking-service/types';
 import type { GetAssetPrice, SelectedWallet, NetworkParams } from '@/store';
@@ -203,7 +204,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectValidator from '@/screens/staking/myStake/validators/SelectValidator.vue';
 import FiltersPopup from '@/screens/staking/myStake/validators/FiltersPopup.vue';
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
-import { getSoraFees } from '@/extension/messaging';
+import { getNominateNetworkFee, getSoraFees } from '@/extension/messaging';
 import { calcTransferableSendMinusFee, getUtilityAsset, isValidAmountAsset } from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import BaseApi from '@/util/BaseApi';
@@ -232,6 +233,7 @@ export default class Bond extends Vue {
   showHistoryBook = false;
   showMyWallets = false;
   fee = '';
+  feeMax = '';
   amount = '';
   newAddress = '';
 
@@ -387,6 +389,12 @@ export default class Bond extends Vue {
     return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
   }
 
+  get feeMaxValueString() {
+    const value = +this.feeMax * this.stakingAssetPrice;
+
+    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
+  }
+
   get feeValueString() {
     const value = +this.fee * this.stakingAssetPrice;
 
@@ -430,6 +438,11 @@ export default class Bond extends Vue {
     return Object.values(this.state);
   }
 
+  @Watch('selectedValidators')
+  async srcWatcher() {
+    this.fee = await getNominateNetworkFee({ validators: this.selectedValidators, network: this.network });
+  }
+
   mounted() {
     // TODO staking
     const isSlashed = false;
@@ -453,10 +466,15 @@ export default class Bond extends Vue {
   }
 
   async getSoraFees() {
-    const { StakingBondAndNominate } = await getSoraFees();
+    // TODO: staking в сетях кроме соры, контроллер устанавливается отдельным вызовом, по этому нужно прибавлять и комиссию за StakingSetController
+    const { StakingBond } = await getSoraFees();
 
-    // TODO: в сетях кроме соры, контроллер устанавливается отдельным вызовом, по этому нужно прибавлять и комиссию за StakingSetController
-    this.fee = StakingBondAndNominate;
+    const feeMaxNominations = await getNominateNetworkFee({
+      validators: new Array(this.networkParams.maxNominations),
+      network: this.network,
+    });
+
+    this.feeMax = (+feeMaxNominations + +StakingBond).toString();
   }
 
   openValidatorList(isSuggested = false) {
@@ -517,7 +535,7 @@ export default class Bond extends Vue {
   }
 
   calcTransferableSendMinusFee() {
-    return calcTransferableSendMinusFee(this.stakingCurrency, this.network, this.fee);
+    return calcTransferableSendMinusFee(this.stakingCurrency, this.network, this.feeMax);
   }
 
   setPayoutAddress(address = '') {

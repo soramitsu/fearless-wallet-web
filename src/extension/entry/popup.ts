@@ -1,4 +1,5 @@
 import Vue from 'vue';
+import '@polkadot/extension-inject/chrome';
 import { Plugin } from 'vue-fragment';
 import router from '@/router';
 import { i18n } from '@/locales';

@@ -115,8 +115,13 @@ export type MakeStakingRequest = {
   type: StakingOperation;
 };
 
-export type CheckPayoutsFeeRequest = {
+export type GetPayoutsFeeRequest = {
   payouts: Payouts;
+  network: NetworkName;
+};
+
+export type GetNominateNetworkFeeRequest = {
+  validators: string[];
   network: NetworkName;
 };
 

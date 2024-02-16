@@ -1,6 +1,6 @@
 import { keyring } from '@polkadot/ui-keyring';
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import { getSubstrateAddress, isEthereumNetwork } from '@extension-base/background/utils/utils';
+import { getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import type State from '@extension-base/background/handlers/State';
@@ -9,10 +9,6 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-keyring/types';
 import type { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
 import { isSameString } from '@/helpers';
-type Wallet = {
-  address: string;
-  ethereumAddress: string;
-};
 
 export class KeyringService {
   constructor(readonly state: State) {}
@@ -178,26 +174,5 @@ export class KeyringService {
 
   createFromUri(suri: string, keypairType: KeypairType, meta: FWKeyringMeta = {}) {
     keyring.createFromUri(suri, meta, keypairType);
-  }
-
-  formatAddress({ address, ethereumAddress }: Wallet, networkName: string = 'westend'): string {
-    const isEthereumNet = isEthereumNetwork(networkName);
-
-    if (isEthereumNet) return ethereumAddress;
-
-    const network = this.state.networksGithub.find(({ name }) => isSameString(name, networkName));
-    const prefix = network?.addressPrefix;
-
-    // the only case for try/catch
-    // if the user used ethereum account instead of a substratum account(via json or private key)
-    try {
-      return this.encodeAddress(address, prefix);
-    } catch {
-      return ethereumAddress;
-    }
-  }
-
-  isSameAddress(wallet1: Wallet, wallet2: Wallet): boolean {
-    return this.state.keyringService.formatAddress(wallet1) === this.state.keyringService.formatAddress(wallet2);
   }
 }

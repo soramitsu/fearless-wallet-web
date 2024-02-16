@@ -449,7 +449,10 @@ export default class TransferForm extends Vue {
   }
 
   get buttonDisabled() {
+    if (this.isDisableBtn) return true;
+
     if (this.isFetchingFees || this.estimateFeeError) return true;
+
     if (!navigator.onLine) return true;
 
     if (this.step === 2) return false;

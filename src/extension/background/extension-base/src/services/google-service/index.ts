@@ -1,8 +1,8 @@
 import axios from 'axios';
+import { chrome } from '@polkadot/extension-inject/chrome';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
 import { FEARLESS_TITLE } from '@/consts/global';
-
 export class GoogleService {
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
   private readonly baseUploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';

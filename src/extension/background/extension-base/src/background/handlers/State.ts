@@ -1,6 +1,7 @@
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
+
 import { assert, u8aToHex } from '@polkadot/util';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { decodePair } from '@polkadot/keyring/pair/decode';

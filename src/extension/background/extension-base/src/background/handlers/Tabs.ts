@@ -1,7 +1,7 @@
 import { PHISHING_PAGE_REDIRECT } from '@extension-base/defaults';
 import { checkIfDenied } from '@polkadot/phishing';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
-
+import { chrome } from '@polkadot/extension-inject/chrome';
 import { assert, isNumber } from '@polkadot/util';
 import {
   stripUrl,

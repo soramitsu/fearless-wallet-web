@@ -7,7 +7,8 @@ import type {
   RewardsResponse,
   CheckControllerRequest,
   getRewardsRequest,
-  CheckPayoutsFeeRequest,
+  GetPayoutsFeeRequest,
+  GetNominateNetworkFeeRequest,
 } from '@extension-base/services/staking-service/types';
 import type { BasicTxResponse } from '@extension-base/background/types/types';
 import { sendMessage } from '@/extension/messaging/index';
@@ -32,6 +33,10 @@ export function makeStaking(request: MakeStakingRequest): Promise<BasicTxRespons
   return sendMessage('pri(staking.makeStaking)', request);
 }
 
-export function checkPayoutsFee(request: CheckPayoutsFeeRequest): Promise<string> {
-  return sendMessage('pri(staking.checkPayoutsFee)', request);
+export function getPayoutsFee(request: GetPayoutsFeeRequest): Promise<string> {
+  return sendMessage('pri(staking.getPayoutsFee)', request);
+}
+
+export function getNominateNetworkFee(request: GetNominateNetworkFeeRequest): Promise<string> {
+  return sendMessage('pri(staking.getNominateNetworkFee)', request);
 }

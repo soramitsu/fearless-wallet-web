@@ -21,7 +21,8 @@ import type {
   RewardsResponse,
   RequestPayoutRewards,
   ValidatorStatuses,
-  CheckPayoutsFeeRequest,
+  GetPayoutsFeeRequest,
+  GetNominateNetworkFeeRequest,
 } from '@extension-base/services/staking-service/types';
 import { type NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
@@ -68,7 +69,7 @@ export class StakingService {
   ): Promise<MyStakingInfo> {
     const _address = await this.state.getCurrentAddress(network);
     const currentWallet = { address: _address, ethereumAddress: _address };
-    const stashByController = await this.state.stakingService.getStashByController(_address);
+    const stashByController = await this.getStashByController(_address);
     const stashAddress = stashByController !== '' ? stashByController : this.state.formatAddress(currentWallet);
 
     const stashWallet = { address: stashAddress, ethereumAddress: stashAddress };
@@ -329,9 +330,16 @@ export class StakingService {
     return apiSora.staking.getMaxNominatorRewardedPerValidator();
   }
 
-  public async checkPayoutsFee({ payouts, network }: CheckPayoutsFeeRequest) {
+  public async getPayoutsFee({ payouts, network }: GetPayoutsFeeRequest) {
     const precision = getUtilityProps(network, this.state).precision;
     const fee = await apiSora.staking.getPayoutNetworkFee({ payouts });
+
+    return FPNumber.fromCodecValue(fee, precision).toString();
+  }
+
+  public async getNominateNetworkFee({ validators, network }: GetNominateNetworkFeeRequest) {
+    const precision = getUtilityProps(network, this.state).precision;
+    const fee = await apiSora.staking.getNominateNetworkFee({ validators });
 
     return FPNumber.fromCodecValue(fee, precision).toString();
   }

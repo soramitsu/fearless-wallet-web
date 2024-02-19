@@ -273,7 +273,7 @@ export default class Wallet extends Vue {
     if (value.length === 0) this.showNetworkManagement = false;
   }
 
-  activated() {
+  mounted() {
     fetchEvmBalance();
   }
 

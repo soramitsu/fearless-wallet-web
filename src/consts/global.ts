@@ -1,3 +1,4 @@
+import { chrome } from '@polkadot/extension-inject/chrome';
 import packages from '../../package.json';
 import { MIN1 } from '@/consts/time';
 

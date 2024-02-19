@@ -1,5 +1,6 @@
 import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
+import { chrome } from '@polkadot/extension-inject/chrome';
 import { handlers, state } from '@extension-base/background/handlers';
 import '@polkadot/extension-inject/crossenv';
 import AccountsStore from '@extension-base/stores/Accounts';

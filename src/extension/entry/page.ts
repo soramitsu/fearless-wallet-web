@@ -5,6 +5,7 @@ import { type FWEvmProvider } from '@extension-base/page/types';
 import { eip6963ProviderInfo } from '@extension-base/const';
 import packages from '../../../package.json';
 import type Injected from '@extension-base/page/Injected';
+import '@polkadot/extension-inject/chrome';
 import type { Message } from '@extension-base/types';
 import type { TransportRequestMessage } from '@extension-base/background/types/types';
 import { APP_VERSION } from '@/consts/global';

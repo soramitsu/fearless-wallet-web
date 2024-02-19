@@ -83,7 +83,7 @@ import { computed, reactive, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
 import { type NetworkJson } from '@extension-base/types';
-import type { NftCollection, NftState, NftTx } from '@extension-base/services/nft-service/types';
+import type { NftCollection, NftTx } from '@extension-base/services/nft-service/types';
 import type { AccountJson } from '@extension-base/background/types/types';
 import { cut, getClipboard } from '@/helpers';
 import { type SelectedWallet, useStore } from '@/store';
@@ -121,9 +121,9 @@ const formInfo = reactive({
 const showEditAddressBook = computed(() => formInfo.newAddress !== '');
 const id = computed(() => route.params.id);
 const contract = computed(() => route.params.contract);
-const nfts = computed<NftState>(() => store.getters.nfts ?? {});
+const nfts = computed<NftCollection[]>(() => store.getters.nfts ?? {});
 
-const collection = computed<NftCollection | undefined>(() => nfts.value[contract.value]);
+const collection = computed<NftCollection | undefined>(() => nfts.value.find((nft) => nft.address === contract.value));
 
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value));

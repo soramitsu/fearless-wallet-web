@@ -61,11 +61,12 @@ const store = useStore();
 const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
 const id = computed(() => route.params.id);
 const contract = computed(() => route.params.contract);
-const nfts = computed(() => store.getters.nfts ?? {});
-const collection = computed<NftCollection>(() => nfts.value[contract.value] ?? { ownedNfts: [] });
+const nfts = computed<NftCollection[]>(() => store.getters.nfts ?? {});
+const collection = computed<NftCollection>(
+  () => nfts.value.find((nft) => nft.address === contract.value) ?? { ownedNfts: [], address: '', network: '' }
+);
 const nft = computed<Partial<FearlessNft>>(() => {
   const nftCollectionFromStore: FearlessNft[] = store.getters.availableNfts[contract.value]?.collection ?? [];
-
   const ownedNfts: FearlessNft[] = [...collection.value.ownedNfts] ?? [];
 
   return (

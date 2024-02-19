@@ -85,7 +85,7 @@ export default class AlchemyNftController {
       const address = nft.contract.address;
       const collection = collections.contracts.find((contract) => contract.address === address);
 
-      if (collection && (!ownedCollections[this.chainId] || !ownedCollections[address])) {
+      if (collection && !ownedCollections[address]) {
         //init Collection
 
         ownedCollections[address] = {

@@ -160,10 +160,9 @@ export class WalletConnectService {
       const { requiredNamespaces, optionalNamespaces } = this.getSession(topic);
 
       const namespaces = Object.keys({ ...requiredNamespaces, ...optionalNamespaces });
-      const chains = Object.values({ ...requiredNamespaces, ...optionalNamespaces })
-        .map((namespace) => namespace.chains)
-        .flat();
-
+      const chains = Object.values(requiredNamespaces).flatMap((namespace) => namespace.chains ?? []);
+      const optionalChains = Object.values(optionalNamespaces).flatMap((namespace) => namespace.chains ?? []);
+      chains.push(...optionalChains);
       const [requestNamespace] = chainId.split(':');
 
       if (namespaces.length && !namespaces.includes(requestNamespace)) {

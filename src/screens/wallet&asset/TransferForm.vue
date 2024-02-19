@@ -82,6 +82,7 @@
                 class="row"
                 icon="rotate"
                 placeholder="assets.destNet"
+                data-testid="destNet"
                 :isActiveRotate="showDestNetPopup"
                 @click="toggleValue('showDestNetPopup')"
               />

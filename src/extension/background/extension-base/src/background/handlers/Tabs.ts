@@ -22,6 +22,7 @@ import type {
   AuthUrlInfo,
   AuthUrls,
   EvmAppState,
+  EvmProvider,
   MessageTypes,
   Port,
   RequestAccountList,
@@ -280,13 +281,16 @@ export default class Tabs {
       url,
     });
 
+    const api = this.state.networkService.evmApiHandler.api[currentEvmNetwork?.name.toLowerCase() ?? ''].api;
+
     return {
       networkKey: currentEvmNetwork?.name,
       chainId: currentEvmNetwork?.chainId,
+      web3: api,
     };
   }
 
-  private async getEvmProvider(url: string): Promise<JsonRpcProvider | undefined> {
+  private async getEvmProvider(url: string): Promise<EvmProvider | undefined> {
     const evmState = await this.getEvmState(url);
     let provider = evmState.web3;
 
@@ -477,7 +481,7 @@ export default class Tabs {
   ) {
     const provider = await this.getEvmProvider(url);
 
-    this.checkAndHandleProviderStatus(provider);
+    // this.checkAndHandleProviderStatus(provider);
 
     return new Promise((resolve, reject) => {
       provider?.send(method, params).then((result) => {
@@ -527,11 +531,11 @@ export default class Tabs {
         case 'eth_accounts':
           return this.getEvmCurrentAccount(url);
 
-        case 'wallet_requestPermissions':
-          return this.authorize(url, { origin: '', accountAuthType: 'evm', reConfirm: true });
+        // case 'wallet_requestPermissions':
+        //   return this.authorize(url, { origin: '', accountAuthType: 'evm', reConfirm: true });
 
-        case 'wallet_switchEthereumChain':
-          return await this.switchEvmNetwork(url, request);
+        // case 'wallet_switchEthereumChain':
+        //   return await this.switchEvmNetwork(url, request);
 
         default:
           return this.performWeb3Method(id, url, request);

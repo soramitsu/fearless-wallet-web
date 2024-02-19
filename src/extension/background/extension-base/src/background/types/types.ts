@@ -756,7 +756,7 @@ export type EvmAppState = {
   networkKey?: string;
   chainId?: string;
   isConnected?: boolean;
-  web3?: JsonRpcProvider;
+  web3?: EvmProvider;
 };
 
 export type TransformAccountPayload = {

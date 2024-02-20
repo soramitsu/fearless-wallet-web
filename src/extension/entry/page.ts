@@ -13,6 +13,7 @@ import { type EIP6963ProviderDetail, type InjectedWindow } from '@/extension/ent
 
 class Page {
   version: string = packages.version;
+
   private inject() {
     // small helper with the typescript types, just cast window
     const windowInject: any = window as Window & InjectedWindow; // don't clobber the existing object, we will add it (or create as needed)
@@ -31,12 +32,12 @@ class Page {
     const windowInject = window as Window & InjectedWindow;
 
     // add our enable function
-    if (windowInject.fearlesswallet) {
+    if (windowInject.fearlessWallet) {
       // Provider has been initialized in proxy mode
-      windowInject.fearlesswallet.provider = evmProvider.provider;
+      windowInject.fearlessWallet.provider = evmProvider.provider;
     } else {
       // Provider has been initialized in direct mode
-      windowInject.fearlesswallet = evmProvider;
+      windowInject.fearlessWallet = evmProvider;
     }
 
     windowInject.dispatchEvent(new Event('fearlesswallet#initialized'));
@@ -51,15 +52,15 @@ class Page {
       this.inject6963EIP(evmProvider);
     });
   }
-  inject6963EIP = (provider: FWEvmProvider) => {
+
+  inject6963EIP(provider: FWEvmProvider) {
     const _provider = new Proxy(provider, {
       get(target, key) {
-        if (key === 'then') {
-          return Promise.resolve(target);
-        }
+        if (key === 'then') return Promise.resolve(target);
 
         return Reflect.get(target, key).bind(target);
       },
+
       deleteProperty() {
         return true;
       },
@@ -75,7 +76,7 @@ class Page {
     window.addEventListener('eip6963:requestProvider', announceProvider);
 
     announceProvider();
-  };
+  }
 
   init() {
     this.setMaxListeners();

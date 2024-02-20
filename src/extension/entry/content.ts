@@ -30,19 +30,17 @@ function injectedTextContent() {
       provider = undefined;
       connected = false;
       isConnected = () => false;
-
       __waitProvider = (async () => {
         const self = this;
-
-        if (self.provider) return self.provider;
-        else {
-          return new Promise((resolve, reject) => {
+        if (self.provider) {
+          return self.provider;
+        } else {
+          return await new Promise((resolve, reject) => {
             let retry = 0;
             const interval = setInterval(() => {
-              console.log(retry)
               if (++retry > 30) {
                 clearInterval(interval);
-                reject(new Error("Fearless Wallet provider not found"));
+                reject(new Error("SubWallet provider not found"));
               }
               if (self.provider) {
                 clearInterval(interval);
@@ -126,7 +124,7 @@ function injectedTextContent() {
         }
       };
     }
-
+    console.log('test')
     window.fearlessWallet = new Proxy(new FearlessWalletPlaceholder(), {
       get(obj, key) {
         if (key === "provider") return undefined;
@@ -163,8 +161,6 @@ function injectedTextContent() {
 
   container.insertBefore(script, container.children[0]);
   container.insertBefore(placeholderScript, container.children[0]);
-  container.removeChild(script);
-  container.removeChild(placeholderScript);
 }
 
 injectedTextContent();

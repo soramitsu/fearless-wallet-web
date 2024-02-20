@@ -45,7 +45,7 @@ export class SoraCardService {
         origin,
         url: POLKASWAP,
         isAllowed: true,
-        isAllowedMap: {},
+        allowedAccountsMap: {},
       };
 
       this.requestService.setAuthorize(authUrls);

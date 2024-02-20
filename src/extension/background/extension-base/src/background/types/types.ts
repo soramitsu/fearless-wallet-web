@@ -569,7 +569,7 @@ export interface AuthUrlInfo {
   url: string;
   accountAuthType?: AccountAuthType;
   authorizedAccounts: string[];
-  isAllowedMap: Record<string, boolean>;
+  allowedAccountsMap: Record<string, boolean>;
   currentEvmNetworkKey?: string;
 }
 

@@ -122,7 +122,7 @@ export class AuthRequestHandler {
         count: 0,
         isAllowed: true,
         accountAuthType,
-        isAllowedMap: {},
+        allowedAccountsMap: {},
         id: idStr,
         origin,
         url,
@@ -192,7 +192,7 @@ export class AuthRequestHandler {
         isAllowed: true,
         origin,
         url,
-        isAllowedMap: {},
+        allowedAccountsMap: {},
         authorizedAccounts: [],
         accountAuthType,
       };

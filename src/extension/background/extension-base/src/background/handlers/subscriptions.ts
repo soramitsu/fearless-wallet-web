@@ -178,7 +178,7 @@ export class FWSubscription {
 
       if (previousAuth && Object.keys(previousAuth).length) {
         Object.keys(previousAuth).forEach((url) => {
-          previousAuth[url].isAllowedMap = previousAuth[url].isAllowed
+          previousAuth[url].allowedAccountsMap = previousAuth[url].isAllowed
             ? this.state.getAddressList(true)
             : this.state.getAddressList();
         });

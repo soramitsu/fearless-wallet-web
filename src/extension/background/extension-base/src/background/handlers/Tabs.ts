@@ -531,11 +531,11 @@ export default class Tabs {
         case 'eth_accounts':
           return this.getEvmCurrentAccount(url);
 
-        // case 'wallet_requestPermissions':
-        //   return this.authorize(url, { origin: '', accountAuthType: 'evm', reConfirm: true });
+        case 'wallet_requestPermissions':
+          return this.authorize(url, { origin: '', accountAuthType: 'evm', reConfirm: true });
 
-        // case 'wallet_switchEthereumChain':
-        //   return await this.switchEvmNetwork(url, request);
+        case 'wallet_switchEthereumChain':
+          return await this.switchEvmNetwork(url, request);
 
         default:
           return this.performWeb3Method(id, url, request);

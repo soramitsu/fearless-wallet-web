@@ -10,6 +10,7 @@ let subscribeFlag = false;
 
 export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvmProvider {
   protected _connected = false;
+  public readonly isMetaMask = false;
 
   constructor(protected sendMessage: SendRequest, public readonly version: string) {
     super();
@@ -21,7 +22,7 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
     return this._connected;
   }
 
-  public isConnected() {
+  isConnected() {
     return this._connected;
   }
 
@@ -59,18 +60,18 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
     subscribeFlag = true;
   }
 
-  public async enable() {
+  enable() {
     return this.request<string[]>({ method: 'eth_requestAccounts' });
   }
 
-  public override on(eventName: string | symbol, listener: (...args: unknown[]) => void): this {
+  override on(eventName: string | symbol, listener: (...args: unknown[]) => void): this {
     this.subscribeExtensionEvents();
     super.on(eventName, listener);
 
     return this;
   }
 
-  public override once(eventName: string | symbol, listener: (...args: unknown[]) => void): this {
+  override once(eventName: string | symbol, listener: (...args: unknown[]) => void): this {
     this.subscribeExtensionEvents();
     super.once(eventName, listener);
 
@@ -139,7 +140,7 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
 
   sendAsync<T>(payload: JsonRpcRequest<T>, callback: (error: Error | null, result?: JsonRpcResponse<T>) => void): void {
     this.request<T>(payload)
-      .then((result) => callback(null, { result } as any))
+      .then((result) => callback(null, { result, id: payload.id, jsonrpc: payload.jsonrpc }))
       .catch((e) => callback(e));
   }
 }

@@ -3,7 +3,7 @@ const packageJson = require('../../package.json');
 
 module.exports = (browser) => {
   const baseContentSecurityPolicy =
-    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self';  style-src 'unsafe-inline';img-src 'self' https: data:; frame-src https://soracard.com/; connect-src https: wss: ws:";
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; object-src 'self';  style-src 'unsafe-inline';img-src 'self' https: data:; frame-src https://soracard.com/; connect-src https: wss: ws:";
 
   const firefoxBase = {
     manifest_version: 2,
@@ -71,7 +71,7 @@ module.exports = (browser) => {
     ],
     web_accessible_resources: [
       {
-        resources: ['page.js'],
+        resources: ['page.js', 'content.js'],
         matches: ['https://*/*'],
         use_dynamic_url: true,
       },

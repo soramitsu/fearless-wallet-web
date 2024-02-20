@@ -1,4 +1,6 @@
 /* eslint-disable no-use-before-define */
+import { type NftTx, type NftSettings } from '@extension-base/services/nft-service/types';
+import { chrome } from '@polkadot/extension-inject/chrome';
 import type { ALLOWED_PATH } from '@extension-base/defaults';
 import type { Subscription } from 'rxjs';
 import type { JsonRpcProvider, WebSocketProvider } from 'ethers';
@@ -190,7 +192,7 @@ export interface RequestAccountCreateSuri {
 
 export interface BalanceJson {
   reset?: boolean;
-  details: TokenBalance[];
+  details: TokenGroup[];
   saveSequence?: boolean;
 }
 
@@ -262,7 +264,18 @@ export interface ApiProps {
   nodeIndex: number;
   isEthereum: boolean;
 }
-
+export interface EvmApiProps {
+  api: EvmProvider;
+  apiRetry?: number;
+  nodeIndex?: number;
+  timeout: Record<string, number>;
+}
+export type FetchEvmBalancePayload = {
+  _networks?: NetworkName[];
+  _ethereumAddress?: string;
+  assetId?: string;
+  force?: boolean;
+};
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type BaseRequestSign = {};
 
@@ -343,7 +356,12 @@ export interface RequestSwap extends PasswordRequestSign<RequestCheckSwap> {
 export type RequestTransfer = PasswordRequestSign<RequestCheckTransfer>;
 
 export type RequestCrossChain = PasswordRequestSign<RequestCheckCrossChain>;
-
+export type RequestNftTransfer = PasswordRequestSign<NftTx>;
+export type ResponseNftTransfer = {
+  errors: Array<BasicTxError>;
+  hash?: string;
+  status: boolean;
+};
 export interface RequestAccountExportPrivateKey {
   address: string;
   password?: string;
@@ -396,7 +414,7 @@ export interface RequestAccountExport {
 
 export type EvmProvider = JsonRpcProvider | WebSocketProvider;
 
-export type EvmApiMap = Record<string, EvmProvider>;
+export type EvmApiMap = Record<string, EvmApiProps>;
 
 export interface ApiMap {
   substrate: Record<string, ApiProps>;
@@ -647,6 +665,7 @@ export interface IState {
   transaction: Record<string, TransactionHistoryItem[]>;
   addressBook: AddressBook;
   userType: UserType;
+  nftSettings: Record<string, NftSettings>;
   onboarding: {
     user: UserType;
     isRequired: boolean;
@@ -712,13 +731,12 @@ export type ResponseTotalBalances = {
   change: ChangeWalletBalance;
 };
 
-export interface TokenBalance {
+export interface TokenGroup {
   mainNetwork: string;
-  assetId: string;
+  groupId: string;
   priceId?: string;
   tokenName: string;
   symbol: string;
-  precision: number;
   relayChain: RelayChainName;
   icon: string;
   providers: BuyProvider[];
@@ -727,7 +745,7 @@ export interface TokenBalance {
   isUtility: boolean; // Это поле означает, что токен является утилити для какой-то из сетей
 }
 
-export type BalanceMap = Record<WalletAddress, TokenBalance[]>;
+export type BalanceMap = Record<WalletAddress, TokenGroup[]>;
 
 export type NetworkMap = Record<string, NetworkJson>;
 export type NotificationResponse = { message: string; title: string; status: boolean };

@@ -1,13 +1,13 @@
 import { ethers } from 'ethers';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { type BalanceItem } from '@extension-base/api/evm/types/ether';
-import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
+import { getContract } from '@extension-base/api/evm/utils/eth';
 import { getSubstrateAddress } from '@extension-base/background/utils/utils';
 import { setBalance } from '@extension-base/api/helpers';
 import type State from '@extension-base/background/handlers/State';
 
 async function getUtilityBalance(networkKey: string, address: string, state: State): Promise<string> {
-  const eth = state.getEvmApi(networkKey);
+  const eth = state.getEvmApi(networkKey)?.api;
 
   const balance = await eth.getBalance(address);
 
@@ -19,10 +19,12 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
   const asset = network.assets.find((el) => el.id === contractAddress);
 
   if (!asset) return;
-  const web3Api = state.getEvmApi(networkKey);
+
+  const web3Api = state.getEvmApi(networkKey)?.api;
+
   if (!web3Api) return;
 
-  const contract = await getERC20Contract(contractAddress, web3Api);
+  const contract = await getContract(contractAddress, web3Api);
   const { symbol, precision, id } = asset;
 
   const balanceItem: Partial<BalanceItem> = {
@@ -54,6 +56,7 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
       balanceItem.state = APIItemState.ERROR;
 
       setBalance(networkKey, balanceItem, address, state);
+      state.disableNetworkMap(networkKey);
 
       console.info(`There is problem when fetching ${symbol} token balance on ${networkKey}`, ex);
     });
@@ -89,17 +92,23 @@ async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, 
     .catch((ex) => {
       console.info(ex);
       balanceItem.state = APIItemState.ERROR;
-
+      state.disableNetworkMap(networkKey);
       setBalance(networkKey, balanceItem, address, state);
     });
 }
 
 export function fetchEvmAssetBalance(ethereumAddress: string, networkKey: string, assetId: string, state: State) {
   const network = state.networkMap[networkKey];
+
   const asset = network.assets.find((asset) => asset.id === assetId);
 
   if (!asset) throw new Error(`Asset ${assetId} is missing on ${networkKey}`);
 
-  if (asset.isUtility) fetchUtilityBalance(networkKey, ethereumAddress, state);
-  else fetchTokenBalance(ethereumAddress, networkKey, asset.id, state);
+  if (asset.isUtility) {
+    fetchUtilityBalance(networkKey, ethereumAddress, state);
+
+    return;
+  }
+
+  fetchTokenBalance(ethereumAddress, networkKey, asset.id, state);
 }

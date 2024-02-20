@@ -3,7 +3,7 @@ import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
 import type { FetchHistory, AugmentedNetworksContext, ToggleFavorite } from '@/store';
 import type { FiatJson, Network } from '@/interfaces';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import { fetchHistory } from '@/subquery/fetchingHistory';
@@ -42,9 +42,11 @@ const actions: ActionTree<State, State> & Actions = {
     const wallet = address ? { address, ethereumAddress: address } : rootGetters.selectedWallet;
     const formattedAddress = BaseApi.formatAddress(wallet, networkName);
 
-    const { type, url } = externalApi.history;
+    const { type, url: historyUrl } = externalApi.history;
+    const url = isSora(networkName) ? externalApi.staking!.url : historyUrl; // TODO remove
+
     const isNativeEvm = isRequireEvmAPI(networkName);
-    const balances: TokenBalance[] = rootState.account.balances ?? [];
+    const balances: TokenGroup[] = rootState.account.balances ?? [];
 
     const asset = isNativeEvm
       ? balances.find(({ balances }) => balances.some((asset) => asset.id === assetId))
@@ -56,7 +58,7 @@ const actions: ActionTree<State, State> & Actions = {
       ? asset.balances.find(
           ({ name, isUtility }) => name && name.toLowerCase() === networkName.toLowerCase() && isUtility
         )?.id
-      : asset && asset.assetId;
+      : asset && asset.groupId;
 
     const isUtility = isNativeEvm ? utilityId !== undefined : assetId === utilityId;
 

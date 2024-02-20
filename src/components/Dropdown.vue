@@ -12,7 +12,12 @@
       {{ $t(label) }}
 
       <template slot="menu">
-        <SDropdownItem v-for="{ label, value } in filteredOptions" :key="label" :value="value">
+        <SDropdownItem
+          v-for="{ label, value } in filteredOptions"
+          :key="label"
+          :value="value"
+          data-testid="dropdownItem"
+        >
           {{ $t(label) }}
         </SDropdownItem>
       </template>

@@ -83,7 +83,9 @@ const click = () => {
 .icon--purple {
   color: #7700ee;
 }
-
+.icon--transparent {
+  color: transparent;
+}
 .icon--purple:hover {
   color: #7700ee50;
 }

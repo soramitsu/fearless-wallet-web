@@ -80,7 +80,7 @@ export class FWSubscription {
     const accountsExceptCurrent = this.state
       .getSubstrateAccounts()
       .filter((el) => el.address !== currentAccount?.address);
-
+    this.state.nftService.fetchNfts();
     accountsExceptCurrent.forEach((account) => {
       const ethAddress = (account.meta.ethereumAddress as string) ?? '';
 
@@ -135,6 +135,7 @@ export class FWSubscription {
               );
             }
 
+            this.state.nftService.publishNfts();
             this.serviceInfo.address = address;
             this.serviceInfo.ethereumAddress = ethereumAddress;
           }
@@ -195,11 +196,10 @@ export class FWSubscription {
     newEvmNetworks: NetworkName[] | null,
     isFirstRun?: boolean
   ) {
-    console.info(`Start balance sub for: ${address}${isFirstRun ? `; isFirstRun: ${true}` : ''}`);
-
     if (isFirstRun) this.state.balanceService.generateDefaultBalance(address);
 
-    this.state.fetchEvmBalance(newEvmNetworks, ethereumAddress);
+    if (newEvmNetworks?.length)
+      this.state.fetchEvmBalance({ _networks: newEvmNetworks, _ethereumAddress: ethereumAddress });
 
     const unsubList = subscribeBalance(address, ethereumAddress, newNetworks, this.state);
 
@@ -207,13 +207,13 @@ export class FWSubscription {
       // ждем 20 секунд, потом отписываемся, за это время ответят большинство сетей
       // можно было бы дожидаться и await`ить все подписки разом, но некоторые сети очень долго отвечают
       setTimeout(() => {
-        unsubList.forEach(async (item) => {
-          const value = await item;
+        unsubList.forEach(async (subPromise) => {
+          const sub = await subPromise;
 
-          value.unsub();
+          sub.unsub();
         });
       }, 20000);
-    } else
+    } else {
       unsubList.forEach(async (item) => {
         const value = await item;
 
@@ -222,6 +222,7 @@ export class FWSubscription {
           func: value.unsub,
         });
       });
+    }
   }
 }
 

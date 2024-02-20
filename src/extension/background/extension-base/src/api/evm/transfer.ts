@@ -1,6 +1,6 @@
 import { type TransactionRequest, Wallet, parseEther, parseUnits } from 'ethers';
 import { type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
-import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
+import { getContract } from '@extension-base/api/evm/utils/eth';
 import { state } from '@extension-base/background/handlers';
 import { type BalanceItem } from '@extension-base/api/evm/types/ether';
 
@@ -32,7 +32,7 @@ interface MakeTransferParams extends TransferParams {
 }
 
 export async function handleTransfer({ callback, networkKey, privateKey, tx }: HandleTransferProps): Promise<void> {
-  const web3Api = state.getEvmApi(networkKey);
+  const web3Api = state.getEvmApi(networkKey)?.api;
   const signer = new Wallet(privateKey, web3Api);
 
   try {
@@ -52,11 +52,9 @@ export async function handleTransfer({ callback, networkKey, privateKey, tx }: H
       ],
     });
   }
-
-  setTimeout(() => state.fetchEvmBalance([networkKey]), 15000);
 }
 
-function calcEvmFees(maxFee: bigint | null, baseFee: bigint | null | undefined, gasLimit: bigint): bigint {
+export function calcEvmFees(maxFee: bigint | null, baseFee: bigint | null | undefined, gasLimit: bigint): bigint {
   const baseFeePerGas = baseFee ?? BigInt(0);
   const maxFeePerGasPrep = maxFee ?? BigInt(0);
   const prepGasPrice = maxFeePerGasPrep + baseFeePerGas;
@@ -66,7 +64,7 @@ function calcEvmFees(maxFee: bigint | null, baseFee: bigint | null | undefined, 
 
 async function getUtilityTransactionObject(params: TransferParams): Promise<TransactionObject> {
   const { networkKey, to, amount } = params;
-  const web3Api = state.getEvmApi(networkKey);
+  const web3Api = state.getEvmApi(networkKey)?.api;
 
   if (!web3Api) throw new Error(`Unknown network ${networkKey}`);
 
@@ -93,9 +91,9 @@ async function getUtilityTransactionObject(params: TransferParams): Promise<Tran
 async function getERC20TransactionObject(params: TransferParams): Promise<TransactionObject> {
   const { balance, networkKey, to, from, amount } = params;
   const contractAddress = balance.id;
-  const web3Api = state.getEvmApi(networkKey);
+  const web3Api = state.getEvmApi(networkKey)?.api;
 
-  const erc20Contract = await getERC20Contract(contractAddress, web3Api);
+  const erc20Contract = await getContract(contractAddress, web3Api);
 
   const parsedValue = parseUnits(amount, balance.precision);
   const data = erc20Contract.interface.encodeFunctionData('transfer', [to, parsedValue]);
@@ -155,14 +153,18 @@ async function makeERC20Transfer(params: MakeTransferParams) {
   await handleTransfer(props);
 }
 
-export async function getEVMTransactionObject(params: TransferParams): Promise<TransactionObject> {
-  if (params.balance.isUtility) return await getUtilityTransactionObject(params);
+export function getEVMTransactionObject(params: TransferParams): Promise<TransactionObject> {
+  if (params.balance.isUtility) return getUtilityTransactionObject(params);
 
-  return await getERC20TransactionObject(params);
+  return getERC20TransactionObject(params);
 }
 
 export function makeEVMTransfer(params: MakeTransferParams): Promise<void> {
-  if (params.balance.isUtility) return makeUtilityTransfer(params);
+  const transfer = params.balance.isUtility ? makeUtilityTransfer(params) : makeERC20Transfer(params);
 
-  return makeERC20Transfer(params);
+  return transfer.then(() => {
+    setTimeout(() => {
+      state.fetchEvmBalance({ _ethereumAddress: params.from, assetId: params.balance.id, force: true });
+    }, 10000);
+  });
 }

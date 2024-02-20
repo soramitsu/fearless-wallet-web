@@ -1,11 +1,12 @@
 <template>
-  <AboveForm header="assets.receiveFunds" :fullScreen="true" @closeHandler="$emit('closeForm')">
+  <AboveForm header="assets.receiveFunds" :fullScreen="true" @closeHandler="closeForm">
     <div class="receive-form">
       <div>
         <InputWithIcon
           v-model="selectedNetwork"
           placeholder="assets.network"
           icon="rotate"
+          data-testid="selectedNetwork"
           :ref="selectNetworkInputRef"
           :isActiveRotate="showSelectNetworkPopup"
           @click="toggleSelectNetworkPopupVisible"
@@ -15,14 +16,14 @@
           <div class="address-wrapper">
             <span>{{ $t('assets.walletAddress') }}</span>
 
-            <div class="address">
+            <div class="address" data-testid="cutAddress">
               {{ cutAddress }}
 
-              <Icon icon="copy" className="copy-icon" @click="copyAddress" />
+              <Icon icon="copy" className="copy-icon" data-testid="copyAddress" @click="copyAddress" />
             </div>
           </div>
 
-          <QR class="qr" ref="qr" :showLogo="true" :width="200" :payload="address" />
+          <QR class="qr" ref="qr" data-testid="qr" :showLogo="true" :width="200" :payload="address" />
         </div>
 
         <Tooltip text="common.copied" target=".copy-icon" placement="bottom" trigger="click" />
@@ -35,6 +36,7 @@
           text="assets.saveQR"
           width="260px"
           iconName="receive-white"
+          data-testid="saveQR"
           @click="saveQR"
         />
 
@@ -44,6 +46,7 @@
           width="260px"
           text="assets.copyQR"
           iconName="share"
+          data-testid="copyQR"
           @click="copyQR"
         />
 
@@ -72,10 +75,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { type SelectedWallet } from '@/store';
@@ -93,13 +96,19 @@ export default class ReceiveForm extends Vue {
   selectedNetwork = 'polkadot';
   showSelectNetworkPopup = false;
 
-  @Prop(String) _selectedNetwork!: string;
-  @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
+
+  get _selectedNetwork() {
+    return this.$route.params.network ?? '';
+  }
+
+  get selectedAssetId() {
+    return this.$route.params.assetId ?? '';
+  }
 
   get assetNetworks() {
-    const currency = this.balances.find(({ assetId }) => assetId === this.selectedAssetId)!;
+    const currency = this.balances.find(({ groupId }) => groupId === this.selectedAssetId)!;
 
     return (
       currency?.balances
@@ -123,7 +132,7 @@ export default class ReceiveForm extends Vue {
   }
 
   closeForm() {
-    this.$emit('closeForm');
+    this.$router.back();
   }
 
   toggleSelectNetworkPopupVisible() {

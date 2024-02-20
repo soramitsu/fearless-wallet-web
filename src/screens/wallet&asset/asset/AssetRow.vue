@@ -1,5 +1,5 @@
 <template>
-  <Row :value="value" :price="price" :icon="icon" class="asset-row" @click="onSelect">
+  <Row :value="value" :price="price" :icon="icon" class="asset-row" data-testid="assetRow" @click="onSelect">
     <ExternalLogo v-if="icon" :name="icon" :width="24" class="icon-info" :class="classes" />
 
     {{ text }}
@@ -11,6 +11,7 @@
         class="details"
         tooltipText="wallet.assetDetails"
         target=".details"
+        data-testid="details"
       />
     </template>
   </Row>

@@ -10,6 +10,7 @@
     :destNetFee="destNetFee"
     :destinationNetwork="destinationNetwork"
     :recipient="recipient"
+    :isDisableBtn="showSoraAlert"
     @update:assetId="updateAssetId"
     @update:selectedNetwork="updateOriginalNetwork"
     @update:amount="updateAmount"
@@ -20,50 +21,56 @@
     @update:recipient="updateRecipient"
     @closeForm="$emit('closeForm')"
   >
-    <div class="cross-chain">
-      <div class="direction">
-        <ExternalLogo :name="originNetIcon" :width="42" />
+    <template v-slot:step1Warning>
+      <Alert v-if="showSoraAlert" :message="soraCrossChainALert" />
+    </template>
 
-        <div class="asset-logo">
-          <div class="hr"></div>
+    <template v-slot:step2>
+      <div class="cross-chain">
+        <div class="direction">
+          <ExternalLogo :name="originNetIcon" :width="42" />
 
-          <div class="background-circle">
-            <ExternalLogo v-if="currency" :name="currency.icon" :width="87" />
+          <div class="asset-logo">
+            <div class="hr"></div>
+
+            <div class="background-circle">
+              <ExternalLogo v-if="currency" :name="currency.icon" :width="87" />
+            </div>
+
+            <div class="hr"></div>
           </div>
 
-          <div class="hr"></div>
+          <ExternalLogo :name="destNetIcon" :width="42" />
         </div>
 
-        <ExternalLogo :name="destNetIcon" :width="42" />
+        <FCorners size="big" class="row">
+          <div class="summary">
+            <InfoRow text="assets.direction" :value="directionText" />
+
+            <InfoRow text="assets.assetsAmount" :value="amountString" :price="showValue ? valueString : ''" />
+
+            <InfoRow text="assets.sendTo" :value="cut(recipient)" />
+
+            <InfoRow
+              text="assets.originalNetworkFee"
+              :value="originalNetworkPartialFeeString"
+              icon="info"
+              :iconClasses="['origin-fee']"
+            />
+
+            <InfoRow
+              text="assets.crossChainFee"
+              :value="destinationNetworkPartialFeeString"
+              icon="info"
+              :iconClasses="['cross-chain-fee']"
+            />
+          </div>
+
+          <Tooltip text="assets.feeDescription" target=".origin-fee" placement="right" />
+          <Tooltip text="assets.feeDescription" target=".cross-chain-fee" placement="right" />
+        </FCorners>
       </div>
-
-      <FCorners size="big" class="row">
-        <div class="summary">
-          <InfoRow text="assets.direction" :value="directionText" />
-
-          <InfoRow text="assets.assetsAmount" :value="amountString" :price="showValue ? valueString : ''" />
-
-          <InfoRow text="assets.sendTo" :value="cut(recipient)" />
-
-          <InfoRow
-            text="assets.originalNetworkFee"
-            :value="originalNetworkPartialFeeString"
-            icon="info"
-            :iconClasses="['origin-fee']"
-          />
-
-          <InfoRow
-            text="assets.crossChainFee"
-            :value="destinationNetworkPartialFeeString"
-            icon="info"
-            :iconClasses="['cross-chain-fee']"
-          />
-        </div>
-
-        <Tooltip text="assets.feeDescription" target=".origin-fee" placement="right" />
-        <Tooltip text="assets.feeDescription" target=".cross-chain-fee" placement="right" />
-      </FCorners>
-    </div>
+    </template>
   </TransferForm>
 </template>
 
@@ -74,11 +81,12 @@ import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import TransferForm from './TransferForm.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetNetwork } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { firstCharToUp, cut } from '@/helpers/';
+import { firstCharToUp, cut, isSora } from '@/helpers/';
 import { formattedNumber } from '@/helpers/numbers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { BRIDGE_MIN_VALUES_TO_SORA, BRIDGE_MIN_VALUES_FROM_SORA } from '@/consts/sora';
 
 @Component({
   components: { TransferForm },
@@ -98,9 +106,31 @@ export default class CrossChainForm extends Vue {
   @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+
+  get minValueBridgeToSora() {
+    return BRIDGE_MIN_VALUES_TO_SORA[this.originalNetwork.toLowerCase()];
+  }
+
+  get minValueBridgeFromSora() {
+    return BRIDGE_MIN_VALUES_FROM_SORA[this.destinationNetwork.toLowerCase()];
+  }
+
+  get showSoraAlert() {
+    if (this.amount === '') return false;
+
+    if (isSora(this.destinationNetwork, true)) return +this.amount < this.minValueBridgeToSora;
+
+    return +this.amount < this.minValueBridgeFromSora;
+  }
+
+  get soraCrossChainALert() {
+    const value = isSora(this.destinationNetwork, true) ? this.minValueBridgeToSora : this.minValueBridgeFromSora;
+
+    return this.$t('assets.soraCrossChainALert', { value, asset: this.assetName });
+  }
 
   get directionText() {
     return `${this.$t('assets.from')} ${this.originalNetwork} ${this.$t('assets.to')} ${this.destinationNetwork} `;
@@ -135,8 +165,8 @@ export default class CrossChainForm extends Vue {
   }
 
   get currency() {
-    return this.balances.find(({ assetId, balances }) => {
-      return assetId === this.assetId || balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase());
+    return this.balances.find(({ groupId, balances }) => {
+      return groupId === this.assetId || balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase());
     });
   }
 

@@ -9,10 +9,7 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-keyring/types';
 import type { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
 import { isSameString } from '@/helpers';
-type Wallet = {
-  address: string;
-  ethereumAddress: string;
-};
+import { type Wallet } from '@/store/accounts/types';
 
 export class KeyringService {
   constructor(readonly state: State) {}
@@ -185,7 +182,7 @@ export class KeyringService {
 
     if (isEthereumNet) return ethereumAddress;
 
-    const network = this.state.networksJson.find(({ name }) => isSameString(name, networkName));
+    const network = this.state.networksGithub.find(({ name }) => isSameString(name, networkName));
     const prefix = network?.addressPrefix;
 
     // the only case for try/catch

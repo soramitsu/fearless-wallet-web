@@ -34,7 +34,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import History from './History.vue';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import type { Features } from '@/store/extension/types';
 import AssetActionButtons from '@/screens/wallet&asset/asset/AssetActionButtons.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
@@ -50,7 +50,7 @@ import { fetchEvmBalance } from '@/extension/messaging';
 export default class AssetHistory extends Vue {
   showPopupButton = false;
 
-  @Prop(Object) currency!: TokenBalance;
+  @Prop(Object) currency!: TokenGroup;
   @Getter(ExtensionGettersTypes.features) features!: Nullable<Features>;
 
   get selectedAssetId() {
@@ -80,7 +80,8 @@ export default class AssetHistory extends Vue {
   }
 
   mounted() {
-    if (BaseApi.isEthereumNetwork(this.currency.mainNetwork)) fetchEvmBalance();
+    if (BaseApi.isEthereumNetwork(this.currency.mainNetwork))
+      fetchEvmBalance(this.selectedAssetId !== '0' ? this.selectedAssetId : undefined);
   }
 
   togglePopupButton() {

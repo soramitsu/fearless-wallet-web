@@ -205,7 +205,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet, GetNetwork, GetAssetPrice } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
 import SwapSettings from '@/screens/polkaswap/swap/SwapSettings.vue';
@@ -262,7 +262,7 @@ export default class SwapForm extends Vue {
   tx: SwapOptions = {} as SwapOptions;
   swapInterval!: NodeJS.Timer;
 
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -381,7 +381,7 @@ export default class SwapForm extends Vue {
   }
 
   get sendCurrency() {
-    return this.balances.find(({ assetId }) => assetId === this.sendAssetId);
+    return this.balances.find(({ groupId }) => groupId === this.sendAssetId);
   }
 
   get sendAssetName(): string {
@@ -389,11 +389,11 @@ export default class SwapForm extends Vue {
   }
 
   get sendAssetIcon() {
-    return this.sendCurrency?.assetId ?? '';
+    return this.sendCurrency?.groupId ?? '';
   }
 
   get receiveCurrency() {
-    return this.balances.find(({ assetId: id }) => id === this.receiveAssetId);
+    return this.balances.find(({ groupId }) => groupId === this.receiveAssetId);
   }
 
   get receiveAssetName(): string {
@@ -410,17 +410,19 @@ export default class SwapForm extends Vue {
 
   get optionsCurrency() {
     const filter = this.filterValue.toLowerCase();
-    const currenciesFilteredByNetwork = this.balances.filter(
-      ({ mainNetwork }) => mainNetwork.toLowerCase() === this.soraNetworkName.toLowerCase()
-    );
+    const tokensGroupFilteredByNetwork = this.balances.filter(({ balances }) => {
+      return balances.some(({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase());
+    });
 
-    return getCurrencyOptions(currenciesFilteredByNetwork).filter(({ name, value }) => {
+    const tokens = getCurrencyOptions(tokensGroupFilteredByNetwork).filter(({ name, value }) => {
       if (!name.toLowerCase().includes(filter)) return false;
 
       const id = this.isSendAssetType ? this.receiveAssetId : this.sendAssetId;
 
       return value !== id;
     });
+
+    return tokens;
   }
 
   get top() {

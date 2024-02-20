@@ -1,7 +1,15 @@
 <template>
   <div class="add-contact">
     <div class="form">
-      <FInput v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
+      <FInput
+        v-model="name"
+        placeholder="common.name"
+        typeText="uppercase"
+        size="big"
+        class="row"
+        :maxlength="45"
+        data-testid="nameInput"
+      />
 
       <ValidatedInput
         v-model="address"
@@ -9,6 +17,7 @@
         class="row"
         errorDescriptions="accounts.invalidAccountAddress"
         :isError="isErrorAddress"
+        data-testId="walletAddressInput"
       />
 
       <Checkbox
@@ -20,13 +29,20 @@
       />
     </div>
 
-    <FButton size="big" text="common.save" :disabled="buttonDisabled" @click="updateContact" />
+    <FButton
+      size="big"
+      text="common.save"
+      :disabled="buttonDisabled"
+      data-testid="updateContact"
+      @click="updateContact"
+    />
   </div>
 </template>
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { storage } from '@extension-base/stores/Storage';
+import { chrome } from '@polkadot/extension-inject/chrome';
 import BaseApi from '@/util/BaseApi';
 
 @Component

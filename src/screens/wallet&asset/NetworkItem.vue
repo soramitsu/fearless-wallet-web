@@ -34,7 +34,6 @@ type Props = {
   isAvailable: boolean;
   isNetworkGroup?: boolean;
 };
-
 const props = withDefaults(defineProps<Props>(), { isNetworkGroup: false });
 const store = useStore();
 const emit = defineEmits(['onToggleFavorite', 'onChangeNetwork']);
@@ -77,7 +76,6 @@ const prepColor = computed(() => {
 
   return 'rgba(255, 255, 255, 1)'; //default-white
 });
-
 const prepOpacity = computed(() => (props.isAvailable ? '1' : '0.5'));
 </script>
 

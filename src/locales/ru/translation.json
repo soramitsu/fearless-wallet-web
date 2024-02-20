@@ -191,6 +191,7 @@
     "googleExportSuccess": "Ваши приватные данные были успешно сохранены в Google Drive"
   },
   "assets": {
+    "soraCrossChainALert": "На данный момент существует мин.сумма {value} {asset} для создания моста для обеспечения стабильности и безопасности сети SORA. Мы ценим ваше понимание.",
     "all": "Все",
     "locked": "Заблокированно",
     "totalLocked": "Суммарно аблокированно",
@@ -496,7 +497,18 @@
     "payoutStakers": "Выплаты стейкерам",
     "withdrawUnbonded": "Выкупить",
     "rewarded": "Награда",
-    "batchAll": "batchAll"
+    "batchAll": "batchAll",
+    "getRewards": "Получение ревардов",
+    "swapTransfer": "Своп-перевод",
+    "transferToSidechain": "Трансфер в сайдчейн",
+    "register": "Register",
+    "reserve": "Бронировать",
+    "deposit": "Депозит",
+    "depositLiquidity": "Депозит ликвидности",
+    "withdraw": "Отзыв",
+    "withdrawLiquidity": "Отзыв ликвидности",
+    "cancelLimitOrder": "Отмена лимитного ордера",
+    "cancelLimitOrdersBatch": "Отмена нескольких лимитных ордеров"
   },
   "staking": {
     "stakingFee": "Сетевая плата в алгоритме консенсуса NPoS для цепочек на основе субстрата относится к затратам, понесенным участниками (валидаторами и номинаторами) за использование ресурсов и услуг сети.",
@@ -633,6 +645,18 @@
     "myStake": "Мой стейкинг",
     "polkaswap": "Polkaswap"
   },
+  "nft": {
+    "owned": "Принадлежит",
+    "type": "Тип",
+    "id": "Id токена",
+    "spam": "Спам",
+    "airdrop": "Airdrop",
+    "hideNfts": "Спрятать NFTs",
+    "collection": "Коллекция",
+    "availableNfts": "Имеющиеся NFT в коллекции {name}",
+    "noNft": "Пока что тут нет никаких NFT. Купите или сминтите NFT, чтобы их увидеть тут.",
+    "txSuccessMessage": "Ваш NFT трансфер прошел успешно"
+  },
   "common": {
     "wc": "Wallet Connect",
     "connect": "Подключить",
@@ -724,6 +748,7 @@
     "nothingFound": "Ничего не найдено",
     "days": "дней",
     "featureOff": "Временно недоступно",
-    "estimateFeeError": "Не удалось посчитать фии"
+    "estimateFeeError": "Не удалось посчитать фии",
+    "copyHash": "Скопировать hash"
   }
 }

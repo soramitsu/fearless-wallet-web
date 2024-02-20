@@ -13,6 +13,7 @@
           placeholder="common.password"
           size="big"
           errorDescriptions="common.invalidPassword"
+          data-testid="passwordInput"
           :class="classesInput"
           :readonly="!isLocked"
           :isError="isErrorPassword"
@@ -42,19 +43,71 @@
       <Loader v-if="isTransactionPending" />
 
       <template v-else-if="isTransactionFinished">
-        <div class="descriptions">
-          <ExternalLogo :name="firstIconUrl" :width="30" />
+        <template v-if="extrinsicType !== 'nft'">
+          <div class="descriptions">
+            <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" />
 
-          <template v-if="secondIcon">
-            <SIcon name="arrows-arrow-right-24" />
+            <template v-if="secondIcon">
+              <SIcon name="arrows-arrow-right-24" />
 
-            <ExternalLogo :name="secondIconUrl" :width="30" />
+              <ExternalLogo :name="secondIconUrl" :width="30" />
+            </template>
+          </div>
+          <div class="transfer-amount" data-testid="confirmedTransferAmount">{{ transferAmountString }}</div>
+
+          <div class="transfer-value" data-testid="confirmedTransferValue">{{ transferValueString }}</div>
+        </template>
+
+        <template v-else>
+          <div class="icon-circle">
+            <Icon
+              :icon="isFailed ? 'close' : 'check'"
+              className="icon__lock-green"
+              :iconColor="isFailed ? 'error' : 'success'"
+              class="icon-check"
+            />
+          </div>
+
+          <template v-if="isSuccess">
+            <span class="nft-success-msg">{{ $t('nft.txSuccessMessage') }}</span>
+            <FButton
+              text="common.copyHash"
+              class="copy-hash"
+              iconName="copy"
+              iconColor="pink"
+              width="100%"
+              size="small"
+              fontSize="small"
+              type="secondary"
+              :border="false"
+              @click="copyHash"
+            />
+
+            <FButton
+              text="accounts.etherscan"
+              iconName="arrow-link"
+              iconColor="pink"
+              width="100%"
+              size="small"
+              fontSize="small"
+              type="secondary"
+              :border="false"
+              @click="openExplorer"
+            />
+
+            <FButton
+              text="common.close"
+              width="100%"
+              size="small"
+              fontSize="small"
+              type="secondary"
+              :border="false"
+              @click="close"
+            />
+
+            <Tooltip text="common.copied" target=".copy-hash" placement="top" trigger="click" />
           </template>
-        </div>
-
-        <div class="transfer-amount">{{ transferAmountString }}</div>
-
-        <div class="transfer-value">{{ transferValueString }}</div>
+        </template>
       </template>
     </div>
   </Popup>
@@ -69,11 +122,15 @@ import {
   type RequestCheckCrossChain,
   type RequestTransfer,
   type RequestCrossChain,
-  type TokenBalance,
+  type TokenGroup,
   type RequestSwap,
   BasicTxErrorCode,
+  type BasicTxResponse,
+  type ResponseMakeSwap,
+  type ResponseNftTransfer,
 } from '@extension-base/background/types/types';
-import { type RequestStaking } from '@extension-base//services/staking-service/types';
+import { type RequestStaking } from '@extension-base/services/staking-service/types';
+import { type NftTx } from '@extension-base/services/nft-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { SwapOptions, StakingOperation } from '@/interfaces';
 import type { GetNetwork, GetNetworkGenesisHash, SelectedWallet } from '@/store';
@@ -84,6 +141,8 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { IS_EXTENSION } from '@/consts/global';
+import { sendNft } from '@/extension/messaging/nfts';
+import { isSora } from '@/helpers';
 
 @Component({
   components: { SignMobile },
@@ -94,6 +153,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   isErrorPassword = false;
   isLocked = true;
   isSavePass = false;
+  hash: string | undefined = undefined;
   signedPayload: null = null;
   transactionState: 'pending' | 'success' | 'failed' | null = null;
   showUnknownErrorPopup = false;
@@ -105,15 +165,15 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop({ type: String, default: '0' }) feeValue!: string;
   @Prop(String) firstIcon!: string;
   @Prop(String) secondIcon!: string;
-  @Prop(Object) currency?: TokenBalance;
-  @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain | RequestStaking | SwapOptions;
-  @Prop(String) extrinsicType!: 'transfer' | 'crossChain' | 'swap' | StakingOperation;
+  @Prop(Object) currency?: TokenGroup;
+  @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain | RequestStaking | SwapOptions | NftTx;
+  @Prop(String) extrinsicType!: 'transfer' | 'crossChain' | 'swap' | 'nft' | StakingOperation;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get classesInput() {
@@ -130,14 +190,18 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.extrinsicType === 'crossChain')
       return this.networks.find(({ name }) => name.toLowerCase() === this.firstIcon.toLowerCase())?.icon ?? '';
 
-    return this.balances.find(({ assetId }) => assetId === this.firstIcon)?.icon;
+    const tokenGroup = this.balances.find(({ groupId }) => groupId === this.firstIcon);
+
+    if (tokenGroup) return tokenGroup.icon;
+
+    return this.firstIcon;
   }
 
   get secondIconUrl() {
     if (this.extrinsicType === 'crossChain')
       return this.networks.find(({ name }) => name.toLowerCase() === this.secondIcon.toLowerCase())?.icon ?? '';
 
-    return this.balances.find(({ assetId }) => assetId === this.secondIcon)?.icon;
+    return this.balances.find(({ groupId }) => groupId === this.secondIcon)?.icon;
   }
 
   get request() {
@@ -264,6 +328,12 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
   }
 
+  copyHash() {
+    if ('clipboard' in navigator) {
+      navigator.clipboard.writeText(this.hash ?? '');
+    }
+  }
+
   onSavePassChange(value: boolean) {
     this.isSavePass = value;
   }
@@ -279,7 +349,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     else this.makeExtrinsic();
   }
 
-  async makeExtrinsic() {
+  async makeExtrinsic(): Promise<BasicTxResponse | ResponseMakeSwap | ResponseNftTransfer | undefined> {
     const callback = (data: any) => {
       // TODO Выводить юзеру ошибку ???
       // TODO ошибку balanceTooLow по хорошему нужно обработать и показать
@@ -299,11 +369,22 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     if (this.extrinsicType === 'swap') return makeSwap(this.request as RequestSwap);
 
+    if (this.extrinsicType === 'nft') return sendNft(this.request as NftTx);
+
     if (this.isStaking)
       return makeStaking({
         type: this.extrinsicType,
         params: this.request as RequestStaking,
       });
+  }
+
+  openExplorer() {
+    const network = this.getNetwork((this.tx as NftTx).network);
+    const explorerUrl = network.externalApi?.explorers ? network?.externalApi?.explorers[0].url : '';
+
+    const hostname = new URL(explorerUrl).hostname;
+
+    window.open(`https://${hostname}/tx/${this.hash}`);
   }
 
   keypress({ key }: KeyboardEvent) {
@@ -315,7 +396,12 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     const results = await this.makeExtrinsic();
 
-    if (!results?.status) {
+    if (this.extrinsicType === 'nft') {
+      const result = results as ResponseNftTransfer;
+      this.hash = result.hash;
+    }
+
+    if (results && !results?.status) {
       const isErrorPassword = results?.errors?.some(({ code }) => code === BasicTxErrorCode.INVALID_PASSWORD) ?? false;
 
       if (isErrorPassword) {
@@ -327,8 +413,16 @@ export default class ConfirmationPasswordPopup extends Vue {
       }
     }
 
+    const txCross = this.tx as RequestCheckCrossChain;
+
     // функции выполняются через "@sora-substrate/util, для них не работают колбеки с подпиской
-    if (this.extrinsicType === 'swap' || this.isStaking) this.transactionState = results?.status ? 'success' : 'failed';
+    if (
+      this.isStaking ||
+      this.extrinsicType === 'swap' ||
+      this.extrinsicType === 'nft' ||
+      (this.extrinsicType === 'crossChain' && isSora(txCross.originNet))
+    )
+      this.transactionState = results?.status ? 'success' : 'failed';
   }
 }
 </script>
@@ -338,7 +432,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-around;
+  gap: 5px;
   padding: 0 25px;
   min-height: 175px;
 
@@ -395,6 +490,27 @@ export default class ConfirmationPasswordPopup extends Vue {
     width: 100%;
     display: flex;
     align-items: flex-start;
+  }
+  .nft-img {
+    margin-left: auto;
+    margin-right: auto;
+    width: 150px;
+    height: 150px;
+  }
+  .nft-finished {
+    display: flex;
+    flex-flow: column;
+    justify-content: space-between;
+  }
+  .nft-success-msg {
+    color: $gray-color;
+    font-size: 16px;
+    font-weight: 400;
+  }
+  .icon-circle {
+    background-color: #ffffff08;
+    border-radius: 50%;
+    padding: 21px;
   }
 }
 </style>

@@ -71,19 +71,19 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { type FWValidatorInfoFull, type RequestNominate } from '@extension-base/services/staking-service/types';
 import type { AsyncFn, SelectionValidator } from '@/interfaces';
 import type { GetAssetPrice, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
 import YourValidators from '@/screens/staking/myStake/validators/YourValidators.vue';
 import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import { fetchBalance, getSoraFees } from '@/extension/messaging';
+import { fetchBalance, getNominateNetworkFee } from '@/extension/messaging';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { isValidAmountAsset } from '@/helpers/currencies';
@@ -106,7 +106,7 @@ export default class YourValidatorsManagement extends Vue {
   stashBalance = '0';
 
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: Object }) stakingCurrency!: TokenBalance;
+  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -125,7 +125,7 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   get stakingAssetId() {
-    return this.stakingCurrency.assetId;
+    return this.stakingCurrency.groupId;
   }
 
   get stakingAssetPrice() {
@@ -144,7 +144,7 @@ export default class YourValidatorsManagement extends Vue {
 
   get isValidAmountAsset() {
     // для controller аккаунта подставляем баланс stash аккаунта
-    const stakingCurrency: TokenBalance = this.stakingNetwork.isController
+    const stakingCurrency: TokenGroup = this.stakingNetwork.isController
       ? {
           ...this.stakingCurrency,
           balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),
@@ -232,6 +232,11 @@ export default class YourValidatorsManagement extends Vue {
     } as RequestNominate;
   }
 
+  @Watch('selectedValidators')
+  async srcWatcher() {
+    this.fee = await getNominateNetworkFee({ validators: this.selectedValidators, network: this.network });
+  }
+
   async mounted() {
     // TODO staking
     const isSlashed = false;
@@ -251,19 +256,11 @@ export default class YourValidatorsManagement extends Vue {
       });
     });
 
-    this.getSoraFees();
-
     if (this.stakingNetwork.isController)
       this.stashBalance = await fetchBalance({
         address: this.stakingNetwork.stashAddress,
         networkName: this.stakingNetwork.network,
       });
-  }
-
-  async getSoraFees() {
-    const { StakingNominate } = await getSoraFees();
-
-    this.fee = StakingNominate.toString();
   }
 
   closeForm() {

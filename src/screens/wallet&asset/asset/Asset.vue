@@ -9,20 +9,6 @@
     >
     </router-view>
 
-    <SendForm
-      v-if="showSendForm"
-      :_selectedNetwork="selectedAssetNetwork"
-      :_selectedAssetId="selectedAssetId"
-      @closeForm="toggleVisible('showSendForm', false)"
-    />
-
-    <ReceiveForm
-      v-if="showReceiveForm"
-      :_selectedNetwork="selectedAssetNetwork"
-      :selectedAssetId="selectedAssetId"
-      @closeForm="toggleVisible('showReceiveForm', false)"
-    />
-
     <CrossChainForm
       v-if="showCrossChainForm"
       :_originalNetwork="selectedAssetNetwork"
@@ -53,7 +39,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import HistoryDetailsForm from '@/screens/wallet&asset/asset/HistoryDetailsForm.vue';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
@@ -69,7 +55,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NETWORKS_GROUPS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common/index';
 
-type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
+type ShowField = 'showCrossChainForm' | 'showBuyPopup';
 
 @Component({
   components: {
@@ -85,14 +71,12 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'sh
 })
 export default class Asset extends Vue {
   historyElement: HistoryElement | Record<string, string> | null = null;
-  showSendForm = false;
-  showReceiveForm = false;
   showCrossChainForm = false;
   showBuyPopup = false;
   showTipPopup = false;
   filterValue = '';
 
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -138,7 +122,7 @@ export default class Asset extends Vue {
   get currentCurrency() {
     return (
       this.balances.find(
-        ({ assetId: id, balances }) =>
+        ({ groupId: id, balances }) =>
           id === this.selectedAssetId || balances.some((el) => el.id === this.selectedAssetId)
       )! ?? {}
     );

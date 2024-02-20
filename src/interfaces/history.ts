@@ -126,7 +126,7 @@ type X1HistoryElement = {
 };
 interface SubqueryHistory {
   timestamp: number;
-  nodes: HistoryElement[]; // | SoraHistoryElement[]
+  nodes: HistoryElement[];
   pageInfo: {
     startCursor: string;
     endCursor: string;

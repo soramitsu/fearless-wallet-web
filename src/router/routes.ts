@@ -8,7 +8,12 @@ import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import { type NetworkName } from '@/interfaces';
 import WcAuths from '@/screens/extension-ui/WcAuths.vue';
 import SubstrateAuths from '@/screens/extension-ui/SubstrateAuths.vue';
+import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
+import NftsList from '@/screens/wallet&asset/asset/NftsList.vue';
+import NftCollection from '@/screens/wallet&asset/asset/NftCollection.vue';
+import NftDetails from '@/screens/wallet&asset/asset/NftDetails.vue';
 
+const NftSendForm = () => import('@/screens/wallet&asset/asset/NftSendForm.vue');
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
@@ -33,6 +38,9 @@ const AssetNetworks = () =>
 const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetHistory.vue');
 
 const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
+const SendForm = () => import('@/screens/wallet&asset/SendForm.vue');
+const ReceiveForm = () => import('@/screens/wallet&asset/ReceiveForm.vue');
+
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
 const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/Disclaimer.vue');
 
@@ -65,6 +73,8 @@ export enum Components {
   Polkaswap = 'Polkaswap',
   PolkaswapDisclaimer = 'PolkaswapDisclaimer',
   SoraSwap = 'SoraSwap',
+  SendForm = 'SendForm',
+  ReceiveForm = 'ReceiveForm',
   SoraCard = 'SoraCard',
   Staking = 'Staking',
   MyStake = 'MyStake',
@@ -81,6 +91,11 @@ export enum Components {
   SubstrateAuths = 'SubstrateAuths',
   WcAuths = 'WcAuths',
   Onboarding = 'Onboarding',
+  Currencies = 'Currencies',
+  Nfts = 'Nfts',
+  NftDetails = 'NftDetails',
+  NftCollection = 'NftCollection',
+  NftSendForm = 'NftSendForm',
 }
 
 const haveSelectedWallet = () => {
@@ -174,6 +189,24 @@ const routes: Array<RouteConfig> = [
     component: WalletConnectInitAuth,
   },
   {
+    path: '/collection/:contract',
+    name: Components.NftCollection,
+    component: NftCollection,
+    meta: { title: 'wallet' },
+  },
+  {
+    path: '/collection/:contract/:id',
+    name: Components.NftDetails,
+    component: NftDetails,
+    meta: { title: 'wallet' },
+  },
+  {
+    path: '/send-nft/:contract/:id',
+    name: Components.NftSendForm,
+    component: NftSendForm,
+    meta: { title: 'wallet' },
+  },
+  {
     path: '/meta',
     name: Components.MetaRequest,
     component: MetaRequest,
@@ -187,6 +220,22 @@ const routes: Array<RouteConfig> = [
     component: Transaction,
     meta: {
       title: 'transaction',
+    },
+  },
+  {
+    path: '/send/:assetId/:network',
+    name: Components.SendForm,
+    component: SendForm,
+    meta: {
+      title: 'send',
+    },
+  },
+  {
+    path: '/receive/:assetId/:network',
+    name: Components.ReceiveForm,
+    component: ReceiveForm,
+    meta: {
+      title: 'receive',
     },
   },
   {
@@ -282,6 +331,7 @@ const routes: Array<RouteConfig> = [
         props: (route) => ({ query: route.query.wallet }),
         name: Components.Wallet,
         component: Wallet,
+        redirect: { name: Components.Currencies },
         beforeEnter: (to, from, next) => {
           if (haveAuthRequests()) next({ name: Components.Authorize });
           else if (haveSignRequests()) next({ name: Components.Transaction });
@@ -291,6 +341,24 @@ const routes: Array<RouteConfig> = [
         meta: {
           title: 'wallet',
         },
+        children: [
+          {
+            path: '/currencies/:access_token?',
+            name: Components.Currencies,
+            component: Currencies,
+            meta: {
+              title: 'wallet',
+            },
+          },
+          {
+            path: '/nft-collections',
+            name: Components.Nfts,
+            component: NftsList,
+            meta: {
+              title: 'wallet',
+            },
+          },
+        ],
       },
       {
         path: 'accounts',
@@ -364,7 +432,7 @@ const routes: Array<RouteConfig> = [
     path: '*',
     component: Welcome,
     beforeEnter: (to, from, next) => {
-      if (haveSelectedWallet()) next({ name: Components.Wallet });
+      if (haveSelectedWallet()) next({ name: Components.Currencies });
       else next();
     },
   },

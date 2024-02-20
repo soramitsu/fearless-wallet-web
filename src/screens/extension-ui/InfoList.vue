@@ -21,7 +21,6 @@
   border-radius: $default-border-radius;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   width: 100%;
-  margin-bottom: 14px;
 
   &__list {
     display: grid;

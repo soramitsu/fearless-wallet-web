@@ -107,7 +107,7 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
 
     switch (payload.method) {
       case 'net_version':
-        result = this.version ? `SubWallet v${this.version}` : null;
+        result = this.version ? `Fearless Wallet v${this.version}` : null;
         break;
       default:
         throw new Error(`Not support ${payload.method}`);

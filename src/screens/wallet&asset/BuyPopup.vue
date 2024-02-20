@@ -4,6 +4,7 @@
       <FButton
         v-for="provider in providersFiltered"
         class="provider-button"
+        data-testid="buyContentBtn"
         :key="provider"
         :text="provider"
         :iconName="provider"

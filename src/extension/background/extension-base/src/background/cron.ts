@@ -149,7 +149,7 @@ export class FWCron {
       if (!navigator.onLine) this.state.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
       else {
         try {
-          await api.provider._waitUntilReady();
+          await api.api.provider._waitUntilReady();
 
           this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
         } catch {

@@ -32,15 +32,16 @@ async function onDisconnect(networkName: string, state: State) {
   const netName = state.getNetworkByKey(networkName).name;
   const network = state.networkMap[netName];
 
-  if (!network.active) return;
+  if (api === undefined) {
+    state.subscription.getSubscription(networkName)?.(); //clean up;
 
-  if (api === undefined) return;
+    return;
+  }
 
   api.apiRetry += 1;
 
   if (api.apiRetry < MAX_CONTINUE_RETRY) return;
 
-  api.api?.disconnect();
   api.provider?.disconnect();
 
   api.nodeIndex += 1;
@@ -51,7 +52,10 @@ async function onDisconnect(networkName: string, state: State) {
     api.api = undefined;
 
     if (navigator.onLine) initApi(network, state);
-    else api.apiStatus = NETWORK_STATUS.DISCONNECTED;
+    else {
+      api.apiStatus = NETWORK_STATUS.DISCONNECTED;
+      state.disableNetworkMap(networkName);
+    }
   } else {
     api.apiStatus = NETWORK_STATUS.DISCONNECTED; // попробовали все ноды, не смогил подключиться, ставим статус дисконнект
 
@@ -59,13 +63,20 @@ async function onDisconnect(networkName: string, state: State) {
   }
 }
 
-function onReady(networkName: string, state: State) {
+async function onReady(networkName: string, state: State) {
   if (isSora(networkName)) {
     apiSora.initialize(false);
     apiSora.calcStaticNetworkFees();
 
     state.subscribeTotalXorBalance();
   }
+
+  const account = await state.currentAccount;
+
+  if (!account) return;
+
+  state.subscription.getSubscription(networkName)?.();
+  state.subscription.subscribeBalances(account.address, account.ethereumAddress, [networkName], []);
 }
 
 export async function initApi(network: NetworkJson, state: State): Promise<void> {
@@ -89,14 +100,12 @@ export async function initApi(network: NetworkJson, state: State): Promise<void>
     try {
       const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS, undefined, 10000);
 
-      const api = new ApiPromise({ provider, noInitWarn: true });
-
-      eventListeners.forEach(([eventName, callback]) => api.on(eventName, callback));
-
-      state.apis.substrate[networkName].api = api;
+      state.apis.substrate[networkName].api = new ApiPromise({ provider, noInitWarn: true });
       state.apis.substrate[networkName].provider = provider;
+
+      eventListeners.forEach(([eventName, callback]) => state.apis.substrate[networkName].api?.on(eventName, callback));
     } catch {
-      console.warn(`Error while init api for ${networkName}`);
+      onDisconnect(networkName, state);
     }
   }
 }

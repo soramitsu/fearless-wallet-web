@@ -34,7 +34,7 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.SET_BALANCE]({ commit, state }, { details, reset, saveSequence = false }) {
     if (saveSequence) {
       const address = state.selectedWallet.address;
-      const sequence = details.map(({ assetId }) => assetId);
+      const sequence = details.map(({ groupId }) => groupId);
 
       accountController.setSequenceAssets(sequence, address);
 

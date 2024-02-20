@@ -2,6 +2,7 @@ import type { AccountJson } from '@extension-base/background/types/types';
 import type { Node, NetworkName, WalletAddress } from '@/interfaces';
 import type { Lang } from '@/locales';
 import { LocalStorage } from '@/controllers/localStorageController';
+import { type NftSettings } from '@/extension/background/extension-base/src/services/nft-service/types';
 
 class AccountController {
   private readonly lsAccount = new LocalStorage('account_');
@@ -20,6 +21,7 @@ class AccountController {
   private readonly agreeSwapDisclaimer = 'agree-swap-disclaimer';
   private readonly hiddenWarningNetworks = 'hidden-warning-networks';
   private readonly hidingSoraCardBannerTime = 'hiding-sora-card-banner-time';
+  private readonly nftSettings = 'nftSettings';
 
   public getHidingSoraCardBannerTime(): number {
     return +(this.lsAccount.get(this.hidingSoraCardBannerTime).value ?? 0);
@@ -82,6 +84,14 @@ class AccountController {
       ethereumAddress: '',
       name: '',
     };
+  }
+
+  public setNftSettings(settings: NftSettings) {
+    this.lsAccount.set(this.nftSettings, settings);
+  }
+
+  public getNftSettings() {
+    return this.lsAccount.get(this.nftSettings).value ?? {};
   }
 
   public setSelectedWalletAddress(address = ''): void {

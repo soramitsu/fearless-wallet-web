@@ -1,5 +1,6 @@
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
+import { chrome } from '@polkadot/extension-inject/chrome';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
@@ -28,7 +29,8 @@ import {
   type RewardsResponse,
   type MakeStakingRequest,
   type StakingParamsResponse,
-  type CheckPayoutsFeeRequest,
+  type GetPayoutsFeeRequest,
+  type GetNominateNetworkFeeRequest,
 } from '@extension-base/services/staking-service/types';
 import { type MetadataDef } from '@polkadot/extension-inject/types';
 import { type SignerPayloadRaw, type SignerPayloadJSON } from '@polkadot/types/types';
@@ -90,6 +92,8 @@ import {
   type BasicTxResponse,
   TransferErrorCode,
   type FetchBalanceRequest,
+  type RequestNftTransfer,
+  type FetchEvmBalancePayload,
 } from '@extension-base/background/types/types';
 import {
   type RequestConnectWalletConnect,
@@ -110,6 +114,11 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
+import type {
+  RequestSettingsChangePayload,
+  AvailableNftPayload,
+  NftTx,
+} from '@extension-base/services/nft-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
 import type { ProposalTypes, SessionTypes } from '@walletconnect/types';
@@ -129,7 +138,6 @@ import type {
 } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
-import { googleManage } from '@/controllers/googleController';
 
 function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
   return (value as SignerPayloadJSON).genesisHash !== undefined;
@@ -553,8 +561,6 @@ export default class Extension extends FWExtensionBase {
   }
 
   signingApproveSignature({ id, signature }: RequestSigningApproveSignature): boolean {
-    this.state.signature = signature;
-
     const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
@@ -652,11 +658,11 @@ export default class Extension extends FWExtensionBase {
   }
 
   initAuth({ type, wallet }: GoogleAuthTypes): void {
-    googleManage.authExtension(type, wallet);
+    this.state.googleService.authExtension(type, wallet);
   }
 
   async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse | null> {
-    return googleManage.verifyToken(token);
+    return this.state.googleService.verifyToken(token);
   }
 
   getToken(): void {
@@ -666,21 +672,21 @@ export default class Extension extends FWExtensionBase {
   }
 
   async getFiles({ token }: { token: string }): Promise<IGetFilesResponse> {
-    return googleManage.getFiles(token);
+    return this.state.googleService.getFiles(token);
   }
 
   async getFile({ id, token }: GoogleFileId): Promise<KeyringPair$Json> {
-    return googleManage.getFile(id, token);
+    return this.state.googleService.getFile(id, token);
   }
 
   async createFile({ json, options, token }: ICreateFile): Promise<FilesResponse> {
-    return googleManage.createFile({ json, options, token });
+    return this.state.googleService.createFile({ json, options, token });
   }
 
   deleteFile({ id }: GoogleFileId): void {
     if (!this.token) this.getToken();
 
-    googleManage.deleteFile(id, this.token);
+    this.state.googleService.deleteFile(id, this.token);
   }
 
   cancelAuthRequest(id: string) {
@@ -699,10 +705,10 @@ export default class Extension extends FWExtensionBase {
     return this.state.balanceService.getBalance();
   }
 
-  private async fetchEvmBalance() {
+  private async fetchEvmBalance({ assetId }: FetchEvmBalancePayload) {
     if (!this.state.ready) return;
 
-    this.state.fetchEvmBalance(null);
+    this.state.fetchEvmBalance({ assetId });
   }
 
   private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {
@@ -1025,12 +1031,15 @@ export default class Extension extends FWExtensionBase {
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
 
     const [fee, crossChainFee] = await estimateCrossChainFee(
-      assetId,
-      originNet,
-      destinationNet,
-      to,
-      amount!,
-      tokenBalance,
+      {
+        assetId,
+        originNet,
+        destinationNet,
+        amount: amount!,
+        from,
+        to,
+        tokenBalance,
+      },
       this.state
     );
 
@@ -1111,7 +1120,7 @@ export default class Extension extends FWExtensionBase {
 
       cb({
         status: false,
-        errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (ex as Error).message }],
+        errors: [{ code: TransferErrorCode.CROSSCHAIN_ERROR, message: (ex as Error).message }],
       });
 
       setTimeout(() => this.cancelSubscription(id), 500);
@@ -1180,7 +1189,7 @@ export default class Extension extends FWExtensionBase {
     if (stashAddress === '') return true;
 
     // Если для address существует stashAddress и он отличается от address, тогда address уже является контроллер аккаунтом
-    const isValidController = this.state.keyringService.isSameAddress(
+    const isValidController = this.state.isSameAddress(
       { address: stashAddress, ethereumAddress: stashAddress },
       { address, ethereumAddress: address }
     );
@@ -1221,8 +1230,12 @@ export default class Extension extends FWExtensionBase {
     return result;
   }
 
-  public async checkPayoutsFee(params: CheckPayoutsFeeRequest) {
-    return await this.state.stakingService.checkPayoutsFee(params);
+  async getPayoutsFee(params: GetPayoutsFeeRequest) {
+    return this.state.stakingService.getPayoutsFee(params);
+  }
+
+  async getNominateNetworkFee(params: GetNominateNetworkFeeRequest) {
+    return this.state.stakingService.getNominateNetworkFee(params);
   }
 
   async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
@@ -1463,7 +1476,7 @@ export default class Extension extends FWExtensionBase {
     if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
 
     const { privateKey } = this.state.accountExportPrivateKey({ address: ethereumAddress, password });
-    const signer = new Wallet(privateKey, this.state.getEvmApi(network.name));
+    const signer = new Wallet(privateKey, this.state.getEvmApi(network.name)?.api);
 
     if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
       const txData = request.request.params.request.params[0] as { to: string; value: string };
@@ -1711,8 +1724,11 @@ export default class Extension extends FWExtensionBase {
       case 'pri(staking.makeStaking)':
         return this.makeStaking(request as MakeStakingRequest);
 
-      case 'pri(staking.checkPayoutsFee)':
-        return this.checkPayoutsFee(request as CheckPayoutsFeeRequest);
+      case 'pri(staking.getPayoutsFee)':
+        return this.getPayoutsFee(request as GetPayoutsFeeRequest);
+
+      case 'pri(staking.getNominateNetworkFee)':
+        return this.getNominateNetworkFee(request as GetNominateNetworkFeeRequest);
 
       // price
       case 'pri(price.update.currency)':
@@ -1789,7 +1805,7 @@ export default class Extension extends FWExtensionBase {
         return this.getBalance();
 
       case 'pri(fetch.evm.balance)':
-        return this.fetchEvmBalance();
+        return this.fetchEvmBalance(request as FetchEvmBalancePayload);
 
       case 'pri(balance.subscription)':
         return this.subscribeBalance(id, port);
@@ -1848,6 +1864,30 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(onboarding.isRequired)':
         return this.isOnboardingRequired();
+
+      //Nfts
+      case 'pri(nft.subscribe)':
+        return this.state.nftService.nftSubscribe(id, port);
+
+      case 'pri(nft.fetch)':
+        return this.state.nftService.fetchNfts(request as string);
+
+      case 'pri(nft.send)':
+        return this.state.nftService.sendNft(
+          request as RequestNftTransfer,
+          (address: string, ethereumAddress: string | undefined, isSave: boolean, isMobile: boolean) => {
+            this.savePass(address, ethereumAddress, isSave, isMobile);
+          }
+        );
+
+      case 'pri(nft.checkSend)':
+        return this.state.nftService.checkSend(request as NftTx);
+
+      case 'pri(nft.fetchNftsForContract)':
+        return this.state.nftService.availableNftsForContract(request as AvailableNftPayload);
+
+      case 'pri(nft.settings)':
+        return this.state.nftService.changeSettings(request as RequestSettingsChangePayload);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

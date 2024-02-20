@@ -193,6 +193,7 @@
     "googleExportSuccess": "The secret data has been successfully saved on Google Drive"
   },
   "assets": {
+    "soraCrossChainALert": "Currently, there's a min. amount {value} {asset} for bridging to ensure the stability and security of the SORA Network. We appreciate your understanding.",
     "all": "All",
     "locked": "Locked",
     "totalLocked": "Total locked",
@@ -503,7 +504,18 @@
     "payoutStakers": "Payout stakers",
     "withdrawUnbonded": "Redeem",
     "rewarded": "Reward",
-    "batchAll": "batchAll"
+    "batchAll": "Batch All",
+    "getRewards": "Get rewards",
+    "swapTransfer": "Swap transfer",
+    "transferToSidechain": "Transfer to Sidechain",
+    "register": "Register",
+    "reserve": "Reserve",
+    "deposit": "Deposit",
+    "depositLiquidity": "Deposit liquidity",
+    "withdraw": "Withdraw",
+    "withdrawLiquidity": "Withdraw liquidity",
+    "cancelLimitOrder": "Cancel Limit Order",
+    "cancelLimitOrdersBatch": "Cancel Limit Orders Batch"
   },
   "staking": {
     "stakingFee": "The network fee in the NPoS consensus algorithm for Substrate based chains refers to the cost incurred by participants (validators and nominators) for using the network's resources and services.",
@@ -641,6 +653,18 @@
     "myStake": "My staking",
     "polkaswap": "Polkaswap"
   },
+  "nft": {
+    "owned": "Owned",
+    "type": "Type",
+    "id": "Token ID",
+    "spam": "Spam",
+    "airdrop": "Airdrop",
+    "hideNfts": "Hide NFTs",
+    "collection": "Collection",
+    "availableNfts": "Available NFTs in the {name} collection",
+    "noNft": "There aren't any NFTs yet. Buy or mint NFTs to see them here.",
+    "txSuccessMessage": "Your NFT transfer has been successfully completed"
+  },
   "common": {
     "approve": "Approve",
     "sign": "Sign",
@@ -719,6 +743,8 @@
     "dontShowAgain": "Don't show me again",
     "iAmReady": "OK, I am ready",
     "all": "All",
+    "send": "Send",
+    "copyMeta": "Copy Metadata",
     "name": "Name",
     "warning": "Warning",
     "iAgree": "I agree",
@@ -730,9 +756,12 @@
     "areYouSure": "Are you sure?",
     "searchByAddress": "Search by address or name",
     "networks": "Networks",
+    "network": "Network",
     "nothingFound": "Nothing found",
     "days": "days",
     "featureOff": "Temparary unavailable, we're working to bring it back.",
-    "estimateFeeError": "Couldn't estimate fee"
+    "estimateFeeError": "Couldn't estimate fee",
+    "networkFees": "Network fee",
+    "copyHash": "Copy hash"
   }
 }

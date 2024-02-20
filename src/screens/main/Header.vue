@@ -91,7 +91,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
-import { type ActiveTabAuthorizeStatus, type TokenBalance } from '@extension-base/background/types/types';
+import { type ActiveTabAuthorizeStatus, type TokenGroup } from '@extension-base/background/types/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import type { NetworkJson } from '@extension-base/types';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
@@ -132,7 +132,7 @@ export default class Header extends Vue {
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get showBackIcon() {
@@ -163,10 +163,10 @@ export default class Header extends Vue {
     return this.$route.params.assetId ?? '';
   }
 
-  get currentCurrency(): TokenBalance | undefined {
+  get currentCurrency(): TokenGroup | undefined {
     return this.balances.find(
-      ({ assetId: id, balances }) =>
-        id === this.selectedAssetId || balances.some((el) => el.id === this.selectedAssetId)
+      ({ groupId, balances }) =>
+        groupId === this.selectedAssetId || balances.some((el) => el.id === this.selectedAssetId)
     );
   }
 
@@ -383,7 +383,7 @@ export default class Header extends Vue {
       display: flex;
       align-items: center;
       height: 32px;
-      padding: 12px;
+      padding: 8px;
       font-size: 12px;
       line-height: 18px;
       border-radius: 20px;

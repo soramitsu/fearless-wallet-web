@@ -1,12 +1,20 @@
 <template>
   <div class="activity">
     <BorderButton
-      v-for="(button, index) in basicButtons"
-      :class="button.class"
-      :text="button.text"
-      :iconName="button.icon"
-      @click="onToggleVisible(button.formName)"
-      :key="index"
+      class="activity-button"
+      text="assets.sendButtonText"
+      iconName="send"
+      data-testid="sendBtn"
+      @click="onRoute('send')"
+    />
+
+    <BorderButton
+      class="activity-button"
+      width="100%"
+      text="assets.receiveButtonText"
+      iconName="receive"
+      data-testid="receiveBtn"
+      @click="onRoute('receive')"
     />
 
     <BorderButton
@@ -14,6 +22,7 @@
       class="activity-button"
       text="assets.crossChain"
       iconName="cross-chain"
+      data-testid="crossChainBtn"
       @click="$emit('toggleVisible', 'showCrossChainForm')"
     />
 
@@ -22,6 +31,7 @@
       class="activity-button"
       text="assets.swap"
       iconName="swap"
+      data-testid="swapBtn"
       @click="openSoraSwap"
     />
 
@@ -30,6 +40,7 @@
       class="activity-button"
       text="assets.buy"
       iconName="plus-pink"
+      data-testid="buyBtn"
       @click="$emit('toggleVisible', 'showBuyPopup')"
     />
 
@@ -37,6 +48,7 @@
       v-if="isNeedPopupButton"
       class="activity-button activity-button--settings"
       iconName="three-dots-vertical"
+      data-testid="threeDotsVerticalBtn"
       @click="$emit('togglePopupButton')"
     />
   </div>
@@ -46,13 +58,12 @@ import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import type { NetworkJson } from '@extension-base/types';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { isSora } from '@/helpers';
 import { type SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { SORA_MAINNET, SORA_TEST } from '@/consts/sora';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
@@ -69,13 +80,6 @@ export default class AssetActionButtons extends Vue {
   readonly basicButtons: ControlButtons[] = [
     {
       class: 'activity-button',
-      text: 'assets.sendButtonText',
-      icon: 'send',
-      formName: 'showSendForm',
-      isActive: true,
-    },
-    {
-      class: 'activity-button',
       text: 'assets.receiveButtonText',
       icon: 'receive',
       formName: 'showReceiveForm',
@@ -83,11 +87,18 @@ export default class AssetActionButtons extends Vue {
     },
   ];
 
-  @Prop(Object) currency!: TokenBalance;
+  @Prop(Object) currency!: TokenGroup;
   @Prop(Boolean) showBuyButton!: boolean;
   @Prop(String) assetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
+
+  onRoute(form: 'send' | 'receive') {
+    this.$router.push({
+      name: form === 'send' ? Components.SendForm : Components.ReceiveForm,
+      params: { assetId: this.$route.params.assetId, network: this.selectedNetwork },
+    });
+  }
 
   get selectedNetwork() {
     return this.$route.params.selectedNetwork ?? '';
@@ -106,9 +117,6 @@ export default class AssetActionButtons extends Vue {
   }
 
   get showCrossChainButton() {
-    // TODO: удалить когда будет готов сора бридж
-    if (this.selectedNetwork === SORA_MAINNET || this.selectedNetwork === SORA_TEST) return false;
-
     if (this.selectedNetwork === '' || this.selectedWallet.isMobile) return false;
 
     const network = this.getNetwork(this.selectedNetwork);

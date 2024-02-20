@@ -44,7 +44,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     sonarProjectKey:            'fearless:fearless-wallet-web',
     sonarProjectName:           'fearless-wallet-web',
     sonarCredential:            'sonar_fearless_token',
-    mozillaSlug:                'fearless-wallet',
+    extSlug:                    'fearless-wallet',
     mozillaChannel:             'listed',
     distFolders:                ['./dist/extension/firefox','./dist/extension/chrome'],
     distFoldersTestNets:        ['./dist/extension/chrome-test'],
@@ -56,7 +56,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     uploadToGoogleFor:          ['master'],
     uploadToFirefoxFor:         ['master'],
     buildWithCred:              buildWithCred,
-    dojoProductType:            'fearless',
+    dojoProductType:            'fearless-web',
     sonarSrcPath:               'src',
     sonarTestsPath:             'tests'
 )

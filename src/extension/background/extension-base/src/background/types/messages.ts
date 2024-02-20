@@ -1,4 +1,13 @@
 import type {
+  NftTx,
+  CheckNftResponse,
+  AvailableNftPayload,
+  AvailableNftResponse,
+  RequestSettingsChangePayload,
+  ChainNftState,
+} from '@extension-base/services/nft-service/types';
+import type { OwnedNftsResponse } from 'alchemy-sdk';
+import type {
   PairingSubjectType,
   RequestApproveConnectWalletSession,
   RequestApproveWalletConnect,
@@ -21,7 +30,8 @@ import type {
   CheckControllerRequest,
   getRewardsRequest,
   StakingNetworkRequest,
-  CheckPayoutsFeeRequest,
+  GetPayoutsFeeRequest,
+  GetNominateNetworkFeeRequest,
 } from '@extension-base/services/staking-service/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type { SessionTypes } from '@walletconnect/types';
@@ -82,6 +92,8 @@ import type {
   MobileSigningRequest,
   RequestSigningSubscribe,
   FetchBalanceRequest,
+  ResponseNftTransfer,
+  FetchEvmBalancePayload,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -181,11 +193,12 @@ export interface RequestSignatures {
   'pri(staking.rewards)': [getRewardsRequest, RewardsResponse];
   'pri(staking.myStaking)': [StakingNetworkRequest, MyStakingInfoResponse];
   'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];
-  'pri(staking.checkPayoutsFee)': [CheckPayoutsFeeRequest, string];
+  'pri(staking.getPayoutsFee)': [GetPayoutsFeeRequest, string];
+  'pri(staking.getNominateNetworkFee)': [GetNominateNetworkFeeRequest, string];
 
   //ether
   'pri(balance)': [null, BalanceJson];
-  'pri(fetch.evm.balance)': [null, void];
+  'pri(fetch.evm.balance)': [FetchEvmBalancePayload, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
   'pri(fetch.balance)': [FetchBalanceRequest, string];
 
@@ -243,4 +256,13 @@ export interface RequestSignatures {
   'pri(walletConnect.app.disconnect)': [null, string];
   'pri(walletConnect.app.subscribePairing)': [string, PairingSubjectType, PairingSubjectType];
   'pri(walletConnect.app.pairing)': [null, string];
+
+  //Nfts
+  'pri(nft.get.all)': [string, OwnedNftsResponse];
+  'pri(nft.subscribe)': [null, ChainNftState, ChainNftState];
+  'pri(nft.fetch)': [string, void];
+  'pri(nft.send)': [NftTx, ResponseNftTransfer];
+  'pri(nft.fetchNftsForContract)': [AvailableNftPayload, AvailableNftResponse];
+  'pri(nft.checkSend)': [NftTx, CheckNftResponse];
+  'pri(nft.settings)': [RequestSettingsChangePayload, void];
 }

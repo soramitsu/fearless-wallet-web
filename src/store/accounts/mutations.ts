@@ -2,6 +2,7 @@ import type { MutationTree } from 'vuex';
 import type { SelectedWallet, SetAccountsProps, SetAutoSelectNode, SetHiddenAsset } from './types';
 import type { State } from './state';
 import type { BalanceJson } from '@extension-base/background/types/types';
+import type { AvailableNftState, ChainNftState } from '@extension-base/services/nft-service/types';
 import { accountController } from '@/controllers';
 
 export enum MutationTypes {
@@ -18,6 +19,9 @@ export enum MutationTypes {
   HIDE_POLKASWAP_ALERT = 'HIDE_POLKASWAP_ALERT',
   HIDE_NETWORK_WARNING = 'HIDE_NETWORK_WARNING',
   SET_BALANCE = 'SET_BALANCE',
+  SET_NFTS = 'SET_NFTS',
+  SET_AVAILABLE_NFTS = 'SET_AVAILABLE_NFTS',
+
   SET_SORA_CARD_BANNER_VISIBILITY = 'SET_SORA_CARD_BANNER_VISIBILITY',
 }
 
@@ -30,6 +34,8 @@ export type Mutations = {
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: SetAutoSelectNode): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
   [MutationTypes.DELETE_QR](state: State): void;
+  [MutationTypes.SET_NFTS](state: State, nfts: ChainNftState): void;
+  [MutationTypes.SET_AVAILABLE_NFTS](state: State, nfts: AvailableNftState): void;
   [MutationTypes.SET_HIDDEN_ASSET](state: State, props: SetHiddenAsset): void;
   [MutationTypes.SET_CUSTOM_SORT](state: State, props: string): void;
   [MutationTypes.HIDE_POLKASWAP_ALERT](state: State, value: boolean): void;
@@ -128,12 +134,20 @@ const mutations: MutationTree<State> & Mutations = {
     state.balances = details;
   },
 
-  [MutationTypes.SET_HIDDEN_ASSET](state, { assetId, value }) {
+  [MutationTypes.SET_NFTS](state, nfts) {
+    state.nfts = nfts;
+  },
+
+  [MutationTypes.SET_AVAILABLE_NFTS](state, nfts) {
+    state.availableNfts = nfts;
+  },
+
+  [MutationTypes.SET_HIDDEN_ASSET](state, { groupId, value }) {
     const address = state.selectedWallet.address;
     const hiddenAssets = state.hiddenAssets[address] ?? [];
 
     if (value) {
-      const index = state.hiddenAssets[address].findIndex((id) => id === assetId);
+      const index = state.hiddenAssets[address].findIndex((id) => id === groupId);
 
       hiddenAssets.splice(index, 1);
 
@@ -146,7 +160,7 @@ const mutations: MutationTree<State> & Mutations = {
     } else {
       state.hiddenAssets = {
         ...state.hiddenAssets,
-        [address]: Array.from(new Set([...hiddenAssets, assetId])),
+        [address]: Array.from(new Set([...hiddenAssets, groupId])),
       };
     }
 

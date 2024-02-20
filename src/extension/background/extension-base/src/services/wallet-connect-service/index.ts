@@ -157,13 +157,12 @@ export class WalletConnectService {
     const method = request.method as WalletConnectSigningMethod;
 
     try {
-      const { requiredNamespaces } = this.getSession(topic);
+      const { requiredNamespaces, optionalNamespaces } = this.getSession(topic);
 
-      const namespaces = Object.keys(requiredNamespaces);
-      const chains = Object.values(requiredNamespaces)
-        .map((namespace) => namespace.chains)
-        .flat();
-
+      const namespaces = Object.keys({ ...requiredNamespaces, ...optionalNamespaces });
+      const chains = Object.values(requiredNamespaces).flatMap((namespace) => namespace.chains ?? []);
+      const optionalChains = Object.values(optionalNamespaces).flatMap((namespace) => namespace.chains ?? []);
+      chains.push(...optionalChains);
       const [requestNamespace] = chainId.split(':');
 
       if (namespaces.length && !namespaces.includes(requestNamespace)) {

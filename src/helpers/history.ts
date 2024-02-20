@@ -8,7 +8,7 @@ import type {
   NetworkName,
   SoraHistoryElement,
 } from '@/interfaces';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { TransactionType } from '@/interfaces';
 import { firstCharToUp, isSora } from '@/helpers';
 import { useStore } from '@/store';
@@ -84,7 +84,7 @@ function getFormattedDate({ timestamp }: HistoryElement) {
 
 function getHumanFeeValue(value: string, networkName: NetworkName) {
   const store = useStore();
-  const tokenBalances: TokenBalance[] = store.getters.getBalances;
+  const tokenBalances: TokenGroup[] = store.getters.getBalances;
   const network: NetworkJson = store.getters.getNetwork(networkName);
   const asset = network.assets.find((asset) => asset.isUtility);
   const token = tokenBalances.find(({ balances }) => balances.some(({ id }) => id === asset?.id));
@@ -97,11 +97,11 @@ function getHumanFeeValue(value: string, networkName: NetworkName) {
 
 function getHumanValue(value: string | number, assetId: string, networkName: NetworkName) {
   const store = useStore();
-  const tokenBalances: TokenBalance[] = store.getters.getBalances;
-  const { balances } = tokenBalances.find(({ assetId: id }) => id === assetId)!;
+  const tokenBalances: TokenGroup[] = store.getters.getBalances;
+  const { balances } = tokenBalances.find(({ groupId }) => groupId === assetId)!;
   const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
 
-  return FPNumber.fromCodecValue(value, precision).toNumber();
+  return +FPNumber.fromCodecValue(value, precision);
 }
 
 function getHumanTransferFee(historyElement: HistoryElement, networkName: NetworkName) {
@@ -152,6 +152,7 @@ function getHistoryValue(
   if (historyType === 'oklink') {
     const amount = historyElement.transfer?.amount ? historyElement.transfer.amount : 0;
     const fee = historyElement.transfer?.fee ? historyElement.transfer.fee : 0;
+
     if (withFee) return { signTransfer, value: +amount + +fee };
 
     return { signTransfer, value: +amount };
@@ -163,7 +164,7 @@ function getHistoryValue(
     const dataValue =
       element.data?.value ?? element.data?.amount ?? element.data?.baseAssetAmount ?? element.data?.maxAdditional ?? 0;
 
-    const targetValue = +(element.data.targetAssetAmount ?? 0);
+    const targetValue = +(element.data?.targetAssetAmount ?? 0);
 
     // fee в индексере с учетом decimals
     const fee = getHumanTransferFee(historyElement, networkName);

@@ -1,6 +1,6 @@
 <template>
   <div :class="internalRowClasses" v-on="$listeners">
-    <div class="label">
+    <div class="label" data-testid="label">
       <slot></slot>
 
       <Icon v-if="icon" :icon="icon" class="icon-info" :class="iconClasses" />
@@ -11,11 +11,11 @@
         <div class="value-container">
           <Loading v-if="isLoading" />
 
-          <span v-else>{{ value }}</span>
+          <span v-else data-testid="value">{{ value }}</span>
         </div>
 
         <div v-if="price" class="price">
-          <span>{{ price }}</span>
+          <span data-testid="price">{{ price }}</span>
         </div>
       </div>
       <slot name="details"></slot>

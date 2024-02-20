@@ -80,18 +80,18 @@ import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type { GetAssetPrice, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
 import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
-import { checkPayoutsFee, fetchBalance, getRewards } from '@/extension/messaging';
 import {
   type PayoutRewards,
   type RewardsResponse,
 } from '@/extension/background/extension-base/src/services/staking-service/types';
+import { getPayoutsFee, fetchBalance, getRewards } from '@/extension/messaging';
 import { isValidAmountAsset } from '@/helpers/currencies';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { type AsyncFn } from '@/interfaces';
@@ -113,8 +113,8 @@ export default class PendingRewardForm extends Vue {
   showLoader = false;
   rewards: RewardsResponse = { validators: [], payouts: [], sum: '0' };
 
-  @Prop({ type: Object }) stakingCurrency!: TokenBalance;
-  @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
+  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
+  @Prop({ type: Object }) rewardedCurrency!: TokenGroup;
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -146,7 +146,7 @@ export default class PendingRewardForm extends Vue {
 
   get isValidAmountAsset() {
     // для controller аккаунта подставляем баланс stash аккаунта
-    const stakingCurrency: TokenBalance = this.stakingNetwork.isController
+    const stakingCurrency: TokenGroup = this.stakingNetwork.isController
       ? {
           ...this.stakingCurrency,
           balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),
@@ -193,11 +193,11 @@ export default class PendingRewardForm extends Vue {
   }
 
   get rewardedAssetId() {
-    return this.rewardedCurrency!.assetId;
+    return this.rewardedCurrency!.groupId;
   }
 
   get stakingAssetId() {
-    return this.stakingCurrency!.assetId;
+    return this.stakingCurrency!.groupId;
   }
 
   get stakingAssetPrice() {
@@ -252,7 +252,7 @@ export default class PendingRewardForm extends Vue {
   }
 
   async getSoraFees() {
-    this.fee = await checkPayoutsFee({ payouts: this.rewards.payouts, network: this.network });
+    this.fee = await getPayoutsFee({ payouts: this.rewards.payouts, network: this.network });
   }
 
   closeForm() {

@@ -4,15 +4,15 @@
 
     <div class="column">
       <div class="first-row">
-        <div>{{ hash }}</div>
+        <div data-testid="hash">{{ hash }}</div>
 
-        <div>{{ value }} {{ assetToUpperCase }}</div>
+        <div data-testid="valueHistory">{{ value }} {{ assetToUpperCase }}</div>
       </div>
 
       <div class="second-row">
-        <div>{{ tModule }}</div>
+        <div data-testid="tModule">{{ tModule }}</div>
 
-        <div>{{ date }}</div>
+        <div data-testid="date">{{ date }}</div>
       </div>
     </div>
   </div>
@@ -22,7 +22,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { HistoryElement, NetworkName } from '@/interfaces';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import { getType, getTypeFormatted, getHistoryValue, getSignTransfer } from '@/helpers/history';
 import { getFormattedDate, cut, isSora } from '@/helpers';
@@ -34,7 +34,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 @Component
 export default class HistoryItem extends Vue {
   @Prop(Object) historyElement!: HistoryElement;
-  @Prop(Object) token!: TokenBalance;
+  @Prop(Object) token!: TokenGroup;
   @Prop(String) network!: NetworkName;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
@@ -79,7 +79,7 @@ export default class HistoryItem extends Vue {
   }
 
   get value() {
-    const values = getHistoryValue(this.historyElement, this.token.assetId, this.network, this.address, true);
+    const values = getHistoryValue(this.historyElement, this.token.groupId, this.network, this.address, true);
 
     if (!values) return 0;
 

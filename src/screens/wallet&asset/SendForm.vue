@@ -8,7 +8,7 @@
     :value="value"
     :partialFee="partialFee"
     :recipient="recipient"
-    @closeForm="$emit('closeForm')"
+    @closeForm="closeForm"
     @update:assetId="updateAssetId"
     @update:selectedNetwork="updateSelectedNetwork"
     @update:amount="updateAmount"
@@ -16,33 +16,47 @@
     @update:partialFee="updatePartialFee"
     @update:recipient="updateRecipient"
   >
-    <div>
-      <div class="row direction-column">
-        <FInput v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
+    <template v-slot:step2>
+      <div>
+        <div class="row direction-column">
+          <FInput
+            v-model="selectedWallet.name"
+            placeholder="assets.from"
+            size="big"
+            :readonly="true"
+            data-testid="fromWallet"
+          />
 
-        <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
+          <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
 
-        <FInput v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
-      </div>
-
-      <FCorners size="big" class="row">
-        <div class="summary">
-          <div class="summary-label">{{ $t('assets.summary') }}</div>
-
-          <InfoRow text="assets.assetsAmount" :value="amountString" :price="valueString" />
-          <InfoRow text="assets.fee" :value="partialFeeString" :price="fiatFeeString" />
-          <InfoRow v-if="isUtilityAsset" text="assets.total" :value="totalString" :price="fiatTotalString" />
+          <FInput
+            v-model="formattedAddressTo"
+            placeholder="assets.to"
+            size="big"
+            :readonly="true"
+            data-testid="toAddress"
+          />
         </div>
-      </FCorners>
-    </div>
+
+        <FCorners size="big" class="row">
+          <div class="summary">
+            <div class="summary-label">{{ $t('assets.summary') }}</div>
+
+            <InfoRow text="assets.assetsAmount" :value="amountString" :price="valueString" />
+            <InfoRow text="assets.fee" :value="partialFeeString" :price="fiatFeeString" />
+            <InfoRow v-if="isUtilityAsset" text="assets.total" :value="totalString" :price="fiatTotalString" />
+          </div>
+        </FCorners>
+      </div>
+    </template>
   </TransferForm>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
-import type { TokenBalance } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { addNumbers } from '@/helpers/numbers';
@@ -60,17 +74,15 @@ export default class SendForm extends Vue {
   amount = '';
   value = '';
 
-  @Prop(String) _selectedNetwork!: string;
-  @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
   get currency() {
     return this.balances.find(({ balances }) =>
-      balances.some((el) => el.id.toLowerCase() === this.assetId.toLowerCase())
-    )!;
+      balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase())
+    );
   }
 
   get isUtilityAsset() {
@@ -78,7 +90,8 @@ export default class SendForm extends Vue {
   }
 
   get partialFeeString() {
-    const { symbol } = getUtilityAsset(this.balances, this.selectedNetwork);
+    const utilityAsset = getUtilityAsset(this.balances, this.selectedNetwork);
+    const symbol = utilityAsset ? utilityAsset.symbol : '';
 
     return `${this.$n(+this.partialFee, 'decimalPrecise')} ${symbol.toUpperCase()}`;
   }
@@ -88,7 +101,7 @@ export default class SendForm extends Vue {
   }
 
   get assetPrice() {
-    return this.getAssetPrice(this.currency.priceId ?? '')?.price ?? 0;
+    return this.getAssetPrice(this.currency?.priceId ?? '')?.price ?? 0;
   }
 
   get fiatFeeString() {
@@ -108,14 +121,14 @@ export default class SendForm extends Vue {
   }
 
   get selectedAsset() {
-    return this.currency.balances.find(
+    return this.currency?.balances?.find(
       (el) =>
         el.symbol.toLowerCase() === this.assetId.toLowerCase() || el.id.toLowerCase() === this.assetId.toLowerCase()
-    )!;
+    );
   }
 
   get selectedAssetUpper() {
-    return this.selectedAsset.symbol.toUpperCase();
+    return this.selectedAsset?.symbol.toUpperCase();
   }
 
   get total() {
@@ -131,13 +144,13 @@ export default class SendForm extends Vue {
   }
 
   created() {
-    this.assetId = this._selectedAssetId;
+    this.assetId = this.$route.params.assetId;
 
-    this.selectedNetwork = this._selectedNetwork;
+    this.selectedNetwork = this.$route.params.network;
   }
 
   closeForm() {
-    this.$emit('closeForm');
+    this.$router.back();
   }
 
   updateAssetId(value: string) {

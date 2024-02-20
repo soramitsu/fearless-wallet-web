@@ -13,7 +13,7 @@
                 <Identicon :address="address" />
 
                 <div class="full-description">
-                  <div class="address">{{ cut(address) }}</div>
+                  <div class="address" data-testid="address">{{ cut(address) }}</div>
                 </div>
               </div>
 
@@ -65,7 +65,6 @@ import { cut, isSora } from '@/helpers/';
 import { getType } from '@/helpers/history';
 import { type SoraHistoryElement, TransactionType } from '@/interfaces/history';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
-
 @Component
 export default class HistoryBook extends Vue {
   addressBook: AddressBook = {};

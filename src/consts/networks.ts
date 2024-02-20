@@ -1,8 +1,6 @@
 import { type NetworkName } from '@/interfaces';
 
 const SUBSTRATE_ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
-const KUSAMA = 'kusama';
-const ROCOCO = 'rococo';
 const NATIVE_ETHEREUM_NETWORKS = [
   'ethereum',
   'ethereum goerli',
@@ -25,7 +23,12 @@ const NATIVE_ETHEREUM_NETWORKS = [
 ];
 const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, ...NATIVE_ETHEREUM_NETWORKS];
 
-const RELAY_CHAINS = ['polkadot', 'kusama', 'westend', 'rococo'];
+const POLKADOT = 'polkadot';
+const KUSAMA = 'kusama';
+const WESTEND = 'westend';
+const ROCOCO = 'rococo';
+
+const RELAY_CHAINS = [POLKADOT, KUSAMA, WESTEND, ROCOCO];
 const NATIVE_PARACHAINS = [
   'statemint',
   'polkadot assethub',
@@ -78,6 +81,8 @@ const EVM_EXPLORERS_BASE_URLS: Record<string, string> = {
 const EXPLORERS_BASE_URLS: Record<string, string> = {
   'polkadot assethub': 'assethub-polkadot',
   'kusama assethub': 'assethub-kusama',
+  'sora mainnet': 'sora',
+  'sora testnet': 'sora',
 } as const;
 
 const ETHEREUM_ADDRESS_LENGTH = 42;
@@ -117,6 +122,8 @@ export {
   SUBSTRATE_ETHEREUM_NETWORKS,
   EXPLORERS_BASE_URLS,
   EVM_EXPLORERS_BASE_URLS,
-  ROCOCO,
+  POLKADOT,
   KUSAMA,
+  WESTEND,
+  ROCOCO,
 };

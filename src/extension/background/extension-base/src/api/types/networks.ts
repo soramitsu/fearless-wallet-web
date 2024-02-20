@@ -7,7 +7,5 @@ export enum NETWORK_STATUS {
 export enum APIItemState {
   PENDING = 'pending',
   READY = 'ready',
-  CACHED = 'cached',
   ERROR = 'error',
-  NOT_SUPPORT = 'not_support',
 }

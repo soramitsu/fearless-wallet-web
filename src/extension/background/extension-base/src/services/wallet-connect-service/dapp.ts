@@ -1,9 +1,7 @@
-import UniversalProvider from '@walletconnect/universal-provider';
 import { getInternalError, getSdkError } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
 import { createSubscription } from '@extension-base/background/handlers/subscriptions';
 import {
-  DEFAULT_LOGGER,
   PROJECT_ID_EXTENSION,
   SUBSTRATE_EVM_HALF_CHAINID,
   WALLET_CONNECT_METADATA,
@@ -13,6 +11,7 @@ import WalletConnectStorage from '@extension-base/services/wallet-connect-servic
 import { generateHalfGenesisHash } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
 import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import Provider from '@walletconnect/universal-provider';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
@@ -20,9 +19,9 @@ import type { SessionTypes } from '@walletconnect/types';
 import type { AppSessionInitResponse, PairingSubjectType } from '@extension-base/services/wallet-connect-service/types';
 import type { Port } from '@extension-base/background/types/types';
 
-export default class WalletConnectDAppService {
+export class WalletConnectDAppService {
   state: State;
-  private app?: UniversalProvider;
+  private app?: Provider;
 
   public readonly uriSubject: BehaviorSubject<string> = new BehaviorSubject<string>('');
   public readonly pairingSubject: BehaviorSubject<Record<string, AppSessionInitResponse>> = new BehaviorSubject<
@@ -35,10 +34,10 @@ export default class WalletConnectDAppService {
   }
 
   private async initApp() {
-    this.app = await UniversalProvider.init({
+    this.app = await Provider.init({
       projectId: PROJECT_ID_EXTENSION,
       metadata: WALLET_CONNECT_METADATA,
-      logger: process.env.NODE_ENV === 'development' ? DEFAULT_LOGGER : undefined,
+      logger: undefined,
       storage: new WalletConnectStorage(),
     });
 
@@ -69,7 +68,7 @@ export default class WalletConnectDAppService {
   async initPairing() {
     if (!this.app) await this.initApp();
 
-    const optionalChains = this.state.networksJson.flatMap((network) => {
+    const optionalChains = this.state.networksGithub.flatMap((network) => {
       if (isRequireEvmAPI(network.name) || !network.chainId) return [];
       const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
 
@@ -83,6 +82,7 @@ export default class WalletConnectDAppService {
           chains: [
             'polkadot:91b171bb158e2d3848fa23a9f1c25182', //dot
             'polkadot:7e4e32d0feafd4f9c9414b0be86373f9', //sora mainnet
+            'polkadot:401a1f9dca3da46f5c4091016c8a2f26', //moonriver
           ],
           events: [],
         },
@@ -136,44 +136,54 @@ export default class WalletConnectDAppService {
     const accounts = data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].accounts;
     const substrateAddress = accounts.find((el) => {
       const [, chainId] = el.split(':');
-      if (!SUBSTRATE_EVM_HALF_CHAINID.includes(chainId)) return el;
 
-      return false;
-    }) as string;
+      return !SUBSTRATE_EVM_HALF_CHAINID.includes(chainId);
+    });
+
+    if (!substrateAddress) throw new Error("couldn't find substrate address");
+
     const [, , address] = substrateAddress.split(':');
     const encodedAddress = this.state.keyringService.encodeAddress(address);
     const ethAddress = accounts.find((el) => {
       const [, chainId] = el.split(':');
-      if (SUBSTRATE_EVM_HALF_CHAINID.includes(chainId)) return el;
 
-      return false;
-    }) as string;
-    const [, , ethereumAddress] = ethAddress.split(':');
+      return SUBSTRATE_EVM_HALF_CHAINID.includes(chainId);
+    });
+    let ethereumAddressWC;
+
+    if (ethAddress) {
+      const [, , ethereumAddress] = ethAddress.split(':');
+      ethereumAddressWC = ethereumAddress;
+    }
+
     const availableNetworks =
       data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].chains?.map((el) => el.split(':')[1]) ?? [];
+    const isDuplicate = this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress);
 
-    if (!this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress)) {
-      this.state.keyringService.saveAddress(
-        encodedAddress,
-        {
-          name: data.peer.metadata.name,
-          isMobile: true,
-          wcTopic: data.topic,
-          ethereumAddress,
-          chains: availableNetworks,
-        },
-        'address'
-      );
-      this.state.updateCurrentAccount(encodedAddress);
-
-      cb({ status: true });
-    } else {
+    if (isDuplicate) {
       this.disconnect(data.topic);
       cb({
         status: false,
         message: 'duplicate',
       });
+
+      return;
     }
+
+    this.state.keyringService.saveAddress(
+      encodedAddress,
+      {
+        name: data.peer.metadata.name,
+        isMobile: true,
+        wcTopic: data.topic,
+        ethereumAddress: ethereumAddressWC,
+        chains: availableNetworks,
+      },
+      'address'
+    );
+    this.state.updateCurrentAccount(encodedAddress);
+
+    cb({ status: true });
   }
 
   disconnect(topic: string) {

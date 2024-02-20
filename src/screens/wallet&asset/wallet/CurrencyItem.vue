@@ -34,7 +34,7 @@
 
         <Shimmer v-if="showShimmers" height="23px" width="60px" />
 
-        <div v-else-if="!showWarning" class="count-assets overflow" data-test-id="countAssets">
+        <div v-else-if="!showWarning" class="count-assets overflow" data-testid="countAssets">
           {{ totalAssetBalanceValue }}
         </div>
       </div>
@@ -69,7 +69,7 @@
           tooltipText="assets.sendButtonText"
           target=".send"
           data-testid="sendBtn"
-          @click="$emit('toggleVisibleActivityForm', 'showSendForm', { mainNetwork, assetId })"
+          @click="onRoute('send')"
         />
 
         <CircleButton
@@ -79,7 +79,7 @@
           tooltipText="assets.receiveButtonText"
           target=".receive"
           data-testid="receiveBtn"
-          @click="$emit('toggleVisibleActivityForm', 'showReceiveForm', { mainNetwork, assetId })"
+          @click="onRoute('receive')"
         />
 
         <CircleButton
@@ -102,7 +102,7 @@ import { Getter, Mutation } from 'vuex-class';
 import { APIItemState, NETWORK_STATUS } from '@extension-base//api/types/networks';
 import type { CustomEvent, Fn } from '@/interfaces';
 import type { SetHiddenAsset, SelectedWallet } from '@/store';
-import type { AccountJson, TokenBalance } from '@extension-base/background/types/types';
+import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
@@ -119,7 +119,7 @@ import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 export default class CurrencyItem extends Vue {
   readonly countDisplayedNetworks = 5;
 
-  @Prop(Object) assetData!: TokenBalance;
+  @Prop({ type: Object, required: true }) assetData!: TokenGroup;
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
@@ -195,7 +195,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get assetId() {
-    return this.assetData.assetId;
+    return this.assetData.groupId;
   }
 
   get tokenPrice() {
@@ -203,11 +203,11 @@ export default class CurrencyItem extends Vue {
   }
 
   get currencyVisible(): boolean {
-    return !this.hiddenAssets.includes(this.assetData.assetId);
+    return !this.hiddenAssets.includes(this.assetData.groupId);
   }
 
   set currencyVisible(value: boolean) {
-    this.setHiddenAssets({ assetId: this.assetData.assetId, value });
+    this.setHiddenAssets({ groupId: this.assetData.groupId, value });
   }
 
   get showCurrencyItem() {
@@ -216,7 +216,7 @@ export default class CurrencyItem extends Vue {
 
   get networkBadges() {
     if (this.isCurrentNetwork) {
-      const { icon, name } = this.assetData.balances.find((balance) => {
+      const network = this.assetData.balances.find((balance) => {
         const account = this.accounts.find(({ address }) => address === this.selectedWallet.address);
         const network = this.getNetwork(balance.name);
 
@@ -225,9 +225,15 @@ export default class CurrencyItem extends Vue {
         }
 
         return filterBalanceItemsByNetwork(balance, this.selectedNetwork);
-      })!;
+      });
 
-      return [{ icon, name }];
+      if (network) {
+        const { icon, name } = network;
+
+        return [{ icon, name }];
+      }
+
+      return [];
     }
 
     if (this.isAdditional) return this.filteredBalances.splice(0, this.countDisplayedNetworks - 1);
@@ -336,7 +342,7 @@ export default class CurrencyItem extends Vue {
       this.$router.push({
         name: Components.AssetHistory,
         params: {
-          assetId: this.assetId ?? this.assetData.assetId,
+          assetId: this.assetId ?? this.assetData.groupId,
           selectedNetwork: this.redirectNetwork === '' ? this.computeActiveNetworks[0].name : this.redirectNetwork,
         },
       });
@@ -347,8 +353,15 @@ export default class CurrencyItem extends Vue {
     this.$router.push({
       name: Components.AssetNetworks,
       params: {
-        assetId: this.assetData.assetId,
+        assetId: this.assetData.groupId,
       },
+    });
+  }
+
+  onRoute(form: 'send' | 'receive') {
+    this.$router.push({
+      name: form === 'send' ? Components.SendForm : Components.ReceiveForm,
+      params: { assetId: this.assetId ?? '', network: this.mainNetwork ?? '' },
     });
   }
 }

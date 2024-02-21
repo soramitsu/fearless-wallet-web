@@ -558,7 +558,7 @@ export interface AuthRequest extends Resolver<AuthResponse> {
 
 export interface ResponseSigning {
   id: string;
-  signature: HexString;
+  payload: HexString;
 }
 
 export interface AuthUrlInfo {

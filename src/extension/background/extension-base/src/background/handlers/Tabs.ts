@@ -517,6 +517,20 @@ export default class Tabs {
     return null;
   }
 
+  private async evmSign(id: string, url: string, { method, params }: RequestArguments): Promise<ResponseSigning> {
+    const signResult = await this.state.requestService.evmRequestHandler.confirmSign(id, url, method, params);
+
+    if (signResult) return signResult;
+    else throw new Error('Failed to sign message');
+  }
+
+  async evmSendTransaction(id: string, url: string, { method, params }: RequestArguments): Promise<ResponseSigning> {
+    const signResult = await this.state.requestService.evmRequestHandler.confirmSign(id, url, method, params);
+
+    if (signResult) return signResult;
+    else throw new Error('Failed to sign message');
+  }
+
   private async handleEvmRequest(id: string, url: string, request: RequestArguments): Promise<unknown> {
     const { method } = request;
 
@@ -535,7 +549,18 @@ export default class Tabs {
           return this.authorize(url, { origin: '', accountAuthType: 'evm', reConfirm: true });
 
         case 'wallet_switchEthereumChain':
-          return await this.switchEvmNetwork(url, request);
+          return this.switchEvmNetwork(url, request);
+
+        case 'eth_sendTransaction':
+          return this.evmSendTransaction(id, url, request);
+
+        case 'eth_sign':
+        case 'personal_sign':
+        case 'eth_signTypedData':
+        case 'eth_signTypedData_v1':
+        case 'eth_signTypedData_v3':
+        case 'eth_signTypedData_v4':
+          return this.evmSign(id, url, request);
 
         default:
           return this.performWeb3Method(id, url, request);

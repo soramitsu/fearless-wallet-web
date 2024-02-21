@@ -171,6 +171,10 @@ export class RequestService {
     return this.evmRequestHandler.signSubject;
   }
 
+  public evmSign(id: string, url: string, method: string, params: any) {
+    return this.evmRequestHandler.confirmSign(id, url, method, params);
+  }
+
   public signWcRequest(topic: string): WCSignRequest {
     return this.evmRequestHandler.getSignWCRequest(topic);
   }

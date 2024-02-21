@@ -1,13 +1,20 @@
 import { BehaviorSubject } from 'rxjs';
 import type { RequestService } from '@extension-base/services/request-service';
 import type { WCSignRequest } from '@extension-base/services/request-service/types';
-import type { WalletConnectTransactionRequest } from '@extension-base/services/wallet-connect-service/types';
+import type {
+  ConfirmationsEvmQueue,
+  WalletConnectTransactionRequest,
+} from '@extension-base/services/wallet-connect-service/types';
 import type { Resolver, ResponseSigning } from '@extension-base/background/types/types';
 
 export default class EvmRequestHandler {
   private readonly requestService: RequestService;
   private wcRequests: Record<string, WCSignRequest> = {};
   public readonly signSubject = new BehaviorSubject<WalletConnectTransactionRequest[]>([]);
+  public readonly confirmationMapSubject = new BehaviorSubject<ConfirmationsEvmQueue>({
+    sendTxRequest: {},
+    signMessageRequest: {},
+  });
 
   constructor(requestService: RequestService) {
     this.requestService = requestService;
@@ -25,10 +32,66 @@ export default class EvmRequestHandler {
     return Object.values(this.wcRequests).map(({ request }): WalletConnectTransactionRequest => ({ ...request }));
   }
 
-  public sign(request: WalletConnectTransactionRequest): Promise<ResponseSigning> {
+  private onIncomingRequest() {
+    this.requestService.updateIcon();
+    this.requestService.popupOpen();
+  }
+
+  onWcComplete(id: string) {
+    delete this.wcRequests[id];
+
+    this.requestService.updateIcon(true);
+
+    this.signSubject.next([...this.allWcSignRequests]);
+  }
+
+  onSignComplete(id: string, type: 'signMessageRequest' | 'sendTxRequest') {
+    const values = this.confirmationMapSubject.getValue();
+
+    delete values[type][id];
+
+    this.requestService.updateIcon(true);
+    this.confirmationMapSubject.next(values);
+  }
+
+  getRequestType(method: string): 'signMessageRequest' | 'sendTxRequest' {
+    switch (method) {
+      case 'eth_sign':
+      case 'personal_sign':
+      case 'eth_signTypedData':
+      case 'eth_signTypedData_v1':
+      case 'eth_signTypedData_v3':
+      case 'eth_signTypedData_v4':
+        return 'signMessageRequest';
+
+      default:
+        return 'sendTxRequest';
+    }
+  }
+
+  public confirmSign(id: string, url: string, method: string, params: any): Promise<ResponseSigning> {
+    const type = this.getRequestType(method);
+    const complete = () => this.onSignComplete(id, type);
+    const values = this.confirmationMapSubject.getValue();
+
+    return new Promise<ResponseSigning>((resolve, reject): void => {
+      this.confirmationMapSubject.next({
+        ...values,
+        [type]: {
+          ...values.sendTxRequest,
+          [id]: { ...this.signComplete(id, complete, resolve, reject), data: params, id },
+        },
+      });
+
+      this.onIncomingRequest();
+    });
+  }
+
+  public onWCSign(request: WalletConnectTransactionRequest): Promise<ResponseSigning> {
     return new Promise((resolve, reject): void => {
+      const complete = () => this.onWcComplete(request.topic);
       this.wcRequests[request.topic] = {
-        ...this.signComplete(request.topic, resolve, reject),
+        ...this.signComplete(request.topic, complete, resolve, reject),
         request,
       };
 
@@ -43,16 +106,10 @@ export default class EvmRequestHandler {
 
   private signComplete = (
     id: string,
+    complete: () => void,
     resolve: (result: ResponseSigning) => void,
     reject: (error: Error) => void
   ): Resolver<ResponseSigning> => {
-    const complete = (): void => {
-      delete this.wcRequests[id];
-      this.requestService.updateIcon(true);
-
-      this.signSubject.next([...this.allWcSignRequests]);
-    };
-
     return {
       reject: (error: Error): void => {
         complete();

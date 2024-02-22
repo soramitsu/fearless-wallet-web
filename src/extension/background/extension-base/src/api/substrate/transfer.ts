@@ -7,7 +7,6 @@ import { type Extrinsic } from '@extension-base/api/substrate/utils/types';
 import type State from '@extension-base/background/handlers/State';
 
 import { type NetworkName } from '@/interfaces';
-import { KUSAMA, ROCOCO } from '@/consts/networks';
 
 type ExtrinsicTransferProps = {
   to: string;
@@ -31,10 +30,7 @@ export function createExtrinsicTransfer(props: ExtrinsicTransferProps, state: St
   try {
     switch (type) {
       case 'normal':
-        if (networkKeyLCase === ROCOCO || networkKeyLCase === KUSAMA)
-          return api.tx.balances.transferKeepAlive(to, precisionAmount);
-
-        return api.tx.balances.transfer(to, precisionAmount);
+        return api.tx.balances.transferKeepAlive(to, precisionAmount);
 
       case 'ormlChain':
         return api.tx.tokens.transfer(to, ormlOptions, precisionAmount);

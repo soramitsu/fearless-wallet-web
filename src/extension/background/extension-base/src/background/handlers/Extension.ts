@@ -501,7 +501,7 @@ export default class Extension extends FWExtensionBase {
 
     if (account && account?.meta.isMobile) {
       const res = await this.state.walletConnectDappService.onRequest(queued.request.payload as SignerPayloadJSON);
-      resolve({ ...res, id });
+      resolve({ payload: res.signature, id });
 
       return true;
     }
@@ -548,7 +548,7 @@ export default class Extension extends FWExtensionBase {
     if (savePass) this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
     else pair.lock();
 
-    resolve({ id, ...result });
+    resolve({ id, payload: result.signature });
 
     return true;
   }
@@ -558,7 +558,7 @@ export default class Extension extends FWExtensionBase {
 
     assert(queued, 'Unable to find request');
 
-    queued.resolve({ id, signature });
+    queued.resolve({ id, payload: signature });
 
     return true;
   }
@@ -1448,7 +1448,7 @@ export default class Extension extends FWExtensionBase {
       const txData = request.request.params.request.params[0] as { to: string; value: string };
 
       const { hash } = await signer.sendTransaction(txData);
-      request.resolve({ id: request.request.topic, signature: hash as HexString });
+      request.resolve({ id: request.request.topic, payload: hash as HexString });
     } else {
       const params = request.request.params.request.params;
 
@@ -1488,7 +1488,7 @@ export default class Extension extends FWExtensionBase {
         ? signer.signMessage(message)
         : signer.signTypedData(message.domain, message.types, message.message));
 
-      request.resolve({ id: request.request.topic, signature: signature as HexString });
+      request.resolve({ id: request.request.topic, payload: signature as HexString });
     }
 
     if (password) {

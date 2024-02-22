@@ -71,10 +71,10 @@ export default class Eip155RequestHandler {
           },
           getWCId(id)
         )
-        .then(async ({ signature }) => {
+        .then(async ({ payload }) => {
           await this.walletConnectService.responseRequest({
             topic,
-            response: formatJsonRpcResult(id, { signature }),
+            response: formatJsonRpcResult(id, { signature: payload }),
           });
         })
         .catch((e) => {
@@ -98,10 +98,10 @@ export default class Eip155RequestHandler {
           },
           getWCId(id)
         )
-        .then(async ({ signature }) => {
+        .then(async ({ payload }) => {
           await this.walletConnectService.responseRequest({
             topic,
-            response: formatJsonRpcResult(id, { signature }),
+            response: formatJsonRpcResult(id, { signature: payload }),
           });
         })
         .catch((e) => {

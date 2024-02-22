@@ -1,5 +1,4 @@
 import type { WarningValueName } from '@/consts/messages';
-import type { AssetName } from './assets';
 import { type INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import { type Components } from '@/router/routes';
 
@@ -123,7 +122,6 @@ export {
   Meta,
   MnemonicConfirmation,
   ChainAccount,
-  AssetName,
   ComponentText,
   AddressMeta,
   CustomEvent,

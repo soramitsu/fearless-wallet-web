@@ -30,6 +30,10 @@ export function createExtrinsicTransfer(props: ExtrinsicTransferProps, state: St
   try {
     switch (type) {
       case 'normal':
+        if (api.tx.balances.transfer) return api.tx.balances.transfer(to, precisionAmount);
+
+        if (api.tx.balances.transferAllowDeath) return api.tx.balances.transferAllowDeath(to, precisionAmount);
+
         return api.tx.balances.transferKeepAlive(to, precisionAmount);
 
       case 'ormlChain':

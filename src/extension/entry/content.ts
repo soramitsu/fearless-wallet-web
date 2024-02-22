@@ -15,3 +15,9 @@ port.onMessage.addListener((data): void => {
 });
 
 window.addEventListener('message', onMessage);
+
+const script = document.createElement('script');
+const container = document.head || document.documentElement;
+
+script.src = chrome.runtime.getURL('page.js');
+container.insertBefore(script, container.children[0]);

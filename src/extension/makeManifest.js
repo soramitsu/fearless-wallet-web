@@ -71,8 +71,8 @@ module.exports = (browser) => {
     ],
     web_accessible_resources: [
       {
-        resources: ['page.js', 'content.js'],
-        matches: ['https://*/*'],
+        resources: ['page.js'],
+        matches: ['https://*/*', 'http://*/*'],
         use_dynamic_url: true,
       },
     ],

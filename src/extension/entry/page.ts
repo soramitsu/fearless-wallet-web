@@ -7,10 +7,180 @@ import packages from '../../../package.json';
 import type Injected from '@extension-base/page/Injected';
 import '@polkadot/extension-inject/chrome';
 import type { Message } from '@extension-base/types';
-import type { TransportRequestMessage } from '@extension-base/background/types/types';
+import type { EvmProvider, TransportRequestMessage } from '@extension-base/background/types/types';
 import { APP_VERSION } from '@/consts/global';
 import { type EIP6963ProviderDetail, type InjectedWindow } from '@/extension/entry/types';
 
+const win = window as Window & InjectedWindow;
+//TODO fix provider injection
+win.injectedWeb3 = win.injectedWeb3 || {};
+class FearlessWalletPlaceholder {
+  provider: EvmProvider | undefined = undefined;
+  connected = false;
+  isConnected = () => false;
+  version = packages.version;
+
+  __waitProvider = (() => {
+    if (this.provider) return Promise.resolve(this.provider);
+
+    return new Promise((resolve, reject) => {
+      let retry = 0;
+
+      const interval = setInterval(() => {
+        if (++retry > 30) {
+          clearInterval(interval);
+          reject(new Error('Fearless Wallet not found'));
+        }
+
+        if (this.provider) {
+          clearInterval(interval);
+          resolve(this.provider);
+        }
+      }, 100);
+    });
+  })();
+
+  on() {
+    this.__waitProvider.then((provider) => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      provider.on(...args);
+    });
+  }
+
+  once() {
+    this.__waitProvider.then((provider) => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      provider.once(...args);
+    });
+  }
+
+  off() {
+    this.__waitProvider.then((provider) => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      provider.off(...args);
+    });
+  }
+
+  addListener() {
+    this.__waitProvider.then((provider) => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      provider.addListener(...args);
+    });
+  }
+
+  removeListener() {
+    this.__waitProvider.then((provider) => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      provider.removeListener(...args);
+    });
+  }
+
+  removeAllListeners() {
+    this.__waitProvider.then((provider) => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      provider.removeAllListeners(...args);
+    });
+  }
+
+  async enable() {
+    const provider = await this.__waitProvider;
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
+    return provider.enable(...args);
+  }
+
+  async request() {
+    const provider = await this.__waitProvider;
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
+    return provider.send(...args);
+  }
+
+  async send() {
+    const provider = await this.__waitProvider;
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
+    return provider.send(...args);
+  }
+
+  async sendAsync(args: any[]) {
+    const provider = await this.__waitProvider;
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
+    return provider.send(...args);
+  }
+}
+
+win.injectedWeb3 = win.injectedWeb3 || {};
+
+if (!win.injectedWeb3['${walletKey}']) {
+  win.injectedWeb3['${walletKey}'] = {
+    isPlaceholder: true,
+    version: '${version}',
+    enable: async (origin) => {
+      await new Promise((resolve, reject) => {
+        let retry = 0;
+        const interval = setInterval(() => {
+          if (++retry > 30) {
+            clearInterval(interval);
+            reject(new Error('Fearless Wallet provider not found'));
+          }
+
+          if (!win.injectedWeb3['${walletKey}'].isPlaceholder) {
+            resolve(clearInterval(interval));
+          }
+        }, 100);
+      });
+
+      return win.injectedWeb3['${walletKey}'].enable(origin);
+    },
+  };
+}
+
+win.fearlessWallet = new Proxy(new FearlessWalletPlaceholder(), {
+  get(obj, key) {
+    if (key === 'provider') return undefined;
+
+    const target = obj.provider || obj;
+
+    if (key === 'then') return Promise.resolve(target);
+
+    const proxyTarget = Reflect.get(target, key);
+
+    if (typeof proxyTarget?.bind === 'function') return proxyTarget.bind(target);
+
+    return proxyTarget;
+  },
+});
+
+const announceProvider = () => {
+  const detail = Object.freeze({
+    info: {
+      uuid: eip6963ProviderInfo.uuid,
+      name: eip6963ProviderInfo.name,
+      icon: eip6963ProviderInfo.icon,
+      rdns: eip6963ProviderInfo.rdns,
+    },
+    provider: win.fearlessWallet,
+  });
+  const event = new CustomEvent('eip6963:announceProvider', { detail });
+
+  win.dispatchEvent(event);
+};
+
+win.addEventListener('eip6963:requestProvider', announceProvider);
+
+announceProvider();
 class Page {
   version: string = packages.version;
 
@@ -42,7 +212,7 @@ class Page {
 
     windowInject.dispatchEvent(new Event('fearlesswallet#initialized'));
 
-    // Publish to global if window.ethereum is not available
+    // Publish to global if win.ethereum is not available
     windowInject.addEventListener('load', () => {
       if (!windowInject.ethereum) {
         windowInject.ethereum = evmProvider;
@@ -70,10 +240,10 @@ class Page {
       const detail: EIP6963ProviderDetail = Object.freeze({ info: eip6963ProviderInfo, provider: _provider });
       const event = new CustomEvent('eip6963:announceProvider', { detail });
 
-      window.dispatchEvent(event);
+      win.dispatchEvent(event);
     };
 
-    window.addEventListener('eip6963:requestProvider', announceProvider);
+    win.addEventListener('eip6963:requestProvider', announceProvider);
 
     announceProvider();
   }
@@ -94,7 +264,7 @@ class Page {
   }
 
   private setMaxListeners() {
-    window.addEventListener('message', ({ data, source }: Message): void => {
+    win.addEventListener('message', ({ data, source }: Message): void => {
       // only allow messages from our window, by the loader
       if (source !== window || data.origin !== MESSAGE_ORIGIN_CONTENT) {
         return;

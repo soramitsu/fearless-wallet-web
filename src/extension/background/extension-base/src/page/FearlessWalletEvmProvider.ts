@@ -27,9 +27,7 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
   }
 
   protected subscribeExtensionEvents() {
-    if (subscribeFlag) {
-      return;
-    }
+    if (subscribeFlag) return;
 
     this.sendMessage('evm(events.subscribe)', null, ({ payload, type }) => {
       const messages = [
@@ -50,9 +48,7 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
         const finalType = type === 'data' ? 'message' : type;
 
         this.emit(finalType, payload);
-      } else {
-        console.warn('Can not handle event', type, payload);
-      }
+      } else console.warn('Can not handle event', type, payload);
     })
       .then(() => (subscribeFlag = true))
       .catch(() => (subscribeFlag = false));
@@ -94,6 +90,7 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
             })
             .catch((e) => reject(e));
         });
+
       default:
         return new Promise((resolve, reject) => {
           this.sendMessage('evm(request)', { params, method })
@@ -110,6 +107,7 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
       case 'net_version':
         result = this.version ? `Fearless Wallet v${this.version}` : null;
         break;
+
       default:
         throw new Error(`Not support ${payload.method}`);
     }

@@ -4,6 +4,7 @@ type This = typeof globalThis;
 
 export interface InjectedWindowProvider {
   enable: (origin: string) => Promise<Injected>;
+  isPlaceholder?: boolean;
   version: string;
 }
 

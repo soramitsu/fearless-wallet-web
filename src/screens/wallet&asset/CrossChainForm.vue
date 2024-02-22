@@ -45,14 +45,20 @@
 
         <FCorners size="big" class="row">
           <div class="summary">
-            <InfoRow text="assets.direction" :value="directionText" />
+            <InfoRow text="assets.direction" data-testid="directionCC" :value="directionText" />
 
-            <InfoRow text="assets.assetsAmount" :value="amountString" :price="showValue ? valueString : ''" />
+            <InfoRow
+              text="assets.assetsAmount"
+              data-testid="amountCC"
+              :value="amountString"
+              :price="showValue ? valueString : ''"
+            />
 
-            <InfoRow text="assets.sendTo" :value="cut(recipient)" />
+            <InfoRow text="assets.sendTo" data-testid="sendToCC" :value="cut(recipient)" />
 
             <InfoRow
               text="assets.originalNetworkFee"
+              data-testid="originalNetworkFee"
               :value="originalNetworkPartialFeeString"
               icon="info"
               :iconClasses="['origin-fee']"
@@ -60,6 +66,7 @@
 
             <InfoRow
               text="assets.crossChainFee"
+              data-testid="crossChainFee"
               :value="destinationNetworkPartialFeeString"
               icon="info"
               :iconClasses="['cross-chain-fee']"

@@ -1,6 +1,7 @@
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
+
 import { assert, u8aToHex } from '@polkadot/util';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { decodePair } from '@polkadot/keyring/pair/decode';
@@ -73,6 +74,11 @@ import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/netw
 import { EXTENSION_ID } from '@/extension/background/extension-base/src/const';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
+
+type Wallet = {
+  address: string;
+  ethereumAddress: string;
+};
 
 type APIs = {
   evm: Record<string, EvmApiProps>;
@@ -1054,5 +1060,25 @@ export default class State {
         fetchEvmAssetBalance(ethereumAddress, name, id, this);
       });
     });
+  }
+
+  formatAddress({ address, ethereumAddress }: Wallet, networkName: string = 'westend'): string {
+    const isEthereumNet = isEthereumNetwork(networkName);
+
+    if (isEthereumNet) return ethereumAddress;
+
+    const network = this.networksGithub.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
+
+    // the only case for try/catch
+    // if the user used ethereum account instead of a substratum account(via json or private key)
+    try {
+      return this.keyringService.encodeAddress(address, network?.addressPrefix);
+    } catch {
+      return ethereumAddress;
+    }
+  }
+
+  isSameAddress(wallet1: Wallet, wallet2: Wallet): boolean {
+    return this.formatAddress(wallet1) === this.formatAddress(wallet2);
   }
 }

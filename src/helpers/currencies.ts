@@ -100,10 +100,10 @@ function getProviderUrl(name: BuyProvider, asset: string, address: string) {
   return provider[name];
 }
 
-function getCurrencyOptions(currencies: TokenGroup[]) {
-  return currencies.map(({ groupId, symbol: _symbol, icon, relayChain }) => {
+function getCurrencyOptions(tokenGroup: TokenGroup[]) {
+  return tokenGroup.map(({ groupId, symbol: _symbol, icon, relayChain }) => {
     const assetUpper = _symbol.toUpperCase();
-    const filteredOptions = currencies.filter(({ symbol }) => symbol === _symbol);
+    const filteredOptions = tokenGroup.filter(({ symbol }) => symbol === _symbol);
     const label = filteredOptions.length > 1 ? `${assetUpper} (${relayChain.toUpperCase()})` : assetUpper;
 
     return {

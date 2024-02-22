@@ -20,8 +20,6 @@ interface AddressMeta extends Meta {
   isMobile: boolean;
 }
 
-type ParentAddress = string;
-
 type TabWallet = Components.Currencies | Components.Nfts;
 type StakingTab = 'all' | 'my';
 type MyStakingTab = 'about' | 'alerts' | 'history';
@@ -113,7 +111,6 @@ export {
   MenuItem,
   ToggleFnProp,
   MenuItems,
-  ParentAddress,
   Fn,
   AsyncFn,
   TabWallet,

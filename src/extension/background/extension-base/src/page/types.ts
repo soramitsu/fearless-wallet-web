@@ -3,7 +3,6 @@
 
 import { type JsonRpcPayload, type JsonRpcResponse } from '@json-rpc-tools/utils';
 import type {
-  EvmProvider,
   MessageTypesWithNoSubscriptions,
   MessageTypesWithNullRequest,
   MessageTypesWithSubscriptions,
@@ -35,7 +34,7 @@ export interface SendRequest {
 }
 
 export type FWEvmProvider = {
-  provider?: EvmProvider;
+  provider?: FWEvmProvider;
   version: string;
   isConnected(): boolean;
 };

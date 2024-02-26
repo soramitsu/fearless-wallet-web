@@ -7,7 +7,7 @@ import packages from '../../../package.json';
 import type Injected from '@extension-base/page/Injected';
 import '@polkadot/extension-inject/chrome';
 import type { Message } from '@extension-base/types';
-import type { EvmProvider, TransportRequestMessage } from '@extension-base/background/types/types';
+import type { TransportRequestMessage } from '@extension-base/background/types/types';
 import { APP_VERSION } from '@/consts/global';
 import { type EIP6963ProviderDetail, type InjectedWindow } from '@/extension/entry/types';
 
@@ -15,7 +15,7 @@ const win = window as Window & InjectedWindow;
 //TODO fix provider injection
 win.injectedWeb3 = win.injectedWeb3 || {};
 class FearlessWalletPlaceholder {
-  provider: EvmProvider | undefined = undefined;
+  provider: FWEvmProvider | undefined = undefined;
   connected = false;
   isConnected = () => false;
   version = packages.version;
@@ -175,7 +175,7 @@ const announceProvider = () => {
   });
   const event = new CustomEvent('eip6963:announceProvider', { detail });
 
-  win.dispatchEvent(event);
+  window.dispatchEvent(event);
 };
 
 win.addEventListener('eip6963:requestProvider', announceProvider);
@@ -204,7 +204,7 @@ class Page {
     // add our enable function
     if (windowInject.fearlessWallet) {
       // Provider has been initialized in proxy mode
-      windowInject.fearlessWallet.provider = evmProvider.provider;
+      windowInject.fearlessWallet.provider = evmProvider;
     } else {
       // Provider has been initialized in direct mode
       windowInject.fearlessWallet = evmProvider;

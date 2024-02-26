@@ -6,7 +6,7 @@
           <Icon v-show="showBackIcon" icon="chevron-left" class="img" />
         </div>
 
-        <div class="header">
+        <div class="header" data-testid="header">
           {{ header }}
 
           <Icon v-if="showPolkaswapIcon" icon="polkaswap" class="polkaswap" />
@@ -16,9 +16,9 @@
 
         <div v-else :class="classesSettings" @click="toggleSettingsVisibility">
           <template v-if="step === 1">
-            <div class="settings-text">{{ marketTypeUP }}</div>
+            <div class="settings-text" data-testid="settingText">{{ marketTypeUP }}</div>
 
-            <div class="settings-circle">
+            <div class="settings-circle" data-testid="settingCircle">
               <Icon icon="settings" class="img" />
             </div>
           </template>
@@ -66,26 +66,26 @@
               @togglePopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'receive')"
             />
 
-            <div :class="classesSwapIcon" @click="swapAssets">
+            <div :class="classesSwapIcon" data-testid="swapAssets" @click="swapAssets">
               <Icon icon="swap" class="img" />
             </div>
 
             <template v-if="showSwapInfo">
-              <div class="row">
+              <div class="row" data-testid="AtoB">
                 {{ sendAssetUP }} / {{ receiveAssetUP }}
 
                 <div class="fiat-info">
-                  <div>{{ AToBCut }}</div>
-                  <div class="price">{{ AToBValueCut }}</div>
+                  <div data-testid="AtoBprice">{{ AToBCut }}</div>
+                  <div class="price" data-testid="AtoBfiatPrice">{{ AToBValueCut }}</div>
                 </div>
               </div>
 
-              <div class="row">
+              <div class="row" data-testid="BtoA">
                 {{ receiveAssetUP }} / {{ sendAssetUP }}
 
                 <div class="fiat-info">
-                  <div>{{ BToACut }}</div>
-                  <div class="price">{{ BToAValueCut }}</div>
+                  <div data-testid="BtoAprice">{{ BToACut }}</div>
+                  <div class="price" data-testid="BtoAfiatPrice">{{ BToAValueCut }}</div>
                 </div>
               </div>
             </template>
@@ -132,7 +132,7 @@
 
         <div>
           <Alert v-if="showPolkaswapAlert" message="common.readPolkaswapDisclaimer" headerMessage="common.disclaimer">
-            <div class="alert-content">
+            <div class="alert-content" data-testid="alertContent">
               {{ $t('common.readPolkaswapDisclaimer') }}
 
               <FButton
@@ -141,6 +141,7 @@
                 fontSize="small"
                 type="warning"
                 text="common.read"
+                data-testid="readBtn"
                 :border="false"
                 @click="openPolkaswapDisclaimer"
               />
@@ -163,6 +164,7 @@
               :text="buttonText"
               :disabled="buttonPreviewDisabled"
               :width="widthButton"
+              data-testid="proceed"
               @click="proceed"
             />
           </div>

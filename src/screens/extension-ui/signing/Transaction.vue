@@ -69,6 +69,8 @@
 import registry from '@extension-base/api/substrate/typeRegistry';
 import { reactive, ref, watch, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n-composable';
+import { type GenericExtrinsicPayload } from '@polkadot/types/extrinsic/ExtrinsicPayload';
+import { formatUnits } from 'ethers';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { AccountJson, SigningRequest } from '@extension-base/background/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
@@ -83,6 +85,8 @@ import { useStore, type SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
 import { isSignLocked, validatePassword } from '@/extension/messaging';
 import { ExtensionController } from '@/controllers';
+import { type SignRequestList } from '@/store/extension/types';
+import { cut } from '@/helpers';
 
 const state = reactive({
   isLocked: true,
@@ -97,7 +101,7 @@ const store = useStore();
 const { t } = useI18n();
 
 const payload = computed<SignerPayloadJSON>(() => store.getters.signRequestPayload);
-const requests = computed<SigningRequest[]>(() => store.getters.signList);
+const requests = computed<SignRequestList>(() => store.getters.signList);
 const accounts = computed<AccountJson[]>(() => store.getters.getAccounts);
 const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
 
@@ -107,7 +111,12 @@ const onSignApprove = (data: ApprovePayload) => {
 
 const classesInput = ['row', 'password-input', { 'password-input-margin': !IS_EXTENSION }];
 const transactionAddress = computed(() => payload.value?.address ?? selectedWallet.value.address);
-const request = computed(() => requests.value[0]);
+const request = computed<SigningRequest | { id: string; data: any; url: string }>(
+  () =>
+    requests.value.substrate[0] ??
+    Object.values(requests.value.evm.sendTxRequest)[0] ??
+    Object.values(requests.value.evm.signMessageRequest)[0]
+);
 const transactionId = computed(() => request.value.id);
 
 const isSignMobile = computed(() => {
@@ -128,19 +137,31 @@ const isSupportedNetwork = computed(() => {
   return false;
 });
 
-const typedPayload = computed(() => {
+const address = computed(() => {
+  if (request.value && 'data' in request.value) return request.value.data.from;
+
+  return request.value?.account.address;
+});
+
+const typedPayload = computed<GenericExtrinsicPayload | undefined>(() => {
+  if (request.value && 'data' in request.value) return;
+
   registry.setSignedExtensions(payload.value.signedExtensions);
 
   return registry.createType('ExtrinsicPayload', payload.value, { version: payload.value.version });
 });
-const address = computed(() => request.value.account.address);
-const accountName = computed(() => request.value.account.name);
-const specVersion = computed(() => typedPayload.value.specVersion.toNumber());
-const genesisHash = computed(() => typedPayload.value.genesisHash.toString());
-const nonce = computed(() => typedPayload.value.nonce.toString());
-const method = computed(() => typedPayload.value.method.toString());
 
-const mortalityAsString = (era: ExtrinsicEra, hexBlockNumber: string): string => {
+const accountName = computed(() => {
+  if (!request.value) return '';
+
+  if ('account' in request.value) return request.value.account.name;
+
+  return request.value.data.from;
+});
+
+const mortalityAsString = (era: ExtrinsicEra | undefined, hexBlockNumber: string): string | undefined => {
+  if (!era) return;
+
   if (era.isImmortalEra) return 'immortal';
 
   const { birth, death } = BaseApi.mortalityDecode(era, hexBlockNumber);
@@ -148,16 +169,45 @@ const mortalityAsString = (era: ExtrinsicEra, hexBlockNumber: string): string =>
   return `mortal, valid from ${birth} to ${death}`;
 };
 
-const mortality = computed(() => mortalityAsString(typedPayload.value.era, payload.value.blockNumber));
+const mortality = computed(() => mortalityAsString(typedPayload.value?.era, payload.value.blockNumber));
 
-const txInfo = computed(() => ({
-  url: request.value.url,
-  nonce: nonce.value,
-  genesisHash: genesisHash.value,
-  specVersion: specVersion.value,
-  method: method.value,
-  mortality: mortality.value,
-}));
+const txInfo = computed(() => {
+  const info: Record<string, string | number> = {
+    url: request.value.url,
+  };
+
+  if (request.value && 'data' in request.value) {
+    if (typeof request.value.data === 'object') {
+      const [payload] = request.value.data;
+
+      if ('gas' in payload) info.gas = formatUnits(payload.gas, 'gwei');
+      if ('value' in payload) info.value = formatUnits(payload.value);
+      if ('to' in payload) info.to = cut(payload.to.toString(), 15);
+      if ('from' in payload) info.from = cut(payload.from.toString(), 15);
+      if ('data' in payload) info.data = cut(payload.data.toString(), 15);
+    } else {
+      info.data = request.value.data;
+    }
+  } else {
+    const data: Record<string, string | number | undefined> = {
+      nonce: typedPayload.value?.nonce.toString(),
+      wallet: request.value.account.name,
+      address: request.value.account.address,
+      genesisHash: typedPayload.value?.genesisHash.toString(),
+      specVersion: typedPayload.value?.specVersion.toString(),
+      method: typedPayload.value?.method.toString(),
+      mortality: mortality.value,
+    };
+
+    for (const [key, value] of Object.entries(data)) {
+      if (value) {
+        info[key] = value;
+      }
+    }
+  }
+
+  return info;
+});
 
 const min15Label = computed((): string => t(state.isLocked ? 'assets.15min' : 'assets.15minExtend').toString());
 const passInputComponent = ref<ValidatedInput>();

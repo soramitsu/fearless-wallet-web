@@ -8,6 +8,7 @@ import {
   type WalletConnectSessionRequest,
   type WalletConnectNotSupportRequest,
   type WalletConnectTransactionRequest,
+  type ConfirmationsEvmQueue,
 } from '@extension-base/services/wallet-connect-service/types';
 
 export interface Features {
@@ -46,4 +47,13 @@ export type SetRequestsPayload =
   | {
       type: 'wcSessions';
       requests: SessionTypes.Struct[];
+    }
+  | {
+      type: 'signEvmRequests';
+      requests: ConfirmationsEvmQueue;
     };
+
+export type SignRequestList = {
+  substrate: SigningRequest[];
+  evm: ConfirmationsEvmQueue;
+};

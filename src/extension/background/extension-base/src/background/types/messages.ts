@@ -9,6 +9,7 @@ import type {
 } from '@extension-base/services/nft-service/types';
 import type { OwnedNftsResponse } from 'alchemy-sdk';
 import type {
+  ConfirmationsEvmQueue,
   PairingSubjectType,
   RequestApproveConnectWalletSession,
   RequestApproveWalletConnect,
@@ -204,6 +205,7 @@ export interface RequestSignatures {
   'pri(fetch.evm.balance)': [FetchEvmBalancePayload, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
   'pri(fetch.balance)': [FetchBalanceRequest, string];
+  'pri(signing.evmrequests)': [null, boolean, ConfirmationsEvmQueue];
 
   'pri(price.update.currency)': [string, void];
   'pri(price.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];

@@ -10,12 +10,11 @@ import type {
   AuthorizeRequest,
   AuthUrlInfo,
   MetadataRequest,
-  SigningRequest,
 } from '@extension-base/background/types/types';
 
 import type { GetterTree } from 'vuex';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { Features } from '@/store/extension/types';
+import type { Features, SignRequestList } from '@/store/extension/types';
 
 export enum GettersTypes {
   authRequests = 'authRequests',
@@ -49,8 +48,9 @@ export type Getters = {
   [GettersTypes.signRequestPayload](
     state: State,
     getters?: GetterTree<State, State> & Getters
-  ): SignerPayloadJSON | SignerPayloadRaw;
-  [GettersTypes.signList](state: State, getters?: GetterTree<State, State> & Getters): SigningRequest[];
+  ): SignerPayloadJSON | SignerPayloadRaw | { id: string; data: any }[];
+
+  [GettersTypes.signList](state: State, getters?: GetterTree<State, State> & Getters): SignRequestList;
   [GettersTypes.onboarding](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.wcConnectRequests](
     state: State,
@@ -85,18 +85,30 @@ const getters: GetterTree<State, State> & Getters = {
     return metaRequests;
   },
 
-  [GettersTypes.signRequestPayload]({ signRequests }): SignerPayloadJSON | SignerPayloadRaw {
-    const [
-      {
-        request: { payload },
-      },
-    ] = signRequests;
+  [GettersTypes.signRequestPayload]({
+    signRequests,
+    signEvmRequests,
+  }): SignerPayloadJSON | SignerPayloadRaw | { id: string; data: any }[] {
+    if (signRequests.length) {
+      const [
+        {
+          request: { payload },
+        },
+      ] = signRequests;
 
-    return payload;
+      return payload;
+    }
+
+    const evmRequests = [
+      ...Object.values(signEvmRequests.sendTxRequest),
+      ...Object.values(signEvmRequests.signMessageRequest),
+    ];
+
+    return evmRequests;
   },
 
-  [GettersTypes.signList]({ signRequests }): SigningRequest[] {
-    return signRequests;
+  [GettersTypes.signList]({ signRequests, signEvmRequests }): SignRequestList {
+    return { substrate: signRequests, evm: signEvmRequests };
   },
 
   [GettersTypes.tabStatus]({ tabStatus }): ActiveTabAuthorizeStatus | null {

@@ -23,8 +23,8 @@ export interface WalletConnectNotSupportRequest extends BaseWalletConnectSession
 export type WalletConnectTransactionRequest = SignClientTypes.EventArguments['session_request'];
 
 export type EvmSignRequests = {
-  signMessageRequest: [{ id: string; data: string }, string];
-  sendTxRequest: [{ id: string; data: any }, string];
+  signMessageRequest: [{ id: string; data: string; url: string }, string];
+  sendTxRequest: [{ id: string; data: any; url: string }, string];
 };
 
 export type EvmRequestTypes = keyof EvmSignRequests;

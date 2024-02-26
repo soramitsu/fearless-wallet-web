@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type {
+  ConfirmationsEvmQueue,
   RequestApproveConnectWalletSession,
   RequestRejectConnectWalletSession,
   WalletConnectNotSupportRequest,
@@ -35,6 +36,7 @@ import {
   walletConnectSessionsSubscribe,
   walletConnectRequestSubscribe,
   subscribeWalletConnectRequest,
+  subscribeEvmSigningRequests,
   subscribeWalletNotSupportedConnectRequest,
 } from '@/extension/messaging';
 import router from '@/router';
@@ -57,6 +59,8 @@ export enum ActionTypes {
   SUBSCRIBE_META_REQUESTS = 'SUBSCRIBE_META_REQUESTS',
   APPROVE_META_REQUEST = 'APPROVE_META_REQUEST',
   REJECT_META_REQUEST = 'REJECT_META_REQUEST',
+
+  SUBSCRIBE_EVM_SIGN_REQUESTS = 'SUBSCRIBE_EVM_SIGN_REQUESTS',
 
   SUBSCRIBE_WC_CONNECT_REQUESTS = 'SUBSCRIBE_WC_CONNECT_REQUESTS',
   SUBSCRIBE_WC_CONNECT_NO_SUPPORTED_REQUESTS = 'SUBSCRIBE_WC_CONNECT_NO_SUPPORTED_REQUESTS',
@@ -106,6 +110,7 @@ export type Actions = {
   ): Promise<void>;
 
   [ActionTypes.SUBSCRIBE_SIGN_REQUESTS](context: AugmentedExtensionContext): Promise<boolean>;
+  [ActionTypes.SUBSCRIBE_EVM_SIGN_REQUESTS](context: AugmentedExtensionContext): Promise<boolean>;
   [ActionTypes.SIGN_CANCEL](context: AugmentedExtensionContext, id: string): Promise<void>;
   [ActionTypes.APPROVE_SIGN_PASSWORD](context: AugmentedExtensionContext, payload: ApprovePayload): Promise<void>;
   [ActionTypes.SUBSCRIBE_EXTENSION_REQUESTS](context: AugmentedExtensionContext): Promise<void[]>;
@@ -204,6 +209,25 @@ const actions: ActionTree<State, State> & Actions = {
     return subscribeSigningRequests(callback);
   },
 
+  async [ActionTypes.SUBSCRIBE_EVM_SIGN_REQUESTS]({ commit }) {
+    const callback = (requests: ConfirmationsEvmQueue) => {
+      commit(MutationTypes.SET_REQUEST, { type: 'signEvmRequests', requests });
+      const isRequestsExists =
+        Object.keys(requests.sendTxRequest).length === 0 || Object.keys(requests.signMessageRequest).length === 0;
+
+      if (router.currentRoute.name === 'Transaction' && isRequestsExists)
+        router.push({
+          name: Components.Wallet,
+        });
+      else if (isRequestsExists)
+        router.push({
+          name: Components.Transaction,
+        });
+    };
+
+    return subscribeEvmSigningRequests(callback);
+  },
+
   async [ActionTypes.APPROVE_SIGN_PASSWORD]({ commit, dispatch }, { id, isSavePass, password }) {
     ExtensionController.approveSignPassword(id, isSavePass, password).then(() => {
       commit(MutationTypes.DELETE_REQUEST, 'signRequests');
@@ -234,12 +258,13 @@ const actions: ActionTree<State, State> & Actions = {
   [ActionTypes.SUBSCRIBE_EXTENSION_REQUESTS]({ dispatch }) {
     const auth = dispatch(ActionTypes.SUBSCRIBE_AUTH_REQUESTS);
     const sign = dispatch(ActionTypes.SUBSCRIBE_SIGN_REQUESTS);
+    const signEvm = dispatch(ActionTypes.SUBSCRIBE_EVM_SIGN_REQUESTS);
     const meta = dispatch(ActionTypes.SUBSCRIBE_META_REQUESTS);
     const wcConnectRequests = dispatch(ActionTypes.SUBSCRIBE_WC_CONNECT_REQUESTS);
     const wcSessions = dispatch(ActionTypes.SUBSCRIBE_WC_SESSIONS);
     const wcRequests = dispatch(ActionTypes.SUBSCRIBE_WC_REQUESTS);
 
-    return Promise.all([auth, sign, meta, wcConnectRequests, wcSessions, wcRequests]);
+    return Promise.all([auth, sign, signEvm, meta, wcConnectRequests, wcSessions, wcRequests]);
   },
 
   async [ActionTypes.FETCH_TAB_STATUS]({ commit }) {

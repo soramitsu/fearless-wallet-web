@@ -10,7 +10,11 @@ import type { Resolver, ResponseSigning } from '@extension-base/background/types
 export default class EvmRequestHandler {
   private readonly requestService: RequestService;
   private wcRequests: Record<string, WCSignRequest> = {};
-  public readonly signSubject = new BehaviorSubject<WalletConnectTransactionRequest[]>([]);
+  private evmRequests: ConfirmationsEvmQueue = {
+    sendTxRequest: {},
+    signMessageRequest: {},
+  };
+  public readonly signWcSubject = new BehaviorSubject<WalletConnectTransactionRequest[]>([]);
   public readonly confirmationMapSubject = new BehaviorSubject<ConfirmationsEvmQueue>({
     sendTxRequest: {},
     signMessageRequest: {},
@@ -42,7 +46,7 @@ export default class EvmRequestHandler {
 
     this.requestService.updateIcon(true);
 
-    this.signSubject.next([...this.allWcSignRequests]);
+    this.signWcSubject.next([...this.allWcSignRequests]);
   }
 
   onSignComplete(id: string, type: 'signMessageRequest' | 'sendTxRequest') {
@@ -79,7 +83,7 @@ export default class EvmRequestHandler {
         ...values,
         [type]: {
           ...values.sendTxRequest,
-          [id]: { ...this.signComplete(id, complete, resolve, reject), data: params, id },
+          [id]: { ...this.signComplete(id, complete, resolve, reject), url, data: params, id },
         },
       });
 
@@ -98,9 +102,9 @@ export default class EvmRequestHandler {
       this.requestService.updateIcon();
       this.requestService.popupOpen();
 
-      const values = this.signSubject.getValue();
+      const values = this.signWcSubject.getValue();
 
-      this.signSubject.next([...values, request]);
+      this.signWcSubject.next([...values, request]);
     });
   }
 

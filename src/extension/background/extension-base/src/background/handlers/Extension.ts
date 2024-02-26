@@ -588,6 +588,20 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
+  signingEvmSubscribe(id: string, port: Port): boolean {
+    const cb = createSubscription<'pri(signing.evmrequests)'>(id, port);
+
+    const evmSubscription = this.state.requestService.signEvmSubject.subscribe((requests): void => cb(requests));
+
+    port.onDisconnect.addListener((): void => {
+      unsubscribe(id);
+
+      evmSubscription.unsubscribe();
+    });
+
+    return true;
+  }
+
   async windowOpen(path: AllowedPath): Promise<boolean> {
     const [tab] = await chrome.tabs.query({ title: 'fearless-wallet' });
 
@@ -1732,6 +1746,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(signing.requests)':
         return this.signingSubscribe(id, port);
+
+      case 'pri(signing.evmrequests)':
+        return this.signingEvmSubscribe(id, port);
 
       // google
       case 'pri(google.get.files)':

@@ -484,18 +484,24 @@ export default class Tabs {
     // this.checkAndHandleProviderStatus(provider);
 
     return new Promise((resolve, reject) => {
-      provider?.send(method, params).then((result) => {
-        const err = result?.error;
+      provider
+        ?._send({
+          jsonrpc: '2.0',
+          method: method,
+          params: params as any[],
+          id: +id,
+        })
+        .then((result) => {
+          const err = (result[0] as any).error;
 
-        if (err) {
-          reject(err);
-        } else {
-          const rs = result?.result as unknown;
+          if (err) reject(err);
+          else {
+            const rs = (result[0] as any).result as unknown;
 
-          callback && callback(rs);
-          resolve(rs);
-        }
-      });
+            callback && callback(rs);
+            resolve(rs);
+          }
+        });
     });
   }
 

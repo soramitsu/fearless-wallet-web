@@ -6,12 +6,14 @@
       placeholder="assets.market"
       size="big"
       class="row"
+      data-testid="marketType"
     />
 
     <ValidatedInput
       v-model="slippagePercent"
       placeholder="assets.slippageTolerance"
       class="row"
+      data-testid="slippageTolerance"
       :errorDescriptions="warningMessage"
       :isError="isErrorSlippageInput"
       :readonly="true"
@@ -22,13 +24,14 @@
         v-for="{ label, value } in slippageValues"
         :key="value"
         :class="getSlippageClasses(value)"
+        data-testid="slippageValue"
         @click="setSlippage(value)"
       >
         {{ label }}
       </div>
     </div>
 
-    <div class="slippage-warning">{{ $t('assets.slippageWarning') }}</div>
+    <div class="slippage-warning" data-testid="slippageWarning">{{ $t('assets.slippageWarning') }}</div>
   </div>
 </template>
 

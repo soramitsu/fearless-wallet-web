@@ -1,6 +1,6 @@
 <template>
   <AboveForm header="common.disclaimer" :fullScreen="true" @closeHandler="closeForm">
-    <div class="disclaimer">
+    <div class="disclaimer" data-testid="disclaimer">
       <Scroll>
         <div>
           {{ $t('disclaimers.swapDisclaimer1') }}
@@ -51,7 +51,7 @@
             <span>{{ $t('disclaimers.importantText') }}</span>
           </div>
 
-          <Switcher v-model="agreeWithRules" />
+          <Switcher v-model="agreeWithRules" data-testid="switcher" />
         </div>
       </Scroll>
 

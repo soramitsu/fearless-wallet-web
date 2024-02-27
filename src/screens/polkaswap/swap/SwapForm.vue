@@ -156,6 +156,7 @@
               type="secondary"
               width="49%"
               :border="false"
+              data-testId="resetToDefault"
               @click="resetSettings"
             />
 

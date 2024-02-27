@@ -1,3 +1,4 @@
+import { type EvmRequestPayload } from '@extension-base/services/request-service/types';
 import type { State } from './state';
 import type {
   WalletConnectNotSupportRequest,
@@ -88,7 +89,7 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.signRequestPayload]({
     signRequests,
     signEvmRequests,
-  }): SignerPayloadJSON | SignerPayloadRaw | { id: string; data: any }[] {
+  }): SignerPayloadJSON | SignerPayloadRaw | EvmRequestPayload[] {
     if (signRequests.length) {
       const [
         {
@@ -99,12 +100,7 @@ const getters: GetterTree<State, State> & Getters = {
       return payload;
     }
 
-    const evmRequests = [
-      ...Object.values(signEvmRequests.sendTxRequest),
-      ...Object.values(signEvmRequests.signMessageRequest),
-    ];
-
-    return evmRequests;
+    return Object.values(signEvmRequests);
   },
 
   [GettersTypes.signList]({ signRequests, signEvmRequests }): SignRequestList {

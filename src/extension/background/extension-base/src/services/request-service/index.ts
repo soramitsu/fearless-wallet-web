@@ -13,7 +13,6 @@ import { type NetworkService, type KeyringService } from '@extension-base/servic
 import { assert } from '@polkadot/util';
 import { type NetworkJson } from '@extension-base/types';
 import type {
-  ConfirmationsEvmQueue,
   WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
   WalletConnectTransactionRequest,
@@ -33,7 +32,7 @@ import type {
   AuthorizedAccountsDiff,
   RequestAuthorizeCancel,
 } from '@extension-base/background/types/types';
-import type { DAppChainInfoPayload, WCSignRequest } from '@extension-base/services/request-service/types';
+import type { DAppChainInfoPayload, EvmRequests, WCSignRequest } from '@extension-base/services/request-service/types';
 
 export class RequestService {
   readonly keyringService: KeyringService;
@@ -164,6 +163,8 @@ export class RequestService {
   }
 
   public getSignRequest(id: string) {
+    if (this.evmRequestHandler.getEvmSignRequest(id)) return this.evmRequestHandler.getEvmSignRequest(id);
+
     return this.substrateRequestHandler.getSignRequest(id);
   }
 
@@ -172,8 +173,8 @@ export class RequestService {
     return this.evmRequestHandler.signWcSubject;
   }
 
-  public get signEvmSubject(): BehaviorSubject<ConfirmationsEvmQueue> {
-    return this.evmRequestHandler.confirmationMapSubject;
+  public get signEvmSubject(): BehaviorSubject<EvmRequests> {
+    return this.evmRequestHandler.signEvmSubject;
   }
 
   public evmSign(id: string, url: string, method: string, params: any) {

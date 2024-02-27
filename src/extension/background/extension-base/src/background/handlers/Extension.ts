@@ -491,8 +491,12 @@ export default class Extension extends FWExtensionBase {
 
   async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
     const queued = this.state.requestService.getSignRequest(id);
-
     assert(queued, 'Unable to find request');
+
+    if (queued && 'data' in queued) {
+      return true;
+    }
+
     const account = this.state.keyringService
       .getAllAccounts()
       .find(({ address }) => address === queued.account.address);

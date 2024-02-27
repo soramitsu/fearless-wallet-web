@@ -1,24 +1,15 @@
 import { BehaviorSubject } from 'rxjs';
 import type { RequestService } from '@extension-base/services/request-service';
-import type { WCSignRequest } from '@extension-base/services/request-service/types';
-import type {
-  ConfirmationsEvmQueue,
-  WalletConnectTransactionRequest,
-} from '@extension-base/services/wallet-connect-service/types';
+import type { EvmRequests, EvmRequestsSubject, WCSignRequest } from '@extension-base/services/request-service/types';
+import type { WalletConnectTransactionRequest } from '@extension-base/services/wallet-connect-service/types';
 import type { Resolver, ResponseSigning } from '@extension-base/background/types/types';
 
 export default class EvmRequestHandler {
   private readonly requestService: RequestService;
   private wcRequests: Record<string, WCSignRequest> = {};
-  private evmRequests: ConfirmationsEvmQueue = {
-    sendTxRequest: {},
-    signMessageRequest: {},
-  };
+  private evmRequests: EvmRequestsSubject = {};
   public readonly signWcSubject = new BehaviorSubject<WalletConnectTransactionRequest[]>([]);
-  public readonly confirmationMapSubject = new BehaviorSubject<ConfirmationsEvmQueue>({
-    sendTxRequest: {},
-    signMessageRequest: {},
-  });
+  public readonly signEvmSubject = new BehaviorSubject<EvmRequests>({});
 
   constructor(requestService: RequestService) {
     this.requestService = requestService;
@@ -32,6 +23,10 @@ export default class EvmRequestHandler {
     return this.wcRequests[id];
   }
 
+  public getEvmSignRequest(id: string) {
+    return this.evmRequests[id];
+  }
+
   public get allWcSignRequests(): WalletConnectTransactionRequest[] {
     return Object.values(this.wcRequests).map(({ request }): WalletConnectTransactionRequest => ({ ...request }));
   }
@@ -41,59 +36,29 @@ export default class EvmRequestHandler {
     this.requestService.popupOpen();
   }
 
-  onWcComplete(id: string) {
-    delete this.wcRequests[id];
+  onComplete(id: string, type: 'wcRequests' | 'evmRequests') {
+    delete this[type][id];
 
     this.requestService.updateIcon(true);
-
-    this.signWcSubject.next([...this.allWcSignRequests]);
-  }
-
-  onSignComplete(id: string, type: 'signMessageRequest' | 'sendTxRequest') {
-    const values = this.confirmationMapSubject.getValue();
-
-    delete values[type][id];
-
-    this.requestService.updateIcon(true);
-    this.confirmationMapSubject.next(values);
-  }
-
-  getRequestType(method: string): 'signMessageRequest' | 'sendTxRequest' {
-    switch (method) {
-      case 'eth_sign':
-      case 'personal_sign':
-      case 'eth_signTypedData':
-      case 'eth_signTypedData_v1':
-      case 'eth_signTypedData_v3':
-      case 'eth_signTypedData_v4':
-        return 'signMessageRequest';
-
-      default:
-        return 'sendTxRequest';
-    }
+    if (type === 'wcRequests') this.signWcSubject.next([...this.allWcSignRequests]);
+    else if (type === 'evmRequests') this.signEvmSubject.next(this[type]);
   }
 
   public confirmSign(id: string, url: string, method: string, params: any): Promise<ResponseSigning> {
-    const type = this.getRequestType(method);
-    const complete = () => this.onSignComplete(id, type);
-    const values = this.confirmationMapSubject.getValue();
+    const complete = () => this.onComplete(id, 'evmRequests');
+    const values = this.signEvmSubject.getValue();
 
     return new Promise<ResponseSigning>((resolve, reject): void => {
-      this.confirmationMapSubject.next({
-        ...values,
-        [type]: {
-          ...values.sendTxRequest,
-          [id]: { ...this.signComplete(id, complete, resolve, reject), url, data: params, id },
-        },
-      });
+      this.signEvmSubject.next({ ...values, [id]: { url, data: params, id } });
 
+      this.evmRequests[id] = { ...this.signComplete(id, complete, resolve, reject), url, data: params, id };
       this.onIncomingRequest();
     });
   }
 
   public onWCSign(request: WalletConnectTransactionRequest): Promise<ResponseSigning> {
     return new Promise((resolve, reject): void => {
-      const complete = () => this.onWcComplete(request.topic);
+      const complete = () => this.onComplete(request.topic, 'wcRequests');
       this.wcRequests[request.topic] = {
         ...this.signComplete(request.topic, complete, resolve, reject),
         request,

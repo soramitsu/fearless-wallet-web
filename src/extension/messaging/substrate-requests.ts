@@ -1,3 +1,4 @@
+import { type EvmRequests } from '@extension-base/services/request-service/types';
 import type {
   SigningRequest,
   ResponseSigningIsLocked,
@@ -7,7 +8,6 @@ import type {
 } from '@extension-base/background/types/types';
 import type { HexString } from '@polkadot/util/types';
 import { sendMessage } from '@/extension/messaging/index';
-import { type ConfirmationsEvmQueue } from '@/extension/background/extension-base/src/services/wallet-connect-service/types';
 
 export function approveAuthRequest(id: string, authorizedAccounts: string[]) {
   return sendMessage('pri(authorize.approve)', { id, authorizedAccounts });
@@ -61,7 +61,7 @@ export function subscribeSigningRequests(cb: (accounts: SigningRequest[]) => voi
   return sendMessage('pri(signing.requests)', null, cb);
 }
 
-export function subscribeEvmSigningRequests(cb: (requests: ConfirmationsEvmQueue) => void): Promise<boolean> {
+export function subscribeEvmSigningRequests(cb: (requests: EvmRequests) => void): Promise<boolean> {
   return sendMessage('pri(signing.evmrequests)', null, cb);
 }
 

@@ -1,14 +1,10 @@
 import { type SessionTypes } from '@walletconnect/types';
-import {
-  type AuthorizeRequest,
-  type MetadataRequest,
-  type SigningRequest,
-} from '@extension-base/background/types/types';
-import {
-  type WalletConnectSessionRequest,
-  type WalletConnectNotSupportRequest,
-  type WalletConnectTransactionRequest,
-  type ConfirmationsEvmQueue,
+import { type EvmRequests } from '@extension-base/services/request-service/types';
+import type { AuthorizeRequest, MetadataRequest, SigningRequest } from '@extension-base/background/types/types';
+import type {
+  WalletConnectSessionRequest,
+  WalletConnectNotSupportRequest,
+  WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 
 export interface Features {
@@ -50,10 +46,10 @@ export type SetRequestsPayload =
     }
   | {
       type: 'signEvmRequests';
-      requests: ConfirmationsEvmQueue;
+      requests: EvmRequests;
     };
 
 export type SignRequestList = {
   substrate: SigningRequest[];
-  evm: ConfirmationsEvmQueue;
+  evm: EvmRequests;
 };

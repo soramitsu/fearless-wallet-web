@@ -71,6 +71,7 @@ import { reactive, ref, watch, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n-composable';
 import { type GenericExtrinsicPayload } from '@polkadot/types/extrinsic/ExtrinsicPayload';
 import { formatUnits } from 'ethers';
+import { type EvmRequestPayload } from '@extension-base/services/request-service/types';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { AccountJson, SigningRequest } from '@extension-base/background/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
@@ -111,11 +112,8 @@ const onSignApprove = (data: ApprovePayload) => {
 
 const classesInput = ['row', 'password-input', { 'password-input-margin': !IS_EXTENSION }];
 const transactionAddress = computed(() => payload.value?.address ?? selectedWallet.value.address);
-const request = computed<SigningRequest | { id: string; data: any; url: string }>(
-  () =>
-    requests.value.substrate[0] ??
-    Object.values(requests.value.evm.sendTxRequest)[0] ??
-    Object.values(requests.value.evm.signMessageRequest)[0]
+const request = computed<SigningRequest | EvmRequestPayload>(
+  () => requests.value.substrate[0] ?? Object.values(requests.value.evm)[0]
 );
 const transactionId = computed(() => request.value.id);
 
@@ -138,7 +136,7 @@ const isSupportedNetwork = computed(() => {
 });
 
 const address = computed(() => {
-  if (request.value && 'data' in request.value) return request.value.data.from;
+  if (request.value && 'data' in request.value) return request.value.data[0].from;
 
   return request.value?.account.address;
 });
@@ -156,7 +154,7 @@ const accountName = computed(() => {
 
   if ('account' in request.value) return request.value.account.name;
 
-  return request.value.data.from;
+  return request.value.data[0].from;
 });
 
 const mortalityAsString = (era: ExtrinsicEra | undefined, hexBlockNumber: string): string | undefined => {
@@ -213,6 +211,7 @@ const min15Label = computed((): string => t(state.isLocked ? 'assets.15min' : 'a
 const passInputComponent = ref<ValidatedInput>();
 
 const onSignMobile = () => ExtensionController.approveSignPassword(transactionId.value, false);
+
 onMounted(async () => {
   if (isSignMobile.value && isSupportedNetwork) onSignMobile();
 
@@ -230,13 +229,11 @@ onMounted(async () => {
 
 watch(
   () => state.password,
-  () => {
-    state.isErrorPassword = false;
-  }
+  () => (state.isErrorPassword = false)
 );
 
 const onSavePassChange = (value: boolean) => (state.isSavePass = value);
-const onReject = async () => store.dispatch('SIGN_CANCEL', request.value.id);
+const onReject = () => store.dispatch('SIGN_CANCEL', transactionId.value);
 
 const sendExtrinsic = async () => {
   state.isDisabled = true;

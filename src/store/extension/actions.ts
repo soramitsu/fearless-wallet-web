@@ -1,6 +1,5 @@
 import axios from 'axios';
 import type {
-  ConfirmationsEvmQueue,
   RequestApproveConnectWalletSession,
   RequestRejectConnectWalletSession,
   WalletConnectNotSupportRequest,
@@ -43,6 +42,7 @@ import router from '@/router';
 import { Components } from '@/router/routes';
 import { ExtensionController } from '@/controllers';
 import { URLS } from '@/consts/urls';
+import { type EvmRequests } from '@/extension/background/extension-base/src/services/request-service/types';
 
 export enum ActionTypes {
   SUBSCRIBE_AUTH_REQUESTS = 'SUBSCRIBE_AUTH_REQUESTS',
@@ -210,19 +210,12 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.SUBSCRIBE_EVM_SIGN_REQUESTS]({ commit }) {
-    const callback = (requests: ConfirmationsEvmQueue) => {
+    const callback = (requests: EvmRequests) => {
       commit(MutationTypes.SET_REQUEST, { type: 'signEvmRequests', requests });
-      const isRequestsExists =
-        Object.keys(requests.sendTxRequest).length === 0 || Object.keys(requests.signMessageRequest).length === 0;
+      const isRequestsExists = Object.keys(requests).length === 0;
 
-      if (router.currentRoute.name === 'Transaction' && isRequestsExists)
-        router.push({
-          name: Components.Wallet,
-        });
-      else if (isRequestsExists)
-        router.push({
-          name: Components.Transaction,
-        });
+      if (router.currentRoute.name === 'Transaction' && isRequestsExists) router.push({ name: Components.Wallet });
+      else if (!isRequestsExists) router.push({ name: Components.Transaction });
     };
 
     return subscribeEvmSigningRequests(callback);

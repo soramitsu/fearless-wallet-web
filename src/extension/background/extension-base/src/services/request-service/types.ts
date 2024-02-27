@@ -13,3 +13,18 @@ export type DAppChainInfoPayload = {
   defaultChain?: string;
   url?: string;
 };
+
+export type EvmRequestPayload = {
+  id: string;
+  data: any;
+  url: string;
+};
+export type EvmRequests = Record<string, EvmRequestPayload>;
+
+export interface EvmRequestsSubjectPayload extends Resolver<ResponseSigning> {
+  id: string;
+  data: any;
+  url: string;
+}
+
+export type EvmRequestsSubject = Record<string, EvmRequestsSubjectPayload>;

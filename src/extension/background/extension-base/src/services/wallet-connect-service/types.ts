@@ -22,17 +22,6 @@ export interface WalletConnectNotSupportRequest extends BaseWalletConnectSession
 }
 export type WalletConnectTransactionRequest = SignClientTypes.EventArguments['session_request'];
 
-export type EvmSignRequests = {
-  signMessageRequest: [{ id: string; data: string; url: string }, string];
-  sendTxRequest: [{ id: string; data: any; url: string }, string];
-};
-
-export type EvmRequestTypes = keyof EvmSignRequests;
-
-export type ConfirmationsEvmQueue = {
-  [CT in EvmRequestTypes]: Record<string, EvmSignRequests[CT][0]>;
-};
-
 export interface RequestApproveWalletConnect {
   address: string;
   password: string;
@@ -134,10 +123,3 @@ export type PairingSubjectType = {
   status?: boolean;
   message?: string;
 };
-
-type RequestTypes = 'signTransaction' | 'signMessage';
-export interface ConfirmationRequestBase {
-  id: string;
-  url: string;
-  type: RequestTypes;
-}

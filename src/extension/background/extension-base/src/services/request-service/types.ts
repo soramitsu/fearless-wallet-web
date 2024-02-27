@@ -24,6 +24,7 @@ export type EvmRequests = Record<string, EvmRequestPayload>;
 export interface EvmRequestsSubjectPayload extends Resolver<ResponseSigning> {
   id: string;
   data: any;
+  method: string;
   url: string;
 }
 

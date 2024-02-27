@@ -51,7 +51,7 @@ export default class EvmRequestHandler {
     return new Promise<ResponseSigning>((resolve, reject): void => {
       this.signEvmSubject.next({ ...values, [id]: { url, data: params, id } });
 
-      this.evmRequests[id] = { ...this.signComplete(id, complete, resolve, reject), url, data: params, id };
+      this.evmRequests[id] = { ...this.signComplete(id, complete, resolve, reject), url, method, data: params, id };
       this.onIncomingRequest();
     });
   }

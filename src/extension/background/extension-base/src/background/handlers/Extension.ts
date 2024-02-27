@@ -131,6 +131,7 @@ import type {
 } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
+import { type EvmRequestsSubjectPayload } from '@/extension/background/extension-base/src/services/request-service/types';
 
 function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
   return (value as SignerPayloadJSON).genesisHash !== undefined;
@@ -489,13 +490,102 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
+  async signEvmApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
+    const request = this.state.requestService.getSignRequest(id) as EvmRequestsSubjectPayload | undefined;
+    assert(request, 'Unable to find request');
+    const { data } = request;
+    const address = data[0].from;
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
+    const ethereumAddress = this.state.keyringService.getEthereumAddress(substrateAddress);
+
+    if (!password) {
+      const eth = this.state.keyringService.getPair(ethereumAddress);
+
+      if (eth?.isLocked) throw new Error(BasicTxErrorCode.KEYRING_ERROR, { cause: 'Pair is locked' });
+    } else {
+      const isPassMatch = this.accountsValidatePassword({ address: ethereumAddress, password });
+
+      if (!isPassMatch) throw new Error(BasicTxErrorCode.KEYRING_ERROR, { cause: 'Password did not match' });
+    }
+
+    const method = request.data.method;
+    const { list: authList } = await this.getAuthList();
+    const auth = authList[request.url];
+
+    const network = Object.values(this.state.networkMap).find(
+      (el) => el.name.toString() === auth.currentEvmNetworkKey?.toString()
+    );
+
+    if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
+
+    const { privateKey } = this.state.accountExportPrivateKey({ address: ethereumAddress, password });
+    const signer = new Wallet(privateKey, this.state.getEvmApi(network.name)?.api);
+
+    if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
+      const txData = request.data[0] as { to: string; value: string };
+
+      const { hash } = await signer.sendTransaction(txData);
+      request.resolve({ id: request.id, payload: hash as HexString });
+    } else {
+      const params = request.data;
+
+      if (
+        [
+          'eth_sign',
+          'personal_sign',
+          'eth_signTypedData',
+          'eth_signTypedData_v1',
+          'eth_signTypedData_v3',
+          'eth_signTypedData_v4',
+        ].indexOf(method) < 0
+      ) {
+        throw new Error('Not found sign method');
+      }
+
+      let payload;
+
+      if (typeof params[0] === 'string' && isEthereumAddress(params[0])) {
+        payload = params[1];
+      } else if (typeof params[1] === 'string' && isEthereumAddress(params[1])) {
+        payload = params[0];
+      }
+
+      if (address === '' || !payload) {
+        throw new Error('Not found address or payload to sign');
+      }
+
+      const message =
+        ['eth_sign', 'personal_sign'].indexOf(method) > -1 ? convertHexToUtf8(payload) : JSON.parse(payload);
+
+      if (!(['eth_sign', 'personal_sign'].indexOf(method) > -1)) {
+        delete message.types['EIP712Domain'];
+      }
+
+      const signature = await (['eth_sign', 'personal_sign'].indexOf(method) > -1
+        ? signer.signMessage(message)
+        : signer.signTypedData(message.domain, message.types, message.message));
+
+      request.resolve({ id: request.id, payload: signature as HexString });
+    }
+
+    if (password) {
+      const subst = this.state.keyringService.getPair(substrateAddress);
+      subst?.unlock(password);
+
+      const eth = this.state.keyringService.getPair(ethereumAddress);
+      eth?.unlock(password);
+    }
+
+    this.savePass(substrateAddress, ethereumAddress, savePass, false);
+
+    return true;
+  }
+
   async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
     const queued = this.state.requestService.getSignRequest(id);
     assert(queued, 'Unable to find request');
 
-    if (queued && 'data' in queued) {
-      return true;
-    }
+    if (queued && 'data' in queued) return this.signEvmApprovePassword({ id, password, savePass }); //sign evm requests
 
     const account = this.state.keyringService
       .getAllAccounts()

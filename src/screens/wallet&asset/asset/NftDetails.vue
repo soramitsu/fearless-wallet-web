@@ -31,7 +31,7 @@
           />
 
           <FButton
-            v-if="isOwned"
+            v-if="showSendBtn"
             iconName="telegram"
             text="common.send"
             width="100%"
@@ -65,6 +65,7 @@ const nfts = computed<NftCollection[]>(() => store.getters.nfts ?? {});
 const collection = computed<NftCollection>(
   () => nfts.value.find((nft) => nft.address === contract.value) ?? { ownedNfts: [], address: '', network: '' }
 );
+
 const nft = computed<Partial<FearlessNft>>(() => {
   const nftCollectionFromStore: FearlessNft[] = store.getters.availableNfts[contract.value]?.collection ?? [];
   const ownedNfts: FearlessNft[] = [...collection.value.ownedNfts] ?? [];
@@ -83,6 +84,7 @@ const meta = computed(() => nft.value.meta ?? {});
 const tokenId = computed(() => cut(id.value, 5));
 const shareBtnType = computed(() => (nft.value.isOwned ? 'thirdly' : 'primary'));
 const isOwned = computed(() => !!nft.value.isOwned);
+const showSendBtn = computed(() => isOwned.value && !collection.value.isSpam);
 const onBack = () => router.back();
 const onSend = () => router.push({ name: Components.NftSendForm, params: { id: id.value } });
 onMounted(() => {

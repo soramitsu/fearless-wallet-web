@@ -91,6 +91,7 @@ export default class AlchemyNftController {
         ownedCollections[address] = {
           name: collection.openSeaMetadata.collectionName ?? collection.name ?? collection.displayNft.name ?? '',
           address: collection.address,
+          isSpam: collection.isSpam,
           image: collection.openSeaMetadata.imageUrl ?? collection.image.cachedUrl,
           network: network?.name ?? this.network,
           total: collection.totalSupply,

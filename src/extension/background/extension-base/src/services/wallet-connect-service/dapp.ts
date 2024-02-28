@@ -1,6 +1,5 @@
 import { getInternalError, getSdkError } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
-import { createSubscription } from '@extension-base/background/handlers/subscriptions';
 import {
   PROJECT_ID_EXTENSION,
   SUBSTRATE_EVM_HALF_CHAINID,
@@ -12,6 +11,7 @@ import { generateHalfGenesisHash } from '@extension-base/services/wallet-connect
 import registry from '@extension-base/api/substrate/typeRegistry';
 import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import Provider from '@walletconnect/universal-provider';
+import { createSubscription } from '@extension-base/services';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';

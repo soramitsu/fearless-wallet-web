@@ -9,7 +9,7 @@ import {
   transformAddresses,
   withErrorLog,
 } from '@extension-base/background/handlers/helpers';
-import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
+import { createSubscription, unsubscribe } from '@extension-base/services';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import type State from '@extension-base/background/handlers/State';

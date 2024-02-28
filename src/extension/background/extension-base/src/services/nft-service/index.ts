@@ -1,6 +1,6 @@
 import { NftFilters, type Network } from 'alchemy-sdk';
 import { Subject } from 'rxjs';
-import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
+import { createSubscription, unsubscribe } from '@extension-base/services';
 import AlchemyNftController from '@extension-base/services/nft-service/handlers/AlchemyNftSdk';
 import { PROD_NFT_NETWORKS } from '@extension-base/services/nft-service/consts';
 import { storage } from '@extension-base/stores/Storage';

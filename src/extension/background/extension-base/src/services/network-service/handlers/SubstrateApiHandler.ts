@@ -80,7 +80,7 @@ export class SubstrateApiHandler {
     const network = this.networkService.networkMap[netName];
 
     if (api === undefined) {
-      this.state.subscription.getSubscription(networkName)?.(); //clean up;
+      this.state.subscriptionService.getSubscription(networkName)?.(); //clean up;
 
       return;
     }
@@ -122,8 +122,8 @@ export class SubstrateApiHandler {
 
     if (!account) return;
 
-    this.state.subscription.getSubscription(networkName)?.();
-    this.state.subscription.subscribeBalances(account.address, account.ethereumAddress, [networkName], []);
+    this.state.subscriptionService.getSubscription(networkName)?.();
+    this.state.subscriptionService.subscribeBalances(account.address, account.ethereumAddress, [networkName], []);
   }
 
   public refreshDotSamaApi(key: string) {

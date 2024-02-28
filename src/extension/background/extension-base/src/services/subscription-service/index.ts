@@ -1,4 +1,3 @@
-import { type FWCron } from '@extension-base/background/cron';
 import { logger as createLogger } from '@polkadot/util';
 import { type Subscription } from 'rxjs';
 import { subscribeBalance } from '@extension-base/api/substrate/balance';
@@ -20,13 +19,12 @@ type UpdateSub = {
   func: () => void;
 };
 
-const subscriptions: Subscriptions = {};
-
 type SubscriptionMap = {
   [key in string]: (() => void) | undefined;
 };
 
-export class FWSubscription {
+export class SubscriptionService {
+  static subscriptions: Subscriptions = {};
   private serviceSubscription: Subscription | undefined;
   public readonly unsubscriptionMap: Record<string, () => void> = {};
   private serviceInfo: {
@@ -41,7 +39,7 @@ export class FWSubscription {
   private subscriptionMap: SubscriptionMap = {};
   private logger: Logger;
 
-  constructor(private state: State, private cron: FWCron) {
+  constructor(private state: State) {
     this.logger = createLogger('Subscription');
     this.init();
   }
@@ -77,10 +75,9 @@ export class FWSubscription {
   async start() {
     this.logger.log('Starting subscription');
 
-    const currentAccount = await this.state.currentAccount;
     const accountsExceptCurrent = this.state.keyringService
       .getSubstrateAccounts()
-      .filter((el) => el.address !== currentAccount?.address);
+      .filter((el) => el.address !== this.state.currentAccount?.address);
     this.state.nftService.fetchNfts();
     accountsExceptCurrent.forEach((account) => {
       const ethAddress = (account.meta.ethereumAddress as string) ?? '';
@@ -93,7 +90,7 @@ export class FWSubscription {
         next: (serviceInfo) => {
           console.info('serviceInfo', serviceInfo);
 
-          this.cron.updateCron(serviceInfo);
+          this.state.cronService.updateCron(serviceInfo);
 
           if (!serviceInfo.currentAccountInfo) return;
 
@@ -229,8 +226,8 @@ export class FWSubscription {
 
 // clear a previous subscriber
 export function unsubscribe(id: string): void {
-  if (subscriptions[id]) {
-    delete subscriptions[id];
+  if (SubscriptionService.subscriptions[id]) {
+    delete SubscriptionService.subscriptions[id];
   } else {
     console.error(`Unable to unsubscribe from ${id}`);
   }
@@ -240,10 +237,10 @@ export function createSubscription<TMessageType extends MessageTypesWithSubscrip
   id: string,
   port: Port
 ): (data: SubscriptionMessageTypes[TMessageType] | null) => void {
-  subscriptions[id] = port;
+  SubscriptionService.subscriptions[id] = port;
 
   return (subscription: unknown): void => {
-    if (subscriptions[id]) {
+    if (SubscriptionService.subscriptions[id]) {
       try {
         port.postMessage({ id, subscription });
       } catch (error) {
@@ -256,5 +253,5 @@ export function createSubscription<TMessageType extends MessageTypesWithSubscrip
 }
 
 export function isSubscriptionRunning(id: string): boolean {
-  return !!subscriptions[id];
+  return !!SubscriptionService.subscriptions[id];
 }

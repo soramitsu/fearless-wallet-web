@@ -17,13 +17,15 @@ import {
   NftService,
   GoogleService,
   WalletConnectDAppService,
+  SubscriptionService,
+  CronService,
+  isSubscriptionRunning,
+  unsubscribe,
 } from '@extension-base/services';
 import { api as apiSora, type FPNumber } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
-import { FWCron } from '@extension-base/background/cron';
 import { isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
-import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import PricesService from '@extension-base/services/prices-service';
 import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
 import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
@@ -62,9 +64,7 @@ export type Passwords = {
 };
 
 export default class State {
-  public cron: FWCron;
   public passwords: Passwords = {};
-  public subscription: FWSubscription;
   public injectedProviders: Map<Port, ProviderInterface> = new Map();
   public providers: Providers = {};
   public readonly unsubscriptionMap: Record<string, () => void> = {};
@@ -79,7 +79,6 @@ export default class State {
     authorizeAccountsCount: 0,
     dAppName: '',
   };
-
   public onboardingService = new OnboardingService();
   public eventService = new EventService();
   public keyringService = new KeyringService(this.eventService);
@@ -93,12 +92,12 @@ export default class State {
   public soraCardService = new SoraCardService(this.requestService);
   public stakingService = new StakingService(this);
   public googleService = new GoogleService();
+  public cronService = new CronService(this);
+  public subscriptionService = new SubscriptionService(this);
 
   constructor() {
     this.injectFromStorage();
     this.onboardingService.init();
-    this.cron = new FWCron(this);
-    this.subscription = new FWSubscription(this, this.cron);
     this.init();
   }
 
@@ -278,7 +277,7 @@ export default class State {
 
     this.networkService.selectedNetworks[currentAccount.address] = type;
 
-    const unsub = this.subscription.getSubscription('balance');
+    const unsub = this.subscriptionService.getSubscription('balance');
     unsub?.();
 
     const networks = this.networkService.getActiveNetworks();
@@ -543,7 +542,7 @@ export default class State {
         .getTotalXorBalanceObservable()
         .subscribe((xorTotalBalance: FPNumber) => this.balanceService.updateXorTotalBalance(xorTotalBalance));
 
-      this.subscription.updateSubscription({ name: 'xorTotalBalance', func: subscription.unsubscribe });
+      this.subscriptionService.updateSubscription({ name: 'xorTotalBalance', func: subscription.unsubscribe });
     } catch (ex) {
       console.error('failed subscribe or unsubscribe to XOR balance');
     }
@@ -588,8 +587,8 @@ export default class State {
   }
 
   private onReady() {
-    this.subscription.start();
-    this.cron.start();
+    this.subscriptionService.start();
+    this.cronService.start();
 
     this.ready = true;
   }

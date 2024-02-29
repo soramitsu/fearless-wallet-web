@@ -244,8 +244,6 @@ class Page {
     };
 
     win.addEventListener('eip6963:requestProvider', announceProvider);
-
-    announceProvider();
   }
 
   init() {

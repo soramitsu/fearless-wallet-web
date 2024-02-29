@@ -13,7 +13,7 @@ import { createSubscription, unsubscribe } from '@extension-base/services';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import { type RequestArguments } from '@json-rpc-tools/utils';
-import { type JsonRpcPayload } from 'ethers';
+import { toBeHex, type JsonRpcPayload } from 'ethers';
 import { type RequestEvmProviderSend, type EvmEventType } from '@extension-base/page/types';
 import { CRON_GET_API_MAP_STATUS } from '@extension-base/const/intervals';
 import type State from '@extension-base/background/handlers/State';
@@ -285,7 +285,7 @@ export default class Tabs {
 
     return {
       networkKey: currentEvmNetwork?.name,
-      chainId: currentEvmNetwork?.chainId,
+      chainId: toBeHex(BigInt(currentEvmNetwork?.chainId || 0)),
       web3: api,
     };
   }
@@ -296,6 +296,7 @@ export default class Tabs {
 
     if (!provider) {
       await this.getEvmCurrentChainId(url);
+
       provider = evmState.web3;
     }
 
@@ -305,7 +306,6 @@ export default class Tabs {
   private async evmSubscribeEvents(url: string, id: string, port: chrome.runtime.Port) {
     // This method will be called after DApp request connect to extension
     const cb = createSubscription<'evm(events.subscribe)'>(id, port);
-    let isConnected = false;
 
     const emitEvent = (eventName: EvmEventType, payload: any) => {
       cb({ type: eventName, payload });
@@ -361,16 +361,10 @@ export default class Tabs {
         .then((evmState) => {
           evmState.web3
             ?.getBlock('latest')
-            .then((block) => {
-              if (block && !isConnected) {
-                emitEvent('connect', { chainId: evmState.chainId });
-              } else if (!block && isConnected) {
-                emitEvent('disconnect', 'Chain disconnectied');
-              }
-
-              isConnected = true;
+            .then(() => {
+              emitEvent('connect', { chainId: evmState?.chainId });
             })
-            .catch(console.error);
+            .catch(() => emitEvent('disconnect', 'Chain disconnectied'));
         })
         .catch(console.error);
     };
@@ -470,24 +464,15 @@ export default class Tabs {
     const provider = await this.getEvmProvider(url);
 
     return new Promise((resolve, reject) => {
-      provider
-        ?._send({
-          jsonrpc: '2.0',
-          method: method,
-          params: params as any[],
-          id: +id,
-        })
-        .then((result) => {
-          const err = (result[0] as any).error;
+      provider?._send({ jsonrpc: '2.0', method, params, id: +id }).then((result) => {
+        if ('error' in result[0]) return reject(result[0].error);
 
-          if (err) reject(err);
-          else {
-            const rs = (result[0] as any).result as unknown;
+        const rs = 'result' in result[0] ? result[0].result : undefined;
 
-            callback && callback(rs);
-            resolve(rs);
-          }
-        });
+        callback && callback(rs);
+
+        resolve(rs);
+      });
     });
   }
 
@@ -543,6 +528,7 @@ export default class Tabs {
         case 'eth_chainId':
           return this.getEvmCurrentChainId(url);
 
+        case 'web3_clientVersion':
         case 'net_version':
           return this.getNetworkVersion(url);
 

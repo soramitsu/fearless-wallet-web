@@ -506,17 +506,17 @@ export default class Tabs {
     ];
   }
 
-  private async evmSign(id: string, url: string, { method, params }: RequestArguments): Promise<ResponseSigning> {
+  private async evmSign(id: string, url: string, { method, params }: RequestArguments): Promise<string> {
     const signResult = await this.state.requestService.evmRequestHandler.confirmSign(id, url, method, params);
 
-    if (signResult) return signResult;
+    if (signResult) return signResult.payload;
     else throw new Error('Failed to sign message');
   }
 
-  async evmSendTransaction(id: string, url: string, { method, params }: RequestArguments): Promise<ResponseSigning> {
+  async evmSendTransaction(id: string, url: string, { method, params }: RequestArguments): Promise<string> {
     const signResult = await this.state.requestService.evmRequestHandler.confirmSign(id, url, method, params);
 
-    if (signResult) return signResult;
+    if (signResult) return signResult.payload;
     else throw new Error('Failed to sign message');
   }
 

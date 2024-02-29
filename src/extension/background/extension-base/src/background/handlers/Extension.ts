@@ -8,7 +8,7 @@ import { formatUnits, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/swaps';
-import { withErrorLog } from '@extension-base/background/handlers/helpers';
+import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { createSubscription, unsubscribe } from '@extension-base/services';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
@@ -508,12 +508,12 @@ export default class Extension extends FWExtensionBase {
       if (!isPassMatch) throw new Error(BasicTxErrorCode.KEYRING_ERROR, { cause: 'Password did not match' });
     }
 
-    const method = request.data.method;
+    const method = request.method;
     const { list: authList } = await this.getAuthList();
-    const auth = authList[request.url];
+    const auth = authList[stripUrl(request.url)];
 
     const network = Object.values(this.state.networkMap).find(
-      (el) => el.name.toString() === auth.currentEvmNetworkKey?.toString()
+      (el) => el.name.toLowerCase() === auth.currentEvmNetworkKey?.toLowerCase()
     );
 
     if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);

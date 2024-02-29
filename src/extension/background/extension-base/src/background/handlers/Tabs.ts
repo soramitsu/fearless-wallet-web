@@ -13,7 +13,7 @@ import { createSubscription, unsubscribe } from '@extension-base/services';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import { type RequestArguments } from '@json-rpc-tools/utils';
-import { type JsonRpcProvider, type JsonRpcPayload } from 'ethers';
+import { type JsonRpcPayload } from 'ethers';
 import { type RequestEvmProviderSend, type EvmEventType } from '@extension-base/page/types';
 import { CRON_GET_API_MAP_STATUS } from '@extension-base/const/intervals';
 import type State from '@extension-base/background/handlers/State';
@@ -351,7 +351,7 @@ export default class Tabs {
       }
     };
 
-    const authUrlSubscription = this.state.requestService.subscribeEvmChainChange.subscribe(() => {
+    const authUrlSubscription = this.state.requestService.subscribeAuthorizeUrlSubject.subscribe(() => {
       _onAuthChanged().catch(console.error);
     });
 
@@ -390,8 +390,7 @@ export default class Tabs {
     };
 
     Object.entries(eventMap).forEach(([event, callback]) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      provider?.on && provider?.on(event, callback);
+      provider?.on(event, callback);
     });
 
     // Add event emitter
@@ -401,14 +400,12 @@ export default class Tabs {
 
     this.evmEventEmitterMap[url][id] = emitEvent;
     this.state.createUnsubscriptionHandle(id, () => {
-      if (this.evmEventEmitterMap[url][id]) {
-        delete this.evmEventEmitterMap[url][id];
-      }
+      if (this.evmEventEmitterMap[url][id]) delete this.evmEventEmitterMap[url][id];
 
       Object.entries(eventMap).forEach(([event, callback]) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        provider?.removeListener && provider?.removeListener(event, callback);
+        provider?.removeListener(event, callback);
       });
+
       accountListSubscription.unsubscribe();
       authUrlSubscription.unsubscribe();
       clearInterval(networkCheckInterval);
@@ -422,10 +419,11 @@ export default class Tabs {
   }
 
   private async getEvmCurrentAccount(url: string): Promise<string[]> {
-    return await new Promise((resolve) => {
+    return new Promise((resolve) => {
       this.getAuthInfo(url)
         .then((authInfo) => {
           const allAccounts = this.state.keyringService.accountSubject.value;
+
           const accountList = transformAccounts({
             accounts: allAccounts,
             anyType: false,
@@ -435,8 +433,10 @@ export default class Tabs {
           let accounts: string[] = [];
 
           const address = this.state.currentAccount?.ethereumAddress;
-
-          if (address && accountList.includes(address)) {
+          const isAuthorizedAddress = authInfo?.authorizedAccounts.some(
+            (el) => el.toLowerCase() === address?.toLowerCase()
+          );
+          if (address && accountList.includes(address) && isAuthorizedAddress) {
             const result = accountList.filter((adr) => adr !== address);
 
             result.unshift(address);
@@ -452,25 +452,13 @@ export default class Tabs {
   async getEvmCurrentChainId(url: string): Promise<string> {
     const evmState = await this.getEvmState(url);
 
-    return evmState.chainId || '0x1';
+    return evmState.chainId || '0x0';
   }
 
   async getNetworkVersion(url: string) {
     const chainId = await this.getEvmCurrentChainId(url);
 
     return parseInt(chainId, 16);
-  }
-
-  private checkAndHandleProviderStatus(provider: JsonRpcProvider | undefined) {
-    if (!provider || !provider?.ready) {
-      Object.values(this.evmEventEmitterMap).forEach((m) => {
-        Object.values(m).forEach((emitter) => {
-          emitter('disconnect', 'CHAIN_DISCONNECTED');
-        });
-      });
-
-      throw new Error('CHAIN_DISCONNECTED');
-    }
   }
 
   private async performWeb3Method(
@@ -480,8 +468,6 @@ export default class Tabs {
     callback?: (result: unknown) => void
   ) {
     const provider = await this.getEvmProvider(url);
-
-    // this.checkAndHandleProviderStatus(provider);
 
     return new Promise((resolve, reject) => {
       provider
@@ -511,9 +497,7 @@ export default class Tabs {
 
     const evmState = await this.getEvmState(url);
 
-    if (evmState.chainId === chainId) {
-      return null;
-    }
+    if (evmState.chainId === chainId) return null;
 
     const [networkKey] = this.state.networkService.findNetworkKeyByChainId(chainIdDec.toString());
 
@@ -521,6 +505,20 @@ export default class Tabs {
     else throw new Error('Unknown network');
 
     return null;
+  }
+
+  private async getEvmPermission(url: string, id: string) {
+    const accounts = await this.getEvmCurrentAccount(url);
+
+    return [
+      {
+        id: id,
+        invoker: url,
+        parentCapability: 'eth_accounts',
+        caveats: [{ type: 'restrictReturnedAccounts', value: accounts }],
+        date: new Date().getTime(),
+      },
+    ];
   }
 
   private async evmSign(id: string, url: string, { method, params }: RequestArguments): Promise<ResponseSigning> {
@@ -552,7 +550,12 @@ export default class Tabs {
           return this.getEvmCurrentAccount(url);
 
         case 'wallet_requestPermissions':
-          return this.authorize(url, { origin: '', accountAuthType: 'evm', reConfirm: true });
+          await this.authorize(url, { origin: '', accountAuthType: 'evm', reConfirm: true });
+
+          return this.getEvmPermission(url, id);
+
+        case 'wallet_getPermissions':
+          return this.getEvmPermission(url, id);
 
         case 'wallet_switchEthereumChain':
           return this.switchEvmNetwork(url, request);

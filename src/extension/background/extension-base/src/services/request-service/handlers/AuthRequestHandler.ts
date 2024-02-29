@@ -28,7 +28,6 @@ export class AuthRequestHandler {
   private authorizeCached: AuthUrls = {};
   private readonly authorizeStore = new AuthorizeStore();
   private readonly authorizeUrlSubject = new BehaviorSubject<AuthUrls>({});
-  private readonly evmNetworkSubject = new BehaviorSubject<AuthUrls>({});
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
 
   constructor(requestService: RequestService, networkService: NetworkService, keyringService: KeyringService) {
@@ -67,7 +66,6 @@ export class AuthRequestHandler {
     this.authorizeStore.set(AUTH_URLS_KEY, data, () => {
       this.authorizeCached = data;
 
-      this.evmNetworkSubject.next(this.authorizeCached);
       this.authorizeUrlSubject.next(this.authorizeCached);
       callback && callback();
     });
@@ -77,14 +75,16 @@ export class AuthRequestHandler {
     // This action can be use many by DApp interaction => caching it in memory
     if (Object.keys(this.authorizeCached).length) {
       update(this.authorizeCached);
-    } else {
-      this.authorizeStore.get('authUrls', (data) => {
-        this.authorizeCached = data || {};
-        this.evmNetworkSubject.next(this.authorizeCached);
-        this.authorizeUrlSubject.next(this.authorizeCached);
-        update(this.authorizeCached);
-      });
+
+      return;
     }
+
+    this.authorizeStore.get('authUrls', (data) => {
+      this.authorizeCached = data || {};
+
+      this.authorizeUrlSubject.next(this.authorizeCached);
+      update(this.authorizeCached);
+    });
   }
 
   public getAuthList(): Promise<AuthUrls> {
@@ -183,23 +183,6 @@ export class AuthRequestHandler {
 
       // Prevent appear confirmation popup
       if (!confirmAnotherType && !request.reConfirm && allowedListByRequestType.length !== 0) return false;
-    } else {
-      // Auto auth for web app
-
-      authList[idStr] = {
-        count: 0,
-        id: idStr,
-        isAllowed: true,
-        origin,
-        url,
-        allowedAccountsMap: {},
-        authorizedAccounts: [],
-        accountAuthType,
-      };
-
-      this.setAuthorize(authList);
-
-      return true;
     }
 
     return new Promise((resolve, reject): void => {
@@ -223,10 +206,6 @@ export class AuthRequestHandler {
 
   public getAuthRequest(id: string): AuthRequest {
     return this.authRequests[id];
-  }
-
-  public get subscribeEvmChainChange() {
-    return this.evmNetworkSubject;
   }
 
   public get subscribeAuthorizeUrlSubject() {

@@ -663,11 +663,10 @@ export default class State {
     const network = this.networkService.getNetworkByKey(networkKey);
 
     if (authUrls[shortenUrl]) {
-      if (!network.active) {
-        await this.networkService.enableNetworks([networkKey]);
-      }
+      if (!network.active) await this.networkService.enableNetworks([networkKey]);
 
       authUrls[shortenUrl].currentEvmNetworkKey = networkKey;
+
       this.requestService.setAuthorize(authUrls);
     } else {
       throw new Error(`Not found ${shortenUrl} in auth list`);

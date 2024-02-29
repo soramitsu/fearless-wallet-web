@@ -133,10 +133,6 @@ export class RequestService {
     return this.authRequestHandler.getAuthRequest(id);
   }
 
-  public get subscribeEvmChainChange() {
-    return this.authRequestHandler.subscribeEvmChainChange;
-  }
-
   public get subscribeAuthorizeUrlSubject() {
     return this.authRequestHandler.subscribeAuthorizeUrlSubject;
   }

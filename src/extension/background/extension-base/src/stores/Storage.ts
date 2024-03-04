@@ -1,4 +1,3 @@
-import { chrome } from '@polkadot/extension-inject/chrome';
 import type { IState } from '@extension-base/background/types/types';
 
 class Storage {

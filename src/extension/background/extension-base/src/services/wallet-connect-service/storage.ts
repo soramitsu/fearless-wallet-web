@@ -1,4 +1,3 @@
-import { chrome } from '@polkadot/extension-inject/chrome';
 export default class WalletConnectStorage {
   getKeys(): Promise<string[]> {
     return new Promise((res) => {

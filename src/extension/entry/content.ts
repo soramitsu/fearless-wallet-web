@@ -1,5 +1,6 @@
+import '@polkadot/extension-inject/crossenv';
+
 import { MESSAGE_ORIGIN_CONTENT, MESSAGE_ORIGIN_PAGE, PORT_CONTENT } from '@extension-base/defaults';
-import { chrome } from '@polkadot/extension-inject/chrome';
 import { type Port } from '@extension-base/background/types/types';
 import type { Message } from '@extension-base/types';
 

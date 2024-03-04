@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 import { type NftTx, type NftSettings } from '@extension-base/services/nft-service/types';
-import { chrome } from '@polkadot/extension-inject/chrome';
+
 import type { ALLOWED_PATH } from '@extension-base/defaults';
 import type { Subscription } from 'rxjs';
 import type { JsonRpcProvider, WebSocketProvider } from 'ethers';
@@ -640,7 +640,7 @@ export type Address = {
 
 export type AddressBook = Record<NetworkName, Address>;
 
-export interface IState {
+export type IState = {
   registry: TypeRegistry;
   metaStore: MetadataStore;
   authUrls: AuthUrls;
@@ -671,7 +671,7 @@ export interface IState {
   'wc@2:core:0.3//subscription': Array<unknown>;
   'wc@2:client:0.3//request': Array<unknown>;
   'wc@2:core:0.3//history': Array<unknown>;
-}
+};
 
 export interface GoogleFileId {
   id: string;

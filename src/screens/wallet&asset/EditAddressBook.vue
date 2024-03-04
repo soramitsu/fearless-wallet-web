@@ -42,7 +42,6 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { storage } from '@extension-base/stores/Storage';
-import { chrome } from '@polkadot/extension-inject/chrome';
 import BaseApi from '@/util/BaseApi';
 
 @Component

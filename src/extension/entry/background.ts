@@ -1,8 +1,8 @@
+import '@polkadot/extension-inject/crossenv';
+
 import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
-import { chrome } from '@polkadot/extension-inject/chrome';
 import { handlers, state } from '@extension-base/background/handlers';
-import '@polkadot/extension-inject/crossenv';
 import AccountsStore from '@extension-base/stores/Accounts';
 import { initStorage } from '@extension-base/stores/Storage';
 import { type RequestSignatures } from '@extension-base/background/types/messages';

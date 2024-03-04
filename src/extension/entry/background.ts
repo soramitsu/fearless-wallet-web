@@ -1,5 +1,4 @@
-import '@polkadot/extension-inject/crossenv';
-
+import { chrome } from '@extension-base/utils/crossenv';
 import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { handlers, state } from '@extension-base/background/handlers';
@@ -29,7 +28,7 @@ async function getActiveTabs() {
   });
 }
 
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener((details: { reason: string; previousVersion: string }) => {
   if (details.reason === 'update') {
     state.onboardingService.isRequired = true;
     state.onboardingService.updateStorage();
@@ -49,7 +48,7 @@ chrome.runtime.onConnect.addListener((port: Port) => {
 });
 
 // listen to tab updates this is fired on url change
-chrome.tabs.onUpdated.addListener((_, changeInfo) => {
+chrome.tabs.onUpdated.addListener((_: any, changeInfo: { url: any }) => {
   // we are only interested in url change
   if (!changeInfo.url) return;
 

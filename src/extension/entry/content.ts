@@ -1,5 +1,4 @@
-import '@polkadot/extension-inject/crossenv';
-
+import { chrome } from '@extension-base/utils/crossenv';
 import { MESSAGE_ORIGIN_CONTENT, MESSAGE_ORIGIN_PAGE, PORT_CONTENT } from '@extension-base/defaults';
 import { type Port } from '@extension-base/background/types/types';
 import type { Message } from '@extension-base/types';
@@ -16,7 +15,7 @@ class Content {
       port.postMessage(data);
     };
 
-    port.onMessage.addListener((data): void => {
+    port.onMessage.addListener((data: any): void => {
       window.postMessage({ ...data, origin: MESSAGE_ORIGIN_CONTENT }, '*');
     });
 

@@ -42,8 +42,8 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { storage } from '@extension-base/stores/Storage';
-import BaseApi from '@/util/BaseApi';
 
+import BaseApi from '@/util/BaseApi';
 @Component
 export default class EditAddressBook extends Vue {
   name = '';
@@ -78,7 +78,7 @@ export default class EditAddressBook extends Vue {
     const key = this.saveForAllNetworks ? 'all' : this.network;
     const value = addressBook[key] ?? [];
 
-    chrome.storage.local.set({
+    storage.set({
       addressBook: {
         ...addressBook,
         [key]: [...value, { name: this.name, address: BaseApi.encodeAddress(this.address.trim()) }],

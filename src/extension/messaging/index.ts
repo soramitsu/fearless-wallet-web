@@ -1,6 +1,6 @@
 import { getId } from '@extension-base/utils/utils';
 import { PORT_EXTENSION } from '@extension-base/defaults';
-
+import { chrome } from '@extension-base/utils/crossenv';
 import type {
   MessageTypes,
   MessageTypesWithNoSubscriptions,

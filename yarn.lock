@@ -4003,6 +4003,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/firefox-webext-browser@npm:^120.0.1":
+  version: 120.0.1
+  resolution: "@types/firefox-webext-browser@npm:120.0.1"
+  checksum: 0ba932a4ee01d0c5421f257b4371f95934ce7253a07d09002663145fee45258571dc68f0e85381372a612aa935ee715515be558bdf0ae26f9cc0e2f32d0c0b9f
+  languageName: node
+  linkType: hard
+
 "@types/fs-extra@npm:^9.0.11":
   version: 9.0.13
   resolution: "@types/fs-extra@npm:9.0.13"
@@ -7536,6 +7543,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"chrome-types@npm:^0.1.270":
+  version: 0.1.270
+  resolution: "chrome-types@npm:0.1.270"
+  checksum: 67aa1ac172bec22af92091821cab120f6c8b62b996e3025f43cf3518669a2979424766afa9b8fbd5b76abac85b6e917e694253b954c79c429ec420c9eb21c550
+  languageName: node
+  linkType: hard
+
 "chromium-pickle-js@npm:^0.2.0":
   version: 0.2.0
   resolution: "chromium-pickle-js@npm:0.2.0"
@@ -10725,6 +10739,7 @@ __metadata:
     "@types/chrome": ^0.0.200
     "@types/electron-devtools-installer": ^2.2.2
     "@types/file-saver": ^2.0.5
+    "@types/firefox-webext-browser": ^120.0.1
     "@types/jest": ^26.0.19
     "@types/lodash": ^4.14.174
     "@types/node": ^16.11.6
@@ -10755,6 +10770,7 @@ __metadata:
     autoprefixer: ^10.4.14
     axios: ^0.27.2
     bignumber.js: ^9.0.2
+    chrome-types: ^0.1.270
     country-code-emoji: ^2.3.0
     css-unicode-loader: ^1.0.3
     cypress: ^9.7.0

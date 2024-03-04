@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { chrome } from '@extension-base/utils/crossenv';
 
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';

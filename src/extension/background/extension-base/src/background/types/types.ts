@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 import { type NftTx, type NftSettings } from '@extension-base/services/nft-service/types';
-
+import { chrome } from '@extension-base/utils/crossenv';
 import type { ALLOWED_PATH } from '@extension-base/defaults';
 import type { Subscription } from 'rxjs';
 import type { JsonRpcProvider, WebSocketProvider } from 'ethers';
@@ -31,7 +31,6 @@ import type {
   MarketType,
   SwapOptions,
 } from '@/interfaces';
-
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
 }[keyof T];

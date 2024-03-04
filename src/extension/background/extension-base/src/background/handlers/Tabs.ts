@@ -1,7 +1,7 @@
 import { PHISHING_PAGE_REDIRECT } from '@extension-base/defaults';
 import { checkIfDenied } from '@polkadot/phishing';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
-
+import { chrome } from '@extension-base/utils/crossenv';
 import { assert, isNumber } from '@polkadot/util';
 import {
   stripUrl,
@@ -220,17 +220,17 @@ export default class Tabs {
     return this.state.rpcUnsubscribe(request, port);
   }
 
-  redirectPhishingLanding(phishingWebsite: string): void {
+  async redirectPhishingLanding(phishingWebsite: string): Promise<void> {
     const nonFragment = phishingWebsite.split('#')[0];
     const encodedWebsite = encodeURIComponent(nonFragment);
     const url = `${chrome.runtime.getURL('index.html')}#${PHISHING_PAGE_REDIRECT}/${encodedWebsite}`;
 
-    chrome.tabs.query({ url: nonFragment }, (tabs) => {
-      tabs
-        .map(({ id }) => id)
-        .filter((id): id is number => isNumber(id))
-        .forEach((id) => withErrorLog(() => chrome.tabs.update(id, { url })));
-    });
+    const tabs = await chrome.tabs.query({ url: nonFragment });
+
+    tabs
+      .map(({ id }) => id)
+      .filter((id): id is number => isNumber(id))
+      .forEach((id) => withErrorLog(() => chrome.tabs.update(id, { url })));
   }
 
   async redirectIfPhishing(url: string): Promise<boolean> {

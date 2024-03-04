@@ -7543,13 +7543,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chrome-types@npm:^0.1.270":
-  version: 0.1.270
-  resolution: "chrome-types@npm:0.1.270"
-  checksum: 67aa1ac172bec22af92091821cab120f6c8b62b996e3025f43cf3518669a2979424766afa9b8fbd5b76abac85b6e917e694253b954c79c429ec420c9eb21c550
-  languageName: node
-  linkType: hard
-
 "chromium-pickle-js@npm:^0.2.0":
   version: 0.2.0
   resolution: "chromium-pickle-js@npm:0.2.0"
@@ -10770,7 +10763,6 @@ __metadata:
     autoprefixer: ^10.4.14
     axios: ^0.27.2
     bignumber.js: ^9.0.2
-    chrome-types: ^0.1.270
     country-code-emoji: ^2.3.0
     css-unicode-loader: ^1.0.3
     cypress: ^9.7.0

@@ -28,7 +28,7 @@ async function getActiveTabs() {
   });
 }
 
-chrome.runtime.onInstalled.addListener((details: { reason: string; previousVersion: string }) => {
+chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'update') {
     state.onboardingService.isRequired = true;
     state.onboardingService.updateStorage();
@@ -48,7 +48,7 @@ chrome.runtime.onConnect.addListener((port: Port) => {
 });
 
 // listen to tab updates this is fired on url change
-chrome.tabs.onUpdated.addListener((_: any, changeInfo: { url: any }) => {
+chrome.tabs.onUpdated.addListener((_, changeInfo) => {
   // we are only interested in url change
   if (!changeInfo.url) return;
 

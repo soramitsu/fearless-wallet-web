@@ -128,6 +128,7 @@ function calcTransferableSendMinusFee(
   currency: TokenGroup | undefined,
   network: NetworkName,
   fee: string,
+  checkED = false,
   destNetFee?: string
 ) {
   if (currency === undefined) return '0';
@@ -139,11 +140,20 @@ function calcTransferableSendMinusFee(
   const transferable = currencyBalance.transferable ?? '0';
 
   // Для Utility ассета вычитаем комиссию, тк комиссия всегда списывается в Utility токене
+  // Для Utility ассета проверяем existentialDeposit
   if (currencyBalance.isUtility) {
+    const existentialDeposit = FPNumber.fromCodecValue(
+      currencyBalance.existentialDeposit ?? '0',
+      currencyBalance.precision
+    );
+
     const amountSubFee = new FPNumber(transferable).sub(new FPNumber(fee));
     const amountSubFeeSubDestFee = isCrossChain ? amountSubFee.sub(destNetFeeFP) : amountSubFee;
+    const amountSubFeeSubDestFeeSubED = checkED
+      ? amountSubFeeSubDestFee.sub(existentialDeposit)
+      : amountSubFeeSubDestFee;
 
-    return FPNumber.lt(amountSubFeeSubDestFee, FPNumber.ZERO) ? '0' : amountSubFeeSubDestFee.toString();
+    return FPNumber.lt(amountSubFeeSubDestFeeSubED, FPNumber.ZERO) ? '0' : amountSubFeeSubDestFeeSubED.toString();
   }
 
   // вычитаем CrossChain комиссию
@@ -156,8 +166,15 @@ function calcTransferableSendMinusFee(
   return transferable;
 }
 
-function isValidAmountAsset(currency: TokenGroup | undefined, network: NetworkName, fee: string, amount: string) {
-  const maxSendFP = new FPNumber(calcTransferableSendMinusFee(currency, network, fee));
+function isValidAmountAsset(
+  currency: TokenGroup | undefined,
+  network: NetworkName,
+  fee: string,
+  amount: string,
+  checkED = false,
+  destFee?: string
+) {
+  const maxSendFP = new FPNumber(calcTransferableSendMinusFee(currency, network, fee, checkED, destFee));
 
   // если sendAsset !== Utility, то: если количество токенов равно нулю, то транзакция невалидна
   // если  sendAsset === Utility, то: если количество токенов за вычетом комиссии равно нулю, то транзакция невалидна

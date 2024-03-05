@@ -124,6 +124,7 @@ export class SubstrateApiHandler {
 
     this.state.subscriptionService.getSubscription(networkName)?.();
     this.state.subscriptionService.subscribeBalances(account.address, account.ethereumAddress, [networkName], []);
+    this.state.balanceService.updateUtilityED(networkName);
   }
 
   public refreshDotSamaApi(key: string) {

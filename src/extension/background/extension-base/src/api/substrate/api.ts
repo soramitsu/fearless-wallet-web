@@ -77,6 +77,7 @@ async function onReady(networkName: string, state: State) {
 
   state.subscription.getSubscription(networkName)?.();
   state.subscription.subscribeBalances(account.address, account.ethereumAddress, [networkName], []);
+  state.balanceService.updateUtilityED(networkName);
 }
 
 export async function initApi(network: NetworkJson, state: State): Promise<void> {
@@ -84,10 +85,11 @@ export async function initApi(network: NetworkJson, state: State): Promise<void>
   const networkName = name.toLowerCase();
 
   if (state.getSubstrateApiMap[networkName] === undefined) state.getSubstrateApiMap[networkName] = createApiObject();
-  const { nodeIndex } = state.getSubstrateApiMap[networkName];
 
+  const { nodeIndex } = state.getSubstrateApiMap[networkName];
   const autoSelectNode = network.isManual ? null : nodes[nodeIndex].url;
   const currentProvider = autoSelectNode ?? network.currentProvider;
+
   const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [
     ['connected', () => onConnected(networkName, state)],
     ['disconnected', () => onDisconnect(name, state)],

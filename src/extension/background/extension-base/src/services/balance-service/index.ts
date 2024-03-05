@@ -43,6 +43,7 @@ export default class BalanceService {
         this.updateBalanceStorage(networkKey, currentAccountInfo.address, item).catch((e) => console.warn(e));
     });
   }
+
   // Balance
   private async updateBalanceStorage(chain: string, address: string, item: Partial<BalanceItem>) {
     if (item.state !== APIItemState.READY) return;
@@ -69,11 +70,9 @@ export default class BalanceService {
   }
 
   public async updateXorTotalBalance(muchTotal: FPNumber): Promise<void> {
-    const currentAccount = await this.state.currentAccount;
+    const address = await this.state.getAccountAddress();
 
-    if (!currentAccount) return;
-
-    const { address } = currentAccount;
+    if (!address) return;
 
     const currencyIndex = this.balanceMap[address].findIndex(({ groupId }) => groupId === SORA_XOR_ASSET_ID);
 
@@ -81,6 +80,27 @@ export default class BalanceService {
     const index = token.balances.findIndex(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
 
     this.balanceMap[address][currencyIndex].balances[index].muchTotal = muchTotal.toString();
+  }
+
+  public async updateUtilityED(networkName: NetworkName): Promise<void> {
+    const existentialDeposit =
+      this.state.apis.substrate[networkName].api?.consts?.balances?.existentialDeposit.toString();
+
+    const allAccounts = this.state.keyringService.getAllSubstrateAccounts();
+
+    if (!allAccounts) return;
+
+    allAccounts.forEach(({ address }) => {
+      const currencyIndex = this.balanceMap[address].findIndex(({ balances }) =>
+        balances.find(({ isUtility, name }) => isUtility && name.toLowerCase() === networkName.toLowerCase())
+      );
+
+      const token = this.balanceMap[address][currencyIndex];
+      const index = token.balances.findIndex(({ name }) => name.toLowerCase() === networkName.toLowerCase());
+
+      this.balanceMap[address][currencyIndex].balances[index].existentialDeposit =
+        existentialDeposit?.toString() ?? '0';
+    });
   }
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {

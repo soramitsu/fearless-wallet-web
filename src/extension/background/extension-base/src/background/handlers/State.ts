@@ -829,7 +829,7 @@ export default class State {
     await this.eventService.waitCryptoReady;
     await this.prepNetworkJson();
 
-    await this.initNetworkStates();
+    this.initNetworkStates();
     this.onReady();
     this.updateServiceInfo();
   }

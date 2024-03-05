@@ -126,6 +126,8 @@ export default class CrossChainForm extends Vue {
   }
 
   get showSoraAlert() {
+    if (!isSora(this.originalNetwork, true) && !isSora(this.destinationNetwork, true)) return false;
+
     if (this.amount === '') return false;
 
     if (isSora(this.destinationNetwork, true)) return +this.amount < this.minValueBridgeToSora;

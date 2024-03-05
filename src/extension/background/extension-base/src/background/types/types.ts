@@ -260,7 +260,7 @@ export interface ApiProps {
   isEthereum: boolean;
 }
 export interface EvmApiProps {
-  api: EvmProvider;
+  api?: EvmProvider;
   apiRetry?: number;
   nodeIndex?: number;
   timeout: Record<string, number>;

@@ -52,6 +52,7 @@ import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
+import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 type Wallet = {
@@ -236,7 +237,6 @@ export default class State {
   }
 
   public disableNetworkMap(networkKey: string): boolean {
-    //if it's already disconnected then return true
     this.networkService.disableNetworkMap(networkKey, () => {
       this.updateServiceInfo();
 
@@ -290,7 +290,7 @@ export default class State {
       const isActive = network.active;
 
       if (!isActive && network.isEthereum && this.getEvmApiMap[networkKey]) {
-        this.getEvmApiMap[networkKey].api.destroy();
+        this.getEvmApiMap[networkKey].api?.destroy();
         delete this.getEvmApiMap[networkKey];
       } else if (!isActive && this.getSubstrateApiMap[networkKey]) {
         this.getSubstrateApiMap[networkKey].provider?.disconnect().then(() => {
@@ -619,13 +619,13 @@ export default class State {
 
     if (!activeEvmNetworks.length) return;
 
-    activeEvmNetworks.forEach(({ assets, name }) => {
+    activeEvmNetworks.forEach(({ assets, name, networkStatus }) => {
       const api = this.getEvmApi(name);
       const timeout = api.timeout[substrateAddress] ?? Number.MIN_VALUE;
       const timeDiff = Date.now() - timeout;
       const shouldSkipUpdate = timeDiff < REFRESH_TIME && !force;
 
-      if (shouldSkipUpdate) return;
+      if (shouldSkipUpdate || networkStatus === NETWORK_STATUS.DISCONNECTED) return;
 
       assets.forEach(({ id }) => {
         if (assetId && assetId !== id) return;

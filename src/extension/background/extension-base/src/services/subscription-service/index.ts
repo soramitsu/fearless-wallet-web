@@ -78,7 +78,7 @@ export class SubscriptionService {
     const accountsExceptCurrent = this.state.keyringService
       .getSubstrateAccounts()
       .filter((el) => el.address !== this.state.currentAccount?.address);
-    this.state.nftService.fetchNfts();
+
     accountsExceptCurrent.forEach((account) => {
       const ethAddress = (account.meta.ethereumAddress as string) ?? '';
 

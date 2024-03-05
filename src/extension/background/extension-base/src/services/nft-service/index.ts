@@ -113,7 +113,7 @@ export class NftService {
     for (const network of networks) {
       const sdk = this.sdks[network];
 
-      if (!sdk || chainIds.some((el) => el !== sdk.chainId)) continue;
+      if (!sdk || chainIds.every((el) => el !== sdk.chainId)) continue;
 
       const timespan = sdk.timespan;
 
@@ -224,6 +224,7 @@ export class NftService {
 
   async checkSend({ from, tokenId, network, contract: contractAddress, type }: NftTx): Promise<CheckNftResponse> {
     const api = this.state.getEvmApi(network)?.api;
+    if (!api) throw new Error('API not found');
     const networkJson = this.state.networkService.getNetworkByKey(network);
     const utilityAsset = networkJson.assets.find((el) => el.isUtility)!;
     const contract = await getContract(contractAddress, api, type === 'ERC721' ? 'ERC721' : 'ERC1155');
@@ -285,7 +286,7 @@ export class NftService {
       const nfts = this.nftMap[account.ethereumAddress];
 
       if (nfts) this.nftSubject.next(this.nftMap[account.ethereumAddress]);
-      if (this.isNeedUpdate(account.ethereumAddress)) this.fetchNfts(account.ethereumAddress);
+      // if (this.isNeedUpdate(account.ethereumAddress)) this.fetchNfts(account.ethereumAddress);
 
       return;
     }

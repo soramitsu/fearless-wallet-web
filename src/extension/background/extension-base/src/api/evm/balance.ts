@@ -8,6 +8,8 @@ import type State from '@extension-base/background/handlers/State';
 async function getUtilityBalance(networkKey: string, address: string, state: State): Promise<string> {
   const eth = state.getEvmApi(networkKey)?.api;
 
+  if (!eth) throw new Error('API not found');
+
   const balance = await eth.getBalance(address);
 
   return ethers.formatEther(balance);
@@ -54,8 +56,14 @@ async function fetchTokenBalance(address: string, networkKey: string, contractAd
       console.info(ex);
       balanceItem.state = APIItemState.ERROR;
 
-      setBalance(networkKey, balanceItem, address, state);
+      const api = state.networkService.evmApiHandler.api[networkKey.toLowerCase()];
+      const retries = api.apiRetry ?? 0;
+      api.apiRetry = retries + 1;
+
+      balanceItem.state = APIItemState.ERROR;
       state.disableNetworkMap(networkKey);
+      state.subscriptionService.getSubscription(networkKey)?.();
+      setBalance(networkKey, balanceItem, address, state);
 
       console.info(`There is problem when fetching ${symbol} token balance on ${networkKey}`, ex);
     });
@@ -90,8 +98,13 @@ async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, 
     })
     .catch((ex) => {
       console.info(ex);
+      const api = state.networkService.evmApiHandler.api[networkKey.toLowerCase()];
+      const retries = api.apiRetry ?? 0;
+      api.apiRetry = retries + 1;
+
       balanceItem.state = APIItemState.ERROR;
       state.disableNetworkMap(networkKey);
+      state.subscriptionService.getSubscription(networkKey)?.();
       setBalance(networkKey, balanceItem, address, state);
     });
 }

@@ -28,13 +28,13 @@ const nfts = computed<NftCollection[]>(() => store.getters.nfts);
 
 const activeNetworkForSelectedWallet = computed<NetworkJson[]>(() => store.getters.activeNetworkForSelectedWallet);
 
-const filteredNfts = computed(() =>
-  nfts.value.filter(({ network, name }) =>
+const filteredNfts = computed(() => {
+  return nfts.value.filter(({ network, name }) =>
     activeNetworkForSelectedWallet.value.some((net) => {
       return net.name === network && name?.toLowerCase()?.includes(props.filterValue.toLowerCase());
     })
-  )
-);
+  );
+});
 const isEmpty = computed(() => !Object.keys(filteredNfts.value).length);
 const containerClass = computed(() => (isEmpty.value ? 'no-nfts' : 'nft-list'));
 onMounted(() => {

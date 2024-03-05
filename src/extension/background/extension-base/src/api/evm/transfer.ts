@@ -97,6 +97,9 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
 
   const parsedValue = parseUnits(amount, balance.precision);
   const data = erc20Contract.interface.encodeFunctionData('transfer', [to, parsedValue]);
+
+  if (!web3Api) throw new Error(`${networkKey} API not found`);
+
   const { maxFeePerGas, gasPrice } = await web3Api.getFeeData();
   const block = await web3Api.provider.getBlock('latest');
 

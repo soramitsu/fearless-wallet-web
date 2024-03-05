@@ -463,7 +463,7 @@ export default class State {
     this.ready = true; //Set true if chain json is parsed and data is preped for init apis
     this.fetchXcmInfo();
 
-    await this.networkService.initNetworkApis();
+    this.networkService.initNetworkApis();
     this.onReady();
     this.updateServiceInfo();
   }

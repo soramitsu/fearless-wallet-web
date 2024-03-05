@@ -1,6 +1,6 @@
 <template>
   <FCorners size="big">
-    <div :class="contentClasses" @click="setWallet">
+    <div :class="contentClasses" data-testid="walletInfo" @click="setWallet">
       <div class="content" data-testid="content">
         <div class="name" data-testid="name">{{ name }}</div>
 

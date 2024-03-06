@@ -91,7 +91,7 @@ export class NetworkService {
     const activeNetworks = this.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((key) => {
-      const isExists = activeNetworks.some(({ name }) => name === key);
+      const isExists = activeNetworks.some(({ name }) => name.toLowerCase() === key.toLowerCase());
 
       this.networkMap[key].active = isExists;
     });
@@ -207,7 +207,7 @@ export class NetworkService {
       const { name, isEthereum } = network;
 
       if (isEthereum && isRequireEvmAPI(name)) {
-        if (!this.evmApiHandler.api[name] || !this.evmApiHandler.api[name].api.ready)
+        if (!this.evmApiHandler.api[name] || !this.evmApiHandler.api[name].api?.ready)
           this.evmApiHandler.initEvmApi(network);
       } else {
         const initSubstrateApies = () => {
@@ -277,11 +277,15 @@ export class NetworkService {
     //if it's already disconnected then return true
     if (this.networkMap[networkKey].networkStatus === NETWORK_STATUS.DISCONNECTED) return true;
 
-    if (this.networkMap[networkKey]?.isEthereum) delete this.evmApiHandler.api[networkKey];
-    else delete this.substrateApiHandler.api[networkKey];
+    const lowerKey = networkKey.toLowerCase();
+    if (this.networkMap[networkKey]?.isEthereum) {
+      this.evmApiHandler.api[lowerKey].api?.destroy();
+
+      delete this.evmApiHandler.api[lowerKey].api;
+    } else delete this.substrateApiHandler.api[lowerKey].api;
 
     this.networkMap[networkKey].active = false;
-    this.networkMap[networkKey].networkStatus = NETWORK_STATUS.DISCONNECTED;
+    this.updateNetworkStatus(networkKey, NETWORK_STATUS.DISCONNECTED);
 
     this.updateNetworks();
 

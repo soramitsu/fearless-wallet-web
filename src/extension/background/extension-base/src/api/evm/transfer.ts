@@ -167,7 +167,7 @@ export function makeEVMTransfer(params: MakeTransferParams): Promise<void> {
 
   return transfer.then(() => {
     setTimeout(() => {
-      state.fetchEvmBalance({ _ethereumAddress: params.from, assetId: params.balance.id, force: true });
+      state.fetchEvmBalance({ ethereumAddress: params.from, assetId: params.balance.id, force: true });
     }, 10000);
   });
 }

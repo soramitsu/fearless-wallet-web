@@ -51,20 +51,18 @@
 </template>
 
 <script lang="ts">
-import { Getter, Action } from 'vuex-class';
+import { Getter } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { FilesState, AsyncFn } from '@/interfaces';
+import type { FilesState } from '@/interfaces';
 import { cut } from '@/helpers';
 import { type SelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
-import { isJsonValid, jsonRestore } from '@/extension/messaging';
+import { isJsonValid, jsonRestore, updateCurrentAccount } from '@/extension/messaging';
 
 @Component
 export default class GoogleWalletsList extends Vue {
   @Prop(Array) items!: FilesState[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
 
   setItemValue(index: number, data: Record<string, string | boolean>) {
     this.items.splice(index, 1, { ...this.items[index], ...data });
@@ -91,7 +89,7 @@ export default class GoogleWalletsList extends Vue {
 
     const address = await jsonRestore(json, password);
 
-    await this.setSelectedWallet(address || this.selectedWallet.address);
+    await updateCurrentAccount(address || this.selectedWallet.address);
     this.setItemValue(index, { isComplete: true, isLoading: false });
 
     return true;

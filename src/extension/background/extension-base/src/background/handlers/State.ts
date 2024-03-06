@@ -608,8 +608,6 @@ export default class State {
 
     if (ethereumAddress === '') return;
 
-    const substrateAddress = this.keyringService.getSubstrateAddress(ethereumAddress);
-
     const activeEvmNetworks = this.networkValues.filter(({ name, active }) => {
       if (_networks && !_networks.includes(name)) return false;
 
@@ -620,11 +618,14 @@ export default class State {
 
     if (!activeEvmNetworks.length) return;
 
+    const substrateAddress = this.keyringService.getSubstrateAddress(ethereumAddress);
+
     activeEvmNetworks.forEach(({ assets, name, networkStatus }) => {
       const api = this.getEvmApi(name);
+
       const timeout = api.timeout[substrateAddress] ?? Number.MIN_VALUE;
       const timeDiff = Date.now() - timeout;
-      const shouldSkipUpdate = timeDiff < REFRESH_TIME && !force;
+      const shouldSkipUpdate = timeDiff < REFRESH_TIME || !!force;
 
       if (shouldSkipUpdate || networkStatus === NETWORK_STATUS.DISCONNECTED) return;
 

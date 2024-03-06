@@ -6,7 +6,8 @@ import { setBalance } from '@extension-base/api/helpers';
 import type State from '@extension-base/background/handlers/State';
 
 async function getUtilityBalance(networkKey: string, address: string, state: State): Promise<string> {
-  const eth = state.getEvmApi(networkKey)?.api;
+  const apiProps = state.getEvmApi(networkKey);
+  const eth = apiProps?.api;
 
   if (!eth) throw new Error('API not found');
 
@@ -93,6 +94,11 @@ async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, 
       balanceItem.total = balance;
       balanceItem.transferable = balance;
       balanceItem.state = APIItemState.READY;
+      const substrateAddress = state.keyringService.getSubstrateAddress(ethereumAddress);
+
+      const api = state.getEvmApi(networkKey);
+
+      if (api) api.timeout[substrateAddress] = Date.now();
 
       setBalance(networkKey, balanceItem, address, state);
     })

@@ -599,7 +599,7 @@ export default class State {
     return isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
   }
 
-  async fetchEvmBalance({ _networks, _ethereumAddress, assetId, force }: FetchEvmBalancePayload) {
+  async fetchEvmBalance({ _networks, ethereumAddress: _ethereumAddress, assetId, force }: FetchEvmBalancePayload) {
     if (!this.ready) return;
 
     const currentAccount = this.currentAccount;

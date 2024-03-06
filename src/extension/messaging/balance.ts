@@ -11,8 +11,8 @@ export function getBalance(): Promise<BalanceJson> {
   return sendMessage('pri(balance)');
 }
 
-export function fetchEvmBalance(assetId?: string, _ethereumAddress?: string): Promise<void> {
-  return sendMessage('pri(fetch.evm.balance)', { assetId, _ethereumAddress });
+export function fetchEvmBalance(assetId?: string, ethereumAddress?: string): Promise<void> {
+  return sendMessage('pri(fetch.evm.balance)', { assetId, ethereumAddress });
 }
 
 export function updateFiatSymbol(symbol: string): Promise<void> {

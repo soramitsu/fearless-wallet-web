@@ -273,8 +273,13 @@ export default class Wallet extends Vue {
     if (value.length === 0) this.showNetworkManagement = false;
   }
 
-  mounted() {
-    fetchEvmBalance();
+  @Watch('selectedWallet')
+  updateEvmBalance() {
+    fetchEvmBalance(undefined, this.selectedWallet.ethereumAddress);
+  }
+
+  activated() {
+    fetchEvmBalance(undefined, this.selectedWallet.ethereumAddress);
   }
 
   deactivated() {

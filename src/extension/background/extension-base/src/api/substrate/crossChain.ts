@@ -350,11 +350,11 @@ async function estimateCrossChainFee(props: CrossChainProps, state: State): Prom
 
   const destEstimateFee = destFees?.destXcmFee?.find(({ symbol: _symbol }) => _symbol.toLowerCase() === asset);
 
-  const { precision: originPrecision } = getAssetBalance(originNet, tokenBalance);
+  const { precision } = getAssetBalance(originNet, tokenBalance);
 
   const crossChainFee = FPNumber.fromCodecValue(
     destEstimateFee?.feeInPlanks ?? '0',
-    +(destEstimateFee?.precision ?? originPrecision)
+    +(destEstimateFee?.precision ?? precision)
   );
 
   if (isSora(originNet, true)) {
@@ -363,12 +363,14 @@ async function estimateCrossChainFee(props: CrossChainProps, state: State): Prom
     return [originFee, crossChainFee];
   }
 
+  const amountWithCrossChainFee = new FPNumber(amount, precision).add(crossChainFee).toString(); // добавляем CrossChain комиссию, потому что она списывается из суммы amount`а
+
   const extrinsic = await createCrossChainExtrinsic(
     assetId,
     originNet,
     destinationNet,
     to,
-    amount!,
+    amountWithCrossChainFee,
     tokenBalance,
     state
   );
@@ -405,16 +407,17 @@ async function makeCrossChain(props: MakeCrossChainProps, state: State): Promise
 
   await apiProps.api?.isReady;
 
+  const { precision } = getAssetBalance(originNet, tokenBalance);
   const [, crossChainFee] = await estimateCrossChainFee(props, state);
 
-  const amountWithCrossChain = new FPNumber(amount).add(crossChainFee).toString();
+  const amountWithCrossChainFee = new FPNumber(amount, precision).add(crossChainFee).toString(); // добавляем CrossChain комиссию, потому что она списывается из суммы amount`а
 
   const extrinsic = await createCrossChainExtrinsic(
     assetId,
     originNet,
     destinationNet,
     to,
-    amountWithCrossChain!,
+    amountWithCrossChainFee!,
     tokenBalance,
     state
   );

@@ -286,7 +286,6 @@ export class NftService {
       const nfts = this.nftMap[account.ethereumAddress];
 
       if (nfts) this.nftSubject.next(this.nftMap[account.ethereumAddress]);
-      // if (this.isNeedUpdate(account.ethereumAddress)) this.fetchNfts(account.ethereumAddress);
 
       return;
     }

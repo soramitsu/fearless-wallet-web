@@ -10,7 +10,7 @@ export default class AlchemyNftController {
 
   constructor(private network: Network, chainId: string, nftService: NftService) {
     this.sdk = new Alchemy({
-      apiKey: process.env.FL_ALCHEMY_API_ETHEREUM_KEY,
+      apiKey: process.env.FL_WEB_ALCHEMY_API_ETHEREUM_KEY,
       network,
     });
     this.nftService = nftService;

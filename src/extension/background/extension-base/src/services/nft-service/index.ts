@@ -73,7 +73,7 @@ export class NftService {
   async fetchNfts(address?: string) {
     if (!address) return;
 
-    this.getNftForAllNetworks(address);
+    this.getNftForActiveNetworks(address);
   }
 
   excludeFilters(address: string) {
@@ -104,7 +104,7 @@ export class NftService {
     return this.sdks[key].getCollectionPage(contract, address, pageKey);
   }
 
-  async getNftForAllNetworks(address: string, force = false) {
+  async getNftForActiveNetworks(address: string, force = false) {
     const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
     const activeNetworks = this.state.getActiveNetworksCurrentWallet(substrateAddress);
     const chainIds = Array.from(activeNetworks).map(({ chainId }) => chainId);
@@ -146,7 +146,7 @@ export class NftService {
       this.hideSettings[address] = settings;
 
       const currentAccount = this.state.currentAccount;
-      if (currentAccount) this.getNftForAllNetworks(currentAccount.ethereumAddress, true);
+      if (currentAccount) this.getNftForActiveNetworks(currentAccount.ethereumAddress, true);
     }
 
     storage.set({ nftSettings: this.hideSettings });
@@ -199,7 +199,7 @@ export class NftService {
       }
 
       txResponse.wait().then(() => {
-        this.getNftForAllNetworks(from, true);
+        this.getNftForActiveNetworks(from, true);
       });
 
       const substrateAddress = this.state.keyringService.getSubstrateAddress(tx.from);

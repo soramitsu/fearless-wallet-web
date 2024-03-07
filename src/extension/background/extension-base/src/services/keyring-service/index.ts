@@ -53,6 +53,14 @@ export class KeyringService {
     return [...this.getAccounts(), ...this.getAddresses()];
   }
 
+  getAllSubstrateAccounts() {
+    return this.getAllAccounts().filter(({ address }) => !isEthereumAddress(address));
+  }
+
+  getAllEthereumAccounts() {
+    return this.getAllAccounts().filter(({ address }) => isEthereumAddress(address));
+  }
+
   getAccounts() {
     return keyring.getAccounts();
   }

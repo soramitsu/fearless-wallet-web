@@ -78,7 +78,7 @@ export class SubscriptionService {
     const accountsExceptCurrent = this.state.keyringService
       .getSubstrateAccounts()
       .filter((el) => el.address !== this.state.currentAccount?.address);
-    this.state.nftService.fetchNfts();
+
     accountsExceptCurrent.forEach((account) => {
       const ethAddress = (account.meta.ethereumAddress as string) ?? '';
 
@@ -196,8 +196,7 @@ export class SubscriptionService {
   ) {
     if (isFirstRun) this.state.balanceService.generateDefaultBalance(address);
 
-    if (newEvmNetworks?.length)
-      this.state.fetchEvmBalance({ _networks: newEvmNetworks, _ethereumAddress: ethereumAddress });
+    if (newEvmNetworks?.length) this.state.fetchEvmBalance({ _networks: newEvmNetworks, ethereumAddress });
 
     const unsubList = subscribeBalance(address, ethereumAddress, newNetworks, this.state);
 

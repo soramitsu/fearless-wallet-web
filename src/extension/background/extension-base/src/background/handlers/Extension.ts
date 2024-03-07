@@ -783,10 +783,10 @@ export default class Extension extends FWExtensionBase {
     return this.state.balanceService.getBalance();
   }
 
-  private async fetchEvmBalance({ assetId }: FetchEvmBalancePayload) {
+  private async fetchEvmBalance({ assetId, ethereumAddress }: FetchEvmBalancePayload) {
     if (!this.state.ready) return;
 
-    this.state.fetchEvmBalance({ assetId });
+    this.state.fetchEvmBalance({ assetId, ethereumAddress });
   }
 
   private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {

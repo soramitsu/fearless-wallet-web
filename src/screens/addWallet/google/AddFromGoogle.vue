@@ -152,6 +152,7 @@ export default class AddFromGoogle extends Vue {
 
   goBack() {
     this.$router.replace('/').catch((e) => e);
+    this.$router.push({ name: Components.Wallet }).catch((e) => e);
   }
 
   back() {

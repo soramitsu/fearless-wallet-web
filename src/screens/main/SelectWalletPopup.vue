@@ -12,7 +12,7 @@
   >
     <div class="wallet-content">
       <WalletInfo
-        v-for="({ name, address, active, isMobile }, index) in wallets"
+        v-for="({ name, address, active, isMobile }, index) in sortedWallets"
         :key="name + index"
         :name="name"
         :isSelected="active"
@@ -78,6 +78,10 @@ export default class SelectWalletPopup extends Vue {
 
   toggleWalletDetailsPopupVisible(buttonTop: number, address: string) {
     this.$emit('toggleWalletDetailsPopupVisible', undefined, buttonTop, address);
+  }
+
+  get sortedWallets() {
+    return this.wallets.sort((a, b) => a.name.localeCompare(b.name));
   }
 }
 </script>

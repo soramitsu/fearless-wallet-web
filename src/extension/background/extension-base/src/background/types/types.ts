@@ -266,7 +266,7 @@ export interface EvmApiProps {
 }
 export type FetchEvmBalancePayload = {
   _networks?: NetworkName[];
-  _ethereumAddress?: string;
+  ethereumAddress?: string;
   assetId?: string;
   force?: boolean;
 };

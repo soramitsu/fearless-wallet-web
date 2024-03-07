@@ -12,7 +12,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { NftCollection } from '@extension-base/services/nft-service/types';
 import NftCollectionItem from '@/screens/wallet&asset/asset/NftCollectionItem.vue';
@@ -35,11 +35,16 @@ const filteredNfts = computed(() => {
     })
   );
 });
+const selectedNetwork = computed<string>(() => store.getters.selectedNetwork);
+const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+watch(selectedNetwork, () => {
+  setTimeout(() => fetchNfts(selectedWallet.value.ethereumAddress), 2000); //hotfix sometimes it fetchs nfts before the network is changed in service worker
+});
 const isEmpty = computed(() => !Object.keys(filteredNfts.value).length);
 const containerClass = computed(() => (isEmpty.value ? 'no-nfts' : 'nft-list'));
+
 onMounted(() => {
-  const selectedWallet: SelectedWallet = store.getters.selectedWallet;
-  fetchNfts(selectedWallet.ethereumAddress);
+  fetchNfts(selectedWallet.value.ethereumAddress);
 });
 const onClose = () => emit('toggleAssetsManagementForm', false);
 </script>

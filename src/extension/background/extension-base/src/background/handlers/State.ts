@@ -301,11 +301,10 @@ export default class State {
 
     if (this.ready) this.networkService.initNetworkApis();
 
-    this.updateServiceInfo();
-
     this.networkService.updateNetworks();
     this.fetchEvmBalance({});
     this.networkService.saveSelectedNetworks();
+    this.updateServiceInfo();
   }
 
   getActiveNetworksCurrentWallet(address: string) {
@@ -462,7 +461,7 @@ export default class State {
     this.ready = true; //Set true if chain json is parsed and data is preped for init apis
     this.fetchXcmInfo();
 
-    await this.networkService.initNetworkApis();
+    this.networkService.initNetworkApis();
     this.onReady();
     this.updateServiceInfo();
   }
@@ -598,7 +597,7 @@ export default class State {
     return isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
   }
 
-  async fetchEvmBalance({ _networks, _ethereumAddress, assetId, force }: FetchEvmBalancePayload) {
+  async fetchEvmBalance({ _networks, ethereumAddress: _ethereumAddress, assetId, force }: FetchEvmBalancePayload) {
     if (!this.ready) return;
 
     const currentAccount = this.currentAccount;
@@ -606,8 +605,6 @@ export default class State {
     const ethereumAddress = _ethereumAddress ?? currentAccount?.ethereumAddress ?? '';
 
     if (ethereumAddress === '') return;
-
-    const substrateAddress = this.keyringService.getSubstrateAddress(ethereumAddress);
 
     const activeEvmNetworks = this.networkValues.filter(({ name, active }) => {
       if (_networks && !_networks.includes(name)) return false;
@@ -619,11 +616,14 @@ export default class State {
 
     if (!activeEvmNetworks.length) return;
 
+    const substrateAddress = this.keyringService.getSubstrateAddress(ethereumAddress);
+
     activeEvmNetworks.forEach(({ assets, name, networkStatus }) => {
       const api = this.getEvmApi(name);
+
       const timeout = api.timeout[substrateAddress] ?? Number.MIN_VALUE;
       const timeDiff = Date.now() - timeout;
-      const shouldSkipUpdate = timeDiff < REFRESH_TIME && !force;
+      const shouldSkipUpdate = timeDiff < REFRESH_TIME || !!force;
 
       if (shouldSkipUpdate || networkStatus === NETWORK_STATUS.DISCONNECTED) return;
 

@@ -134,20 +134,23 @@ function calcTransferableSendMinusFee(
   if (currency === undefined) return '0';
 
   const isCrossChain = destNetFee !== undefined;
-  const destNetFeeFP = new FPNumber(destNetFee ?? 0);
 
   const currencyBalance = currency.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase())!;
+  const precision = currencyBalance.precision;
   const transferable = currencyBalance.transferable ?? '0';
 
-  const existentialDeposit = FPNumber.fromCodecValue(
-    currencyBalance.existentialDeposit ?? '0',
-    currencyBalance.precision
+  const transferableFP = new FPNumber(transferable, precision);
+  const destNetFeeFP = new FPNumber(destNetFee ?? 0, precision);
+
+  // ED берем с запасом + 10%
+  const existentialDeposit = FPNumber.fromCodecValue(currencyBalance.existentialDeposit ?? '0', precision).mul(
+    new FPNumber(1.1, precision)
   );
 
-  // Для Utility ассета вычитаем комиссию, тк комиссия всегда списывается в Utility токене
-  // Для Utility ассета проверяем existentialDeposit
+  // Для Utility ассета вычитаем origin fee, тк origin fee всегда списывается в Utility ассете
+  // также проверяем existentialDeposit и дополнительно оставляем на балансе 10% от комисии
   if (currencyBalance.isUtility) {
-    const amountSubFee = new FPNumber(transferable).sub(new FPNumber(fee));
+    const amountSubFee = transferableFP.sub(new FPNumber(fee, precision));
     const amountSubFeeSubDestFee = isCrossChain ? amountSubFee.sub(destNetFeeFP) : amountSubFee;
     const amountSubFeeSubDestFeeSubED = checkED
       ? amountSubFeeSubDestFee.sub(existentialDeposit)
@@ -156,9 +159,9 @@ function calcTransferableSendMinusFee(
     return FPNumber.lt(amountSubFeeSubDestFeeSubED, FPNumber.ZERO) ? '0' : amountSubFeeSubDestFeeSubED.toString();
   }
 
-  // вычитаем CrossChain комиссию
+  // вычитаем CrossChain комиссию и проверяем existentialDeposit для ORML ассета
   if (isCrossChain) {
-    const amountSubDestFee = new FPNumber(transferable).sub(destNetFeeFP);
+    const amountSubDestFee = transferableFP.sub(destNetFeeFP);
     const amountSubDestFeeSubED = checkED ? amountSubDestFee.sub(existentialDeposit) : amountSubDestFee;
 
     return FPNumber.lt(amountSubDestFeeSubED, FPNumber.ZERO) ? '0' : amountSubDestFeeSubED.toString();

@@ -302,11 +302,10 @@ export default class State {
 
     if (this.ready) this.networkService.initNetworkApis();
 
-    this.updateServiceInfo();
-
     this.networkService.updateNetworks();
     this.fetchEvmBalance({});
     this.networkService.saveSelectedNetworks();
+    this.updateServiceInfo();
   }
 
   getActiveNetworksCurrentWallet(address: string) {

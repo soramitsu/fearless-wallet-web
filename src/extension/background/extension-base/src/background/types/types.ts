@@ -95,11 +95,6 @@ export interface SigningRequest {
   url: string;
 }
 
-export interface MobileSigningRequest {
-  id: string;
-  request: SignerPayloadRaw;
-}
-
 export interface MobileSignRequest extends Resolver<ResponseSigning> {
   id: string;
   request: SignerPayloadRaw;
@@ -265,14 +260,14 @@ export interface ApiProps {
   isEthereum: boolean;
 }
 export interface EvmApiProps {
-  api: EvmProvider;
+  api?: EvmProvider;
   apiRetry?: number;
   nodeIndex?: number;
   timeout: Record<string, number>;
 }
 export type FetchEvmBalancePayload = {
   _networks?: NetworkName[];
-  _ethereumAddress?: string;
+  ethereumAddress?: string;
   assetId?: string;
   force?: boolean;
 };

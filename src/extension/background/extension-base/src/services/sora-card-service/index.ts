@@ -1,4 +1,4 @@
-import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
+import { createSubscription, unsubscribe } from '@extension-base/services';
 import { BehaviorSubject } from 'rxjs';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
 import { getId } from '@extension-base/utils/utils';

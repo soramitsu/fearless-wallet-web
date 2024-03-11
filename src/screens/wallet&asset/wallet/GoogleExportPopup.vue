@@ -11,7 +11,7 @@
       <template v-if="isAwaiting">
         <Icon icon="lock-green" className="icon" iconColor="success" />
 
-        <div class="text row">{{ popupMessage }}</div>
+        <div class="text row" data-testid="popupMessage">{{ popupMessage }}</div>
 
         <ValidatedInput
           v-model="password"
@@ -19,6 +19,7 @@
           size="big"
           class="password-input row"
           errorDescriptions="common.invalidPassword"
+          data-testid="passwordGoogle"
           :isError="isErrorPassword"
           :showPassword="true"
         />
@@ -31,9 +32,9 @@
       <div v-if="isFinishedUpload">
         <Icon icon="check" className="icon" iconColor="success" />
 
-        <div class="saved">{{ $t('addWallet.google.saved') }}</div>
+        <div class="saved" data-testid="googleSaved">{{ $t('addWallet.google.saved') }}</div>
 
-        <span class="descriptions">{{ $t('wallet.googleExportSuccess') }}</span>
+        <span class="descriptions" data-testid="googleDescriptions">{{ $t('wallet.googleExportSuccess') }}</span>
       </div>
 
       <FButton
@@ -45,6 +46,7 @@
         type="primary"
         :disabled="disabledButton"
         :border="false"
+        data-testid="confirmPassword"
         @click="onConfirm"
       />
     </div>

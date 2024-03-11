@@ -1,6 +1,6 @@
 import { NftFilters, type Network } from 'alchemy-sdk';
 import { Subject } from 'rxjs';
-import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
+import { createSubscription, unsubscribe } from '@extension-base/services';
 import AlchemyNftController from '@extension-base/services/nft-service/handlers/AlchemyNftSdk';
 import { PROD_NFT_NETWORKS } from '@extension-base/services/nft-service/consts';
 import { storage } from '@extension-base/stores/Storage';
@@ -12,7 +12,7 @@ import {
   type RequestNftTransfer,
   type ResponseNftTransfer,
 } from '@extension-base/background/types/types';
-import { getBalanceItem, getEthereumAddress, getSubstrateAddress } from '@extension-base/background/utils/utils';
+import { getBalanceItem } from '@extension-base/background/utils/utils';
 import { FPNumber } from '@sora-substrate/util';
 import { calcEvmFees } from '@extension-base/api/evm/transfer';
 import type {
@@ -73,7 +73,7 @@ export class NftService {
   async fetchNfts(address?: string) {
     if (!address) return;
 
-    this.getNftForAllNetworks(address);
+    this.getNftForActiveNetworks(address);
   }
 
   excludeFilters(address: string) {
@@ -92,7 +92,7 @@ export class NftService {
   }
 
   availableNftsForContract({ network, contract, address, pageKey }: AvailableNftPayload) {
-    const net = this.state.getNetworkByKey(network);
+    const net = this.state.networkService.getNetworkByKey(network);
     const key = PROD_NFT_NETWORKS[+net.chainId];
 
     if (!this.sdks[key])
@@ -104,8 +104,8 @@ export class NftService {
     return this.sdks[key].getCollectionPage(contract, address, pageKey);
   }
 
-  async getNftForAllNetworks(address: string, force = false) {
-    const substrateAddress = getSubstrateAddress(address, this.state);
+  async getNftForActiveNetworks(address: string, force = false) {
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
     const activeNetworks = this.state.getActiveNetworksCurrentWallet(substrateAddress);
     const chainIds = Array.from(activeNetworks).map(({ chainId }) => chainId);
     const networks = Object.keys(this.sdks);
@@ -113,7 +113,7 @@ export class NftService {
     for (const network of networks) {
       const sdk = this.sdks[network];
 
-      if (!sdk || chainIds.some((el) => el !== sdk.chainId)) continue;
+      if (!sdk || chainIds.every((el) => el !== sdk.chainId)) continue;
 
       const timespan = sdk.timespan;
 
@@ -125,11 +125,11 @@ export class NftService {
 
           this.nftMap[address][sdk.chainId] = JSON.parse(JSON.stringify(networkNfts)) as NftState;
 
-          this.state.currentAccount.then((account) => {
-            if (account && account.ethereumAddress === address) {
-              this.nftSubject.next(this.nftMap[address]);
-            }
-          });
+          const account = this.state.currentAccount;
+
+          if (account && account.ethereumAddress === address) {
+            this.nftSubject.next(this.nftMap[address]);
+          }
         });
       }
     }
@@ -145,9 +145,8 @@ export class NftService {
     if (isChanged) {
       this.hideSettings[address] = settings;
 
-      this.state.currentAccount.then((account) => {
-        if (account) this.getNftForAllNetworks(account.ethereumAddress, true);
-      });
+      const currentAccount = this.state.currentAccount;
+      if (currentAccount) this.getNftForActiveNetworks(currentAccount.ethereumAddress, true);
     }
 
     storage.set({ nftSettings: this.hideSettings });
@@ -200,10 +199,10 @@ export class NftService {
       }
 
       txResponse.wait().then(() => {
-        this.getNftForAllNetworks(from, true);
+        this.getNftForActiveNetworks(from, true);
       });
 
-      const substrateAddress = getSubstrateAddress(tx.from, this.state);
+      const substrateAddress = this.state.keyringService.getSubstrateAddress(tx.from);
 
       savePass(substrateAddress, tx.from, tx.isSavePass, false);
 
@@ -225,11 +224,12 @@ export class NftService {
 
   async checkSend({ from, tokenId, network, contract: contractAddress, type }: NftTx): Promise<CheckNftResponse> {
     const api = this.state.getEvmApi(network)?.api;
-    const networkJson = this.state.getNetworkByKey(network);
+    if (!api) throw new Error('API not found');
+    const networkJson = this.state.networkService.getNetworkByKey(network);
     const utilityAsset = networkJson.assets.find((el) => el.isUtility)!;
     const contract = await getContract(contractAddress, api, type === 'ERC721' ? 'ERC721' : 'ERC1155');
     const feeData = await api.getFeeData();
-    const substrateAddress = getSubstrateAddress(from, this.state);
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
 
     const accountBalance = this.state.balanceService.getAccountBalance(substrateAddress);
     const tokenBalance = accountBalance.find((el) => el.symbol === utilityAsset.symbol && el.relayChain === 'ethereum');
@@ -280,13 +280,12 @@ export class NftService {
   }
 
   async publishNfts() {
-    const account = await this.state.currentAccount;
+    const account = this.state.currentAccount;
 
     if (account && account.ethereumAddress) {
       const nfts = this.nftMap[account.ethereumAddress];
 
       if (nfts) this.nftSubject.next(this.nftMap[account.ethereumAddress]);
-      if (this.isNeedUpdate(account.ethereumAddress)) this.fetchNfts(account.ethereumAddress);
 
       return;
     }
@@ -308,7 +307,7 @@ export class NftService {
       subscription.unsubscribe();
     });
 
-    const account = await this.state.currentAccount;
+    const account = this.state.currentAccount;
 
     if (!account || !account.ethereumAddress || !this.nftMap[account.ethereumAddress]) return {};
 
@@ -316,7 +315,7 @@ export class NftService {
   }
 
   deleteSavedNfts(address: string) {
-    const ethereumAddress = getEthereumAddress(address, this.state);
+    const ethereumAddress = this.state.keyringService.getEthereumAddress(address);
 
     delete this.nftMap[ethereumAddress];
   }

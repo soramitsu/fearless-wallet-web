@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
 import type { FetchHistory, AugmentedNetworksContext, ToggleFavorite } from '@/store';
@@ -10,7 +11,6 @@ import { fetchHistory } from '@/subquery/fetchingHistory';
 import { URLS } from '@/consts/urls';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { toggleFavoriteNetwork } from '@/extension/messaging';
-import { isRequireEvmAPI } from '@/extension/background/extension-base/src/background/utils/utils';
 import { isSora } from '@/helpers';
 
 export enum ActionTypes {
@@ -72,13 +72,14 @@ const actions: ActionTree<State, State> & Actions = {
 
     const history = await fetchHistory(url, formattedAddress, type, networkName, searchedAsset.id, isUtility);
 
-    commit(MutationTypes.SET_HISTORY, {
-      networkName: networkName.toLowerCase(),
-      walletAddress: BaseApi.formatAddress(wallet),
-      history,
-      assetId,
-      serviceType: type,
-    });
+    if (history)
+      commit(MutationTypes.SET_HISTORY, {
+        networkName: networkName.toLowerCase(),
+        walletAddress: BaseApi.formatAddress(wallet),
+        history,
+        assetId,
+        serviceType: type,
+      });
   },
 
   async [ActionTypes.TOGGLE_FAVORITE_NETWORK]({ state, commit }, { address, networkName }): Promise<boolean> {

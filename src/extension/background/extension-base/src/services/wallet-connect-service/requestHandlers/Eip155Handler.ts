@@ -79,7 +79,7 @@ export default class Eip155RequestHandler {
 
       const chainId = _chainId.split(':')[1];
 
-      const [networkKey, chainInfo] = this.state.findNetworkKeyByChainId(chainId);
+      const [networkKey, chainInfo] = this.state.networkService.findNetworkKeyByChainId(chainId);
 
       if (!networkKey || !chainInfo) {
         throw new Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + address);

@@ -3,8 +3,8 @@
     <ContentForm class="direction-form">
       <div class="direction">
         <div class="column left-column">
-          <div class="amount">{{ sendAmountCut }}</div>
-          <div class="price">{{ sendValueCut }}</div>
+          <div class="amount" data-testid="sendAmount">{{ sendAmountCut }}</div>
+          <div class="price" data-testid="sendPrice">{{ sendValueCut }}</div>
         </div>
 
         <div class="hr"></div>
@@ -14,8 +14,8 @@
         </div>
 
         <div class="column right-column">
-          <div class="amount">{{ receiveAmountCut }}</div>
-          <div class="price">{{ receiveValueCut }}</div>
+          <div class="amount" data-testid="receiveAmount">{{ receiveAmountCut }}</div>
+          <div class="price" data-testid="receivePrice">{{ receiveValueCut }}</div>
         </div>
       </div>
     </ContentForm>

@@ -1,21 +1,41 @@
 import { keyring } from '@polkadot/ui-keyring';
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import { getSubstrateAddress, isEthereumNetwork } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
-import type State from '@extension-base/background/handlers/State';
+import { BehaviorSubject } from 'rxjs';
+import CurrentAccountStore, { type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import { type EventService } from '@extension-base/services';
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-keyring/types';
 import type { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
 import { isSameString } from '@/helpers';
-import { type Wallet } from '@/store/accounts/types';
 
 export class KeyringService {
-  constructor(readonly state: State) {}
+  private readonly currentAccountStore = new CurrentAccountStore();
+  readonly currentAccountSubject = new BehaviorSubject<CurrentAccountState>(null);
+
+  constructor(eventService: EventService) {
+    eventService.waitCryptoReady
+      .then(() => {
+        this.currentAccountStore.get('CurrentAccountInfo', (rs) => {
+          rs && this.currentAccountSubject.next(rs);
+        });
+      })
+      .catch(console.error);
+  }
 
   get addressesSubjectValue() {
     return keyring.addresses.subject.value;
+  }
+
+  get currentAccount(): CurrentAccountState {
+    return this.currentAccountSubject.value;
+  }
+
+  setCurrentAccount(currentAccountData: CurrentAccountState) {
+    this.currentAccountSubject.next(currentAccountData);
+    this.currentAccountStore.set('CurrentAccountInfo', currentAccountData);
   }
 
   loadAll(store: KeyringStore, type: KeypairType = 'sr25519') {
@@ -27,6 +47,14 @@ export class KeyringService {
 
   getAllAccounts() {
     return [...this.getAccounts(), ...this.getAddresses()];
+  }
+
+  getAllSubstrateAccounts() {
+    return this.getAllAccounts().filter(({ address }) => !isEthereumAddress(address));
+  }
+
+  getAllEthereumAccounts() {
+    return this.getAllAccounts().filter(({ address }) => isEthereumAddress(address));
   }
 
   getAccounts() {
@@ -125,7 +153,7 @@ export class KeyringService {
 
     const { address } = pair;
     const isEthereum = isEthereumAddress(address);
-    const substrateAddress = getSubstrateAddress(address, this.state);
+    const substrateAddress = this.getSubstrateAddress(address);
 
     const substratePair = isEthereum ? this.getPair(substrateAddress) : pair;
     const ethereumAddress = isEthereum ? address : (substratePair?.meta.ethereumAddress as string | undefined);
@@ -177,24 +205,31 @@ export class KeyringService {
     keyring.createFromUri(suri, meta, keypairType);
   }
 
-  formatAddress({ address, ethereumAddress }: Wallet, networkName: string = 'westend'): string {
-    const isEthereumNet = isEthereumNetwork(networkName);
+  getSubstrateAccounts() {
+    const accounts = this.getAccounts().filter((el) => !isEthereumAddress(el.address));
+    const addresses = this.getAddresses();
 
-    if (isEthereumNet) return ethereumAddress;
-
-    const network = this.state.networksGithub.find(({ name }) => isSameString(name, networkName));
-    const prefix = network?.addressPrefix;
-
-    // the only case for try/catch
-    // if the user used ethereum account instead of a substratum account(via json or private key)
-    try {
-      return this.encodeAddress(address, prefix);
-    } catch {
-      return ethereumAddress;
-    }
+    return [...accounts, ...addresses];
   }
 
-  isSameAddress(wallet1: Wallet, wallet2: Wallet): boolean {
-    return this.state.keyringService.formatAddress(wallet1) === this.state.keyringService.formatAddress(wallet2);
+  getSubstrateAddress(address: string) {
+    if (!isEthereumAddress(address)) return address;
+
+    const accounts = this.getAllAccounts();
+
+    const account = accounts.find(
+      ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
+    );
+
+    return account?.address ?? address;
+  }
+
+  getEthereumAddress(address: string) {
+    if (isEthereumAddress(address)) return address;
+
+    const accounts = this.getAllAccounts();
+    const account = accounts.find(({ address: _address }) => _address === address);
+
+    return (account?.meta.ethereumAddress as string) ?? '';
   }
 }

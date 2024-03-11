@@ -27,10 +27,14 @@ $secondary-btn-color: hsl(0, 0%, 16%);
 $default-border: 1px solid $default-background-color;
 $secondary-border: 1px solid $secondary-background-color;
 
-$default-border: 1px solid $default-background-color;
-$secondary-border: 1px solid $secondary-background-color;
-
-$big-clip-path-left-top-and-right-bottom: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+$big-clip-path-left-top-and-right-bottom: polygon(
+  20px 0,
+  100% 0,
+  100% calc(100% - 20px),
+  calc(100% - 20px) 100%,
+  0 100%,
+  0 20px
+);
 $big-clip-path-left-top: polygon(20px 0, 100% 0, 100% calc(100% - 20px), 100% 100%, 0 100%, 0 20px);
 
 $medium-clip-path-left-top-and-right-bottom: polygon(

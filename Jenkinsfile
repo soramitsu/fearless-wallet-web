@@ -21,7 +21,7 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_SEPOLIA_KEY', variable: 'FL_BLAST_API_SEPOLIA_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_GOERLI_KEY', variable: 'FL_BLAST_API_GOERLI_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_POLYGON_KEY', variable: 'FL_BLAST_API_POLYGON_KEY'],
-    [$class: 'StringBinding', credentialsId: 'FL_ALCHEMY_API_ETHEREUM_KEY', variable: 'FL_ALCHEMY_API_ETHEREUM_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_WEB_ALCHEMY_API_ETHEREUM_KEY', variable: 'FL_WEB_ALCHEMY_API_ETHEREUM_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_MOONBEAM_KEY', variable: 'FL_BLAST_API_MOONBEAM_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_MOONRIVER_KEY', variable: 'FL_BLAST_API_MOONRIVER_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_OKTC_MAINNET_KEY', variable: 'FL_BLAST_API_OKTC_MAINNET_KEY'],

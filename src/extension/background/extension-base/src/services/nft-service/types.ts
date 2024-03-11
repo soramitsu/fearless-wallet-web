@@ -18,6 +18,7 @@ export type NftCollection = {
   network: string;
   address: string;
   total?: string;
+  isSpam?: boolean;
   ownedNfts: FearlessNft[];
 };
 

@@ -2,7 +2,7 @@
   <div class="hint">
     <Icon :icon="iconName" :className="getClasses" />
 
-    <span class="info-text" :class="getSize">{{ tText }}</span>
+    <span class="info-text" data-testid="infoText" :class="getSize">{{ tText }}</span>
   </div>
 </template>
 

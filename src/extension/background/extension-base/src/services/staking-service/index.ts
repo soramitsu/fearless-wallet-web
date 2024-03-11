@@ -1,7 +1,7 @@
 import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
 import { BasicTxErrorCode, type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
-import { getEthereumAddress, getSubstrateAddress, getUtilityProps } from '@extension-base/background/utils/utils';
+import { getUtilityProps } from '@extension-base/background/utils/utils';
 import type State from '@extension-base/background/handlers/State';
 import type {
   RequestBond,
@@ -151,8 +151,8 @@ export class StakingService {
     network: NetworkName,
     myValidators: string[]
   ): Promise<ValidatorStatuses> {
-    const substrateAddress = getSubstrateAddress(_address, this.state);
-    const ethereumAddress = getEthereumAddress(_address, this.state);
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(_address);
+    const ethereumAddress = this.state.keyringService.getEthereumAddress(_address);
     const address = this.state.formatAddress({ address: substrateAddress, ethereumAddress }, network);
     const max = this.maxNominatorRewardedPerValidator();
     const activeEra = await apiSora.staking.getCurrentEra();

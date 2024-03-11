@@ -10,7 +10,7 @@ export default class AlchemyNftController {
 
   constructor(private network: Network, chainId: string, nftService: NftService) {
     this.sdk = new Alchemy({
-      apiKey: process.env.FL_ALCHEMY_API_ETHEREUM_KEY,
+      apiKey: process.env.FL_WEB_ALCHEMY_API_ETHEREUM_KEY,
       network,
     });
     this.nftService = nftService;
@@ -91,6 +91,7 @@ export default class AlchemyNftController {
         ownedCollections[address] = {
           name: collection.openSeaMetadata.collectionName ?? collection.name ?? collection.displayNft.name ?? '',
           address: collection.address,
+          isSpam: collection.isSpam,
           image: collection.openSeaMetadata.imageUrl ?? collection.image.cachedUrl,
           network: network?.name ?? this.network,
           total: collection.totalSupply,

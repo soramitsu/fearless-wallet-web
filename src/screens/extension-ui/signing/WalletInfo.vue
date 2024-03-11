@@ -16,22 +16,20 @@
   </FCorners>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 import { cut } from '@/helpers';
 
-@Component
-export default class WalletInfo extends Vue {
-  @Prop(String) address!: string;
-  @Prop(String) name!: string;
+type Props = {
+  address: string;
+  name: string;
+};
+const props = defineProps<Props>();
 
-  saveToClipboard() {
-    navigator.clipboard.writeText(this.address);
-  }
+const cutAddress = computed(() => cut(props.address, 14));
 
-  get cutAddress() {
-    return cut(this.address, 14);
-  }
+function saveToClipboard() {
+  navigator.clipboard.writeText(props.address);
 }
 </script>
 

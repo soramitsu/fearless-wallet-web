@@ -599,8 +599,8 @@ export default class Extension extends FWExtensionBase {
     this.state.updateCurrentTabsUrl(tabs);
   }
 
-  initAuth({ type, wallet }: GoogleAuthTypes): void {
-    this.state.googleService.authExtension(type, wallet);
+  initAuth({ type, wallet }: GoogleAuthTypes): Promise<void> {
+    return this.state.googleService.authExtension(type, wallet);
   }
 
   async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse | null> {

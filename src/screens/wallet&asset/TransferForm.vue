@@ -630,12 +630,18 @@ export default class TransferForm extends Vue {
     // этот кейс проверяется в this.isValidSendAsset, когда sendAsset это utility asset для сети
     if (this.sendAssetName?.toLowerCase() === this.utilityAssetName) return true;
 
+    const precision = this.currencyBalance?.precision;
+
+    const ed = FPNumber.fromCodecValue(this.currencyBalance?.existentialDeposit ?? '0', precision).mul(
+      new FPNumber(1.1, precision)
+    );
+
     const checkValue = this.isCrossChain
-      ? new FPNumber(this.syncedFee).add(FPNumber.fromCodecValue(this.currencyBalance?.existentialDeposit ?? '0'))
-      : new FPNumber(this.syncedFee);
+      ? new FPNumber(this.syncedFee, precision).add(ed)
+      : new FPNumber(this.syncedFee, precision);
 
     // проверяем, что utility balance достаточно на оплату fee и ED
-    return FPNumber.gte(new FPNumber(this.calcTransferableUtility()), checkValue);
+    return FPNumber.gte(new FPNumber(this.calcTransferableUtility(), precision), checkValue);
   }
 
   get transactionAddress() {
@@ -833,11 +839,10 @@ export default class TransferForm extends Vue {
 
     const setMax = async () => {
       const { estimateFee } = await this.verifyTx(this.transferableAmount.toString());
+      const transferable = this.calcTransferableSendMinusFee(estimateFee!);
 
-      const transferableCountAssets = this.calcTransferableSendMinusFee(estimateFee!);
-
-      this.syncedAmount = transferableCountAssets.toString();
-      this.syncedValue = getCostOfAssets(transferableCountAssets, this.assetPrice).toString();
+      this.syncedAmount = transferable.toString();
+      this.syncedValue = getCostOfAssets(transferable, this.assetPrice).toString();
     };
 
     if (this.syncedFee === '0') {
@@ -883,7 +888,7 @@ export default class TransferForm extends Vue {
       from: this.transactionAddress,
       to,
       relayChain: this.currency?.relayChain,
-      amount: new FPNumber(amount).add(new FPNumber(this.syncedDestNetFee)).toString(), // добавляем CrossChain комиссию, потому что она списывается из суммы amount`а
+      amount,
       assetId: this.syncedAssetId,
     });
 

@@ -72,13 +72,14 @@ const actions: ActionTree<State, State> & Actions = {
 
     const history = await fetchHistory(url, formattedAddress, type, networkName, searchedAsset.id, isUtility);
 
-    commit(MutationTypes.SET_HISTORY, {
-      networkName: networkName.toLowerCase(),
-      walletAddress: BaseApi.formatAddress(wallet),
-      history,
-      assetId,
-      serviceType: type,
-    });
+    if (history)
+      commit(MutationTypes.SET_HISTORY, {
+        networkName: networkName.toLowerCase(),
+        walletAddress: BaseApi.formatAddress(wallet),
+        history,
+        assetId,
+        serviceType: type,
+      });
   },
 
   async [ActionTypes.TOGGLE_FAVORITE_NETWORK]({ state, commit }, { address, networkName }): Promise<boolean> {

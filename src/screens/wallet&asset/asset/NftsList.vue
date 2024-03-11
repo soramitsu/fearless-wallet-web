@@ -12,7 +12,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { NftCollection } from '@extension-base/services/nft-service/types';
 import NftCollectionItem from '@/screens/wallet&asset/asset/NftCollectionItem.vue';
@@ -28,18 +28,24 @@ const nfts = computed<NftCollection[]>(() => store.getters.nfts);
 
 const activeNetworkForSelectedWallet = computed<NetworkJson[]>(() => store.getters.activeNetworkForSelectedWallet);
 
-const filteredNfts = computed(() =>
-  nfts.value.filter(({ network, name }) =>
+const filteredNfts = computed(() => {
+  return nfts.value.filter(({ network, name }) =>
     activeNetworkForSelectedWallet.value.some((net) => {
       return net.name === network && name?.toLowerCase()?.includes(props.filterValue.toLowerCase());
     })
-  )
-);
+  );
+});
+const selectedNetwork = computed<string>(() => store.getters.selectedNetwork);
+const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+
+watch([selectedWallet, selectedNetwork], () => {
+  setTimeout(() => fetchNfts(selectedWallet.value.ethereumAddress), 2000);
+});
 const isEmpty = computed(() => !Object.keys(filteredNfts.value).length);
 const containerClass = computed(() => (isEmpty.value ? 'no-nfts' : 'nft-list'));
+
 onMounted(() => {
-  const selectedWallet: SelectedWallet = store.getters.selectedWallet;
-  fetchNfts(selectedWallet.ethereumAddress);
+  fetchNfts(selectedWallet.value.ethereumAddress);
 });
 const onClose = () => emit('toggleAssetsManagementForm', false);
 </script>

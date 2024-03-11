@@ -15,10 +15,10 @@
 <script lang="ts" setup>
 import { onMounted, ref, computed } from 'vue';
 import { useRouter } from 'vue-router/composables';
+import { type AuthUrlInfo } from '@extension-base/background/types';
 import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { useStore } from '@/store';
 import { Components } from '@/router/routes';
-import { type AuthUrlInfo } from '@/extension/background/extension-base/src/background/types';
 
 const store = useStore();
 const router = useRouter();

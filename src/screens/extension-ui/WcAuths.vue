@@ -14,8 +14,8 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { useRouter } from 'vue-router/composables';
-import type { WalletConnectSessions } from '@/extension/background/extension-base/src/services/wallet-connect-service/types';
-import type { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
+import type { WalletConnectSessions } from '@extension-base/services/wallet-connect-service/types';
+import type { AccountJson } from '@extension-base/background/types/types';
 import WalletConnectAuthItem from '@/screens/walletConnect/WalletConnectAuthItem.vue';
 import { useStore } from '@/store';
 import { Components } from '@/router/routes';

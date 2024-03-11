@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { getSubstrateAddress, isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import type {
   CachedUnlocks,
   RequestAccountExport,
@@ -20,9 +20,8 @@ import { type DerivationPath } from '@/interfaces';
 export default class FWExtensionBase {
   protected token: string;
   public cachedUnlocks: CachedUnlocks;
-  protected state: State;
 
-  constructor(state: State) {
+  constructor(protected state: State) {
     this.cachedUnlocks = {};
     this.state = state;
     this.token = '';
@@ -57,18 +56,18 @@ export default class FWExtensionBase {
     if (meta.ethereumAddress) {
       const cb = () =>
         Object.keys(this.state.networkMap).forEach((network) => {
-          if (isRequireEvmAPI(network)) this.state.refreshWeb3Api(network);
+          if (isRequireEvmAPI(network)) this.state.networkService.evmApiHandler.refreshEvmApi(network);
         });
 
-      this.state.getCurrentAccount((account) =>
+      if (this.state.currentAccount) {
         this.state.setCurrentAccount(
           {
-            ...account!,
+            ...this.state.currentAccount,
             ethereumAddress: (meta.ethereumAddress as string) ?? '',
           },
           cb
-        )
-      );
+        );
+      }
 
       this.state.updateServiceInfo();
     }
@@ -116,7 +115,7 @@ export default class FWExtensionBase {
   }
 
   signingIsLocked({ address }: RequestSigningIsLocked): ResponseSigningIsLocked {
-    const substrateAddress = getSubstrateAddress(address, this.state);
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
     const pair = this.state.keyringService.getPair(substrateAddress);
 
     assert(pair, 'Unable to find pair');

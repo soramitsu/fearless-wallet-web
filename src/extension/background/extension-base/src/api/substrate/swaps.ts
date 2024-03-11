@@ -55,7 +55,7 @@ export async function createSwap(
   state: State
 ): Promise<CreateSwapResult> {
   const { assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage, marketType } = options;
-  const currentAccount = await state.currentAccount;
+  const currentAccount = state.currentAccount;
 
   const tokenBalanceA = state.balanceService
     .getAccountBalance(currentAccount!.address)

@@ -1,6 +1,6 @@
 import type { NetworkJson } from '@extension-base/types';
 
-export function _getSubstrateGenesisHash(chainInfo: NetworkJson) {
+export function getSubstrateGenesisHash(chainInfo: NetworkJson) {
   return chainInfo.genesisHash || '';
 }
 
@@ -26,7 +26,7 @@ export const findChainInfoByHalfGenesisHash = (
 
   for (const chainInfo of Object.values(chainMap)) {
     if (
-      _getSubstrateGenesisHash(chainInfo)
+      getSubstrateGenesisHash(chainInfo)
         ?.toLowerCase()
         .substring(2, 2 + 32) === halfGenesisHash.toLowerCase()
     ) {

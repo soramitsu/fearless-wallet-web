@@ -3,10 +3,10 @@ import {
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
+import { type NetworkJson } from '@extension-base/types';
 import { type ChainData, type SessionProposalNamespaces } from '@/screens/walletConnect/types';
-import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 import { useStore } from '@/store';
-import { _getSubstrateGenesisHash } from '@/extension/background/extension-base/src/services/chain-service/helpers';
+import { getSubstrateGenesisHash } from '@/extension/background/extension-base/src/services/network-service/helpers';
 
 export const findChainInfoByHalfGenesisHash = (
   chainMap: NetworkJson[],
@@ -18,7 +18,7 @@ export const findChainInfoByHalfGenesisHash = (
 
   for (const chainInfo of chainMap) {
     if (
-      _getSubstrateGenesisHash(chainInfo)
+      getSubstrateGenesisHash(chainInfo)
         ?.toLowerCase()
         .substring(2, 2 + 32) === halfGenesisHash.toLowerCase()
     ) {

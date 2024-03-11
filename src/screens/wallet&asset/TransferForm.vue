@@ -82,6 +82,7 @@
                 class="row"
                 icon="rotate"
                 placeholder="assets.destNet"
+                data-testid="destNet"
                 :isActiveRotate="showDestNetPopup"
                 @click="toggleValue('showDestNetPopup')"
               />
@@ -251,6 +252,7 @@ export default class TransferForm extends Vue {
   readonly isPopup = BaseApi.useIsPopup();
 
   timeoutSubscription: NodeJS.Timeout | undefined;
+  timeoutSetMax: NodeJS.Timeout | undefined;
   showSelectedAssetPopup = false;
   showSelectNetworkPopup = false;
   showDestNetPopup = false;
@@ -427,6 +429,7 @@ export default class TransferForm extends Vue {
     }
 
     if (this.estimateFeeError) return 'estimateFeeError';
+
     if (this.isSameAddress) return 'assets.isSameAddress';
 
     if (!this.isValidRecipientAddress && this.syncedRecipient !== '') return 'assets.incorrectAddress';
@@ -611,7 +614,14 @@ export default class TransferForm extends Vue {
   }
 
   get isValidSendAsset() {
-    return isValidAmountAsset(this.currency, this.syncedNetwork, this.syncedFee ?? '0', this.syncedAmount);
+    return isValidAmountAsset(
+      this.currency,
+      this.syncedNetwork,
+      this.syncedFee ?? '0',
+      this.syncedAmount,
+      this.isCrossChain, // проверяем ED для crossChain транзакций
+      this.syncedDestNetFee ?? '0'
+    );
   }
 
   get isValidTransferByUtility() {
@@ -620,8 +630,18 @@ export default class TransferForm extends Vue {
     // этот кейс проверяется в this.isValidSendAsset, когда sendAsset это utility asset для сети
     if (this.sendAssetName?.toLowerCase() === this.utilityAssetName) return true;
 
-    // проверяем, что utility достаточно на оплату комиссии
-    return FPNumber.gte(new FPNumber(this.calcTransferableUtility()), new FPNumber(this.syncedFee));
+    const precision = this.currencyBalance?.precision;
+
+    const ed = FPNumber.fromCodecValue(this.currencyBalance?.existentialDeposit ?? '0', precision).mul(
+      new FPNumber(1.1, precision)
+    );
+
+    const checkValue = this.isCrossChain
+      ? new FPNumber(this.syncedFee, precision).add(ed)
+      : new FPNumber(this.syncedFee, precision);
+
+    // проверяем, что utility balance достаточно на оплату fee и ED
+    return FPNumber.gte(new FPNumber(this.calcTransferableUtility(), precision), checkValue);
   }
 
   get transactionAddress() {
@@ -694,7 +714,7 @@ export default class TransferForm extends Vue {
   }
 
   @Watch('syncedDestNet')
-  async cleatRecipient() {
+  async clearRecipient() {
     this.$nextTick(() => {
       if (!this.isValidRecipientAddress) this.setRecipient();
     });
@@ -705,32 +725,37 @@ export default class TransferForm extends Vue {
   @Watch('syncedDestNet')
   @Watch('syncedRecipient')
   @Watch('syncedAmount')
-  async calculateEstimates() {
+  calculateFee() {
     if (!this.currency) return;
 
     clearTimeout(this.timeoutSubscription);
-    this.timeoutSubscription = setTimeout(async () => {
-      try {
-        const { estimateFee, destEstimateFee, errors } = await this.verifyTx();
 
-        if (errors) {
-          errors.forEach((error) => {
-            if (error.code === TransferErrorCode.TRANSFER_ERROR) this.estimateFeeError = true;
-            else this.estimateFeeError = false;
-          });
-        }
-
-        this.syncedFee = estimateFee ?? '0';
-        this.syncedDestNetFee = destEstimateFee ?? '0';
-      } catch (e) {
-        this.syncedFee = '0';
-        this.syncedDestNetFee = '0';
-      }
-    }, 2000);
+    this.timeoutSubscription = setTimeout(() => this.calculateEstimates(), 2000);
   }
 
   created() {
     this.calculateEstimates();
+  }
+
+  async calculateEstimates() {
+    if (!this.currency) return;
+
+    try {
+      const { estimateFee, destEstimateFee, errors } = await this.verifyTx();
+
+      if (errors) {
+        errors.forEach((error) => {
+          if (error.code === TransferErrorCode.TRANSFER_ERROR) this.estimateFeeError = true;
+          else this.estimateFeeError = false;
+        });
+      }
+
+      this.syncedFee = estimateFee ?? '0';
+      this.syncedDestNetFee = destEstimateFee ?? '0';
+    } catch (e) {
+      this.syncedFee = '0';
+      this.syncedDestNetFee = '0';
+    }
   }
 
   toggleValue(value: 'showSelectedAssetPopup' | 'showSelectNetworkPopup' | 'showDestNetPopup') {
@@ -800,18 +825,31 @@ export default class TransferForm extends Vue {
   }
 
   calcTransferableSendMinusFee(fee: string) {
-    return calcTransferableSendMinusFee(this.currency, this.syncedNetwork, fee, this.syncedDestNetFee);
+    return calcTransferableSendMinusFee(
+      this.currency,
+      this.syncedNetwork,
+      fee,
+      this.isCrossChain, // проверяем ED для crossChain транзакций
+      this.syncedDestNetFee
+    );
   }
 
   async setMax() {
     if (!this.currency) return;
 
-    const { estimateFee } = await this.verifyTx(this.transferableAmount.toString());
+    const setMax = async () => {
+      const { estimateFee } = await this.verifyTx(this.transferableAmount.toString());
+      const transferable = this.calcTransferableSendMinusFee(estimateFee!);
 
-    const transferableCountAssets = this.calcTransferableSendMinusFee(estimateFee!);
+      this.syncedAmount = transferable.toString();
+      this.syncedValue = getCostOfAssets(transferable, this.assetPrice).toString();
+    };
 
-    this.syncedAmount = transferableCountAssets.toString();
-    this.syncedValue = getCostOfAssets(transferableCountAssets, this.assetPrice).toString();
+    if (this.syncedFee === '0') {
+      clearTimeout(this.timeoutSetMax);
+
+      this.timeoutSetMax = setTimeout(setMax, 2000);
+    } else setMax();
   }
 
   toggleLoading(value = true) {
@@ -850,7 +888,7 @@ export default class TransferForm extends Vue {
       from: this.transactionAddress,
       to,
       relayChain: this.currency?.relayChain,
-      amount: new FPNumber(amount).add(new FPNumber(this.syncedDestNetFee)).toString(), // добавляем CrossChain комиссию, потому что она списывается из суммы amount`а
+      amount,
       assetId: this.syncedAssetId,
     });
 

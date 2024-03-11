@@ -1,7 +1,7 @@
 import { FPNumber } from '@sora-substrate/util';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { getAssetOptions, getPrecisionValue } from '@extension-base/api/substrate/utils';
-import { getUtilityProps, getSubstrateAddress } from '@extension-base/background/utils/utils';
+import { getUtilityProps } from '@extension-base/background/utils/utils';
 import { type BasicTxResponse, type TokenGroup, SignerType } from '@extension-base/background/types/types';
 import { type Extrinsic } from '@extension-base/api/substrate/utils/types';
 import type State from '@extension-base/background/handlers/State';
@@ -128,7 +128,7 @@ export async function makeTransfer({
 
   await api?.isReady;
 
-  const address = getSubstrateAddress(from, state);
+  const address = state.keyringService.getSubstrateAddress(from);
   const tokenBalance = state.balanceService.getAccountBalance(address).find(({ groupId }) => groupId === assetId)!;
 
   const extrinsic = createExtrinsicTransfer(

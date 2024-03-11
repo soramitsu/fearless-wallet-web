@@ -1,12 +1,10 @@
-import { logger as createLogger } from '@polkadot/util';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { storage } from '@extension-base/stores/Storage';
 import { Subject } from 'rxjs';
 import { type FPNumber } from '@sora-substrate/util';
-import { getMockCurrencies, getSubstrateAddress } from '@extension-base/background/utils/utils';
+import { getMockCurrencies } from '@extension-base/background/utils/utils';
 import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
 import { fetchBalance } from '@extension-base/api/substrate/balance';
-import type { Logger } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { BalanceMap, BalanceJson, ResponseTotalBalances } from '@extension-base/background/types/types';
@@ -17,14 +15,12 @@ import { getSummaryTransferableWalletBalance, getChangeWalletBalance } from '@/h
 import { type NetworkName } from '@/interfaces';
 
 export default class BalanceService {
-  private logger: Logger;
   private balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
   private state: State;
 
   constructor(state: State) {
     this.state = state;
-    this.logger = this.logger = createLogger('Balance-service');
   }
 
   getAccountBalance(address: string) {
@@ -38,11 +34,12 @@ export default class BalanceService {
   }
 
   public updateBalanceStore(networkKey: string, item: Partial<BalanceItem>) {
-    this.state.getCurrentAccount((currentAccountInfo) => {
-      if (currentAccountInfo)
-        this.updateBalanceStorage(networkKey, currentAccountInfo.address, item).catch((e) => console.warn(e));
-    });
+    const currentAccount = this.state.currentAccount;
+
+    if (currentAccount)
+      this.updateBalanceStorage(networkKey, currentAccount.address, item).catch((e) => console.warn(e));
   }
+
   // Balance
   private async updateBalanceStorage(chain: string, address: string, item: Partial<BalanceItem>) {
     if (item.state !== APIItemState.READY) return;
@@ -69,11 +66,9 @@ export default class BalanceService {
   }
 
   public async updateXorTotalBalance(muchTotal: FPNumber): Promise<void> {
-    const currentAccount = await this.state.currentAccount;
+    const address = this.state.getAccountAddress();
 
-    if (!currentAccount) return;
-
-    const { address } = currentAccount;
+    if (!address) return;
 
     const currencyIndex = this.balanceMap[address].findIndex(({ groupId }) => groupId === SORA_XOR_ASSET_ID);
 
@@ -83,9 +78,32 @@ export default class BalanceService {
     this.balanceMap[address][currencyIndex].balances[index].muchTotal = muchTotal.toString();
   }
 
+  public async updateUtilityED(networkName: NetworkName): Promise<void> {
+    const existentialDeposit =
+      this.state.networkService.substrateApiHandler.api[
+        networkName
+      ].api?.consts?.balances?.existentialDeposit.toString();
+
+    const allAccounts = this.state.keyringService.getAllSubstrateAccounts();
+
+    if (!allAccounts) return;
+
+    allAccounts.forEach(({ address }) => {
+      const currencyIndex = this.balanceMap[address].findIndex(({ balances }) =>
+        balances.find(({ isUtility, name }) => isUtility && name.toLowerCase() === networkName.toLowerCase())
+      );
+
+      const token = this.balanceMap[address][currencyIndex];
+      const index = token.balances.findIndex(({ name }) => name.toLowerCase() === networkName.toLowerCase());
+
+      this.balanceMap[address][currencyIndex].balances[index].existentialDeposit =
+        existentialDeposit?.toString() ?? '0';
+    });
+  }
+
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
     const { reserved, free, locked, frozen, total, transferable, state, id, relayChain, symbol } = item;
-    const accountAddress = getSubstrateAddress(address, this.state);
+    const accountAddress = this.state.keyringService.getSubstrateAddress(address);
     const balancesByAddress = this.balanceMap[accountAddress];
 
     const currencyIndex = balancesByAddress.findIndex(({ groupId, symbol: _symbol, relayChain: _relayChain }) => {
@@ -122,7 +140,13 @@ export default class BalanceService {
 
     this.updateBalanceStore(networkKey, item);
 
-    this.state.lazyNext('setBalanceItem', () => this.state.publishBalance());
+    this.state.lazyNext('setBalanceItem', () => this.publishBalance());
+  }
+
+  public async publishBalance() {
+    const balance = await this.getBalance();
+
+    return this.updateBalance(balance);
   }
 
   async getTotalBalances(): Promise<ResponseTotalBalances[]> {
@@ -136,7 +160,7 @@ export default class BalanceService {
             balances[address],
             prices,
             ALL_NETWORKS,
-            this.state.networksGithub
+            this.state.networkService.networksGithub
           );
 
           const change = getChangeWalletBalance(balances[address], prices, ALL_NETWORKS);
@@ -154,7 +178,7 @@ export default class BalanceService {
   }
 
   public async getBalance(): Promise<BalanceJson> {
-    const account = await this.state.currentAccount;
+    const account = this.state.currentAccount;
 
     if (account) {
       return new Promise((resolve) => {

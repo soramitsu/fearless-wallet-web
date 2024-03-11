@@ -108,7 +108,7 @@ export default class ReceiveForm extends Vue {
   }
 
   get assetNetworks() {
-    const currency = this.balances.find(({ groupId }) => groupId === this.selectedAssetId)!;
+    const currency = this.balances.find(({ groupId }) => groupId === this.selectedAssetId);
 
     return (
       currency?.balances

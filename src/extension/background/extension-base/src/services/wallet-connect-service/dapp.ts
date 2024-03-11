@@ -3,21 +3,33 @@ import { BehaviorSubject } from 'rxjs';
 import {
   PROJECT_ID_EXTENSION,
   SUBSTRATE_EVM_HALF_CHAINID,
+  WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_METADATA,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
-import { generateHalfGenesisHash } from '@extension-base/services/wallet-connect-service/utils';
+import {
+  generateHalfGenesisHash,
+  getEip155MessageAddress,
+  parseRequestParams,
+} from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
 import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import Provider from '@walletconnect/universal-provider';
 import { createSubscription } from '@extension-base/services';
+import {
+  EIP155_SIGNING_METHODS,
+  type AppSessionInitResponse,
+  type PairingSubjectType,
+  type WalletConnectTransactionRequest,
+} from '@extension-base/services/wallet-connect-service/types';
+import { formatJsonRpcError, formatJsonRpcResult } from '@json-rpc-tools/utils';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
 import type { SessionTypes } from '@walletconnect/types';
-import type { AppSessionInitResponse, PairingSubjectType } from '@extension-base/services/wallet-connect-service/types';
 import type { Port } from '@extension-base/background/types/types';
+import { isSameAddress } from '@/extension/background/extension-base/src/utils';
 
 export class WalletConnectDAppService {
   state: State;
@@ -65,6 +77,16 @@ export class WalletConnectDAppService {
     this.pairingSubject.next({ ...this.pairingSubject.value, [key]: data });
   }
 
+  public getSession(topic: string): SessionTypes.Struct {
+    const session = this.sessions.find((el) => el.topic === topic);
+
+    if (!session) {
+      throw new Error(getInternalError('MISMATCHED_TOPIC').message);
+    } else {
+      return session;
+    }
+  }
+
   async initPairing() {
     if (!this.app) await this.initApp();
 
@@ -73,6 +95,14 @@ export class WalletConnectDAppService {
       const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
 
       return [`polkadot:${halfChainId}`];
+    });
+
+    const optionalEvmChains = this.state.networkService.networksGithub.flatMap((network) => {
+      if (!isRequireEvmAPI(network.name) || !network.chainId) return [];
+
+      const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
+
+      return [`eip155:${halfChainId}`];
     });
 
     const pairing = await this.app?.client.connect({
@@ -86,12 +116,22 @@ export class WalletConnectDAppService {
           ],
           events: [],
         },
+        eip155: {
+          chains: ['eip155:1'],
+          methods: ['eth_sendTransaction', 'personal_sign'],
+          events: ['accountsChanged', 'chainChanged'],
+        },
       },
       optionalNamespaces: {
         polkadot: {
           methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
           chains: optionalChains,
           events: [],
+        },
+        eip155: {
+          chains: optionalEvmChains,
+          methods: ['eth_sendTransaction', 'personal_sign'],
+          events: ['accountsChanged', 'chainChanged'],
         },
       },
     });
@@ -126,13 +166,13 @@ export class WalletConnectDAppService {
 
     activePairing
       ?.approval()
-      .then((data) => this.onApproval(data, cb))
+      .then((data) => this.onAuthApproval(data, cb))
       .catch(() => cb({ status: false, message: 'rejected' }));
 
     return this.pairingSubject.value?.uri;
   }
 
-  onApproval(data: SessionTypes.Struct, cb: (data: PairingSubjectType) => void) {
+  onAuthApproval(data: SessionTypes.Struct, cb: (data: PairingSubjectType) => void) {
     const accounts = data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].accounts;
     const substrateAddress = accounts.find((el) => {
       const [, chainId] = el.split(':');
@@ -156,8 +196,10 @@ export class WalletConnectDAppService {
       ethereumAddressWC = ethereumAddress;
     }
 
-    const availableNetworks =
+    const availableSubstrateNetworks =
       data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].chains?.map((el) => el.split(':')[1]) ?? [];
+    const availableEvmNetworks =
+      data.namespaces[WALLET_CONNECT_EIP155_NAMESPACE].chains?.map((el) => el.split(':')[1]) ?? [];
     const isDuplicate = this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress);
 
     if (isDuplicate) {
@@ -177,7 +219,7 @@ export class WalletConnectDAppService {
         isMobile: true,
         wcTopic: data.topic,
         ethereumAddress: ethereumAddressWC,
-        chains: availableNetworks,
+        chains: [...availableSubstrateNetworks, ...availableEvmNetworks],
       },
       'address'
     );
@@ -269,5 +311,111 @@ export class WalletConnectDAppService {
     });
 
     return result ?? { signature: '0x' as HexString };
+  }
+
+  private handleError(topic: string, id: number, e: unknown) {
+    let message = (e as Error).message;
+
+    if (message.includes('User Rejected Request')) {
+      message = getSdkError('USER_REJECTED').message;
+    }
+
+    this.state.walletConnectService
+      .responseRequest({
+        topic,
+        response: formatJsonRpcError(id, message),
+      })
+      .catch(console.error);
+  }
+
+  public onEvmRequest(id: string, method: EIP155_SIGNING_METHODS, params: any) {
+    const { chainId: _chainId, request } = params;
+    const topic = typeof params === 'object' ? params.data[0].from : '';
+    const requestSession = this.getSession(topic);
+
+    const sessionAccounts = requestSession.namespaces.eip155.accounts.map((account) => account.split(':')[2]);
+    const requestEvent: WalletConnectTransactionRequest = {
+      id: +id,
+      params,
+      topic,
+      verifyContext: {
+        verified: {
+          origin: '',
+          validation: 'VALID',
+          verifyUrl: '',
+        },
+      },
+    };
+
+    if (
+      [
+        EIP155_SIGNING_METHODS.PERSONAL_SIGN,
+        EIP155_SIGNING_METHODS.ETH_SIGN,
+        EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA,
+        EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3,
+        EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4,
+      ].includes(method)
+    ) {
+      const address = getEip155MessageAddress(method, request.params);
+
+      this.checkAccount(address, sessionAccounts);
+
+      this.state.requestService.evmRequestHandler
+        .onWCSign(requestEvent)
+        .then(async ({ payload }) => {
+          const response = formatJsonRpcResult(+id, payload);
+          this.state.walletConnectService.responseRequest({ topic, response });
+        })
+        .catch((e: any) => this.handleError(topic, +id, e));
+    } else if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
+      const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(request.params);
+
+      const address = tx.from;
+
+      this.state.walletConnectService.eip155RequestHandler.checkAccount(address, sessionAccounts);
+
+      const chainId = _chainId.split(':')[1];
+
+      const [networkKey, chainInfo] = this.state.networkService.findNetworkKeyByChainId(chainId);
+
+      if (!networkKey || !chainInfo) {
+        throw new Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + address);
+      }
+
+      const chainState = this.state.networkMap[networkKey];
+
+      const createRequest = () => {
+        this.state.requestService.evmRequestHandler
+          .onWCSign(requestEvent)
+          .then(async ({ payload }) => {
+            await this.state.walletConnectService.responseRequest({
+              topic,
+              response: formatJsonRpcResult(+id, payload),
+            });
+          })
+          .catch((e) => {
+            this.handleError(topic, +id, e);
+          });
+      };
+
+      if (!chainState.active) {
+        this.state
+          .setActiveNetworks(networkKey)
+          .then(createRequest)
+          .catch(() => {
+            throw new Error(getSdkError('USER_REJECTED').message + ' Can not active chain: ' + chainInfo.name);
+          });
+      } else {
+        createRequest();
+      }
+    } else {
+      throw Error(getSdkError('INVALID_METHOD').message + ' ' + method);
+    }
+  }
+
+  checkAccount(address: string, accounts: string[]) {
+    if (!accounts.find((account) => isSameAddress(account, address))) {
+      throw new Error(getSdkError('UNSUPPORTED_ACCOUNTS').message + ' ' + address);
+    }
   }
 }

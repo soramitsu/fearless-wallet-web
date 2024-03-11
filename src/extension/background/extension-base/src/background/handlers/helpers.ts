@@ -48,21 +48,23 @@ export function transformAccounts({ accounts, accountAuthType }: TransformAccoun
     );
 }
 
-export function transformAddresses(addresses: SubjectInfo): InjectedAccount[] {
+export function transformAddresses(addresses: SubjectInfo, authType?: string): InjectedAccount[] {
   return Object.values(addresses)
     .sort((a, b) => (a.json.meta.whenCreated || 0) - (b.json.meta.whenCreated || 0))
     .map(
       ({
         json: {
           address,
-          meta: { name },
+          meta: { name, ethereumAddress },
         },
         type,
-      }): InjectedAccount => ({
-        address,
-        name,
-        type,
-        genesisHash: '',
-      })
+      }): InjectedAccount => {
+        return {
+          address: authType === 'evm' ? (ethereumAddress as string) : address,
+          name,
+          type,
+          genesisHash: '',
+        };
+      }
     );
 }

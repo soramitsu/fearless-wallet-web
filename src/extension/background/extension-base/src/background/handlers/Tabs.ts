@@ -417,19 +417,23 @@ export default class Tabs {
       this.getAuthInfo(url)
         .then((authInfo) => {
           const allAccounts = this.state.keyringService.accountSubject.value;
-
-          const accountList = transformAccounts({
+          const allMobileAccounts = this.state.keyringService.addressSubject.value;
+          const mobileWallets = transformAddresses(allMobileAccounts, 'evm').map(({ address }) => address);
+          const transformedAccounts = transformAccounts({
             accounts: allAccounts,
             anyType: false,
             authInfo,
             accountAuthType: 'evm',
           }).map(({ address }) => address);
+
+          const accountList = [...transformedAccounts, ...mobileWallets];
           let accounts: string[] = [];
 
           const address = this.state.currentAccount?.ethereumAddress;
           const isAuthorizedAddress = authInfo?.authorizedAccounts.some(
             (el) => el.toLowerCase() === address?.toLowerCase()
           );
+
           if (address && accountList.includes(address) && isAuthorizedAddress) {
             const result = accountList.filter((adr) => adr !== address);
 
@@ -513,7 +517,40 @@ export default class Tabs {
     else throw new Error('Failed to sign message');
   }
 
-  async evmSendTransaction(id: string, url: string, { method, params }: RequestArguments): Promise<string> {
+  async evmSendTransaction(id: string, url: string, payload: RequestArguments): Promise<string> {
+    const { method, params } = payload;
+    const evmState = await this.getEvmState(url);
+    const address = typeof params === 'object' ? params[0].from : '';
+    const isMobile = this.state.keyringService.isMobileAccount(address);
+    const wallet = this.state.keyringService.getAccount(address);
+
+    if (isMobile) {
+      if (!evmState.chainId) throw new Error('Current ChainId is undefined');
+
+      const topic = wallet?.meta.topic as string;
+
+      const wcResponse = await this.state.requestService.evmRequestHandler.onWCSign({
+        id: +id,
+        topic,
+        params: {
+          chainId: evmState.chainId,
+          request: {
+            method,
+            params,
+          },
+        },
+        verifyContext: {
+          verified: {
+            origin: url,
+            validation: 'VALID',
+            verifyUrl: url,
+          },
+        },
+      });
+
+      return wcResponse.payload;
+    }
+
     const signResult = await this.state.requestService.evmRequestHandler.confirmSign(id, url, method, params);
 
     if (signResult) return signResult.payload;

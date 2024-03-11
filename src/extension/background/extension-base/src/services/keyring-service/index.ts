@@ -236,4 +236,14 @@ export class KeyringService {
 
     return (account?.meta.ethereumAddress as string) ?? '';
   }
+
+  isMobileAccount(address: string): boolean {
+    const account =
+      this.getAllAccounts().find((el) => el.address === address) ||
+      this.getAddresses().find((el) => el.address === address || el.meta.ethereumAddress === address);
+
+    if (!account) throw new Error('Couldnt find account');
+
+    return !!account.meta.isMobile;
+  }
 }

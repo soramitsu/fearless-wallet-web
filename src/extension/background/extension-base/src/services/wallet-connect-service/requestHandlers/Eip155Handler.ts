@@ -19,7 +19,7 @@ export default class Eip155RequestHandler {
     this.requestService = requestService;
   }
 
-  private checkAccount(address: string, accounts: string[]) {
+  checkAccount(address: string, accounts: string[]) {
     if (!accounts.find((account) => isSameAddress(account, address))) {
       throw new Error(getSdkError('UNSUPPORTED_ACCOUNTS').message + ' ' + address);
     }

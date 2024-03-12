@@ -85,10 +85,6 @@ export default class Tabs {
     return filteredAuths;
   }
 
-  public isEvmPublicRequest(type: string, request: RequestArguments) {
-    return type === 'evm(request)' && ['eth_chainId', 'net_version'].includes(request?.method);
-  }
-
   async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<string> {
     const cb = createSubscription<'pub(accounts.subscribe)'>(id, port);
 
@@ -639,13 +635,13 @@ export default class Tabs {
 
       //EVM
       case 'evm(events.subscribe)':
-        return await this.evmSubscribeEvents(url, id, port);
+        return this.evmSubscribeEvents(url, id, port);
 
       case 'evm(request)':
-        return await this.handleEvmRequest(id, url, request as RequestArguments);
+        return this.handleEvmRequest(id, url, request as RequestArguments);
 
       case 'evm(provider.send)':
-        return await this.handleEvmSend(id, url, port, request as RequestEvmProviderSend);
+        return this.handleEvmSend(id, url, port, request as RequestEvmProviderSend);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

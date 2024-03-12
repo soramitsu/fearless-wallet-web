@@ -51,7 +51,7 @@ export class RequestService {
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
     this.substrateRequestHandler = new SubstrateRequestHandler(this, this.keyringService);
-    this.authRequestHandler = new AuthRequestHandler(this, networkService, keyringService);
+    this.authRequestHandler = new AuthRequestHandler(this, networkService);
     this.substrateRequestHandler = new SubstrateRequestHandler(this, this.keyringService);
     this.evmRequestHandler = new EvmRequestHandler(this);
   }

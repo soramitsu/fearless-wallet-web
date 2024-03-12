@@ -293,8 +293,4 @@ export class NetworkService {
 
     return true;
   }
-
-  enableNetworks(keys: string[]) {
-    console.info(keys);
-  }
 }

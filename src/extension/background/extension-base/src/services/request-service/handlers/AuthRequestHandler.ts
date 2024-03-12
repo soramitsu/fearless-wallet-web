@@ -14,7 +14,7 @@ import type {
   AuthUrls,
   RequestAuthorizeTab,
 } from '@extension-base/background/types/types';
-import type { KeyringService, NetworkService, RequestService } from '@extension-base/services';
+import type { NetworkService, RequestService } from '@extension-base/services';
 import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 
 const AUTH_URLS_KEY = 'authUrls';
@@ -22,7 +22,6 @@ const AUTH_URLS_KEY = 'authUrls';
 export class AuthRequestHandler {
   private readonly requestService: RequestService;
   private readonly networkService: NetworkService;
-  private readonly keyringService: KeyringService;
 
   readonly authRequests: Record<string, AuthRequest> = {};
   private authorizeCached: AuthUrls = {};
@@ -30,12 +29,11 @@ export class AuthRequestHandler {
   private readonly authorizeUrlSubject = new BehaviorSubject<AuthUrls>({});
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
 
-  constructor(requestService: RequestService, networkService: NetworkService, keyringService: KeyringService) {
+  constructor(requestService: RequestService, networkService: NetworkService) {
     this.getAuthorize((auths) => (this.authorizeCached = auths ?? {}));
 
     this.requestService = requestService;
     this.networkService = networkService;
-    this.keyringService = keyringService;
   }
 
   public get numAuthRequests(): number {
@@ -231,7 +229,6 @@ export class AuthRequestHandler {
   getDAppNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {
     const networks = this.networkService.networkMap;
     const defaultChain = options.defaultChain;
-    let needEnableChains: string[] = [];
 
     let chainInfo: NetworkJson | undefined;
 
@@ -242,14 +239,7 @@ export class AuthRequestHandler {
         (defaultChain
           ? networks[defaultChain]
           : evmChains.find((chain) => networks[chain.name.toLowerCase()]?.active)) || evmChains[0];
-
-      if (options.autoActive && !needEnableChains.includes(chainInfo?.name)) {
-        needEnableChains.push(chainInfo?.name);
-      }
     }
-
-    needEnableChains = needEnableChains.filter((slug) => !networks[slug]?.active);
-    needEnableChains.length > 0 && this.networkService.enableNetworks(needEnableChains);
 
     return chainInfo;
   }

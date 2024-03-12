@@ -670,7 +670,7 @@ export default class State {
     const network = this.networkService.getNetworkByKey(networkKey);
 
     if (authUrls[shortenUrl]) {
-      if (!network.active) await this.networkService.enableNetworks([networkKey]);
+      if (!network.active) await this.setActiveNetworks(networkKey);
 
       authUrls[shortenUrl].currentEvmNetworkKey = networkKey;
 

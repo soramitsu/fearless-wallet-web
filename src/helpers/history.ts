@@ -106,7 +106,7 @@ function getHumanTransferFee(historyElement: HistoryElement, networkName: Networ
   if (type === TransactionType.transfer) {
     const { fee } = transfer!;
 
-    if (historyType === 'oklink') return +fee;
+    if (historyType === 'oklink' || historyType === 'etherscan') return +fee;
 
     return getHumanFeeValue(fee, networkName);
   }

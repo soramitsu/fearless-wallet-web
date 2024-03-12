@@ -18,13 +18,10 @@ import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { type DerivationPath } from '@/interfaces';
 
 export default class FWExtensionBase {
-  protected token: string;
   public cachedUnlocks: CachedUnlocks;
 
   constructor(protected state: State) {
     this.cachedUnlocks = {};
-    this.state = state;
-    this.token = '';
   }
 
   accountsExport({ address, password }: RequestAccountExport): ResponseAccountExport {

@@ -20,6 +20,7 @@ import {
   isSupportWalletConnectNamespace,
   isSupportWalletConnectChain,
   convertHexToUtf8,
+  getEip155MessageAddress,
 } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
 import {
@@ -495,7 +496,9 @@ export default class Extension extends FWExtensionBase {
     const request = this.state.requestService.getSignRequest(id) as EvmRequestsSubjectPayload | undefined;
     assert(request, 'Unable to find request');
     const { data } = request;
-    const address = data[0].from;
+
+    const address = getEip155MessageAddress(request.method, data);
+
     const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
     const ethereumAddress = this.state.keyringService.getEthereumAddress(substrateAddress);
     const isMobile = this.state.keyringService.isMobileAccount(substrateAddress);

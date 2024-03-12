@@ -65,7 +65,7 @@
   </Fragment>
 </template>
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { APIItemState } from '@extension-base/api/types/networks';
 import type { TokenGroup } from '@extension-base/background/types/types';
@@ -85,6 +85,7 @@ import AccountSettingsPopup from '@/screens/accounts/AccountSettingsPopup.vue';
 export default class AssetInfo extends Vue {
   showBalanceDetailsPopup = false;
   showDetailsPopup = false;
+  transferableAssetBalance = 0;
 
   @Prop(Object) price!: AssetPrice;
   @Prop(Object) currency!: TokenGroup;
@@ -132,10 +133,6 @@ export default class AssetInfo extends Vue {
     return `1 ${this.selectedAssetUpper} = ${this.fiatSymbol}${this.$n(this.price.price, 'price')}`;
   }
 
-  get transferableAssetBalance() {
-    return +getSummaryTransferableBalanceFilteredByActiveNetworks(this.currency, this.pickedNetwork);
-  }
-
   get lockedBalanceString() {
     const lockedBalance = getSummaryLockedBalance(this.currency);
 
@@ -151,6 +148,7 @@ export default class AssetInfo extends Vue {
 
     return `${this.fiatSymbol} ${this.$n(this.transferableFiatBalance, 'price')}`;
   }
+
   get countAssetsString() {
     if (!this.currency) return `0 ${this.selectedAssetUpper}`;
 
@@ -165,6 +163,18 @@ export default class AssetInfo extends Vue {
 
   get selectedAssetUpper() {
     return this.selectedAsset.toUpperCase();
+  }
+
+  @Watch('currency', { deep: true })
+  transferableAssetBalanceUpdate() {
+    this.transferableAssetBalance = +getSummaryTransferableBalanceFilteredByActiveNetworks(
+      this.currency,
+      this.pickedNetwork
+    );
+  }
+
+  mounted() {
+    this.transferableAssetBalanceUpdate();
   }
 
   toggleBalanceDetailsPopup() {

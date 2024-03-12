@@ -623,7 +623,7 @@ export default class State {
 
       const timeout = api.timeout[substrateAddress] ?? Number.MIN_VALUE;
       const timeDiff = Date.now() - timeout;
-      const shouldSkipUpdate = timeDiff < REFRESH_TIME || !!force;
+      const shouldSkipUpdate = timeDiff < REFRESH_TIME && !force;
 
       if (shouldSkipUpdate || networkStatus === NETWORK_STATUS.DISCONNECTED) return;
 

@@ -49,7 +49,7 @@ export type Getters = {
   [GettersTypes.signRequestPayload](
     state: State,
     getters?: GetterTree<State, State> & Getters
-  ): SignerPayloadJSON | SignerPayloadRaw | { id: string; data: any }[];
+  ): SignerPayloadJSON | SignerPayloadRaw | EvmRequestPayload;
 
   [GettersTypes.signList](state: State, getters?: GetterTree<State, State> & Getters): SignRequestList;
   [GettersTypes.onboarding](state: State, getters?: GetterTree<State, State> & Getters): boolean;
@@ -89,7 +89,7 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.signRequestPayload]({
     signRequests,
     signEvmRequests,
-  }): SignerPayloadJSON | SignerPayloadRaw | EvmRequestPayload[] {
+  }): SignerPayloadJSON | SignerPayloadRaw | EvmRequestPayload {
     if (signRequests.length) {
       const [
         {
@@ -100,7 +100,7 @@ const getters: GetterTree<State, State> & Getters = {
       return payload;
     }
 
-    return Object.values(signEvmRequests);
+    return Object.values(signEvmRequests)[0];
   },
 
   [GettersTypes.signList]({ signRequests, signEvmRequests }): SignRequestList {

@@ -116,8 +116,8 @@ export class WalletConnectDAppService {
         },
         eip155: {
           chains: ['eip155:1'],
-          methods: ['eth_sendTransaction', 'personal_sign'],
-          events: ['accountsChanged', 'chainChanged'],
+          methods: ['personal_sign', 'eth_sendTransaction'],
+          events: [],
         },
       },
       optionalNamespaces: {
@@ -128,7 +128,17 @@ export class WalletConnectDAppService {
         },
         eip155: {
           chains: optionalEvmChains,
-          methods: ['eth_sendTransaction', 'personal_sign'],
+          methods: [
+            'eth_sendTransaction',
+            'personal_sign',
+            'eth_sign',
+            'eth_signTransaction',
+            'eth_signTypedData',
+            'eth_signTypedData_v1',
+            'eth_signTypedData_v3',
+            'eth_signTypedData_v4',
+            'eth_sendRawTransaction',
+          ],
           events: ['accountsChanged', 'chainChanged'],
         },
       },

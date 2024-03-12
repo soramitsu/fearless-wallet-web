@@ -22,12 +22,12 @@ import {
   type AppSessionInitResponse,
   type PairingSubjectType,
 } from '@extension-base/services/wallet-connect-service/types';
+import { isSameAddress } from '@extension-base/utils';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
 import type { EngineTypes, SessionTypes } from '@walletconnect/types';
 import type { Port, ResponseSigning } from '@extension-base/background/types/types';
-import { isSameAddress } from '@/extension/background/extension-base/src/utils';
 
 export class WalletConnectDAppService {
   state: State;

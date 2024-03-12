@@ -6,6 +6,7 @@ import { isEthereumAddress } from '@polkadot/util-crypto';
 import { getId } from '@extension-base/utils';
 import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { type DAppChainInfoPayload } from '@extension-base/services/request-service/types';
+import { type NetworkJson } from '@extension-base/types';
 import type {
   Resolver,
   AuthorizeRequest,
@@ -15,7 +16,6 @@ import type {
   RequestAuthorizeTab,
 } from '@extension-base/background/types/types';
 import type { NetworkService, RequestService } from '@extension-base/services';
-import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 
 const AUTH_URLS_KEY = 'authUrls';
 

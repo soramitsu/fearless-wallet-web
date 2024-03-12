@@ -95,6 +95,7 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
+import { type EvmRequestsSubjectPayload } from '@extension-base/services/request-service/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type {
   StakingNetworkRequest,
@@ -132,7 +133,6 @@ import type {
 } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
-import { type EvmRequestsSubjectPayload } from '@/extension/background/extension-base/src/services/request-service/types';
 
 function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
   return (value as SignerPayloadJSON).genesisHash !== undefined;
@@ -504,15 +504,17 @@ export default class Extension extends FWExtensionBase {
     const isMobile = this.state.keyringService.isMobileAccount(substrateAddress);
 
     if (isMobile) {
-      const account = this.state.keyringService.getAddress(substrateAddress);
-
       try {
+        const account = this.state.keyringService.getAddress(substrateAddress);
+
+        if (!account || account.meta.wcTopic) throw new Error('Couldnt find account');
+
         const res = await this.state.walletConnectDappService.onEvmRequest(
           id,
           request.url,
           request.method,
           request.data,
-          account?.meta.wcTopic as string
+          account.meta.wcTopic as string
         );
         if (res) request.resolve(res);
       } catch {

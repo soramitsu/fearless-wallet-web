@@ -1,4 +1,11 @@
 import { type RequestArguments } from '@json-rpc-tools/utils';
+import {
+  type RequestEvmEvents,
+  type EvmEvent,
+  type ResponseEvmProviderSend,
+  type RequestEvmProviderSend,
+} from '@extension-base/page/types';
+import { type EvmRequests } from '@extension-base/services/request-service/types';
 import type {
   NftTx,
   CheckNftResponse,
@@ -114,13 +121,6 @@ import type {
   SoraFees,
   OnboardingStories,
 } from '@/interfaces';
-import {
-  type RequestEvmEvents,
-  type EvmEvent,
-  type ResponseEvmProviderSend,
-  type RequestEvmProviderSend,
-} from '@/extension/background/extension-base/src/page/types';
-import { type EvmRequests } from '@/extension/background/extension-base/src/services/request-service/types';
 
 export interface RequestSignatures {
   // private/internal requests, i.e. from a popup

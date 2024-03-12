@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { type EvmRequests } from '@extension-base/services/request-service/types';
 import type {
   RequestApproveConnectWalletSession,
   RequestRejectConnectWalletSession,
@@ -42,7 +43,6 @@ import router from '@/router';
 import { Components } from '@/router/routes';
 import { ExtensionController } from '@/controllers';
 import { URLS } from '@/consts/urls';
-import { type EvmRequests } from '@/extension/background/extension-base/src/services/request-service/types';
 
 export enum ActionTypes {
   SUBSCRIBE_AUTH_REQUESTS = 'SUBSCRIBE_AUTH_REQUESTS',

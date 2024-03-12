@@ -139,7 +139,7 @@ async function makeUtilityTransfer(params: MakeTransferParams): Promise<void> {
     tx,
   };
 
-  await handleTransfer(props);
+  return handleTransfer(props);
 }
 
 async function makeERC20Transfer(params: MakeTransferParams) {
@@ -153,7 +153,7 @@ async function makeERC20Transfer(params: MakeTransferParams) {
     tx,
   };
 
-  await handleTransfer(props);
+  return handleTransfer(props);
 }
 
 export function getEVMTransactionObject(params: TransferParams): Promise<TransactionObject> {

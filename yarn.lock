@@ -4017,6 +4017,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/firefox-webext-browser@npm:^120.0.1":
+  version: 120.0.1
+  resolution: "@types/firefox-webext-browser@npm:120.0.1"
+  checksum: 0ba932a4ee01d0c5421f257b4371f95934ce7253a07d09002663145fee45258571dc68f0e85381372a612aa935ee715515be558bdf0ae26f9cc0e2f32d0c0b9f
+  languageName: node
+  linkType: hard
+
 "@types/fs-extra@npm:^9.0.11":
   version: 9.0.13
   resolution: "@types/fs-extra@npm:9.0.13"
@@ -10756,6 +10763,7 @@ __metadata:
     "@types/chrome": ^0.0.200
     "@types/electron-devtools-installer": ^2.2.2
     "@types/file-saver": ^2.0.5
+    "@types/firefox-webext-browser": ^120.0.1
     "@types/jest": ^26.0.19
     "@types/lodash": ^4.14.174
     "@types/node": ^16.11.6

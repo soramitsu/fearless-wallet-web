@@ -1,6 +1,6 @@
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
+import { chrome } from '@extension-base/utils/crossenv';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
-import { chrome } from '@polkadot/extension-inject/chrome';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
@@ -343,26 +343,27 @@ export default class Extension extends FWExtensionBase {
   }
 
   async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+
+    if (!tab || !tab.url) {
+      return {
+        isAuthorize: false,
+        authorizeAccountsCount: 0,
+        dAppName: '',
+      };
+    }
+
+    const tabHostName = new URL(tab.url).hostname;
+
     return new Promise((resolve) => {
-      chrome.tabs.query({ active: true, lastFocusedWindow: true }, ([tab]) => {
-        if (!tab || !tab.url) {
-          return resolve({
-            isAuthorize: false,
-            authorizeAccountsCount: 0,
-            dAppName: '',
-          });
-        }
+      this.state.requestService.getAuthorize((authUrls) => {
+        const authorizeUrl = Object.keys(authUrls).filter((url) => url === tabHostName);
+        const isAuthorize = authorizeUrl.length !== 0;
 
-        const tabHostName = new URL(tab.url).hostname;
-        this.state.requestService.getAuthorize((authUrls) => {
-          const authorizeUrl = Object.keys(authUrls).filter((url) => url === tabHostName);
-          const isAuthorize = authorizeUrl.length !== 0;
-
-          resolve({
-            isAuthorize,
-            authorizeAccountsCount: isAuthorize ? authUrls[tabHostName].authorizedAccounts.length : 0,
-            dAppName: tabHostName,
-          });
+        resolve({
+          isAuthorize,
+          authorizeAccountsCount: isAuthorize ? authUrls[tabHostName].authorizedAccounts.length : 0,
+          dAppName: tabHostName,
         });
       });
     });
@@ -743,12 +744,6 @@ export default class Extension extends FWExtensionBase {
     return this.state.googleService.verifyToken(token);
   }
 
-  getToken(): void {
-    chrome.identity.getAuthToken({}, (token) => {
-      this.token = token ?? '';
-    });
-  }
-
   async getFiles({ token }: { token: string }): Promise<IGetFilesResponse> {
     return this.state.googleService.getFiles(token);
   }
@@ -762,8 +757,6 @@ export default class Extension extends FWExtensionBase {
   }
 
   deleteFile({ id }: GoogleFileId): void {
-    if (!this.token) this.getToken();
-
     this.state.googleService.deleteFile(id, this.token);
   }
 

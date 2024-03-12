@@ -1,3 +1,5 @@
+import '@polkadot/extension-inject/crossenv';
+
 import { MESSAGE_ORIGIN_CONTENT } from '@extension-base/defaults';
 import { enable, handleResponse, initEvmProvider, redirectIfPhishing, saveSoraCardToken } from '@extension-base/page';
 import { type RequestSignatures } from '@extension-base/background/types/messages';
@@ -5,7 +7,6 @@ import { type FWEvmProvider } from '@extension-base/page/types';
 import { eip6963ProviderInfo } from '@extension-base/const';
 import packages from '../../../package.json';
 import type Injected from '@extension-base/page/Injected';
-import '@polkadot/extension-inject/chrome';
 import type { Message } from '@extension-base/types';
 import type { TransportRequestMessage } from '@extension-base/background/types/types';
 import { APP_VERSION } from '@/consts/global';

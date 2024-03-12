@@ -22,7 +22,9 @@
       "jest",
       "node",
       "element-ui",
+      "chrome-types",
       "chrome",
+      "firefox-webext-browser",
       "network-information-types"
     ],
     "paths": {

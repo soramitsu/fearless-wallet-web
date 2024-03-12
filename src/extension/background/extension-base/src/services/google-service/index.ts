@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { chrome } from '@polkadot/extension-inject/chrome';
+import { chrome } from '@extension-base/utils/crossenv';
+
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
 import { FEARLESS_TITLE } from '@/consts/global';

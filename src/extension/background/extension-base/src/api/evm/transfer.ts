@@ -165,9 +165,9 @@ export function getEVMTransactionObject(params: TransferParams): Promise<Transac
 export function makeEVMTransfer(params: MakeTransferParams): Promise<void> {
   const transfer = params.balance.isUtility ? makeUtilityTransfer(params) : makeERC20Transfer(params);
 
-  return transfer.then(() => {
+  return transfer.finally(() => {
     setTimeout(() => {
       state.fetchEvmBalance({ ethereumAddress: params.from, assetId: params.balance.id, force: true });
-    }, 10000);
+    }, 5000);
   });
 }

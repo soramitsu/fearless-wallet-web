@@ -754,7 +754,7 @@ export type NotificationResponse = { message: string; title: string; status: boo
 
 export type EvmAppState = {
   networkKey?: string;
-  chainId?: string;
+  chainId: string;
   isConnected?: boolean;
   web3?: EvmProvider;
 };

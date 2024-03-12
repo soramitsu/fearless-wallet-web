@@ -1,14 +1,13 @@
 <template>
   <AboveForm :fullScreen="true" header="assets.transaction" @closeHandler="onReject">
     <div v-if="isSignMobile" class="transaction-mobile">
-      <Loader v-if="isSupportedNetwork" />
+      <Loader />
 
-      <Alert
-        v-else
+      <!-- <Alert
         headerText="walletConnect.requiredNetworkAlert.header"
         message="walletConnect.requiredNetworkAlert.message"
         sizeText="small"
-      />
+      /> -->
 
       <FButton
         text="common.cancel"
@@ -123,18 +122,6 @@ const isSignMobile = computed(() => {
   return accounts.value.some((account) => account.address === encodedAddress && account.isMobile);
 });
 
-const isSupportedNetwork = computed(() => {
-  if (isSignMobile.value) {
-    const encodedAddress = BaseApi.encodeAddress(transactionAddress.value);
-
-    const account = accounts.value.find((account) => account.address === encodedAddress && account.isMobile);
-
-    return account?.chains?.some((el) => payload.value.genesisHash.includes(el));
-  }
-
-  return false;
-});
-
 const address = computed(() => {
   if (request.value && 'data' in request.value) return request.value.data[0].from;
 
@@ -213,7 +200,7 @@ const passInputComponent = ref<ValidatedInput>();
 const onSignMobile = () => ExtensionController.approveSignPassword(transactionId.value, false);
 
 onMounted(async () => {
-  if (isSignMobile.value && isSupportedNetwork) onSignMobile();
+  if (isSignMobile.value) onSignMobile();
 
   if (!IS_EXTENSION || isSignMobile.value) return;
 

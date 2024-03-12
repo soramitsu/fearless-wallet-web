@@ -23,7 +23,6 @@ import {
   type PairingSubjectType,
   type WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
-import { formatJsonRpcError, formatJsonRpcResult } from '@json-rpc-tools/utils';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
@@ -313,22 +312,7 @@ export class WalletConnectDAppService {
     return result ?? { signature: '0x' as HexString };
   }
 
-  private handleError(topic: string, id: number, e: unknown) {
-    let message = (e as Error).message;
-
-    if (message.includes('User Rejected Request')) {
-      message = getSdkError('USER_REJECTED').message;
-    }
-
-    this.state.walletConnectService
-      .responseRequest({
-        topic,
-        response: formatJsonRpcError(id, message),
-      })
-      .catch(console.error);
-  }
-
-  public onEvmRequest(id: string, method: EIP155_SIGNING_METHODS, params: any) {
+  public async onEvmRequest(id: string, url: string, method: string, params: any) {
     const { chainId: _chainId, request } = params;
     const topic = typeof params === 'object' ? params.data[0].from : '';
     const requestSession = this.getSession(topic);
@@ -340,33 +324,31 @@ export class WalletConnectDAppService {
       topic,
       verifyContext: {
         verified: {
-          origin: '',
+          origin: url,
           validation: 'VALID',
-          verifyUrl: '',
+          verifyUrl: url,
         },
       },
     };
 
-    if (
-      [
-        EIP155_SIGNING_METHODS.PERSONAL_SIGN,
-        EIP155_SIGNING_METHODS.ETH_SIGN,
-        EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA,
-        EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3,
-        EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4,
-      ].includes(method)
-    ) {
+    const signMethods: string[] = [
+      EIP155_SIGNING_METHODS.PERSONAL_SIGN,
+      EIP155_SIGNING_METHODS.ETH_SIGN,
+      EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA,
+      EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3,
+      EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4,
+    ];
+
+    if (signMethods.includes(method)) {
       const address = getEip155MessageAddress(method, request.params);
 
       this.checkAccount(address, sessionAccounts);
 
-      this.state.requestService.evmRequestHandler
-        .onWCSign(requestEvent)
-        .then(async ({ payload }) => {
-          const response = formatJsonRpcResult(+id, payload);
-          this.state.walletConnectService.responseRequest({ topic, response });
-        })
-        .catch((e: any) => this.handleError(topic, +id, e));
+      const res = await this.app?.client.request<{ payload: HexString }>(requestEvent as any).catch(() => {
+        return { payload: '0x0' as HexString };
+      });
+
+      return res;
     } else if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
       const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(request.params);
 
@@ -385,16 +367,11 @@ export class WalletConnectDAppService {
       const chainState = this.state.networkMap[networkKey];
 
       const createRequest = () => {
-        this.state.requestService.evmRequestHandler
-          .onWCSign(requestEvent)
-          .then(async ({ payload }) => {
-            await this.state.walletConnectService.responseRequest({
-              topic,
-              response: formatJsonRpcResult(+id, payload),
-            });
-          })
-          .catch((e) => {
-            this.handleError(topic, +id, e);
+        return this.app?.client
+          .request<{ payload: HexString }>(requestEvent as any)
+
+          .catch(() => {
+            return { payload: '0x0' as HexString };
           });
       };
 

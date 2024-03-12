@@ -54,7 +54,7 @@ export const parseRequestParams = <T = keyof WalletConnectSigningMethod>(params:
   return params as WalletConnectParamMap[T];
 };
 
-export const getEip155MessageAddress = (method: EIP155_SIGNING_METHODS, param: unknown): string => {
+export const getEip155MessageAddress = (method: string, param: unknown): string => {
   switch (method) {
     case EIP155_SIGNING_METHODS.PERSONAL_SIGN:
     case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA:

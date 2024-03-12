@@ -1,7 +1,9 @@
 <template>
   <AboveForm :fullScreen="true" :header="header" @closeHandler="onReject">
     <div class="wc-request-content">
-      <div class="scroll__container">
+      <Loader v-if="isMobile" />
+
+      <div class="scroll__container" v-else>
         <Scroll>
           <div class="wc-request">
             <WalletConnectHeader :title="title" :subtext="subtext" :url="url" />
@@ -10,8 +12,9 @@
           </div>
         </Scroll>
       </div>
+
       <div>
-        <div class="pass-form">
+        <div v-if="!isMobile" class="pass-form">
           <ValidatedInput
             v-if="isLocked"
             v-model="password"
@@ -35,6 +38,7 @@
           />
 
           <FButton
+            v-if="!isMobile"
             text="common.sign"
             :loading="state.isSigning"
             :disabled="state.isSigning"
@@ -61,7 +65,7 @@ import { isEthereumAddress } from '@polkadot/util-crypto';
 import WalletConnectRequestData from './WalletConnectRequestData.vue';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import { walletConnectRequestReject, walletConnectRequestApprove, isSignLocked } from '@/extension/messaging';
-import { useStore } from '@/store';
+import { type WalletInfo, useStore } from '@/store';
 import { useNotify } from '@/plugins/soramitsuUI';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 type Error = { message: TransferErrorCode.UNSUPPORTED | BasicTxErrorCode.KEYRING_ERROR };
@@ -103,6 +107,11 @@ const address = computed<string>(() => {
   }
 
   return params[0].from as string;
+});
+const isMobile = computed(() => {
+  const wallet: WalletInfo[] = store.getters.getWallets;
+
+  return wallet.find((wallet) => wallet.ethereumAddress === address.value || wallet.address === address.value);
 });
 const isLocked = ref(false);
 const min15Label = computed(() => (isLocked.value ? 'assets.15min' : 'assets.15minExtend'));

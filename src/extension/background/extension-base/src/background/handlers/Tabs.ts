@@ -519,37 +519,6 @@ export default class Tabs {
 
   async evmSendTransaction(id: string, url: string, payload: RequestArguments): Promise<string> {
     const { method, params } = payload;
-    const evmState = await this.getEvmState(url);
-    const address = typeof params === 'object' ? params[0].from : '';
-    const isMobile = this.state.keyringService.isMobileAccount(address);
-    const wallet = this.state.keyringService.getAccount(address);
-
-    if (isMobile) {
-      if (!evmState.chainId) throw new Error('Current ChainId is undefined');
-
-      const topic = wallet?.meta.topic as string;
-
-      const wcResponse = await this.state.requestService.evmRequestHandler.onWCSign({
-        id: +id,
-        topic,
-        params: {
-          chainId: evmState.chainId,
-          request: {
-            method,
-            params,
-          },
-        },
-        verifyContext: {
-          verified: {
-            origin: url,
-            validation: 'VALID',
-            verifyUrl: url,
-          },
-        },
-      });
-
-      return wcResponse.payload;
-    }
 
     const signResult = await this.state.requestService.evmRequestHandler.confirmSign(id, url, method, params);
 

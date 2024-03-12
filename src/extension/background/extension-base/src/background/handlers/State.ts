@@ -24,7 +24,7 @@ import {
 import { api as apiSora, type FPNumber } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
 import { isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
-import { withErrorLog } from '@extension-base/background/handlers/helpers';
+import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import PricesService from '@extension-base/services/prices-service';
 import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
 import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
@@ -45,6 +45,8 @@ import type {
   RequestAccountExportPrivateKey,
   ResponseAccountExportPrivateKey,
   FetchEvmBalancePayload,
+  AuthUrlInfo,
+  AuthUrls,
 } from '@extension-base/background/types/types';
 import type { ChainRegistry, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
@@ -228,6 +230,14 @@ export default class State {
 
   get networkMap() {
     return this.networkService.networkMap;
+  }
+
+  async getAuthInfo(url: string, fromList?: AuthUrls): Promise<AuthUrlInfo | undefined> {
+    const auths = await this.requestService.getAuthList();
+    const authList = fromList || auths;
+    const shortenUrl = stripUrl(url);
+
+    return authList[shortenUrl];
   }
 
   public upsertNetworkMap(data: NetworkJson): boolean {

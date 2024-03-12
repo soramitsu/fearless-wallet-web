@@ -21,13 +21,12 @@ import {
   EIP155_SIGNING_METHODS,
   type AppSessionInitResponse,
   type PairingSubjectType,
-  type WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
-import type { SessionTypes } from '@walletconnect/types';
-import type { Port } from '@extension-base/background/types/types';
+import type { EngineTypes, SessionTypes } from '@walletconnect/types';
+import type { Port, ResponseSigning } from '@extension-base/background/types/types';
 import { isSameAddress } from '@/extension/background/extension-base/src/utils';
 
 export class WalletConnectDAppService {
@@ -312,23 +311,33 @@ export class WalletConnectDAppService {
     return result ?? { signature: '0x' as HexString };
   }
 
-  public async onEvmRequest(id: string, url: string, method: string, params: any) {
-    const { chainId: _chainId, request } = params;
-    const topic = typeof params === 'object' ? params.data[0].from : '';
+  public async onEvmRequest(
+    id: string,
+    url: string,
+    method: string,
+    params: any,
+    topic: string
+  ): Promise<ResponseSigning> {
     const requestSession = this.getSession(topic);
 
     const sessionAccounts = requestSession.namespaces.eip155.accounts.map((account) => account.split(':')[2]);
-    const requestEvent: WalletConnectTransactionRequest = {
-      id: +id,
-      params,
-      topic,
-      verifyContext: {
-        verified: {
-          origin: url,
-          validation: 'VALID',
-          verifyUrl: url,
-        },
+
+    const authInfo = await this.state.getAuthInfo(url);
+
+    if (!authInfo || !authInfo?.currentEvmNetworkKey) {
+      throw new Error(getSdkError('UNSUPPORTED_CHAINS').message);
+    }
+
+    const networkKey = authInfo.currentEvmNetworkKey;
+    const chainState = this.state.networkMap[networkKey];
+
+    const requestEvent: EngineTypes.RequestParams = {
+      chainId: `${WALLET_CONNECT_EIP155_NAMESPACE}:${chainState.chainId}`,
+      request: {
+        method,
+        params,
       },
+      topic,
     };
 
     const signMethods: string[] = [
@@ -339,55 +348,40 @@ export class WalletConnectDAppService {
       EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4,
     ];
 
+    if (!this.app) throw new Error('Wallet Connect is not init!');
+
     if (signMethods.includes(method)) {
-      const address = getEip155MessageAddress(method, request.params);
+      const address = getEip155MessageAddress(method, params);
 
       this.checkAccount(address, sessionAccounts);
 
-      const res = await this.app?.client.request<{ payload: HexString }>(requestEvent as any).catch(() => {
-        return { payload: '0x0' as HexString };
-      });
+      const res = await this.app.client.request<{ payload: HexString }>(requestEvent as any);
 
-      return res;
-    } else if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
-      const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(request.params);
-
-      const address = tx.from;
-
-      this.state.walletConnectService.eip155RequestHandler.checkAccount(address, sessionAccounts);
-
-      const chainId = _chainId.split(':')[1];
-
-      const [networkKey, chainInfo] = this.state.networkService.findNetworkKeyByChainId(chainId);
-
-      if (!networkKey || !chainInfo) {
-        throw new Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + address);
-      }
-
-      const chainState = this.state.networkMap[networkKey];
-
-      const createRequest = () => {
-        return this.app?.client
-          .request<{ payload: HexString }>(requestEvent as any)
-
-          .catch(() => {
-            return { payload: '0x0' as HexString };
-          });
-      };
-
-      if (!chainState.active) {
-        this.state
-          .setActiveNetworks(networkKey)
-          .then(createRequest)
-          .catch(() => {
-            throw new Error(getSdkError('USER_REJECTED').message + ' Can not active chain: ' + chainInfo.name);
-          });
-      } else {
-        createRequest();
-      }
-    } else {
-      throw Error(getSdkError('INVALID_METHOD').message + ' ' + method);
+      return { id, payload: res.payload };
     }
+
+    const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(params);
+
+    const address = tx.from;
+
+    this.state.walletConnectService.eip155RequestHandler.checkAccount(address, sessionAccounts);
+
+    const createRequest = () => {
+      if (!this.app) throw new Error('Wallet Connect is not init!');
+
+      return this.app.client.request<{ payload: HexString }>(requestEvent as any);
+    };
+
+    if (!chainState.active) {
+      await this.state.setActiveNetworks(networkKey);
+    }
+
+    const res = await createRequest();
+
+    return {
+      id,
+      payload: res.payload,
+    };
   }
 
   checkAccount(address: string, accounts: string[]) {

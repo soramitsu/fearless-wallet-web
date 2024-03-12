@@ -19,8 +19,6 @@ import { CRON_GET_API_MAP_STATUS } from '@extension-base/const/intervals';
 import type State from '@extension-base/background/handlers/State';
 import type {
   AccountSub,
-  AuthUrlInfo,
-  AuthUrls,
   EvmAppState,
   EvmProvider,
   MessageTypes,
@@ -85,14 +83,6 @@ export default class Tabs {
     const filteredAuths = await this.filterForAuthorizedAccounts(totalAccounts, url);
 
     return filteredAuths;
-  }
-
-  async getAuthInfo(url: string, fromList?: AuthUrls): Promise<AuthUrlInfo | undefined> {
-    const auths = await this.state.requestService.getAuthList();
-    const authList = fromList || auths;
-    const shortenUrl = stripUrl(url);
-
-    return authList[shortenUrl];
   }
 
   public isEvmPublicRequest(type: string, request: RequestArguments) {
@@ -265,7 +255,7 @@ export default class Tabs {
     let autoActive = false;
 
     if (url) {
-      const authInfo = await this.getAuthInfo(url);
+      const authInfo = await this.state.getAuthInfo(url);
 
       if (authInfo?.currentEvmNetworkKey) {
         currentChain = authInfo?.currentEvmNetworkKey;
@@ -414,7 +404,8 @@ export default class Tabs {
 
   private async getEvmCurrentAccount(url: string): Promise<string[]> {
     return new Promise((resolve) => {
-      this.getAuthInfo(url)
+      this.state
+        .getAuthInfo(url)
         .then((authInfo) => {
           const allAccounts = this.state.keyringService.accountSubject.value;
           const allMobileAccounts = this.state.keyringService.addressSubject.value;

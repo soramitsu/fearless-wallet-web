@@ -10,11 +10,9 @@ const onMessage = ({ data, source }: Message): void => {
   port.postMessage(data);
 };
 
-port.onMessage.addListener((data: any): void => {
+port.onMessage.addListener((data): void => {
   window.postMessage({ ...data, origin: MESSAGE_ORIGIN_CONTENT }, '*');
 });
-
-port.onDisconnect.addListener(this.setListeners);
 
 window.addEventListener('message', onMessage);
 

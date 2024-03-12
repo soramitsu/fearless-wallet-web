@@ -13,6 +13,7 @@ import { APP_VERSION } from '@/consts/global';
 import { type EIP6963ProviderDetail, type InjectedWindow } from '@/extension/entry/types';
 
 const win = window as Window & InjectedWindow;
+const walletKey = 'fearlessWallet';
 //TODO fix provider injection
 win.injectedWeb3 = win.injectedWeb3 || {};
 class FearlessWalletPlaceholder {
@@ -124,8 +125,8 @@ class FearlessWalletPlaceholder {
 
 win.injectedWeb3 = win.injectedWeb3 || {};
 
-if (!win.injectedWeb3['${walletKey}']) {
-  win.injectedWeb3['${walletKey}'] = {
+if (!win.injectedWeb3[`${walletKey}`]) {
+  win.injectedWeb3[`${walletKey}`] = {
     isPlaceholder: true,
     version: '${version}',
     enable: async (origin) => {
@@ -137,13 +138,13 @@ if (!win.injectedWeb3['${walletKey}']) {
             reject(new Error('Fearless Wallet provider not found'));
           }
 
-          if (!win.injectedWeb3['${walletKey}'].isPlaceholder) {
+          if (!win.injectedWeb3[`${walletKey}`].isPlaceholder) {
             resolve(clearInterval(interval));
           }
         }, 100);
       });
 
-      return win.injectedWeb3['${walletKey}'].enable(origin);
+      return win.injectedWeb3[`${walletKey}`].enable(origin);
     },
   };
 }
@@ -191,7 +192,7 @@ class Page {
 
     windowInject.injectedWeb3 = windowInject.injectedWeb3 || {}; // add our enable and saveSoraCardToken functions
 
-    windowInject.injectedWeb3['fearlessWallet'] = {
+    windowInject.injectedWeb3[walletKey] = {
       enable: (origin: string): Promise<Injected> => enable(origin),
       saveSoraCardToken: (token: string) => saveSoraCardToken(token),
       version: APP_VERSION,

@@ -498,6 +498,28 @@ export default class Extension extends FWExtensionBase {
     const address = data[0].from;
     const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
     const ethereumAddress = this.state.keyringService.getEthereumAddress(substrateAddress);
+    const isMobile = this.state.keyringService.isMobileAccount(substrateAddress);
+
+    if (isMobile) {
+      const account = this.state.keyringService.getAddress(substrateAddress);
+
+      try {
+        const res = await this.state.walletConnectDappService.onEvmRequest(
+          id,
+          request.url,
+          request.method,
+          request.data,
+          account?.meta.wcTopic as string
+        );
+        if (res) request.resolve(res);
+      } catch {
+        request.reject(new Error('USER_REJECTED'));
+
+        return false;
+      }
+
+      return true;
+    }
 
     if (!password) {
       const eth = this.state.keyringService.getPair(ethereumAddress);

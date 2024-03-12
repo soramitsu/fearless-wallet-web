@@ -586,7 +586,9 @@ export default class Extension extends FWExtensionBase {
   async removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
     const auths = await this.state.requestService.getAuthList();
     delete auths[url];
-    await this.state.requestService.setAuthorize(auths);
+
+    this.state.requestService.setAuthorize(auths);
+
     const newList = await this.state.requestService.getAuthList();
 
     return { list: newList };
@@ -620,8 +622,8 @@ export default class Extension extends FWExtensionBase {
     return this.state.googleService.createFile({ json, options, token });
   }
 
-  deleteFile({ id }: GoogleFileId): void {
-    this.state.googleService.deleteFile(id, this.token);
+  deleteFile({ id, token }: GoogleFileId): void {
+    this.state.googleService.deleteFile(id, token);
   }
 
   cancelAuthRequest(id: string) {
@@ -738,7 +740,7 @@ export default class Extension extends FWExtensionBase {
     const { password, isSavePass } = options;
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = swapOptions!;
     const errors: Array<BasicTxError> = [];
-    const address = await this.state.getAccountAddress();
+    const address = this.state.getAccountAddress();
     const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
 
     const pair = this.state.keyringService.getPair(address)!;
@@ -1114,7 +1116,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async checkController(params: CheckControllerRequest): Promise<boolean> {
-    const address = await this.state.getCurrentAddress('westend');
+    const address = this.state.getCurrentAddress('westend');
     const stashAddress = await this.state.stakingService.getStashByController(params.address);
 
     if (stashAddress === '') return true;

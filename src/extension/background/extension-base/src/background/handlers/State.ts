@@ -591,8 +591,8 @@ export default class State {
     this.ready = true;
   }
 
-  async getCurrentAddress(network: NetworkName, _currentAccount?: CurrentAccountState) {
-    const currentAccount = _currentAccount ?? (await this.currentAccount);
+  getCurrentAddress(network: NetworkName, _currentAccount?: CurrentAccountState): string {
+    const currentAccount = _currentAccount ?? this.currentAccount;
 
     return isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
   }
@@ -600,9 +600,7 @@ export default class State {
   async fetchEvmBalance({ _networks, ethereumAddress: _ethereumAddress, assetId, force }: FetchEvmBalancePayload) {
     if (!this.ready) return;
 
-    const currentAccount = this.currentAccount;
-
-    const ethereumAddress = _ethereumAddress ?? currentAccount?.ethereumAddress ?? '';
+    const ethereumAddress = _ethereumAddress ?? this.currentAccount?.ethereumAddress ?? '';
 
     if (ethereumAddress === '') return;
 

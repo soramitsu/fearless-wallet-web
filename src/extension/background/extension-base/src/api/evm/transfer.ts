@@ -168,6 +168,6 @@ export function makeEVMTransfer(params: MakeTransferParams): Promise<void> {
   return transfer.finally(() => {
     setTimeout(() => {
       state.fetchEvmBalance({ ethereumAddress: params.from, assetId: params.balance.id, force: true });
-    }, 5000);
+    }, 8000);
   });
 }

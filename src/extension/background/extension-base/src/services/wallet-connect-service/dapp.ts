@@ -110,7 +110,6 @@ export class WalletConnectDAppService {
           chains: [
             'polkadot:91b171bb158e2d3848fa23a9f1c25182', //dot
             'polkadot:7e4e32d0feafd4f9c9414b0be86373f9', //sora mainnet
-            'polkadot:401a1f9dca3da46f5c4091016c8a2f26', //moonriver
           ],
           events: [],
         },

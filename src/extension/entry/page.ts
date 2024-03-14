@@ -10,8 +10,7 @@ import type Injected from '@extension-base/page/Injected';
 import type { Message } from '@extension-base/types';
 import type { TransportRequestMessage } from '@extension-base/background/types/types';
 import { APP_VERSION } from '@/consts/global';
-import { type EIP6963ProviderDetail, type InjectedWindow } from '@/extension/entry/types';
-
+import { type InjectedWindow } from '@/extension/entry/types';
 const win = window as Window & InjectedWindow;
 const walletKey = 'fearlessWallet';
 //TODO fix provider injection
@@ -220,32 +219,7 @@ class Page {
         windowInject.ethereum = evmProvider;
         windowInject.dispatchEvent(new Event('ethereum#initialized'));
       }
-
-      this.inject6963EIP(evmProvider);
     });
-  }
-
-  inject6963EIP(provider: FWEvmProvider) {
-    const _provider = new Proxy(provider, {
-      get(target, key) {
-        if (key === 'then') return Promise.resolve(target);
-
-        return Reflect.get(target, key).bind(target);
-      },
-
-      deleteProperty() {
-        return true;
-      },
-    });
-
-    const announceProvider = () => {
-      const detail: EIP6963ProviderDetail = Object.freeze({ info: eip6963ProviderInfo, provider: _provider });
-      const event = new CustomEvent('eip6963:announceProvider', { detail });
-
-      win.dispatchEvent(event);
-    };
-
-    win.addEventListener('eip6963:requestProvider', announceProvider);
   }
 
   init() {

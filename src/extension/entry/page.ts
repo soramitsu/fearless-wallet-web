@@ -125,10 +125,10 @@ class FearlessWalletPlaceholder {
 
 win.injectedWeb3 = win.injectedWeb3 || {};
 
-if (!win.injectedWeb3[`${walletKey}`]) {
-  win.injectedWeb3[`${walletKey}`] = {
+if (!win.injectedWeb3[walletKey]) {
+  win.injectedWeb3[walletKey] = {
     isPlaceholder: true,
-    version: '${version}',
+    version: packages.version,
     enable: async (origin) => {
       await new Promise((resolve, reject) => {
         let retry = 0;
@@ -138,13 +138,13 @@ if (!win.injectedWeb3[`${walletKey}`]) {
             reject(new Error('Fearless Wallet provider not found'));
           }
 
-          if (!win.injectedWeb3[`${walletKey}`].isPlaceholder) {
+          if (!win.injectedWeb3[walletKey].isPlaceholder) {
             resolve(clearInterval(interval));
           }
         }, 100);
       });
 
-      return win.injectedWeb3[`${walletKey}`].enable(origin);
+      return win.injectedWeb3[walletKey].enable(origin);
     },
   };
 }

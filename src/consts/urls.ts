@@ -16,7 +16,9 @@ const XCM_LOCATIONS = IS_PRODUCTION
   ? `${BASE_URL}/master/xcm/v2/xcm_token_locations.json`
   : `${BASE_URL}/develop-free/xcm/v2/xcm_token_locations.json`;
 
-const XCM_FEES = IS_PRODUCTION ? `${BASE_URL}/master/xcm/xcm_fees.json` : `${BASE_URL}/develop-free/xcm/xcm_fees.json`;
+const XCM_FEES = IS_PRODUCTION
+  ? `${BASE_URL}/master/xcm/v2/xcm_fees.json`
+  : `${BASE_URL}/develop-free/xcm/v2/xcm_fees.json`;
 
 const ONBOARDING_URL = `${BASE_URL}/master/appConfigs/onboarding/web.json`;
 

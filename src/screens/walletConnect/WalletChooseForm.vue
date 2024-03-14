@@ -65,6 +65,7 @@ const isSelected = (address: string) => address === props.selectedAddress;
     line-height: 16px;
     place-self: flex-start;
   }
+
   &__logo {
     grid-area: logo;
     width: 24px;

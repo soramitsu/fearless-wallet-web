@@ -12,10 +12,12 @@ import type { Message } from '@extension-base/types';
 import type { TransportRequestMessage } from '@extension-base/background/types/types';
 import { APP_VERSION } from '@/consts/global';
 import { type InjectedWindow } from '@/extension/entry/types';
+
 const win = window as Window & InjectedWindow;
 const walletKey = 'fearlessWallet';
-//TODO fix provider injection
+
 win.injectedWeb3 = win.injectedWeb3 || {};
+
 class FearlessWalletPlaceholder {
   provider: FWEvmProvider | undefined = undefined;
   connected = false;

@@ -1,3 +1,4 @@
+/* eslint-disable prefer-rest-params */
 import '@polkadot/extension-inject/crossenv';
 
 import { MESSAGE_ORIGIN_CONTENT } from '@extension-base/defaults';
@@ -21,10 +22,10 @@ class FearlessWalletPlaceholder {
   isConnected = () => false;
   version = packages.version;
 
-  __waitProvider = (() => {
+  __waitProvider = (async () => {
     if (this.provider) return Promise.resolve(this.provider);
 
-    return new Promise((resolve, reject) => {
+    const provider = await new Promise((resolve, reject) => {
       let retry = 0;
 
       const interval = setInterval(() => {
@@ -39,13 +40,15 @@ class FearlessWalletPlaceholder {
         }
       }, 100);
     });
+
+    return provider;
   })();
 
   on() {
     this.__waitProvider.then((provider) => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
-      provider.on(...args);
+      provider.on(...arguments);
     });
   }
 
@@ -53,7 +56,7 @@ class FearlessWalletPlaceholder {
     this.__waitProvider.then((provider) => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
-      provider.once(...args);
+      provider.once(...arguments);
     });
   }
 
@@ -61,7 +64,7 @@ class FearlessWalletPlaceholder {
     this.__waitProvider.then((provider) => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
-      provider.off(...args);
+      provider.off(...arguments);
     });
   }
 
@@ -69,7 +72,7 @@ class FearlessWalletPlaceholder {
     this.__waitProvider.then((provider) => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
-      provider.addListener(...args);
+      provider.addListener(...arguments);
     });
   }
 
@@ -77,7 +80,7 @@ class FearlessWalletPlaceholder {
     this.__waitProvider.then((provider) => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
-      provider.removeListener(...args);
+      provider.removeListener(...arguments);
     });
   }
 
@@ -85,7 +88,7 @@ class FearlessWalletPlaceholder {
     this.__waitProvider.then((provider) => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
-      provider.removeAllListeners(...args);
+      provider.removeAllListeners(...arguments);
     });
   }
 
@@ -94,7 +97,7 @@ class FearlessWalletPlaceholder {
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
-    return provider.enable(...args);
+    return await provider.enable(...arguments);
   }
 
   async request() {
@@ -102,7 +105,7 @@ class FearlessWalletPlaceholder {
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
-    return provider.send(...args);
+    return await provider.send(...arguments);
   }
 
   async send() {
@@ -110,15 +113,15 @@ class FearlessWalletPlaceholder {
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
-    return provider.send(...args);
+    return await provider.send(...arguments);
   }
 
-  async sendAsync(args: any[]) {
+  async sendAsync() {
     const provider = await this.__waitProvider;
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
-    return provider.send(...args);
+    return await provider.send(...arguments);
   }
 }
 

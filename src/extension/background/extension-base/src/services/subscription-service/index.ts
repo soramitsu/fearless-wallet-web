@@ -210,16 +210,18 @@ export class SubscriptionService {
           sub.unsub();
         });
       }, 20000);
-    } else {
-      unsubList.forEach(async (item) => {
-        const value = await item;
 
-        this.updateSubscription({
-          name: value.networkName,
-          func: value.unsub,
-        });
-      });
+      return;
     }
+
+    unsubList.forEach(async (item) => {
+      const value = await item;
+
+      this.updateSubscription({
+        name: value.networkName,
+        func: value.unsub,
+      });
+    });
   }
 }
 

@@ -64,7 +64,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     autotestsBranches:          ['develop', 'stage', 'feature/DOPS-2075/trigger_autotest_fearless'],
     autotests:                   'tests:fearless-all',
     downstreamJobParams:        [
-        [$class: 'StringParameterValue', name: 'targetBranch', value: steps.env.BRANCH_NAME],
+        [$class: 'StringParameterValue', name: 'targetBranch', value: env.BRANCH_NAME],
         [$class: 'StringParameterValue', name: 'typeTest', value: autotests]
     ]
 )

@@ -62,10 +62,9 @@ def pipeline = new org.js.AppArtifactsPipeline(
     triggerAutotest:            true,
     downstreamJob:              '/qa/soramitsu-test-framework/fearless-wallet-web',
     autotestsBranches:          ['develop', 'stage', 'feature/DOPS-2075/trigger_autotest_fearless'],
-    autotests:                   'tests:fearless-all',
     downstreamJobParams:        [
         [$class: 'StringParameterValue', name: 'targetBranch', value: env.BRANCH_NAME],
-        [$class: 'StringParameterValue', name: 'typeTest', value: autotests]
+        [$class: 'StringParameterValue', name: 'typeTest', value: 'tests:fearless-all']
     ]
 )
 pipeline.runPipeline()

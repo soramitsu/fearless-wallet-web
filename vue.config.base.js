@@ -28,6 +28,7 @@ module.exports = {
       const def = definitions[0]['process.env'];
 
       def.EXTENSION_PREFIX = JSON.stringify(process.env.EXTENSION_PREFIX);
+      def.IS_EXTENSION = JSON.stringify(process.env.IS_EXTENSION);
       def.OAUTH_CLIENT_ID = JSON.stringify(process.env.OAUTH_CLIENT_ID);
       def.PORT_PREFIX = JSON.stringify(process.env.PORT_PREFIX);
       def.RAMP_TEST_API_KEY = JSON.stringify(process.env.RAMP_TEST_API_KEY);

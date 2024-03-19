@@ -59,7 +59,7 @@
             <InfoRow
               text="assets.originalNetworkFee"
               data-testid="originalNetworkFee"
-              :value="originalNetworkPartialFeeString"
+              :value="originalNetworkFeeString"
               icon="info"
               :iconClasses="['origin-fee']"
             />
@@ -67,7 +67,7 @@
             <InfoRow
               text="assets.crossChainFee"
               data-testid="crossChainFee"
-              :value="destinationNetworkPartialFeeString"
+              :value="destinationNetworkFeeString"
               icon="info"
               :iconClasses="['cross-chain-fee']"
             />
@@ -165,11 +165,11 @@ export default class CrossChainForm extends Vue {
     return `${this.fiatSymbol}${this.$n(+this.value, 'price')}`;
   }
 
-  get originalNetworkPartialFeeString() {
+  get originalNetworkFeeString() {
     return `${formattedNumber(+this.originNetFee, { decimalsValue: 7 })} ${this.originalNetworkUtilityAssetUpper}`;
   }
 
-  get destinationNetworkPartialFeeString() {
+  get destinationNetworkFeeString() {
     return `${formattedNumber(+this.destNetFee)} ${this.assetName}`;
   }
 

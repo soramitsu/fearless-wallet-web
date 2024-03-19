@@ -133,13 +133,7 @@ export default class ReceiveForm extends Vue {
   }
 
   get showCopyBtn() {
-    try {
-      ClipboardItem;
-
-      return true;
-    } catch {
-      return false;
-    }
+    return !window.navigator.userAgent.toLowerCase().includes('firefox');
   }
 
   mounted() {

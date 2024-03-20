@@ -55,7 +55,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { GetAssetPrice, SelectedWallet } from '@/store';
+import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -78,6 +78,7 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get currency() {
     return this.balances.find(({ balances }) =>
@@ -104,8 +105,23 @@ export default class SendForm extends Vue {
     return this.getAssetPrice(this.currency?.priceId ?? '')?.price ?? 0;
   }
 
+  get originNet() {
+    return this.getNetwork(this.selectedNetwork);
+  }
+
+  get originalUtilityId() {
+    return this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
+  }
+
+  get feeAssetPrice() {
+    const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === this.originalUtilityId));
+    const priceId = currency?.priceId ?? '';
+
+    return this.getAssetPrice(priceId).price;
+  }
+
   get fiatFeeString() {
-    return `${this.fiatSymbol}${this.$n(+this.partialFee * this.assetPrice, 'price')}`;
+    return `${this.fiatSymbol}${this.$n(+this.partialFee * this.feeAssetPrice, 'price')}`;
   }
 
   get valueString() {

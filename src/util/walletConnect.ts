@@ -5,7 +5,7 @@ import {
 } from '@extension-base/services/wallet-connect-service/consts';
 import { type NetworkJson } from '@extension-base/types';
 import { getSubstrateGenesisHash } from '@extension-base/services/network-service/helpers';
-import { type ChainData, type SessionProposalNamespaces } from '@/screens/walletConnect/types';
+import { type ChainData, type SessionProposalNamespaces } from '@/interfaces/walletconnect';
 import { useStore } from '@/store';
 
 export const findChainInfoByHalfGenesisHash = (

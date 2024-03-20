@@ -54,6 +54,8 @@ export default class App extends Vue {
   @Action(ExtensionActionTypes.FETCH_FEATURES) fetchFeatures!: AsyncFn;
   @Mutation(ExtensionMutationTypes.SET_ONBOARDING) setOnboarding!: (payload: boolean) => void;
 
+  pingInterval: NodeJS.Timer | undefined = undefined;
+
   get includeKeepAlive() {
     const components = ['Main'];
 
@@ -89,13 +91,17 @@ export default class App extends Vue {
   }
 
   setupSWPing() {
-    setInterval(() => {
+    this.pingInterval = setInterval(() => {
       try {
         pingServiceWorker();
       } catch (error) {
         window.close();
       }
     }, 20000);
+  }
+
+  destroyed() {
+    clearInterval(this.pingInterval);
   }
 
   async setupBalance() {
@@ -105,9 +111,8 @@ export default class App extends Vue {
   }
 
   async setupNfts() {
-    const ownedNfts = await getNftSubscribe((data) => {
-      this.setNfts(data);
-    });
+    const ownedNfts = await getNftSubscribe((nftUpdates) => this.setNfts(nftUpdates));
+
     this.setNfts(ownedNfts);
   }
 
@@ -148,7 +153,7 @@ export default class App extends Vue {
       this.onAccountUpdate(accounts);
     });
 
-    this.onAccountUpdate([...accounts]);
+    this.onAccountUpdate(accounts);
 
     subscribeAddresses((accounts) => {
       this.onAccountUpdate(accounts, true);

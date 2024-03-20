@@ -1,11 +1,5 @@
 import { type ProposalTypes } from '@walletconnect/types';
 
-export type WalletConnectRequestProps = {
-  id: string;
-  accounts: string[];
-  isSupported: boolean;
-};
-
 export type ChainData = {
   name: string;
   icon: string;

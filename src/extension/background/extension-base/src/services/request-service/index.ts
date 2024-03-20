@@ -1,6 +1,6 @@
 import { type BehaviorSubject } from 'rxjs';
 import EvmRequestHandler from '@extension-base/services/request-service/handlers/EvmRequestHandler';
-import { chrome } from '@polkadot/extension-inject/chrome';
+import { chrome } from '@extension-base/utils/crossenv';
 import {
   ConnectWCRequestHandler,
   NotSupportWCRequestHandler,

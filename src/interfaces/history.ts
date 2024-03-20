@@ -3,35 +3,31 @@ import type { WalletAddress, NetworkName, AssetId, AssetName } from '@/interface
 type Reward = {
   amount: string;
   era: number;
-  eventIdx: number;
-  isReward: boolean;
   stash: string;
   validator: string;
 };
 
 type Transfer = {
   amount: string;
-  eventIdx?: number;
   fee: string;
   from: string;
-  success: boolean;
-  hash: string;
   to: string;
-};
-
-type HistoryExtrinsic = {
-  call: string;
-  fee: string;
-  hash: string;
-  module: string;
-  success: boolean;
 };
 
 type HistoryElement = {
   id: string;
   address: string;
   timestamp: string;
-  extrinsic?: HistoryExtrinsic;
+  success: boolean;
+  name?: string;
+  module?: string;
+  method?: string;
+  type?: 'rewarded' | 'bridge' | 'slashed';
+  extrinsicIdx?: number;
+  extrinsicHash?: string;
+  entityType?: 'CALL' | 'EVENT';
+  blockHeight?: number | string;
+  blockHash?: string;
   reward?: Reward;
   transfer?: Transfer;
 };
@@ -46,6 +42,7 @@ type SoraHistoryElement = {
   execution: {
     success: boolean;
   };
+  success: boolean; // дубликат execution.success для совместимости с HistoryElement
   module: 'staking' | 'liquidityProxy' | 'demeterFarmingPlatform' | 'utility' | string;
   method:
     | 'setPayee'
@@ -92,6 +89,7 @@ interface GiantsquidHistoryItem {
     };
   };
 }
+
 type X1HistoryTxList = {
   txId: string;
   methodId: string;
@@ -111,6 +109,7 @@ type X1HistoryTxList = {
   challengeStatus: string;
   l1OriginHash: string;
 };
+
 type X1HistoryData = {
   page: string;
   limit: string;
@@ -119,11 +118,13 @@ type X1HistoryData = {
   chainShortName: string;
   transactionLists: X1HistoryTxList[];
 };
+
 type X1HistoryElement = {
   code: string;
   msg: string;
   data: X1HistoryData[];
 };
+
 interface SubqueryHistory {
   timestamp: number;
   nodes: HistoryElement[];
@@ -144,7 +145,6 @@ type GetHistory = (assetName: AssetName, networkName: NetworkName, address?: str
 enum TransactionType {
   transfer = 'transfer',
   reward = 'reward',
-  extrinsic = 'extrinsic',
   sora = 'sora',
 }
 
@@ -190,15 +190,16 @@ type ZetaHistoryItem = {
   value: string;
   max_priority_fee_per_gas: string;
 };
+
 type ZetaHistory = {
   items: ZetaHistoryItem[];
 };
+
 export {
   TransactionType,
   GetHistory,
   History,
   HistoryForWalletAddress,
-  HistoryExtrinsic,
   SubqueryHistory,
   GiantsquidHistoryItem,
   Reward,

@@ -62,33 +62,29 @@ export const computedSubsquidRequest = (address: string): string =>
     }
   ) {
     timestamp
+    type
+    success
+    name
+    module
+    method
     id
     extrinsicIdx
     extrinsicHash
-    blockNumber
+    entityType
+    blockHeight
+    blockHash
     address
     transfer {
       amount
-      eventIdx
       fee
       from
-      success
       to
     }
     reward {
       amount
       era
-      eventIdx
-      isReward
       stash
       validator
-    }
-    extrinsic {
-      call
-      fee
-      hash
-      module
-      success
     }
   }
 }`;

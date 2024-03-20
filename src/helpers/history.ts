@@ -16,18 +16,18 @@ import { useStore } from '@/store';
 function getType(historyElement: HistoryElement, networkName?: NetworkName): TransactionType {
   if (isSora(networkName ?? '')) return TransactionType.sora;
 
-  const { reward, transfer } = historyElement;
+  const { transfer } = historyElement;
 
   if (transfer) return TransactionType.transfer;
 
-  return reward ? TransactionType.reward : TransactionType.extrinsic;
+  return TransactionType.reward;
 }
 
 function getSignTransfer(historyElement: HistoryElement, address: string, networkName: NetworkName) {
   const type = getType(historyElement, networkName);
 
   if (type === TransactionType.sora) {
-    const element = historyElement as SoraHistoryElement;
+    const element = historyElement as unknown as SoraHistoryElement;
 
     return element.method === 'rewarded' ? '+' : '-';
   }
@@ -46,7 +46,7 @@ function getTypeFormatted(historyElement: HistoryElement, address: string, netwo
   const type = getType(historyElement, networkName);
 
   if (type === TransactionType.sora) {
-    const element = historyElement as SoraHistoryElement;
+    const element = historyElement as unknown as SoraHistoryElement;
 
     return element.module;
   }
@@ -55,12 +55,6 @@ function getTypeFormatted(historyElement: HistoryElement, address: string, netwo
 
   if (type === TransactionType.transfer) {
     return signTransfer === '+' ? 'incomingTransfer' : 'outgoingTransfer';
-  }
-
-  if (type === TransactionType.extrinsic) {
-    const { call } = historyElement.extrinsic!;
-
-    return `${firstCharToUp(call)}${call === 'transfer' ? ' fee' : ''}`;
   }
 
   // reward
@@ -95,24 +89,20 @@ function getHumanTransferFee(historyElement: HistoryElement, networkName: Networ
   const type = getType(historyElement, networkName);
 
   if (type === TransactionType.sora) {
-    const element = historyElement as SoraHistoryElement;
+    const element = historyElement as unknown as SoraHistoryElement;
     const { networkFee } = element;
 
     return getHumanFeeValue(networkFee, networkName);
   }
 
-  const { transfer, extrinsic } = historyElement;
+  const { transfer } = historyElement;
 
   if (type === TransactionType.transfer) {
     const { fee } = transfer!;
 
-    if (historyType === 'oklink') return +fee;
+    if (fee === null) return 0;
 
-    return getHumanFeeValue(fee, networkName);
-  }
-
-  if (type === TransactionType.extrinsic) {
-    const { fee } = extrinsic!;
+    if (historyType === 'oklink' || historyType === 'etherscan') return +fee;
 
     return getHumanFeeValue(fee, networkName);
   }
@@ -125,13 +115,14 @@ function getHistoryValue(
   assetId: string,
   networkName: NetworkName,
   address: string,
-  withFee = false
+  _withFee = false
 ) {
   const store = useStore();
   const network: NetworkJson = store.getters.getNetwork(networkName);
   const historyType = network.externalApi?.history?.type;
   const signTransfer = getSignTransfer(historyElement, address, networkName);
   const type = getType(historyElement, networkName);
+  const withFee = _withFee && signTransfer === '-';
 
   if (historyType === 'oklink') {
     const amount = historyElement.transfer?.amount ? historyElement.transfer.amount : 0;
@@ -143,7 +134,7 @@ function getHistoryValue(
   }
 
   if (type === TransactionType.sora) {
-    const element = historyElement as SoraHistoryElement;
+    const element = historyElement as unknown as SoraHistoryElement;
 
     const dataValue =
       element.data?.value ?? element.data?.amount ?? element.data?.baseAssetAmount ?? element.data?.maxAdditional ?? 0;
@@ -158,7 +149,7 @@ function getHistoryValue(
     return { signTransfer, value: result, targetValue };
   }
 
-  const { transfer, reward, extrinsic } = historyElement;
+  const { transfer, reward } = historyElement;
 
   if (type === TransactionType.transfer && transfer) {
     const value = getHumanValue(transfer.amount, assetId, networkName);
@@ -174,33 +165,27 @@ function getHistoryValue(
     return { signTransfer: '+', value };
   }
 
-  // extrinsic
-  const { fee } = extrinsic!;
-  const value = getHumanValue(fee, assetId, networkName);
-
-  return { signTransfer: '-', value };
+  return { signTransfer: '', value: 0 };
 }
 
 // temporary function, remove after complete transition to subsquid
 function getFormattedHistory(
-  history: GiantsquidHistoryItem[] | SubqueryHistory | HistoryElement[],
+  history: GiantsquidHistoryItem[] | SubqueryHistory | HistoryElement[] | SoraHistoryElement[],
   serviceType: HistoryServiceType
 ): SubqueryHistory {
   if (serviceType === 'giantsquid') {
     const nodes: HistoryElement[] = (history as GiantsquidHistoryItem[]).map(({ id, transfer }) => {
-      const { amount, from, success, timestamp, to, extrinsicHash } = transfer;
+      const { amount, from, success, timestamp, to } = transfer;
 
       return {
         id,
         timestamp: (new Date(timestamp).getTime() / 1000).toString(),
         address: '',
+        success,
         transfer: {
           amount,
-          success,
-          hash: extrinsicHash,
           from: from.id,
           to: to.id,
-          eventIdx: -1,
           fee: '0',
         },
       };
@@ -224,6 +209,7 @@ function getFormattedHistory(
     const nodes: HistoryElement[] = (history as SoraHistoryElement[]).map((historyElement) => {
       return {
         ...historyElement,
+        success: historyElement.execution.success,
         timestamp: historyElement.timestamp.toString(),
       };
     });

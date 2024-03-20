@@ -89,12 +89,12 @@ export default class HistoryItem extends Vue {
 
   get hash() {
     if (this.isSora) {
-      const element = this.historyElement as SoraHistoryElement;
+      const element = this.historyElement as unknown as SoraHistoryElement;
 
       return this.$t(`history.${element.method}`);
     }
 
-    const { transfer, reward, extrinsic } = this.historyElement;
+    const { transfer, reward } = this.historyElement;
 
     if (this.type === TransactionType.transfer) {
       const value = this.typeFormatted === 'incomingTransfer' ? transfer!.from : transfer!.to;
@@ -102,10 +102,8 @@ export default class HistoryItem extends Vue {
       return cut(value);
     }
 
-    if (this.type === TransactionType.reward) return cut(reward!.validator);
-
-    // extrinsic
-    return cut(extrinsic!.hash);
+    // reward
+    return cut(reward!.validator);
   }
 
   get typeFormatted() {

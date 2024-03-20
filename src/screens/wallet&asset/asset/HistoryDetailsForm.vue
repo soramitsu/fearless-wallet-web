@@ -2,7 +2,7 @@
   <AboveForm header="Details" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="details">
       <div class="descriptions">
-        <div v-if="isExtrinsic || isSora" class="item" data-testid="extrinsicHashLabel">
+        <div v-if="isSora" class="item" data-testid="extrinsicHashLabel">
           Extrinsic Hash
 
           <div class="item-value item-icon" data-testid="extrinsicHash">
@@ -79,19 +79,17 @@
           <div class="item-value">{{ targetValue }}</div>
         </div>
 
-        <template v-if="isExtrinsic">
-          <div class="item">
-            Module
+        <div class="item">
+          Module
 
-            <div class="item-value">{{ moduleType }}</div>
-          </div>
+          <div class="item-value">{{ moduleType }}</div>
+        </div>
 
-          <div class="item">
-            Call
+        <div class="item">
+          Method
 
-            <div class="item-value">{{ call }}</div>
-          </div>
-        </template>
+          <div class="item-value">{{ method }}</div>
+        </div>
 
         <div v-if="showFee" class="item">
           Transfer fee
@@ -132,7 +130,7 @@ export default class HistoryDetailsForm extends Vue {
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get showTargetAmount() {
-    return this.isSora && (this.historyElement as SoraHistoryElement).method === 'swap';
+    return this.isSora && (this.historyElement as unknown as SoraHistoryElement).method === 'swap';
   }
 
   get isTransfer() {
@@ -169,16 +167,12 @@ export default class HistoryDetailsForm extends Vue {
     return this.$t(this.explorerType === 'etherscan' ? 'accounts.etherscan' : 'accounts.subscan');
   }
 
-  get isExtrinsic() {
-    return this.type === 'extrinsic';
-  }
-
   get isReward() {
     return this.type === 'reward';
   }
 
   get showFee() {
-    if (this.isSora) return (this.historyElement as SoraHistoryElement).method !== 'rewarded';
+    if (this.isSora) return (this.historyElement as unknown as SoraHistoryElement).method !== 'rewarded';
 
     return this.isTransfer && this.signTransfer === '-';
   }
@@ -194,21 +188,11 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get statusIsSuccess() {
-    if (this.isSora) return (this.historyElement as SoraHistoryElement).execution.success;
+    if (this.isSora) return (this.historyElement as unknown as SoraHistoryElement).execution.success;
 
-    if (this.isTransfer) {
-      const { success } = this.historyElement.transfer!;
+    const { success } = this.historyElement!;
 
-      return success;
-    }
-
-    if (this.isExtrinsic) {
-      const { success } = this.historyElement.extrinsic!;
-
-      return success;
-    }
-
-    return true;
+    return success ?? true;
   }
 
   get validator() {
@@ -250,15 +234,15 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get moduleType() {
-    if (this.isSora) return (this.historyElement as SoraHistoryElement).module;
+    if (this.isSora) return (this.historyElement as unknown as SoraHistoryElement).module;
 
-    return this.historyElement.extrinsic!.module;
+    return this.historyElement!.module;
   }
 
-  get call() {
-    if (this.isSora) return (this.historyElement as SoraHistoryElement).method;
+  get method() {
+    if (this.isSora) return (this.historyElement as unknown as SoraHistoryElement).method;
 
-    return this.historyElement.extrinsic!.call;
+    return this.historyElement?.method;
   }
 
   get transferFee() {
@@ -292,9 +276,9 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get hash() {
-    if (this.isSora) return (this.historyElement as SoraHistoryElement).blockHash;
+    if (this.isSora) return (this.historyElement as unknown as SoraHistoryElement).blockHash;
 
-    return this.historyElement.extrinsic!.hash;
+    return this.historyElement.blockHash ?? '';
   }
 
   get displayHash() {
@@ -315,9 +299,7 @@ export default class HistoryDetailsForm extends Vue {
   openExplorer() {
     if (this.explorerType === 'etherscan' || this.explorerType === 'oklink') {
       if (this.explorerUrl) {
-        const url = this.explorerUrl
-          .replace('{type}', 'tx')
-          .replace('{value}', this.historyElement?.transfer?.hash ?? '');
+        const url = this.explorerUrl.replace('{type}', 'tx').replace('{value}', this.historyElement?.blockHash ?? '');
 
         window.open(url);
       }
@@ -327,7 +309,7 @@ export default class HistoryDetailsForm extends Vue {
 
     const url = this.explorerUrl
       .replace('{type}', 'extrinsic')
-      .replace('{value}', this.historyElement?.transfer?.hash ?? '');
+      .replace('{value}', this.historyElement?.blockHash ?? '');
 
     window.open(url);
   }

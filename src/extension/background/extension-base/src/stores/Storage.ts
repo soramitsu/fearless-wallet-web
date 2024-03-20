@@ -1,6 +1,5 @@
-import { chrome } from '@polkadot/extension-inject/chrome';
+import { chrome } from '@extension-base/utils/crossenv';
 import type { IState } from '@extension-base/background/types/types';
-
 class Storage {
   set(value: Partial<IState>) {
     return chrome.storage.local.set(value);

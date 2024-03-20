@@ -37,12 +37,7 @@ import type { SessionTypes } from '@walletconnect/types';
 import { transformNamespaces } from '@/util/walletConnect';
 import { useStore } from '@/store';
 import { disconnectWalletConnectConnection } from '@/extension/messaging/wallet-connect-requests';
-
-type ChainData = {
-  name: string;
-  icon: string;
-  connected: boolean;
-};
+import { type ChainData } from '@/interfaces/walletconnect';
 
 const route = useRoute();
 const router = useRouter();

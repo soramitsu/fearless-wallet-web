@@ -1,8 +1,7 @@
 // Copyright 2019-2023 @polkadot/extension-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-import { chrome } from '@polkadot/extension-inject/chrome';
-
 type StoreValue = Record<string, unknown>;
+import { chrome } from '@extension-base/utils/crossenv';
 
 const lastError = (type: string): void => {
   const error = chrome.runtime.lastError;

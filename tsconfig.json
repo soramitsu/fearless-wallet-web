@@ -23,6 +23,7 @@
       "node",
       "element-ui",
       "chrome",
+      "firefox-webext-browser",
       "network-information-types"
     ],
     "paths": {

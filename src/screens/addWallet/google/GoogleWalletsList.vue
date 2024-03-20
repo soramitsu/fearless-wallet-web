@@ -90,7 +90,6 @@ export default class GoogleWalletsList extends Vue {
     const address = await jsonRestore(json, password);
 
     await updateCurrentAccount(address || this.selectedWallet.address);
-
     this.setItemValue(index, { isComplete: true, isLoading: false });
 
     return true;

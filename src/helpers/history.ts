@@ -194,13 +194,19 @@ function getFormattedHistory(
     return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
   }
 
-  if (serviceType === 'subsquid' || serviceType === 'etherscan') {
+  if (serviceType === 'etherscan') {
     const nodes: HistoryElement[] = (history as HistoryElement[]).map((historyElement) => {
       return {
         ...historyElement,
         timestamp: (+historyElement.timestamp / 1000).toString(),
       };
     });
+
+    return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
+  }
+
+  if (serviceType === 'subsquid') {
+    const nodes: HistoryElement[] = history as HistoryElement[];
 
     return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
   }

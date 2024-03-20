@@ -2,7 +2,7 @@
   <AboveForm header="Details" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="details">
       <div class="descriptions">
-        <div v-if="!isSora" class="item" data-testid="extrinsicHashLabel">
+        <div v-if="!isSora && !!extrinsicHash" class="item" data-testid="extrinsicHashLabel">
           Extrinsic Hash
 
           <div class="item-value item-icon" data-testid="extrinsicHash">
@@ -12,7 +12,7 @@
           </div>
         </div>
 
-        <div class="item" data-testid="extrinsicHashLabel">
+        <div v-if="!!blockHash" class="item" data-testid="extrinsicHashLabel">
           Block Hash
 
           <div class="item-value item-icon" data-testid="extrinsicHash">
@@ -286,9 +286,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get extrinsicHash() {
-    if (this.isSora) return '';
-
-    return this.historyElement.extrinsicHash ?? '';
+    return this.historyElement.extrinsicHash;
   }
 
   get displayExtrinsicHash() {
@@ -296,9 +294,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get blockHash() {
-    if (this.isSora) return (this.historyElement as unknown as SoraHistoryElement).blockHash;
-
-    return this.historyElement.blockHash ?? '';
+    return this.historyElement.blockHash;
   }
 
   get displayBlockHash() {

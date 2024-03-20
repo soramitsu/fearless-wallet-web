@@ -2,13 +2,23 @@
   <AboveForm header="Details" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="details">
       <div class="descriptions">
-        <div v-if="isSora" class="item" data-testid="extrinsicHashLabel">
+        <div v-if="!isSora" class="item" data-testid="extrinsicHashLabel">
           Extrinsic Hash
 
           <div class="item-value item-icon" data-testid="extrinsicHash">
-            {{ displayHash }}
+            {{ displayExtrinsicHash }}
 
-            <Icon icon="copy" className="copy" data-testid="copyBtn" @click="copy(hash)" />
+            <Icon icon="copy" className="copy" data-testid="copyBtn" @click="copy(extrinsicHash)" />
+          </div>
+        </div>
+
+        <div class="item" data-testid="extrinsicHashLabel">
+          Block Hash
+
+          <div class="item-value item-icon" data-testid="extrinsicHash">
+            {{ displayBlockHash }}
+
+            <Icon icon="copy" className="copy" data-testid="copyBtn" @click="copy(blockHash)" />
           </div>
         </div>
 
@@ -67,18 +77,6 @@
           <div class="item-value">{{ era }}</div>
         </div>
 
-        <div v-if="showAmount" class="item">
-          Amount
-
-          <div class="item-value">{{ value }}</div>
-        </div>
-
-        <div v-if="showTargetAmount" class="item">
-          Target Amount
-
-          <div class="item-value">{{ targetValue }}</div>
-        </div>
-
         <div class="item">
           Module
 
@@ -89,6 +87,18 @@
           Method
 
           <div class="item-value">{{ method }}</div>
+        </div>
+
+        <div v-if="showAmount" class="item">
+          Amount
+
+          <div class="item-value">{{ value }}</div>
+        </div>
+
+        <div v-if="showTargetAmount" class="item">
+          Target Amount
+
+          <div class="item-value">{{ targetValue }}</div>
         </div>
 
         <div v-if="showFee" class="item">
@@ -275,14 +285,24 @@ export default class HistoryDetailsForm extends Vue {
     return getSignTransfer(this.historyElement, this.address, this.selectedNetwork);
   }
 
-  get hash() {
+  get extrinsicHash() {
+    if (this.isSora) return '';
+
+    return this.historyElement.extrinsicHash ?? '';
+  }
+
+  get displayExtrinsicHash() {
+    return cut(this.extrinsicHash);
+  }
+
+  get blockHash() {
     if (this.isSora) return (this.historyElement as unknown as SoraHistoryElement).blockHash;
 
     return this.historyElement.blockHash ?? '';
   }
 
-  get displayHash() {
-    return cut(this.hash);
+  get displayBlockHash() {
+    return cut(this.blockHash);
   }
 
   get selectedNetwork() {

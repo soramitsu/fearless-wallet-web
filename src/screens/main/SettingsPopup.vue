@@ -15,6 +15,7 @@
         data-testid="walletConnect"
         @onOpen="open('WalletConnectInitAuth')"
       />
+
       <SettingMenuItem
         v-if="isExtension"
         title="common.manageDApp"
@@ -22,6 +23,7 @@
         data-testid="manageDApp"
         @onOpen="openManageAuths"
       />
+
       <SettingMenuItem
         title="header.settings.accounts"
         icon="account"

@@ -34,19 +34,20 @@
           size="big"
           class="button"
           text="assets.saveQR"
-          width="260px"
           iconName="receive-white"
           data-testid="saveQR"
+          :width="widthSaveBtn"
           @click="saveQR"
         />
 
         <FButton
+          v-if="showCopyBtn"
           size="big"
           class="button copy-qr"
-          width="260px"
           text="assets.copyQR"
           iconName="share"
           data-testid="copyQR"
+          width="260px"
           @click="copyQR"
         />
 
@@ -125,6 +126,14 @@ export default class ReceiveForm extends Vue {
 
   get cutAddress() {
     return cut(this.address, 5);
+  }
+
+  get widthSaveBtn() {
+    return this.showCopyBtn ? '260px' : '530px';
+  }
+
+  get showCopyBtn() {
+    return !window.navigator.userAgent.toLowerCase().includes('firefox');
   }
 
   mounted() {
@@ -230,10 +239,10 @@ export default class ReceiveForm extends Vue {
   }
 
   .button {
-    margin-right: 10px;
+    margin-left: 10px;
 
-    &:last-child {
-      margin-right: 0;
+    &:first-child {
+      margin-left: 0;
     }
   }
 

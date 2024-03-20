@@ -43,7 +43,9 @@ function validateEmail(email: string) {
   return EmailValidator.validate(email);
 }
 
-function cut(value: string, length = 7) {
+function cut(value: string | undefined, length = 7) {
+  if (value === undefined) return '';
+
   const endNumber = length + 1;
 
   if (value.length <= length * 2 + 1) return value;

@@ -137,12 +137,12 @@ export default class History extends Vue {
   get filteredHistory() {
     if (this.filterHistoryValue === 'all') return this.historyItems;
 
-    const field = this.filterHistoryValue as 'transfer' | 'reward' | 'extrinsic';
+    const field = this.filterHistoryValue as 'transfer' | 'reward';
 
     if (this.isSora) {
       const value = field === 'reward' ? 'rewarded' : field;
 
-      const filteredHistory = (this.historyItems as SoraHistoryElement[]).filter((historyItem) => {
+      const filteredHistory = (this.historyItems as unknown as SoraHistoryElement[]).filter((historyItem) => {
         return historyItem.method === value;
       });
 

@@ -6,7 +6,7 @@
       <div class="first-row">
         <div data-testid="hash">{{ hash }}</div>
 
-        <div data-testid="valueHistory">{{ value }} {{ assetToUpperCase }}</div>
+        <div :class="valueClasses" data-testid="valueHistory">{{ value }} {{ assetToUpperCase }}</div>
       </div>
 
       <div class="second-row">
@@ -57,6 +57,16 @@ export default class HistoryItem extends Vue {
 
   get isSora() {
     return isSora(this.network);
+  }
+
+  get success() {
+    return this.historyElement.success;
+  }
+
+  get valueClasses() {
+    return {
+      reject: !this.success,
+    };
   }
 
   get date() {
@@ -132,6 +142,10 @@ export default class HistoryItem extends Vue {
 
   &:last-child {
     border: none;
+  }
+
+  .reject {
+    color: $reject-color;
   }
 
   .column {

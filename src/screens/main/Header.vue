@@ -313,6 +313,7 @@ export default class Header extends Vue {
 
   .logo-container {
     width: 48px;
+    margin: auto;
   }
 
   i {

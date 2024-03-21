@@ -1,8 +1,14 @@
 <template>
   <FCorners :size="size">
     <div :class="containerSelectClasses">
-      <SSelect v-model="vModel" :placeholder="$t(placeholder)" :size="size" :disabled="disabled">
-        <SOption v-for="{ value, label } in options" :key="label" :value="value" :label="label" />
+      <SSelect v-model="vModel" :placeholder="$t(placeholder)" :size="size" :disabled="disabled" data-testid="select">
+        <SOption
+          v-for="{ value, label } in options"
+          :key="label"
+          :value="value"
+          :label="label"
+          data-testid="selectOption"
+        />
       </SSelect>
     </div>
   </FCorners>

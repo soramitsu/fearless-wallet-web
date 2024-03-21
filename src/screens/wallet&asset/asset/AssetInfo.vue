@@ -165,7 +165,7 @@ export default class AssetInfo extends Vue {
     return this.selectedAsset.toUpperCase();
   }
 
-  @Watch('currency', { deep: true })
+  @Watch('pickedNetwork')
   transferableAssetBalanceUpdate() {
     this.transferableAssetBalance = +getSummaryTransferableBalanceFilteredByActiveNetworks(
       this.currency,

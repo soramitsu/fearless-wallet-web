@@ -12,6 +12,7 @@
       :disabled="disabled"
       :typeText="typeText"
       :type="type"
+      data-testid="input"
     />
 
     <div v-show="showErrorText" class="error-descriptions" data-testid="errorDescriptions">

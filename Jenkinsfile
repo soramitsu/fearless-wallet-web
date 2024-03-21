@@ -1,4 +1,4 @@
-@Library('jenkins-library@feature/DOPS-2075/trigger_autotest_fearless')
+@Library('jenkins-library')
 
 def buildWithCred  = [
     [$class: 'UsernamePasswordMultiBinding', credentialsId: 'OAUTH_CLIENT_UPLOAD', usernameVariable: 'OAUTH_CLIENT_ID_UPLOAD', passwordVariable: 'OAUTH_CLIENT_SECRET_UPLOAD'],
@@ -61,9 +61,8 @@ def pipeline = new org.js.AppArtifactsPipeline(
     sonarTestsPath:             'tests',
     triggerAutotest:            true,
     downstreamJob:              '/qa/soramitsu-test-framework/fearless-wallet-test',
-    autotestsBranches:          ['develop', 'stage', 'feature/DOPS-2075/trigger_autotest_fearless'],
     downstreamJobParams:        [
-        [$class: 'StringParameterValue', name: 'targetBranch', value: 'develop'],
+        [$class: 'StringParameterValue', name: 'targetBranch', value: env.BRANCH_NAME],
         [$class: 'StringParameterValue', name: 'typeTest', value: 'tests:fearless-all']
     ]
 )

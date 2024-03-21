@@ -56,7 +56,7 @@ export const computedGiantSquidRequest = (address: string): string =>
 export const computedSubsquidRequest = (address: string): string =>
   `{
   historyElements(
-    orderBy: id_DESC
+    orderBy: timestamp_DESC
     where: {
       address_eq: "${address}"
     }

@@ -85,6 +85,7 @@
     "@open-web3/orml-types": "^2.0.1",
     "@polkadot/types": "^10.9.1",
     "@types/chrome": "^0.0.200",
+    "@types/crypto-js": "^4.2.2",
     "@types/electron-devtools-installer": "^2.2.2",
     "@types/file-saver": "^2.0.5",
     "@types/firefox-webext-browser": "^120.0.1",

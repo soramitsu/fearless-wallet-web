@@ -3913,6 +3913,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/crypto-js@npm:^4.2.2":
+  version: 4.2.2
+  resolution: "@types/crypto-js@npm:4.2.2"
+  checksum: 727daa0d2db35f0abefbab865c23213b6ee6a270e27e177939bbe4b70d1e84c2202d9fac4ea84859c4b4d49a4ee50f948f601327a39b69ec013288018ba07ca5
+  languageName: node
+  linkType: hard
+
 "@types/debug@npm:^4.1.6":
   version: 4.1.8
   resolution: "@types/debug@npm:4.1.8"
@@ -10737,6 +10744,7 @@ __metadata:
     "@sora-substrate/util": 1.32.8
     "@soramitsu-ui/ui-vue2": ^1.1.0
     "@types/chrome": ^0.0.200
+    "@types/crypto-js": ^4.2.2
     "@types/electron-devtools-installer": ^2.2.2
     "@types/file-saver": ^2.0.5
     "@types/firefox-webext-browser": ^120.0.1

@@ -324,7 +324,6 @@ export interface ResponseCheckSwap {
   amountB: string;
   AToB: string;
   BToA: string;
-  fee: string;
   networkFee?: string;
   minMaxValue: string;
   route: string;

@@ -32,7 +32,6 @@
         :minMaxAmountPrice="minMaxAmountPrice"
         :fee="fee"
         :feePrice="feePrice"
-        :providerFee="providerFee"
         :sendAssetUP="sendAssetUP"
         :receiveAssetUP="receiveAssetUP"
         :isExchangeB="isExchangeB"
@@ -62,7 +61,6 @@ export default class SwapPreview extends Vue {
   @Prop({ default: '' }) minMaxAmountPrice!: string;
   @Prop({ default: '' }) fee!: string;
   @Prop({ default: '' }) feePrice!: string;
-  @Prop({ default: '' }) providerFee!: string;
   @Prop({ default: '' }) sendAssetUP!: string;
   @Prop({ default: '' }) receiveAssetUP!: string;
   @Prop({ default: '' }) route!: string;

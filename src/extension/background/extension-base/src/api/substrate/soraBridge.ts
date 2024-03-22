@@ -1,5 +1,6 @@
 import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import { SubNetworkId } from '@sora-substrate/util/build/bridgeProxy/sub/consts';
+import { type SubNetwork } from '@sora-substrate/util/build/bridgeProxy/sub/types';
 import { getAssetBalance, getAssetInfo } from '../helpers';
 import { type CrossChainProps, type MakeCrossChainProps } from './crossChain';
 import type State from '@extension-base/background/handlers/State';
@@ -25,7 +26,7 @@ function getSoraParaId(network: NetworkName, state: State): string {
   return networks.find(({ chainId }) => chainId === parachainId)!.paraId!;
 }
 
-function getSoraParams(props: CrossChainProps, state: State): [Asset, SubNetworkId] {
+function getSoraParams(props: CrossChainProps, state: State): [Asset, SubNetwork] {
   const { originNet, tokenBalance, destinationNet, assetId } = props;
   const { precision, symbol } = getAssetBalance(originNet, tokenBalance);
   const { currencyId } = getAssetInfo(assetId, state);
@@ -43,6 +44,7 @@ function getSoraParams(props: CrossChainProps, state: State): [Asset, SubNetwork
       symbol: symbol,
       name: symbol,
       decimals: precision,
+      isMintable: false,
     },
     subNetworkId,
   ];

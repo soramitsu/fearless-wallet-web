@@ -717,7 +717,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async checkSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
-    const { AToB, BToA, amountA, amountB, minMaxValue, swapOptions, providerFee, route } = await createSwap(
+    const { AToB, BToA, amountA, amountB, minMaxValue, swapOptions, route } = await createSwap(
       options,
       apiSora,
       this.state
@@ -725,7 +725,6 @@ export default class Extension extends FWExtensionBase {
 
     return {
       swapOptions,
-      fee: providerFee,
       AToB,
       BToA,
       amountA,

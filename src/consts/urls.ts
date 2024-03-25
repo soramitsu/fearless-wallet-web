@@ -4,7 +4,7 @@ const BASE_URL = 'https://raw.githubusercontent.com/soramitsu/shared-features-ut
 
 const CHAINS = IS_PRODUCTION
   ? `${BASE_URL}/master/chains/v9/chains.json`
-  : `${BASE_URL}/develop-free/chains/v7/chains_dev.json`;
+  : `${BASE_URL}/develop-free/chains/v9/chains_dev.json`;
 
 const FIATS = `${BASE_URL}/master/fiat/fiats.json`;
 

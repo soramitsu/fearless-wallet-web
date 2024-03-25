@@ -479,7 +479,9 @@ export default class State {
 
     this.saveCurrentAccountAddress(address, () => {
       this.keyringService.triggerWalletsSubscription();
+
       if (isNew) this.setActiveNetworks(this.networkService.selectedNetworks[address] ?? ALL_NETWORKS);
+
       this.nftService.publishNfts();
     });
 
@@ -506,17 +508,6 @@ export default class State {
     callback();
   }
 
-  cleanupDeletedAccount(address: string) {
-    if (this.networkService.selectedNetworks[address]) {
-      delete this.networkService.selectedNetworks[address];
-
-      storage.set({ selectedNetworks: this.networkService.selectedNetworks });
-    }
-
-    this.nftService.deleteSavedNfts(address);
-    this.balanceService.deleteBalance(address);
-  }
-
   public saveCurrentAccountAddress(address: string, callback?: (account: CurrentAccountState) => void) {
     if (address === '') return this.setCurrentAccount(null);
 
@@ -532,6 +523,17 @@ export default class State {
     };
 
     this.setCurrentAccount(accountInfo, () => callback?.(accountInfo));
+  }
+
+  cleanupDeletedAccount(address: string) {
+    if (this.networkService.selectedNetworks[address]) {
+      delete this.networkService.selectedNetworks[address];
+
+      storage.set({ selectedNetworks: this.networkService.selectedNetworks });
+    }
+
+    this.nftService.deleteSavedNfts(address);
+    this.balanceService.deleteBalance(address);
   }
 
   public subscribeTotalXorBalance() {
@@ -593,8 +595,8 @@ export default class State {
     this.ready = true;
   }
 
-  async getCurrentAddress(network: NetworkName, _currentAccount?: CurrentAccountState) {
-    const currentAccount = _currentAccount ?? (await this.currentAccount);
+  getCurrentAddress(network: NetworkName, _currentAccount?: CurrentAccountState): string {
+    const currentAccount = _currentAccount ?? this.currentAccount;
 
     return isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
   }
@@ -602,9 +604,7 @@ export default class State {
   async fetchEvmBalance({ _networks, ethereumAddress: _ethereumAddress, assetId, force }: FetchEvmBalancePayload) {
     if (!this.ready) return;
 
-    const currentAccount = this.currentAccount;
-
-    const ethereumAddress = _ethereumAddress ?? currentAccount?.ethereumAddress ?? '';
+    const ethereumAddress = _ethereumAddress ?? this.currentAccount?.ethereumAddress ?? '';
 
     if (ethereumAddress === '') return;
 
@@ -625,7 +625,7 @@ export default class State {
 
       const timeout = api.timeout[substrateAddress] ?? Number.MIN_VALUE;
       const timeDiff = Date.now() - timeout;
-      const shouldSkipUpdate = timeDiff < REFRESH_TIME || !!force;
+      const shouldSkipUpdate = timeDiff < REFRESH_TIME && !force;
 
       if (shouldSkipUpdate || networkStatus === NETWORK_STATUS.DISCONNECTED) return;
 

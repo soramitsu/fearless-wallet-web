@@ -100,11 +100,11 @@ import { Components } from '@/router/routes';
 import { URLS } from '@/consts/urls';
 import { initGoogleAuth } from '@/extension/messaging';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { IS_EXTENSION } from '@/consts/global';
 
 @Component
 export default class Welcome extends Vue {
   showGoogleAuthPopup = false;
+  isAuthFlowInit = false;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get showBackWalletIcon() {
@@ -120,7 +120,13 @@ export default class Welcome extends Vue {
   }
 
   manageGoogle() {
-    if (IS_EXTENSION) initGoogleAuth();
+    if (!this.isAuthFlowInit) {
+      this.isAuthFlowInit = true;
+
+      initGoogleAuth().finally(() => {
+        this.isAuthFlowInit = false;
+      });
+    }
   }
 
   closeGooglePopup() {

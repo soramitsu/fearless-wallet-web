@@ -4,9 +4,9 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import { type NetworkJson } from '@extension-base/types';
-import { type ChainData, type SessionProposalNamespaces } from '@/screens/walletConnect/types';
+import { getSubstrateGenesisHash } from '@extension-base/services/network-service/helpers';
+import { type ChainData, type SessionProposalNamespaces } from '@/interfaces/walletconnect';
 import { useStore } from '@/store';
-import { getSubstrateGenesisHash } from '@/extension/background/extension-base/src/services/network-service/helpers';
 
 export const findChainInfoByHalfGenesisHash = (
   chainMap: NetworkJson[],

@@ -89,7 +89,7 @@ import { Fragment } from 'vue-fragment';
 import { WALLET_CONNECT_SUPPORTED_METHODS } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import WalletChooseForm from './WalletChooseForm.vue';
-import type { ChainData } from './types';
+import type { ChainData } from '@/interfaces/walletconnect';
 import type { WalletConnectSessionRequest } from '@extension-base/services/wallet-connect-service/types';
 import type { AccountJson } from '@extension-base/background/types/types';
 import { useStore } from '@/store';

@@ -82,7 +82,10 @@ const mutations: MutationTree<State> & Mutations = {
 
         if (result[id] === undefined) result[id] = [];
 
-        result[id].push(item);
+        result[id].push({
+          ...item,
+          success: item.execution.success,
+        });
 
         return result;
       }, {} as Record<string, SoraHistoryElement[]>);

@@ -92,22 +92,19 @@ async function fetchEthereumHistory(url: string, address: string, contractAddres
   }
 
   return res.data.result.map(({ timeStamp, value: amount, gasUsed: fee, gasPrice, from, to, hash }, index) => {
-    const calcFee = new FPNumber(formatUnits(fee, 'gwei'))
-      .mul(new FPNumber(formatUnits(gasPrice, 'gwei')))
-      .bnToString();
+    const calcFee = new FPNumber(formatUnits(fee, 'gwei')).mul(new FPNumber(formatUnits(gasPrice, 'gwei'))).toString();
 
     return {
       address,
       id: String(index),
       timestamp: (+timeStamp * SEC1).toString(),
+      success: true,
+      blockHash: hash,
       transfer: {
         amount,
-        hash,
         fee: formatEther(calcFee),
         from,
         to,
-        eventIdx: 0,
-        success: true,
       },
     };
   });
@@ -126,11 +123,11 @@ export async function fetchX1History(url: string, address: string): Promise<Hist
       address,
       id: String(index),
       timestamp: (new Date(+el.transactionTime).getTime() / 1000).toString(),
+      success: el.state === 'success',
+      blockHash: el.txId,
       transfer: {
         amount: el.amount,
         from: el.from,
-        hash: el.txId,
-        success: el.state === 'success',
         to: el.to,
         fee: el.txFee,
       },
@@ -163,11 +160,11 @@ async function fetchZetaHistory(url: string, address: string) {
       address,
       id: String(index),
       timestamp: (new Date(el.timestamp).getTime() / 1000).toString(), //to seconds
+      success: el.status === 'ok',
+      blockHash: el.hash,
       transfer: {
         amount: el.value,
         from: el.from.hash,
-        hash: el.hash,
-        success: el.status === 'ok',
         to: el.to.hash,
         fee: el.fee.value,
       },
@@ -187,14 +184,10 @@ export async function fetchHistory(
 ) {
   try {
     if (type === 'sora') return fetchSoraHistory(url, address);
+
     if (type === 'oklink') return fetchX1History(url, address);
+
     if (type === 'zeta') return fetchZetaHistory(url, address);
-
-    if (type === 'etherscan') {
-      const contractAddress = isUtility ? undefined : assetId;
-
-      return fetchEthereumHistory(url, address, contractAddress);
-    }
 
     if (type === 'subquery') return fetchSubqueryHistory(url, address);
 
@@ -204,6 +197,12 @@ export async function fetchHistory(
       const formattedAddress = BaseApi.isEthereumNetwork(networkName) ? address.toLowerCase() : address;
 
       return fetchGiantsquidHistory(url, formattedAddress);
+    }
+
+    if (type === 'etherscan') {
+      const contractAddress = isUtility ? undefined : assetId;
+
+      return fetchEthereumHistory(url, address, contractAddress);
     }
 
     return [];

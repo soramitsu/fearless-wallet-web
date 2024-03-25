@@ -48,6 +48,7 @@
               :assetId="sendAssetId"
               :amount="sendAmount"
               :isRotate="isSendAssetType"
+              :showOriginValue="isExchangeB"
               @update:amount="updateSendAmount"
               @setMax="setMax"
               @togglePopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'send')"
@@ -62,6 +63,7 @@
               :assetId="receiveAssetId"
               :amount="receiveAmount"
               :isRotate="isReceiveAssetType"
+              :showOriginValue="!isExchangeB"
               @update:amount="updateReceiveAmount"
               @togglePopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'receive')"
             />
@@ -102,7 +104,6 @@
               :minMaxAmountPrice="minMaxAmountPrice"
               :fee="fee"
               :feePrice="feePrice"
-              :providerFee="providerFee"
               :sendAssetUP="sendAssetUP"
               :receiveAssetUP="receiveAssetUP"
               :isExchangeB="isExchangeB"
@@ -122,7 +123,6 @@
             :minMaxAmountPrice="minMaxAmountPrice"
             :fee="fee"
             :feePrice="feePrice"
-            :providerFee="providerFee"
             :sendAssetUP="sendAssetUP"
             :receiveAssetUP="receiveAssetUP"
             :isExchangeB="isExchangeB"
@@ -252,7 +252,6 @@ export default class SwapForm extends Vue {
   sendAmount = '';
   receiveAmount = '';
   minMaxAmount = '';
-  providerFee = '';
   selectAssetType = '';
   route = '';
   AToB = '';
@@ -592,7 +591,7 @@ export default class SwapForm extends Vue {
     }
 
     const createSwap = async () => {
-      const { amountA, amountB, AToB, BToA, fee, swapOptions, minMaxValue, route } = await checkSwap({
+      const { amountA, amountB, AToB, BToA, swapOptions, minMaxValue, route } = await checkSwap({
         network: this.soraNetworkName,
         amountA: this.sendAmount,
         amountB: this.receiveAmount,
@@ -610,7 +609,6 @@ export default class SwapForm extends Vue {
 
       this.tx = swapOptions!;
       this.minMaxAmount = minMaxValue;
-      this.providerFee = fee;
       this.AToB = AToB;
       this.BToA = BToA;
       this.route = route;
@@ -621,7 +619,6 @@ export default class SwapForm extends Vue {
 
     createSwap();
   }
-
   clearSwapInterval() {
     clearInterval(this.swapInterval);
   }

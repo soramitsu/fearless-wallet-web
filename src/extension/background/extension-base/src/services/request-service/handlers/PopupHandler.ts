@@ -2,7 +2,7 @@ import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { DEFAULT_NOTIFICATION_TYPE } from '@extension-base/services/request-service/consts';
 import { type RequestService } from '@extension-base/services';
 import { type BrowserConfirmationType } from '@extension-base/services/request-service/types';
-import { chrome } from '@polkadot/extension-inject/chrome';
+import { chrome } from '@extension-base/utils/crossenv';
 
 const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
 

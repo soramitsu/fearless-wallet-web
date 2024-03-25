@@ -28,7 +28,13 @@ type MenuItemType = 'Wallet' | 'Staking' | 'Polkaswap';
   components: { MenuItem },
 })
 export default class Menu extends Vue {
-  walletItems: string[] = [Components.Accounts, Components.Export, Components.Nodes];
+  walletItems: string[] = [
+    Components.Currencies,
+    Components.Nfts,
+    Components.Accounts,
+    Components.Export,
+    Components.Nodes,
+  ];
   stakingItems: string[] = [Components.MyStake];
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;

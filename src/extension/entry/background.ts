@@ -1,8 +1,7 @@
+import { chrome } from '@extension-base/utils/crossenv';
 import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
-import { chrome } from '@polkadot/extension-inject/chrome';
 import { handlers, state } from '@extension-base/background/handlers';
-import '@polkadot/extension-inject/crossenv';
 import AccountsStore from '@extension-base/stores/Accounts';
 import { initStorage } from '@extension-base/stores/Storage';
 import { type RequestSignatures } from '@extension-base/background/types/messages';
@@ -10,8 +9,10 @@ import { type TransportRequestMessage, type Port } from '@extension-base/backgro
 import MigrationService from '@extension-base/services/migration-service';
 import axios from 'axios';
 import { APP_VERSION } from '@/consts/global';
-axios.defaults.adapter = fetchAdapter;
+
 console.info('background initialization');
+
+axios.defaults.adapter = fetchAdapter;
 
 async function getActiveTabs() {
   // quering the current active tab in the current window should only ever return 1 tab

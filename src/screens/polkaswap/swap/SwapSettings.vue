@@ -6,14 +6,12 @@
       placeholder="assets.market"
       size="big"
       class="row"
-      data-testid="marketType"
     />
 
     <ValidatedInput
       v-model="slippagePercent"
       placeholder="assets.slippageTolerance"
       class="row"
-      data-testid="slippageTolerance"
       :errorDescriptions="warningMessage"
       :isError="isErrorSlippageInput"
       :readonly="true"

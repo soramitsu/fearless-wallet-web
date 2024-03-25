@@ -1,6 +1,6 @@
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
+import { chrome } from '@extension-base/utils/crossenv';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
-import { chrome } from '@polkadot/extension-inject/chrome';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
@@ -314,26 +314,27 @@ export default class Extension extends FWExtensionBase {
   }
 
   async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+
+    if (!tab || !tab.url) {
+      return {
+        isAuthorize: false,
+        authorizeAccountsCount: 0,
+        dAppName: '',
+      };
+    }
+
+    const tabHostName = new URL(tab.url).hostname;
+
     return new Promise((resolve) => {
-      chrome.tabs.query({ active: true, lastFocusedWindow: true }, ([tab]) => {
-        if (!tab || !tab.url) {
-          return resolve({
-            isAuthorize: false,
-            authorizeAccountsCount: 0,
-            dAppName: '',
-          });
-        }
+      this.state.requestService.getAuthorize((authUrls) => {
+        const authorizeUrl = Object.keys(authUrls).filter((url) => url === tabHostName);
+        const isAuthorize = authorizeUrl.length !== 0;
 
-        const tabHostName = new URL(tab.url).hostname;
-        this.state.requestService.getAuthorize((authUrls) => {
-          const authorizeUrl = Object.keys(authUrls).filter((url) => url === tabHostName);
-          const isAuthorize = authorizeUrl.length !== 0;
-
-          resolve({
-            isAuthorize,
-            authorizeAccountsCount: isAuthorize ? authUrls[tabHostName].authorizedAccounts.length : 0,
-            dAppName: tabHostName,
-          });
+        resolve({
+          isAuthorize,
+          authorizeAccountsCount: isAuthorize ? authUrls[tabHostName].authorizedAccounts.length : 0,
+          dAppName: tabHostName,
         });
       });
     });
@@ -585,7 +586,9 @@ export default class Extension extends FWExtensionBase {
   async removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
     const auths = await this.state.requestService.getAuthList();
     delete auths[url];
-    await this.state.requestService.setAuthorize(auths);
+
+    this.state.requestService.setAuthorize(auths);
+
     const newList = await this.state.requestService.getAuthList();
 
     return { list: newList };
@@ -599,18 +602,12 @@ export default class Extension extends FWExtensionBase {
     this.state.updateCurrentTabsUrl(tabs);
   }
 
-  initAuth({ type, wallet }: GoogleAuthTypes): void {
-    this.state.googleService.authExtension(type, wallet);
+  initAuth({ type, wallet }: GoogleAuthTypes): Promise<void> {
+    return this.state.googleService.authExtension(type, wallet);
   }
 
   async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse | null> {
     return this.state.googleService.verifyToken(token);
-  }
-
-  getToken(): void {
-    chrome.identity.getAuthToken({}, (token) => {
-      this.token = token ?? '';
-    });
   }
 
   async getFiles({ token }: { token: string }): Promise<IGetFilesResponse> {
@@ -625,10 +622,8 @@ export default class Extension extends FWExtensionBase {
     return this.state.googleService.createFile({ json, options, token });
   }
 
-  deleteFile({ id }: GoogleFileId): void {
-    if (!this.token) this.getToken();
-
-    this.state.googleService.deleteFile(id, this.token);
+  deleteFile({ id, token }: GoogleFileId): void {
+    this.state.googleService.deleteFile(id, token);
   }
 
   cancelAuthRequest(id: string) {
@@ -722,7 +717,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async checkSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
-    const { AToB, BToA, amountA, amountB, minMaxValue, swapOptions, providerFee, route } = await createSwap(
+    const { AToB, BToA, amountA, amountB, minMaxValue, swapOptions, route } = await createSwap(
       options,
       apiSora,
       this.state
@@ -730,7 +725,6 @@ export default class Extension extends FWExtensionBase {
 
     return {
       swapOptions,
-      fee: providerFee,
       AToB,
       BToA,
       amountA,
@@ -745,7 +739,7 @@ export default class Extension extends FWExtensionBase {
     const { password, isSavePass } = options;
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = swapOptions!;
     const errors: Array<BasicTxError> = [];
-    const address = await this.state.getAccountAddress();
+    const address = this.state.getAccountAddress();
     const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
 
     const pair = this.state.keyringService.getPair(address)!;
@@ -1121,7 +1115,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async checkController(params: CheckControllerRequest): Promise<boolean> {
-    const address = await this.state.getCurrentAddress('westend');
+    const address = this.state.getCurrentAddress('westend');
     const stashAddress = await this.state.stakingService.getStashByController(params.address);
 
     if (stashAddress === '') return true;

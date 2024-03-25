@@ -101,7 +101,7 @@ export default class HistoryBook extends Vue {
     if (!history) return [];
 
     const addresses = isSora(this.network)
-      ? (history.nodes as SoraHistoryElement[]).flatMap((item) => {
+      ? (history.nodes as unknown as SoraHistoryElement[]).flatMap((item) => {
           if (item.method !== 'transfer') return [];
 
           return BaseApi.encodeAddress(item.data?.to ?? '', this.addressPrefix) ?? [];

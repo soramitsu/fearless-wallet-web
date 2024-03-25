@@ -14,10 +14,12 @@ type Props = {
   name: TMenuItem;
   isActive?: boolean;
 };
+
 const props = withDefaults(defineProps<Props>(), { isActive: false });
 
 const iconClass = ['menu-icon'];
 const localeName = ref(`menu.${props.name.toLowerCase()}`);
+
 const menuItemClasses = computed(() => ['menu-item', { active: props.isActive }]);
 const img = ref(props.name.toLowerCase());
 </script>

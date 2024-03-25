@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 import { type NftTx, type NftSettings } from '@extension-base/services/nft-service/types';
-import { chrome } from '@polkadot/extension-inject/chrome';
+import { chrome } from '@extension-base/utils/crossenv';
 import type { ALLOWED_PATH } from '@extension-base/defaults';
 import type { Subscription } from 'rxjs';
 import type { JsonRpcProvider, WebSocketProvider } from 'ethers';
@@ -31,7 +31,6 @@ import type {
   MarketType,
   SwapOptions,
 } from '@/interfaces';
-
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
 }[keyof T];
@@ -325,7 +324,6 @@ export interface ResponseCheckSwap {
   amountB: string;
   AToB: string;
   BToA: string;
-  fee: string;
   networkFee?: string;
   minMaxValue: string;
   route: string;
@@ -640,7 +638,7 @@ export type Address = {
 
 export type AddressBook = Record<NetworkName, Address>;
 
-export interface IState {
+export type IState = {
   registry: TypeRegistry;
   metaStore: MetadataStore;
   authUrls: AuthUrls;
@@ -671,7 +669,7 @@ export interface IState {
   'wc@2:core:0.3//subscription': Array<unknown>;
   'wc@2:client:0.3//request': Array<unknown>;
   'wc@2:core:0.3//history': Array<unknown>;
-}
+};
 
 export interface GoogleFileId {
   id: string;
@@ -737,7 +735,6 @@ export interface TokenGroup {
   providers: BuyProvider[];
   balances: BalanceItem[];
   color?: string;
-  isUtility: boolean; // Это поле означает, что токен является утилити для какой-то из сетей
 }
 
 export type BalanceMap = Record<WalletAddress, TokenGroup[]>;

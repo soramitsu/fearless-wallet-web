@@ -123,7 +123,7 @@ export default class Asset extends Vue {
     return (
       this.balances.find(
         ({ groupId: id, balances }) =>
-          id === this.selectedAssetId || balances.some((el) => el.id === this.selectedAssetId)
+          id === this.selectedAssetId || balances.some(({ id }) => id === this.selectedAssetId)
       )! ?? {}
     );
   }

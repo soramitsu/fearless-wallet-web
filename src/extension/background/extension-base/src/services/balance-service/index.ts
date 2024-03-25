@@ -152,24 +152,18 @@ export default class BalanceService {
   async getTotalBalances(): Promise<ResponseTotalBalances[]> {
     return new Promise<ResponseTotalBalances[]>((res) =>
       this.state.pricesService.getPrice((prices) => {
-        const balances: BalanceMap = { ...this.balanceMap };
-
-        const totalBalances = Object.keys(balances).map((address) => {
+        const totalBalances = Object.keys(this.balanceMap).map((address) => {
           const total = getSummaryTransferableWalletBalance(
             address,
-            balances[address],
+            this.balanceMap[address],
             prices,
             ALL_NETWORKS,
             this.state.networkService.networksGithub
           );
 
-          const change = getChangeWalletBalance(balances[address], prices, ALL_NETWORKS);
+          const change = getChangeWalletBalance(this.balanceMap[address], prices, ALL_NETWORKS);
 
-          return {
-            address,
-            total,
-            change,
-          };
+          return { address, total, change };
         });
 
         res(totalBalances);

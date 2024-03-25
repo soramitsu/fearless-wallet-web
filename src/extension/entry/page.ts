@@ -1,7 +1,8 @@
+import '@polkadot/extension-inject/crossenv';
+
 import { MESSAGE_ORIGIN_CONTENT } from '@extension-base/defaults';
 import { enable, handleResponse, redirectIfPhishing, saveSoraCardToken } from '@extension-base/page';
 import { type RequestSignatures } from '@extension-base/background/types/messages';
-import '@polkadot/extension-inject/chrome';
 import type { Message } from '@extension-base/types';
 import type { TransportRequestMessage } from '@extension-base/background/types/types';
 import { APP_VERSION } from '@/consts/global';

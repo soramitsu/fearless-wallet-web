@@ -48,6 +48,7 @@
               :assetId="sendAssetId"
               :amount="sendAmount"
               :isRotate="isSendAssetType"
+              :showOriginValue="isExchangeB"
               @update:amount="updateSendAmount"
               @setMax="setMax"
               @togglePopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'send')"
@@ -62,6 +63,7 @@
               :assetId="receiveAssetId"
               :amount="receiveAmount"
               :isRotate="isReceiveAssetType"
+              :showOriginValue="!isExchangeB"
               @update:amount="updateReceiveAmount"
               @togglePopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'receive')"
             />

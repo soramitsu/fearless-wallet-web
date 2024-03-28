@@ -6,9 +6,21 @@ export interface MyPoolsInfo {
   test: string;
 }
 
+export interface AssetPool {
+  name: string;
+  icon: string;
+  id: string;
+  amount: string;
+  myAmount: string;
+}
+
 export interface DefaultPoolsParams {
   network: NetworkName;
   apr: number;
+  tvl: string;
+  isMyPool: true;
+  asset1: AssetPool;
+  asset2: AssetPool;
 }
 
 export type PoolsParamsRequest = {
@@ -17,7 +29,7 @@ export type PoolsParamsRequest = {
 
 export type PoolsParamsResponse = DefaultPoolsParams[];
 
-export type PoolsNetworkRequest = {
+export type MyPoolsRequest = {
   network: NetworkName;
 };
 
@@ -53,9 +65,9 @@ export type RequestRemoveLiquidity = PasswordRequestSign<RemoveLiquidity>;
 
 ///////////////////////////////////////////////////////
 
-export type RequestStaking = RequestAddLiquidity | RequestRemoveLiquidity;
+export type RequestPool = RequestAddLiquidity | RequestRemoveLiquidity;
 
 export type MakePoolsRequest = {
-  params: RequestStaking;
+  params: RequestPool;
   type: PoolsOperation;
 };

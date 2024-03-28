@@ -28,7 +28,12 @@
               </template>
 
               <template v-else>
-                <MyPoolItem v-for="item in filteredMyPoolsItems" :key="item.network" :poolParams="item" />
+                <PoolItem
+                  v-for="item in filteredMyPoolsItems"
+                  :key="item.network"
+                  :poolParams="item"
+                  @click="updatePoolParams(item)"
+                />
               </template>
             </template>
 
@@ -38,7 +43,7 @@
       </div>
     </ContentForm>
 
-    <AddLiquidity v-if="showLiquidity" :poolsParams="poolsParams" @closeLiquidity="updatePoolParams" />
+    <PoolDetails v-if="showPoolDetails" :poolsParams="poolsParams" @closePoolDetails="updatePoolParams" />
   </div>
 </template>
 
@@ -46,13 +51,13 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { AsyncFn, PoolsTab } from '@/interfaces';
-import type { NetworkParams, SelectedWallet, GetPoolsParamsProps } from '@/store';
+import type { SelectedWallet, GetPoolsParamsProps, PoolsParams } from '@/store';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import PoolsSettings from '@/screens/pools/PoolsSettings.vue';
 import PoolItem from '@/screens/pools/PoolItem.vue';
 import MyPoolItem from '@/screens/pools/MyPoolItem.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import AddLiquidity from '@/screens/pools/AddLiquidity.vue';
+import PoolDetails from '@/screens/pools/PoolDetails.vue';
 import { GettersTypes as PoolsGettersTypes } from '@/store/pools/getters';
 import { isSubstrString } from '@/helpers';
 import { ActionTypes as PoolsActionTypes } from '@/store/pools/actions';
@@ -61,7 +66,7 @@ import { ActionTypes as PoolsActionTypes } from '@/store/pools/actions';
   components: {
     PoolItem,
     MyPoolItem,
-    AddLiquidity,
+    PoolDetails,
     PoolsSettings,
   },
 })
@@ -69,17 +74,19 @@ export default class PoolsPage extends Vue {
   activeTabName: PoolsTab | '' = '';
   filterValue = '';
   isLoading = false;
-  poolsParams: Nullable<NetworkParams> = null;
+  poolsParams: Nullable<PoolsParams> = null;
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(PoolsGettersTypes.poolsItems) poolsItems!: NetworkParams[];
-  @Getter(PoolsGettersTypes.myPoolsItems) myPoolsItems!: NetworkParams[];
+  @Getter(PoolsGettersTypes.poolsItems) poolsItems!: PoolsParams[];
+  @Getter(PoolsGettersTypes.myPoolsItems) myPoolsItems!: PoolsParams[];
   @Action(PoolsActionTypes.GET_POOLS_PARAMS) getPoolsParams!: AsyncFn<GetPoolsParamsProps>;
 
   get filteredPoolsItems() {
     if (this.filterValue === '') return this.poolsItems;
 
-    return this.poolsItems.filter(({ network }) => isSubstrString(network, this.filterValue));
+    return this.poolsItems.filter(({ asset1: { name: name1 }, asset2: { name: name2 } }) =>
+      isSubstrString(`${name1}${name2}`, this.filterValue)
+    );
   }
 
   get filteredMyPoolsItems() {
@@ -112,7 +119,7 @@ export default class PoolsPage extends Vue {
     return this.myPoolsItems.length !== 0;
   }
 
-  get showLiquidity() {
+  get showPoolDetails() {
     return this.poolsParams !== null;
   }
 
@@ -161,7 +168,7 @@ export default class PoolsPage extends Vue {
     this.activeTabName = name;
   }
 
-  updatePoolParams(poolsParams: Nullable<NetworkParams> = null) {
+  updatePoolParams(poolsParams: Nullable<PoolsParams> = null) {
     this.poolsParams = poolsParams;
   }
 }

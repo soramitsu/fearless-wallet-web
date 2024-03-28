@@ -1682,6 +1682,9 @@ export default class Extension extends FWExtensionBase {
       case 'pri(pools.myPools)':
         return this.getMyPoolsInfo(request as StakingNetworkRequest);
 
+      case 'pri(pools.makePool)':
+        return this.getMyPoolsInfo(request as StakingNetworkRequest);
+
       // price
       case 'pri(price.update.currency)':
         return this.updateCurrencySymbol(request as string);

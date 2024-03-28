@@ -1,6 +1,6 @@
-import type { State } from '@/store/pools/state';
 import type { ActionTree } from 'vuex';
 import type { AugmentedPoolsContext, GetPoolsParamsProps, GetPoolsNetworkProps } from './types';
+import { POOLS_NETWORKS_LIST, type State } from '@/store/pools/state';
 import { getPoolsParams, getMyPoolsInfo } from '@/extension/messaging';
 import { SEC1 } from '@/consts/time';
 import { MutationTypes } from '@/store/pools/mutations';
@@ -16,13 +16,12 @@ export type Actions = {
 };
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.GET_POOLS_PARAMS]({ commit, state }, props = { delay: 0 }) {
+  async [ActionTypes.GET_POOLS_PARAMS]({ commit }, props = { delay: 0 }) {
     commit(MutationTypes.CLEAR_POOLS_PARAMS, undefined);
 
     await new Promise((res) => {
       setTimeout(async () => {
-        const networks = state.allPoolsItems.map(({ network }) => network);
-        const poolsParams = await getPoolsParams({ networks });
+        const poolsParams = await getPoolsParams({ networks: POOLS_NETWORKS_LIST });
 
         commit(MutationTypes.UPDATE_POOLS_PARAMS, poolsParams);
 

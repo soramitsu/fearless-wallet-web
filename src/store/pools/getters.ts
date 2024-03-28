@@ -72,13 +72,13 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.poolsItems](state, getters): PoolsParams[] {
     const allPoolsItems: PoolsParams[] = getters?.allPoolsItems as unknown as PoolsParams[];
 
-    return allPoolsItems.filter(({ asset1: { amount } }) => amount === '0');
+    return allPoolsItems.filter(({ asset1: { myAmount } }) => myAmount === '0');
   },
 
   [GettersTypes.myPoolsItems](state, getters): PoolsParams[] {
     const allPoolsItems: PoolsParams[] = getters?.allPoolsItems as unknown as PoolsParams[];
 
-    return allPoolsItems.filter(({ asset1: { amount } }) => amount !== '0');
+    return allPoolsItems.filter(({ asset1: { myAmount } }) => myAmount !== '0');
   },
 };
 

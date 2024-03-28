@@ -1,7 +1,11 @@
-import { type PoolsParams } from '@/store/pools/types';
+import type { PoolsParams } from '@/store/pools/types';
+import { SORA_MAINNET, SORA_NETWORK_NAME } from '@/consts/sora';
+
+// export const POOLS_NETWORKS_LIST = [SORA_NETWORK_NAME]; TODO revert
+export const POOLS_NETWORKS_LIST = [SORA_MAINNET];
 
 export type State = {
-  allPoolsItems: Omit<PoolsParams, 'bondAmount'>[];
+  allPoolsItems: PoolsParams[];
 };
 
 const state = (): State => {

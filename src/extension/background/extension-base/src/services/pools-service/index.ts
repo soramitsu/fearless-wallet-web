@@ -8,10 +8,10 @@ import {
   type RequestRemoveLiquidity,
   type MyPoolsInfo,
   type PoolsParamsRequest,
+  type DefaultPoolsParams,
 } from './types';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkName } from '@/interfaces';
-import type { PoolsParams } from '@/store';
 
 export class PoolsService {
   constructor(private state: State) {}
@@ -20,13 +20,54 @@ export class PoolsService {
     const { networks } = params;
 
     // TODO use networks
-    const promises: Promise<PoolsParams[]>[] = networks.map(async (network) => {
+    const promises: Promise<DefaultPoolsParams[]>[] = networks.map(async (network) => {
       const apiProps = this.state.getSubstrateApiMap[network.toLowerCase()];
       const isReady = await apiProps?.api?.isReady;
 
       if (!isReady) return [];
 
-      return [];
+      return [
+        {
+          network,
+          apr: 99,
+          tvl: '101010',
+          isMyPool: false,
+          asset1: {
+            amount: '11',
+            myAmount: '0',
+            icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/XOR.svg',
+            id: 'b774c386-5cce-454a-a845-1ec0381538ec',
+            name: 'xor',
+          },
+          asset2: {
+            amount: '22',
+            myAmount: '0',
+            icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/DAI.svg',
+            id: '1e6f8ba3-5aeb-41d8-b80e-a44ce0f33716',
+            name: 'dai',
+          },
+        },
+        {
+          network,
+          apr: 12,
+          tvl: '18560',
+          isMyPool: true,
+          asset1: {
+            amount: '33',
+            myAmount: '1',
+            icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/XOR.svg',
+            id: 'b774c386-5cce-454a-a845-1ec0381538ec',
+            name: 'xor',
+          },
+          asset2: {
+            amount: '44',
+            myAmount: '5',
+            icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/DAI.svg',
+            id: '1e6f8ba3-5aeb-41d8-b80e-a44ce0f33716',
+            name: 'dai',
+          },
+        },
+      ] as DefaultPoolsParams[];
     });
 
     const array = await Promise.all(promises);

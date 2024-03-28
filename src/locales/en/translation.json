@@ -632,7 +632,13 @@
   },
   "pools": {
     "noPools": "Selected networks do not have pools",
-    "myPools": "My pools"
+    "myPools": "My pools",
+    "pool": "Pool",
+    "poolDetails": "Pool Details",
+    "supply": "Supply",
+    "remove": "Remove",
+    "supplyLiquidity": "Supply liquidity",
+    "confirmSupply": "Confirm supply"
   },
   "browserTabs": {
     "welcome": "Welcome",

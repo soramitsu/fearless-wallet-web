@@ -1,6 +1,7 @@
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
 import type { SetAllPoolsItems, SetMyPoolsInfo } from './types';
+import type { PoolsParams } from '@/store/pools/types';
 import { isSameString } from '@/helpers';
 
 export enum MutationTypes {
@@ -18,9 +19,9 @@ export type Mutations = {
 const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.UPDATE_POOLS_PARAMS](state, poolsParams) {
     poolsParams.forEach((params, index) => {
-      const newItem = {
-        ...state.allPoolsItems[index],
+      const newItem: PoolsParams = {
         ...params,
+        ...state.allPoolsItems[index],
         loading: false,
       };
 

@@ -2,29 +2,21 @@ import type {
   DefaultPoolsParams,
   PoolsParamsResponse,
   MyPoolsInfo,
+  AssetPool,
 } from '@extension-base/services/pools-service/types';
 import type { Mutations } from '@/store/pools/mutations';
 import type { ActionContext } from 'vuex';
 import type { State } from '@/store/pools/state';
 import { type NetworkName } from '@/interfaces';
 
-export interface PoolsParams extends DefaultPoolsParams {
+interface FullAssetPool extends AssetPool {
   transferableAmount: string;
+}
+
+export interface PoolsParams extends DefaultPoolsParams {
   loading: boolean;
-  asset1: {
-    name: string;
-    icon: string;
-    id: string;
-    amount: string;
-    transferableAmount: string;
-  };
-  asset2: {
-    name: string;
-    icon: string;
-    id: string;
-    amount: string;
-    transferableAmount: string;
-  };
+  asset1: FullAssetPool;
+  asset2: FullAssetPool;
 }
 
 export type SetAllPoolsItems = PoolsParamsResponse;

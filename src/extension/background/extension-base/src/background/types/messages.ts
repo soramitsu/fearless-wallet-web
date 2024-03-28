@@ -1,8 +1,9 @@
 import {
+  type MyPoolsRequest,
   type MyPoolsInfoResponse,
-  type PoolsNetworkRequest,
   type PoolsParamsRequest,
   type PoolsParamsResponse,
+  MakePoolsRequest,
 } from '@extension-base/services/pools-service/types';
 import type {
   NftTx,
@@ -198,9 +199,10 @@ export interface RequestSignatures {
   'pri(staking.getPayoutsFee)': [GetPayoutsFeeRequest, string];
   'pri(staking.getNominateNetworkFee)': [GetNominateNetworkFeeRequest, string];
 
-  // staking
+  // pools
   'pri(pools.poolsParams)': [PoolsParamsRequest, PoolsParamsResponse];
-  'pri(pools.myPools)': [PoolsNetworkRequest, MyPoolsInfoResponse];
+  'pri(pools.myPools)': [MyPoolsRequest, MyPoolsInfoResponse];
+  'pri(pools.makePool)': [MakePoolsRequest, BasicTxResponse];
 
   //ether
   'pri(balance)': [null, BalanceJson];

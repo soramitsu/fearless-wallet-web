@@ -1,8 +1,8 @@
 import { type Api, FPNumber } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
+import { getSoraAsset } from './sora';
 import type State from '@extension-base/background/handlers/State';
-import type { Asset } from '@sora-substrate/util/build/assets/types';
 import type { CreateSwapResult, BaseExchangeProps } from '@extension-base/api/types/swaps';
 import type { SwapOptions } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
@@ -52,39 +52,28 @@ export async function createSwap(
   api: Api<void>,
   state: State
 ): Promise<CreateSwapResult> {
-  const { assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage, marketType } = options;
+  const { assetAId, assetBId, isExchangeB, amountA, amountB, slippage, marketType } = options;
   const currentAccount = state.currentAccount;
 
   const tokenBalanceA = state.balanceService
     .getAccountBalance(currentAccount!.address)
     .find(({ groupId }) => groupId === assetAId);
-  const aId = tokenBalanceA?.balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
 
   const tokenBalanceB = state.balanceService
     .getAccountBalance(currentAccount!.address)
     .find(({ groupId }) => groupId === assetBId);
+
+  const aId = tokenBalanceA?.balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
   const aIB = tokenBalanceB?.balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
 
   const assetAAddress = getAssetOptions(aId!.id, state.assetsMap) as string;
   const assetBAddress = getAssetOptions(aIB!.id, state.assetsMap) as string;
+
   const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
   const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
 
-  const assetA: Asset = {
-    address: assetAAddress,
-    decimals: 18,
-    name: symbolA!,
-    symbol: symbolA!,
-    isMintable: true,
-  };
-
-  const assetB: Asset = {
-    address: assetBAddress,
-    decimals: 18,
-    name: symbolB!,
-    symbol: symbolB!,
-    isMintable: true,
-  };
+  const assetA = getSoraAsset({ assetId: assetAId!, tokenBalance: tokenBalanceA!, network: SORA_NETWORK_NAME }, state);
+  const assetB = getSoraAsset({ assetId: assetBId!, tokenBalance: tokenBalanceB!, network: SORA_NETWORK_NAME }, state);
 
   const { amount: amountDexIdXOR, route: routeDexIdXOR } = await api.swap.getResultFromDexRpc(
     assetAAddress,

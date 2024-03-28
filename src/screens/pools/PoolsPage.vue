@@ -1,6 +1,6 @@
 <template>
   <div class="pools">
-    <ContentForm :height="382">
+    <ContentForm :height="440">
       <div class="content">
         <Loader v-if="showLoader" />
 
@@ -23,7 +23,7 @@
                   v-for="item in filteredPoolsItems"
                   :key="item.network"
                   :poolParams="item"
-                  @click="updateNetworkPool(item)"
+                  @click="updatePoolParams(item)"
                 />
               </template>
 
@@ -38,24 +38,21 @@
       </div>
     </ContentForm>
 
-    <AddLiquidity v-if="showLiquidity" :networkParams="networkParams" @closeLiquidity="updateNetworkPool" />
+    <AddLiquidity v-if="showLiquidity" :poolsParams="poolsParams" @closeLiquidity="updatePoolParams" />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import type { NetworkJson } from '@extension-base/types';
 import type { AsyncFn, PoolsTab } from '@/interfaces';
-import type { TokenGroup } from '@extension-base/background/types/types';
-import type { NetworkParams, SelectedWallet, GetAssetPrice, GetPoolsParamsProps } from '@/store';
+import type { NetworkParams, SelectedWallet, GetPoolsParamsProps } from '@/store';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import PoolsSettings from '@/screens/pools/PoolsSettings.vue';
 import PoolItem from '@/screens/pools/PoolItem.vue';
 import MyPoolItem from '@/screens/pools/MyPoolItem.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import AddLiquidity from '@/screens/pools/AddLiquidity.vue';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as PoolsGettersTypes } from '@/store/pools/getters';
 import { isSubstrString } from '@/helpers';
 import { ActionTypes as PoolsActionTypes } from '@/store/pools/actions';
@@ -72,12 +69,9 @@ export default class PoolsPage extends Vue {
   activeTabName: PoolsTab | '' = '';
   filterValue = '';
   isLoading = false;
-  networkParams: Nullable<NetworkParams> = null;
+  poolsParams: Nullable<NetworkParams> = null;
 
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(PoolsGettersTypes.poolsItems) poolsItems!: NetworkParams[];
   @Getter(PoolsGettersTypes.myPoolsItems) myPoolsItems!: NetworkParams[];
   @Action(PoolsActionTypes.GET_POOLS_PARAMS) getPoolsParams!: AsyncFn<GetPoolsParamsProps>;
@@ -119,7 +113,7 @@ export default class PoolsPage extends Vue {
   }
 
   get showLiquidity() {
-    return this.networkParams !== null;
+    return this.poolsParams !== null;
   }
 
   get contentFormHeight() {
@@ -167,8 +161,8 @@ export default class PoolsPage extends Vue {
     this.activeTabName = name;
   }
 
-  updateNetworkPool(networkParams: Nullable<NetworkParams> = null) {
-    this.networkParams = networkParams;
+  updatePoolParams(poolsParams: Nullable<NetworkParams> = null) {
+    this.poolsParams = poolsParams;
   }
 }
 </script>

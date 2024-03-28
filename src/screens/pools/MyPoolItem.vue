@@ -24,21 +24,12 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { type TokenGroup } from '@extension-base/background/types/types';
-import type { NetworkJson } from '@extension-base/types';
-import type { GetAssetPrice, PoolsParams } from '@/store';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import type { PoolsParams } from '@/store';
 import { Components } from '@/router/routes';
 
 @Component
 export default class MyPoolItem extends Vue {
   @Prop(Object) poolParams!: PoolsParams;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
   get network() {
     return this.poolParams.network;

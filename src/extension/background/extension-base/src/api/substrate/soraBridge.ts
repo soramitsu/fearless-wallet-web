@@ -1,7 +1,6 @@
 import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import { SubNetworkId } from '@sora-substrate/util/build/bridgeProxy/sub/consts';
 import { type SubNetwork } from '@sora-substrate/util/build/bridgeProxy/sub/types';
-import { getAssetBalance, getAssetInfo } from '../helpers';
 import { type CrossChainProps, type MakeCrossChainProps } from './crossChain';
 import { getSoraAsset } from './sora';
 import type State from '@extension-base/background/handlers/State';

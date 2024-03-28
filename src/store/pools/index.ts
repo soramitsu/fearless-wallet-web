@@ -1,7 +1,7 @@
-import actions from '@/store/staking/actions';
-import getters from '@/store/staking/getters';
-import mutations from '@/store/staking/mutations';
-import state from '@/store/staking/state';
+import actions from '@/store/pools/actions';
+import getters from '@/store/pools/getters';
+import mutations from '@/store/pools/mutations';
+import state from '@/store/pools/state';
 
 export default {
   state,

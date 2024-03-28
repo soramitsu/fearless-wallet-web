@@ -1,32 +1,31 @@
-import {
-  type PoolsParams,
-  type PoolsParamsResponse,
-  type MyPoolsInfo,
+import type {
+  DefaultPoolsParams,
+  PoolsParamsResponse,
+  MyPoolsInfo,
 } from '@extension-base/services/pools-service/types';
 import type { Mutations } from '@/store/pools/mutations';
 import type { ActionContext } from 'vuex';
 import type { State } from '@/store/pools/state';
-import { type HistoryElement, type NetworkName, type SoraHistoryElement } from '@/interfaces';
+import { type NetworkName } from '@/interfaces';
 
-export interface PoolsNetworkParams extends PoolsParams {
+export interface PoolsParams extends DefaultPoolsParams {
   transferableAmount: string;
-  asset: string;
-  assetId: string;
-  icon: string;
   loading: boolean;
-  type?: 'regular';
+  asset1: {
+    name: string;
+    icon: string;
+    id: string;
+    amount: string;
+    transferableAmount: string;
+  };
+  asset2: {
+    name: string;
+    icon: string;
+    id: string;
+    amount: string;
+    transferableAmount: string;
+  };
 }
-
-export type PoolsHistory = HistoryElement | SoraHistoryElement; // TODO
-
-export type GetPoolsNetwork = (networkName: NetworkName) => PoolsNetworkParams;
-
-export type GetPoolsHistory = (
-  networkName: NetworkName,
-  assetId: string,
-  stashAddress?: string,
-  payeeAddress?: string
-) => PoolsHistory[];
 
 export type SetAllPoolsItems = PoolsParamsResponse;
 

@@ -19,16 +19,16 @@
           <Scroll>
             <template v-if="haveFilteredItems">
               <template v-if="isAllTab">
-                <PoolsItem
+                <PoolItem
                   v-for="item in filteredPoolsItems"
                   :key="item.network"
-                  :networkParams="item"
+                  :poolParams="item"
                   @click="updateNetworkPool(item)"
                 />
               </template>
 
               <template v-else>
-                <MyPoolsItem v-for="item in filteredMyPoolsItems" :key="item.network" :networkParams="item" />
+                <MyPoolItem v-for="item in filteredMyPoolsItems" :key="item.network" :poolParams="item" />
               </template>
             </template>
 
@@ -51,8 +51,8 @@ import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkParams, SelectedWallet, GetAssetPrice, GetPoolsParamsProps } from '@/store';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import PoolsSettings from '@/screens/pools/PoolsSettings.vue';
-import PoolsItem from '@/screens/pools/PoolsItem.vue';
-import MyPoolsItem from '@/screens/pools/MyPoolsItem.vue';
+import PoolItem from '@/screens/pools/PoolItem.vue';
+import MyPoolItem from '@/screens/pools/MyPoolItem.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import AddLiquidity from '@/screens/pools/AddLiquidity.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -62,8 +62,8 @@ import { ActionTypes as PoolsActionTypes } from '@/store/pools/actions';
 
 @Component({
   components: {
-    PoolsItem,
-    MyPoolsItem,
+    PoolItem,
+    MyPoolItem,
     AddLiquidity,
     PoolsSettings,
   },

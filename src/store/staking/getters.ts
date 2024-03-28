@@ -56,11 +56,11 @@ const getters: GetterTree<State, State> & Getters = {
         return true;
       })
       .map((params) => {
-        if (accountBalances.length === 0) return { ...params };
+        if (accountBalances.length === 0) return params;
 
         const balances = accountBalances.find(({ groupId }) => isSameString(groupId, params.assetId))?.balances;
 
-        if (balances === undefined) return { ...params };
+        if (balances === undefined) return params;
 
         const balance = balances.find(({ name }) => isSameString(name, params.network))!;
         const transferableAmount = balance.transferable ?? '0';

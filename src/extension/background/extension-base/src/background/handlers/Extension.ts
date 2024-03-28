@@ -93,7 +93,11 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
-import { type PoolsParamsResponse, type PoolsParamsRequest } from '../../services/pools-service/types';
+import type {
+  PoolsParamsResponse,
+  PoolsParamsRequest,
+  MyPoolsInfoResponse,
+} from '@extension-base//services/pools-service/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type {
   StakingNetworkRequest,
@@ -1175,10 +1179,8 @@ export default class Extension extends FWExtensionBase {
     return this.state.poolsService.getPoolsParams(params);
   }
 
-  async getMyPoolsInfo(params: StakingNetworkRequest): Promise<MyStakingInfoResponse> {
-    const validators = await this.state.stakingService.getValidators(params.network);
-
-    return this.state.poolsService.getMyPoolsInfo(params.network, validators);
+  async getMyPoolsInfo(params: StakingNetworkRequest): Promise<MyPoolsInfoResponse> {
+    return this.state.poolsService.getMyPoolsInfo(params.network);
   }
 
   async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {

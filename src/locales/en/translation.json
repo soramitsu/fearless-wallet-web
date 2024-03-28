@@ -632,7 +632,6 @@
   },
   "pools": {
     "noPools": "Selected networks do not have pools",
-    "poolBalance": "Pool balance",
     "myPools": "My pools"
   },
   "browserTabs": {

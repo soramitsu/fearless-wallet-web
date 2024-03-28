@@ -1,7 +1,9 @@
 <template>
   <div class="pool-item" @click="click">
     <div class="description-part left-part">
-      <ExternalLogo :name="icon" class="network-icon" />
+      <ExternalLogo :name="icon1" class="network-icon" />
+
+      <ExternalLogo :name="icon2" class="network-icon" />
 
       <div class="network-name">{{ network }}</div>
     </div>
@@ -10,11 +12,11 @@
       <div class="values">
         <Shimmer v-if="isLoading" height="20px" width="155px" />
 
-        <div v-else class="apy">{{ apy }} APY</div>
+        <div v-else class="apy">{{ apr }} APR</div>
 
         <Shimmer v-if="isLoading" height="12px" width="55px" />
 
-        <div v-else class="min-bond">{{ $t('common.min') }} {{ minBond }} {{ asset }}</div>
+        <div v-else class="min-bond">{{ $t('common.min') }} TVL</div>
       </div>
 
       <Icon icon="chevron-right" class="chevron" />
@@ -28,27 +30,35 @@ import { Getter } from 'vuex-class';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { type TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
-import type { NetworkParams } from '@/store';
+import type { PoolsParams } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { isSameString } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component
 export default class PoolItem extends Vue {
-  @Prop(Object) networkParams!: NetworkParams;
+  @Prop(Object) poolParams!: PoolsParams;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
   get network() {
-    return this.networkParams.network;
+    return this.poolParams.network;
   }
 
-  get assetId() {
-    return this.networkParams.assetId;
+  get assetId1() {
+    return this.poolParams.asset1.id;
   }
 
-  get poolCurrency() {
-    return this.balances?.find(({ groupId }) => groupId === this.assetId);
+  get assetId2() {
+    return this.poolParams.asset2.id;
+  }
+
+  get poolCurrency1() {
+    return this.balances?.find(({ groupId }) => groupId === this.assetId1);
+  }
+
+  get poolCurrency2() {
+    return this.balances?.find(({ groupId }) => groupId === this.assetId2);
   }
 
   get isLoading() {
@@ -56,37 +66,22 @@ export default class PoolItem extends Vue {
   }
 
   get balanceIsReady() {
-    const networkBalance = this.poolCurrency?.balances?.find(({ name }) => isSameString(name, this.network));
+    const networkBalance1 = this.poolCurrency1?.balances?.find(({ name }) => isSameString(name, this.network));
+    const networkBalance2 = this.poolCurrency1?.balances?.find(({ name }) => isSameString(name, this.network));
 
-    return networkBalance?.state === APIItemState.READY;
+    return networkBalance1?.state === APIItemState.READY && networkBalance2?.state === APIItemState.READY;
   }
 
-  get apy() {
-    return `${this.$n(this.networkParams.apy, 'price')}%`;
+  get apr() {
+    return `${this.$n(this.poolParams.apr, 'price')}%`;
   }
 
-  get asset() {
-    return this.networkParams.asset.toUpperCase();
+  get icon1() {
+    return this.poolParams.asset1.icon;
   }
 
-  get icon() {
-    return this.networkParams.icon;
-  }
-
-  get unbondPeriod() {
-    return this.networkParams.unbondPeriod;
-  }
-
-  get minBond() {
-    return this.networkParams.minBond;
-  }
-
-  get type() {
-    return this.networkParams.type;
-  }
-
-  get days() {
-    return { value: this.networkParams.unbondPeriod };
+  get icon2() {
+    return this.poolParams.asset2.icon;
   }
 
   click() {

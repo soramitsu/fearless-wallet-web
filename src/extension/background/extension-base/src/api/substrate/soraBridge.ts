@@ -3,6 +3,7 @@ import { SubNetworkId } from '@sora-substrate/util/build/bridgeProxy/sub/consts'
 import { type SubNetwork } from '@sora-substrate/util/build/bridgeProxy/sub/types';
 import { getAssetBalance, getAssetInfo } from '../helpers';
 import { type CrossChainProps, type MakeCrossChainProps } from './crossChain';
+import { getSoraAsset } from './sora';
 import type State from '@extension-base/background/handlers/State';
 import type { Asset } from '@sora-substrate/util/src/assets/types';
 import { type NetworkName } from '@/interfaces';
@@ -27,9 +28,8 @@ function getSoraParaId(network: NetworkName, state: State): string {
 }
 
 function getSoraParams(props: CrossChainProps, state: State): [Asset, SubNetwork] {
-  const { originNet, tokenBalance, destinationNet, assetId } = props;
-  const { precision, symbol } = getAssetBalance(originNet, tokenBalance);
-  const { currencyId } = getAssetInfo(assetId, state);
+  const { destinationNet } = props;
+  const asset = getSoraAsset({ ...props, network: props.originNet }, state);
 
   const subNetworkId =
     destinationNet.toLowerCase() === 'kusama'
@@ -38,16 +38,7 @@ function getSoraParams(props: CrossChainProps, state: State): [Asset, SubNetwork
       ? SubNetworkId.Polkadot
       : SubNetworkId.Rococo;
 
-  return [
-    {
-      address: currencyId!,
-      symbol: symbol,
-      name: symbol,
-      decimals: precision,
-      isMintable: false,
-    },
-    subNetworkId,
-  ];
+  return [asset, subNetworkId];
 }
 
 async function estimateSoraCrossChainFee(props: CrossChainProps, state: State): Promise<FPNumber> {

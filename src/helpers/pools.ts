@@ -1,8 +1,9 @@
-import { type PoolsParams } from '@extension-base/services/pools-service/types';
-import { type NetworkName } from '@/interfaces';
+import type { DefaultPoolsParams } from '@extension-base/services/pools-service/types';
+import type { NetworkName } from '@/interfaces';
 
-const getDefaultPoolsParams = (network: NetworkName): PoolsParams => ({
+const getDefaultPoolsParams = (network: NetworkName): DefaultPoolsParams => ({
   network,
+  apr: 0,
 });
 
 export { getDefaultPoolsParams };

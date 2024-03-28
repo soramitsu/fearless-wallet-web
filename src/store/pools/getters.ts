@@ -1,21 +1,17 @@
-import type { GetPoolsHistory, GetPoolsNetwork, PoolsNetworkParams } from '@/store/pools/types';
+import type { PoolsParams } from '@/store/pools/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet } from '@/store/accounts/types';
-import { isSameString, isSora } from '@/helpers';
+import { isSameString } from '@/helpers';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common';
-import { type SoraHistoryElement, type SubqueryHistory } from '@/interfaces';
-import { SORA_VAL_ASSET_ID } from '@/consts/sora';
 
 export enum GettersTypes {
   allPoolsItems = 'allPoolsItems',
   poolsItems = 'poolsItems',
   myPoolsItems = 'myPoolsItems',
-  getPoolsNetwork = 'getPoolsNetwork',
-  getPoolsHistory = 'getPoolsHistory',
 }
 
 export type Getters = {
@@ -24,20 +20,13 @@ export type Getters = {
     getters?: GetterTree<State, State> & Getters,
     rootState?: any,
     rootGetters?: any
-  ): PoolsNetworkParams[];
-  [GettersTypes.poolsItems](state: State, getters?: GetterTree<State, State> & Getters): PoolsNetworkParams[];
-  [GettersTypes.myPoolsItems](state: State, getters?: GetterTree<State, State> & Getters): PoolsNetworkParams[];
-  [GettersTypes.getPoolsNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetPoolsNetwork | any;
-  [GettersTypes.getPoolsHistory](
-    state: State,
-    getters?: GetterTree<State, State> & Getters,
-    rootState?: any,
-    rootGetters?: any
-  ): GetPoolsHistory;
+  ): PoolsParams[];
+  [GettersTypes.poolsItems](state: State, getters?: GetterTree<State, State> & Getters): PoolsParams[];
+  [GettersTypes.myPoolsItems](state: State, getters?: GetterTree<State, State> & Getters): PoolsParams[];
 };
 
 const getters: GetterTree<State, State> & Getters = {
-  [GettersTypes.allPoolsItems]({ allPoolsItems }, getters, rootState, rootGetters): PoolsNetworkParams[] {
+  [GettersTypes.allPoolsItems]({ allPoolsItems }, getters, rootState, rootGetters): PoolsParams[] {
     const accountBalances: TokenGroup[] = rootState.account.balances ?? [];
     const selectedWallet: SelectedWallet = rootState.account.selectedWallet;
     const selectedNetwork: string = rootGetters.selectedNetwork;
@@ -57,58 +46,40 @@ const getters: GetterTree<State, State> & Getters = {
         return true;
       })
       .map((params) => {
-        if (accountBalances.length === 0) return { ...params };
+        if (accountBalances.length === 0) return params;
 
-        const balances = accountBalances.find(({ groupId }) => isSameString(groupId, params.assetId))?.balances;
+        const balances1 = accountBalances.find(({ groupId }) => isSameString(groupId, params.asset1.id))?.balances;
+        const balances2 = accountBalances.find(({ groupId }) => isSameString(groupId, params.asset2.id))?.balances;
 
-        if (balances === undefined) return { ...params };
+        if (balances1 !== undefined) {
+          const balance1 = balances1.find(({ name }) => isSameString(name, params.network))!;
+          const transferableAmount1 = balance1.transferable ?? '0';
 
-        const balance = balances.find(({ name }) => isSameString(name, params.network))!;
-        const transferableAmount = balance.transferable ?? '0';
+          params = { ...params, asset1: { ...params.asset1, transferableAmount: transferableAmount1 } };
+        }
 
-        return { ...params, transferableAmount };
+        if (balances2 !== undefined) {
+          const balance2 = balances2.find(({ name }) => isSameString(name, params.network))!;
+          const transferableAmount2 = balance2.transferable ?? '0';
+
+          params = { ...params, asset2: { ...params.asset2, transferableAmount: transferableAmount2 } };
+        }
+
+        return params;
       });
   },
 
-  [GettersTypes.poolsItems](state, getters): PoolsNetworkParams[] {
-    const allPoolsItems: PoolsNetworkParams[] = getters?.allPoolsItems as unknown as PoolsNetworkParams[];
+  [GettersTypes.poolsItems](state, getters): PoolsParams[] {
+    const allPoolsItems: PoolsParams[] = getters?.allPoolsItems as unknown as PoolsParams[];
 
-    return allPoolsItems.filter(({ totalStake }) => totalStake === '0');
+    return allPoolsItems.filter(({ asset1: { amount } }) => amount === '0');
   },
 
-  [GettersTypes.myPoolsItems](state, getters): PoolsNetworkParams[] {
-    const allPoolsItems: PoolsNetworkParams[] = getters?.allPoolsItems as unknown as PoolsNetworkParams[];
+  [GettersTypes.myPoolsItems](state, getters): PoolsParams[] {
+    const allPoolsItems: PoolsParams[] = getters?.allPoolsItems as unknown as PoolsParams[];
 
-    return allPoolsItems.filter(({ totalStake }) => totalStake !== '0');
+    return allPoolsItems.filter(({ asset1: { amount } }) => amount !== '0');
   },
-
-  [GettersTypes.getPoolsNetwork]: (state, getters) => (networkName: string) => {
-    const allPoolsItems: PoolsNetworkParams[] = getters?.allPoolsItems as unknown as PoolsNetworkParams[];
-
-    return allPoolsItems.find(({ network }) => isSameString(network, networkName))!;
-  },
-
-  [GettersTypes.getPoolsHistory]:
-    (state, getters, rootState, rootGetters) =>
-    (networkName: string, assetId: string, stashAddress?: string, payeeAddress?: string) => {
-      const history: SubqueryHistory = rootGetters.getHistory(assetId, networkName, stashAddress);
-
-      if (isSora(networkName)) {
-        const nodes = (history?.nodes as unknown as SoraHistoryElement[]) ?? [];
-        const poolsXor = nodes.filter(({ module }) => module === 'pools');
-
-        const historyVal: SubqueryHistory = rootGetters.getHistory(SORA_VAL_ASSET_ID, networkName, payeeAddress);
-        const nodesVal = (historyVal?.nodes as unknown as SoraHistoryElement[]) ?? [];
-        const poolsVal = nodesVal.filter(({ module }) => module === 'pools');
-
-        return [...poolsXor, ...poolsVal].sort(
-          ({ timestamp: timestamp1 }, { timestamp: timestamp2 }) => +timestamp2 - +timestamp1
-        );
-      }
-
-      // TODO pools доделать когда появятся новые сети для стейкинга
-      return history?.nodes ?? [];
-    },
 };
 
 export default getters;

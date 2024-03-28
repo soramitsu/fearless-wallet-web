@@ -69,13 +69,21 @@ export async function createSwap(
   const assetBAddress = getAssetOptions(aIB!.id, state.assetsMap) as string;
   const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
   const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
-  const assetA: Asset = { address: assetAAddress, decimals: 18, name: symbolA!, symbol: symbolA!, isMintable: false };
+
+  const assetA: Asset = {
+    address: assetAAddress,
+    decimals: 18,
+    name: symbolA!,
+    symbol: symbolA!,
+    isMintable: true,
+  };
+
   const assetB: Asset = {
     address: assetBAddress,
     decimals: 18,
     name: symbolB!,
     symbol: symbolB!,
-    isMintable: false,
+    isMintable: true,
   };
 
   const { amount: amountDexIdXOR, route: routeDexIdXOR } = await api.swap.getResultFromDexRpc(

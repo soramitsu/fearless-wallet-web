@@ -82,6 +82,7 @@ connect();
 export { sendMessage, connect };
 
 export * from '@/extension/messaging/staking';
+export * from '@/extension/messaging/pools';
 export * from '@/extension/messaging/accounts';
 export * from '@/extension/messaging/transfers';
 export * from '@/extension/messaging/substrate-requests';

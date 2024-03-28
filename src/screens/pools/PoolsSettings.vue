@@ -1,5 +1,5 @@
 <template>
-  <div class="staking-settings">
+  <div class="pools-settings">
     <div class="settings-part">
       <template v-for="{ label, tabName, target, classes, isShow } in tabsOptions">
         <TabButton
@@ -23,21 +23,21 @@
 
 <script lang="ts">
 import { Component, Vue, PropSync, Prop } from 'vue-property-decorator';
-import type { StakingTab } from '@/interfaces/common';
+import type { PoolsTab } from '@/interfaces/common';
 
 interface TabsOptions {
   label: string;
-  tabName: StakingTab;
+  tabName: PoolsTab;
   classes: string;
   target: string;
   isShow: boolean;
 }
 
 @Component
-export default class StakingSettings extends Vue {
-  @Prop({ type: Boolean }) showStakingItems!: boolean;
-  @Prop({ type: Boolean }) showMyStakingItems!: boolean;
-  @PropSync('activeTabName', { type: String }) syncedActiveTabName!: StakingTab;
+export default class PoolsSettings extends Vue {
+  @Prop({ type: Boolean }) showPoolsItems!: boolean;
+  @Prop({ type: Boolean }) showMyPoolsItems!: boolean;
+  @PropSync('activeTabName', { type: String }) syncedActiveTabName!: PoolsTab;
   @PropSync('filterValue', { type: String }) syncedFilterValue!: string;
 
   get tabsOptions(): TabsOptions[] {
@@ -47,14 +47,14 @@ export default class StakingSettings extends Vue {
         tabName: 'all',
         classes: 'all-tab',
         target: '.all-tab',
-        isShow: this.showStakingItems,
+        isShow: this.showPoolsItems,
       },
       {
-        label: 'staking.myStaked',
+        label: 'pools.myPools',
         tabName: 'my',
         classes: 'my-tab',
         target: '.my-tab',
-        isShow: this.showMyStakingItems,
+        isShow: this.showMyPoolsItems,
       },
     ];
   }
@@ -63,14 +63,14 @@ export default class StakingSettings extends Vue {
     return this.syncedActiveTabName === 'all';
   }
 
-  openTab(name: StakingTab) {
+  openTab(name: PoolsTab) {
     this.syncedActiveTabName = name;
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.staking-settings {
+.pools-settings {
   display: flex;
   justify-content: space-between;
   margin-bottom: 10px;

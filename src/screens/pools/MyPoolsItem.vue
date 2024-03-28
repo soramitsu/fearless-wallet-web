@@ -1,6 +1,6 @@
 <template>
   <ContentForm :height="250" :isStaticHeight="true" :bottomRightCorner="true">
-    <div class="my-staking-item" @click="openStakingInfo">
+    <div class="my-pools-item" @click="openPoolsInfo">
       <div class="header">
         <div class="description-part left-part">
           <ExternalLogo :name="icon" class="network-icon" />
@@ -23,7 +23,7 @@
 
       <div class="row">
         <div>
-          {{ $t('staking.stakingBalance') }}
+          {{ $t('pools.poolBalance') }}
         </div>
 
         <Loading v-if="isLoading" :width="28" />
@@ -33,7 +33,7 @@
 
       <div class="row">
         <div>
-          {{ $t('staking.unstaking') }}
+          {{ 'test' }}
         </div>
 
         <Loading v-if="isLoading" :width="28" />
@@ -42,7 +42,7 @@
       </div>
 
       <div class="row">
-        <div>APY</div>
+        <div>{{ 'test' }}</div>
 
         <Loading v-if="isLoading" :width="28" />
 
@@ -51,7 +51,7 @@
 
       <div class="row">
         <div>
-          {{ $t('staking.unstakingPeriod') }}
+          {{ 'test' }}
         </div>
 
         <Loading v-if="isLoading" :width="28" />
@@ -75,7 +75,7 @@ import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { getUtilityAsset } from '@/helpers/currencies';
 
 @Component
-export default class MyStakingItem extends Vue {
+export default class MyPoolItem extends Vue {
   @Prop(Object) networkParams!: NetworkParams;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
@@ -83,8 +83,8 @@ export default class MyStakingItem extends Vue {
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
   get fiatValue() {
-    const stakingCurrency = getUtilityAsset(this.balances, this.network);
-    const priceId = stakingCurrency?.priceId ?? '';
+    const poolCurrency = getUtilityAsset(this.balances, this.network);
+    const priceId = poolCurrency?.priceId ?? '';
     const price = this.getAssetPrice(priceId).price;
     const value = getCostOfAssets(this.totalStake, price, 'string').toString();
 
@@ -139,7 +139,7 @@ export default class MyStakingItem extends Vue {
     return this.networkParams.totalStake;
   }
 
-  openStakingInfo() {
+  openPoolsInfo() {
     if (!this.isLoading)
       this.$router.push({
         name: Components.MyStake,
@@ -153,7 +153,7 @@ export default class MyStakingItem extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.my-staking-item {
+.my-pools-item {
   display: flex;
   flex-direction: column;
   align-items: flex-start;

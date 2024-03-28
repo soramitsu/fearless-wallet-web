@@ -172,8 +172,8 @@
     "wallet": "Wallet",
     "crowdloans": "Crowdloans",
     "staking": "Staking",
-    "polkaswap": "Polkaswap",
-    "history": "History"
+    "pools": "Pools",
+    "polkaswap": "Polkaswap"
   },
   "wallet": {
     "currencies": "Currencies",
@@ -629,6 +629,11 @@
         "text": "Stake more tokens. Staking is currently inactive. Current minimum stake is low"
       }
     }
+  },
+  "pools": {
+    "noPools": "Selected networks do not have pools",
+    "poolBalance": "Pool balance",
+    "myPools": "My pools"
   },
   "browserTabs": {
     "welcome": "Welcome",

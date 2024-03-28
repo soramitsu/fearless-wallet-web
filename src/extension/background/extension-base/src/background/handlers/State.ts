@@ -10,6 +10,7 @@ import {
   OnboardingService,
   KeyringService,
   StakingService,
+  PoolsService,
   NetworkService,
   RequestService,
   WalletConnectService,
@@ -91,6 +92,7 @@ export default class State {
   public nftService = new NftService(this);
   public soraCardService = new SoraCardService(this.requestService);
   public stakingService = new StakingService(this);
+  public poolsService = new PoolsService(this);
   public googleService = new GoogleService();
   public cronService = new CronService(this);
   public subscriptionService = new SubscriptionService(this);

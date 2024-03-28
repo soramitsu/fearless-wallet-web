@@ -51,6 +51,8 @@ const CreateGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screen
 const MyStake = () => import(/* webpackChunkName: "staking */ '@/screens/staking/myStake/MyStake.vue');
 const Staking = () => import(/* webpackChunkName: "staking */ '@/screens/staking/StakingPage.vue');
 
+const Pools = () => import(/* webpackChunkName: "pools */ '@/screens/pools/PoolsPage.vue');
+
 export enum Components {
   Welcome = 'Welcome',
   AddWallet = 'AddWallet',
@@ -77,6 +79,7 @@ export enum Components {
   ReceiveForm = 'ReceiveForm',
   SoraCard = 'SoraCard',
   Staking = 'Staking',
+  Pools = 'Pools',
   MyStake = 'MyStake',
   NoFound = 'NoFound',
   AssetHistory = 'AssetHistory',
@@ -420,6 +423,14 @@ const routes: Array<RouteConfig> = [
         component: Staking,
         meta: {
           title: 'staking',
+        },
+      },
+      {
+        path: 'pools',
+        name: Components.Pools,
+        component: Pools,
+        meta: {
+          title: 'pools',
         },
       },
     ],

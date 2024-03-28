@@ -93,6 +93,7 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
+import { type PoolsParamsResponse, type PoolsParamsRequest } from '../../services/pools-service/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type {
   StakingNetworkRequest,
@@ -1170,6 +1171,16 @@ export default class Extension extends FWExtensionBase {
     return this.state.stakingService.getNominateNetworkFee(params);
   }
 
+  getPoolsParams(params: PoolsParamsRequest): Promise<PoolsParamsResponse> {
+    return this.state.poolsService.getPoolsParams(params);
+  }
+
+  async getMyPoolsInfo(params: StakingNetworkRequest): Promise<MyStakingInfoResponse> {
+    const validators = await this.state.stakingService.getValidators(params.network);
+
+    return this.state.poolsService.getMyPoolsInfo(params.network, validators);
+  }
+
   async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
     return this.state.walletConnectService
       .connect(uri)
@@ -1661,6 +1672,13 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(staking.getNominateNetworkFee)':
         return this.getNominateNetworkFee(request as GetNominateNetworkFeeRequest);
+
+      // pools
+      case 'pri(pools.poolsParams)':
+        return this.getPoolsParams(request as PoolsParamsRequest);
+
+      case 'pri(pools.myPools)':
+        return this.getMyPoolsInfo(request as StakingNetworkRequest);
 
       // price
       case 'pri(price.update.currency)':

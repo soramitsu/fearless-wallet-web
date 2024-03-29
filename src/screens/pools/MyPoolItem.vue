@@ -24,12 +24,12 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { PoolsParams } from '@/store';
+import type { PoolParams } from '@/store';
 import { Components } from '@/router/routes';
 
 @Component
 export default class MyPoolItem extends Vue {
-  @Prop(Object) poolParams!: PoolsParams;
+  @Prop(Object) poolParams!: PoolParams;
 
   get network() {
     return this.poolParams.network;

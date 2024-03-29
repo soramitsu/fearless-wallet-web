@@ -125,7 +125,6 @@ export default class CurrencyItem extends Vue {
   @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
-
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];

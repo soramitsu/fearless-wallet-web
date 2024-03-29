@@ -43,7 +43,7 @@
       </div>
     </ContentForm>
 
-    <PoolDetails v-if="showPoolDetails" :poolsParams="poolsParams" @closePoolDetails="updatePoolParams" />
+    <PoolDetails v-if="showPoolDetails" :poolParams="poolParams" @closePoolDetails="updatePoolParams" />
   </div>
 </template>
 
@@ -51,7 +51,7 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { AsyncFn, PoolsTab } from '@/interfaces';
-import type { SelectedWallet, GetPoolsParamsProps, PoolsParams } from '@/store';
+import type { SelectedWallet, GetPoolsParamsProps, PoolParams } from '@/store';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import PoolsSettings from '@/screens/pools/PoolsSettings.vue';
 import PoolItem from '@/screens/pools/PoolItem.vue';
@@ -74,11 +74,11 @@ export default class PoolsPage extends Vue {
   activeTabName: PoolsTab | '' = '';
   filterValue = '';
   isLoading = false;
-  poolsParams: Nullable<PoolsParams> = null;
+  poolParams: Nullable<PoolParams> = null;
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(PoolsGettersTypes.poolsItems) poolsItems!: PoolsParams[];
-  @Getter(PoolsGettersTypes.myPoolsItems) myPoolsItems!: PoolsParams[];
+  @Getter(PoolsGettersTypes.poolsItems) poolsItems!: PoolParams[];
+  @Getter(PoolsGettersTypes.myPoolsItems) myPoolsItems!: PoolParams[];
   @Action(PoolsActionTypes.GET_POOLS_PARAMS) getPoolsParams!: AsyncFn<GetPoolsParamsProps>;
 
   get filteredPoolsItems() {
@@ -120,7 +120,7 @@ export default class PoolsPage extends Vue {
   }
 
   get showPoolDetails() {
-    return this.poolsParams !== null;
+    return this.poolParams !== null;
   }
 
   get contentFormHeight() {
@@ -168,8 +168,8 @@ export default class PoolsPage extends Vue {
     this.activeTabName = name;
   }
 
-  updatePoolParams(poolsParams: Nullable<PoolsParams> = null) {
-    this.poolsParams = poolsParams;
+  updatePoolParams(poolParams: Nullable<PoolParams> = null) {
+    this.poolParams = poolParams;
   }
 }
 </script>

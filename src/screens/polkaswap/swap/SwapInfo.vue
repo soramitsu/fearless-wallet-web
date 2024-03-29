@@ -40,7 +40,7 @@ type Props = {
   slippage?: number;
   sendAmount?: string;
   receiveAmount?: string;
-  sendValue?: string;
+  sendValue?: number;
   receiveValue?: number;
   minMaxAmount?: string;
   minMaxAmountPrice?: string;
@@ -57,7 +57,7 @@ const props = withDefaults(defineProps<Props>(), {
   slippage: 0,
   sendAmount: '',
   receiveAmount: '',
-  sendValue: '',
+  sendValue: 0,
   receiveValue: 0,
   minMaxAmount: '',
   minMaxAmountPrice: '',

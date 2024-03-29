@@ -5,7 +5,8 @@ declare module 'vue' {
     Loading: typeof import('@/components/Loading.vue')['Loading'];
     AboveForm: typeof import('@/components/AboveForm.vue')['AboveForm'];
     Alert: typeof import('@/components/Alert.vue')['Alert'];
-    AssetIcon: typeof import('@/components/AssetIcon.vue')['AssetIcon'];
+    AssetHighlightIcon: typeof import('@/components/AssetHighlightIcon.vue')['AssetHighlightIcon'];
+    DoubleAssetHighlightIcon: typeof import('@/components/DoubleAssetHighlightIcon.vue')['DoubleAssetHighlightIcon'];
     BadgeButton: typeof import('@/components/BadgeButton.vue')['BadgeButton'];
     BorderButton: typeof import('@/components/BorderButton.vue')['BorderButton'];
     FButton: typeof import('@/components/FButton.vue')['Button'];

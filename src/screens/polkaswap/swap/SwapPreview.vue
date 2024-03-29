@@ -55,8 +55,8 @@ export default class SwapPreview extends Vue {
   @Prop({ default: '' }) slippage!: string;
   @Prop({ default: '' }) sendAmount!: string;
   @Prop({ default: '' }) receiveAmount!: string;
-  @Prop({ default: '' }) sendValue!: string;
-  @Prop({ default: '' }) receiveValue!: string;
+  @Prop({ default: 0 }) sendValue!: number;
+  @Prop({ default: 0 }) receiveValue!: number;
   @Prop({ default: '' }) minMaxAmount!: string;
   @Prop({ default: '' }) minMaxAmountPrice!: string;
   @Prop({ default: '' }) fee!: string;

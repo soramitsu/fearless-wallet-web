@@ -1,4 +1,4 @@
-import type { PoolsParams } from '@/store/pools/types';
+import type { PoolParams } from '@/store/pools/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
@@ -20,13 +20,13 @@ export type Getters = {
     getters?: GetterTree<State, State> & Getters,
     rootState?: any,
     rootGetters?: any
-  ): PoolsParams[];
-  [GettersTypes.poolsItems](state: State, getters?: GetterTree<State, State> & Getters): PoolsParams[];
-  [GettersTypes.myPoolsItems](state: State, getters?: GetterTree<State, State> & Getters): PoolsParams[];
+  ): PoolParams[];
+  [GettersTypes.poolsItems](state: State, getters?: GetterTree<State, State> & Getters): PoolParams[];
+  [GettersTypes.myPoolsItems](state: State, getters?: GetterTree<State, State> & Getters): PoolParams[];
 };
 
 const getters: GetterTree<State, State> & Getters = {
-  [GettersTypes.allPoolsItems]({ allPoolsItems }, getters, rootState, rootGetters): PoolsParams[] {
+  [GettersTypes.allPoolsItems]({ allPoolsItems }, getters, rootState, rootGetters): PoolParams[] {
     const accountBalances: TokenGroup[] = rootState.account.balances ?? [];
     const selectedWallet: SelectedWallet = rootState.account.selectedWallet;
     const selectedNetwork: string = rootGetters.selectedNetwork;
@@ -69,14 +69,14 @@ const getters: GetterTree<State, State> & Getters = {
       });
   },
 
-  [GettersTypes.poolsItems](state, getters): PoolsParams[] {
-    const allPoolsItems: PoolsParams[] = getters?.allPoolsItems as unknown as PoolsParams[];
+  [GettersTypes.poolsItems](state, getters): PoolParams[] {
+    const allPoolsItems: PoolParams[] = getters?.allPoolsItems as unknown as PoolParams[];
 
     return allPoolsItems.filter(({ asset1: { myAmount } }) => myAmount === '0');
   },
 
-  [GettersTypes.myPoolsItems](state, getters): PoolsParams[] {
-    const allPoolsItems: PoolsParams[] = getters?.allPoolsItems as unknown as PoolsParams[];
+  [GettersTypes.myPoolsItems](state, getters): PoolParams[] {
+    const allPoolsItems: PoolParams[] = getters?.allPoolsItems as unknown as PoolParams[];
 
     return allPoolsItems.filter(({ asset1: { myAmount } }) => myAmount !== '0');
   },

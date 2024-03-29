@@ -34,13 +34,13 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { type TokenGroup } from '@extension-base/background/types/types';
-import type { PoolsParams } from '@/store';
+import type { PoolParams } from '@/store';
 import { isSameString } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component
 export default class PoolItem extends Vue {
-  @Prop(Object) poolParams!: PoolsParams;
+  @Prop(Object) poolParams!: PoolParams;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 

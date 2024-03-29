@@ -21,9 +21,9 @@ const actions: ActionTree<State, State> & Actions = {
 
     await new Promise((res) => {
       setTimeout(async () => {
-        const poolsParams = await getPoolsParams({ networks: POOLS_NETWORKS_LIST });
+        const poolParams = await getPoolsParams({ networks: POOLS_NETWORKS_LIST });
 
-        commit(MutationTypes.UPDATE_POOLS_PARAMS, poolsParams);
+        commit(MutationTypes.UPDATE_POOLS_PARAMS, poolParams);
 
         res(true);
       }, props.delay);

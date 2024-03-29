@@ -18,7 +18,9 @@ export interface DefaultPoolsParams {
   network: NetworkName;
   apr: number;
   tvl: string;
+  rewardAsset: string;
   isMyPool: true;
+  yourShare?: string;
   asset1: AssetPool;
   asset2: AssetPool;
 }

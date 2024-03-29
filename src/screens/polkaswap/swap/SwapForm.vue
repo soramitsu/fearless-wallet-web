@@ -529,13 +529,11 @@ export default class SwapForm extends Vue {
   }
 
   get sendValue() {
-    return (this.sendAssetPrice * (+this.sendAmount ?? 0)).toString();
+    return getCostOfAssets(+this.sendAmount ?? 0, this.sendAssetPrice);
   }
 
   get receiveValue() {
-    const amount = +this.receiveAmount ?? 0;
-
-    return this.receiveAssetPrice * amount;
+    return getCostOfAssets(+this.receiveAmount ?? 0, this.receiveAssetPrice);
   }
 
   created() {

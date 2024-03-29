@@ -32,6 +32,7 @@ export class PoolsService {
           apr: 99,
           tvl: '101010',
           isMyPool: false,
+          rewardAsset: 'PSWAP',
           asset1: {
             amount: '11',
             myAmount: '0',
@@ -52,6 +53,8 @@ export class PoolsService {
           apr: 12,
           tvl: '18560',
           isMyPool: true,
+          rewardAsset: 'PSWAP',
+          yourShare: '0.05',
           asset1: {
             amount: '33',
             myAmount: '1',

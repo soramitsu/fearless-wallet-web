@@ -1,7 +1,8 @@
 import Vue from 'vue';
 import AboveForm from '@/components/AboveForm.vue';
 import Alert from '@/components/Alert.vue';
-import AssetIcon from '@/components/AssetIcon.vue';
+import AssetHighlightIcon from '@/components/AssetHighlightIcon.vue';
+import DoubleAssetHighlightIcon from '@/components/DoubleAssetHighlightIcon.vue';
 import BadgeButton from '@/components/BadgeButton.vue';
 import BorderButton from '@/components/BorderButton.vue';
 import Checkbox from '@/components/Checkbox.vue';
@@ -47,7 +48,8 @@ import Tabs from '@/components/Tabs.vue';
 //add component to component.d.ts as well
 Vue.component('AboveForm', AboveForm);
 Vue.component('Alert', Alert);
-Vue.component('AssetIcon', AssetIcon);
+Vue.component('AssetHighlightIcon', AssetHighlightIcon);
+Vue.component('DoubleAssetHighlightIcon', DoubleAssetHighlightIcon);
 Vue.component('BadgeButton', BadgeButton);
 Vue.component('BorderButton', BorderButton);
 Vue.component('Checkbox', Checkbox);

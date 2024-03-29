@@ -13,7 +13,7 @@ interface FullAssetPool extends AssetPool {
   transferableAmount: string;
 }
 
-export interface PoolsParams extends DefaultPoolsParams {
+export interface PoolParams extends DefaultPoolsParams {
   loading: boolean;
   asset1: FullAssetPool;
   asset2: FullAssetPool;

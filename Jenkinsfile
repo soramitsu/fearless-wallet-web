@@ -36,7 +36,7 @@ def buildWithCred  = [
 def pipeline = new org.js.AppArtifactsPipeline(
     steps:                      this,
     secretScannerExclusion:     '/src/extension/background/extension-base/src/api/evm/history.ts',
-    buildCmds:                  ['yarn build:extension:all'],
+    buildCmds:                  ['yarn build:extension:firefox:zip'],
     nexusCredential:            'bot-fearless-rw',
     nexusProjectPath:           'fearless/extension',
     nexusNotification:           true,

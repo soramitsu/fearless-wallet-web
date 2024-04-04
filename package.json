@@ -154,7 +154,7 @@
     "@polkadot/x-fetch": "^12.3.2"
   },
   "license": "Apache-2.0",
-  "packageManager": "yarn@3.4.1",
+  "packageManager": "yarn@1.22.22",
   "lint-staged": {
     "*.{js,jsx,vue,ts,tsx}": [
       "yarn lint:precommit",

@@ -312,6 +312,8 @@ export default class State {
     const networks = this.networkValues;
     const selectedNetwork = this.networkService.selectedNetworks[address];
 
+    if (selectedNetwork === ALL_NETWORKS) return networks;
+
     if (selectedNetwork === POPULAR_NETWORKS) {
       const popular = networks.filter((el) => el.rank !== undefined);
       popular.forEach((el) => uniqNetworks.add(el));
@@ -479,6 +481,8 @@ export default class State {
       this.keyringService.triggerWalletsSubscription();
 
       if (isNew) this.setActiveNetworks(this.networkService.selectedNetworks[address] ?? ALL_NETWORKS);
+
+      this.nftService.publishNfts();
     });
 
     return true;

@@ -750,11 +750,11 @@ export default class TransferForm extends Vue {
         });
       }
 
-      this.syncedFee = estimateFee ?? '0';
-      this.syncedDestNetFee = destEstimateFee ?? '0';
+      this.syncedFee = estimateFee ?? '';
+      this.syncedDestNetFee = destEstimateFee ?? '';
     } catch (e) {
-      this.syncedFee = '0';
-      this.syncedDestNetFee = '0';
+      this.syncedFee = '';
+      this.syncedDestNetFee = '';
     }
   }
 
@@ -845,7 +845,7 @@ export default class TransferForm extends Vue {
       this.syncedValue = getCostOfAssets(transferable, this.assetPrice).toString();
     };
 
-    if (this.syncedFee === '0') {
+    if (this.syncedFee === '' || this.syncedFee === '0') {
       clearTimeout(this.timeoutSetMax);
 
       this.timeoutSetMax = setTimeout(setMax, 2000);

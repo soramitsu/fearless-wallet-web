@@ -14,15 +14,7 @@
         :iconClasses="['min-max']"
       />
 
-      <InfoRow
-        text="assets.liquidityProvideFee"
-        :value="`${providerFeeCut} ${soraMainAsset}`"
-        icon="info"
-        :iconClasses="['provider-fee']"
-      />
-
       <Tooltip text="assets.minMaxReceiveInfo" target=".min-max" placement="right" />
-      <Tooltip text="assets.liquidityProvideFeeInfo" target=".provider-fee" placement="right" />
     </template>
 
     <InfoRow
@@ -39,7 +31,6 @@
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
-import { useI18n } from 'vue-i18n-composable';
 import { firstCharToUp } from '@/helpers';
 import { SORA_UTILITY_ASSET } from '@/consts/sora';
 import { useStore } from '@/store';
@@ -55,7 +46,6 @@ type Props = {
   minMaxAmountPrice?: string;
   fee?: string;
   feePrice?: string;
-  providerFee?: string;
   sendAssetUP?: string;
   receiveAssetUP?: string;
   route?: string;
@@ -73,19 +63,16 @@ const props = withDefaults(defineProps<Props>(), {
   minMaxAmountPrice: '',
   fee: '',
   feePrice: '',
-  providerFee: '',
   sendAssetUP: '',
   receiveAssetUP: '',
   route: '',
   showSwapInfo: true,
 });
 const store = useStore();
-const { n } = useI18n();
 
 const fiatSymbol = ref<string>(store.getters.fiatSymbol);
 const soraMainAsset = SORA_UTILITY_ASSET.toUpperCase();
 
-const providerFeeCut = computed(() => n(+props.providerFee, 'decimal'));
 const minMaxLabel = computed(() => (props.isExchangeB ? 'assets.maxSales' : 'assets.minReceived'));
 const marketTypeUP = computed(() => firstCharToUp(props.marketType));
 </script>

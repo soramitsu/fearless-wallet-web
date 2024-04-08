@@ -9,8 +9,10 @@ import { type TransportRequestMessage, type Port } from '@extension-base/backgro
 import MigrationService from '@extension-base/services/migration-service';
 import axios from 'axios';
 import { APP_VERSION } from '@/consts/global';
-axios.defaults.adapter = fetchAdapter;
+
 console.info('background initialization');
+
+axios.defaults.adapter = fetchAdapter;
 
 async function getActiveTabs() {
   // quering the current active tab in the current window should only ever return 1 tab

@@ -1,50 +1,52 @@
 <template>
-  <div class="pools">
-    <ContentForm :height="440">
-      <div class="content">
-        <Loader v-if="showLoader" />
+  <AboveForm header="pools.liquidityPools" :fullScreen="true" @closeHandler="closeForm">
+    <div class="pools">
+      <PoolsSettings
+        :activeTabName="activeTabName"
+        :filterValue="filterValue"
+        :showPoolsItems="showPoolsItems"
+        :showMyPoolsItems="showMyPoolsItems"
+        @update:filterValue="updateFilterValue"
+        @update:activeTabName="updateActiveTabName"
+      />
 
-        <div v-else-if="noPoolsItems" class="no-pools">{{ $t('pools.noPools') }}</div>
+      <ContentForm :height="460">
+        <div class="content">
+          <Loader v-if="showLoader" />
 
-        <template v-else>
-          <PoolsSettings
-            :activeTabName="activeTabName"
-            :filterValue="filterValue"
-            :showPoolsItems="showPoolsItems"
-            :showMyPoolsItems="showMyPoolsItems"
-            @update:filterValue="updateFilterValue"
-            @update:activeTabName="updateActiveTabName"
-          />
+          <div v-else-if="noPoolsItems" class="no-pools">{{ $t('pools.noPools') }}</div>
 
-          <Scroll>
-            <template v-if="haveFilteredItems">
-              <template v-if="isAllTab">
-                <PoolItem
-                  v-for="item in filteredPoolsItems"
-                  :key="item.network"
-                  :poolParams="item"
-                  @click="updatePoolParams(item)"
-                />
+          <template v-else>
+            <Scroll>
+              <template v-if="haveFilteredItems">
+                <template v-if="isAllTab">
+                  <PoolItem
+                    v-for="item in filteredPoolsItems"
+                    :key="item.network"
+                    :poolParams="item"
+                    @click="updatePoolParams(item)"
+                  />
+                </template>
+
+                <template v-else>
+                  <PoolItem
+                    v-for="item in filteredMyPoolsItems"
+                    :key="item.network"
+                    :poolParams="item"
+                    @click="updatePoolParams(item)"
+                  />
+                </template>
               </template>
 
-              <template v-else>
-                <PoolItem
-                  v-for="item in filteredMyPoolsItems"
-                  :key="item.network"
-                  :poolParams="item"
-                  @click="updatePoolParams(item)"
-                />
-              </template>
-            </template>
+              <div v-else class="nothing-found">{{ $t('common.nothingFound') }}</div>
+            </Scroll>
+          </template>
+        </div>
+      </ContentForm>
 
-            <div v-else class="nothing-found">{{ $t('common.nothingFound') }}</div>
-          </Scroll>
-        </template>
-      </div>
-    </ContentForm>
-
-    <PoolDetails v-if="showPoolDetails" :poolParams="poolParams" @closePoolDetails="updatePoolParams" />
-  </div>
+      <PoolDetails v-if="showPoolDetails" :poolParams="poolParams" @closePoolDetails="updatePoolParams" />
+    </div>
+  </AboveForm>
 </template>
 
 <script lang="ts">
@@ -55,17 +57,16 @@ import type { SelectedWallet, GetPoolsParamsProps, PoolParams } from '@/store';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import PoolsSettings from '@/screens/pools/PoolsSettings.vue';
 import PoolItem from '@/screens/pools/PoolItem.vue';
-import MyPoolItem from '@/screens/pools/MyPoolItem.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import PoolDetails from '@/screens/pools/PoolDetails.vue';
 import { GettersTypes as PoolsGettersTypes } from '@/store/pools/getters';
 import { isSubstrString } from '@/helpers';
 import { ActionTypes as PoolsActionTypes } from '@/store/pools/actions';
+import { Components } from '@/router/routes';
 
 @Component({
   components: {
     PoolItem,
-    MyPoolItem,
     PoolDetails,
     PoolsSettings,
   },
@@ -170,6 +171,10 @@ export default class PoolsPage extends Vue {
 
   updatePoolParams(poolParams: Nullable<PoolParams> = null) {
     this.poolParams = poolParams;
+  }
+
+  closeForm() {
+    this.$router.push({ name: Components.Wallet });
   }
 }
 </script>

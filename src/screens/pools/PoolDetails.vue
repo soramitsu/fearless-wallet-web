@@ -75,16 +75,6 @@
 
             <InfoRow :text="asset2PooledStr" :value="asset2MyAmount" />
           </div>
-
-          <div v-if="step === 1 || step === 4">
-            <ContentForm :height="100" :isStaticHeight="true" :bottomRightCorner="true">
-              <div class="content-form">
-                <div class="description">
-                  {{ $t('pools.stakeYourPoolShare') }}
-                </div>
-              </div>
-            </ContentForm>
-          </div>
         </div>
 
         <div class="activity-buttons">
@@ -278,6 +268,8 @@ export default class PoolDetails extends Vue {
   get showBackIcon() {
     if (this.showSettings) return false;
 
+    if (this.step === 4) return false;
+
     return this.step !== 1;
   }
 
@@ -296,7 +288,7 @@ export default class PoolDetails extends Vue {
   get header() {
     if (this.showSettings) return this.$t('assets.poolSettings');
 
-    if (this.step === 1) return this.$t('pools.poolDetails');
+    if (this.step === 1 || this.step === 4) return this.$t('pools.poolDetails');
 
     if (this.step === 2) return this.$t('pools.supplyLiquidity');
 
@@ -380,16 +372,6 @@ export default class PoolDetails extends Vue {
 
   .remove-button {
     margin-right: 10px;
-  }
-
-  .content-form {
-    padding: $default-padding;
-  }
-
-  .description {
-    font-size: 14px;
-    color: $default-white;
-    text-align: left;
   }
 
   .slippage-warning {

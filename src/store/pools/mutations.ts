@@ -3,17 +3,20 @@ import type { State } from './state';
 import type { SetAllPoolsItems, SetMyPoolsInfo } from './types';
 import type { PoolParams } from '@/store/pools/types';
 import { isSameString } from '@/helpers';
+import { accountController } from '@/controllers';
 
 export enum MutationTypes {
   UPDATE_POOLS_PARAMS = 'UPDATE_POOLS_PARAMS',
   CLEAR_POOLS_PARAMS = 'CLEAR_POOLS_PARAMS',
   UPDATE_MY_POOLS_INFO = 'UPDATE_MY_POOLS_INFO',
+  HIDE_POOLS_BANNER = 'HIDE_POOLS_BANNER',
 }
 
 export type Mutations = {
   [MutationTypes.UPDATE_POOLS_PARAMS](state: State, props: SetAllPoolsItems): void;
   [MutationTypes.CLEAR_POOLS_PARAMS](state: State): void;
   [MutationTypes.UPDATE_MY_POOLS_INFO](state: State, props: SetMyPoolsInfo): void;
+  [MutationTypes.HIDE_POOLS_BANNER](state: State): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -48,6 +51,12 @@ const mutations: MutationTree<State> & Mutations = {
       ...oldItem,
       ...poolsInfo,
     });
+  },
+
+  [MutationTypes.HIDE_POOLS_BANNER](state) {
+    accountController.setHidingPoolsBanner();
+
+    state.showPoolsBanner = false;
   },
 };
 

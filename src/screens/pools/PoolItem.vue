@@ -115,8 +115,6 @@ export default class PoolItem extends Vue {
   align-items: center;
   border-bottom: $default-border;
   height: 80px;
-  padding: 8px 0 8px 14px;
-  margin-right: 16px;
   user-select: none;
   cursor: pointer;
 
@@ -147,7 +145,6 @@ export default class PoolItem extends Vue {
       .pool-name {
         text-transform: uppercase;
         color: $default-white;
-        margin-bottom: 5px;
       }
     }
 
@@ -177,7 +174,6 @@ export default class PoolItem extends Vue {
 
     .apy {
       font-weight: 600;
-      line-height: 25px;
       color: $pink-lavender-color;
     }
 

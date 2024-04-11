@@ -12,6 +12,7 @@ export enum GettersTypes {
   allPoolsItems = 'allPoolsItems',
   poolsItems = 'poolsItems',
   myPoolsItems = 'myPoolsItems',
+  showPoolsBanner = 'showPoolsBanner',
 }
 
 export type Getters = {
@@ -23,6 +24,7 @@ export type Getters = {
   ): PoolParams[];
   [GettersTypes.poolsItems](state: State, getters?: GetterTree<State, State> & Getters): PoolParams[];
   [GettersTypes.myPoolsItems](state: State, getters?: GetterTree<State, State> & Getters): PoolParams[];
+  [GettersTypes.showPoolsBanner](state: State, getters?: GetterTree<State, State> & Getters): boolean;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -79,6 +81,10 @@ const getters: GetterTree<State, State> & Getters = {
     const allPoolsItems: PoolParams[] = getters?.allPoolsItems as unknown as PoolParams[];
 
     return allPoolsItems.filter(({ asset1: { myAmount } }) => myAmount !== '0');
+  },
+
+  [GettersTypes.showPoolsBanner]({ showPoolsBanner }): boolean {
+    return showPoolsBanner;
   },
 };
 

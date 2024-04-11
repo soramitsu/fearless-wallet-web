@@ -136,6 +136,8 @@
             </div>
           </Alert>
 
+          <PoolsBanner class="banner-pools" />
+
           <div class="buttons">
             <FButton
               v-if="showSettings"
@@ -205,6 +207,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
+import PoolsBanner from '@/screens/pools/PoolsBanner.vue';
 import { Components } from '@/router/routes';
 import { checkSwap, getSoraFees } from '@/extension/messaging';
 import {
@@ -225,6 +228,7 @@ const SWAP_INTERVAL_RECALCULATE = 10000;
     SwapInfo,
     Disclaimer,
     SwapPreview,
+    PoolsBanner,
     SwapSettings,
     PolkaswapSettings,
     ConfirmationPasswordPopup,
@@ -254,9 +258,9 @@ export default class SwapForm extends Vue {
   tx: SwapOptions = {} as SwapOptions;
   swapInterval!: NodeJS.Timer;
 
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
@@ -783,6 +787,10 @@ export default class SwapForm extends Vue {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+}
+
+.banner-pools {
+  margin-top: 10px;
 }
 
 .swap-content {

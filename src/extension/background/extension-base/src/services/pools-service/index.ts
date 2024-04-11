@@ -1,14 +1,14 @@
 import { api as apiSora } from '@sora-substrate/util';
 import { BasicTxErrorCode, type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
-import { getSoraAsset } from '../../api/substrate/sora';
-import {
-  type RequestAddLiquidity,
-  type PoolsParamsResponse,
-  type MakePoolsRequest,
-  type RequestRemoveLiquidity,
-  type MyPoolsInfo,
-  type PoolsParamsRequest,
-  type DefaultPoolsParams,
+import { getSoraAsset } from '@extension-base/api/substrate/sora';
+import type {
+  RequestAddLiquidity,
+  PoolsParamsResponse,
+  MakePoolsRequest,
+  RequestRemoveLiquidity,
+  MyPoolsInfo,
+  PoolsParamsRequest,
+  DefaultPoolsParams,
 } from './types';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkName } from '@/interfaces';

@@ -1,8 +1,8 @@
 import { getAssetBalance, getAssetInfo } from '../helpers';
-import { type TokenGroup } from '../../background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import type { Asset } from '@sora-substrate/util/src/assets/types';
 import type State from '@extension-base/background/handlers/State';
-import { type NetworkName } from '@/interfaces';
+import type { NetworkName } from '@/interfaces';
 
 interface Props {
   assetId: string;

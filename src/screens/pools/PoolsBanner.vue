@@ -6,9 +6,9 @@
       <Icon icon="pools-details-button" class="pools-details" />
     </div>
 
-    <div class="close-button center" @click="hideBanner">
+    <!-- <div class="close-button center" @click="hideBanner">
       <Icon icon="close-thin" class="close-icon" />
-    </div>
+    </div> -->
   </div>
 </template>
 

@@ -11,6 +11,7 @@
         :header="header"
         @back="back"
         @toggleSettingsVisibility="toggleSettingsVisibility"
+        @closeForm="closeForm"
       />
     </template>
 
@@ -119,9 +120,11 @@
         </div>
 
         <div>
-          <PolkaswapAlert />
+          <template v-if="!showSettings">
+            <PolkaswapAlert />
 
-          <PoolsBanner class="banner-pools" />
+            <PoolsBanner class="banner-pools" />
+          </template>
 
           <div class="buttons">
             <FButton
@@ -259,7 +262,9 @@ export default class SwapForm extends Vue {
   }
 
   get showCloseIcon() {
-    return this.showSettings;
+    if (this.showSettings) return true;
+
+    return this.step !== 1;
   }
 
   get sendAssetPrice() {
@@ -594,6 +599,12 @@ export default class SwapForm extends Vue {
   }
 
   closeForm() {
+    if (this.showSettings) {
+      this.toggleSettingsVisibility();
+
+      return;
+    }
+
     this.clearSwapInterval();
     this.$router.back();
   }
@@ -657,11 +668,11 @@ export default class SwapForm extends Vue {
   resetSettings() {
     this.temporaryMarketType = MarketType.SMART;
     this.temporarySlippage = 0.5;
+
+    this.proceed();
   }
 
   toggleSettingsVisibility() {
-    if (this.step === 2) return;
-
     this.showSettings = !this.showSettings;
     this.temporaryMarketType = this.marketType;
     this.temporarySlippage = this.slippage;

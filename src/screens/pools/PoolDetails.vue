@@ -11,6 +11,7 @@
         :header="header"
         @back="handlerBack"
         @toggleSettingsVisibility="toggleSettingsVisibility"
+        @closeForm="closeForm"
       />
     </template>
 
@@ -61,7 +62,7 @@
               :currency2="currency2"
             />
 
-            <ContentForm :height="280" :isStaticHeight="true" :bottomRightCorner="true">
+            <ContentForm :height="225" :isStaticHeight="true" :bottomRightCorner="true">
               <PoolDescription :poolParams="poolParams" :showAdditionalInfo="true" :slippage="slippage" />
             </ContentForm>
 
@@ -85,7 +86,7 @@
               size="big"
               fontSize="big"
               class="remove-button"
-              text="pools.remove"
+              :text="btnSecondText"
               type="secondary"
               :border="false"
               @click="secondBtnHandler"
@@ -137,6 +138,8 @@ import { type PoolsOperation } from '@/interfaces/pools';
 import PolkaswapSettingsHeader from '@/screens/polkaswap/PolkaswapSettingsHeader.vue';
 import PolkaswapSettings from '@/screens/polkaswap/PolkaswapSettings.vue';
 import PolkaswapAlert from '@/screens/polkaswap/PolkaswapAlert.vue';
+import { GettersTypes as PoolsGettersTypes } from '@/store/pools/getters';
+import { isSameString } from '@/helpers';
 
 @Component({
   components: {
@@ -158,9 +161,24 @@ export default class PoolDetails extends Vue {
   showSettings = false;
   fee = ''; // TODO нужна ли fee?
 
-  @Prop({ type: Object }) poolParams!: PoolParams;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
+  @Getter(PoolsGettersTypes.poolsItems) poolsItems!: PoolParams[];
+  @Getter(PoolsGettersTypes.myPoolsItems) myPoolsItems!: PoolParams[];
+
+  get poolParams() {
+    return [...this.poolsItems, ...this.myPoolsItems].find(
+      ({ asset1, asset2 }) => isSameString(asset1.name, this.asset1) || isSameString(asset2.name, this.asset2)
+    )!;
+  }
+
+  get asset1() {
+    return this.$route.params.asset1;
+  }
+
+  get asset2() {
+    return this.$route.params.asset2;
+  }
 
   get showPolkaswapIcon() {
     return this.step === 2 && !this.showSettings;
@@ -168,14 +186,6 @@ export default class PoolDetails extends Vue {
 
   get network() {
     return this.poolParams.network;
-  }
-
-  get asset1() {
-    return this.poolParams.asset1.name;
-  }
-
-  get asset2() {
-    return this.poolParams.asset2.name;
   }
 
   get asset1MyAmount() {
@@ -248,6 +258,12 @@ export default class PoolDetails extends Vue {
       return true;
 
     return false;
+  }
+
+  get btnSecondText() {
+    if (this.showSettings) return 'assets.resetToDefault';
+
+    return 'pools.remove';
   }
 
   get btnText() {
@@ -326,9 +342,10 @@ export default class PoolDetails extends Vue {
 
   toggleSettingsVisibility() {
     if (this.step !== 2) this.closeForm();
-    else if (this.step === 2) this.showSettings = !this.showSettings;
-
-    // this.temporarySlippage = this.slippage;
+    else if (this.step === 2) {
+      this.showSettings = !this.showSettings;
+      this.temporarySlippage = this.slippage;
+    }
   }
 
   handlerBack() {
@@ -338,12 +355,24 @@ export default class PoolDetails extends Vue {
   }
 
   closeForm() {
-    this.$emit('closePoolDetails');
+    if (this.showSettings) {
+      this.toggleSettingsVisibility();
+
+      return;
+    }
+
+    this.$router.back();
   }
 
   secondBtnHandler() {
-    if (this.showSettings) this.temporarySlippage = 0.5;
-    else this.extrinsicType === 'removeLiquidity';
+    if (this.showSettings) {
+      this.temporarySlippage = 0.5;
+      this.confirm();
+
+      return;
+    }
+
+    this.extrinsicType === 'removeLiquidity';
   }
 
   updateAmount1(value: string) {

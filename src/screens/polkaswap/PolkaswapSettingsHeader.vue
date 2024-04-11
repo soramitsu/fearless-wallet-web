@@ -11,7 +11,7 @@
     </div>
 
     <template>
-      <Icon v-if="showCloseIcon" icon="close" class="img close" @click="$emit('toggleSettingsVisibility')" />
+      <Icon v-if="showCloseIcon" icon="close" class="img close" @click="$emit('closeForm')" />
 
       <div v-else :class="classesSettings" @click="$emit('toggleSettingsVisibility')">
         <template>
@@ -45,8 +45,9 @@ export default class PolkaswapSettingsHeader extends Vue {
 
   get classesBackIcon() {
     return [
+      'back-default',
       {
-        back: !this.showCloseIcon,
+        'back-mock-settings': !this.showCloseIcon,
         'back-mock': this.showBackMock || this.showSettings,
       },
     ];
@@ -76,14 +77,17 @@ export default class PolkaswapSettingsHeader extends Vue {
   }
 }
 
-.back {
+.back-default {
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  width: 112px;
-  height: 20px;
   opacity: 0.65;
+  height: 20px;
   cursor: pointer;
+}
+
+.back-mock-settings {
+  width: 112px;
 }
 
 .back-mock {
@@ -100,6 +104,7 @@ export default class PolkaswapSettingsHeader extends Vue {
     opacity: 0.8;
   }
 }
+
 .settings {
   display: flex;
   justify-content: space-between;

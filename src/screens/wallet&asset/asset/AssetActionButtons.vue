@@ -96,7 +96,10 @@ export default class AssetActionButtons extends Vue {
   onRoute(form: 'send' | 'receive') {
     this.$router.push({
       name: form === 'send' ? Components.SendForm : Components.ReceiveForm,
-      params: { assetId: this.$route.params.assetId, network: this.selectedNetwork },
+      params: {
+        assetId: this.$route.params.assetId,
+        network: this.selectedNetwork,
+      },
     });
   }
 

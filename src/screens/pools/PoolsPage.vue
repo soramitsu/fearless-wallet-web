@@ -24,7 +24,7 @@
                     v-for="item in filteredPoolsItems"
                     :key="item.network"
                     :poolParams="item"
-                    @click="updatePoolParams(item)"
+                    @click="openPoolDetails(item)"
                   />
                 </template>
 
@@ -33,7 +33,7 @@
                     v-for="item in filteredMyPoolsItems"
                     :key="item.network"
                     :poolParams="item"
-                    @click="updatePoolParams(item)"
+                    @click="openPoolDetails(item)"
                   />
                 </template>
               </template>
@@ -43,8 +43,6 @@
           </template>
         </div>
       </ContentForm>
-
-      <PoolDetails v-if="showPoolDetails" :poolParams="poolParams" @closePoolDetails="updatePoolParams" />
     </div>
   </AboveForm>
 </template>
@@ -58,7 +56,6 @@ import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import PoolsSettings from '@/screens/pools/PoolsSettings.vue';
 import PoolItem from '@/screens/pools/PoolItem.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import PoolDetails from '@/screens/pools/PoolDetails.vue';
 import { GettersTypes as PoolsGettersTypes } from '@/store/pools/getters';
 import { isSubstrString } from '@/helpers';
 import { ActionTypes as PoolsActionTypes } from '@/store/pools/actions';
@@ -67,7 +64,6 @@ import { Components } from '@/router/routes';
 @Component({
   components: {
     PoolItem,
-    PoolDetails,
     PoolsSettings,
   },
 })
@@ -120,10 +116,6 @@ export default class PoolsPage extends Vue {
     return this.myPoolsItems.length !== 0;
   }
 
-  get showPoolDetails() {
-    return this.poolParams !== null;
-  }
-
   get contentFormHeight() {
     return CONTENT_FORM_HEIGHT;
   }
@@ -169,8 +161,15 @@ export default class PoolsPage extends Vue {
     this.activeTabName = name;
   }
 
-  updatePoolParams(poolParams: Nullable<PoolParams> = null) {
-    this.poolParams = poolParams;
+  openPoolDetails(poolParams: PoolParams) {
+    this.$router.push({
+      name: Components.PoolDetails,
+      params: {
+        poolName: `${poolParams?.asset1}-${poolParams?.asset1}`,
+        asset1: poolParams.asset1.name,
+        asset2: poolParams.asset2.name,
+      },
+    });
   }
 
   closeForm() {

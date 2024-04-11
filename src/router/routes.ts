@@ -58,6 +58,7 @@ const MyStake = () => import(/* webpackChunkName: "staking */ '@/screens/staking
 const Staking = () => import(/* webpackChunkName: "staking */ '@/screens/staking/StakingPage.vue');
 
 const Pools = () => import(/* webpackChunkName: "pools */ '@/screens/pools/PoolsPage.vue');
+const PoolDetails = () => import(/* webpackChunkName: "pools */ '@/screens/pools/PoolDetails.vue');
 
 export enum Components {
   Welcome = 'Welcome',
@@ -85,8 +86,9 @@ export enum Components {
   ReceiveForm = 'ReceiveForm',
   SoraCard = 'SoraCard',
   Staking = 'Staking',
-  Pools = 'Pools',
   MyStake = 'MyStake',
+  Pools = 'Pools',
+  PoolDetails = 'PoolDetails',
   NoFound = 'NoFound',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
@@ -296,6 +298,14 @@ const routes: Array<RouteConfig> = [
     component: Pools,
     meta: {
       title: 'pools',
+    },
+  },
+  {
+    path: '/pool-details/:poolName',
+    name: Components.PoolDetails,
+    component: PoolDetails,
+    meta: {
+      title: 'Pool Details',
     },
   },
   {

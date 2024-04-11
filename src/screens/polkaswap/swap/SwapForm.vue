@@ -1,29 +1,17 @@
 <template>
   <AboveForm :fullScreen="true" @closeHandler="closeForm">
     <template v-slot:header>
-      <div class="header-content">
-        <div :class="classesBackIcon" data-testid="backBtn" @click="back">
-          <Icon v-show="showBackIcon" icon="chevron-left" class="img" />
-        </div>
-
-        <div class="header" data-testid="header">
-          {{ header }}
-
-          <Icon v-if="showPolkaswapIcon" icon="polkaswap" class="polkaswap" />
-        </div>
-
-        <Icon v-if="showCloseIcon" icon="close" class="img close" @click="toggleSettingsVisibility" />
-
-        <div v-else :class="classesSettings" @click="toggleSettingsVisibility">
-          <template v-if="step === 1">
-            <div class="settings-text" data-testid="settingText">{{ marketTypeUP }}</div>
-
-            <div class="settings-circle" data-testid="settingCircle">
-              <Icon icon="settings" class="img" />
-            </div>
-          </template>
-        </div>
-      </div>
+      <PolkaswapSettings
+        :marketType="marketType"
+        :showSettings="showSettings"
+        :showPolkaswapIcon="showPolkaswapIcon"
+        :showBackIcon="showBackIcon"
+        :showCloseIcon="showCloseIcon"
+        :settingHide="step === 2"
+        :header="header"
+        @back="back"
+        @toggleSettingsVisibility="toggleSettingsVisibility"
+      />
     </template>
 
     <Scroll>
@@ -212,6 +200,7 @@ import type { TokenGroup } from '@extension-base/background/types/types';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
 import SwapSettings from '@/screens/polkaswap/swap/SwapSettings.vue';
+import PolkaswapSettings from '@/screens/polkaswap/PolkaswapSettings.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
@@ -237,6 +226,7 @@ const SWAP_INTERVAL_RECALCULATE = 10000;
     Disclaimer,
     SwapPreview,
     SwapSettings,
+    PolkaswapSettings,
     ConfirmationPasswordPopup,
   },
 })
@@ -271,6 +261,14 @@ export default class SwapForm extends Vue {
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
 
+  get showBackIcon() {
+    return !this.showSettings;
+  }
+
+  get showPolkaswapIcon() {
+    return this.step === 1 && !this.showSettings;
+  }
+
   get showCloseIcon() {
     return this.showSettings;
   }
@@ -285,14 +283,6 @@ export default class SwapForm extends Vue {
     const priceId = this.receiveCurrency?.priceId ?? '';
 
     return this.getAssetPrice(priceId).price;
-  }
-
-  get showBackIcon() {
-    return !this.showSettings;
-  }
-
-  get showPolkaswapIcon() {
-    return this.step === 1 && !this.showSettings;
   }
 
   get classesSwapIcon() {
@@ -364,10 +354,6 @@ export default class SwapForm extends Vue {
 
   get classesSettings() {
     return ['settings', { 'setting-hide': this.step === 2 }];
-  }
-
-  get classesBackIcon() {
-    return ['back', { 'back-mock': this.showSettings }];
   }
 
   get header() {
@@ -498,10 +484,6 @@ export default class SwapForm extends Vue {
     return FPNumber.gte(new FPNumber(this.calcTransferableXor()), new FPNumber(this.fee));
   }
 
-  get marketTypeUP() {
-    return this.marketType.toUpperCase();
-  }
-
   get sendAssetUP() {
     return this.sendAssetName.toUpperCase();
   }
@@ -529,11 +511,11 @@ export default class SwapForm extends Vue {
   }
 
   get sendValue() {
-    return getCostOfAssets(+this.sendAmount ?? 0, this.sendAssetPrice);
+    return getCostOfAssets(+this.sendAmount ?? 0, this.sendAssetPrice, 'string');
   }
 
   get receiveValue() {
-    return getCostOfAssets(+this.receiveAmount ?? 0, this.receiveAssetPrice);
+    return getCostOfAssets(+this.receiveAmount ?? 0, this.receiveAssetPrice, 'string');
   }
 
   created() {
@@ -786,43 +768,6 @@ export default class SwapForm extends Vue {
   margin-top: 10px;
 }
 
-.header-content {
-  height: 64px;
-  font-size: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: $default-padding;
-  border-bottom: $default-border;
-}
-
-.header {
-  display: flex;
-  align-items: flex-end;
-
-  .polkaswap {
-    width: 32px;
-    height: 32px;
-    color: $pink-color;
-  }
-}
-
-.back {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  width: 112px;
-  height: 20px;
-  opacity: 0.65;
-  cursor: pointer;
-}
-
-.back-mock {
-  width: 20px;
-  height: 20px;
-  cursor: default;
-}
-
 .img {
   height: 20px;
   width: 20px;
@@ -831,15 +776,6 @@ export default class SwapForm extends Vue {
 .swap-icon-disable {
   cursor: not-allowed !important;
   background-color: rgb(29, 29, 29) !important;
-}
-
-.close {
-  opacity: 0.65;
-  cursor: pointer;
-
-  &:hover {
-    opacity: 0.8;
-  }
 }
 
 .swap {
@@ -875,41 +811,5 @@ export default class SwapForm extends Vue {
       background-color: rgb(34, 32, 32);
     }
   }
-}
-
-.settings {
-  display: flex;
-  justify-content: space-between;
-  background-color: $secondary-background-color;
-  border-radius: 20px;
-  height: 42px;
-  min-width: 112px;
-  cursor: pointer;
-
-  .settings-text {
-    display: flex;
-    flex: 1 0 40px;
-    justify-content: center;
-    align-items: center;
-    font-weight: 700;
-    font-size: 12px;
-    color: $gray-color;
-  }
-
-  .settings-circle {
-    background-color: $default-background-color;
-    border-radius: 50%;
-    height: 42px;
-    width: 42px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    opacity: 0.65;
-  }
-}
-
-.setting-hide {
-  background: none;
-  cursor: default;
 }
 </style>

@@ -3,7 +3,7 @@ import {
   type MyPoolsInfoResponse,
   type PoolsParamsRequest,
   type PoolsParamsResponse,
-  MakePoolsRequest,
+  type MakePoolsRequest,
 } from '@extension-base/services/pools-service/types';
 import type {
   NftTx,

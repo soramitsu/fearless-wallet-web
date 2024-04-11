@@ -60,7 +60,7 @@ export interface RemoveLiquidity {
   amount2: string;
   desiredMarker: string;
   supply: string;
-  slippage: string;
+  slippage: number;
 }
 
 export type RequestRemoveLiquidity = PasswordRequestSign<RemoveLiquidity>;

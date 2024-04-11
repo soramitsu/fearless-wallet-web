@@ -1,11 +1,20 @@
 <template>
-  <AboveForm
-    :fullScreen="true"
-    :showBackIcon="showBackIcon"
-    :header="header"
-    @handlerBack="handlerBack"
-    @closeHandler="closeForm"
-  >
+  <AboveForm :fullScreen="true" @closeHandler="closeForm">
+    <template v-slot:header>
+      <PolkaswapSettings
+        :marketType="marketType"
+        :showSettings="showSettings"
+        :showPolkaswapIcon="showPolkaswapIcon"
+        :showBackIcon="showBackIcon"
+        :showCloseIcon="showCloseIcon"
+        :showBackMock="step === 1"
+        :settingHide="step !== 2"
+        :header="header"
+        @back="handlerBack"
+        @toggleSettingsVisibility="toggleSettingsVisibility"
+      />
+    </template>
+
     <Scroll>
       <div class="pool-details">
         <div>
@@ -17,8 +26,10 @@
             :currency2="currency2"
           />
 
+          <div v-if="showSettings">settings</div>
+
           <InputsForm
-            v-if="step === 2"
+            v-else-if="step === 2"
             :poolParams="poolParams"
             :amount1="amount1"
             :amount2="amount2"
@@ -30,17 +41,39 @@
           />
 
           <PoolDescription
-            v-if="step === 1 || step === 2 || step === 4"
+            v-if="!showSettings && (step === 1 || step === 2 || step === 4)"
             :poolParams="poolParams"
-            :showShare="step === 2 || step === 4"
+            :marketType="marketType"
+            :slippage="slippage"
+            :showAdditionalInfo="step === 2 || step === 4"
           />
 
-          <div v-if="step === 3">33</div>
+          <div v-if="step === 3">
+            <DirectionContentForm
+              :asset1="asset1"
+              :asset2="asset2"
+              :amount1="amount1"
+              :amount2="amount2"
+              :currency1="currency1"
+              :currency2="currency2"
+            />
+
+            <ContentForm :height="280" :isStaticHeight="true" :bottomRightCorner="true">
+              <PoolDescription
+                :poolParams="poolParams"
+                :showAdditionalInfo="true"
+                :marketType="marketType"
+                :slippage="slippage"
+              />
+            </ContentForm>
+
+            <Alert message="assets.slippageWarning" class="slippage-warning" />
+          </div>
 
           <div v-else-if="step === 4">
-            <InfoRow :text="asset1PooledStr" :value="asset1Amount" />
+            <InfoRow :text="asset1PooledStr" :value="asset1MyAmount" />
 
-            <InfoRow :text="asset2PooledStr" :value="asset2Amount" />
+            <InfoRow :text="asset2PooledStr" :value="asset2MyAmount" />
           </div>
 
           <div v-if="step === 1 || step === 4">
@@ -109,43 +142,61 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { getUtilityAsset, isValidAmountAsset } from '@/helpers/currencies';
 import { type PoolsOperation } from '@/interfaces/pools';
+import { MarketType } from '@/interfaces';
+import PolkaswapSettings from '@/screens/polkaswap/PolkaswapSettings.vue';
 
 @Component({
   components: {
     InputsForm,
     HeaderPool,
     PoolDescription,
+    PolkaswapSettings,
   },
 })
 export default class PoolDetails extends Vue {
   step = 1;
-  extrinsicType: PoolsOperation | null = null;
   amount1 = '';
   amount2 = '';
+  extrinsicType: PoolsOperation | null = null;
   fee = ''; // TODO нужна ли fee?
+  marketType = MarketType.SMART;
+  slippage = 0.5;
+  showSettings = false;
 
   @Prop({ type: Object }) poolParams!: PoolParams;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
+  get showPolkaswapIcon() {
+    return this.step === 2 && !this.showSettings;
+  }
+
   get network() {
     return this.poolParams.network;
   }
 
-  get asset1Amount() {
+  get asset1() {
+    return this.poolParams.asset1.name;
+  }
+
+  get asset2() {
+    return this.poolParams.asset2.name;
+  }
+
+  get asset1MyAmount() {
     return this.poolParams.asset1.myAmount;
   }
 
-  get asset2Amount() {
+  get asset2MyAmount() {
     return this.poolParams.asset2.myAmount;
   }
 
   get asset1PooledStr() {
-    return this.$t('pools.yourPooled', { asset: this.poolParams.asset1.name.toUpperCase() });
+    return this.$t('pools.yourPooled', { asset: this.asset1.toUpperCase() });
   }
 
   get asset2PooledStr() {
-    return this.$t('pools.yourPooled', { asset: this.poolParams.asset2.name.toUpperCase() });
+    return this.$t('pools.yourPooled', { asset: this.asset2.toUpperCase() });
   }
 
   get utilityCurrency() {
@@ -218,8 +269,16 @@ export default class PoolDetails extends Vue {
     return this.showBtnRemove ? '260px' : '530px';
   }
 
+  get showCloseIcon() {
+    if (this.showSettings) return true;
+
+    return this.step !== 2;
+  }
+
   get showBackIcon() {
-    return this.step === 2 || this.step === 3;
+    if (this.showSettings) return false;
+
+    return this.step !== 1;
   }
 
   get showBtnRemove() {
@@ -235,22 +294,41 @@ export default class PoolDetails extends Vue {
   }
 
   get header() {
-    if (this.step === 1) return 'pools.poolDetails';
+    if (this.showSettings) return this.$t('assets.poolSettings');
 
-    if (this.step === 2) return 'pools.supplyLiquidity';
+    if (this.step === 1) return this.$t('pools.poolDetails');
 
-    if (this.step === 3) return 'pools.confirmSupply';
+    if (this.step === 2) return this.$t('pools.supplyLiquidity');
+
+    if (this.step === 3) return this.$t('pools.confirmSupply');
 
     return '';
   }
 
   get tx() {
     // todo
-    return {} as RequestPool;
+    return {
+      amount1: this.amount1,
+      amount2: this.amount2,
+      assetId1: this.poolParams.asset1.id,
+      assetId2: this.poolParams.asset2.id,
+      networkName: this.network,
+      slippage: this.slippage,
+      desiredMarker: '',
+      supply: '',
+    } as RequestPool;
   }
 
   created() {
     if (this.poolParams.isMyPool) this.step = 4;
+  }
+
+  toggleSettingsVisibility() {
+    if (this.step !== 2) this.closeForm();
+    else if (this.step === 2) this.showSettings = !this.showSettings;
+
+    // this.temporaryMarketType = this.marketType;
+    // this.temporarySlippage = this.slippage;
   }
 
   handlerBack() {
@@ -312,6 +390,10 @@ export default class PoolDetails extends Vue {
     font-size: 14px;
     color: $default-white;
     text-align: left;
+  }
+
+  .slippage-warning {
+    margin-top: 10px;
   }
 }
 </style>

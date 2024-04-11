@@ -236,6 +236,7 @@
     "polkaswap": "Polkaswap",
     "resetToDefault": "Reset to default",
     "swapSettings": "Swap settings",
+    "poolSettings": "Pool settings",
     "from": "From",
     "to": "To",
     "assetsAmount": "Assets Amount",

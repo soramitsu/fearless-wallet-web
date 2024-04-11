@@ -1,8 +1,7 @@
 <template>
   <AboveForm :fullScreen="true" @closeHandler="closeForm">
     <template v-slot:header>
-      <PolkaswapSettings
-        :marketType="marketType"
+      <PolkaswapSettingsHeader
         :showSettings="showSettings"
         :showPolkaswapIcon="showPolkaswapIcon"
         :showBackIcon="showBackIcon"
@@ -18,7 +17,7 @@
     <Scroll>
       <div class="pool-details">
         <div>
-          <HeaderPool
+          <PoolHeader
             v-if="step === 1 || step === 3 || step === 4"
             :poolParams="poolParams"
             :step="step"
@@ -26,7 +25,12 @@
             :currency2="currency2"
           />
 
-          <div v-if="showSettings">settings</div>
+          <PolkaswapSettings
+            v-if="showSettings"
+            :slippage="slippage"
+            :temporarySlippage="temporarySlippage"
+            @update:temporarySlippage="updateSlippage"
+          />
 
           <InputsForm
             v-else-if="step === 2"
@@ -43,7 +47,6 @@
           <PoolDescription
             v-if="!showSettings && (step === 1 || step === 2 || step === 4)"
             :poolParams="poolParams"
-            :marketType="marketType"
             :slippage="slippage"
             :showAdditionalInfo="step === 2 || step === 4"
           />
@@ -59,12 +62,7 @@
             />
 
             <ContentForm :height="280" :isStaticHeight="true" :bottomRightCorner="true">
-              <PoolDescription
-                :poolParams="poolParams"
-                :showAdditionalInfo="true"
-                :marketType="marketType"
-                :slippage="slippage"
-              />
+              <PoolDescription :poolParams="poolParams" :showAdditionalInfo="true" :slippage="slippage" />
             </ContentForm>
 
             <Alert message="assets.slippageWarning" class="slippage-warning" />
@@ -79,7 +77,7 @@
 
         <div class="activity-buttons">
           <FButton
-            v-if="showBtnRemove"
+            v-if="showSecondBtn"
             width="260px"
             size="big"
             fontSize="big"
@@ -87,7 +85,7 @@
             text="pools.remove"
             type="secondary"
             :border="false"
-            @click="remove"
+            @click="secondBtnHandler"
           />
 
           <FButton
@@ -122,7 +120,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import PoolDescription from './PoolDescription.vue';
-import HeaderPool from './HeaderPool.vue';
+import PoolHeader from './PoolHeader.vue';
 import InputsForm from './InputsForm.vue';
 import type { GetAssetPrice, PoolParams } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
@@ -132,15 +130,16 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { getUtilityAsset, isValidAmountAsset } from '@/helpers/currencies';
 import { type PoolsOperation } from '@/interfaces/pools';
-import { MarketType } from '@/interfaces';
+import PolkaswapSettingsHeader from '@/screens/polkaswap/PolkaswapSettingsHeader.vue';
 import PolkaswapSettings from '@/screens/polkaswap/PolkaswapSettings.vue';
 
 @Component({
   components: {
     InputsForm,
-    HeaderPool,
+    PoolHeader,
     PoolDescription,
     PolkaswapSettings,
+    PolkaswapSettingsHeader,
   },
 })
 export default class PoolDetails extends Vue {
@@ -148,10 +147,10 @@ export default class PoolDetails extends Vue {
   amount1 = '';
   amount2 = '';
   extrinsicType: PoolsOperation | null = null;
-  fee = ''; // TODO нужна ли fee?
-  marketType = MarketType.SMART;
   slippage = 0.5;
+  temporarySlippage = 0.5;
   showSettings = false;
+  fee = ''; // TODO нужна ли fee?
 
   @Prop({ type: Object }) poolParams!: PoolParams;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
@@ -246,6 +245,8 @@ export default class PoolDetails extends Vue {
   }
 
   get btnText() {
+    if (this.showSettings) return 'common.save';
+
     if (this.step === 1) return 'pools.supply';
 
     if (this.step === 2) return 'assets.preview';
@@ -256,7 +257,7 @@ export default class PoolDetails extends Vue {
   }
 
   get widthConfirmBtn() {
-    return this.showBtnRemove ? '260px' : '530px';
+    return this.showSecondBtn ? '260px' : '530px';
   }
 
   get showCloseIcon() {
@@ -273,7 +274,9 @@ export default class PoolDetails extends Vue {
     return this.step !== 1;
   }
 
-  get showBtnRemove() {
+  get showSecondBtn() {
+    if (this.showSettings) return true;
+
     return this.poolParams.isMyPool;
   }
 
@@ -319,7 +322,6 @@ export default class PoolDetails extends Vue {
     if (this.step !== 2) this.closeForm();
     else if (this.step === 2) this.showSettings = !this.showSettings;
 
-    // this.temporaryMarketType = this.marketType;
     // this.temporarySlippage = this.slippage;
   }
 
@@ -332,8 +334,9 @@ export default class PoolDetails extends Vue {
     this.$emit('closePoolDetails');
   }
 
-  remove() {
-    this.extrinsicType === 'removeLiquidity';
+  secondBtnHandler() {
+    if (this.showSettings) this.temporarySlippage = 0.5;
+    else this.extrinsicType === 'removeLiquidity';
   }
 
   updateAmount1(value: string) {
@@ -345,6 +348,13 @@ export default class PoolDetails extends Vue {
   }
 
   confirm() {
+    if (this.showSettings) {
+      this.slippage = this.temporarySlippage;
+      this.showSettings = false;
+
+      return;
+    }
+
     if (this.step === 4) this.step = 2;
     else if (this.step === 3) this.extrinsicType === 'addLiquidity';
     else this.step += 1;
@@ -354,6 +364,10 @@ export default class PoolDetails extends Vue {
     this.extrinsicType = null;
 
     if (closeForm) this.closeForm();
+  }
+
+  updateSlippage(value: number) {
+    this.temporarySlippage = value;
   }
 }
 </script>

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <InfoRow v-if="showAdditionalInfo" text="assets.market" :value="marketType" />
+    <InfoRow v-if="showAdditionalInfo && marketType" text="assets.market" :value="marketType" />
 
     <InfoRow v-if="showAdditionalInfo" text="assets.slippage" :value="`${slippage}%`" />
 
@@ -19,13 +19,11 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { PoolParams } from '@/store';
 import type { MarketType } from '@/interfaces';
 
-@Component({
-  components: {},
-})
+@Component({})
 export default class PoolDescription extends Vue {
   @Prop({ type: Object }) poolParams!: PoolParams;
   @Prop(Boolean) showAdditionalInfo!: boolean;
-  @Prop(String) marketType!: MarketType;
+  @Prop(String) marketType?: MarketType;
   @Prop(Number) slippage!: number;
 
   get apr() {

@@ -86,7 +86,7 @@ export class PoolsService {
     return { test: '' };
   }
 
-  public async makeStaking({ params, type }: MakePoolsRequest): Promise<BasicTxResponse> {
+  public async makePool({ params, type }: MakePoolsRequest): Promise<BasicTxResponse> {
     const { networkName, isSavePass } = params;
     const apiProps = this.state.getSubstrateApiMap[networkName.toLowerCase()];
     const isReady = await apiProps.api?.isReady;

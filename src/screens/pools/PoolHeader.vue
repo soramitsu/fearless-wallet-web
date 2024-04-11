@@ -30,7 +30,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 @Component({
   components: {},
 })
-export default class HeaderPool extends Vue {
+export default class PoolHeader extends Vue {
   @Prop({ type: Object }) poolParams!: PoolParams;
   @Prop({ type: Object }) currency1!: TokenGroup;
   @Prop({ type: Object }) currency2!: TokenGroup;

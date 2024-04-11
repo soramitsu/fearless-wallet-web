@@ -97,6 +97,8 @@ import type {
   PoolsParamsResponse,
   PoolsParamsRequest,
   MyPoolsInfoResponse,
+  MakePoolsRequest,
+  MyPoolsRequest,
 } from '@extension-base//services/pools-service/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type {
@@ -1179,8 +1181,31 @@ export default class Extension extends FWExtensionBase {
     return this.state.poolsService.getPoolsParams(params);
   }
 
-  async getMyPoolsInfo(params: StakingNetworkRequest): Promise<MyPoolsInfoResponse> {
+  async getMyPoolsInfo(params: MyPoolsRequest): Promise<MyPoolsInfoResponse> {
     return this.state.poolsService.getMyPoolsInfo(params.network);
+  }
+
+  async makePool(request: MakePoolsRequest): Promise<BasicTxResponse> {
+    const address = this.state.getAccountAddress();
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
+    const { password, isSavePass } = request.params;
+
+    const pair = this.state.keyringService.getPair(substrateAddress);
+
+    if (pair?.isLocked) {
+      const isUnlock = this.state.keyringService.unlockPair(pair, password);
+
+      if (!isUnlock) {
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
+      }
+    }
+
+    const ethereumAddress = this.state.keyringService.getAccount(address)?.meta.ethereumAddress as string | undefined;
+    const result = await this.state.poolsService.makePool(request);
+
+    this.savePass(address, ethereumAddress, isSavePass, false);
+
+    return result;
   }
 
   async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
@@ -1680,10 +1705,10 @@ export default class Extension extends FWExtensionBase {
         return this.getPoolsParams(request as PoolsParamsRequest);
 
       case 'pri(pools.myPools)':
-        return this.getMyPoolsInfo(request as StakingNetworkRequest);
+        return this.getMyPoolsInfo(request as MyPoolsRequest);
 
       case 'pri(pools.makePool)':
-        return this.getMyPoolsInfo(request as StakingNetworkRequest);
+        return this.makePool(request as MakePoolsRequest);
 
       // price
       case 'pri(price.update.currency)':

@@ -1,7 +1,7 @@
 <template>
   <AboveForm :fullScreen="true" @closeHandler="closeForm">
     <template v-slot:header>
-      <PolkaswapSettings
+      <PolkaswapSettingsHeader
         :marketType="marketType"
         :showSettings="showSettings"
         :showPolkaswapIcon="showPolkaswapIcon"
@@ -17,7 +17,7 @@
     <Scroll>
       <div class="swap">
         <div class="swap-content">
-          <SwapSettings
+          <PolkaswapSettings
             v-if="showSettings"
             :marketType="marketType"
             :slippage="slippage"
@@ -201,8 +201,8 @@ import type { SelectedWallet, GetNetwork, GetAssetPrice } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
-import SwapSettings from '@/screens/polkaswap/swap/SwapSettings.vue';
 import PolkaswapSettings from '@/screens/polkaswap/PolkaswapSettings.vue';
+import PolkaswapSettingsHeader from '@/screens/polkaswap/PolkaswapSettingsHeader.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
@@ -229,8 +229,8 @@ const SWAP_INTERVAL_RECALCULATE = 10000;
     Disclaimer,
     SwapPreview,
     PoolsBanner,
-    SwapSettings,
     PolkaswapSettings,
+    PolkaswapSettingsHeader,
     ConfirmationPasswordPopup,
   },
 })

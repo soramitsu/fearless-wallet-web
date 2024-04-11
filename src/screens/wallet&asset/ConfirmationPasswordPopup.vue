@@ -410,6 +410,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     if (this.extrinsicType === 'nft') {
       const result = results as ResponseNftTransfer;
+
       this.hash = result.hash;
     }
 
@@ -430,6 +431,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     // функции выполняются через "@sora-substrate/util, для них не работают колбеки с подпиской
     if (
       this.isStaking ||
+      this.isPool ||
       this.extrinsicType === 'swap' ||
       this.extrinsicType === 'nft' ||
       (this.extrinsicType === 'crossChain' && isSora(txCross.originNet))

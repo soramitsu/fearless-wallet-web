@@ -30,7 +30,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component({})
 export default class PolkaswapSettingsHeader extends Vue {
-  @Prop({ type: String }) marketType!: string;
+  @Prop({ type: String, default: 'Settings' }) marketType!: string;
   @Prop({ type: Boolean }) showSettings!: boolean;
   @Prop({ type: Boolean }) showPolkaswapIcon!: boolean;
   @Prop({ type: Boolean }) settingHide!: boolean;

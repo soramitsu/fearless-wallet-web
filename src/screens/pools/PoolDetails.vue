@@ -75,27 +75,31 @@
           </div>
         </div>
 
-        <div class="activity-buttons">
-          <FButton
-            v-if="showSecondBtn"
-            width="260px"
-            size="big"
-            fontSize="big"
-            class="remove-button"
-            text="pools.remove"
-            type="secondary"
-            :border="false"
-            @click="secondBtnHandler"
-          />
+        <div>
+          <PolkaswapAlert />
 
-          <FButton
-            :width="widthConfirmBtn"
-            size="big"
-            fontSize="big"
-            :text="btnText"
-            :disabled="confirmBtnDisabled"
-            @click="confirm"
-          />
+          <div class="activity-buttons">
+            <FButton
+              v-if="showSecondBtn"
+              width="260px"
+              size="big"
+              fontSize="big"
+              class="remove-button"
+              text="pools.remove"
+              type="secondary"
+              :border="false"
+              @click="secondBtnHandler"
+            />
+
+            <FButton
+              :width="widthConfirmBtn"
+              size="big"
+              fontSize="big"
+              :text="btnText"
+              :disabled="confirmBtnDisabled"
+              @click="confirm"
+            />
+          </div>
         </div>
       </div>
     </Scroll>
@@ -119,11 +123,11 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import PoolDescription from './PoolDescription.vue';
-import PoolHeader from './PoolHeader.vue';
-import InputsForm from './InputsForm.vue';
 import type { GetAssetPrice, PoolParams } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
+import PoolDescription from '@/screens/pools/PoolDescription.vue';
+import PoolHeader from '@/screens/pools/PoolHeader.vue';
+import InputsForm from '@/screens/pools/InputsForm.vue';
 import { type RequestPool } from '@/extension/background/extension-base/src/services/pools-service/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -132,11 +136,13 @@ import { getUtilityAsset, isValidAmountAsset } from '@/helpers/currencies';
 import { type PoolsOperation } from '@/interfaces/pools';
 import PolkaswapSettingsHeader from '@/screens/polkaswap/PolkaswapSettingsHeader.vue';
 import PolkaswapSettings from '@/screens/polkaswap/PolkaswapSettings.vue';
+import PolkaswapAlert from '@/screens/polkaswap/PolkaswapAlert.vue';
 
 @Component({
   components: {
     InputsForm,
     PoolHeader,
+    PolkaswapAlert,
     PoolDescription,
     PolkaswapSettings,
     PolkaswapSettingsHeader,
@@ -326,7 +332,8 @@ export default class PoolDetails extends Vue {
   }
 
   handlerBack() {
-    if (this.step === 2 && this.poolParams.isMyPool) this.step = 4;
+    if (this.showSettings) return;
+    else if (this.step === 2 && this.poolParams.isMyPool) this.step = 4;
     else this.step -= 1;
   }
 

@@ -119,22 +119,7 @@
         </div>
 
         <div>
-          <Alert v-if="showPolkaswapAlert" message="common.readPolkaswapDisclaimer" headerMessage="common.disclaimer">
-            <div class="alert-content" data-testid="alertContent">
-              {{ $t('common.readPolkaswapDisclaimer') }}
-
-              <FButton
-                width="85px"
-                size="mini"
-                fontSize="small"
-                type="warning"
-                text="common.read"
-                data-testid="readBtn"
-                :border="false"
-                @click="openPolkaswapDisclaimer"
-              />
-            </div>
-          </Alert>
+          <PolkaswapAlert />
 
           <PoolsBanner class="banner-pools" />
 
@@ -200,6 +185,7 @@ import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet, GetNetwork, GetAssetPrice } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
+import PolkaswapAlert from '@/screens/polkaswap/PolkaswapAlert.vue';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
 import PolkaswapSettings from '@/screens/polkaswap/PolkaswapSettings.vue';
 import PolkaswapSettingsHeader from '@/screens/polkaswap/PolkaswapSettingsHeader.vue';
@@ -208,7 +194,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
 import PoolsBanner from '@/screens/pools/PoolsBanner.vue';
-import { Components } from '@/router/routes';
 import { checkSwap, getSoraFees } from '@/extension/messaging';
 import {
   getCurrencyOptions,
@@ -229,6 +214,7 @@ const SWAP_INTERVAL_RECALCULATE = 10000;
     Disclaimer,
     SwapPreview,
     PoolsBanner,
+    PolkaswapAlert,
     PolkaswapSettings,
     PolkaswapSettingsHeader,
     ConfirmationPasswordPopup,
@@ -263,7 +249,6 @@ export default class SwapForm extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
 
   get showBackIcon() {
     return !this.showSettings;
@@ -603,6 +588,7 @@ export default class SwapForm extends Vue {
 
     createSwap();
   }
+
   clearSwapInterval() {
     clearInterval(this.swapInterval);
   }
@@ -610,13 +596,6 @@ export default class SwapForm extends Vue {
   closeForm() {
     this.clearSwapInterval();
     this.$router.back();
-  }
-
-  openPolkaswapDisclaimer() {
-    this.$router.push({
-      name: Components.PolkaswapDisclaimer,
-      params: { showSwitcher: '1' },
-    });
   }
 
   async updateSendAmount(value: string) {
@@ -758,12 +737,6 @@ export default class SwapForm extends Vue {
       color: $gray-color;
     }
   }
-}
-
-.alert-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .buttons {

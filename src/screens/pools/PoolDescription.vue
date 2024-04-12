@@ -27,15 +27,15 @@ export default class PoolDescription extends Vue {
   @Prop(Number) slippage!: number;
 
   get apr() {
-    return `${this.poolParams.apr}%`;
+    return `${this.poolParams?.apr}%`;
   }
 
   get rewardAsset() {
-    return this.poolParams.rewardAsset;
+    return this.poolParams?.rewardAsset;
   }
 
   get yourShare() {
-    return this.poolParams.yourShare;
+    return this.poolParams?.yourShare;
   }
 }
 </script>

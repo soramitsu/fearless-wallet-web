@@ -13,6 +13,8 @@ function firstCharToUp(string: string, onlyFirstChat = true) {
 }
 
 function isSameString(string1: string, string2: string) {
+  if (string1 === undefined || string2 === undefined) return false;
+
   return string1.toLowerCase() === string2.toLowerCase();
 }
 

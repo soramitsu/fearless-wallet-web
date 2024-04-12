@@ -162,12 +162,13 @@ export default class PoolsPage extends Vue {
   }
 
   openPoolDetails(poolParams: PoolParams) {
+    const asset1 = poolParams.asset1.name;
+    const asset2 = poolParams.asset2.name;
+
     this.$router.push({
       name: Components.PoolDetails,
       params: {
-        poolName: `${poolParams?.asset1}-${poolParams?.asset1}`,
-        asset1: poolParams.asset1.name,
-        asset2: poolParams.asset2.name,
+        poolName: `${asset1}-${asset2}`,
       },
     });
   }

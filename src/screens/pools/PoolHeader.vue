@@ -1,10 +1,10 @@
 <template>
   <div class="header-pool">
     <DoubleAssetHighlightIcon
-      :icon1="currency1.icon"
-      :icon2="currency2.icon"
-      :shadowColor1="currency1.color"
-      :shadowColor2="currency2.color"
+      :icon1="icon1"
+      :icon2="icon2"
+      :shadowColor1="color1"
+      :shadowColor2="color2"
       :size="size"
     />
 
@@ -42,20 +42,30 @@ export default class PoolHeader extends Vue {
   }
 
   get tvl() {
-    return `${this.fiatSymbol}${this.$n(+this.poolParams.tvl, 'price')}`;
+    const tvl = +(this.poolParams?.tvl ?? 0);
+
+    return `${this.fiatSymbol}${this.$n(tvl, 'price')}`;
   }
 
   get icon1() {
-    return this.poolParams.asset1.icon;
+    return this.currency1?.icon ?? '';
   }
 
   get icon2() {
-    return this.poolParams.asset2.icon;
+    return this.currency2?.icon ?? '';
+  }
+
+  get color1() {
+    return this.currency1?.color ?? '';
+  }
+
+  get color2() {
+    return this.currency2?.color ?? '';
   }
 
   get poolName() {
-    const asset1 = this.poolParams.asset1.name.toUpperCase();
-    const asset2 = this.poolParams.asset2.name.toUpperCase();
+    const asset1 = this.poolParams?.asset1.name.toUpperCase();
+    const asset2 = this.poolParams?.asset2.name.toUpperCase();
 
     return `${asset1}-${asset2} ${this.$t('pools.pool')}`;
   }

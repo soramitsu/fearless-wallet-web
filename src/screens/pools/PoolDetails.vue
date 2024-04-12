@@ -122,9 +122,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { GetAssetPrice, PoolParams } from '@/store';
+import { Component, Vue } from 'vue-property-decorator';
+import { Getter, Action } from 'vuex-class';
+import type { GetAssetPrice, GetPoolsParamsProps, PoolParams } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import PoolDescription from '@/screens/pools/PoolDescription.vue';
 import PoolHeader from '@/screens/pools/PoolHeader.vue';
@@ -140,6 +140,8 @@ import PolkaswapSettings from '@/screens/polkaswap/PolkaswapSettings.vue';
 import PolkaswapAlert from '@/screens/polkaswap/PolkaswapAlert.vue';
 import { GettersTypes as PoolsGettersTypes } from '@/store/pools/getters';
 import { isSameString } from '@/helpers';
+import { ActionTypes as PoolsActionTypes } from '@/store/pools/actions';
+import { type AsyncFn } from '@/interfaces';
 
 @Component({
   components: {
@@ -165,19 +167,24 @@ export default class PoolDetails extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(PoolsGettersTypes.poolsItems) poolsItems!: PoolParams[];
   @Getter(PoolsGettersTypes.myPoolsItems) myPoolsItems!: PoolParams[];
+  @Action(PoolsActionTypes.GET_POOLS_PARAMS) getPoolsParams!: AsyncFn<GetPoolsParamsProps>;
 
   get poolParams() {
     return [...this.poolsItems, ...this.myPoolsItems].find(
       ({ asset1, asset2 }) => isSameString(asset1.name, this.asset1) || isSameString(asset2.name, this.asset2)
-    )!;
+    );
+  }
+
+  get splitPoolName() {
+    return this.$route.params.poolName.split('-');
   }
 
   get asset1() {
-    return this.$route.params.asset1;
+    return this.splitPoolName[0];
   }
 
   get asset2() {
-    return this.$route.params.asset2;
+    return this.splitPoolName[1];
   }
 
   get showPolkaswapIcon() {
@@ -185,15 +192,15 @@ export default class PoolDetails extends Vue {
   }
 
   get network() {
-    return this.poolParams.network;
+    return this.poolParams?.network ?? '';
   }
 
   get asset1MyAmount() {
-    return this.poolParams.asset1.myAmount;
+    return this.poolParams?.asset1.myAmount;
   }
 
   get asset2MyAmount() {
-    return this.poolParams.asset2.myAmount;
+    return this.poolParams?.asset2.myAmount;
   }
 
   get asset1PooledStr() {
@@ -219,11 +226,11 @@ export default class PoolDetails extends Vue {
   }
 
   get currency1() {
-    return this.balances.find(({ groupId }) => groupId === this.poolParams.asset1.id);
+    return this.balances.find(({ groupId }) => groupId === this.poolParams?.asset1.id);
   }
 
   get currency2() {
-    return this.balances.find(({ groupId }) => groupId === this.poolParams.asset2.id);
+    return this.balances.find(({ groupId }) => groupId === this.poolParams?.asset2.id);
   }
 
   get amount1AssetPrice() {
@@ -299,15 +306,15 @@ export default class PoolDetails extends Vue {
   get showSecondBtn() {
     if (this.showSettings) return true;
 
-    return this.poolParams.isMyPool;
+    return this.poolParams?.isMyPool;
   }
 
   get icon1() {
-    return this.poolParams.asset1.icon;
+    return this.poolParams?.asset1.icon;
   }
 
   get icon2() {
-    return this.poolParams.asset2.icon;
+    return this.poolParams?.asset2.icon;
   }
 
   get header() {
@@ -327,8 +334,8 @@ export default class PoolDetails extends Vue {
     return {
       amount1: this.amount1,
       amount2: this.amount2,
-      assetId1: this.poolParams.asset1.id,
-      assetId2: this.poolParams.asset2.id,
+      assetId1: this.poolParams?.asset1.id,
+      assetId2: this.poolParams?.asset2.id,
       networkName: this.network,
       slippage: this.slippage,
       desiredMarker: '',
@@ -336,8 +343,10 @@ export default class PoolDetails extends Vue {
     } as RequestPool;
   }
 
-  created() {
-    if (this.poolParams.isMyPool) this.step = 4;
+  async created() {
+    if (this.poolsItems.length === 0 && this.myPoolsItems.length === 0) await this.getPoolsParams();
+
+    if (this.poolParams?.isMyPool) this.step = 4;
   }
 
   toggleSettingsVisibility() {
@@ -350,7 +359,7 @@ export default class PoolDetails extends Vue {
 
   handlerBack() {
     if (this.showSettings) return;
-    else if (this.step === 2 && this.poolParams.isMyPool) this.step = 4;
+    else if (this.step === 2 && this.poolParams?.isMyPool) this.step = 4;
     else this.step -= 1;
   }
 

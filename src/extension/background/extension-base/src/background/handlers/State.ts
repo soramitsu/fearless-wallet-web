@@ -107,14 +107,6 @@ export default class State {
     return knownMetadata();
   }
 
-  public get networkValues() {
-    return this.networkService.networkValues;
-  }
-
-  public get assetsMap() {
-    return this.networkValues.map(({ assets }) => assets).flat();
-  }
-
   public getEvmApi(key: string) {
     return this.getEvmApiMap[key.toLowerCase()];
   }
@@ -311,7 +303,7 @@ export default class State {
 
   getActiveNetworksCurrentWallet(address: string) {
     const uniqNetworks = new Set<NetworkJson>();
-    const networks = this.networkValues;
+    const networks = this.networkService.networkValues;
     const selectedNetwork = this.networkService.selectedNetworks[address];
 
     if (selectedNetwork === ALL_NETWORKS) return networks;
@@ -610,7 +602,7 @@ export default class State {
 
     if (ethereumAddress === '') return;
 
-    const activeEvmNetworks = this.networkValues.filter(({ name, active }) => {
+    const activeEvmNetworks = this.networkService.networkValues.filter(({ name, active }) => {
       if (_networks && !_networks.includes(name)) return false;
 
       if (!active || !isRequireEvmAPI(name)) return false;

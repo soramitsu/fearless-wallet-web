@@ -12,6 +12,7 @@ import { type ApiMap } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { URLS } from '@/consts/urls';
+import { isSameString } from '@/helpers';
 
 export class NetworkService {
   readonly keyringService: KeyringService;
@@ -139,7 +140,7 @@ export class NetworkService {
   }
 
   getNetworkByKey(key: string): NetworkJson {
-    return this.networkValues.find((network) => network.name.toLowerCase() === key.toLowerCase())!;
+    return this.networkValues.find((network) => isSameString(network.name, key))!;
   }
 
   findNetworkKeyByChainId(_chainId?: string | null): [string | undefined, NetworkJson | undefined] {

@@ -197,7 +197,6 @@ export interface RequestMobileSign {
 export interface PriceJson {
   ready?: boolean;
   currency: string;
-  priceMap: Record<string, number>;
   tokenPriceMap: Record<string, number>;
   tokenPriceChange: Record<string, number>;
 }

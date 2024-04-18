@@ -22,7 +22,7 @@
                 <template v-if="isAllTab">
                   <PoolItem
                     v-for="item in filteredPoolsItems"
-                    :key="item.network"
+                    :key="getKey(item)"
                     :poolParams="item"
                     @click="openPoolDetails(item)"
                   />
@@ -175,6 +175,10 @@ export default class PoolsPage extends Vue {
 
   closeForm() {
     this.$router.push({ name: Components.Wallet });
+  }
+
+  getKey(item: PoolParams) {
+    return item.asset1.name + item.asset2.name;
   }
 }
 </script>

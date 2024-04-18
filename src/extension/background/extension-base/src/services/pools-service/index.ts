@@ -1,6 +1,7 @@
-import { api as apiSora } from '@sora-substrate/util';
+import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import { BasicTxErrorCode, type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
 import { getSoraAsset } from '@extension-base/api/substrate/sora';
+import { type u128 } from '@polkadot/types';
 import type {
   RequestAddLiquidity,
   PoolsParamsResponse,
@@ -12,6 +13,12 @@ import type {
 } from './types';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkName } from '@/interfaces';
+import { isSameString } from '@/helpers';
+
+const toReserve = (value: u128): string => new FPNumber(value).toString();
+
+const getSvgUrl = (assetName: string): string =>
+  `https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/${assetName.toUpperCase()}.svg`;
 
 export class PoolsService {
   constructor(private state: State) {}
@@ -26,56 +33,37 @@ export class PoolsService {
 
       if (!isReady) return [];
 
+      const address = this.state.getCurrentAddress(network);
+      const allReserves = await this.getAllReserves(network, address);
+
       return [
-        {
-          network,
-          apr: 99,
-          tvl: '101010',
-          isMyPool: false,
-          rewardAsset: 'PSWAP',
-          asset1: {
-            amount: '11',
-            myAmount: '0',
-            icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/XOR.svg',
-            id: 'b774c386-5cce-454a-a845-1ec0381538ec',
-            name: 'xor',
-          },
-          asset2: {
-            amount: '22',
-            myAmount: '0',
-            icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/DAI.svg',
-            id: '1e6f8ba3-5aeb-41d8-b80e-a44ce0f33716',
-            name: 'dai',
-          },
-        },
-        {
-          network,
-          apr: 12,
-          tvl: '18560',
-          isMyPool: true,
-          rewardAsset: 'PSWAP',
-          yourShare: '0.05',
-          asset1: {
-            amount: '33',
-            myAmount: '1',
-            icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/XOR.svg',
-            id: 'b774c386-5cce-454a-a845-1ec0381538ec',
-            name: 'xor',
-          },
-          asset2: {
-            amount: '44',
-            myAmount: '5',
-            icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/DAI.svg',
-            id: '1e6f8ba3-5aeb-41d8-b80e-a44ce0f33716',
-            name: 'dai',
-          },
-        },
+        ...allReserves,
+        // {
+        //   network,
+        //   apr: 12,
+        //   tvl: '18560',
+        //   isMyPool: true,
+        //   rewardAsset: 'PSWAP',
+        //   yourShare: '0.05',
+        //   asset1: {
+        //     amount: '33',
+        //     myAmount: '1',
+        //     icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/XOR.svg',
+        //     id: 'b774c386-5cce-454a-a845-1ec0381538ec',
+        //     name: 'xor',
+        //   },
+        //   asset2: {
+        //     amount: '44',
+        //     myAmount: '5',
+        //     icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/DAI.svg',
+        //     id: '1e6f8ba3-5aeb-41d8-b80e-a44ce0f33716',
+        //     name: 'dai',
+        //   },
+        // },
       ] as DefaultPoolsParams[];
     });
 
-    const array = await Promise.all(promises);
-
-    return array.flat();
+    return (await Promise.all(promises)).flat();
   }
 
   public async getMyPoolsInfo(network: NetworkName): Promise<MyPoolsInfo> {
@@ -84,6 +72,62 @@ export class PoolsService {
     // const poolsInfo = apiSora.poolXyk.remove(address);
 
     return { test: '' };
+  }
+
+  public async getAllReserves(network: NetworkName, address: string): Promise<DefaultPoolsParams[]> {
+    const toKey = (address: any) => address.code.toString();
+
+    const baseAssetIds = apiSora.dex.baseAssetsIds;
+    const allReservesArray = baseAssetIds.map((baseAssetId) => apiSora.api.query.poolXYK.reserves.entries(baseAssetId));
+    const allReserves = (await Promise.all(allReservesArray)).flat(1);
+
+    const result = allReserves.map((item) => {
+      if (item[1]?.length !== 2) return;
+
+      const [key1, key2] = item[0].args;
+      const [value1, value2] = item[1];
+
+      const currencyId1 = toKey(key1);
+      const currencyId2 = toKey(key2);
+
+      const networkJson = this.state.networkService.getNetworkByKey(network);
+
+      const asset1 = networkJson?.assets.find(({ currencyId }) => isSameString(currencyId, currencyId1));
+      const asset2 = networkJson?.assets.find(({ currencyId }) => isSameString(currencyId, currencyId2));
+
+      // Если не нашли имя токена в наших файлах, то не показываем пул
+      if (asset1 === undefined || asset2 === undefined) return;
+
+      const price1 = this.state.pricesService.getTokenPrice(asset1.name);
+
+      const groupId1 = this.state.balanceService.getTokenBalance(address, asset1.id, network).groupId; // TODO для SORA relayChain = SORA NETWORK NAME
+      const groupId2 = this.state.balanceService.getTokenBalance(address, asset2.id, network).groupId; // TODO для SORA relayChain = SORA NETWORK NAME
+
+      return {
+        network,
+        rewardAsset: 'PSWAP',
+        tvl: new FPNumber(value1).mul(FPNumber.TWO).mul(price1).toString(),
+        apr: 0, // todo
+        yourShare: '0', // todo
+        isMyPool: false, // todo
+        asset1: {
+          myAmount: '0', // todo
+          id: groupId1,
+          amount: toReserve(value1),
+          icon: getSvgUrl(asset1.symbol),
+          name: asset1.symbol!,
+        },
+        asset2: {
+          myAmount: '0', // todo
+          id: groupId2,
+          amount: toReserve(value2),
+          icon: getSvgUrl(asset2.symbol),
+          name: asset2.symbol!,
+        },
+      };
+    });
+
+    return result.filter((item) => item) as DefaultPoolsParams[];
   }
 
   public async makePool({ params, type }: MakePoolsRequest): Promise<BasicTxResponse> {

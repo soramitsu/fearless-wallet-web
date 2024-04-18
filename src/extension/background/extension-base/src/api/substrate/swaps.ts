@@ -66,8 +66,8 @@ export async function createSwap(
   const aId = tokenBalanceA?.balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
   const aIB = tokenBalanceB?.balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
 
-  const assetAAddress = getAssetOptions(aId!.id, state.assetsMap) as string;
-  const assetBAddress = getAssetOptions(aIB!.id, state.assetsMap) as string;
+  const assetAAddress = getAssetOptions(aId!.id, state.networkService.assetsMap) as string;
+  const assetBAddress = getAssetOptions(aIB!.id, state.networkService.assetsMap) as string;
 
   const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
   const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
@@ -121,7 +121,7 @@ export async function createSwap(
   route =
     route
       ?.map((item) => {
-        const { symbol } = state.assetsMap.find(({ currencyId }) => currencyId === item)!;
+        const { symbol } = state.networkService.assetsMap.find(({ currencyId }) => currencyId === item)!;
 
         return symbol.toUpperCase();
       })

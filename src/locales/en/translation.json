@@ -668,7 +668,9 @@
     "crowdloans": "Crowdloans",
     "staking": "Staking",
     "myStake": "My staking",
-    "polkaswap": "Polkaswap"
+    "polkaswap": "Polkaswap",
+    "pools": "Pools",
+    "poolDetails": "Pool Details"
   },
   "nft": {
     "owned": "Owned",

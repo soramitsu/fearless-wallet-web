@@ -171,7 +171,7 @@ export default class PoolDetails extends Vue {
 
   get poolParams() {
     return [...this.poolsItems, ...this.myPoolsItems].find(
-      ({ asset1, asset2 }) => isSameString(asset1.name, this.asset1) || isSameString(asset2.name, this.asset2)
+      ({ asset1, asset2 }) => isSameString(asset1.name, this.asset1) && isSameString(asset2.name, this.asset2)
     );
   }
 
@@ -226,11 +226,11 @@ export default class PoolDetails extends Vue {
   }
 
   get currency1() {
-    return this.balances.find(({ groupId }) => groupId === this.poolParams?.asset1.id);
+    return this.balances.find(({ groupId }) => isSameString(groupId, this.poolParams?.asset1.id));
   }
 
   get currency2() {
-    return this.balances.find(({ groupId }) => groupId === this.poolParams?.asset2.id);
+    return this.balances.find(({ groupId }) => isSameString(groupId, this.poolParams?.asset2.id));
   }
 
   get amount1AssetPrice() {

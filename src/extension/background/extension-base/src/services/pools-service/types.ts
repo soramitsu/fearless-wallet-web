@@ -19,7 +19,7 @@ export interface DefaultPoolsParams {
   apr: number;
   tvl: string;
   rewardAsset: string;
-  isMyPool: true;
+  isMyPool: boolean;
   yourShare?: string;
   asset1: AssetPool;
   asset2: AssetPool;

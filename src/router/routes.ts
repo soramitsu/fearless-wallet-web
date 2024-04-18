@@ -305,7 +305,7 @@ const routes: Array<RouteConfig> = [
     name: Components.PoolDetails,
     component: PoolDetails,
     meta: {
-      title: 'Pool Details',
+      title: 'poolDetails',
     },
   },
   {

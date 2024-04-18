@@ -50,18 +50,19 @@ const getters: GetterTree<State, State> & Getters = {
       .map((params) => {
         if (accountBalances.length === 0) return params;
 
-        const balances1 = accountBalances.find(({ groupId }) => isSameString(groupId, params.asset1.id))?.balances;
-        const balances2 = accountBalances.find(({ groupId }) => isSameString(groupId, params.asset2.id))?.balances;
+        const tokenGroup1 = accountBalances.find(({ groupId }) => isSameString(groupId, params.asset1.id));
+        const tokenGroup2 = accountBalances.find(({ groupId }) => isSameString(groupId, params.asset2.id));
 
-        if (balances1 !== undefined) {
-          const balance1 = balances1.find(({ name }) => isSameString(name, params.network))!;
+        if (tokenGroup1 !== undefined) {
+          const balance1 = tokenGroup1.balances.find(({ name }) => isSameString(name, params.network))!;
           const transferableAmount1 = balance1.transferable ?? '0';
 
           params = { ...params, asset1: { ...params.asset1, transferableAmount: transferableAmount1 } };
         }
 
-        if (balances2 !== undefined) {
-          const balance2 = balances2.find(({ name }) => isSameString(name, params.network))!;
+        if (tokenGroup2 !== undefined) {
+          const balance2 = tokenGroup2.balances.find(({ name }) => isSameString(name, params.network))!;
+
           const transferableAmount2 = balance2.transferable ?? '0';
 
           params = { ...params, asset2: { ...params.asset2, transferableAmount: transferableAmount2 } };

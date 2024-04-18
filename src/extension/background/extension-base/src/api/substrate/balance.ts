@@ -88,7 +88,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
 
   const unsubList = assets.map(({ precision, symbol, id, type }) => {
     try {
-      const options = getAssetOptions(id, state.assetsMap);
+      const options = getAssetOptions(id, state.networkService.assetsMap);
 
       if (!api || !api.rx) return () => null;
 
@@ -242,7 +242,7 @@ export function subscribeBalance(
 
 export async function fetchBalance(address: string, networkKey: string, state: State, api?: ApiPromise) {
   const { id, symbol, type, precision } = getUtilityProps(networkKey, state);
-  const options = getAssetOptions(id, state.assetsMap);
+  const options = getAssetOptions(id, state.networkService.assetsMap);
 
   if (!api) return '0';
 

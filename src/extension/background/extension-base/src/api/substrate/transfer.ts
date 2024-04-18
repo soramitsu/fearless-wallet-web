@@ -24,7 +24,7 @@ export function createExtrinsicTransfer(props: ExtrinsicTransferProps, state: St
   if (!api) return null;
 
   const { precision, type, id } = tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKeyLCase)!;
-  const ormlOptions = getAssetOptions(id, state.assetsMap);
+  const ormlOptions = getAssetOptions(id, state.networkService.assetsMap);
   const precisionAmount = getPrecisionValue(amount, precision) as string;
 
   try {

@@ -16,7 +16,6 @@ export default class PricesService {
     json: {
       tokenPriceMap: {},
       currency: 'usd',
-      priceMap: {},
       tokenPriceChange: {},
     }, //TODO covert to behavior subject
     timestamp: 0,
@@ -41,7 +40,7 @@ export default class PricesService {
   }
 
   public refreshPrice() {
-    this.getTokenPrice(this.priceIds, this.fiatSymbol)
+    this.fetchTokensPrice(this.priceIds, this.fiatSymbol)
       .then((rs) => this.setPrice(rs))
       .catch((err) => console.info(err));
   }
@@ -64,7 +63,7 @@ export default class PricesService {
     this.priceStore.get('PriceData', (rs) => {
       if (this.priceStoreReady) update(rs);
       else {
-        this.getTokenPrice(this.priceIds, this.fiatSymbol)
+        this.fetchTokensPrice(this.priceIds, this.fiatSymbol)
           .then((rs) => {
             this.setPrice(rs);
             update(rs);
@@ -80,7 +79,13 @@ export default class PricesService {
     return this.priceStore.subject;
   }
 
-  async getTokenPrice(assets: Array<string>, currency = 'usd'): Promise<PriceJson> {
+  public getTokenPrice(assetName: string) {
+    const name = assetName.replaceAll(' ', '-');
+
+    return this.prices.json.tokenPriceMap[name] ?? 0;
+  }
+
+  async fetchTokensPrice(assets: Array<string>, currency = 'usd'): Promise<PriceJson> {
     try {
       const now = new Date().getTime();
       const { currency: currentCurrency } = this.prices.json;
@@ -98,14 +103,12 @@ export default class PricesService {
 
         return {
           currency,
-          priceMap: {},
           tokenPriceMap: {},
           tokenPriceChange: {},
         };
       }
 
       const responseData = res.data as Record<string, Record<string, number>>;
-      const priceMap: Record<string, number> = {};
       const tokenPriceMap: Record<string, number> = {};
       const tokenPriceChange: Record<string, number> = {};
 
@@ -119,7 +122,6 @@ export default class PricesService {
         json: {
           currency,
           tokenPriceChange,
-          priceMap,
           tokenPriceMap,
         },
         timestamp: new Date().getTime(),
@@ -127,7 +129,6 @@ export default class PricesService {
 
       return {
         currency,
-        priceMap,
         tokenPriceMap,
         tokenPriceChange,
       };

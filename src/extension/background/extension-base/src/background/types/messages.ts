@@ -4,6 +4,8 @@ import {
   type PoolsParamsRequest,
   type PoolsParamsResponse,
   type MakePoolsRequest,
+  type GetShareOfPoolResponse,
+  GetShareOfPoolRequest,
 } from '@extension-base/services/pools-service/types';
 import type {
   NftTx,
@@ -203,6 +205,8 @@ export interface RequestSignatures {
   'pri(pools.poolsParams)': [PoolsParamsRequest, PoolsParamsResponse];
   'pri(pools.myPools)': [MyPoolsRequest, MyPoolsInfoResponse];
   'pri(pools.makePool)': [MakePoolsRequest, BasicTxResponse];
+  'pri(pools.shareOfPool)': [GetShareOfPoolRequest, GetShareOfPoolResponse];
+  'pri(pools.unsubscribePools)': [null, void];
 
   //ether
   'pri(balance)': [null, BalanceJson];

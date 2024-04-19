@@ -6,11 +6,19 @@ export interface MyPoolsInfo {
   test: string;
 }
 
+export interface DefaultParams {
+  assetId1: string;
+  assetId2: string;
+  amount1: string;
+  amount2: string;
+  networkName: NetworkName;
+}
+
 export interface AssetPool {
   name: string;
   icon: string;
   id: string;
-  amount: string;
+  reserve: string;
   myAmount: string;
 }
 
@@ -39,12 +47,7 @@ export type MyPoolsInfoResponse = MyPoolsInfo;
 
 ///////////////////////////////////////////////////////
 
-export interface AddLiquidity {
-  networkName: NetworkName;
-  assetId1: string;
-  assetId2: string;
-  amount1: string;
-  amount2: string;
+export interface AddLiquidity extends DefaultParams {
   slippage: string;
 }
 
@@ -52,14 +55,7 @@ export type RequestAddLiquidity = PasswordRequestSign<AddLiquidity>;
 
 ///////////////////////////////////////////////////////
 
-export interface RemoveLiquidity {
-  networkName: NetworkName;
-  assetId1: string;
-  assetId2: string;
-  amount1: string;
-  amount2: string;
-  desiredMarker: string;
-  supply: string;
+export interface RemoveLiquidity extends DefaultParams {
   slippage: number;
 }
 
@@ -73,3 +69,9 @@ export type MakePoolsRequest = {
   params: RequestPool;
   type: PoolsOperation;
 };
+
+export interface GetShareOfPoolRequest extends DefaultParams {
+  type: 'add' | 'remove';
+}
+
+export type GetShareOfPoolResponse = string;

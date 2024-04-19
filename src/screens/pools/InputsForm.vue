@@ -7,7 +7,6 @@
       :asset="asset1"
       :assetId="assetId1"
       :amount="syncedAmount1"
-      :showOriginValue="isExchangeB"
       :isRotate="false"
       :showIcon="false"
       @update:amount="updateAmount1"
@@ -22,7 +21,6 @@
       :asset="asset2"
       :assetId="assetId2"
       :amount="syncedAmount2"
-      :showOriginValue="!isExchangeB"
       :isRotate="false"
       :showIcon="false"
       @update:amount="updateAmount2"
@@ -31,7 +29,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { GetAssetPrice, PoolParams } from '@/store';
 import type { TokenGroup } from '@/extension/background/extension-base/src/background/types/types';
@@ -43,8 +41,6 @@ import { getCostOfAssets } from '@/controllers/transferHelpers';
   components: {},
 })
 export default class InputsForm extends Vue {
-  isExchangeB = false;
-
   @PropSync('amount1', { type: String }) syncedAmount1!: string;
   @PropSync('amount2', { type: String }) syncedAmount2!: string;
   @Prop({ type: Object }) poolParams!: PoolParams;
@@ -101,6 +97,16 @@ export default class InputsForm extends Vue {
     return getCostOfAssets(+this.syncedAmount2 ?? 0, this.assetPrice2);
   }
 
+  @Watch('syncedAmount1')
+  watcherAmount2() {
+    return 1;
+  }
+
+  @Watch('syncedAmount2')
+  watcherAmount1() {
+    return 1;
+  }
+
   updateAmount1(value: string) {
     this.syncedAmount1 = value;
 
@@ -118,7 +124,6 @@ export default class InputsForm extends Vue {
   }
 
   setMax() {
-    this.isExchangeB = false;
     this.syncedAmount1 = this.calcTransferableSendMinusFee();
 
     // this.checkPool();

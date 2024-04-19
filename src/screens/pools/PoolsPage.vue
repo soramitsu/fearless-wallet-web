@@ -31,7 +31,7 @@
                 <template v-else>
                   <PoolItem
                     v-for="item in filteredMyPoolsItems"
-                    :key="item.network"
+                    :key="getKey(item)"
                     :poolParams="item"
                     @click="openPoolDetails(item)"
                   />
@@ -60,6 +60,7 @@ import { GettersTypes as PoolsGettersTypes } from '@/store/pools/getters';
 import { isSubstrString } from '@/helpers';
 import { ActionTypes as PoolsActionTypes } from '@/store/pools/actions';
 import { Components } from '@/router/routes';
+import { unsubscribePools } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -174,6 +175,8 @@ export default class PoolsPage extends Vue {
   }
 
   closeForm() {
+    unsubscribePools();
+
     this.$router.push({ name: Components.Wallet });
   }
 

@@ -99,6 +99,7 @@ import type {
   MyPoolsInfoResponse,
   MakePoolsRequest,
   MyPoolsRequest,
+  GetShareOfPoolRequest,
 } from '@extension-base//services/pools-service/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type {
@@ -1208,6 +1209,16 @@ export default class Extension extends FWExtensionBase {
     return result;
   }
 
+  async getShareOfPool(params: GetShareOfPoolRequest): Promise<string> {
+    return params.type === 'add'
+      ? await this.state.poolsService.getShareOfPoolByAddLiquidity(params)
+      : this.state.poolsService.getShareOfPoolByRemoveLiquidity(params);
+  }
+
+  unsubscribePools(): void {
+    this.state.poolsService.unsubscribePools();
+  }
+
   async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
     return this.state.walletConnectService
       .connect(uri)
@@ -1709,6 +1720,12 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(pools.makePool)':
         return this.makePool(request as MakePoolsRequest);
+
+      case 'pri(pools.shareOfPool)':
+        return this.getShareOfPool(request as GetShareOfPoolRequest);
+
+      case 'pri(pools.unsubscribePools)':
+        return this.unsubscribePools();
 
       // price
       case 'pri(price.update.currency)':

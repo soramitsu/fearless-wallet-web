@@ -47,7 +47,10 @@
 
           <PoolDescription
             v-if="!showSettings && (step === 1 || step === 2 || step === 4)"
+            :type="step === 2 ? 'add' : ''"
             :poolParams="poolParams"
+            :amount1="amount1"
+            :amount2="amount2"
             :slippage="slippage"
             :showAdditionalInfo="step === 2 || step === 4"
           />
@@ -63,7 +66,14 @@
             />
 
             <ContentForm :height="225" :isStaticHeight="true" :bottomRightCorner="true">
-              <PoolDescription :poolParams="poolParams" :showAdditionalInfo="true" :slippage="slippage" />
+              <PoolDescription
+                :poolParams="poolParams"
+                :amount1="amount1"
+                :amount2="amount2"
+                type="add"
+                :showAdditionalInfo="true"
+                :slippage="slippage"
+              />
             </ContentForm>
 
             <Alert message="assets.slippageWarning" class="slippage-warning" />
@@ -77,7 +87,7 @@
         </div>
 
         <div>
-          <PolkaswapAlert />
+          <PolkaswapAlert v-if="!showSettings" />
 
           <div class="activity-buttons">
             <FButton
@@ -196,11 +206,11 @@ export default class PoolDetails extends Vue {
   }
 
   get asset1MyAmount() {
-    return this.poolParams?.asset1.myAmount;
+    return this.$n(+(this.poolParams?.asset1.myAmount ?? 0), 'decimal');
   }
 
   get asset2MyAmount() {
-    return this.poolParams?.asset2.myAmount;
+    return this.$n(+(this.poolParams?.asset2.myAmount ?? 0), 'decimal');
   }
 
   get asset1PooledStr() {
@@ -338,8 +348,6 @@ export default class PoolDetails extends Vue {
       assetId2: this.poolParams?.asset2.id,
       networkName: this.network,
       slippage: this.slippage,
-      desiredMarker: '',
-      supply: '',
     } as RequestPool;
   }
 
@@ -358,7 +366,7 @@ export default class PoolDetails extends Vue {
   }
 
   handlerBack() {
-    if (this.showSettings) return;
+    if (this.showSettings || this.step === 1) return;
     else if (this.step === 2 && this.poolParams?.isMyPool) this.step = 4;
     else this.step -= 1;
   }

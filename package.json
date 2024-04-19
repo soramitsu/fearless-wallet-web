@@ -1,6 +1,6 @@
 {
   "name": "fearless-wallet",
-  "version": "2.4.6",
+  "version": "2.4.9",
   "private": true,
   "author": {
     "email": "fearless.web@soramitsu.co.jp",
@@ -11,7 +11,7 @@
   "browserslist": "last 2 Chrome versions, last 2 Firefox versions",
   "scripts": {
     "serve": "env-cmd -f .env.desktop vue-cli-service serve",
-    "build": "env-cmd -f .env.desktop vue-cli-service build",
+    "build": "EXTENSION_TYPE=firefox OUTPUT_DIR=firefox env-cmd -f .env.extension vue-cli-service build",
     "build:extension": "EXTENSION_TYPE=chrome OUTPUT_DIR=chrome env-cmd -f .env.extension  vue-cli-service build",
     "build:extension-test": "EXTENSION_TYPE=chrome VUE_APP_TEST_ONLY=true OUTPUT_DIR=chrome-test env-cmd -f .env.extension vue-cli-service --mode development build",
     "build:extension:firefox": "EXTENSION_TYPE=firefox OUTPUT_DIR=firefox env-cmd -f .env.extension vue-cli-service build",
@@ -154,7 +154,7 @@
     "@polkadot/x-fetch": "^12.3.2"
   },
   "license": "Apache-2.0",
-  "packageManager": "yarn@3.4.1",
+  "packageManager": "yarn@1.22.22",
   "lint-staged": {
     "*.{js,jsx,vue,ts,tsx}": [
       "yarn lint:precommit",

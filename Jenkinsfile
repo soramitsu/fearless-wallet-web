@@ -36,7 +36,7 @@ def buildWithCred  = [
 def pipeline = new org.js.AppArtifactsPipeline(
     steps:                      this,
     secretScannerExclusion:     '/src/extension/background/extension-base/src/api/evm/history.ts',
-    buildCmds:                  ['yarn build:extension:all'],
+    buildCmds:                  ['yarn build:extension:firefox:zip'],
     nexusCredential:            'bot-fearless-rw',
     nexusProjectPath:           'fearless/extension',
     nexusNotification:           true,
@@ -48,7 +48,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     mozillaChannel:             'listed',
     distFolders:                ['./dist/extension/firefox','./dist/extension/chrome'],
     distFoldersTestNets:        ['./dist/extension/chrome-test'],
-    preBuildCmds:               ['apt-get update && apt-get install zip jq -y && yarn set version 3.4.1 && yarn install'],
+    preBuildCmds:               ['apt-get update && apt-get install zip jq -y && yarn set version 1.22.22 && yarn install'],
     nexusFiles:                 [ '.zip'],
     chromeExtFile:              'fearless-wallet-extension-chrome.zip',
     mozillaExtFile:             'fearless-wallet-extension-firefox.zip',

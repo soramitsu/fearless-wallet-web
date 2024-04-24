@@ -4,11 +4,7 @@
 
     <InfoRow v-if="showAdditionalInfo && !isMyPool" text="assets.slippage" :value="`${slippage}%`" />
 
-    <InfoRow text="pools.strategicBonus" :value="apr" icon="info" :iconClasses="['strategic-bonus']" />
-
     <InfoRow text="pools.rewardsPayout" :value="rewardAsset" />
-
-    <Tooltip text="pools.strategicBonusDescription" target=".strategic-bonus" placement="right" />
 
     <InfoRow v-if="showAdditionalInfo" text="pools.yourPoolShare" :value="yourShare" />
   </div>

@@ -12,7 +12,7 @@
 
         <Shimmer v-if="isLoading" height="20px" width="155px" />
 
-        <div v-else class="apy">{{ apr }} APR</div>
+        <div v-else class="tvl">{{ tvl }} TVL</div>
       </diV>
 
       <div class="values">
@@ -20,10 +20,6 @@
           Earn
           <p class="asset">{{ asset2 }}</p>
         </div>
-
-        <Shimmer v-if="isLoading" height="12px" width="55px" />
-
-        <div v-else class="tvl">{{ tvl }} TVL</div>
       </div>
     </div>
   </div>
@@ -89,10 +85,6 @@ export default class PoolItem extends Vue {
     const networkBalance2 = this.poolCurrency1?.balances?.find(({ name }) => isSameString(name, this.network));
 
     return networkBalance1?.state === APIItemState.READY && networkBalance2?.state === APIItemState.READY;
-  }
-
-  get apr() {
-    return `${this.$n(this.poolParams.apr, 'price')}%`;
   }
 
   get icon1() {
@@ -172,15 +164,9 @@ export default class PoolItem extends Vue {
       color: $grayish-white-2;
     }
 
-    .apy {
+    .tvl {
       font-weight: 600;
       color: $pink-lavender-color;
-    }
-
-    .tvl {
-      font-size: 12px;
-      color: $grayish-white-2;
-      margin-top: 5px;
     }
   }
 }

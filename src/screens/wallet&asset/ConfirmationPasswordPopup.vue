@@ -203,7 +203,11 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.extrinsicType === 'crossChain')
       return this.networks.find(({ name }) => name.toLowerCase() === this.secondIcon.toLowerCase())?.icon ?? '';
 
-    return this.balances.find(({ groupId }) => groupId === this.secondIcon)?.icon;
+    const tokenGroup = this.balances.find(({ groupId }) => groupId === this.secondIcon);
+
+    if (tokenGroup) return tokenGroup.icon;
+
+    return this.secondIcon;
   }
 
   get request() {

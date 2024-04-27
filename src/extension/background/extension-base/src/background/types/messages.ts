@@ -1,10 +1,9 @@
-import {
-  type MyPoolsRequest,
-  type MyPoolsInfoResponse,
-  type PoolsParamsRequest,
-  type PoolsParamsResponse,
-  type MakePoolsRequest,
-  type GetShareOfPoolResponse,
+import { type AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
+import type {
+  PoolsParamsRequest,
+  PoolsParamsResponse,
+  MakePoolsRequest,
+  GetShareOfPoolResponse,
   GetShareOfPoolRequest,
 } from '@extension-base/services/pools-service/types';
 import type {
@@ -203,10 +202,10 @@ export interface RequestSignatures {
 
   // pools
   'pri(pools.poolsParams)': [PoolsParamsRequest, PoolsParamsResponse];
-  'pri(pools.myPools)': [MyPoolsRequest, MyPoolsInfoResponse];
   'pri(pools.makePool)': [MakePoolsRequest, BasicTxResponse];
   'pri(pools.shareOfPool)': [GetShareOfPoolRequest, GetShareOfPoolResponse];
   'pri(pools.unsubscribePools)': [null, void];
+  'pri(pools.accountLiquidity)': [null, boolean, AccountLiquidity[]];
 
   //ether
   'pri(balance)': [null, BalanceJson];

@@ -128,9 +128,7 @@ export default class State {
   }
 
   public cancelSubscription(id: string): boolean {
-    if (isSubscriptionRunning(id)) {
-      unsubscribe(id);
-    }
+    if (isSubscriptionRunning(id)) unsubscribe(id);
 
     if (this.unsubscriptionMap[id]) {
       this.unsubscriptionMap[id]();

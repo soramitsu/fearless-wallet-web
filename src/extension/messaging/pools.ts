@@ -1,8 +1,7 @@
+import { type AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
 import type {
   PoolsParamsResponse,
   PoolsParamsRequest,
-  MyPoolsInfoResponse,
-  MyPoolsRequest,
   MakePoolsRequest,
   GetShareOfPoolRequest,
 } from '@extension-base/services/pools-service/types';
@@ -11,10 +10,6 @@ import { sendMessage } from '@/extension/messaging/index';
 
 export function getPoolsParams(request: PoolsParamsRequest): Promise<PoolsParamsResponse> {
   return sendMessage('pri(pools.poolsParams)', request);
-}
-
-export function getMyPoolsInfo(request: MyPoolsRequest): Promise<MyPoolsInfoResponse> {
-  return sendMessage('pri(pools.myPools)', request);
 }
 
 export function makePool(request: MakePoolsRequest): Promise<BasicTxResponse> {
@@ -27,4 +22,8 @@ export function getShareOfPool(request: GetShareOfPoolRequest): Promise<string> 
 
 export function unsubscribePools(): Promise<void> {
   return sendMessage('pri(pools.unsubscribePools)');
+}
+
+export async function subscribeAccountLiquidity(cb: (accountLiquidity: AccountLiquidity[]) => void): Promise<boolean> {
+  return sendMessage('pri(pools.accountLiquidity)', null, cb);
 }

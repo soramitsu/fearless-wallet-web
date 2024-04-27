@@ -96,9 +96,7 @@ import {
 import type {
   PoolsParamsResponse,
   PoolsParamsRequest,
-  MyPoolsInfoResponse,
   MakePoolsRequest,
-  MyPoolsRequest,
   GetShareOfPoolRequest,
 } from '@extension-base//services/pools-service/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
@@ -660,9 +658,7 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(balance.subscription)'>(id, port);
 
     const balanceSubscription = this.state.balanceService.balanceSubject.subscribe({
-      next: (rs) => {
-        cb(rs);
-      },
+      next: (rs) => cb(rs),
     });
 
     this.createUnsubscriptionHandle(id, balanceSubscription.unsubscribe);
@@ -1182,10 +1178,6 @@ export default class Extension extends FWExtensionBase {
     return this.state.poolsService.getPoolsParams(params);
   }
 
-  async getMyPoolsInfo(params: MyPoolsRequest): Promise<MyPoolsInfoResponse> {
-    return this.state.poolsService.getMyPoolsInfo(params.network);
-  }
-
   async makePool(request: MakePoolsRequest): Promise<BasicTxResponse> {
     const address = this.state.getAccountAddress();
     const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
@@ -1217,6 +1209,10 @@ export default class Extension extends FWExtensionBase {
 
   unsubscribePools(): void {
     this.state.poolsService.unsubscribePools();
+  }
+
+  private async accountLiquiditySubscribe(id: string, port: Port): Promise<boolean> {
+    return this.state.poolsService.accountLiquiditySubscribe(id, port);
   }
 
   async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
@@ -1715,9 +1711,6 @@ export default class Extension extends FWExtensionBase {
       case 'pri(pools.poolsParams)':
         return this.getPoolsParams(request as PoolsParamsRequest);
 
-      case 'pri(pools.myPools)':
-        return this.getMyPoolsInfo(request as MyPoolsRequest);
-
       case 'pri(pools.makePool)':
         return this.makePool(request as MakePoolsRequest);
 
@@ -1726,6 +1719,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(pools.unsubscribePools)':
         return this.unsubscribePools();
+
+      case 'pri(pools.accountLiquidity)':
+        return this.accountLiquiditySubscribe(id, port);
 
       // price
       case 'pri(price.update.currency)':

@@ -24,7 +24,6 @@ export interface AssetPool {
 
 export interface DefaultPoolsParams {
   network: NetworkName;
-  apr: number;
   tvl: string;
   rewardAsset: string;
   isMyPool: boolean;
@@ -39,16 +38,10 @@ export type PoolsParamsRequest = {
 
 export type PoolsParamsResponse = DefaultPoolsParams[];
 
-export type MyPoolsRequest = {
-  network: NetworkName;
-};
-
-export type MyPoolsInfoResponse = MyPoolsInfo;
-
 ///////////////////////////////////////////////////////
 
 export interface AddLiquidity extends DefaultParams {
-  slippage: string;
+  slippage: number;
 }
 
 export type RequestAddLiquidity = PasswordRequestSign<AddLiquidity>;

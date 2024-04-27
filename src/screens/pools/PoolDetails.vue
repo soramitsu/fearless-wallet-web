@@ -53,6 +53,7 @@
             :amount2="amount2"
             :slippage="slippage"
             :showAdditionalInfo="step === 2 || step === 4"
+            :fee="fee"
           />
 
           <div v-if="step === 3">
@@ -70,9 +71,10 @@
                 :poolParams="poolParams"
                 :amount1="amount1"
                 :amount2="amount2"
-                type="add"
                 :showAdditionalInfo="true"
                 :slippage="slippage"
+                :fee="fee"
+                type="add"
               />
             </ContentForm>
 
@@ -152,6 +154,8 @@ import { GettersTypes as PoolsGettersTypes } from '@/store/pools/getters';
 import { isSameString } from '@/helpers';
 import { ActionTypes as PoolsActionTypes } from '@/store/pools/actions';
 import { type AsyncFn } from '@/interfaces';
+import { getSoraFees } from '@/extension/messaging';
+import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 
 @Component({
   components: {
@@ -161,6 +165,7 @@ import { type AsyncFn } from '@/interfaces';
     PoolDescription,
     PolkaswapSettings,
     PolkaswapSettingsHeader,
+    ConfirmationPasswordPopup,
   },
 })
 export default class PoolDetails extends Vue {
@@ -171,7 +176,7 @@ export default class PoolDetails extends Vue {
   slippage = 0.5;
   temporarySlippage = 0.5;
   showSettings = false;
-  fee = ''; // TODO нужна ли fee?
+  fee = '';
 
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
@@ -268,11 +273,13 @@ export default class PoolDetails extends Vue {
   get confirmBtnDisabled() {
     if (this.step === 1 || this.step === 4) return false;
 
-    // TODO
-    if (this.step === 2) return false;
+    if (this.step === 2) {
+      if (+this.amount1 === 0 && +this.amount2 === 0) return true;
 
-    if (this.fee === '' || !this.isValidAsset1 || !this.isValidAsset2 || +this.amount1 === 0 || +this.amount2 === 0)
-      return true;
+      if (!this.isValidAsset1 || !this.isValidAsset2) return true;
+
+      return this.fee === '';
+    }
 
     return false;
   }
@@ -340,7 +347,6 @@ export default class PoolDetails extends Vue {
   }
 
   get tx() {
-    // todo
     return {
       amount1: this.amount1,
       amount2: this.amount2,
@@ -355,6 +361,14 @@ export default class PoolDetails extends Vue {
     if (this.poolsItems.length === 0 && this.myPoolsItems.length === 0) await this.getPoolsParams();
 
     if (this.poolParams?.isMyPool) this.step = 4;
+
+    this.getSoraFees();
+  }
+
+  async getSoraFees() {
+    const { AddLiquidity } = await getSoraFees();
+
+    this.fee = AddLiquidity;
   }
 
   toggleSettingsVisibility() {
@@ -409,7 +423,7 @@ export default class PoolDetails extends Vue {
     }
 
     if (this.step === 4) this.step = 2;
-    else if (this.step === 3) this.extrinsicType === 'addLiquidity';
+    else if (this.step === 3) this.extrinsicType = 'addLiquidity';
     else this.step += 1;
   }
 

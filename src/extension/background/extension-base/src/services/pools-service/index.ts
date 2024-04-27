@@ -1,18 +1,24 @@
 import { api as apiSora, type CodecString, FPNumber } from '@sora-substrate/util';
-import { BasicTxErrorCode, type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
+import {
+  BasicTxErrorCode,
+  TransferErrorCode,
+  type BasicTxResponse,
+  type Port,
+} from '@extension-base/background/types/types';
 import { getSoraAsset } from '@extension-base/api/substrate/sora';
 import { type u128 } from '@polkadot/types';
 import { type AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
-import {
-  type GetShareOfPoolRequest,
-  type RequestAddLiquidity,
-  type PoolsParamsResponse,
-  type MakePoolsRequest,
-  type RequestRemoveLiquidity,
-  type MyPoolsInfo,
-  type PoolsParamsRequest,
-  type DefaultPoolsParams,
-  type DefaultParams,
+import { BehaviorSubject } from 'rxjs';
+import { createSubscription, unsubscribe } from '@extension-base/services';
+import type {
+  GetShareOfPoolRequest,
+  RequestAddLiquidity,
+  PoolsParamsResponse,
+  MakePoolsRequest,
+  RequestRemoveLiquidity,
+  PoolsParamsRequest,
+  DefaultPoolsParams,
+  DefaultParams,
 } from './types';
 import type { Subscription } from 'rxjs';
 
@@ -36,14 +42,29 @@ interface LiquidityInfo {
 }
 
 export class PoolsService {
+  private readonly accountLiquiditySubject: BehaviorSubject<AccountLiquidity[]> = new BehaviorSubject<
+    AccountLiquidity[]
+  >([]);
+
   userPoolsSubscription: Subscription | null = null;
+  liquidityUpdatedSubscription: Subscription | null = null;
+  accountLiquidity: AccountLiquidity[] = [];
 
   constructor(private state: State) {}
 
   public async getPoolsParams(params: PoolsParamsRequest): Promise<PoolsParamsResponse> {
     const { networks } = params;
 
-    if (this.userPoolsSubscription === null) this.userPoolsSubscription = apiSora.poolXyk.getUserPoolsSubscription();
+    if (this.userPoolsSubscription === null) {
+      this.userPoolsSubscription = apiSora.poolXyk.getUserPoolsSubscription();
+
+      this.liquidityUpdatedSubscription = apiSora.poolXyk.updated.subscribe(() => {
+        this.accountLiquidity = apiSora.poolXyk.accountLiquidity;
+        this.accountLiquiditySubject.next(this.accountLiquidity);
+
+        console.info('accountLiquidity subscription: ', this.accountLiquidity);
+      });
+    }
 
     // TODO use networks
     const promises: Promise<DefaultPoolsParams[]>[] = networks.map(async (network) => {
@@ -61,14 +82,22 @@ export class PoolsService {
     return (await Promise.all(promises)).flat();
   }
 
-  public unsubscribePools(): void {
-    this.userPoolsSubscription?.unsubscribe();
+  public async accountLiquiditySubscribe(id: string, port: Port): Promise<boolean> {
+    const cb = createSubscription<'pri(pools.accountLiquidity)'>(id, port);
+
+    const subscription = this.accountLiquiditySubject.subscribe((accountLiquidity) => cb(accountLiquidity));
+
+    port.onDisconnect.addListener((): void => {
+      unsubscribe(id);
+      subscription.unsubscribe();
+    });
+
+    return true;
   }
 
-  public async getMyPoolsInfo(network: NetworkName): Promise<MyPoolsInfo> {
-    const address = this.state.getCurrentAddress(network);
-
-    return { test: '' };
+  public unsubscribePools(): void {
+    this.userPoolsSubscription?.unsubscribe();
+    this.liquidityUpdatedSubscription?.unsubscribe();
   }
 
   public async getAllReserves(network: NetworkName, address: string): Promise<DefaultPoolsParams[]> {
@@ -108,7 +137,6 @@ export class PoolsService {
         tvl: new FPNumber(value1).mul(FPNumber.TWO).mul(price1).toString(),
         yourShare: accountLiquidityPool?.poolShare,
         isMyPool: accountLiquidityPool !== undefined,
-        apr: 0, // TODO
         asset1: {
           myAmount: FPNumber.fromCodecValue(accountLiquidityPool?.firstBalance ?? 0).toString(),
           id: groupId1,
@@ -130,9 +158,7 @@ export class PoolsService {
   }
 
   public getAccountLiquidityPool(address1: string, address2: string): AccountLiquidity | undefined {
-    const accountLiquidity = apiSora.poolXyk.accountLiquidity;
-
-    return accountLiquidity.find(
+    return this.accountLiquidity.find(
       ({ firstAddress, secondAddress }) => firstAddress === address1 && secondAddress === address2
     );
   }
@@ -161,6 +187,7 @@ export class PoolsService {
   }
 
   public getLiquidityAmount(): FPNumber {
+    // TODO
     return FPNumber.ZERO;
   }
 

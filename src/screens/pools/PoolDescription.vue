@@ -2,19 +2,35 @@
   <div>
     <InfoRow v-if="showAdditionalInfo && marketType" text="assets.market" :value="marketType" />
 
-    <InfoRow v-if="showAdditionalInfo && !isMyPool" text="assets.slippage" :value="`${slippage}%`" />
+    <InfoRow v-if="showAdditionalInfo && isActivityForm" text="assets.slippage" :value="`${slippage}%`" />
 
     <InfoRow text="pools.rewardsPayout" :value="rewardAsset" />
 
     <InfoRow v-if="showAdditionalInfo" text="pools.yourPoolShare" :value="yourShare" />
+
+    <Tooltip text="assets.networkFeeSora" target=".network-fee" placement="right" />
+
+    <InfoRow
+      v-if="showAdditionalInfo && isActivityForm"
+      text="assets.networkFee"
+      :value="fee ? `${fee} ${soraMainAsset}` : undefined"
+      :price="`${fiatSymbol} ${feePrice}`"
+      icon="info"
+      :iconClasses="['network-fee']"
+    />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import type { PoolParams } from '@/store';
+import { Getter } from 'vuex-class';
+import type { GetAssetPrice, PoolParams } from '@/store';
 import type { MarketType } from '@/interfaces';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { getShareOfPool } from '@/extension/messaging';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { getXORCurrency } from '@/helpers/currencies';
 
 @Component({})
 export default class PoolDescription extends Vue {
@@ -26,10 +42,25 @@ export default class PoolDescription extends Vue {
   @Prop(Number) slippage!: number;
   @Prop(String) amount1!: string;
   @Prop(String) amount2!: string;
+  @Prop(String) fee!: string;
   @Prop(String) type!: 'add' | 'remove';
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
-  get apr() {
-    return `${this.poolParams?.apr}%`;
+  get soraMainAsset() {
+    return this.currencyXOR.symbol;
+  }
+
+  get currencyXOR() {
+    return getXORCurrency(this.balances);
+  }
+
+  get feePrice() {
+    const fee = this.fee ?? 0;
+    const balance = this.getAssetPrice(this.currencyXOR?.priceId ?? '').price * +fee;
+
+    return this.$n(+balance, 'price');
   }
 
   get rewardAsset() {
@@ -37,18 +68,23 @@ export default class PoolDescription extends Vue {
   }
 
   get yourShare() {
-    const share = this.type ? this.estimatedYourShare : this.poolParams?.yourShare ?? 0;
-
-    return `${this.$n(+share, 'decimalPrecise')}%`;
+    return `${this.$n(+this.estimatedYourShare, 'decimalPrecise')}%`;
   }
 
   get isMyPool() {
     return this.poolParams.isMyPool;
   }
 
+  get isActivityForm() {
+    return this.type;
+  }
+
   @Watch('amount1')
   @Watch('amount2')
-  async amountWatcher() {
+  @Watch('poolParams')
+  async calculateShare() {
+    if (!this.poolParams) return;
+
     this.estimatedYourShare = await getShareOfPool({
       amount1: this.amount1,
       amount2: this.amount2,
@@ -57,6 +93,10 @@ export default class PoolDescription extends Vue {
       networkName: this.poolParams.network,
       type: this.type,
     });
+  }
+
+  created() {
+    this.calculateShare();
   }
 }
 </script>

@@ -31,6 +31,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { FPNumber } from '@sora-substrate/util';
 import type { GetAssetPrice, PoolParams } from '@/store';
 import type { TokenGroup } from '@/extension/background/extension-base/src/background/types/types';
 import { calcTransferableSendMinusFee } from '@/helpers/currencies';
@@ -98,25 +99,27 @@ export default class InputsForm extends Vue {
   }
 
   @Watch('syncedAmount1')
-  watcherAmount2() {
-    return 1;
+  watcherAmount1() {
+    this.syncedAmount2 = new FPNumber(this.syncedAmount1)
+      .mul(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
+      .div(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
+      .toString();
   }
 
   @Watch('syncedAmount2')
-  watcherAmount1() {
-    return 1;
+  watcherAmount2() {
+    this.syncedAmount1 = new FPNumber(this.syncedAmount2)
+      .mul(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
+      .div(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
+      .toString();
   }
 
   updateAmount1(value: string) {
     this.syncedAmount1 = value;
-
-    // this.checkPool();
   }
 
   updateAmount2(value: string) {
     this.syncedAmount2 = value;
-
-    // this.checkPool();
   }
 
   calcTransferableSendMinusFee() {
@@ -125,8 +128,6 @@ export default class InputsForm extends Vue {
 
   setMax() {
     this.syncedAmount1 = this.calcTransferableSendMinusFee();
-
-    // this.checkPool();
   }
 }
 </script>

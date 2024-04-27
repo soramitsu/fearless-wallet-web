@@ -50,6 +50,7 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
+import { type AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
 import type { AsyncFn, PoolsTab } from '@/interfaces';
 import type { SelectedWallet, GetPoolsParamsProps, PoolParams } from '@/store';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
@@ -60,7 +61,7 @@ import { GettersTypes as PoolsGettersTypes } from '@/store/pools/getters';
 import { isSubstrString } from '@/helpers';
 import { ActionTypes as PoolsActionTypes } from '@/store/pools/actions';
 import { Components } from '@/router/routes';
-import { unsubscribePools } from '@/extension/messaging';
+import { subscribeAccountLiquidity, unsubscribePools } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -72,7 +73,6 @@ export default class PoolsPage extends Vue {
   activeTabName: PoolsTab | '' = '';
   filterValue = '';
   isLoading = false;
-  poolParams: Nullable<PoolParams> = null;
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(PoolsGettersTypes.poolsItems) poolsItems!: PoolParams[];
@@ -126,13 +126,11 @@ export default class PoolsPage extends Vue {
   }
 
   async created() {
-    const updateTab = () => this.updateActiveTabName(this.showPoolsItems ? 'all' : 'my');
+    this.fetchPoolInfo();
 
-    if (this.showMyPoolsItems && !this.showPoolsItems) updateTab();
+    const callback = (accountLiquidity: AccountLiquidity[]) => this.fetchPoolInfo();
 
-    await this.getPoolsParams();
-
-    if (this.activeTabName === '') updateTab();
+    subscribeAccountLiquidity(callback);
   }
 
   @Watch('showPoolsItems')
@@ -152,6 +150,16 @@ export default class PoolsPage extends Vue {
     await this.getPoolsParams({ delay: 5000 });
 
     this.isLoading = false;
+  }
+
+  async fetchPoolInfo() {
+    const updateTab = () => this.updateActiveTabName(this.showMyPoolsItems ? 'my' : 'all');
+
+    if (this.showMyPoolsItems && !this.showPoolsItems) updateTab();
+
+    await this.getPoolsParams();
+
+    if (this.activeTabName === '') updateTab();
   }
 
   updateFilterValue(value: string) {

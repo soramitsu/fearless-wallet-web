@@ -140,8 +140,10 @@ export default class InputsForm extends Vue {
       isExchangeB: this.syncedIsExchangeB,
     };
 
-    if (this.syncedIsExchangeB) this.syncedAmount1 = await getAmountPoolValue(params);
-    else this.syncedAmount2 = await getAmountPoolValue(params);
+    const amount = await getAmountPoolValue(params);
+
+    if (this.syncedIsExchangeB) this.syncedAmount1 = amount;
+    else this.syncedAmount2 = amount;
   }
 
   updateAmount1(value: string) {
@@ -161,8 +163,12 @@ export default class InputsForm extends Vue {
   }
 
   setMax(isExchangeB: boolean) {
-    if (this.extrinsicType === 'removeLiquidity') this.syncedAmount1 = this.transferableAmount1;
-    else {
+    if (this.extrinsicType === 'removeLiquidity') {
+      this.syncedIsExchangeB = isExchangeB;
+
+      if (isExchangeB) this.syncedAmount2 = this.transferableAmount2;
+      else this.syncedAmount1 = this.transferableAmount1;
+    } else {
       this.syncedIsExchangeB = isExchangeB;
 
       if (isExchangeB) this.syncedAmount2 = this.calcTransferableSendMinusFee(isExchangeB);

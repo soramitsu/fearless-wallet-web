@@ -41,8 +41,14 @@ interface LiquidityInfo {
   amount2: string;
   reserveA: string;
   reserveB: string;
-  firstBalance: string;
-  secondBalance: string;
+  firstBalance: {
+    value: string;
+    valueFP: FPNumber;
+  };
+  secondBalance: {
+    value: string;
+    valueFP: FPNumber;
+  };
 }
 
 export class PoolsService {
@@ -189,8 +195,14 @@ export class PoolsService {
       balance: accountLiquidityPool?.balance ?? '0',
       reserveA: accountLiquidityPool?.reserveA ?? '0',
       reserveB: accountLiquidityPool?.reserveB ?? '0',
-      firstBalance: accountLiquidityPool?.firstBalance ?? '0',
-      secondBalance: accountLiquidityPool?.secondBalance ?? '0',
+      firstBalance: {
+        value: accountLiquidityPool?.firstBalance ?? '0',
+        valueFP: FPNumber.fromCodecValue(accountLiquidityPool?.firstBalance ?? '0', asset1.decimals),
+      },
+      secondBalance: {
+        value: accountLiquidityPool?.secondBalance ?? '0',
+        valueFP: FPNumber.fromCodecValue(accountLiquidityPool?.secondBalance ?? '0', asset2.decimals),
+      },
     };
   }
 
@@ -286,15 +298,9 @@ export class PoolsService {
   }
 
   public getPart(liquidityInfo: LiquidityInfo, isExchangeB: boolean): FPNumber {
-    if (isExchangeB) {
-      const secondBalance = FPNumber.fromCodecValue(liquidityInfo.secondBalance, liquidityInfo.asset1.decimals);
+    if (isExchangeB) return new FPNumber(liquidityInfo.amount2).div(liquidityInfo.secondBalance.valueFP);
 
-      return new FPNumber(liquidityInfo.amount1).div(secondBalance);
-    }
-
-    const firstBalance = FPNumber.fromCodecValue(liquidityInfo.firstBalance, liquidityInfo.asset1.decimals);
-
-    return new FPNumber(liquidityInfo.amount1).div(firstBalance);
+    return new FPNumber(liquidityInfo.amount1).div(liquidityInfo.firstBalance.valueFP);
   }
 
   public getPoolAmountValue(params: DefaultParams): string {
@@ -303,7 +309,9 @@ export class PoolsService {
     const liquidityInfo = this.getPoolInfo(params);
     const part = this.getPart(liquidityInfo, isExchangeB);
 
-    const result = isExchangeB ? part.mul(liquidityInfo.firstBalance) : part.mul(liquidityInfo.secondBalance);
+    const result = isExchangeB
+      ? part.mul(liquidityInfo.firstBalance.valueFP)
+      : part.mul(liquidityInfo.secondBalance.valueFP);
 
     return result.toString();
   }
@@ -324,9 +332,11 @@ export class PoolsService {
     const totalSupply = FPNumber.fromCodecValue(supply);
     const totalSupplyAfter = totalSupply.sub(removed);
 
-    if (existed.isZero() || totalSupply.isZero() || FPNumber.lte(totalSupplyAfter, FPNumber.ZERO)) return '0';
+    if (existed.isZero() || totalSupply.isZero() || totalSupplyAfter.isZero()) return '0';
 
-    return existed.sub(removed).div(totalSupplyAfter).mul(FPNumber.HUNDRED).toLocaleString() || '0';
+    const result = existed.sub(removed).div(totalSupplyAfter).mul(FPNumber.HUNDRED);
+
+    return FPNumber.lte(result, FPNumber.ZERO) ? '0' : result.toLocaleString() || '0';
   }
 
   public async makePool({ params, type }: MakePoolsRequest): Promise<BasicTxResponse> {
@@ -380,7 +390,7 @@ export class PoolsService {
 
     const liquidityBalance = this.getLiquidityBalance(params).toString();
 
-    const tokenBalance1 = FPNumber.fromCodecValue(firstBalance, asset1.decimals);
+    const tokenBalance1 = FPNumber.fromCodecValue(firstBalance.value, asset1.decimals);
     // const tokenBalance2 = FPNumber.fromCodecValue(secondBalance, asset2.decimals);
 
     const firstTokenBalance = tokenBalance1.mul(liquidityBalance).div(FPNumber.fromCodecValue(balance));

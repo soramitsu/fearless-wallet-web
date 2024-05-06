@@ -33,10 +33,13 @@
             :amount1="amount1"
             :amount2="amount2"
             :currency1="currency1"
+            :currency2="currency2"
             :fee="fee"
             :extrinsicType="extrinsicType"
+            :isExchangeB="isExchangeB"
             @update:amount1="updateAmount1"
             @update:amount2="updateAmount2"
+            @update:isExchangeB="updateIsExchangeB"
           />
 
           <Alert v-if="showLiquidityWarning" message="pools.emptyLiquidityWarning" />
@@ -50,6 +53,7 @@
             :slippage="slippage"
             :showAdditionalInfo="step === 2 || step === 4"
             :fee="fee"
+            :isExchangeB="isExchangeB"
           />
 
           <div v-if="step === 3">
@@ -144,7 +148,7 @@ import { type RequestPool } from '@/extension/background/extension-base/src/serv
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
-import { getUtilityAsset, isValidAmountAsset } from '@/helpers/currencies';
+import { getUtilityAsset, getXORCurrency, isValidAmountAsset } from '@/helpers/currencies';
 import { type PoolsOperation } from '@/interfaces/pools';
 import PolkaswapSettingsHeader from '@/screens/polkaswap/PolkaswapSettingsHeader.vue';
 import PolkaswapSettings from '@/screens/polkaswap/PolkaswapSettings.vue';
@@ -176,6 +180,7 @@ export default class PoolDetails extends Vue {
   temporarySlippage = 0.5;
   showSettings = false;
   showConfirmationPasswordPopup = false;
+  isExchangeB = false;
   fee = '';
 
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
@@ -262,42 +267,48 @@ export default class PoolDetails extends Vue {
     return getCostOfAssets(this.amount1, this.amount1AssetPrice).toString();
   }
 
+  get currencyXOR() {
+    return getXORCurrency(this.balances);
+  }
+
   get isValidAsset1() {
-    if (this.extrinsicType === 'removeLiquidity') {
-      // для remove транзакции баланс, это баланс пула
-      const poolCurrency = {
-        ...this.currency1!,
-        balances: this.currency1!.balances.map((item) => ({
-          ...item,
-          transferable: this.poolParams?.asset1.myAmount,
-        })),
-      };
+    // для remove транзакции баланс, это баланс пула
+    const poolCurrency =
+      this.extrinsicType === 'removeLiquidity'
+        ? {
+            ...this.currency1!,
+            balances: this.currency1!.balances.map((item) => ({
+              ...item,
+              transferable: this.poolParams?.asset1.myAmount,
+            })),
+          }
+        : this.currency1;
 
-      const isValid = isValidAmountAsset(poolCurrency, this.network, '0', this.amount1);
+    const isValid = isValidAmountAsset(poolCurrency, this.network, '0', this.amount1);
 
-      if (!isValid) return false;
-    }
+    if (!isValid) return false;
 
-    return isValidAmountAsset(this.currency1, this.network, this.fee, this.amount1);
+    return isValidAmountAsset(this.currencyXOR, this.network, this.fee, '0');
   }
 
   get isValidAsset2() {
-    if (this.extrinsicType === 'removeLiquidity') {
-      // для remove транзакции баланс, это баланс пула
-      const poolCurrency = {
-        ...this.currency2!,
-        balances: this.currency2!.balances.map((item) => ({
-          ...item,
-          transferable: this.poolParams?.asset2.myAmount,
-        })),
-      };
+    // для remove транзакции баланс, это баланс пула
+    const poolCurrency =
+      this.extrinsicType === 'removeLiquidity'
+        ? {
+            ...this.currency2!,
+            balances: this.currency2!.balances.map((item) => ({
+              ...item,
+              transferable: this.poolParams?.asset2.myAmount,
+            })),
+          }
+        : this.currency2;
 
-      const isValid = isValidAmountAsset(poolCurrency, this.network, '0', this.amount2);
+    const isValid = isValidAmountAsset(poolCurrency, this.network, '0', this.amount2);
 
-      if (!isValid) return false;
-    }
+    if (!isValid) return false;
 
-    return isValidAmountAsset(this.currency2, this.network, this.fee, this.amount2);
+    return isValidAmountAsset(this.currencyXOR, this.network, this.fee, '0');
   }
 
   get confirmBtnDisabled() {
@@ -448,6 +459,10 @@ export default class PoolDetails extends Vue {
 
     this.step = 2;
     this.extrinsicType = 'removeLiquidity';
+  }
+
+  updateIsExchangeB(value: boolean) {
+    this.isExchangeB = value;
   }
 
   updateAmount1(value: string) {

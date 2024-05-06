@@ -12,6 +12,7 @@ export interface DefaultParams {
   amount1: string;
   amount2: string;
   networkName: NetworkName;
+  isExchangeB: boolean;
 }
 
 export interface AssetPool {
@@ -66,5 +67,6 @@ export type MakePoolsRequest = {
 export interface GetShareOfPoolRequest extends DefaultParams {
   type: 'addLiquidity' | 'removeLiquidity';
 }
+
 
 export type GetShareOfPoolResponse = string;

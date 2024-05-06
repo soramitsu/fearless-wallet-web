@@ -4,6 +4,7 @@ import type {
   PoolsParamsRequest,
   MakePoolsRequest,
   GetShareOfPoolRequest,
+  DefaultParams,
 } from '@extension-base/services/pools-service/types';
 import type { BasicTxResponse } from '@extension-base/background/types/types';
 import { sendMessage } from '@/extension/messaging/index';
@@ -26,4 +27,8 @@ export function unsubscribePools(): Promise<void> {
 
 export async function subscribeAccountLiquidity(cb: (accountLiquidity: AccountLiquidity[]) => void): Promise<boolean> {
   return sendMessage('pri(pools.accountLiquidity)', null, cb);
+}
+
+export async function getAmountPoolValue(request: DefaultParams): Promise<string> {
+  return sendMessage('pri(pools.getAmountValue)', request);
 }

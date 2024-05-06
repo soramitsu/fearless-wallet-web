@@ -9,8 +9,9 @@
       :amount="syncedAmount1"
       :isRotate="false"
       :showIcon="false"
+      :showOriginValue="syncedIsExchangeB"
       @update:amount="updateAmount1"
-      @setMax="setMax"
+      @setMax="setMax(false)"
     />
 
     <SelectInput
@@ -23,8 +24,9 @@
       :amount="syncedAmount2"
       :isRotate="false"
       :showIcon="false"
+      :showOriginValue="!syncedIsExchangeB"
       @update:amount="updateAmount2"
-      @setMax="setMax"
+      @setMax="setMax(true)"
     />
   </div>
 </template>
@@ -38,17 +40,18 @@ import type { TokenGroup } from '@/extension/background/extension-base/src/backg
 import { calcTransferableSendMinusFee } from '@/helpers/currencies';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { getAmountPoolValue } from '@/extension/messaging';
 
 @Component({
   components: {},
 })
 export default class InputsForm extends Vue {
-  isExchangeB = false;
-
   @PropSync('amount1', { type: String }) syncedAmount1!: string;
   @PropSync('amount2', { type: String }) syncedAmount2!: string;
+  @PropSync('isExchangeB', { type: Boolean }) syncedIsExchangeB!: boolean;
   @Prop({ type: Object }) poolParams!: PoolParams;
   @Prop({ type: Object }) currency1!: TokenGroup;
+  @Prop({ type: Object }) currency2!: TokenGroup;
   @Prop({ type: String }) fee!: string;
   @Prop(String) extrinsicType!: 'addLiquidity' | 'removeLiquidity' | '';
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
@@ -107,41 +110,64 @@ export default class InputsForm extends Vue {
 
   @Watch('syncedAmount1')
   @Watch('syncedAmount2')
-  watcherAmount() {
-    if (this.isExchangeB) {
-      if (this.poolParams.asset2.reserve) return;
+  async watcherAmount() {
+    if (this.extrinsicType === 'addLiquidity') {
+      if (this.syncedIsExchangeB) {
+        if (this.poolParams.asset2.reserve === '0') return;
 
-      this.syncedAmount1 = new FPNumber(this.syncedAmount2)
-        .mul(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
-        .div(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
-        .toString();
-    } else {
-      if (this.poolParams.asset1.reserve) return;
+        this.syncedAmount1 = new FPNumber(this.syncedAmount2)
+          .mul(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
+          .div(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
+          .toString();
+      } else {
+        if (this.poolParams.asset1.reserve === '0') return;
 
-      this.syncedAmount2 = new FPNumber(this.syncedAmount1)
-        .mul(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
-        .div(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
-        .toString();
+        this.syncedAmount2 = new FPNumber(this.syncedAmount1)
+          .mul(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
+          .div(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
+          .toString();
+      }
+
+      return;
     }
+
+    const params = {
+      amount1: this.syncedAmount1,
+      amount2: this.syncedAmount2,
+      assetId1: this.assetId1,
+      assetId2: this.assetId2,
+      networkName: this.poolParams.network,
+      isExchangeB: this.syncedIsExchangeB,
+    };
+
+    if (this.syncedIsExchangeB) this.syncedAmount1 = await getAmountPoolValue(params);
+    else this.syncedAmount2 = await getAmountPoolValue(params);
   }
 
   updateAmount1(value: string) {
     this.syncedAmount1 = value;
-    this.isExchangeB = false;
+    this.syncedIsExchangeB = false;
   }
 
   updateAmount2(value: string) {
     this.syncedAmount2 = value;
-    this.isExchangeB = true;
+    this.syncedIsExchangeB = true;
   }
 
-  calcTransferableSendMinusFee() {
-    return calcTransferableSendMinusFee(this.currency1, this.poolParams.network, this.fee);
+  calcTransferableSendMinusFee(isExchangeB: boolean) {
+    const currency = isExchangeB ? this.currency2 : this.currency1;
+
+    return calcTransferableSendMinusFee(currency, this.poolParams.network, this.fee);
   }
 
-  setMax() {
+  setMax(isExchangeB: boolean) {
     if (this.extrinsicType === 'removeLiquidity') this.syncedAmount1 = this.transferableAmount1;
-    else this.syncedAmount1 = this.calcTransferableSendMinusFee();
+    else {
+      this.syncedIsExchangeB = isExchangeB;
+
+      if (isExchangeB) this.syncedAmount2 = this.calcTransferableSendMinusFee(isExchangeB);
+      else this.syncedAmount1 = this.calcTransferableSendMinusFee(isExchangeB);
+    }
   }
 }
 </script>

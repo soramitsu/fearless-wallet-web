@@ -285,11 +285,32 @@ export class PoolsService {
     return minted.add(existed).div(total.add(minted)).mul(FPNumber.HUNDRED).toLocaleString() || '0';
   }
 
-  public getRemoved(params: DefaultParams): string {
-    const liquidityInfo = this.getPoolInfo(params);
+  public getPart(liquidityInfo: LiquidityInfo, isExchangeB: boolean): FPNumber {
+    if (isExchangeB) {
+      const secondBalance = FPNumber.fromCodecValue(liquidityInfo.secondBalance, liquidityInfo.asset1.decimals);
+
+      return new FPNumber(liquidityInfo.amount1).div(secondBalance);
+    }
 
     const firstBalance = FPNumber.fromCodecValue(liquidityInfo.firstBalance, liquidityInfo.asset1.decimals);
-    const part = new FPNumber(liquidityInfo.amount1).div(firstBalance);
+
+    return new FPNumber(liquidityInfo.amount1).div(firstBalance);
+  }
+
+  public getPoolAmountValue(params: DefaultParams): string {
+    const { isExchangeB } = params;
+
+    const liquidityInfo = this.getPoolInfo(params);
+    const part = this.getPart(liquidityInfo, isExchangeB);
+
+    const result = isExchangeB ? part.mul(liquidityInfo.firstBalance) : part.mul(liquidityInfo.secondBalance);
+
+    return result.toString();
+  }
+
+  public getRemoved(params: DefaultParams): string {
+    const liquidityInfo = this.getPoolInfo(params);
+    const part = this.getPart(liquidityInfo, params.isExchangeB);
     const liquidityBalance = this.getLiquidityBalance(params);
 
     return part.mul(liquidityBalance).toString();

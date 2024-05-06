@@ -5,6 +5,7 @@ import type {
   MakePoolsRequest,
   GetShareOfPoolResponse,
   GetShareOfPoolRequest,
+  DefaultParams as DefaultPoolParams,
 } from '@extension-base/services/pools-service/types';
 import type {
   NftTx,
@@ -206,6 +207,7 @@ export interface RequestSignatures {
   'pri(pools.shareOfPool)': [GetShareOfPoolRequest, GetShareOfPoolResponse];
   'pri(pools.unsubscribePools)': [null, void];
   'pri(pools.accountLiquidity)': [null, boolean, AccountLiquidity[]];
+  'pri(pools.getAmountValue)': [DefaultPoolParams, string];
 
   //ether
   'pri(balance)': [null, BalanceJson];

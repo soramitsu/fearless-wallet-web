@@ -38,8 +38,9 @@ export default class PoolDescription extends Vue {
 
   @Prop({ type: Object }) poolParams!: PoolParams;
   @Prop(Boolean) showAdditionalInfo!: boolean;
-  @Prop(String) marketType?: MarketType;
   @Prop(Number) slippage!: number;
+  @Prop(Boolean) isExchangeB!: boolean;
+  @Prop(String) marketType?: MarketType;
   @Prop(String) amount1!: string;
   @Prop(String) amount2!: string;
   @Prop(String) fee!: string;
@@ -92,6 +93,7 @@ export default class PoolDescription extends Vue {
       assetId2: this.poolParams.asset2.id,
       networkName: this.poolParams.network,
       type: this.extrinsicType || 'addLiquidity',
+      isExchangeB: this.isExchangeB,
     });
   }
 

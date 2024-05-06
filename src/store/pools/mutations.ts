@@ -1,7 +1,6 @@
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
-import type { SetAllPoolsItems } from './types';
-import type { PoolParams } from '@/store/pools/types';
+import type { SetAllPoolsItems, StatePoolParams } from './types';
 import { accountController } from '@/controllers';
 
 export enum MutationTypes {
@@ -19,11 +18,9 @@ export type Mutations = {
 const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.UPDATE_POOLS_PARAMS](state, poolParams) {
     poolParams.forEach((params, index) => {
-      const newItem: PoolParams = {
+      const newItem: StatePoolParams = {
         ...state.allPoolsItems[index],
         ...params,
-        asset1: { ...params.asset1, transferableAmount: '0' },
-        asset2: { ...params.asset2, transferableAmount: '0' },
         loading: false,
       };
 

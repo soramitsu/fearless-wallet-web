@@ -639,13 +639,15 @@
     "supply": "Supply",
     "remove": "Remove",
     "supplyLiquidity": "Supply liquidity",
+    "removeLiquidity": "Remove liquidity",
     "confirmSupply": "Confirm supply",
     "yourPoolShare": "Your pool share",
     "rewardsPayout": "Rewards payout in",
     "yourPooled": "Your {asset} pooled",
     "stakeYourPoolShare": "Stake your pool share for extra rewards",
     "liquidityPools": "Liquidity pools",
-    "showDetails": "Show details"
+    "showDetails": "Show details",
+    "removeWarning": "Removing pool tokens converts your position back into underlying tokens at the current rate, proportional to your share of the pool. Accrued fees are included in the amounts you receive."
   },
   "browserTabs": {
     "welcome": "Welcome",

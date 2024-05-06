@@ -18,13 +18,7 @@
     <Scroll>
       <div class="pool-details">
         <div>
-          <PoolHeader
-            v-if="step === 1 || step === 3 || step === 4"
-            :poolParams="poolParams"
-            :step="step"
-            :currency1="currency1"
-            :currency2="currency2"
-          />
+          <PoolHeader v-if="step === 1 || step === 3 || step === 4" :poolParams="poolParams" :step="step" />
 
           <PolkaswapSettings
             v-if="showSettings"
@@ -39,15 +33,15 @@
             :amount1="amount1"
             :amount2="amount2"
             :currency1="currency1"
-            :currency2="currency2"
             :fee="fee"
+            :extrinsicType="extrinsicType"
             @update:amount1="updateAmount1"
             @update:amount2="updateAmount2"
           />
 
           <PoolDescription
             v-if="!showSettings && (step === 1 || step === 2 || step === 4)"
-            :type="step === 2 ? 'add' : ''"
+            :extrinsicType="step === 2 ? extrinsicType : ''"
             :poolParams="poolParams"
             :amount1="amount1"
             :amount2="amount2"
@@ -62,8 +56,8 @@
               :asset2="asset2"
               :amount1="amount1"
               :amount2="amount2"
-              :currency1="currency1"
-              :currency2="currency2"
+              :priceId1="poolParams?.asset1.priceId"
+              :priceId2="poolParams?.asset2.priceId"
             />
 
             <ContentForm :height="225" :isStaticHeight="true" :bottomRightCorner="true">
@@ -74,11 +68,13 @@
                 :showAdditionalInfo="true"
                 :slippage="slippage"
                 :fee="fee"
-                type="add"
+                :extrinsicType="extrinsicType"
               />
             </ContentForm>
 
-            <Alert message="assets.slippageWarning" class="slippage-warning" />
+            <Alert message="assets.slippageWarning" class="warning" />
+
+            <Alert v-if="extrinsicType === 'removeLiquidity'" message="pools.removeWarning" class="warning" />
           </div>
 
           <div v-else-if="step === 4">
@@ -89,7 +85,7 @@
         </div>
 
         <div>
-          <PolkaswapAlert v-if="!showSettings" />
+          <PolkaswapAlert v-if="!showSettings" class="warning" />
 
           <div class="activity-buttons">
             <FButton
@@ -110,7 +106,7 @@
               fontSize="big"
               :text="btnText"
               :disabled="confirmBtnDisabled"
-              @click="confirm"
+              @click="supply"
             />
           </div>
         </div>
@@ -134,7 +130,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { GetAssetPrice, GetPoolsParamsProps, PoolParams } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
@@ -169,13 +165,14 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
   },
 })
 export default class PoolDetails extends Vue {
-  step = 1;
+  step = 1; // step 1 = pool preview, step 2 = add/remove liquidity, step 3 = add/remove preview, step 4 = my pool
   amount1 = '';
   amount2 = '';
-  extrinsicType: PoolsOperation | null = null;
+  extrinsicType: PoolsOperation | '' = '';
   slippage = 0.5;
   temporarySlippage = 0.5;
   showSettings = false;
+  showConfirmationPasswordPopup = false;
   fee = '';
 
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
@@ -249,7 +246,7 @@ export default class PoolDetails extends Vue {
   }
 
   get amount1AssetPrice() {
-    const priceId = this.currency1?.priceId ?? '';
+    const priceId = this.poolParams?.asset1.priceId ?? '';
 
     return this.getAssetPrice(priceId).price;
   }
@@ -258,16 +255,36 @@ export default class PoolDetails extends Vue {
     return getCostOfAssets(this.amount1, this.amount1AssetPrice).toString();
   }
 
-  get showConfirmationPasswordPopup() {
-    return this.extrinsicType !== null;
-  }
-
   get isValidAsset1() {
-    return isValidAmountAsset(this.currency1, this.network, this.fee, this.amount1);
+    // для remove транзакции баланс, это баланс пула
+    const poolCurrency =
+      this.extrinsicType === 'removeLiquidity'
+        ? {
+            ...this.currency1!,
+            balances: this.currency1!.balances.map((item) => ({
+              ...item,
+              transferable: this.poolParams?.asset1.myAmount,
+            })),
+          }
+        : this.currency1;
+
+    return isValidAmountAsset(poolCurrency, this.network, this.fee, this.amount1);
   }
 
   get isValidAsset2() {
-    return isValidAmountAsset(this.currency2, this.network, this.fee, this.amount2);
+    // для remove транзакции баланс, это баланс пула
+    const poolCurrency =
+      this.extrinsicType === 'removeLiquidity'
+        ? {
+            ...this.currency2!,
+            balances: this.currency2!.balances.map((item) => ({
+              ...item,
+              transferable: this.poolParams?.asset2.myAmount,
+            })),
+          }
+        : this.currency2;
+
+    return isValidAmountAsset(poolCurrency, this.network, this.fee, this.amount2);
   }
 
   get confirmBtnDisabled() {
@@ -323,7 +340,7 @@ export default class PoolDetails extends Vue {
   get showSecondBtn() {
     if (this.showSettings) return true;
 
-    return this.poolParams?.isMyPool;
+    return this.poolParams?.isMyPool && this.step === 4;
   }
 
   get icon1() {
@@ -339,7 +356,11 @@ export default class PoolDetails extends Vue {
 
     if (this.step === 1 || this.step === 4) return this.$t('pools.poolDetails');
 
-    if (this.step === 2) return this.$t('pools.supplyLiquidity');
+    if (this.step === 2) {
+      if (this.extrinsicType === 'addLiquidity') return this.$t('pools.supplyLiquidity');
+
+      return this.$t('pools.removeLiquidity');
+    }
 
     if (this.step === 3) return this.$t('pools.confirmSupply');
 
@@ -357,6 +378,11 @@ export default class PoolDetails extends Vue {
     } as RequestPool;
   }
 
+  @Watch('extrinsicType')
+  async extrinsicTypeWatcher() {
+    this.getSoraFees();
+  }
+
   async created() {
     if (this.poolsItems.length === 0 && this.myPoolsItems.length === 0) await this.getPoolsParams();
 
@@ -366,9 +392,9 @@ export default class PoolDetails extends Vue {
   }
 
   async getSoraFees() {
-    const { AddLiquidity } = await getSoraFees();
+    const { AddLiquidity, RemoveLiquidity } = await getSoraFees();
 
-    this.fee = AddLiquidity;
+    this.fee = this.extrinsicType === 'addLiquidity' ? AddLiquidity : RemoveLiquidity;
   }
 
   toggleSettingsVisibility() {
@@ -381,8 +407,12 @@ export default class PoolDetails extends Vue {
 
   handlerBack() {
     if (this.showSettings || this.step === 1) return;
-    else if (this.step === 2 && this.poolParams?.isMyPool) this.step = 4;
-    else this.step -= 1;
+
+    if (this.step === 2 && this.poolParams?.isMyPool) {
+      this.step = 4;
+      this.amount1 = '';
+      this.amount2 = '';
+    } else this.step -= 1;
   }
 
   closeForm() {
@@ -398,12 +428,13 @@ export default class PoolDetails extends Vue {
   secondBtnHandler() {
     if (this.showSettings) {
       this.temporarySlippage = 0.5;
-      this.confirm();
+      this.supply();
 
       return;
     }
 
-    this.extrinsicType === 'removeLiquidity';
+    this.step = 2;
+    this.extrinsicType = 'removeLiquidity';
   }
 
   updateAmount1(value: string) {
@@ -414,7 +445,7 @@ export default class PoolDetails extends Vue {
     this.amount2 = value;
   }
 
-  confirm() {
+  supply() {
     if (this.showSettings) {
       this.slippage = this.temporarySlippage;
       this.showSettings = false;
@@ -422,13 +453,19 @@ export default class PoolDetails extends Vue {
       return;
     }
 
-    if (this.step === 4) this.step = 2;
-    else if (this.step === 3) this.extrinsicType = 'addLiquidity';
+    if (this.step === 1 || this.step === 4) {
+      this.step = 2;
+      this.extrinsicType = 'addLiquidity';
+
+      return;
+    }
+
+    if (this.step === 3) this.showConfirmationPasswordPopup = true;
     else this.step += 1;
   }
 
   confirmationPasswordPopupClose(closeForm: boolean) {
-    this.extrinsicType = null;
+    this.showConfirmationPasswordPopup = false;
 
     if (closeForm) this.closeForm();
   }
@@ -455,7 +492,7 @@ export default class PoolDetails extends Vue {
     margin-right: 10px;
   }
 
-  .slippage-warning {
+  .warning {
     margin-top: 10px;
   }
 }

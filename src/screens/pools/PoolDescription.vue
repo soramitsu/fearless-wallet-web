@@ -43,7 +43,7 @@ export default class PoolDescription extends Vue {
   @Prop(String) amount1!: string;
   @Prop(String) amount2!: string;
   @Prop(String) fee!: string;
-  @Prop(String) type!: 'add' | 'remove';
+  @Prop(String) extrinsicType!: 'addLiquidity' | 'removeLiquidity' | '';
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
@@ -76,7 +76,7 @@ export default class PoolDescription extends Vue {
   }
 
   get isActivityForm() {
-    return this.type;
+    return this.extrinsicType !== '';
   }
 
   @Watch('amount1')
@@ -91,7 +91,7 @@ export default class PoolDescription extends Vue {
       assetId1: this.poolParams.asset1.id,
       assetId2: this.poolParams.asset2.id,
       networkName: this.poolParams.network,
-      type: this.type,
+      type: this.extrinsicType || 'addLiquidity',
     });
   }
 

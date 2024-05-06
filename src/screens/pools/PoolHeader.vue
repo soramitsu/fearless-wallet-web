@@ -24,7 +24,6 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { PoolParams } from '@/store';
-import type { TokenGroup } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
@@ -32,8 +31,6 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 })
 export default class PoolHeader extends Vue {
   @Prop({ type: Object }) poolParams!: PoolParams;
-  @Prop({ type: Object }) currency1!: TokenGroup;
-  @Prop({ type: Object }) currency2!: TokenGroup;
   @Prop({ type: Number }) step!: number;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
@@ -48,19 +45,19 @@ export default class PoolHeader extends Vue {
   }
 
   get icon1() {
-    return this.currency1?.icon ?? '';
+    return this.poolParams?.asset1.icon ?? '';
   }
 
   get icon2() {
-    return this.currency2?.icon ?? '';
+    return this.poolParams?.asset2.icon ?? '';
   }
 
   get color1() {
-    return this.currency1?.color ?? '';
+    return this.poolParams?.asset1.color ?? '';
   }
 
   get color2() {
-    return this.currency2?.color ?? '';
+    return this.poolParams?.asset2.color ?? '';
   }
 
   get poolName() {

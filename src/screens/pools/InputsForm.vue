@@ -42,19 +42,25 @@ import { getCostOfAssets } from '@/controllers/transferHelpers';
   components: {},
 })
 export default class InputsForm extends Vue {
+  isExchangeB = false;
+
   @PropSync('amount1', { type: String }) syncedAmount1!: string;
   @PropSync('amount2', { type: String }) syncedAmount2!: string;
   @Prop({ type: Object }) poolParams!: PoolParams;
   @Prop({ type: Object }) currency1!: TokenGroup;
-  @Prop({ type: Object }) currency2!: TokenGroup;
   @Prop({ type: String }) fee!: string;
+  @Prop(String) extrinsicType!: 'addLiquidity' | 'removeLiquidity' | '';
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get transferableAmount1() {
+    if (this.extrinsicType === 'removeLiquidity') return this.poolParams.asset1.myAmount;
+
     return this.poolParams.asset1.transferableAmount;
   }
 
   get transferableAmount2() {
+    if (this.extrinsicType === 'removeLiquidity') return this.poolParams.asset2.myAmount;
+
     return this.poolParams.asset2.transferableAmount;
   }
 
@@ -79,13 +85,13 @@ export default class InputsForm extends Vue {
   }
 
   get assetPrice1() {
-    const priceId = this.currency1?.priceId ?? '';
+    const priceId = this.poolParams.asset1.priceId;
 
     return this.getAssetPrice(priceId).price;
   }
 
   get assetPrice2() {
-    const priceId = this.currency2?.priceId ?? '';
+    const priceId = this.poolParams.asset2.priceId;
 
     return this.getAssetPrice(priceId).price;
   }
@@ -99,27 +105,28 @@ export default class InputsForm extends Vue {
   }
 
   @Watch('syncedAmount1')
-  watcherAmount1() {
-    this.syncedAmount2 = new FPNumber(this.syncedAmount1)
-      .mul(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
-      .div(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
-      .toString();
-  }
-
   @Watch('syncedAmount2')
-  watcherAmount2() {
-    this.syncedAmount1 = new FPNumber(this.syncedAmount2)
-      .mul(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
-      .div(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
-      .toString();
+  watcherAmount() {
+    if (this.isExchangeB)
+      this.syncedAmount1 = new FPNumber(this.syncedAmount2)
+        .mul(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
+        .div(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
+        .toString();
+    else
+      this.syncedAmount2 = new FPNumber(this.syncedAmount1)
+        .mul(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
+        .div(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
+        .toString();
   }
 
   updateAmount1(value: string) {
     this.syncedAmount1 = value;
+    this.isExchangeB = false;
   }
 
   updateAmount2(value: string) {
     this.syncedAmount2 = value;
+    this.isExchangeB = true;
   }
 
   calcTransferableSendMinusFee() {
@@ -127,7 +134,8 @@ export default class InputsForm extends Vue {
   }
 
   setMax() {
-    this.syncedAmount1 = this.calcTransferableSendMinusFee();
+    if (this.extrinsicType === 'removeLiquidity') this.syncedAmount1 = this.transferableAmount1;
+    else this.syncedAmount1 = this.calcTransferableSendMinusFee();
   }
 }
 </script>

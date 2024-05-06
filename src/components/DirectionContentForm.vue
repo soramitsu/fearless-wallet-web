@@ -6,10 +6,12 @@
         <div class="price" data-testid="sendPrice">{{ value1Cut }}</div>
       </div>
 
-      <div class="hr"></div>
+      <div class="partition">
+        <div class="hr"></div>
 
-      <div class="direction-icon">
-        <Icon :icon="icon" class="img" />
+        <div class="direction-icon">
+          <Icon :icon="icon" class="img" />
+        </div>
       </div>
 
       <div class="column right-column">
@@ -27,7 +29,6 @@ import type { GetAssetPrice } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { type TokenGroup } from '@/extension/background/extension-base/src/background/types/types';
 
 @Component({})
 export default class DirectionContentForm extends Vue {
@@ -38,8 +39,8 @@ export default class DirectionContentForm extends Vue {
   @Prop(String) amount2!: string;
   @Prop(String) value1!: string;
   @Prop(String) value2!: string;
-  @Prop({ type: Object }) currency1!: TokenGroup;
-  @Prop({ type: Object }) currency2!: TokenGroup;
+  @Prop(String) priceId1!: string;
+  @Prop(String) priceId2!: string;
   @Prop({ default: 'chevron-right' }) icon!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
@@ -53,15 +54,11 @@ export default class DirectionContentForm extends Vue {
   }
 
   get assetPrice1() {
-    const priceId = this.currency1?.priceId ?? '';
-
-    return this.getAssetPrice(priceId).price;
+    return this.getAssetPrice(this.priceId1).price;
   }
 
   get assetPrice2() {
-    const priceId = this.currency2?.priceId ?? '';
-
-    return this.getAssetPrice(priceId).price;
+    return this.getAssetPrice(this.priceId2).price;
   }
 
   get _value1() {
@@ -87,7 +84,6 @@ export default class DirectionContentForm extends Vue {
   margin-bottom: 10px !important;
 
   .direction {
-    padding: 24px 16px;
     display: flex;
     justify-content: space-between;
     height: 95px;
@@ -100,6 +96,7 @@ export default class DirectionContentForm extends Vue {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      padding: 24px 16px;
 
       .amount {
         font-weight: 800;
@@ -122,30 +119,32 @@ export default class DirectionContentForm extends Vue {
       text-align: right;
     }
 
-    .hr {
-      height: 95px;
-      margin: -24px auto 0;
-      width: 1px;
-      border-left: 2px solid $secondary-background-color;
+    .partition {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      .hr {
+        height: 95px;
+        width: 1px;
+        border-left: 2px solid $secondary-background-color;
+      }
+
+      .direction-icon {
+        border-radius: 50%;
+        background-color: rgb(29, 29, 29);
+        min-width: 46px;
+        min-height: 46px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: $secondary-border;
+        opacity: 1;
+        cursor: pointer;
+        margin-top: -69.5px;
+      }
     }
   }
-}
-
-.direction-icon {
-  border-radius: 50%;
-  background-color: rgb(29, 29, 29);
-  width: 46px;
-  height: 46px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: -46px auto 0;
-  border: $secondary-border;
-  opacity: 1;
-  position: absolute;
-  top: 70px;
-  left: 241px;
-  cursor: pointer;
 }
 
 .img {

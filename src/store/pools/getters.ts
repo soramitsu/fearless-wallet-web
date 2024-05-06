@@ -7,6 +7,7 @@ import type { SelectedWallet } from '@/store/accounts/types';
 import { isSameString } from '@/helpers';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common';
+import { type AssetPool } from '@/extension/background/extension-base/src/services/pools-service/types';
 
 export enum GettersTypes {
   allPoolsItems = 'allPoolsItems',
@@ -50,6 +51,8 @@ const getters: GetterTree<State, State> & Getters = {
       .map((params) => {
         if (accountBalances.length === 0) return params;
 
+        let newParams = { ...params } as PoolParams;
+
         const tokenGroup1 = accountBalances.find(({ groupId }) => isSameString(groupId, params.asset1.id));
         const tokenGroup2 = accountBalances.find(({ groupId }) => isSameString(groupId, params.asset2.id));
 
@@ -57,7 +60,15 @@ const getters: GetterTree<State, State> & Getters = {
           const balance1 = tokenGroup1.balances.find(({ name }) => isSameString(name, params.network))!;
           const transferableAmount1 = balance1.transferable ?? '0';
 
-          params = { ...params, asset1: { ...params.asset1, transferableAmount: transferableAmount1 } };
+          newParams = {
+            ...newParams,
+            asset1: {
+              ...newParams.asset1,
+              transferableAmount: transferableAmount1,
+              priceId: tokenGroup1.priceId ?? '',
+              color: tokenGroup1.color ?? '',
+            },
+          } as PoolParams;
         }
 
         if (tokenGroup2 !== undefined) {
@@ -65,11 +76,20 @@ const getters: GetterTree<State, State> & Getters = {
 
           const transferableAmount2 = balance2.transferable ?? '0';
 
-          params = { ...params, asset2: { ...params.asset2, transferableAmount: transferableAmount2 } };
+          newParams = {
+            ...newParams,
+            asset2: {
+              ...newParams.asset2,
+              transferableAmount: transferableAmount2,
+              priceId: tokenGroup2.priceId ?? '',
+              icon: tokenGroup2.icon,
+              color: tokenGroup2.color ?? '',
+            },
+          } as PoolParams;
         }
 
-        return params;
-      });
+        return newParams;
+      }) as PoolParams[];
   },
 
   [GettersTypes.poolsItems](state, getters): PoolParams[] {

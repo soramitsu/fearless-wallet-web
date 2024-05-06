@@ -39,6 +39,10 @@ interface LiquidityInfo {
   asset2: Asset;
   amount1: string;
   amount2: string;
+  reserveA: string;
+  reserveB: string;
+  firstBalance: string;
+  secondBalance: string;
 }
 
 export class PoolsService {
@@ -183,12 +187,44 @@ export class PoolsService {
       amount2,
       supply: accountLiquidityPool?.totalSupply ?? '0',
       balance: accountLiquidityPool?.balance ?? '0',
+      reserveA: accountLiquidityPool?.reserveA ?? '0',
+      reserveB: accountLiquidityPool?.reserveB ?? '0',
+      firstBalance: accountLiquidityPool?.firstBalance ?? '0',
+      secondBalance: accountLiquidityPool?.secondBalance ?? '0',
     };
   }
 
-  public getLiquidityAmount(): FPNumber {
-    // TODO
-    return FPNumber.ZERO;
+  // public getDemeterLockedBalance(liquidityInfo: LiquidityInfo): FPNumber {
+  //   const baseAsset = liquidityInfo.asset1.address;
+  //   const poolAsset = liquidityInfo.asset2.address;
+  //   const balance = liquidityInfo.balance;
+  //   const lockedBalance = demeterFarming.getLockedAmount(baseAsset, poolAsset, true);
+
+  //   const maxLocked = FPNumber.min(balance, lockedBalance) as FPNumber;
+
+  //   return maxLocked;
+  // }
+
+  // public getCeresLockedBalance(liquidityInfo: LiquidityInfo): FPNumber {
+  //   const baseAsset = liquidityInfo.asset1.address;
+  //   const poolAsset = liquidityInfo.asset2.address;
+  //   const balance = liquidityInfo.balance;
+  //   const lockedBalance = pool.getLockedAmount(baseAsset, poolAsset);
+
+  //   const maxLocked = FPNumber.min(balance, lockedBalance) as FPNumber;
+
+  //   return maxLocked;
+  // }
+
+  public getLiquidityBalance(params: DefaultParams): FPNumber {
+    const liquidityInfo = this.getPoolInfo(params);
+    // const demeterLockedBalance = this.getDemeterLockedBalance(liquidityInfo);
+    // const ceresLockedBalance = this.getCeresLockedBalance(liquidityInfo);
+    // const maxLocked = FPNumber.max(demeterLockedBalance, ceresLockedBalance) as FPNumber;
+
+    // return FPNumber.fromCodecValue(liquidityInfo.balance).sub(maxLocked);
+
+    return FPNumber.fromCodecValue(liquidityInfo.balance);
   }
 
   public async getReserves(address1: string, address2: string): Promise<Array<CodecString>> {
@@ -243,15 +279,25 @@ export class PoolsService {
     return minted.add(existed).div(total.add(minted)).mul(FPNumber.HUNDRED).toLocaleString() || '0';
   }
 
+  public getRemoved(params: DefaultParams): string {
+    const liquidityInfo = this.getPoolInfo(params);
+
+    const firstBalance = FPNumber.fromCodecValue(liquidityInfo.firstBalance, liquidityInfo.asset1.decimals);
+    const part = new FPNumber(liquidityInfo.amount1).div(firstBalance);
+    const liquidityBalance = this.getLiquidityBalance(params);
+
+    return part.mul(liquidityBalance).toString();
+  }
+
   public getShareOfPoolByRemoveLiquidity(params: GetShareOfPoolRequest): string {
     const { balance, supply } = this.getPoolInfo(params);
 
     const existed = FPNumber.fromCodecValue(balance);
-    const removed = this.getLiquidityAmount(); // TODO количество удаляемых токенов??
+    const removed = this.getRemoved(params);
     const totalSupply = FPNumber.fromCodecValue(supply);
     const totalSupplyAfter = totalSupply.sub(removed);
 
-    if (existed.isZero() || totalSupply.isZero() || totalSupplyAfter.isZero()) return '0';
+    if (existed.isZero() || totalSupply.isZero() || FPNumber.lte(totalSupplyAfter, FPNumber.ZERO)) return '0';
 
     return existed.sub(removed).div(totalSupplyAfter).mul(FPNumber.HUNDRED).toLocaleString() || '0';
   }
@@ -302,12 +348,24 @@ export class PoolsService {
 
   public async removeLiquidity(params: RequestRemoveLiquidity): Promise<BasicTxResponse> {
     const { amount1, amount2, slippage } = params;
-    const { asset1, asset2, supply } = this.getPoolInfo(params);
+    const { asset1, asset2, supply, reserveA, reserveB, firstBalance, secondBalance, balance } =
+      this.getPoolInfo(params);
 
-    const desiredMarker = this.getLiquidityAmount().toString();
+    const liquidityBalance = this.getLiquidityBalance(params).toString();
+
+    const tokenBalance1 = FPNumber.fromCodecValue(firstBalance, asset1.decimals);
+    // const tokenBalance2 = FPNumber.fromCodecValue(secondBalance, asset2.decimals);
+
+    const firstTokenBalance = tokenBalance1.mul(liquidityBalance).div(FPNumber.fromCodecValue(balance));
+    // const secondTokenBalance = tokenBalance2.mul(liquidityBalance).div(balance);
+
+    const part1 = new FPNumber(amount1).div(firstTokenBalance);
+    // const part2 = new FPNumber(amount2).div(secondTokenBalance);
+
+    const liquidityAmount = part1.mul(liquidityBalance).toString();
 
     try {
-      await apiSora.poolXyk.remove(asset1, asset2, desiredMarker, amount1, amount2, supply, slippage);
+      await apiSora.poolXyk.remove(asset1, asset2, liquidityAmount, reserveA, reserveB, supply, slippage);
     } catch (ex) {
       const message = `[POOLS] Remove Liquidity failed: ${ex}`;
 

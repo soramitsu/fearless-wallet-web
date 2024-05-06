@@ -1202,7 +1202,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async getShareOfPool(params: GetShareOfPoolRequest): Promise<string> {
-    return params.type === 'add'
+    return params.type === 'addLiquidity'
       ? await this.state.poolsService.getShareOfPoolByAddLiquidity(params)
       : this.state.poolsService.getShareOfPoolByRemoveLiquidity(params);
   }

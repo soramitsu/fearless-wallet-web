@@ -5,9 +5,16 @@ import type { State } from '@/store/pools/state';
 
 interface FullAssetPool extends AssetPool {
   transferableAmount: string;
+  priceId: string;
+  icon: string;
+  color: string;
 }
 
-export interface PoolParams extends DefaultPoolsParams {
+export interface StatePoolParams extends DefaultPoolsParams {
+  loading: boolean;
+}
+
+export interface PoolParams extends StatePoolParams {
   loading: boolean;
   asset1: FullAssetPool;
   asset2: FullAssetPool;

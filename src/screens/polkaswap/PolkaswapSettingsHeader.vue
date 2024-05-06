@@ -69,6 +69,9 @@ export default class PolkaswapSettingsHeader extends Vue {
 .header {
   display: flex;
   align-items: flex-end;
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: capitalize;
 
   .polkaswap {
     width: 32px;

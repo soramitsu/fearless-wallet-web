@@ -10,7 +10,7 @@
         <div class="hr"></div>
 
         <div class="direction-icon">
-          <Icon :icon="icon" class="img" />
+          <Icon :icon="icon" :class="directionIcons" />
         </div>
       </div>
 
@@ -44,6 +44,15 @@ export default class DirectionContentForm extends Vue {
   @Prop({ default: 'chevron-right' }) icon!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
+
+  get directionIcons() {
+    return [
+      'img',
+      {
+        'img-margin': this.icon === 'chevron-right',
+      },
+    ];
+  }
 
   get amount1Cut() {
     return `${this.$n(+this.amount1, 'decimal')} ${this.asset1.toUpperCase()}`;
@@ -150,7 +159,10 @@ export default class DirectionContentForm extends Vue {
 .img {
   height: 20px;
   width: 20px;
-  margin-left: 4px;
   color: #ee0077;
+}
+
+.img-margin {
+  margin-left: 4px;
 }
 </style>

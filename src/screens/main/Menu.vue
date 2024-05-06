@@ -22,7 +22,7 @@ import { type NetworkName } from '@/interfaces';
 import { SORA_MAINNET } from '@/consts/sora';
 import { isSameString } from '@/helpers';
 
-type MenuItemType = 'Wallet' | 'Staking' | 'Polkaswap' | 'Pools'; // TODO: POOLS remove for new structure
+type MenuItemType = 'Wallet' | 'Staking' | 'Polkaswap';
 
 @Component({
   components: { MenuItem },
@@ -41,7 +41,7 @@ export default class Menu extends Vue {
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: NetworkName;
 
   get menuItems() {
-    const array: MenuItemType[] = [Components.Wallet, Components.Staking, Components.Pools];
+    const array: MenuItemType[] = [Components.Wallet, Components.Staking];
 
     if (IS_PRODUCTION || (!IS_PRODUCTION && !isSameString(this.selectedNetwork, SORA_MAINNET)))
       array.push(Components.Polkaswap);

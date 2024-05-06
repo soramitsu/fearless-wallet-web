@@ -270,6 +270,12 @@ export class PoolsService {
     const { balance, asset1, asset2 } = poolInfo;
     const totalSupply = await this.getTotalSupply(asset1.address, asset2.address);
 
+    if (totalSupply === '0') {
+      if (+poolInfo.amount1 === 0) return '0';
+
+      return '100';
+    }
+
     const minted = await this.getMinted(poolInfo, totalSupply);
     const total = FPNumber.fromCodecValue(totalSupply);
     const existed = FPNumber.fromCodecValue(balance);

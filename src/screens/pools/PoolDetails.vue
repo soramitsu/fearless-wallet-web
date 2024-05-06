@@ -39,6 +39,8 @@
             @update:amount2="updateAmount2"
           />
 
+          <Alert v-if="showLiquidityWarning" message="pools.emptyLiquidityWarning" />
+
           <PoolDescription
             v-if="!showSettings && (step === 1 || step === 2 || step === 4)"
             :extrinsicType="step === 2 ? extrinsicType : ''"
@@ -58,6 +60,7 @@
               :amount2="amount2"
               :priceId1="poolParams?.asset1.priceId"
               :priceId2="poolParams?.asset2.priceId"
+              icon="plus-pink"
             />
 
             <ContentForm :height="225" :isStaticHeight="true" :bottomRightCorner="true">
@@ -187,6 +190,10 @@ export default class PoolDetails extends Vue {
     );
   }
 
+  get showLiquidityWarning() {
+    return this.step === 2 && this.poolParams?.asset1.reserve === '0' && this.poolParams?.asset2.reserve === '0';
+  }
+
   get splitPoolName() {
     return this.$route.params.poolName.split('-');
   }
@@ -256,35 +263,41 @@ export default class PoolDetails extends Vue {
   }
 
   get isValidAsset1() {
-    // для remove транзакции баланс, это баланс пула
-    const poolCurrency =
-      this.extrinsicType === 'removeLiquidity'
-        ? {
-            ...this.currency1!,
-            balances: this.currency1!.balances.map((item) => ({
-              ...item,
-              transferable: this.poolParams?.asset1.myAmount,
-            })),
-          }
-        : this.currency1;
+    if (this.extrinsicType === 'removeLiquidity') {
+      // для remove транзакции баланс, это баланс пула
+      const poolCurrency = {
+        ...this.currency1!,
+        balances: this.currency1!.balances.map((item) => ({
+          ...item,
+          transferable: this.poolParams?.asset1.myAmount,
+        })),
+      };
 
-    return isValidAmountAsset(poolCurrency, this.network, this.fee, this.amount1);
+      const isValid = isValidAmountAsset(poolCurrency, this.network, '0', this.amount1);
+
+      if (!isValid) return false;
+    }
+
+    return isValidAmountAsset(this.currency1, this.network, this.fee, this.amount1);
   }
 
   get isValidAsset2() {
-    // для remove транзакции баланс, это баланс пула
-    const poolCurrency =
-      this.extrinsicType === 'removeLiquidity'
-        ? {
-            ...this.currency2!,
-            balances: this.currency2!.balances.map((item) => ({
-              ...item,
-              transferable: this.poolParams?.asset2.myAmount,
-            })),
-          }
-        : this.currency2;
+    if (this.extrinsicType === 'removeLiquidity') {
+      // для remove транзакции баланс, это баланс пула
+      const poolCurrency = {
+        ...this.currency2!,
+        balances: this.currency2!.balances.map((item) => ({
+          ...item,
+          transferable: this.poolParams?.asset2.myAmount,
+        })),
+      };
 
-    return isValidAmountAsset(poolCurrency, this.network, this.fee, this.amount2);
+      const isValid = isValidAmountAsset(poolCurrency, this.network, '0', this.amount2);
+
+      if (!isValid) return false;
+    }
+
+    return isValidAmountAsset(this.currency2, this.network, this.fee, this.amount2);
   }
 
   get confirmBtnDisabled() {

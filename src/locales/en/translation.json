@@ -647,6 +647,7 @@
     "stakeYourPoolShare": "Stake your pool share for extra rewards",
     "liquidityPools": "Liquidity pools",
     "showDetails": "Show details",
+    "emptyLiquidityWarning": "The ratio of tokens you add will set the price of this pool. Once you are happy with the rate click supply to review.",
     "removeWarning": "Removing pool tokens converts your position back into underlying tokens at the current rate, proportional to your share of the pool. Accrued fees are included in the amounts you receive."
   },
   "browserTabs": {

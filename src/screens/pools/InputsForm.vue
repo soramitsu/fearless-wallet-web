@@ -24,6 +24,7 @@
       :isRotate="false"
       :showIcon="false"
       @update:amount="updateAmount2"
+      @setMax="setMax"
     />
   </div>
 </template>
@@ -107,16 +108,21 @@ export default class InputsForm extends Vue {
   @Watch('syncedAmount1')
   @Watch('syncedAmount2')
   watcherAmount() {
-    if (this.isExchangeB)
+    if (this.isExchangeB) {
+      if (this.poolParams.asset2.reserve) return;
+
       this.syncedAmount1 = new FPNumber(this.syncedAmount2)
         .mul(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
         .div(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
         .toString();
-    else
+    } else {
+      if (this.poolParams.asset1.reserve) return;
+
       this.syncedAmount2 = new FPNumber(this.syncedAmount1)
         .mul(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
         .div(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
         .toString();
+    }
   }
 
   updateAmount1(value: string) {

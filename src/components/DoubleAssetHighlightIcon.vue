@@ -3,16 +3,16 @@
     <AssetHighlightIcon
       :icon="props.icon1"
       :shadowColor="props.shadowColor1"
-      class="icon-1"
       :size="props.size"
+      class="icon-1"
       moveHorizontalShadow="left"
     />
 
     <AssetHighlightIcon
       :icon="props.icon2"
       :shadowColor="props.shadowColor2"
-      class="asset-highlight"
       :size="props.size"
+      class="icon-2"
       moveHorizontalShadow="right"
     />
   </div>
@@ -38,7 +38,7 @@ const props = defineProps<Props>();
     z-index: 1;
   }
 
-  .asset-highlight {
+  .icon-2 {
     position: relative;
     left: -32px;
   }

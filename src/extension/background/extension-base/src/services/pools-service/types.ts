@@ -68,5 +68,4 @@ export interface GetShareOfPoolRequest extends DefaultParams {
   type: 'addLiquidity' | 'removeLiquidity';
 }
 
-
 export type GetShareOfPoolResponse = string;

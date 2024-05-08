@@ -421,22 +421,26 @@ export class PoolsService {
   }
 
   public async removeLiquidity(params: RequestRemoveLiquidity): Promise<BasicTxResponse> {
-    const { amount1, amount2, slippage } = params;
+    const { amount1, amount2, slippage, isExchangeB } = params;
     const { asset1, asset2, supply, reserveA, reserveB, firstBalance, secondBalance, balance } =
       this.getPoolInfo(params);
 
     const liquidityBalance = this.getLiquidityBalance(params).toString();
+    const balanceFP = FPNumber.fromCodecValue(balance);
 
     const tokenBalance1 = FPNumber.fromCodecValue(firstBalance.value, asset1.decimals);
-    // const tokenBalance2 = FPNumber.fromCodecValue(secondBalance, asset2.decimals);
+    const tokenBalance2 = FPNumber.fromCodecValue(secondBalance.value, asset2.decimals);
 
-    const firstTokenBalance = tokenBalance1.mul(liquidityBalance).div(FPNumber.fromCodecValue(balance));
-    // const secondTokenBalance = tokenBalance2.mul(liquidityBalance).div(balance);
+    const firstTokenBalance = tokenBalance1.mul(liquidityBalance).div(balanceFP);
+    const secondTokenBalance = tokenBalance2.mul(liquidityBalance).div(balanceFP);
 
     const part1 = new FPNumber(amount1).div(firstTokenBalance);
-    // const part2 = new FPNumber(amount2).div(secondTokenBalance);
+    const part2 = new FPNumber(amount2).div(secondTokenBalance);
 
-    const liquidityAmount = part1.mul(liquidityBalance).toString();
+    const liquidityAmount1 = part1.mul(liquidityBalance).toString();
+    const liquidityAmount2 = part2.mul(liquidityBalance).toString();
+
+    const liquidityAmount = isExchangeB ? liquidityAmount2 : liquidityAmount1;
 
     try {
       await apiSora.poolXyk.remove(asset1, asset2, liquidityAmount, reserveA, reserveB, supply, slippage);

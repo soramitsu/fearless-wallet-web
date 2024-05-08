@@ -128,7 +128,11 @@ export default class PoolsPage extends Vue {
   async created() {
     this.fetchPoolInfo();
 
-    const callback = (accountLiquidity: AccountLiquidity[]) => this.fetchPoolInfo();
+    const callback = (accountLiquidity: AccountLiquidity[]) => {
+      console.info('Client accountLiquidity:', accountLiquidity);
+
+      this.fetchPoolInfo();
+    };
 
     subscribeAccountLiquidity(callback);
   }

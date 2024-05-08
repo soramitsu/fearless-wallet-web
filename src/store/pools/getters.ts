@@ -7,7 +7,6 @@ import type { SelectedWallet } from '@/store/accounts/types';
 import { isSameString } from '@/helpers';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common';
-import { type AssetPool } from '@/extension/background/extension-base/src/services/pools-service/types';
 
 export enum GettersTypes {
   allPoolsItems = 'allPoolsItems',

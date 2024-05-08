@@ -338,7 +338,7 @@ export default class PoolDetails extends Vue {
 
     if (this.step === 2) return 'assets.preview';
 
-    if (this.step === 2) return 'common.confirm';
+    if (this.step === 3) return 'common.confirm';
 
     return 'pools.supply';
   }

@@ -28,6 +28,10 @@
       @update:amount="updateAmount2"
       @setMax="setMax(true)"
     />
+
+    <div class="plus-icon">
+      <Icon icon="plus-pink" class="img" :hover="false" />
+    </div>
   </div>
 </template>
 
@@ -181,5 +185,26 @@ export default class InputsForm extends Vue {
 <style lang="scss" scoped>
 .input-to {
   margin: 7px 0 14px;
+}
+
+.plus-icon {
+  border-radius: 50%;
+  background-color: rgb(29, 29, 29);
+  width: 46px;
+  height: 46px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: -46px auto 0;
+  border: $secondary-border;
+  opacity: 1;
+  position: relative;
+  top: -92px;
+  cursor: pointer;
+
+  .img {
+    height: 20px;
+    width: 20px;
+  }
 }
 </style>

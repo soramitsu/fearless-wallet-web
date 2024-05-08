@@ -4,7 +4,7 @@
 
     <InfoRow v-if="showAdditionalInfo && isActivityForm" text="assets.slippage" :value="`${slippage}%`" />
 
-    <InfoRow text="pools.rewardsPayout" :value="rewardAsset" />
+    <InfoRow text="pools.rewardsPayout" :value="rewardAsset" iconValue="polkaswap" />
 
     <InfoRow v-if="showAdditionalInfo" text="pools.yourPoolShare" :value="yourShare" />
 

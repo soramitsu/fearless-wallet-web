@@ -10,6 +10,8 @@ import { type u128 } from '@polkadot/types';
 import { type AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
 import { BehaviorSubject } from 'rxjs';
 import { createSubscription, unsubscribe } from '@extension-base/services';
+import { type DemeterAccountPool } from '@sora-substrate/util/build/demeterFarming/types';
+import { type AccountLockedPool } from '@sora-substrate/util/build/ceresLiquidityLocker/types';
 import type {
   GetShareOfPoolRequest,
   RequestAddLiquidity,
@@ -58,7 +60,12 @@ export class PoolsService {
 
   userPoolsSubscription: Subscription | null = null;
   liquidityUpdatedSubscription: Subscription | null = null;
+  demeterFarmingSubscription: Subscription | null = null;
+  ceresLiquidityLockerSubscription: Subscription | null = null;
+
   accountLiquidity: AccountLiquidity[] = [];
+  demeterAccountPools: DemeterAccountPool[] = [];
+  ceresLockedPools: AccountLockedPool[] = [];
 
   constructor(private state: State) {}
 
@@ -74,6 +81,24 @@ export class PoolsService {
 
         console.info('accountLiquidity subscription: ', this.accountLiquidity);
       });
+    }
+
+    if (this.demeterFarmingSubscription === null) {
+      this.demeterFarmingSubscription = apiSora.demeterFarming.getAccountPoolsObservable().subscribe((accountPools) => {
+        this.demeterAccountPools = accountPools;
+
+        console.info('demeterAccountPools subscription: ', this.demeterAccountPools);
+      });
+    }
+
+    if (this.ceresLiquidityLockerSubscription === null) {
+      this.ceresLiquidityLockerSubscription = apiSora.ceresLiquidityLocker
+        .getLockerDataObservable()
+        .subscribe((data) => {
+          this.ceresLockedPools = data;
+
+          console.info('ceresLockedPools subscription: ', this.ceresLockedPools);
+        });
     }
 
     // TODO use networks
@@ -108,6 +133,8 @@ export class PoolsService {
   public unsubscribePools(): void {
     this.userPoolsSubscription?.unsubscribe();
     this.liquidityUpdatedSubscription?.unsubscribe();
+    this.demeterFarmingSubscription?.unsubscribe();
+    this.ceresLiquidityLockerSubscription?.unsubscribe();
   }
 
   public async getAllReserves(network: NetworkName, address: string): Promise<DefaultPoolsParams[]> {
@@ -206,37 +233,47 @@ export class PoolsService {
     };
   }
 
-  // public getDemeterLockedBalance(liquidityInfo: LiquidityInfo): FPNumber {
-  //   const baseAsset = liquidityInfo.asset1.address;
-  //   const poolAsset = liquidityInfo.asset2.address;
-  //   const balance = liquidityInfo.balance;
-  //   const lockedBalance = demeterFarming.getLockedAmount(baseAsset, poolAsset, true);
+  public getDemeterLockedBalance(liquidityInfo: LiquidityInfo): FPNumber {
+    const baseAsset = liquidityInfo.asset1.address;
+    const poolAsset = liquidityInfo.asset2.address;
+    const balance = FPNumber.fromCodecValue(liquidityInfo.balance);
 
-  //   const maxLocked = FPNumber.min(balance, lockedBalance) as FPNumber;
+    const lockedBalance = this.demeterAccountPools.reduce((value, accountPool) => {
+      if (accountPool.baseAsset === baseAsset && accountPool.poolAsset === poolAsset && accountPool.isFarm)
+        return FPNumber.max(value, accountPool.pooledTokens) as FPNumber;
 
-  //   return maxLocked;
-  // }
+      return value;
+    }, FPNumber.ZERO);
 
-  // public getCeresLockedBalance(liquidityInfo: LiquidityInfo): FPNumber {
-  //   const baseAsset = liquidityInfo.asset1.address;
-  //   const poolAsset = liquidityInfo.asset2.address;
-  //   const balance = liquidityInfo.balance;
-  //   const lockedBalance = pool.getLockedAmount(baseAsset, poolAsset);
+    const maxLocked = FPNumber.min(balance, lockedBalance) as FPNumber;
 
-  //   const maxLocked = FPNumber.min(balance, lockedBalance) as FPNumber;
+    return maxLocked;
+  }
 
-  //   return maxLocked;
-  // }
+  public getCeresLockedBalance(liquidityInfo: LiquidityInfo): FPNumber {
+    const baseAsset = liquidityInfo.asset1.address;
+    const poolAsset = liquidityInfo.asset2.address;
+    const balance = FPNumber.fromCodecValue(liquidityInfo.balance);
+    const lockedBalance = this.ceresLockedPools.reduce((value, accountLockedPool) => {
+      if (accountLockedPool.assetA === baseAsset && accountLockedPool.assetB === poolAsset) {
+        return value.add(accountLockedPool.poolTokens);
+      }
+
+      return value;
+    }, FPNumber.ZERO);
+
+    const maxLocked = FPNumber.min(balance, lockedBalance) as FPNumber;
+
+    return maxLocked;
+  }
 
   public getLiquidityBalance(params: DefaultParams): FPNumber {
     const liquidityInfo = this.getPoolInfo(params);
-    // const demeterLockedBalance = this.getDemeterLockedBalance(liquidityInfo);
-    // const ceresLockedBalance = this.getCeresLockedBalance(liquidityInfo);
-    // const maxLocked = FPNumber.max(demeterLockedBalance, ceresLockedBalance) as FPNumber;
+    const demeterLockedBalance = this.getDemeterLockedBalance(liquidityInfo);
+    const ceresLockedBalance = this.getCeresLockedBalance(liquidityInfo);
+    const maxLocked = FPNumber.max(demeterLockedBalance, ceresLockedBalance) as FPNumber;
 
-    // return FPNumber.fromCodecValue(liquidityInfo.balance).sub(maxLocked);
-
-    return FPNumber.fromCodecValue(liquidityInfo.balance);
+    return FPNumber.fromCodecValue(liquidityInfo.balance).sub(maxLocked);
   }
 
   public async getReserves(address1: string, address2: string): Promise<Array<CodecString>> {

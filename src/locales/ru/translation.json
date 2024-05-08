@@ -599,6 +599,7 @@
     "minimumStake": "Минимальная ставка для получения вознаграждения составляет {value} {asset}",
     "unstakingDays": "Период анстейкинга {value} дней",
     "daysLeft": "Дней осталось",
+    "validatorsAlreadyNominated": "Выбранные валидаторы уже номинированы",
     "alertsList": {
       "redeem": {
         "name": "Выкупить анстейкинг токены.",

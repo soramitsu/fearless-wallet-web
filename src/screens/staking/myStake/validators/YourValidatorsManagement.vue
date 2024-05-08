@@ -155,15 +155,25 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   get confirmBtnDisabled() {
-    if (this.step === 4 || this.step === 5) return this.selectedValidatorsLength === 0;
+    if (this.step === 4 || this.step === 5) return this.selectedValidatorsLength === 0 || this.fullMatchValidators;
 
     if (this.step === 6) return !this.isValidAmountAsset;
 
     return false;
   }
 
+  get fullMatchValidators() {
+    return this.stakingNetwork.myValidators.every(({ address }) =>
+      this.selectedValidators.some((_address) => address === _address)
+    );
+  }
+
   get buttontext() {
     if (this.step === 1) return 'common.edit';
+
+    if (this.step === 4 || this.step === 5) {
+      if (this.fullMatchValidators) return 'staking.validatorsAlreadyNominated';
+    }
 
     if (this.step === 6 && !this.isValidAmountAsset)
       return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };

@@ -204,6 +204,8 @@ export default class StakingPage extends Vue {
 
   updateNetworkBond(networkParams: Nullable<NetworkParams> = null) {
     this.networkParams = networkParams;
+
+    if (networkParams === null) this.updateTabStakingParams();
   }
 }
 </script>

@@ -76,7 +76,7 @@ import { getUtilityAsset } from '@/helpers/currencies';
 
 @Component
 export default class MyStakingItem extends Vue {
-  @Prop(Object) networkParams!: NetworkParams;
+  @Prop(Object) stakingNetwork!: NetworkParams;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
@@ -92,31 +92,31 @@ export default class MyStakingItem extends Vue {
   }
 
   get network() {
-    return this.networkParams.network;
+    return this.stakingNetwork.network;
   }
 
   get icon() {
-    return this.networkParams.icon;
+    return this.stakingNetwork.icon;
   }
 
   get unbondPeriod() {
-    return this.networkParams.unbondPeriod;
+    return this.stakingNetwork.unbondPeriod;
   }
 
   get unbondAmount() {
-    return this.networkParams.unbond.sum;
+    return this.stakingNetwork.unbond.sum;
   }
 
   get asset() {
-    return this.networkParams.asset;
+    return this.stakingNetwork.asset;
   }
 
   get isLoading() {
-    return this.networkParams.loading;
+    return this.stakingNetwork.loading;
   }
 
   get apy() {
-    return `${this.$n(this.networkParams.apy, 'price')}%`;
+    return `${this.$n(this.stakingNetwork.apy, 'price')}%`;
   }
 
   get changeBalance() {
@@ -142,7 +142,7 @@ export default class MyStakingItem extends Vue {
   }
 
   get totalStake() {
-    return this.networkParams.totalStake;
+    return this.stakingNetwork.totalStake;
   }
 
   openStakingInfo() {

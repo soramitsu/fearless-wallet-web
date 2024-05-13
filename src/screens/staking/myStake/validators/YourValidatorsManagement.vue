@@ -42,8 +42,12 @@
         :step="step"
         :validators="validators"
         :maxNominations="maxNominations"
+        :stakingCurrency="stakingCurrency"
+        :stakingNetwork="stakingNetwork"
+        :selectedValidator="selectedValidator"
         @openValidatorList="openValidatorList"
         @updateSelectedValidators="updateSelectedValidators"
+        @openValidatorInfo="openValidatorInfo"
       />
 
       <FButton
@@ -73,7 +77,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { type FWValidatorInfoFull, type RequestNominate } from '@extension-base/services/staking-service/types';
+import type { FWValidatorInfoFull, RequestNominate } from '@extension-base/services/staking-service/types';
 import type { AsyncFn, SelectionValidator } from '@/interfaces';
 import type { GetAssetPrice, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
@@ -252,14 +256,9 @@ export default class YourValidatorsManagement extends Vue {
     const isSlashed = false;
     const limitValidatorsIdentity = false;
 
-    this.stakingNetwork.validators.forEach(({ address, apy, name, description, isOversubscribed, isKnownGood }) => {
-      Vue.set(this.state, address, {
-        name,
-        address,
-        apy,
-        description,
-        isOversubscribed,
-        onchainIdentity: isKnownGood,
+    this.stakingNetwork.validators.forEach((info) => {
+      Vue.set(this.state, info.address, {
+        ...info,
         isSlashed,
         limitValidatorsIdentity,
         isSelect: false,

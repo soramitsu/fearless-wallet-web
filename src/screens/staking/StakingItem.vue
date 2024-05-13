@@ -43,16 +43,16 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component
 export default class StakingItem extends Vue {
-  @Prop(Object) networkParams!: NetworkParams;
+  @Prop(Object) stakingNetwork!: NetworkParams;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
   get network() {
-    return this.networkParams.network;
+    return this.stakingNetwork.network;
   }
 
   get assetId() {
-    return this.networkParams.assetId;
+    return this.stakingNetwork.assetId;
   }
 
   get stakingCurrency() {
@@ -70,31 +70,31 @@ export default class StakingItem extends Vue {
   }
 
   get apy() {
-    return `${this.$n(this.networkParams.apy, 'price')}%`;
+    return `${this.$n(this.stakingNetwork.apy, 'price')}%`;
   }
 
   get asset() {
-    return this.networkParams.asset.toUpperCase();
+    return this.stakingNetwork.asset.toUpperCase();
   }
 
   get icon() {
-    return this.networkParams.icon;
+    return this.stakingNetwork.icon;
   }
 
   get unbondPeriod() {
-    return this.networkParams.unbondPeriod;
+    return this.stakingNetwork.unbondPeriod;
   }
 
   get minBond() {
-    return this.networkParams.minBond;
+    return this.stakingNetwork.minBond;
   }
 
   get type() {
-    return this.networkParams.type;
+    return this.stakingNetwork.type;
   }
 
   get days() {
-    return { value: this.networkParams.unbondPeriod };
+    return { value: this.stakingNetwork.unbondPeriod };
   }
 
   click() {

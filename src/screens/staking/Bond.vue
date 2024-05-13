@@ -38,7 +38,7 @@
           />
         </div>
 
-        <div v-else>
+        <div v-else class="main-content">
           <template v-if="step === 1">
             <FInput v-model="accountName" placeholder="accounts.account" size="big" :readonly="true" />
 
@@ -90,8 +90,12 @@
             :step="step"
             :validators="validators"
             :maxNominations="maxNominations"
+            :stakingCurrency="stakingCurrency"
+            :stakingNetwork="stakingNetwork"
+            :selectedValidator="selectedValidator"
             @openValidatorList="openValidatorList"
             @updateSelectedValidators="updateSelectedValidators"
+            @openValidatorInfo="openValidatorInfo"
           />
 
           <template v-if="step === 6">
@@ -194,7 +198,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { type RequestBond } from '@extension-base/services/staking-service/types';
+import { type RequestBond, type FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
 import type { GetAssetPrice, SelectedWallet, NetworkParams } from '@/store';
 import type { SelectionValidator } from '@/interfaces';
 import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
@@ -226,6 +230,7 @@ import WalletInfo from '@/screens/main/WalletInfo.vue';
 })
 export default class Bond extends Vue {
   state: Record<string, SelectionValidator> = {};
+  selectedValidator: FWValidatorInfoFull | null = null;
   payoutAddress = '';
   step = 1;
   isSuggested = false;
@@ -237,7 +242,7 @@ export default class Bond extends Vue {
   amount = '';
   newAddress = '';
 
-  @Prop({ type: Object }) networkParams!: NetworkParams;
+  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -263,7 +268,9 @@ export default class Bond extends Vue {
   }
 
   get network() {
-    return this.networkParams.network;
+    console.log(this.stakingNetwork);
+
+    return this.stakingNetwork.network;
   }
 
   get stakingAssetId() {
@@ -363,7 +370,7 @@ export default class Bond extends Vue {
     return {
       text: 'staking.minimumStake',
       localeProps: {
-        value: this.networkParams.minBond,
+        value: this.stakingNetwork.minBond,
         asset: this.stakingAssetName.toUpperCase(),
       },
     };
@@ -402,7 +409,7 @@ export default class Bond extends Vue {
   }
 
   get maxNominations() {
-    const maxNominations = this.networkParams.maxNominations;
+    const maxNominations = this.stakingNetwork.maxNominations;
 
     // Если количество валидаторов в сети меньше, чем maxNominations, то отображаем количество валидаторов как maxNominations
     if (this.validators.length < maxNominations) return this.validators.length;
@@ -421,7 +428,7 @@ export default class Bond extends Vue {
   }
 
   get days() {
-    return { value: this.networkParams.unbondPeriod };
+    return { value: this.stakingNetwork.unbondPeriod };
   }
 
   get tx() {
@@ -448,14 +455,9 @@ export default class Bond extends Vue {
     const isSlashed = false;
     const limitValidatorsIdentity = false;
 
-    this.networkParams.validators.forEach(({ address, apy, name, description, isOversubscribed, isKnownGood }) => {
-      Vue.set(this.state, address, {
-        name,
-        address,
-        apy,
-        description,
-        isOversubscribed,
-        onchainIdentity: isKnownGood,
+    this.stakingNetwork.validators.forEach((info) => {
+      Vue.set(this.state, info.address, {
+        ...info,
         isSlashed,
         limitValidatorsIdentity,
         isSelect: false,
@@ -470,7 +472,7 @@ export default class Bond extends Vue {
     const { StakingBond } = await getSoraFees();
 
     const feeMaxNominations = await getNominateNetworkFee({
-      validators: new Array(this.networkParams.maxNominations),
+      validators: new Array(this.stakingNetwork.maxNominations),
       network: this.network,
     });
 
@@ -490,6 +492,10 @@ export default class Bond extends Vue {
     this.amount = amount;
   }
 
+  openValidatorInfo(validator: FWValidatorInfoFull) {
+    this.selectedValidator = validator;
+  }
+
   toggleHistoryBookVisibility() {
     this.showHistoryBook = !this.showHistoryBook;
   }
@@ -499,6 +505,12 @@ export default class Bond extends Vue {
   }
 
   handlerBack() {
+    if (this.selectedValidator) {
+      this.selectedValidator = null;
+
+      return;
+    }
+
     if (this.step === 1) {
       this.showMyWallets = false;
       this.showHistoryBook = false;
@@ -581,6 +593,10 @@ export default class Bond extends Vue {
   flex-direction: column;
   height: 100%;
   justify-content: space-between;
+
+  .main-content {
+    height: 100%;
+  }
 
   .hint {
     padding: $default-padding;

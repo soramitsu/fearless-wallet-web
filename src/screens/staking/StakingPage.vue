@@ -202,10 +202,10 @@ export default class StakingPage extends Vue {
     this.activeTabName = name;
   }
 
-  updateNetworkBond(stakingNetwork: Nullable<NetworkParams> = null) {
+  updateNetworkBond(stakingNetwork: Nullable<NetworkParams> = null, updated: boolean) {
     this.stakingNetwork = stakingNetwork;
 
-    if (stakingNetwork === null) this.updateTabStakingParams();
+    if (updated) this.updateTabStakingParams();
   }
 }
 </script>

@@ -208,7 +208,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectValidator from '@/screens/staking/myStake/validators/SelectValidator.vue';
 import FiltersPopup from '@/screens/staking/myStake/validators/FiltersPopup.vue';
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
-import { getNominateNetworkFee, getSoraFees } from '@/extension/messaging';
+import { getBondAndNominateNetworkFee } from '@/extension/messaging';
 import { calcTransferableSendMinusFee, getUtilityAsset, isValidAmountAsset } from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import BaseApi from '@/util/BaseApi';
@@ -268,8 +268,6 @@ export default class Bond extends Vue {
   }
 
   get network() {
-    console.log(this.stakingNetwork);
-
     return this.stakingNetwork.network;
   }
 
@@ -447,7 +445,7 @@ export default class Bond extends Vue {
 
   @Watch('selectedValidators')
   async srcWatcher() {
-    this.fee = await getNominateNetworkFee({ validators: this.selectedValidators, network: this.network });
+    this.fee = await getBondAndNominateNetworkFee(this.tx);
   }
 
   mounted() {
@@ -469,14 +467,10 @@ export default class Bond extends Vue {
 
   async getSoraFees() {
     // TODO: staking в сетях кроме соры, контроллер устанавливается отдельным вызовом, по этому нужно прибавлять и комиссию за StakingSetController
-    const { StakingBond } = await getSoraFees();
-
-    const feeMaxNominations = await getNominateNetworkFee({
+    this.feeMax = await getBondAndNominateNetworkFee({
+      ...this.tx,
       validators: new Array(this.stakingNetwork.maxNominations),
-      network: this.network,
     });
-
-    this.feeMax = (+feeMaxNominations + +StakingBond).toString();
   }
 
   openValidatorList(isSuggested = false) {
@@ -539,11 +533,11 @@ export default class Bond extends Vue {
   confirmationPasswordPopupClose(closeForm: boolean) {
     this.showConfirmationPasswordPopup = false;
 
-    if (closeForm) this.closeForm();
+    if (closeForm) this.closeForm(true);
   }
 
-  closeForm() {
-    this.$emit('closeBond');
+  closeForm(updated = false) {
+    this.$emit('closeBond', null, updated);
   }
 
   calcTransferableSendMinusFee() {

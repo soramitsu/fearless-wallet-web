@@ -34,11 +34,11 @@ export function getSummaryTransferableWalletBalance(
     }
 
     balances.forEach(({ state, transferable, name }) => {
-      const networkParams = networks.find(({ name: _name }) => isSameString(_name.toLowerCase(), name.toLowerCase()));
+      const stakingNetwork = networks.find(({ name: _name }) => isSameString(_name.toLowerCase(), name.toLowerCase()));
 
-      if (isSameString(network, POPULAR_NETWORKS) && networkParams?.rank === undefined) return result;
+      if (isSameString(network, POPULAR_NETWORKS) && stakingNetwork?.rank === undefined) return result;
 
-      if (isSameString(network, FAVORITE_NETWORKS) && !networkParams?.favorite.includes(address)) return result;
+      if (isSameString(network, FAVORITE_NETWORKS) && !stakingNetwork?.favorite.includes(address)) return result;
 
       if (state === APIItemState.READY) {
         const assetCount = +(transferable ?? 0);

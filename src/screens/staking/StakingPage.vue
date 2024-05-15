@@ -34,13 +34,13 @@
                 <StakingItem
                   v-for="item in filteredStakingItems"
                   :key="item.network"
-                  :networkParams="item"
+                  :stakingNetwork="item"
                   @click="updateNetworkBond(item)"
                 />
               </template>
 
               <template v-else->
-                <MyStakingItem v-for="item in filteredMyStakingItems" :key="item.network" :networkParams="item" />
+                <MyStakingItem v-for="item in filteredMyStakingItems" :key="item.network" :stakingNetwork="item" />
               </template>
             </template>
 
@@ -50,7 +50,7 @@
       </div>
     </ContentForm>
 
-    <Bond v-if="showBond" :networkParams="networkParams" @closeBond="updateNetworkBond" />
+    <Bond v-if="showBond" :stakingNetwork="stakingNetwork" @closeBond="updateNetworkBond" />
   </div>
 </template>
 
@@ -89,7 +89,7 @@ export default class StakingPage extends Vue {
   activeTabName: StakingTab | '' = '';
   filterValue = '';
   isLoading = false;
-  networkParams: Nullable<NetworkParams> = null;
+  stakingNetwork: Nullable<NetworkParams> = null;
 
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -136,7 +136,7 @@ export default class StakingPage extends Vue {
   }
 
   get showBond() {
-    return this.networkParams !== null;
+    return this.stakingNetwork !== null;
   }
 
   get showLoading() {
@@ -202,8 +202,10 @@ export default class StakingPage extends Vue {
     this.activeTabName = name;
   }
 
-  updateNetworkBond(networkParams: Nullable<NetworkParams> = null) {
-    this.networkParams = networkParams;
+  updateNetworkBond(stakingNetwork: Nullable<NetworkParams> = null, updated = false) {
+    this.stakingNetwork = stakingNetwork;
+
+    if (updated) this.updateTabStakingParams();
   }
 }
 </script>

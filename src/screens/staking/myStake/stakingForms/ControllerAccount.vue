@@ -17,7 +17,7 @@
       />
 
       <Alert
-        v-if="isInvalidController"
+        v-if="!isValidController"
         message="staking.alreadyControlling"
         sizeText="small"
         class="already-controlling"
@@ -59,7 +59,7 @@ export default class ControllerAccount extends Vue {
   @Prop({ type: String }) fee!: string;
   @Prop({ type: Object }) stakingCurrency!: TokenGroup;
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: Boolean }) isInvalidController!: boolean;
+  @Prop({ type: Boolean }) isValidController!: boolean;
   @PropSync('controllerAddress', { type: String }) syncedControllerAddress!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;

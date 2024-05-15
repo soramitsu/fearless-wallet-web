@@ -64,8 +64,8 @@ import Scroll from '@/components/Scroll.vue';
 })
 export default class ValidatorInfo extends Vue {
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: Object }) validator!: FWValidatorInfoFull;
   @Prop({ type: Object }) stakingCurrency!: TokenGroup;
+  @Prop({ type: Object }) validator!: FWValidatorInfoFull;
   @Prop({ type: Array }) validators!: FWValidatorInfoFull[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;

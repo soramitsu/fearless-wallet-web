@@ -38,7 +38,7 @@
           />
         </div>
 
-        <div v-else class="main-content">
+        <div v-else>
           <template v-if="step === 1">
             <FInput v-model="accountName" placeholder="accounts.account" size="big" :readonly="true" />
 
@@ -587,10 +587,6 @@ export default class Bond extends Vue {
   flex-direction: column;
   height: 100%;
   justify-content: space-between;
-
-  .main-content {
-    height: 100%;
-  }
 
   .hint {
     padding: $default-padding;

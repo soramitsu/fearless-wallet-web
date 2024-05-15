@@ -90,7 +90,7 @@ export function getChangeWalletBalance(
 
     const currentFiat = totalBalance * tokenPrice;
 
-    return { totalBalance, changeAmount, changeFiat, currentFiat };
+    return { changeFiat, currentFiat };
   });
 
   const totalCurrentFiat = +addNumbers(changeAssets.map(({ currentFiat }) => currentFiat));

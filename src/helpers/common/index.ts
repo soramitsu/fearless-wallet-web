@@ -76,23 +76,30 @@ export function getChangeWalletBalance(
   price: AssetsPrice,
   network: NetworkName // network name or group name
 ): ChangeWalletBalance {
-  const changeAssets = tokens.map((token) => {
-    const priceChange = price?.tokenPriceChange[token.priceId ?? ''] ?? 0;
-    const totalBalance = +getSummaryTransferableBalance(token, network);
-    const currentPercent = 100 + (priceChange ?? 0);
-    const oldBalance = (totalBalance / currentPercent) * 100;
-    const changeAmount = totalBalance - oldBalance;
+  const changeAssets = tokens.map((tokenGroup) => {
+    const priceChange = price?.tokenPriceChange[tokenGroup.priceId ?? ''] ?? 0;
+    const tokenPrice = price?.tokenPriceMap[tokenGroup.priceId ?? ''] ?? 0;
 
-    return { totalBalance, changeAmount };
+    const currentPercent = 100 + (priceChange ?? 0);
+
+    const totalBalance = +getSummaryTransferableBalance(tokenGroup, network);
+    const oldBalance = (totalBalance / currentPercent) * 100;
+
+    const changeAmount = totalBalance - oldBalance;
+    const changeFiat = changeAmount * tokenPrice;
+
+    const currentFiat = totalBalance * tokenPrice;
+
+    return { changeFiat, currentFiat };
   });
 
-  const totalChange = +addNumbers(changeAssets.map(({ changeAmount }) => changeAmount));
-  const totalBalance = +addNumbers(changeAssets.map(({ totalBalance }) => totalBalance));
-  const totalPercentChange = totalBalance === 0 ? 0 : (totalChange / totalBalance) * 100;
+  const totalCurrentFiat = +addNumbers(changeAssets.map(({ currentFiat }) => currentFiat));
+  const totalChangeFiat = +addNumbers(changeAssets.map(({ changeFiat }) => changeFiat));
+  const totalPercentChange = totalChangeFiat === 0 ? 0 : (totalChangeFiat / totalCurrentFiat) * 100;
 
   return {
     percent: totalPercentChange,
-    amount: totalChange,
+    amount: totalChangeFiat,
   };
 }
 

@@ -32,6 +32,14 @@
     <div class="plus-icon">
       <Icon icon="plus-pink" class="img" :hover="false" />
     </div>
+
+    <div class="slider-info">
+      <div class="slider-value">{{ percent }}%</div>
+
+      <EllipseButton text="common.max" :disabled="percentIsMax" @click="updateValue" />
+    </div>
+
+    <Slider :value="percent" class="percent-slider" @updateValue="updateValue" />
   </div>
 </template>
 
@@ -50,6 +58,9 @@ import { getAmountPoolValue } from '@/extension/messaging';
   components: {},
 })
 export default class InputsForm extends Vue {
+  percent = 0;
+  isPercentChanging = false;
+
   @PropSync('amount1', { type: String }) syncedAmount1!: string;
   @PropSync('amount2', { type: String }) syncedAmount2!: string;
   @PropSync('isExchangeB', { type: Boolean }) syncedIsExchangeB!: boolean;
@@ -112,30 +123,12 @@ export default class InputsForm extends Vue {
     return getCostOfAssets(+this.syncedAmount2 ?? 0, this.assetPrice2);
   }
 
-  @Watch('syncedAmount1')
-  @Watch('syncedAmount2')
-  async watcherAmount() {
-    if (this.extrinsicType === 'addLiquidity') {
-      if (this.syncedIsExchangeB) {
-        if (this.poolParams.asset2.reserve === '0') return;
+  get percentIsMax() {
+    return this.percent === 100;
+  }
 
-        this.syncedAmount1 = new FPNumber(this.syncedAmount2)
-          .mul(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
-          .div(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
-          .toString();
-      } else {
-        if (this.poolParams.asset1.reserve === '0') return;
-
-        this.syncedAmount2 = new FPNumber(this.syncedAmount1)
-          .mul(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
-          .div(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
-          .toString();
-      }
-
-      return;
-    }
-
-    const params = {
+  get poolValueParams() {
+    return {
       amount1: this.syncedAmount1,
       amount2: this.syncedAmount2,
       assetId1: this.assetId1,
@@ -143,11 +136,68 @@ export default class InputsForm extends Vue {
       networkName: this.poolParams.network,
       isExchangeB: this.syncedIsExchangeB,
     };
+  }
 
-    const amount = await getAmountPoolValue(params);
+  @Watch('percent')
+  watcherPercent() {
+    if (!this.isPercentChanging) return;
 
-    if (this.syncedIsExchangeB) this.syncedAmount1 = amount;
-    else this.syncedAmount2 = amount;
+    const part = new FPNumber(this.percent).div(FPNumber.HUNDRED);
+    const value = new FPNumber(this.transferableAmount1).mul(part).toString();
+
+    this.updateAmount1(value);
+  }
+
+  @Watch('syncedAmount1')
+  async watcherAmount1() {
+    if (this.syncedIsExchangeB) return;
+
+    if (this.extrinsicType === 'addLiquidity') {
+      if (this.poolParams.asset1.reserve === '0') return;
+
+      this.syncedAmount2 = new FPNumber(this.syncedAmount1)
+        .mul(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
+        .div(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
+        .toString();
+    } else {
+      this.syncedAmount2 = await getAmountPoolValue(this.poolValueParams);
+
+      const percent = Math.round(
+        new FPNumber(this.syncedAmount1)
+          .div(new FPNumber(this.poolParams.asset1.myAmount))
+          .mul(FPNumber.HUNDRED)
+          .toNumber()
+      );
+
+      this.isPercentChanging = false;
+      this.percent = Math.min(percent, 100);
+    }
+  }
+
+  @Watch('syncedAmount2')
+  async watcherAmount2() {
+    if (!this.syncedIsExchangeB) return;
+
+    if (this.extrinsicType === 'addLiquidity') {
+      if (this.poolParams.asset2.reserve === '0') return;
+
+      this.syncedAmount1 = new FPNumber(this.syncedAmount2)
+        .mul(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
+        .div(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
+        .toString();
+    } else {
+      this.syncedAmount1 = await getAmountPoolValue(this.poolValueParams);
+
+      const percent = Math.round(
+        new FPNumber(this.syncedAmount2)
+          .div(new FPNumber(this.poolParams.asset2.myAmount))
+          .mul(FPNumber.HUNDRED)
+          .toNumber()
+      );
+
+      this.isPercentChanging = false;
+      this.percent = Math.min(percent, 100);
+    }
   }
 
   updateAmount1(value: string) {
@@ -179,6 +229,12 @@ export default class InputsForm extends Vue {
       else this.syncedAmount1 = this.calcTransferableSendMinusFee(isExchangeB);
     }
   }
+
+  updateValue(percent = 100) {
+    this.percent = percent;
+    this.isPercentChanging = true;
+    this.syncedIsExchangeB = false;
+  }
 }
 </script>
 
@@ -206,5 +262,23 @@ export default class InputsForm extends Vue {
     height: 20px;
     width: 20px;
   }
+}
+
+.slider-info {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 5px;
+
+  .slider-value {
+    font-size: 24px;
+    font-weight: 700;
+    text-align: left;
+    color: $pink-color;
+  }
+}
+
+.percent-slider {
+  width: 510px;
+  margin: auto;
 }
 </style>

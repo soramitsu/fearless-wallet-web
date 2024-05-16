@@ -30,6 +30,7 @@ import type { Asset } from '@sora-substrate/util/src/assets/types';
 import { isSameString } from '@/helpers';
 
 const toReserve = (value: u128): string => new FPNumber(value).toString();
+const toKey = (address: any) => address.code.toString();
 
 const getSvgUrl = (assetName: string): string =>
   `https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/${assetName.toUpperCase()}.svg`;
@@ -111,7 +112,7 @@ export class PoolsService {
       const address = this.state.getCurrentAddress(network);
       const allReserves = await this.getAllReserves(network, address);
 
-      return [...allReserves] as DefaultPoolsParams[];
+      return allReserves;
     });
 
     return (await Promise.all(promises)).flat();
@@ -138,8 +139,6 @@ export class PoolsService {
   }
 
   public async getAllReserves(network: NetworkName, address: string): Promise<DefaultPoolsParams[]> {
-    const toKey = (address: any) => address.code.toString();
-
     const baseAssetIds = apiSora.dex.baseAssetsIds;
     const allReservesArray = baseAssetIds.map((baseAssetId) => apiSora.api.query.poolXYK.reserves.entries(baseAssetId));
     const allReserves = (await Promise.all(allReservesArray)).flat(1);
@@ -373,7 +372,9 @@ export class PoolsService {
 
     const result = existed.sub(removed).div(totalSupplyAfter).mul(FPNumber.HUNDRED);
 
-    return FPNumber.lte(result, FPNumber.ZERO) ? '0' : result.toLocaleString() || '0';
+    return FPNumber.lte(result, FPNumber.ZERO) || FPNumber.gte(result, FPNumber.HUNDRED)
+      ? '0'
+      : result.toString() || '0';
   }
 
   public async makePool({ params, type }: MakePoolsRequest): Promise<BasicTxResponse> {

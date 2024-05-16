@@ -12,6 +12,7 @@ declare module 'vue' {
     FButton: typeof import('@/components/FButton.vue')['Button'];
     Checkbox: typeof import('@/components/Checkbox.vue')['Checkbox'];
     CircleButton: typeof import('@/components/CircleButton.vue')['CircleButton'];
+    EllipseButton: typeof import('@/components/EllipseButton.vue')['EllipseButton'];
     ComingSoon: typeof import('@/components/ComingSoon.vue')['ComingSoon'];
     ConfirmationPopup: typeof import('@/components/ConfirmationPopup.vue')['ConfirmationPopup'];
     ContentForm: typeof import('@/components/ContentForm.vue')['ContentForm'];
@@ -42,6 +43,7 @@ declare module 'vue' {
     SelectPopup: typeof import('@/components/SelectPopup.vue')['SelectPopup'];
     Shimmer: typeof import('@/components/Shimmer.vue')['Shimmer'];
     SelectInput: typeof import('@/components/SelectInput.vue')['SelectInput'];
+    Slider: typeof import('@/components/Slider.vue')['Slider'];
     Switcher: typeof import('@/components/Switcher.vue')['Switcher'];
     TabButton: typeof import('@/components/TabButton.vue')['TabButton'];
     Tooltip: typeof import('@/components/Tooltip.vue')['Tooltip'];

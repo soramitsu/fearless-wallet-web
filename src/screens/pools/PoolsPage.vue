@@ -125,7 +125,7 @@ export default class PoolsPage extends Vue {
     return this.activeTabName === 'all';
   }
 
-  async created() {
+  created() {
     this.fetchPoolInfo();
 
     const callback = (accountLiquidity: AccountLiquidity[]) => {

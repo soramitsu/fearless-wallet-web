@@ -40,7 +40,7 @@
               </template>
 
               <template v-else>
-                <MyStakingItem v-for="item in filteredMyStakingItems" :key="item.network" :networkParams="item" />
+                <MyStakingItem v-for="item in filteredMyStakingItems" :key="item.network" :stakingNetwork="item" />
               </template>
             </template>
 

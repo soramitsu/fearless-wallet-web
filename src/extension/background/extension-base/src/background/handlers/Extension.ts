@@ -112,6 +112,7 @@ import type {
   StakingParamsResponse,
   GetPayoutsFeeRequest,
   GetNominateNetworkFeeRequest,
+  RequestBond,
 } from '@extension-base/services/staking-service/types';
 import type {
   RequestSettingsChangePayload,
@@ -1134,7 +1135,7 @@ export default class Extension extends FWExtensionBase {
     return isValidController;
   }
 
-  async getRewards({ network, address }: getRewardsRequest): Promise<RewardsResponse> {
+  getRewards({ network, address }: getRewardsRequest): Promise<RewardsResponse> {
     return this.state.stakingService.getRewards(network, address);
   }
 
@@ -1167,12 +1168,16 @@ export default class Extension extends FWExtensionBase {
     return result;
   }
 
-  async getPayoutsFee(params: GetPayoutsFeeRequest) {
+  getPayoutsFee(params: GetPayoutsFeeRequest) {
     return this.state.stakingService.getPayoutsFee(params);
   }
 
-  async getNominateNetworkFee(params: GetNominateNetworkFeeRequest) {
+  getNominateNetworkFee(params: GetNominateNetworkFeeRequest) {
     return this.state.stakingService.getNominateNetworkFee(params);
+  }
+
+  getBondAndNominateNetworkFee(params: RequestBond) {
+    return this.state.stakingService.getBondAndNominateNetworkFee(params);
   }
 
   getPoolsParams(params: PoolsParamsRequest): Promise<PoolsParamsResponse> {
@@ -1711,6 +1716,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(staking.getNominateNetworkFee)':
         return this.getNominateNetworkFee(request as GetNominateNetworkFeeRequest);
+
+      case 'pri(staking.getBondAndNominateNetworkFee)':
+        return this.getBondAndNominateNetworkFee(request as RequestBond);
 
       // pools
       case 'pri(pools.poolsParams)':

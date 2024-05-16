@@ -27,7 +27,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { SelectionValidator } from '@/interfaces';
+import type { SelectionValidator, CustomEvent } from '@/interfaces';
 
 @Component
 export default class ValidatorItem extends Vue {
@@ -39,16 +39,17 @@ export default class ValidatorItem extends Vue {
   }
 
   get classes() {
-    return [
-      'validator',
-      {
-        'validator-cursor': !this.showCheckbox,
-      },
-    ];
+    return ['validator', 'validator-cursor'];
   }
 
-  click() {
-    if (!this.showCheckbox) this.$emit('openValidatorInfo', this.validator);
+  click(event: CustomEvent) {
+    if (
+      event.target?.classList.contains('el-checkbox__inner') ||
+      event.target?.classList.contains('el-checkbox__original')
+    )
+      return;
+
+    this.$emit('openValidatorInfo', this.validator);
   }
 
   onSelect(value: boolean) {

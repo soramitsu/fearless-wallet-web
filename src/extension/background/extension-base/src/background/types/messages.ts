@@ -41,6 +41,7 @@ import type {
   StakingNetworkRequest,
   GetPayoutsFeeRequest,
   GetNominateNetworkFeeRequest,
+  RequestBond,
 } from '@extension-base/services/staking-service/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type { SessionTypes } from '@walletconnect/types';
@@ -200,6 +201,7 @@ export interface RequestSignatures {
   'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];
   'pri(staking.getPayoutsFee)': [GetPayoutsFeeRequest, string];
   'pri(staking.getNominateNetworkFee)': [GetNominateNetworkFeeRequest, string];
+  'pri(staking.getBondAndNominateNetworkFee)': [RequestBond, string];
 
   // pools
   'pri(pools.poolsParams)': [PoolsParamsRequest, PoolsParamsResponse];

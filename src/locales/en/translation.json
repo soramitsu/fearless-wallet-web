@@ -608,6 +608,7 @@
     "minimumStake": "The minimum stake to receive the reward is {value} {asset}",
     "unstakingDays": "Unstaking period {value} days",
     "daysLeft": "days left",
+    "validatorsAlreadyNominated": "Selected validators already nominated",
     "alertsList": {
       "redeem": {
         "name": "Redeem unstaked tokens.",

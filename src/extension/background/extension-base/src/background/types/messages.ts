@@ -1,3 +1,12 @@
+import { type AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
+import type {
+  PoolsParamsRequest,
+  PoolsParamsResponse,
+  MakePoolsRequest,
+  GetShareOfPoolResponse,
+  GetShareOfPoolRequest,
+  DefaultParams as DefaultPoolParams,
+} from '@extension-base/services/pools-service/types';
 import type {
   NftTx,
   CheckNftResponse,
@@ -193,6 +202,14 @@ export interface RequestSignatures {
   'pri(staking.getPayoutsFee)': [GetPayoutsFeeRequest, string];
   'pri(staking.getNominateNetworkFee)': [GetNominateNetworkFeeRequest, string];
   'pri(staking.getBondAndNominateNetworkFee)': [RequestBond, string];
+
+  // pools
+  'pri(pools.poolsParams)': [PoolsParamsRequest, PoolsParamsResponse];
+  'pri(pools.makePool)': [MakePoolsRequest, BasicTxResponse];
+  'pri(pools.shareOfPool)': [GetShareOfPoolRequest, GetShareOfPoolResponse];
+  'pri(pools.unsubscribePools)': [null, void];
+  'pri(pools.accountLiquidity)': [null, boolean, AccountLiquidity[]];
+  'pri(pools.getAmountValue)': [DefaultPoolParams, string];
 
   //ether
   'pri(balance)': [null, BalanceJson];

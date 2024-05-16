@@ -11,7 +11,11 @@
         <div class="value-container">
           <Loading v-if="isLoading" />
 
-          <span v-else data-testid="value">{{ value }}</span>
+          <template v-else>
+            <Icon v-if="iconValue" :icon="iconValue" :hover="false" :iconColor="iconValueColor" class="icon-value" />
+
+            <span data-testid="value">{{ value }}</span>
+          </template>
         </div>
 
         <div v-if="price" class="price">
@@ -34,6 +38,7 @@ type Props = {
   price?: string;
   color?: Color;
   icon?: string;
+  iconValue?: string;
   rowClasses?: string;
   isLoading?: boolean;
   isIconPrepend?: boolean;
@@ -59,6 +64,8 @@ const iconColor = computed(() => {
 });
 
 const valueClasses = computed(() => ['value', `color-${props.color}`]);
+
+const iconValueColor = computed(() => (props.iconValue === 'polkaswap' ? 'pink' : undefined));
 
 const internalRowClasses = computed(() => {
   const classes = ['row'];
@@ -103,6 +110,11 @@ const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
   line-height: 19px;
   gap: 4px;
   text-transform: uppercase;
+
+  .icon-value {
+    width: 18px;
+    height: 18px;
+  }
 }
 
 .row {
@@ -118,20 +130,6 @@ const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
     text-align: right;
     display: flex;
 
-    .icon-info {
-      width: 18px;
-      height: 18px;
-      color: v-bind('iconColor');
-      cursor: pointer;
-
-      &--prepend {
-        margin-left: 13px;
-      }
-
-      &:hover {
-        color: $default-white;
-      }
-    }
     .price {
       color: $gray-color;
       margin-top: 3px;
@@ -152,7 +150,7 @@ const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
     .icon-info {
       width: 18px;
       height: 18px;
-      color: $grayish-white;
+      color: v-bind('iconColor');
       cursor: pointer;
 
       &--prepend {

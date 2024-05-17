@@ -17,12 +17,19 @@
       <YourValidators v-else-if="step === 1" :stakingNetwork="stakingNetwork" @openValidatorInfo="openValidatorInfo" />
 
       <div v-else-if="step === 6">
-        <FInput v-model="selectedAccountName" placeholder="accounts.account" size="big" :readonly="true" />
+        <FInput
+          v-model="selectedAccountName"
+          placeholder="accounts.account"
+          size="big"
+          :readonly="true"
+          data-testid="accountName"
+        />
 
         <InfoRow
           text="staking.selectedValidators"
           :value="`${selectedValidatorsLength} (${$t('common.max')} ${maxNominations})`"
           borderType="default"
+          data-testid="selectedValidators"
         />
 
         <InfoRow
@@ -32,6 +39,7 @@
           borderType="default"
           icon="info"
           :iconClasses="['network-fee']"
+          data-testid="networkFee"
         />
 
         <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
@@ -57,6 +65,7 @@
         width="100%"
         :text="buttontext"
         :disabled="confirmBtnDisabled"
+        data-testId="confirmBtn"
         @click="openSelectionValidatorsForm"
       />
 

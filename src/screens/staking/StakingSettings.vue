@@ -11,6 +11,7 @@
           :class="classes"
           :label="label"
           :isActive="activeTabName === tabName"
+          data-testid="tabButton"
           @click="openTab(tabName)"
         />
       </template>

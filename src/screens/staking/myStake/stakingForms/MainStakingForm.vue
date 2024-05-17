@@ -39,7 +39,7 @@
         </div>
 
         <template v-else>
-          <div v-if="showWalletName" class="controller-description row">
+          <div v-if="showWalletName" class="controller-description row" data-testid="controllerDescription">
             {{ $t('staking.separateAccountController') }}
           </div>
 
@@ -48,6 +48,7 @@
             v-model="accountName"
             placeholder="accounts.account"
             size="big"
+            data-testid="accountName"
             :readonly="true"
           />
 
@@ -62,6 +63,7 @@
             :amount="amount"
             :showIcon="false"
             :readonly="isRedeem"
+            data-testid="inputAmount"
             @update:amount="updateAmount"
             @setMax="setMax"
           />
@@ -86,11 +88,16 @@
             @update:controllerAddress="updateControllerAddress"
           >
             <div class="activity-buttons">
-              <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+              <BadgeButton text="assets.history" data-testid="historyBtn" @click="toggleHistoryBookVisibility" />
 
-              <BadgeButton text="common.paste" @click="paste" />
+              <BadgeButton text="common.paste" data-testid="pasteBtn" @click="paste" />
 
-              <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
+              <BadgeButton
+                v-if="showMyWalletsButton"
+                text="assets.myWallets"
+                data-testid="myWalletsBtn"
+                @click="toggleMyWalletsVisibility"
+              />
             </div>
           </ControllerAccount>
 
@@ -105,11 +112,16 @@
             @update:payoutAddress="setPayoutAddress"
           >
             <div class="activity-buttons">
-              <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+              <BadgeButton text="assets.history" data-testid="historyBtn" @click="toggleHistoryBookVisibility" />
 
-              <BadgeButton text="common.paste" @click="paste" />
+              <BadgeButton text="common.paste" data-testid="pasteBtn" @click="paste" />
 
-              <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
+              <BadgeButton
+                v-if="showMyWalletsButton"
+                text="assets.myWallets"
+                data-testid="myWalletsBtn"
+                @click="toggleMyWalletsVisibility"
+              />
             </div>
           </Payee>
         </template>
@@ -122,6 +134,7 @@
         fontSize="big"
         :text="btnText"
         :disabled="confirmBtnDisabled"
+        data-testid="confirmBtn"
         @click="confirm"
       />
     </div>

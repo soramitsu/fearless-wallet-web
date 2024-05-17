@@ -1,12 +1,18 @@
 <template>
   <Scroll>
     <div class="validator-info">
-      <FInput v-model="address" :placeholder="validatorName" size="big" :readonly="true" />
+      <FInput
+        v-model="address"
+        :placeholder="validatorName"
+        size="big"
+        data-testid="validatorNameInput"
+        :readonly="true"
+      />
 
       <ContentForm :height="validatorFormHeight" :isStaticHeight="true" :bottomRightCorner="true" class="about-staking">
-        <div class="label">{{ $t('browserTabs.staking') }}</div>
+        <div class="label" data-testid="stakingLabel">{{ $t('browserTabs.staking') }}</div>
 
-        <InfoRow text="common.status" :value="status" :showBorder="!showSlashedWarning" />
+        <InfoRow text="common.status" :value="status" :showBorder="!showSlashedWarning" data-testid="status" />
 
         <Hint v-if="showSlashedWarning" iconName="warning" text="staking.validatorSlashed" class="hint" />
 
@@ -15,6 +21,7 @@
           :value="`${nominatorsCount} (${$t('common.max')} ${maxNominatorRewardedPerValidator})`"
           borderType="default"
           :showBorder="!showOversubscribedWarning"
+          data-testid="nominators"
         />
 
         <Hint v-if="showOversubscribedWarning" iconName="warning" text="staking.oversubscribedOnly" />
@@ -23,25 +30,49 @@
           text="staking.totalStake"
           :value="`${totalStakeString} ${stakingAssetName}`"
           :price="totalStakeValue"
+          data-testid="totalStake"
         />
 
-        <InfoRow text="staking.estimatedRewards" :value="`${apy}% APY`" borderType="default" />
+        <InfoRow
+          text="staking.estimatedRewards"
+          :value="`${apy}% APY`"
+          borderType="default"
+          data-testid="estimatedRewards"
+        />
       </ContentForm>
 
       <ContentForm :height="315" :isStaticHeight="true" :bottomRightCorner="true">
         <Scroll>
           <div class="form-layout">
-            <div class="label">{{ $t('staking.identity') }}</div>
+            <div class="label" data-testid="identityLabel">{{ $t('staking.identity') }}</div>
 
-            <InfoRow text="staking.legalName" :value="legalName" borderType="default" />
+            <InfoRow text="staking.legalName" :value="legalName" borderType="default" data-testid="legalName" />
 
-            <InfoRow text="common.email" :value="email" borderType="default" color="pink-lavender" />
+            <InfoRow
+              text="common.email"
+              :value="email"
+              borderType="default"
+              color="pink-lavender"
+              data-testid="email"
+            />
 
-            <InfoRow text="staking.web" :value="web" borderType="default" color="pink-lavender" />
+            <InfoRow text="staking.web" :value="web" borderType="default" color="pink-lavender" data-testid="web" />
 
-            <InfoRow text="common.twitter" :value="twitter" borderType="default" color="pink-lavender" />
+            <InfoRow
+              text="common.twitter"
+              :value="twitter"
+              borderType="default"
+              color="pink-lavender"
+              data-testid="twitter"
+            />
 
-            <InfoRow text="staking.elementName" :value="elementName" borderType="default" color="pink-lavender" />
+            <InfoRow
+              text="staking.elementName"
+              :value="elementName"
+              borderType="default"
+              color="pink-lavender"
+              data-testid="elementName"
+            />
           </div>
         </Scroll>
       </ContentForm>

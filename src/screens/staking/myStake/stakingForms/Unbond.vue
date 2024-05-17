@@ -12,13 +12,13 @@
 
     <InfoRow class="unbond-period" text="staking.unstakingPeriod" borderType="default" :value="period" />
 
-    <div class="disclaimer">
+    <div class="disclaimer" data-testid="unstakingDisclaimers1">
       <Icon icon="wallet-2" class="img" />
 
       {{ $t('staking.unstakingDisclaimers1') }}
     </div>
 
-    <div class="disclaimer">
+    <div class="disclaimer" data-testid="unstakingDisclaimers2">
       <Icon icon="logout" class="img" />
 
       {{ $t('staking.unstakingDisclaimers2') }}

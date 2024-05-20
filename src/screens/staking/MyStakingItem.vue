@@ -6,7 +6,7 @@
           <ExternalLogo :name="icon" class="network-icon" />
 
           <div class="network-description">
-            <div class="network-name">{{ network }}</div>
+            <div class="network-name" data-testid="networkName">{{ network }}</div>
           </div>
         </div>
 
@@ -14,49 +14,49 @@
           <Loading v-if="isLoading" :width="28" />
 
           <template v-else>
-            <div class="fiat">{{ fiatSymbol }}{{ fiatValue }}</div>
+            <div class="fiat" data-testid="fiat">{{ fiatSymbol }}{{ fiatValue }}</div>
 
-            <Icon icon="chevron-right" class="chevron" />
+            <Icon icon="chevron-right" class="chevron" data-testid="stakingDetails" />
           </template>
         </div>
       </div>
 
       <div class="row">
-        <div>
+        <div data-testid="stakingBalanceTitle">
           {{ $t('staking.stakingBalance') }}
         </div>
 
         <Loading v-if="isLoading" :width="28" />
 
-        <div v-else class="value">{{ totalStake }} {{ asset }}</div>
+        <div v-else class="value" data-testid="stakingBalanceValue">{{ totalStake }} {{ asset }}</div>
       </div>
 
       <div class="row">
-        <div>
+        <div data-testid="unstakingTitle">
           {{ $t('staking.unstaking') }}
         </div>
 
         <Loading v-if="isLoading" :width="28" />
 
-        <div v-else class="value">{{ unbondAmount }} {{ asset }}</div>
+        <div v-else class="value" data-testid="unstakingValue">{{ unbondAmount }} {{ asset }}</div>
       </div>
 
       <div class="row">
-        <div>APY</div>
+        <div data-testid="apyTitle">APY</div>
 
         <Loading v-if="isLoading" :width="28" />
 
-        <div v-else class="value">{{ apy }}</div>
+        <div v-else class="value" data-testid="apyValue">{{ apy }}</div>
       </div>
 
       <div class="row">
-        <div>
+        <div data-testid="unstakingPeriodTitle">
           {{ $t('staking.unstakingPeriod') }}
         </div>
 
         <Loading v-if="isLoading" :width="28" />
 
-        <div v-else class="value">{{ period }}</div>
+        <div v-else class="value" data-testid="unstakingPeriodValue">{{ period }}</div>
       </div>
     </div>
   </ContentForm>

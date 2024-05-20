@@ -5,6 +5,7 @@
         <TabButton
           v-if="isShow"
           class="tab"
+          data-testid="tabButton"
           :key="tabName"
           :target="target"
           :class="classes"

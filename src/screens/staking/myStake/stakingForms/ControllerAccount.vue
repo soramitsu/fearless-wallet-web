@@ -1,9 +1,21 @@
 <template>
   <div class="controller-account">
     <template v-if="step === 1">
-      <InfoRow text="staking.stashAccount" borderType="default" :value="accountName" :hideLastBorder="false" />
+      <InfoRow
+        text="staking.stashAccount"
+        data-testid="stashAccount"
+        borderType="default"
+        :value="accountName"
+        :hideLastBorder="false"
+      />
 
-      <InfoRow text="staking.setController" borderType="default" :value="controllerCut" :hideLastBorder="false" />
+      <InfoRow
+        text="staking.setController"
+        data-testid="controllerAccount"
+        borderType="default"
+        :value="controllerCut"
+        :hideLastBorder="false"
+      />
     </template>
 
     <template v-else>
@@ -13,6 +25,7 @@
         v-model="addressCut"
         icon="close"
         placeholder="staking.setController"
+        data-testid="controllerAccountInput"
         @click="setControllerAddress"
       />
 
@@ -34,6 +47,7 @@
       text="assets.networkFee"
       borderType="default"
       icon="info"
+      data-testid="networkFee"
       :value="`${fee} ${asset}`"
       :price="valueString"
       :hideLastBorder="false"

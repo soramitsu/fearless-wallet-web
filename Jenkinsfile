@@ -63,7 +63,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     downstreamJob:              '/qa/soramitsu-test-framework/fearless-wallet-web',
     downstreamJobParams:        [
         [$class: 'StringParameterValue', name: 'targetBranch', value: env.BRANCH_NAME],
-        [$class: 'StringParameterValue', name: 'typeTest', value: 'tests:fearless-all']
+        [$class: 'StringParameterValue', name: 'typeTest', value: 'tests:fearless-smoke']
     ]
 )
 pipeline.runPipeline()

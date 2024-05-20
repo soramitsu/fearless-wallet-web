@@ -2,7 +2,7 @@
   <div class="staking">
     <header class="staking-header">
       <div class="staking-balance">
-        <span class="label"> {{ $t('staking.stakingBalance') }} </span>
+        <span class="label" data-testid="labelStakingbalance"> {{ $t('staking.stakingBalance') }} </span>
 
         <div class="balance">
           <WalletBalance class="wallet-balance" :balance="stakingBalance" />
@@ -44,7 +44,7 @@
               </template>
             </template>
 
-            <div v-else class="nothing-found">{{ $t('common.nothingFound') }}</div>
+            <div v-else class="nothing-found" data-testid="nothingFound">{{ $t('common.nothingFound') }}</div>
           </Scroll>
         </template>
       </div>

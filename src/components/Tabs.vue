@@ -1,6 +1,7 @@
 <template>
   <div class="tabs">
     <input :value="activeTab" class="display-none" />
+
     <TabButton
       v-for="{ name, label } in tabs"
       class="button"

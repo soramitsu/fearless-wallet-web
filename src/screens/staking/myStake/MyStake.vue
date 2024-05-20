@@ -7,6 +7,7 @@
           class="action-button"
           text="staking.bondExtra"
           iconName="stake"
+          data-testid="stakeMore"
           @click="toggleVisible('showBondExtraForm', true)"
         />
 
@@ -15,6 +16,7 @@
           class="action-button"
           text="staking.unbond"
           iconName="unbond"
+          data-testid="unstake"
           @click="toggleVisible('showUnbondForm', true)"
         />
 
@@ -23,6 +25,7 @@
           class="action-button"
           text="staking.rebond"
           iconName="rebond"
+          data-testid="rebond"
           @click="toggleVisible('showRebondForm', true)"
         />
 
@@ -31,6 +34,7 @@
           class="action-button"
           text="staking.redeem"
           iconName="redeem"
+          data-testid="redeem"
           @click="toggleVisible('showRedeemForm', true)"
         />
 
@@ -39,6 +43,7 @@
           class="action-button"
           text="staking.yourValidators"
           iconName="validators"
+          data-testid="validators"
           @click="toggleVisible('showYourValidatorsForm', true)"
         />
 
@@ -47,11 +52,18 @@
           class="action-button"
           text="staking.setController"
           iconName="controller"
+          data-testid="controller"
           @click="toggleVisible('showControllerAccountForm', true)"
         />
 
         <div class="menu">
-          <Dropdown v-if="showDropdown" :options="actionOptions" type="dots-vertical" @handler="openForm" />
+          <Dropdown
+            v-if="showDropdown"
+            :options="actionOptions"
+            type="dots-vertical"
+            data-testid="menu"
+            @handler="openForm"
+          />
         </div>
       </div>
 
@@ -59,6 +71,7 @@
         <Scroll>
           <div class="content">
             <MyStakeSettings
+              data-testid="myStakingSettings"
               :activeTabName="activeTabName"
               :showAlertTab="showAlertTab"
               @update:activeTabName="updateActiveTabName"
@@ -66,15 +79,17 @@
 
             <About
               v-if="isAbout"
+              data-testid="about"
               :stakingCurrency="stakingCurrency"
               :rewardedCurrency="rewardedCurrency"
               :network="network"
             />
 
-            <Alerts v-else-if="isAlerts" :alerts="alerts" @openForm="openForm" />
+            <Alerts v-else-if="isAlerts" data-testid="alerts" :alerts="alerts" @openForm="openForm" />
 
             <History
               v-else-if="isHistory"
+              data-testid="history"
               :network="network"
               :stakingAssetId="stakingAssetId"
               :rewardedAssetId="rewardedAssetId"

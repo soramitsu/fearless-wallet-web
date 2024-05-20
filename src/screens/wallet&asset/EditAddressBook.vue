@@ -25,6 +25,7 @@
         size="medium"
         :label="$t('assets.saveAddressForAllNetwork')"
         class="row"
+        data-testid="saveForAllNetworks"
         @change="onSave"
       />
     </div>

@@ -40,7 +40,13 @@
 
         <div v-else>
           <template v-if="step === 1">
-            <FInput v-model="accountName" placeholder="accounts.account" size="big" :readonly="true" />
+            <FInput
+              v-model="accountName"
+              placeholder="accounts.account"
+              size="big"
+              data-testid="account"
+              :readonly="true"
+            />
 
             <SelectInput
               v-if="showAmountInput"
@@ -62,17 +68,23 @@
               v-model="payoutAddressCut"
               icon="close"
               placeholder="staking.payoutAccount"
+              data-testid="payoutAccount"
               @click="setPayoutAddress"
             />
 
             <Hint class="hint" iconName="notification" text="staking.defaultPayout" />
 
             <div class="activity-buttons">
-              <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+              <BadgeButton text="assets.history" data-testid="historyBtn" @click="toggleHistoryBookVisibility" />
 
-              <BadgeButton text="common.paste" @click="paste" />
+              <BadgeButton text="common.paste" data-testid="pasteBtn" @click="paste" />
 
-              <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
+              <BadgeButton
+                v-if="showMyWalletsButton"
+                text="assets.myWallets"
+                data-testid="myWalletsBtn"
+                @click="toggleMyWalletsVisibility"
+              />
             </div>
 
             <InfoRow
@@ -108,18 +120,31 @@
             <ContentForm :height="200" :isStaticHeight="true" :bottomRightCorner="true">
               <InfoRow
                 text="staking.selectedValidators"
+                data-testid="selectedValidators"
                 :value="`${selectedValidatorsLength} (${$t('common.max')} ${maxNominations})`"
                 borderType="default"
               />
 
-              <InfoRow text="assets.amount" :value="amountString" borderType="default" :price="amountValueString" />
+              <InfoRow
+                text="assets.amount"
+                data-testid="amount"
+                :value="amountString"
+                borderType="default"
+                :price="amountValueString"
+              />
 
-              <InfoRow text="accounts.account" :value="selectedAccountName" borderType="default" />
+              <InfoRow
+                text="accounts.account"
+                data-testid="account"
+                :value="selectedAccountName"
+                borderType="default"
+              />
 
               <InfoRow
                 text="assets.networkFee"
                 borderType="default"
                 icon="info"
+                data-testid="networkFee"
                 :value="`${fee} ${stakingAssetName}`"
                 :price="feeValueString"
                 :isIconPrepend="false"
@@ -133,7 +158,7 @@
           </template>
 
           <template v-if="step === 6">
-            <div class="descriptions-row">
+            <div class="descriptions-row" data-testid="descriptionRowStaked">
               <Icon icon="gift" class="icon" />
 
               <!-- TODO: staking Переделать, когда будут новые сети -->
@@ -142,7 +167,7 @@
               </div>
             </div>
 
-            <div class="descriptions-row">
+            <div class="descriptions-row" data-testid="descriptionRowUnstake">
               <Icon icon="information-rectangle" class="icon" />
 
               <div>
@@ -150,7 +175,7 @@
               </div>
             </div>
 
-            <div class="descriptions-row">
+            <div class="descriptions-row" data-testid="descriptionRowDisclaimers1">
               <Icon icon="wallet-remove" class="icon" />
 
               <div>
@@ -158,7 +183,7 @@
               </div>
             </div>
 
-            <div class="descriptions-row">
+            <div class="descriptions-row" data-testid="descriptionRowDisclaimers2">
               <Icon icon="logout" class="icon" />
 
               <div>
@@ -175,6 +200,7 @@
           fontSize="big"
           :text="btnText"
           :disabled="confirmBtnDisabled"
+          data-testid="confirmBtn"
           @click="confirm"
         />
       </div>

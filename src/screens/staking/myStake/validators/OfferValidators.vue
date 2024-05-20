@@ -1,5 +1,5 @@
 <template>
-  <div class="offer-validators">
+  <div class="offer-validators" data-testid="offerValidators">
     <ContentForm :height="298" :isStaticHeight="true" :bottomRightCorner="true">
       <div class="content">
         <div class="label">{{ $t('staking.suggestedAlgorithm') }}</div>
@@ -42,6 +42,7 @@
           :border="false"
           iconName="protection"
           class="protection-button"
+          data-testid="selectSuggestedBtn"
           @click="openValidatorList(true)"
         />
       </div>
@@ -53,7 +54,14 @@
 
         <div class="sub-label">{{ $t('staking.yourValidatorsDisclaimer') }}</div>
 
-        <FButton width="100%" text="staking.yourself" :border="false" iconName="filter" @click="openValidatorList" />
+        <FButton
+          width="100%"
+          text="staking.yourself"
+          :border="false"
+          iconName="filter"
+          data-testid="selectByYourselfBtn"
+          @click="openValidatorList"
+        />
       </div>
     </ContentForm>
   </div>

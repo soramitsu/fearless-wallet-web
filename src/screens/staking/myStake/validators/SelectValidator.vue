@@ -9,7 +9,7 @@
 
     <template v-else>
       <div v-if="step === 5">
-        <div>
+        <div data-testid="haveSelectedText">
           {{ $t('staking.haveSelected') }}
 
           <span class="highlight">{{ selectedQuantity }}</span>
@@ -22,9 +22,15 @@
         </div>
 
         <div class="settings">
-          <SearchInput v-model="filterValue" placeholder="common.searchByAddress" width="450px" class="search" />
+          <SearchInput
+            v-model="filterValue"
+            placeholder="common.searchByAddress"
+            width="450px"
+            class="search"
+            data-testid="searchInput"
+          />
 
-          <Icon icon="filter" @click.native="openFiltersPopup" class="filter" />
+          <Icon icon="filter" @click.native="openFiltersPopup" class="filter" data-testid="filter" />
         </div>
       </div>
 

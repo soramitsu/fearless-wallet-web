@@ -7,18 +7,19 @@
         size="medium"
         label=""
         class="validator-checkbox"
+        data-testid="validatorCheckbox"
         @change="onSelect"
       />
 
       <Identicon :address="validator.address" class="ident" />
 
-      <div>{{ validator.name }}</div>
+      <div data-testid="validatorName">{{ validator.name }}</div>
     </div>
 
     <div class="right-part">
-      <div>{{ validator.apy }}%</div>
+      <div data-testid="validatorApy">{{ validator.apy }}%</div>
 
-      <Icon icon="info" :class="iconClasses" />
+      <Icon icon="info" data-testid="validatorInfo" :class="iconClasses" />
 
       <Tooltip :text="validator.description" :target="`.${validator.address}`" placement="left" />
     </div>

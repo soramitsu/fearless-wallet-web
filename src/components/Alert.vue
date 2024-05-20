@@ -4,7 +4,7 @@
       <div class="alert__content">
         <Hint class="alert__header" size="big" iconName="warning" :text="headerText" />
 
-        <p :class="messageClasses">
+        <p data-testid="alertMessage" :class="messageClasses">
           <slot>{{ $t(message) }}</slot>
         </p>
       </div>

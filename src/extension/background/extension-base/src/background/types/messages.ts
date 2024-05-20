@@ -114,7 +114,7 @@ import type {
   SoraFees,
   OnboardingStories,
 } from '@/interfaces';
-import { type ScamAddressList } from '@/store/extension/types';
+import type { ScamAddressList } from '@extension-base/services/scam-service/types';
 
 export interface RequestSignatures {
   // private/internal requests, i.e. from a popup

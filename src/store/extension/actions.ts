@@ -16,7 +16,6 @@ import type {
 import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from '@/store/extension/state';
 import type { Features } from '@/store/extension/types';
-
 import { type Mutations, MutationTypes } from '@/store/extension/mutations';
 import {
   subscribeAuthorizeRequests,
@@ -258,8 +257,6 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.FETCH_SCAM]({ commit }) {
     const scamAddressList = await getScamAddressList();
-
-    // const { data } = await axios.get<Features>(URLS.SCAM);
 
     commit(MutationTypes.SET_SCAM, scamAddressList);
   },

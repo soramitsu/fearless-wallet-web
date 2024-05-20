@@ -21,17 +21,13 @@ import type State from '@extension-base/background/handlers/State';
 import type { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
 import type { RequestService } from '@extension-base/services';
 export class WalletConnectService {
-  private readonly state: State;
-  private readonly requestService: RequestService;
   private client?: WalletConnect;
 
   readonly eip155RequestHandler: Eip155Handler;
   readonly polkadotRequestHandler: PolkadotHandler;
   readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]>;
 
-  constructor(state: State, requestService: RequestService) {
-    this.state = state;
-    this.requestService = requestService;
+  constructor(private state: State, private readonly requestService: RequestService) {
     this.sessionSubject = new BehaviorSubject<SessionTypes.Struct[]>([]);
     this.eip155RequestHandler = new Eip155Handler(this.state, this, requestService);
     this.polkadotRequestHandler = new PolkadotHandler(this.state, this, requestService);

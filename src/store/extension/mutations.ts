@@ -1,7 +1,8 @@
 import type { ActiveTabAuthorizeStatus, ResponseAuthorizeList } from '@extension-base/background/types/types';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
-import type { Features, ScamAddressList, SetRequestsPayload } from '@/store/extension/types';
+import type { Features, SetRequestsPayload } from '@/store/extension/types';
+import type { ScamAddressList } from '@extension-base/services/scam-service/types';
 
 export enum MutationTypes {
   SET_AUTHLIST = 'SET_AUTHLIST',

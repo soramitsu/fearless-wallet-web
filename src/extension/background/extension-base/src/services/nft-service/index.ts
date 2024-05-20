@@ -35,9 +35,9 @@ export class NftService {
 
   hideSettings: Record<string, NftSettings> = {};
 
-  constructor(public state: State) {
+  constructor(private state: State) {
     Object.entries(PROD_NFT_NETWORKS).forEach(([chainId, network]) => {
-      this.sdks[network] = new AlchemyNftController(network, chainId, this);
+      this.sdks[network] = new AlchemyNftController(network, chainId, this, this.state);
     });
 
     this.init();

@@ -5,13 +5,14 @@ import type {
   MetadataRequest,
   SigningRequest,
 } from '@extension-base/background/types/types';
-import type { Features, ScamAddressList } from '@/store/extension/types';
+import type { Features } from '@/store/extension/types';
 import type {
   WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
   WalletConnectSessions,
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
+import type { ScamAddressList } from '@extension-base/services/scam-service/types';
 
 export type State = {
   authRequests: AuthorizeRequest[];

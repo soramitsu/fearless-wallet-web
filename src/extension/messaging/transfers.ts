@@ -12,7 +12,7 @@ import type {
   ResponseMakeSwap,
 } from '@extension-base/background/types/types';
 import type { SoraFees } from '@/interfaces';
-import type { ScamAddressList } from '@/store/extension/types';
+import type { ScamAddressList } from '@extension-base/services/scam-service/types';
 import { sendMessage } from '@/extension/messaging/index';
 
 export function checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {

@@ -1069,14 +1069,9 @@ export default class Extension extends FWExtensionBase {
   }
 
   public async getScamAddressList() {
-    this.state.soraFees = Object.fromEntries(
-      Object.entries(apiSora.NetworkFee).map(([operation, value]) => [
-        operation,
-        FPNumber.fromCodecValue(value).toString(),
-      ])
-    ) as SoraFees;
+    const scamAddressList = await this.state.scamService.getScamAddressList();
 
-    return this.state.soraFees;
+    return scamAddressList;
   }
 
   private createMobileWallet({ address, meta }: RequestAddressCreate) {

@@ -12,12 +12,10 @@ import type { ServiceInfo } from '@extension-base/background/types/types';
 
 export class CronService {
   public status: 'pending' | 'running' | 'stopped' = 'pending';
-  private state: State;
   private logger: Logger;
   private cronMap: Record<string, unknown> = {};
 
-  constructor(state: State) {
-    this.state = state;
+  constructor(private state: State) {
     this.logger = createLogger('Cron');
   }
 

@@ -1,4 +1,4 @@
-import { type ScamAddressList } from './types';
+import type { ScamAddressList } from '@extension-base/services/scam-service/types';
 import type { State } from './state';
 import type {
   WalletConnectNotSupportRequest,

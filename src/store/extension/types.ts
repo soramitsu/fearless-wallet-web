@@ -18,8 +18,6 @@ export interface Features {
   };
 }
 
-export type ScamAddressList = any;
-
 export type SetRequestsPayload =
   | {
       type: 'authRequests';

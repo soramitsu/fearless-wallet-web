@@ -1,7 +1,7 @@
 <template>
   <div>
     <FCorners>
-      <div :class="tabButtonClasses" :title="title" data-testid="tabTitle" @click="$emit('click')">
+      <div data-testid="tabTitle" :class="tabButtonClasses" :title="title" @click="$emit('click')">
         {{ $t(label) }}
       </div>
     </FCorners>

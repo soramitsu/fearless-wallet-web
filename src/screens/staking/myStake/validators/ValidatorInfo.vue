@@ -12,32 +12,32 @@
       <ContentForm :height="validatorFormHeight" :isStaticHeight="true" :bottomRightCorner="true" class="about-staking">
         <div class="label" data-testid="stakingLabel">{{ $t('browserTabs.staking') }}</div>
 
-        <InfoRow text="common.status" :value="status" :showBorder="!showSlashedWarning" data-testid="status" />
+        <InfoRow text="common.status" data-testid="status" :value="status" :showBorder="!showSlashedWarning" />
 
         <Hint v-if="showSlashedWarning" iconName="warning" text="staking.validatorSlashed" class="hint" />
 
         <InfoRow
           text="staking.nominators"
+          data-testid="nominators"
           :value="`${nominatorsCount} (${$t('common.max')} ${maxNominatorRewardedPerValidator})`"
           borderType="default"
           :showBorder="!showOversubscribedWarning"
-          data-testid="nominators"
         />
 
         <Hint v-if="showOversubscribedWarning" iconName="warning" text="staking.oversubscribedOnly" />
 
         <InfoRow
           text="staking.totalStake"
+          data-testid="totalStake"
           :value="`${totalStakeString} ${stakingAssetName}`"
           :price="totalStakeValue"
-          data-testid="totalStake"
         />
 
         <InfoRow
           text="staking.estimatedRewards"
+          data-testid="estimatedRewards"
           :value="`${apy}% APY`"
           borderType="default"
-          data-testid="estimatedRewards"
         />
       </ContentForm>
 

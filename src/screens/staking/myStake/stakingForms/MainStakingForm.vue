@@ -56,6 +56,7 @@
             v-if="showAmountInput"
             class="amount-input"
             text="assets.amount"
+            data-testid="inputAmount"
             :totalAmount="totalAmount"
             :value="amountValue"
             :asset="stakingAssetName"
@@ -63,7 +64,6 @@
             :amount="amount"
             :showIcon="false"
             :readonly="isRedeem"
-            data-testid="inputAmount"
             @update:amount="updateAmount"
             @setMax="setMax"
           />
@@ -132,9 +132,9 @@
         width="100%"
         size="big"
         fontSize="big"
+        data-testid="confirmBtn"
         :text="btnText"
         :disabled="confirmBtnDisabled"
-        data-testid="confirmBtn"
         @click="confirm"
       />
     </div>

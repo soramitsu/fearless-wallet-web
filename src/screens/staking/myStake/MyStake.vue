@@ -71,29 +71,29 @@
         <Scroll>
           <div class="content">
             <MyStakeSettings
+              data-testid="myStakingSettings"
               :activeTabName="activeTabName"
               :showAlertTab="showAlertTab"
               @update:activeTabName="updateActiveTabName"
-              data-testid="myStakingSettings"
             />
 
             <About
               v-if="isAbout"
+              data-testid="about"
               :stakingCurrency="stakingCurrency"
               :rewardedCurrency="rewardedCurrency"
               :network="network"
-              data-testid="about"
             />
 
-            <Alerts v-else-if="isAlerts" :alerts="alerts" @openForm="openForm" data-testid="alerts" />
+            <Alerts v-else-if="isAlerts" data-testid="alerts" :alerts="alerts" @openForm="openForm" />
 
             <History
               v-else-if="isHistory"
+              data-testid="history"
               :network="network"
               :stakingAssetId="stakingAssetId"
               :rewardedAssetId="rewardedAssetId"
               @openHistoryDetailsForm="openHistoryDetailsForm"
-              data-testid="history"
             />
           </div>
         </Scroll>

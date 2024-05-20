@@ -5,12 +5,12 @@
         <TabButton
           v-if="visibility"
           class="tab"
+          data-testid="myTabButton"
           :key="tabName"
           :target="target"
           :class="classes"
           :label="label"
           :isActive="activeTabName === tabName"
-          data-testid="myTabButton"
           @click="openTab(tabName)"
         />
       </template>

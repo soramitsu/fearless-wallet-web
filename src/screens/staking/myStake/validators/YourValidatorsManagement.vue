@@ -21,25 +21,25 @@
           v-model="selectedAccountName"
           placeholder="accounts.account"
           size="big"
-          :readonly="true"
           data-testid="accountName"
+          :readonly="true"
         />
 
         <InfoRow
           text="staking.selectedValidators"
+          data-testid="selectedValidators"
           :value="`${selectedValidatorsLength} (${$t('common.max')} ${maxNominations})`"
           borderType="default"
-          data-testid="selectedValidators"
         />
 
         <InfoRow
           text="assets.networkFee"
+          data-testid="networkFee"
           :value="`${fee} ${stakingAssetName}`"
           :price="feeValueString"
           borderType="default"
           icon="info"
           :iconClasses="['network-fee']"
-          data-testid="networkFee"
         />
 
         <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
@@ -63,9 +63,9 @@
         size="big"
         fontSize="big"
         width="100%"
+        data-testId="confirmBtn"
         :text="buttontext"
         :disabled="confirmBtnDisabled"
-        data-testId="confirmBtn"
         @click="openSelectionValidatorsForm"
       />
 

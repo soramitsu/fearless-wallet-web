@@ -4,18 +4,18 @@
       <InfoRow
         text="accounts.account"
         borderType="default"
+        data-testid="accountName"
         :value="accountName"
         :price="addressCut"
         :hideLastBorder="false"
-        data-testid="accountName"
       />
 
       <InfoRow
         text="staking.payoutAccount"
         borderType="default"
+        data-testid="infoPayoutAccount"
         :value="payeeCut"
         :hideLastBorder="false"
-        data-testid="infoPayoutAccount"
       />
     </template>
 
@@ -40,11 +40,11 @@
       text="assets.networkFee"
       borderType="default"
       icon="info"
+      data-testid="assetsNetworkFee"
       :value="`${fee} ${asset}`"
       :price="valueString"
       :hideLastBorder="false"
       :iconClasses="['staking-fee']"
-      data-testid="assetsNetworkFee"
     />
 
     <Tooltip text="staking.stakingFee" target=".staking-fee" placement="right" data-testid="stakingFee" />

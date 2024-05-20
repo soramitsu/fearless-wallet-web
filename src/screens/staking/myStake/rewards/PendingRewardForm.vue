@@ -73,9 +73,9 @@
         width="100%"
         size="big"
         fontSize="big"
+        data-testid="confirmBtn"
         :disabled="disabledBtn"
         :text="btnText"
-        data-testid="confirmBtn"
         @click="confirm"
       />
     </div>

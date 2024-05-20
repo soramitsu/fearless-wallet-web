@@ -72,7 +72,9 @@ cryptoWaitReady()
   .then((): void => {
     state.keyringService.loadAll(new AccountsStore());
     state.eventService.emit('crypto.ready', true);
+
     const migrationService = new MigrationService();
+
     migrationService.start();
   })
   .catch((error): void => {

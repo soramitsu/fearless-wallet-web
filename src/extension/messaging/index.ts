@@ -37,17 +37,11 @@ function connect() {
       return;
     }
 
-    if (!handler.subscriber) {
-      delete handlers[data.id];
-    }
+    if (!handler.subscriber) delete handlers[data.id];
 
-    if (data.subscription && handler.subscriber) {
-      handler.subscriber(data.subscription);
-    } else if (data.error) {
-      handler.reject(new Error(data.error));
-    } else {
-      handler.resolve(data.response);
-    }
+    if (data.subscription && handler.subscriber) handler.subscriber(data.subscription);
+    else if (data.error) handler.reject(new Error(data.error));
+    else handler.resolve(data.response);
   });
 }
 

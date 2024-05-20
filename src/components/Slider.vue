@@ -39,3 +39,9 @@ const vModel = computed({
   set: (value: boolean) => emit('updateValue', value),
 });
 </script>
+
+<style lang="scss">
+.el-slider__runway {
+  background-color: $default-background-color !important;
+}
+</style>

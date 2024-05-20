@@ -143,14 +143,17 @@ export default class InputsForm extends Vue {
     if (!this.isPercentChanging) return;
 
     const part = new FPNumber(this.percent).div(FPNumber.HUNDRED);
-    const value = new FPNumber(this.transferableAmount1).mul(part).toString();
 
-    this.updateAmount1(value);
+    const value1 = new FPNumber(this.transferableAmount1).mul(part).toString();
+    const value2 = new FPNumber(this.transferableAmount2).mul(part).toString();
+
+    this.syncedAmount1 = value1;
+    this.syncedAmount2 = value2;
   }
 
   @Watch('syncedAmount1')
   async watcherAmount1() {
-    if (this.syncedIsExchangeB) return;
+    if (this.syncedIsExchangeB || this.isPercentChanging) return;
 
     if (this.extrinsicType === 'addLiquidity') {
       if (this.poolParams.asset1.reserve === '0') return;
@@ -169,14 +172,13 @@ export default class InputsForm extends Vue {
           .toNumber()
       );
 
-      this.isPercentChanging = false;
       this.percent = Math.min(percent, 100);
     }
   }
 
   @Watch('syncedAmount2')
   async watcherAmount2() {
-    if (!this.syncedIsExchangeB) return;
+    if (!this.syncedIsExchangeB || this.isPercentChanging) return;
 
     if (this.extrinsicType === 'addLiquidity') {
       if (this.poolParams.asset2.reserve === '0') return;
@@ -195,7 +197,6 @@ export default class InputsForm extends Vue {
           .toNumber()
       );
 
-      this.isPercentChanging = false;
       this.percent = Math.min(percent, 100);
     }
   }
@@ -203,11 +204,13 @@ export default class InputsForm extends Vue {
   updateAmount1(value: string) {
     this.syncedAmount1 = value;
     this.syncedIsExchangeB = false;
+    this.isPercentChanging = false;
   }
 
   updateAmount2(value: string) {
     this.syncedAmount2 = value;
     this.syncedIsExchangeB = true;
+    this.isPercentChanging = false;
   }
 
   calcTransferableSendMinusFee(isExchangeB: boolean) {

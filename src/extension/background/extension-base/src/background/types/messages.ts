@@ -114,6 +114,7 @@ import type {
   SoraFees,
   OnboardingStories,
 } from '@/interfaces';
+import { type ScamAddressList } from '@/store/extension/types';
 
 export interface RequestSignatures {
   // private/internal requests, i.e. from a popup
@@ -174,15 +175,16 @@ export interface RequestSignatures {
 
   //Transfer, CrossChain, Sora Swap
   'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
-  'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
+  'pri(accounts.makeTransfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
 
   'pri(accounts.checkCrossChain)': [RequestCheckCrossChain, ResponseCheckCrossChain];
-  'pri(accounts.crossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse];
+  'pri(accounts.makeCrossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse];
 
   'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
-  'pri(accounts.swap)': [RequestSwap, ResponseMakeSwap];
+  'pri(accounts.makeSwap)': [RequestSwap, ResponseMakeSwap];
 
-  'pri(accounts.soraFees)': [null, SoraFees];
+  'pri(accounts.getSoraFees)': [null, SoraFees];
+  'pri(accounts.getScamAddressList)': [null, ScamAddressList];
 
   // staking
   'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];

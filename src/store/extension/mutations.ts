@@ -1,7 +1,7 @@
 import type { ActiveTabAuthorizeStatus, ResponseAuthorizeList } from '@extension-base/background/types/types';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
-import type { Features, SetRequestsPayload } from '@/store/extension/types';
+import type { Features, ScamAddressList, SetRequestsPayload } from '@/store/extension/types';
 
 export enum MutationTypes {
   SET_AUTHLIST = 'SET_AUTHLIST',
@@ -10,6 +10,7 @@ export enum MutationTypes {
   SET_REQUEST = 'SET_REQUEST',
   SET_TAB_STATUS = 'SET_TAB_STATUS',
   SET_FEATURES = 'SET_FEATURES',
+  SET_SCAM = 'SET_SCAM',
   SET_ONBOARDING = 'SET_ONBOARDING',
 }
 
@@ -23,6 +24,7 @@ export type Mutations = {
   [MutationTypes.SET_REQUEST](state: State, payload: SetRequestsPayload): void;
   [MutationTypes.SET_TAB_STATUS](state: State, payload: ActiveTabAuthorizeStatus): void;
   [MutationTypes.SET_FEATURES](state: State, features: Features): void;
+  [MutationTypes.SET_SCAM](state: State, scamAddresses: ScamAddressList): void;
   [MutationTypes.SET_ONBOARDING](state: State, payload: boolean): void;
 };
 
@@ -61,6 +63,10 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_FEATURES](state, features) {
     state.features = features;
+  },
+
+  [MutationTypes.SET_SCAM](state, scamAddresses) {
+    state.scamAddresses = scamAddresses;
   },
 
   [MutationTypes.SET_ONBOARDING](state, payload) {

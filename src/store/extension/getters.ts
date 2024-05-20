@@ -1,3 +1,4 @@
+import { type ScamAddressList } from './types';
 import type { State } from './state';
 import type {
   WalletConnectNotSupportRequest,
@@ -12,7 +13,6 @@ import type {
   MetadataRequest,
   SigningRequest,
 } from '@extension-base/background/types/types';
-
 import type { GetterTree } from 'vuex';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { Features } from '@/store/extension/types';
@@ -26,6 +26,7 @@ export enum GettersTypes {
   signList = 'signList',
   tabStatus = 'tabStatus',
   features = 'features',
+  scamAddresses = 'scamAddresses',
   onboarding = 'onboarding',
   wcConnectRequests = 'wcConnectRequests',
   wcSessions = 'wcSessions',
@@ -45,6 +46,7 @@ export type Getters = {
     getters?: GetterTree<State, State> & Getters
   ): Nullable<ActiveTabAuthorizeStatus>;
   [GettersTypes.features](state: State, getters?: GetterTree<State, State> & Getters): Nullable<Features>;
+  [GettersTypes.scamAddresses](state: State, getters?: GetterTree<State, State> & Getters): Nullable<ScamAddressList>;
   [GettersTypes.metaRequests](state: State, getters?: GetterTree<State, State> & Getters): MetadataRequest[];
   [GettersTypes.signRequestPayload](
     state: State,
@@ -103,21 +105,30 @@ const getters: GetterTree<State, State> & Getters = {
     return tabStatus;
   },
 
-  [GettersTypes.features]({ features }): Nullable<Features> {
+  [GettersTypes.features]({ features }): Nullable<ScamAddressList> {
     return features;
   },
+
+  [GettersTypes.scamAddresses]({ scamAddresses }): Nullable<ScamAddressList> {
+    return scamAddresses;
+  },
+
   [GettersTypes.onboarding]({ onboarding }): boolean {
     return onboarding;
   },
+
   [GettersTypes.wcConnectRequests]({ wcConnectRequests }): WalletConnectSessionRequest[] {
     return wcConnectRequests;
   },
+
   [GettersTypes.wcNotSupportedRequests]({ wcNotSupportedRequests }): WalletConnectNotSupportRequest[] {
     return wcNotSupportedRequests;
   },
+
   [GettersTypes.wcSessions]({ wcSessions }): WalletConnectSessions {
     return wcSessions;
   },
+
   [GettersTypes.wcSignList]({ wcRequests }): WalletConnectTransactionRequest[] {
     return wcRequests;
   },

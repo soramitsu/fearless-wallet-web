@@ -879,7 +879,7 @@ export default class Extension extends FWExtensionBase {
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
     const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
 
-    const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
+    const cb = createSubscription<'pri(accounts.makeTransfer)'>(id, port);
     const savePass = () => this.savePass(substrateAddress, ethereumAddress, !!isSavePass, !!isMobile);
     const callback = this.makeExtrinsicCallback(cb, savePass);
 
@@ -1016,7 +1016,7 @@ export default class Extension extends FWExtensionBase {
     const ethereumAddress = this.state.keyringService.getEthereumAddress(from);
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
 
-    const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
+    const cb = createSubscription<'pri(accounts.makeCrossChain)'>(id, port);
     const savePass = () => this.savePass(substrateAddress, ethereumAddress, !!isSavePass, !!isMobile);
     const callback = this.makeExtrinsicCallback(cb, savePass);
 
@@ -1066,6 +1066,17 @@ export default class Extension extends FWExtensionBase {
     port.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return { status: true };
+  }
+
+  public async getScamAddressList() {
+    this.state.soraFees = Object.fromEntries(
+      Object.entries(apiSora.NetworkFee).map(([operation, value]) => [
+        operation,
+        FPNumber.fromCodecValue(value).toString(),
+      ])
+    ) as SoraFees;
+
+    return this.state.soraFees;
   }
 
   private createMobileWallet({ address, meta }: RequestAddressCreate) {
@@ -1627,23 +1638,26 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.checkTransfer)':
         return this.checkTransfer(request as RequestCheckTransfer);
 
-      case 'pri(accounts.transfer)':
+      case 'pri(accounts.makeTransfer)':
         return this.makeTransfer(id, port, request as RequestTransfer);
 
       case 'pri(accounts.checkCrossChain)':
         return this.checkCrossChain(request as RequestCheckCrossChain);
 
-      case 'pri(accounts.crossChain)':
+      case 'pri(accounts.makeCrossChain)':
         return this.makeCrossChain(id, port, request as RequestCrossChain);
 
       case 'pri(accounts.checkSwap)':
         return this.checkSwap(request as RequestCheckSwap);
 
-      case 'pri(accounts.swap)':
+      case 'pri(accounts.makeSwap)':
         return this.makeSwap(request as RequestSwap);
 
-      case 'pri(accounts.soraFees)':
+      case 'pri(accounts.getSoraFees)':
         return this.getSoraFees();
+
+      case 'pri(accounts.getScamAddressList)':
+        return this.getScamAddressList();
 
       // staking
       case 'pri(staking.stakingParams)':

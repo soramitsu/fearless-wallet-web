@@ -52,6 +52,7 @@ export default class App extends Vue {
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: AsyncFn;
   @Action(ExtensionActionTypes.FETCH_FEATURES) fetchFeatures!: AsyncFn;
+  @Action(ExtensionActionTypes.FETCH_SCAM) fetchScam!: AsyncFn;
   @Mutation(ExtensionMutationTypes.SET_ONBOARDING) setOnboarding!: (payload: boolean) => void;
 
   pingInterval: NodeJS.Timer | undefined = undefined;
@@ -77,6 +78,7 @@ export default class App extends Vue {
     this.setupPrice();
     this.setupSWPing();
 
+    this.fetchScam();
     await this.fetchFeatures();
 
     this.getUserStatus(); // SORA Card

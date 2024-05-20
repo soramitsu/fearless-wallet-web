@@ -1,11 +1,11 @@
-import {
-  type ActiveTabAuthorizeStatus,
-  type AuthorizeRequest,
-  type AuthUrlInfo,
-  type MetadataRequest,
-  type SigningRequest,
+import type {
+  ActiveTabAuthorizeStatus,
+  AuthorizeRequest,
+  AuthUrlInfo,
+  MetadataRequest,
+  SigningRequest,
 } from '@extension-base/background/types/types';
-import type { Features } from '@/store/extension/types';
+import type { Features, ScamAddressList } from '@/store/extension/types';
 import type {
   WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
@@ -25,6 +25,7 @@ export type State = {
   tabStatus: ActiveTabAuthorizeStatus | null;
   features: Nullable<Features>;
   onboarding: boolean;
+  scamAddresses: ScamAddressList;
 };
 
 const state = (): State => {
@@ -40,6 +41,7 @@ const state = (): State => {
     tabStatus: null,
     features: null,
     onboarding: false,
+    scamAddresses: [],
   };
 };
 

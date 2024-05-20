@@ -54,6 +54,7 @@ export class CronService {
 
   init() {
     if (!this.state.isReady) return;
+
     if (!this.state.currentAccount?.address) return;
 
     if (Object.keys(this.state.getSubstrateApiMap).length !== 0 || Object.keys(this.state.getEvmApiMap).length !== 0) {

@@ -1,14 +1,26 @@
 import axios from 'axios';
-import type { ScamAddressList } from './types';
+import { parseSCV } from '@extension-base/utils/index';
+import type { ScamAddressList } from '@extension-base/services/scam-service/types';
+import type { RequestCheckScam } from '../../background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import { URLS } from '@/consts/urls';
 
 export class ScamService {
-  constructor(public state: State) {}
+  scamList: Nullable<ScamAddressList>;
 
-  async getScamAddressList() {
-    const { data } = await axios.get<ScamAddressList>(URLS.SCAM);
+  constructor(public state: State) {
+    this.refreshScamAddressList();
+  }
 
-    return data;
+  async refreshScamAddressList() {
+    const { data } = await axios.get<string>(URLS.SCAM);
+
+    this.scamList = parseSCV(data);
+  }
+
+  checkScamAddress(request: RequestCheckScam) {
+    const { address, network } = request;
+
+    return true;
   }
 }

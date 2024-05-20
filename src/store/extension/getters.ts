@@ -26,7 +26,6 @@ export enum GettersTypes {
   signList = 'signList',
   tabStatus = 'tabStatus',
   features = 'features',
-  scamAddresses = 'scamAddresses',
   onboarding = 'onboarding',
   wcConnectRequests = 'wcConnectRequests',
   wcSessions = 'wcSessions',
@@ -46,7 +45,6 @@ export type Getters = {
     getters?: GetterTree<State, State> & Getters
   ): Nullable<ActiveTabAuthorizeStatus>;
   [GettersTypes.features](state: State, getters?: GetterTree<State, State> & Getters): Nullable<Features>;
-  [GettersTypes.scamAddresses](state: State, getters?: GetterTree<State, State> & Getters): Nullable<ScamAddressList>;
   [GettersTypes.metaRequests](state: State, getters?: GetterTree<State, State> & Getters): MetadataRequest[];
   [GettersTypes.signRequestPayload](
     state: State,
@@ -105,12 +103,8 @@ const getters: GetterTree<State, State> & Getters = {
     return tabStatus;
   },
 
-  [GettersTypes.features]({ features }): Nullable<ScamAddressList> {
+  [GettersTypes.features]({ features }): Nullable<Features> {
     return features;
-  },
-
-  [GettersTypes.scamAddresses]({ scamAddresses }): Nullable<ScamAddressList> {
-    return scamAddresses;
   },
 
   [GettersTypes.onboarding]({ onboarding }): boolean {

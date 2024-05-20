@@ -109,6 +109,8 @@
                 />
               </div>
 
+              <Alert v-if="isScamAddress" :message="scamMessage" headerMessage="common.warning" />
+
               <slot name="step1Warning"></slot>
 
               <InfoRow
@@ -233,7 +235,7 @@ import {
   FAVORITE_NETWORKS,
 } from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
-import { checkTransfer, checkCrossChain } from '@/extension/messaging';
+import { checkTransfer, checkCrossChain, checkScamAddress } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import { isNetworkGroup } from '@/helpers/common';
 
@@ -264,6 +266,7 @@ export default class TransferForm extends Vue {
   filterValue = '';
   isFetchingFees = false;
   estimateFeeError = false;
+  isScamAddress = false;
   step = 1;
 
   @Prop(String) header!: string;
@@ -285,6 +288,13 @@ export default class TransferForm extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+
+  get scamMessage() {
+    return {
+      text: 'assets.isScamAddress',
+      localeProps: { asset: this.sendAssetName.toUpperCase() },
+    };
+  }
 
   get recipientCut() {
     return cut(this.syncedRecipient);
@@ -668,6 +678,14 @@ export default class TransferForm extends Vue {
       originNet: this.syncedNetwork,
       destinationNet: this.syncedDestNet,
     } as RequestCheckCrossChain;
+  }
+
+  @Watch('syncedRecipient')
+  async checkScam() {
+    this.$nextTick(async () => {
+      if (this.isValidRecipientAddress)
+        this.isScamAddress = await checkScamAddress({ address: this.syncedRecipient, network: this.targetNetwork });
+    });
   }
 
   @Watch('showSelectedAssetPopup')

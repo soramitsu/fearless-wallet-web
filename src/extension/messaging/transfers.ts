@@ -10,6 +10,7 @@ import type {
   RequestCheckSwap,
   ResponseCheckSwap,
   ResponseMakeSwap,
+  RequestCheckScam,
 } from '@extension-base/background/types/types';
 import type { SoraFees } from '@/interfaces';
 import type { ScamAddressList } from '@extension-base/services/scam-service/types';
@@ -49,6 +50,6 @@ export function getSoraFees(): Promise<SoraFees> {
   return sendMessage('pri(accounts.getSoraFees)');
 }
 
-export function getScamAddressList(): Promise<ScamAddressList> {
-  return sendMessage('pri(accounts.getScamAddressList)');
+export function checkScamAddress(request: RequestCheckScam): Promise<boolean> {
+  return sendMessage('pri(accounts.checkScamAddress)', request);
 }

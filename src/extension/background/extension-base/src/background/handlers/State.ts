@@ -439,31 +439,26 @@ export default class State {
   fetchXcmInfo() {
     axios
       .get<XcmLocations>(URLS.XCM_LOCATIONS)
-      .then(({ data }) => {
-        this.xcmLocations = data;
-      })
-      .catch(() => {
-        this.xcmLocations = [];
-      });
+      .then(({ data }) => (this.xcmLocations = data))
+      .catch(() => (this.xcmLocations = []));
 
     axios
       .get<XcmFees>(URLS.XCM_FEES)
-      .then(({ data }) => {
-        this.xcmFees = data;
-      })
-      .catch(() => {
-        this.xcmFees = [];
-      });
+      .then(({ data }) => (this.xcmFees = data))
+      .catch(() => (this.xcmFees = []));
   }
 
   public async init() {
     await this.eventService.waitCryptoReady;
     await this.networkService.initNetworkMap();
+
     this.keyringService
       .getSubstrateAccounts()
       .forEach(({ address }) => this.balanceService.generateDefaultBalance(address));
+
     this.ready = true; //Set true if chain json is parsed and data is preped for init apis
     this.fetchXcmInfo();
+    this.scamService.refreshScamAddressList();
 
     this.networkService.initNetworkApis();
     this.onReady();

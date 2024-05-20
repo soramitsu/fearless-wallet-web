@@ -258,18 +258,21 @@ export interface ApiProps {
   nodeIndex: number;
   isEthereum: boolean;
 }
+
 export interface EvmApiProps {
   api?: EvmProvider;
   apiRetry?: number;
   nodeIndex?: number;
   timeout: Record<string, number>;
 }
+
 export type FetchEvmBalancePayload = {
   _networks?: NetworkName[];
   ethereumAddress?: string;
   assetId?: string;
   force?: boolean;
 };
+
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type BaseRequestSign = {};
 
@@ -302,6 +305,11 @@ export interface ResponseCheckCrossChain {
   estimateFee?: string;
   destEstimateFee?: string;
   errors?: BasicTxError[];
+}
+
+export interface RequestCheckScam {
+  address: string;
+  network: NetworkName;
 }
 
 export interface RequestCheckSwap extends BaseRequestSign {

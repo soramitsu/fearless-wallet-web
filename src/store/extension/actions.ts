@@ -35,7 +35,6 @@ import {
   walletConnectRequestSubscribe,
   subscribeWalletConnectRequest,
   subscribeWalletNotSupportedConnectRequest,
-  getScamAddressList,
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
@@ -69,7 +68,6 @@ export enum ActionTypes {
   SUBSCRIBE_EXTENSION_REQUESTS = 'SUBSCRIBE_EXTENSION_REQUESTS',
   FETCH_TAB_STATUS = 'FETCH_TAB_STATUS',
   FETCH_FEATURES = 'FETCH_FEATURES',
-  FETCH_SCAM = 'FETCH_SCAM',
 }
 
 export type ApprovePayload = {
@@ -253,12 +251,6 @@ const actions: ActionTree<State, State> & Actions = {
     const { data } = await axios.get<Features>(URLS.FEATURES);
 
     commit(MutationTypes.SET_FEATURES, data);
-  },
-
-  async [ActionTypes.FETCH_SCAM]({ commit }) {
-    const scamAddressList = await getScamAddressList();
-
-    commit(MutationTypes.SET_SCAM, scamAddressList);
   },
 
   async [ActionTypes.APPROVE_WC_REQUEST]({ commit, dispatch }, payload) {

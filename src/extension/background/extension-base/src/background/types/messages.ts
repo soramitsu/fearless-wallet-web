@@ -94,6 +94,7 @@ import type {
   FetchBalanceRequest,
   ResponseNftTransfer,
   FetchEvmBalancePayload,
+  RequestCheckScam,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -184,7 +185,7 @@ export interface RequestSignatures {
   'pri(accounts.makeSwap)': [RequestSwap, ResponseMakeSwap];
 
   'pri(accounts.getSoraFees)': [null, SoraFees];
-  'pri(accounts.getScamAddressList)': [null, ScamAddressList];
+  'pri(accounts.checkScamAddress)': [RequestCheckScam, boolean];
 
   // staking
   'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];

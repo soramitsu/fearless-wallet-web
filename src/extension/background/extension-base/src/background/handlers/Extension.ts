@@ -22,58 +22,7 @@ import {
   convertHexToUtf8,
 } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
-import {
-  type RequestUpdateMeta,
-  type PriceJson,
-  type RequestSigningIsLocked,
-  type NotificationResponse,
-  type ResponseCheckTransfer,
-  type SigningRequest,
-  type ActiveTabAuthorizeStatus,
-  type BalanceJson,
-  type BasicTxError,
-  type Port,
-  type RequestCheckSwap,
-  type RequestCheckTransfer,
-  type RequestCheckCrossChain,
-  type RequestSwap,
-  type RequestTransfer,
-  type RequestCrossChain,
-  type ResponseCheckSwap,
-  type ResponseCheckCrossChain,
-  type ResponseMakeSwap,
-  type AccountJson,
-  type AllowedPath,
-  type AuthorizedAccountsDiff,
-  type AuthorizeRequest,
-  type GoogleFileId,
-  type MessageTypes,
-  type MetadataRequest,
-  type RequestAccountCreateSuri,
-  type RequestAccountExport,
-  type RequestAccountForget,
-  type RequestAccountName,
-  type RequestAccountValidate,
-  type RequestActiveTabsUrlUpdate,
-  type RequestAddressCreate,
-  type RequestAuthorizeApprove,
-  type RequestJsonRestore,
-  type RequestMetadataApprove,
-  type RequestMetadataReject,
-  type RequestSigningApprovePassword,
-  type RequestSigningApproveSignature,
-  type RequestSigningCancel,
-  type RequestTypes,
-  type RequestUpdateAuthorizedAccounts,
-  type ResponseAuthorizeList,
-  type ResponseType,
-  BasicTxErrorCode,
-  type BasicTxResponse,
-  TransferErrorCode,
-  type FetchBalanceRequest,
-  type RequestNftTransfer,
-  type FetchEvmBalancePayload,
-} from '@extension-base/background/types/types';
+import { BasicTxErrorCode, TransferErrorCode } from '@extension-base/background/types/types';
 import {
   type RequestConnectWalletConnect,
   type WalletConnectSessionRequest,
@@ -93,6 +42,57 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
+import type {
+  RequestUpdateMeta,
+  PriceJson,
+  RequestSigningIsLocked,
+  NotificationResponse,
+  ResponseCheckTransfer,
+  SigningRequest,
+  ActiveTabAuthorizeStatus,
+  BalanceJson,
+  BasicTxError,
+  Port,
+  RequestCheckSwap,
+  RequestCheckTransfer,
+  RequestCheckCrossChain,
+  RequestSwap,
+  RequestTransfer,
+  RequestCrossChain,
+  ResponseCheckSwap,
+  ResponseCheckCrossChain,
+  ResponseMakeSwap,
+  AccountJson,
+  AllowedPath,
+  AuthorizedAccountsDiff,
+  AuthorizeRequest,
+  GoogleFileId,
+  MessageTypes,
+  MetadataRequest,
+  RequestAccountCreateSuri,
+  RequestAccountExport,
+  RequestAccountForget,
+  RequestAccountName,
+  RequestAccountValidate,
+  RequestActiveTabsUrlUpdate,
+  RequestAddressCreate,
+  RequestAuthorizeApprove,
+  RequestJsonRestore,
+  RequestMetadataApprove,
+  RequestMetadataReject,
+  RequestSigningApprovePassword,
+  RequestSigningApproveSignature,
+  RequestSigningCancel,
+  RequestTypes,
+  RequestUpdateAuthorizedAccounts,
+  ResponseAuthorizeList,
+  ResponseType,
+  BasicTxResponse,
+  FetchBalanceRequest,
+  RequestNftTransfer,
+  FetchEvmBalancePayload,
+  RequestCheckScam,
+} from '@extension-base/background/types/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type {
   StakingNetworkRequest,
@@ -1068,10 +1068,8 @@ export default class Extension extends FWExtensionBase {
     return { status: true };
   }
 
-  public async getScamAddressList() {
-    const scamAddressList = await this.state.scamService.getScamAddressList();
-
-    return scamAddressList;
+  public checkScamAddress(request: RequestCheckScam) {
+    return this.state.scamService.checkScamAddress(request);
   }
 
   private createMobileWallet({ address, meta }: RequestAddressCreate) {
@@ -1651,8 +1649,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.getSoraFees)':
         return this.getSoraFees();
 
-      case 'pri(accounts.getScamAddressList)':
-        return this.getScamAddressList();
+      case 'pri(accounts.checkScamAddress)':
+        return this.checkScamAddress(request as RequestCheckScam);
 
       // staking
       case 'pri(staking.stakingParams)':

@@ -12,7 +12,6 @@ import type {
   WalletConnectSessions,
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
-import type { ScamAddressList } from '@extension-base/services/scam-service/types';
 
 export type State = {
   authRequests: AuthorizeRequest[];
@@ -26,7 +25,6 @@ export type State = {
   tabStatus: ActiveTabAuthorizeStatus | null;
   features: Nullable<Features>;
   onboarding: boolean;
-  scamAddresses: ScamAddressList;
 };
 
 const state = (): State => {
@@ -42,7 +40,6 @@ const state = (): State => {
     tabStatus: null,
     features: null,
     onboarding: false,
-    scamAddresses: [],
   };
 };
 

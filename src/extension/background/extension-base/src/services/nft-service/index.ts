@@ -233,7 +233,7 @@ export class NftService {
 
     const accountBalance = this.state.balanceService.getAccountBalance(substrateAddress);
     const tokenBalance = accountBalance.find((el) => el.symbol === utilityAsset.symbol && el.relayChain === 'ethereum');
-    if (!tokenBalance) return { error: 'unsufficientFunds', fee: '0', data: '0x' };
+    if (!tokenBalance) return { error: 'insufficientFunds', fee: '0', data: '0x' };
 
     const balance = getBalanceItem(tokenBalance.balances, network);
 
@@ -255,11 +255,11 @@ export class NftService {
       const estimateFee = calcEvmFees(feeData.maxFeePerGas ?? feeData.gasPrice, block?.baseFeePerGas, gasLimit);
       const formatFees = formatUnits(estimateFee);
 
-      const isUnsufficientFunds = new FPNumber(formatFees).isGreaterThan(new FPNumber(balance?.total ?? 0));
+      const isInsufficientFunds = new FPNumber(formatFees).isGreaterThan(new FPNumber(balance?.total ?? 0));
 
-      if (isUnsufficientFunds) {
+      if (isInsufficientFunds) {
         return {
-          error: 'unsufficientFunds',
+          error: 'insufficientFunds',
           data,
           fee: formatFees,
         };

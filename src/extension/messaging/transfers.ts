@@ -11,9 +11,9 @@ import type {
   ResponseCheckSwap,
   ResponseMakeSwap,
   RequestCheckScam,
+  ResponseCheckScam,
 } from '@extension-base/background/types/types';
 import type { SoraFees } from '@/interfaces';
-import type { ScamAddressList } from '@extension-base/services/scam-service/types';
 import { sendMessage } from '@/extension/messaging/index';
 
 export function checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
@@ -50,6 +50,6 @@ export function getSoraFees(): Promise<SoraFees> {
   return sendMessage('pri(accounts.getSoraFees)');
 }
 
-export function checkScamAddress(request: RequestCheckScam): Promise<boolean> {
+export function checkScamAddress(request: RequestCheckScam): Promise<ResponseCheckScam> {
   return sendMessage('pri(accounts.checkScamAddress)', request);
 }

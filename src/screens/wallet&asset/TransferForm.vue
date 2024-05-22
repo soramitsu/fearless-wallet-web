@@ -109,7 +109,7 @@
                 />
               </div>
 
-              <Alert v-if="isScamAddress" :message="scamMessage" headerMessage="common.warning" />
+              <Alert v-if="isScamAddress" :message="scamMessage" headerText="common.warning" />
 
               <slot name="step1Warning"></slot>
 
@@ -188,7 +188,7 @@
     />
 
     <WarningAddressPopup
-      v-if="showWarningAddressPopup"
+      v-if="!isValidAddressByNetwork"
       @handlerAccept="formatAddress"
       @handlerClose="handlerCloseWarningAddressPopup"
     />
@@ -209,6 +209,7 @@ import {
   type ResponseCheckCrossChain,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
+import { Reasons, type ScamInfo } from '@extension-base/services/scam-service/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
@@ -267,6 +268,7 @@ export default class TransferForm extends Vue {
   isFetchingFees = false;
   estimateFeeError = false;
   isScamAddress = false;
+  scamInfo: Nullable<ScamInfo> = null;
   step = 1;
 
   @Prop(String) header!: string;
@@ -290,8 +292,17 @@ export default class TransferForm extends Vue {
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get scamMessage() {
+    const key =
+      this.scamInfo?.reason === Reasons.Donation
+        ? 'isDonationAddress'
+        : this.scamInfo?.reason === Reasons.Exchange
+        ? 'isExchangeAddress'
+        : this.scamInfo?.reason === Reasons.Sanctions
+        ? 'isSanctionsAddress'
+        : 'isScamAddress';
+
     return {
-      text: 'assets.isScamAddress',
+      text: `assets.${key}`,
       localeProps: { asset: this.sendAssetName.toUpperCase() },
     };
   }
@@ -395,10 +406,10 @@ export default class TransferForm extends Vue {
     return this.isTransfer ? this.syncedNetwork : this.syncedDestNet;
   }
 
-  get showWarningAddressPopup() {
-    if (!this.isValidRecipientAddress || this.syncedNetwork === '') return false;
+  get isValidAddressByNetwork() {
+    if (!this.isValidRecipientAddress || this.syncedNetwork === '') return true;
 
-    return !BaseApi.validateAddressByNetwork(this.syncedRecipient, this.targetNetwork);
+    return BaseApi.validateAddressByNetwork(this.syncedRecipient, this.targetNetwork);
   }
 
   get top() {
@@ -682,10 +693,15 @@ export default class TransferForm extends Vue {
 
   @Watch('syncedRecipient')
   async checkScam() {
-    this.$nextTick(async () => {
-      if (this.isValidRecipientAddress)
-        this.isScamAddress = await checkScamAddress({ address: this.syncedRecipient, network: this.targetNetwork });
-    });
+    if (this.isValidRecipientAddress && this.isValidAddressByNetwork) {
+      const { value, info } = await checkScamAddress({ address: this.syncedRecipient, network: this.targetNetwork });
+
+      this.isScamAddress = value;
+      this.scamInfo = info;
+    } else {
+      this.isScamAddress = false;
+      this.scamInfo = null;
+    }
   }
 
   @Watch('showSelectedAssetPopup')

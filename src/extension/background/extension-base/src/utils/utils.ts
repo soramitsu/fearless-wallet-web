@@ -2,7 +2,6 @@ import { BN } from '@polkadot/util';
 import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import { isEthereumAddress, decodeAddress, encodeAddress, ethereumEncode } from '@polkadot/util-crypto';
 import { EXTENSION_REQUEST_URL } from '@extension-base/const';
-import type { ScamAddressList } from '@extension-base/services/scam-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 
@@ -74,18 +73,4 @@ export function isSameAddress(address1: string, address2: string) {
 
 export function isInternalRequest(url: string): boolean {
   return url === EXTENSION_REQUEST_URL;
-}
-
-export function parseSCV(data: string): ScamAddressList {
-  const dataSplit = data.split('\n').splice(1);
-
-  return dataSplit.reduce((result, item) => {
-    const [name, address, reason, additional] = item.split(',');
-
-    // console.log(name, address, reason, additional);
-
-    result.set(address, { name, reason, additional });
-
-    return result;
-  }, new Map());
 }

@@ -104,6 +104,7 @@ import type {
   ResponseNftTransfer,
   FetchEvmBalancePayload,
   RequestCheckScam,
+  ResponseCheckScam,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -124,7 +125,6 @@ import type {
   SoraFees,
   OnboardingStories,
 } from '@/interfaces';
-import type { ScamAddressList } from '@extension-base/services/scam-service/types';
 
 export interface RequestSignatures {
   // private/internal requests, i.e. from a popup
@@ -194,7 +194,7 @@ export interface RequestSignatures {
   'pri(accounts.makeSwap)': [RequestSwap, ResponseMakeSwap];
 
   'pri(accounts.getSoraFees)': [null, SoraFees];
-  'pri(accounts.checkScamAddress)': [RequestCheckScam, boolean];
+  'pri(accounts.checkScamAddress)': [RequestCheckScam, ResponseCheckScam];
 
   // staking
   'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];

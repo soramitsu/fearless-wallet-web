@@ -194,6 +194,7 @@ const actions: ActionTree<State, State> & Actions = {
         router.push({
           name: Components.Wallet,
         });
+
       if (requests.length)
         router.push({
           name: Components.Transaction,

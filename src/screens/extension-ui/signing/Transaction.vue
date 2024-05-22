@@ -133,7 +133,8 @@ const typedPayload = computed(() => {
 
   return registry.createType('ExtrinsicPayload', payload.value, { version: payload.value.version });
 });
-const address = computed(() => request.value.account.address);
+const address = computed(() => request.value.request.payload.address);
+
 const accountName = computed(() => request.value.account.name);
 const specVersion = computed(() => typedPayload.value.specVersion.toNumber());
 const genesisHash = computed(() => typedPayload.value.genesisHash.toString());

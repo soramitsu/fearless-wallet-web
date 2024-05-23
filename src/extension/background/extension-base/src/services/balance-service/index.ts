@@ -17,11 +17,8 @@ import { type NetworkName } from '@/interfaces';
 export default class BalanceService {
   private balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
-  private state: State;
 
-  constructor(state: State) {
-    this.state = state;
-  }
+  constructor(private state: State) {}
 
   getAccountBalance(address: string) {
     return this.balanceMap[address];

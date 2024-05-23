@@ -18,6 +18,8 @@ import {
   WalletConnectDAppService,
   SubscriptionService,
   CronService,
+  ScamService,
+  PricesService,
   isSubscriptionRunning,
   unsubscribe,
 } from '@extension-base/services';
@@ -25,7 +27,6 @@ import { api as apiSora, type FPNumber } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
 import { isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
-import PricesService from '@extension-base/services/prices-service';
 import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
 import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
 import BalanceService from '@extension-base/services/balance-service';
@@ -93,6 +94,7 @@ export default class State {
   public stakingService = new StakingService(this);
   public googleService = new GoogleService();
   public cronService = new CronService(this);
+  public scamService = new ScamService(this);
   public subscriptionService = new SubscriptionService(this);
 
   constructor() {
@@ -437,31 +439,26 @@ export default class State {
   fetchXcmInfo() {
     axios
       .get<XcmLocations>(URLS.XCM_LOCATIONS)
-      .then(({ data }) => {
-        this.xcmLocations = data;
-      })
-      .catch(() => {
-        this.xcmLocations = [];
-      });
+      .then(({ data }) => (this.xcmLocations = data))
+      .catch(() => (this.xcmLocations = []));
 
     axios
       .get<XcmFees>(URLS.XCM_FEES)
-      .then(({ data }) => {
-        this.xcmFees = data;
-      })
-      .catch(() => {
-        this.xcmFees = [];
-      });
+      .then(({ data }) => (this.xcmFees = data))
+      .catch(() => (this.xcmFees = []));
   }
 
   public async init() {
     await this.eventService.waitCryptoReady;
     await this.networkService.initNetworkMap();
+
     this.keyringService
       .getSubstrateAccounts()
       .forEach(({ address }) => this.balanceService.generateDefaultBalance(address));
+
     this.ready = true; //Set true if chain json is parsed and data is preped for init apis
     this.fetchXcmInfo();
+    this.scamService.refreshScamAddressList();
 
     this.networkService.initNetworkApis();
     this.onReady();

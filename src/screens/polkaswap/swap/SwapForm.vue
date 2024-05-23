@@ -131,7 +131,7 @@
         </div>
 
         <div>
-          <Alert v-if="showPolkaswapAlert" message="common.readPolkaswapDisclaimer" headerMessage="common.disclaimer">
+          <Alert v-if="showPolkaswapAlert" message="common.readPolkaswapDisclaimer" headerText="common.disclaimer">
             <div class="alert-content" data-testid="alertContent">
               {{ $t('common.readPolkaswapDisclaimer') }}
 

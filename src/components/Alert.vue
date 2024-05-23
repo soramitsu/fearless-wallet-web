@@ -4,8 +4,8 @@
       <div class="alert__content">
         <Hint class="alert__header" size="big" iconName="warning" :text="headerText" />
 
-        <p :class="messageClasses">
-          <slot>{{ $t(message) }}</slot>
+        <p data-testid="alertMessage" :class="messageClasses">
+          <slot>{{ tMessage }}</slot>
         </p>
       </div>
     </div>
@@ -14,15 +14,19 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n-composable';
+import type { ComponentText } from '@/interfaces';
 
 type SizeTextType = 'small' | 'medium' | 'big';
+
 type Props = {
-  message?: string;
+  message: ComponentText;
   sizeText?: SizeTextType;
   headerText?: string;
 };
 
 const props = withDefaults(defineProps<Props>(), { sizeText: 'medium', headerText: 'common.attention', message: '' });
+const { t, tc } = useI18n();
 
 const messageClasses = computed(() => {
   const classes = ['alert__message'];
@@ -30,6 +34,20 @@ const messageClasses = computed(() => {
   if (props.sizeText !== 'medium') classes.push(`text-${props.sizeText}`);
 
   return classes;
+});
+
+const tMessage = computed(() => {
+  if (typeof props.message === 'string') return t(props.message);
+
+  const { text, localeProps } = props.message;
+
+  if (localeProps) {
+    const { tc: tcProps } = localeProps;
+
+    if (tcProps) return tc(text, tcProps, localeProps);
+  }
+
+  return t(text, localeProps);
 });
 </script>
 

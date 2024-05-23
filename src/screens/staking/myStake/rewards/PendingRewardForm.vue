@@ -13,7 +13,9 @@
 
           <div v-show="!showLoader" class="form-layout">
             <Scroll>
-              <div class="descriptions">{{ $t('staking.validatorsPayoutRewards') }}</div>
+              <div class="descriptions" data-testid="validatorsPayoutRewards">
+                {{ $t('staking.validatorsPayoutRewards') }}
+              </div>
 
               <ValidatorItem
                 v-for="validator in myRewards"
@@ -27,7 +29,13 @@
         </ContentForm>
 
         <div v-else-if="step === 2">
-          <FInput v-model="selectedAccountName" placeholder="accounts.account" size="big" :readonly="true" />
+          <FInput
+            v-model="selectedAccountName"
+            placeholder="accounts.account"
+            data-testid="account"
+            size="big"
+            :readonly="true"
+          />
 
           <SelectInput
             class="amount-input"
@@ -40,7 +48,13 @@
             :readonly="true"
           />
 
-          <FInput v-model="payeeName" :readonly="true" placeholder="staking.setPayee" size="big" />
+          <FInput
+            v-model="payeeName"
+            :readonly="true"
+            placeholder="staking.setPayee"
+            data-testid="setPayee"
+            size="big"
+          />
         </div>
 
         <InfoRow
@@ -55,7 +69,15 @@
         <Tooltip text="staking.stakingFee" target=".network-fee" placement="right" />
       </div>
 
-      <FButton width="100%" size="big" fontSize="big" :disabled="disabledBtn" :text="btnText" @click="confirm" />
+      <FButton
+        width="100%"
+        size="big"
+        fontSize="big"
+        data-testid="confirmBtn"
+        :disabled="disabledBtn"
+        :text="btnText"
+        @click="confirm"
+      />
     </div>
 
     <WarningPopup v-if="showWarningPopup" :handlerAccept="handlerAccept" :handlerClose="closeWarningPopup" />

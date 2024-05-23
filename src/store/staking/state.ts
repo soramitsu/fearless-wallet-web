@@ -6,12 +6,12 @@ export type State = {
   allStakingNetworks: Omit<NetworkParams, 'bondAmount'>[];
 };
 
-const getDefaultNetworkParams = (networkParams: Partial<NetworkParams>) => {
+const getDefaultNetworkParams = (stakingNetwork: Partial<NetworkParams>) => {
   return {
-    ...networkParams,
+    ...stakingNetwork,
     transferableAmount: '0',
     loading: true,
-    ...getDefaultStakingParams(networkParams.network!),
+    ...getDefaultStakingParams(stakingNetwork.network!),
   } as Omit<NetworkParams, 'bondAmount'>;
 };
 

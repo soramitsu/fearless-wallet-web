@@ -34,7 +34,6 @@ import type {
 import type { WCSignRequest } from '@extension-base/services/request-service/types';
 
 export class RequestService {
-  readonly keyringService: KeyringService;
   readonly popupHandler: PopupHandler;
   readonly connectWCRequestHandler: ConnectWCRequestHandler;
   readonly notSupportWCRequestHandler: NotSupportWCRequestHandler;
@@ -43,14 +42,13 @@ export class RequestService {
   readonly substrateRequestHandler: SubstrateRequestHandler;
   readonly evmRequestHandler: EvmRequestHandler;
 
-  constructor(keyringService: KeyringService) {
-    this.keyringService = keyringService;
+  constructor(readonly keyringService: KeyringService) {
     this.popupHandler = new PopupHandler(this);
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
     this.authRequestHandler = new AuthRequestHandler(this);
-    this.substrateRequestHandler = new SubstrateRequestHandler(this, this.keyringService);
+    this.substrateRequestHandler = new SubstrateRequestHandler(this, keyringService);
     this.evmRequestHandler = new EvmRequestHandler(this);
   }
 

@@ -340,7 +340,21 @@ export class StakingService {
 
   public async getNominateNetworkFee({ validators, network }: GetNominateNetworkFeeRequest) {
     const precision = getUtilityProps(network, this.state).precision;
+
     const fee = await apiSora.staking.getNominateNetworkFee({ validators });
+
+    return FPNumber.fromCodecValue(fee, precision).toString();
+  }
+
+  public async getBondAndNominateNetworkFee({ validators, payoutAddress, from, networkName, amount }: RequestBond) {
+    const precision = getUtilityProps(networkName, this.state).precision;
+
+    const fee = await apiSora.staking.getBondAndNominateNetworkFee({
+      validators,
+      controller: from,
+      payee: payoutAddress,
+      value: amount,
+    });
 
     return FPNumber.fromCodecValue(fee, precision).toString();
   }
@@ -381,8 +395,10 @@ export class StakingService {
   public async bondAndNominate(params: RequestBond): Promise<BasicTxResponse> {
     const { amount, payoutAddress, from, validators } = params;
 
+    const payee = payoutAddress === '' ? from : payoutAddress;
+
     try {
-      await apiSora.staking.bondAndNominate({ value: amount, controller: from, payee: payoutAddress, validators }); // Controller аккаунт по умолчанию это Stash
+      await apiSora.staking.bondAndNominate({ value: amount, controller: from, payee, validators }); // Controller аккаунт по умолчанию это Stash
     } catch (ex) {
       const message = `[STAKING] Bond failed: ${ex}`;
 

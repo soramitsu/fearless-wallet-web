@@ -47,11 +47,11 @@ const getters: GetterTree<State, State> & Getters = {
       .filter(({ network }) => {
         if (!isNetworkGroup(selectedNetwork)) return isSameString(network, selectedNetwork);
 
-        const networkParams = networks.find(({ name }) => isSameString(name, network));
+        const stakingNetwork = networks.find(({ name }) => isSameString(name, network));
 
-        if (isSameString(network, POPULAR_NETWORKS)) return networkParams?.rank !== undefined;
+        if (isSameString(network, POPULAR_NETWORKS)) return stakingNetwork?.rank !== undefined;
 
-        if (isSameString(network, FAVORITE_NETWORKS)) return networkParams?.favorite.includes(selectedWallet.address);
+        if (isSameString(network, FAVORITE_NETWORKS)) return stakingNetwork?.favorite.includes(selectedWallet.address);
 
         return true;
       })

@@ -12,7 +12,6 @@ import type {
   MetadataRequest,
   SigningRequest,
 } from '@extension-base/background/types/types';
-
 import type { GetterTree } from 'vuex';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { Features } from '@/store/extension/types';
@@ -106,18 +105,23 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.features]({ features }): Nullable<Features> {
     return features;
   },
+
   [GettersTypes.onboarding]({ onboarding }): boolean {
     return onboarding;
   },
+
   [GettersTypes.wcConnectRequests]({ wcConnectRequests }): WalletConnectSessionRequest[] {
     return wcConnectRequests;
   },
+
   [GettersTypes.wcNotSupportedRequests]({ wcNotSupportedRequests }): WalletConnectNotSupportRequest[] {
     return wcNotSupportedRequests;
   },
+
   [GettersTypes.wcSessions]({ wcSessions }): WalletConnectSessions {
     return wcSessions;
   },
+
   [GettersTypes.wcSignList]({ wcRequests }): WalletConnectTransactionRequest[] {
     return wcRequests;
   },

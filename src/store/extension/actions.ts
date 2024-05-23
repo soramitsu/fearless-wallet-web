@@ -16,7 +16,6 @@ import type {
 import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from '@/store/extension/state';
 import type { Features } from '@/store/extension/types';
-
 import { type Mutations, MutationTypes } from '@/store/extension/mutations';
 import {
   subscribeAuthorizeRequests,
@@ -195,6 +194,7 @@ const actions: ActionTree<State, State> & Actions = {
         router.push({
           name: Components.Wallet,
         });
+
       if (requests.length)
         router.push({
           name: Components.Transaction,

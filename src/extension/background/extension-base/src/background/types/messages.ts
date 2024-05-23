@@ -103,6 +103,8 @@ import type {
   FetchBalanceRequest,
   ResponseNftTransfer,
   FetchEvmBalancePayload,
+  RequestCheckScam,
+  ResponseCheckScam,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -183,15 +185,16 @@ export interface RequestSignatures {
 
   //Transfer, CrossChain, Sora Swap
   'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
-  'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
+  'pri(accounts.makeTransfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
 
   'pri(accounts.checkCrossChain)': [RequestCheckCrossChain, ResponseCheckCrossChain];
-  'pri(accounts.crossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse];
+  'pri(accounts.makeCrossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse];
 
   'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
-  'pri(accounts.swap)': [RequestSwap, ResponseMakeSwap];
+  'pri(accounts.makeSwap)': [RequestSwap, ResponseMakeSwap];
 
-  'pri(accounts.soraFees)': [null, SoraFees];
+  'pri(accounts.getSoraFees)': [null, SoraFees];
+  'pri(accounts.checkScamAddress)': [RequestCheckScam, ResponseCheckScam];
 
   // staking
   'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];

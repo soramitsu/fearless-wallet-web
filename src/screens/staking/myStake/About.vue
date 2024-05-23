@@ -239,7 +239,7 @@ export default class About extends Vue {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 135px;
+        max-width: 125px;
         margin-right: 5px;
       }
     }

@@ -18,7 +18,6 @@ declare module 'vue' {
     Dropdown: typeof import('@/components/Dropdown.vue')['Dropdown'];
     ExternalLogo: typeof import('@/components/ExternalLogo.vue')['ExternalLogo'];
     ExternalWidget: typeof import('@/components/ExternalWidget.vue')['ExternalWidget'];
-    FloatInput: typeof import('@/components/FloatInput.vue')['FloatInput'];
     Hint: typeof import('@/components/Hint.vue')['Hint'];
     Icon: typeof import('@/components/Icon.vue')['Icon'];
     InformationBlock: typeof import('@/components/InformationBlock.vue')['InformationBlock'];

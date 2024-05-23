@@ -20,7 +20,7 @@ import type { ComponentText } from '@/interfaces';
 type SizeTextType = 'small' | 'medium' | 'big';
 
 type Props = {
-  message: ComponentText;
+  message?: ComponentText;
   sizeText?: SizeTextType;
   headerText?: string;
 };

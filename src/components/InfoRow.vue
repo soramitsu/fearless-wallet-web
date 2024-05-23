@@ -3,6 +3,7 @@
     :value="value"
     :price="price"
     :icon="icon"
+    :iconValue="iconValue"
     :iconAppend="iconAppend"
     :isLoading="isLoading"
     :borderType="borderType"
@@ -33,6 +34,7 @@ export default class InfoRow extends Vue {
   @Prop({ default: '' }) value!: string;
   @Prop(String) price!: string;
   @Prop(String) icon?: string;
+  @Prop(String) iconValue?: string;
   @Prop(String) color!: Color;
   @Prop(String) iconAppend?: string;
   @Prop({ default: 'secondary' }) borderType!: BorderType;

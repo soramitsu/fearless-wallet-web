@@ -1,9 +1,9 @@
-import {
-  type ActiveTabAuthorizeStatus,
-  type AuthorizeRequest,
-  type AuthUrlInfo,
-  type MetadataRequest,
-  type SigningRequest,
+import type {
+  ActiveTabAuthorizeStatus,
+  AuthorizeRequest,
+  AuthUrlInfo,
+  MetadataRequest,
+  SigningRequest,
 } from '@extension-base/background/types/types';
 import type { Features } from '@/store/extension/types';
 import type {

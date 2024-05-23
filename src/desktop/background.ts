@@ -105,6 +105,7 @@ app.on('web-contents-created', (event, contents) => {
     // }
     event.preventDefault(); // Since we don't need webviews, all attached webviews will be disabled
   });
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   contents.on('will-navigate', (event, navigationUrl) => {
     // Limit navigation, FOR EXAMPLE
@@ -114,17 +115,14 @@ app.on('web-contents-created', (event, contents) => {
     // }
     event.preventDefault(); // Since we don't have navigation, we'll prevent all
   });
+
   contents.setWindowOpenHandler(({ url }) => {
     // In this example, we'll ask the operating system
     // to open this event's url in the default browser.
     //
     // See the following item for considerations regarding what
     // URLs should be allowed through to shell.openExternal.
-    if (isSafeForExternalOpen(url)) {
-      setImmediate(() => {
-        shell.openExternal(url);
-      });
-    }
+    if (isSafeForExternalOpen(url)) setImmediate(() => shell.openExternal(url));
 
     return { action: 'deny' };
   });
@@ -146,15 +144,12 @@ app.on('open-url', (event, url) => {
 
 // Exit cleanly on request from parent process in development mode.
 if (isDevelopment) {
-  if (process.platform === 'win32') {
+  if (process.platform === 'win32')
     process.on('message', (data) => {
-      if (data === 'graceful-exit') {
-        app.quit();
-      }
+      if (data === 'graceful-exit') app.quit();
     });
-  } else {
+  else
     process.on('SIGTERM', () => {
       app.quit();
     });
-  }
 }

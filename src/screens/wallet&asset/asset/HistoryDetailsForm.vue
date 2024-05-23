@@ -59,52 +59,52 @@
           </div>
         </div>
 
-        <div class="item">
+        <div class="item" data-testid="statusLabel">
           Status
 
-          <div :class="statusClasses">{{ statusText }}</div>
+          <div :class="statusClasses" data-testid="statusValue">{{ statusText }}</div>
         </div>
 
-        <div class="item">
+        <div class="item" data-testid="dateLabel">
           Date
 
-          <div class="item-value">{{ date }}</div>
+          <div class="item-value" data-testid="dateValue">{{ date }}</div>
         </div>
 
-        <div v-if="isReward" class="item">
+        <div v-if="isReward" class="item" data-testid="eraLabel">
           Era
 
-          <div class="item-value">{{ era }}</div>
+          <div class="item-value" data-testid="eraValue">{{ era }}</div>
         </div>
 
-        <div class="item">
+        <div class="item" data-testid="moduleLabel">
           Module
 
-          <div class="item-value">{{ moduleType }}</div>
+          <div class="item-value" data-testid="moduleValue">{{ moduleType }}</div>
         </div>
 
-        <div class="item">
+        <div class="item" data-testid="methodLabel">
           Method
 
-          <div class="item-value">{{ method }}</div>
+          <div class="item-value" data-testid="methodValue">{{ method }}</div>
         </div>
 
-        <div v-if="showAmount" class="item">
+        <div v-if="showAmount" class="item" data-testid="amountLabel">
           Amount
 
-          <div class="item-value">{{ value }}</div>
+          <div class="item-value" data-testid="amountValue">{{ value }}</div>
         </div>
 
-        <div v-if="showTargetAmount" class="item">
+        <div v-if="showTargetAmount" class="item" data-testid="amountLabel">
           Target Amount
 
-          <div class="item-value">{{ targetValue }}</div>
+          <div class="item-value" data-testid="amountValue">{{ targetValue }}</div>
         </div>
 
-        <div v-if="showFee" class="item">
+        <div v-if="showFee" class="item" data-testid="feeLabel">
           Transfer fee
 
-          <div class="item-value">{{ transferFee }}</div>
+          <div class="item-value" data-testid="feeValue">{{ transferFee }}</div>
         </div>
       </div>
 

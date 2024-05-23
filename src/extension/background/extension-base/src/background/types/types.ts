@@ -1,6 +1,7 @@
 /* eslint-disable no-use-before-define */
 import { type NftTx, type NftSettings } from '@extension-base/services/nft-service/types';
 import { chrome } from '@extension-base/utils/crossenv';
+import type { ScamInfo } from '@extension-base/services/scam-service/types';
 import type { ALLOWED_PATH } from '@extension-base/defaults';
 import type { Subscription } from 'rxjs';
 import type { JsonRpcProvider, WebSocketProvider } from 'ethers';
@@ -258,18 +259,21 @@ export interface ApiProps {
   nodeIndex: number;
   isEthereum: boolean;
 }
+
 export interface EvmApiProps {
   api?: EvmProvider;
   apiRetry?: number;
   nodeIndex?: number;
   timeout: Record<string, number>;
 }
+
 export type FetchEvmBalancePayload = {
   _networks?: NetworkName[];
   ethereumAddress?: string;
   assetId?: string;
   force?: boolean;
 };
+
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type BaseRequestSign = {};
 
@@ -302,6 +306,16 @@ export interface ResponseCheckCrossChain {
   estimateFee?: string;
   destEstimateFee?: string;
   errors?: BasicTxError[];
+}
+
+export interface RequestCheckScam {
+  address: string;
+  network: NetworkName;
+}
+
+export interface ResponseCheckScam {
+  value: boolean;
+  info?: ScamInfo;
 }
 
 export interface RequestCheckSwap extends BaseRequestSign {

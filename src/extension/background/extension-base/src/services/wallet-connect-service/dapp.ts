@@ -20,7 +20,6 @@ import type { AppSessionInitResponse, PairingSubjectType } from '@extension-base
 import type { Port } from '@extension-base/background/types/types';
 
 export class WalletConnectDAppService {
-  state: State;
   private app?: Provider;
 
   public readonly uriSubject: BehaviorSubject<string> = new BehaviorSubject<string>('');
@@ -28,8 +27,7 @@ export class WalletConnectDAppService {
     Record<string, AppSessionInitResponse>
   >({});
 
-  constructor(state: State) {
-    this.state = state;
+  constructor(private state: State) {
     this.initApp().catch(console.error);
   }
 

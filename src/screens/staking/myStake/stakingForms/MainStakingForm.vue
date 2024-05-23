@@ -39,7 +39,7 @@
         </div>
 
         <template v-else>
-          <div v-if="showWalletName" class="controller-description row">
+          <div v-if="showWalletName" class="controller-description row" data-testid="controllerDescription">
             {{ $t('staking.separateAccountController') }}
           </div>
 
@@ -48,6 +48,7 @@
             v-model="accountName"
             placeholder="accounts.account"
             size="big"
+            data-testid="accountName"
             :readonly="true"
           />
 
@@ -55,13 +56,14 @@
             v-if="showAmountInput"
             class="amount-input"
             text="assets.amount"
+            data-testid="inputAmount"
             :totalAmount="totalAmount"
             :value="amountValue"
             :asset="stakingAssetName"
             :assetId="stakingAssetId"
             :amount="amount"
             :showIcon="false"
-            :readonly="isRebond"
+            :readonly="isRedeem"
             @update:amount="updateAmount"
             @setMax="setMax"
           />
@@ -82,15 +84,20 @@
             :stakingNetwork="stakingNetwork"
             :stakingCurrency="stakingCurrency"
             :controllerAddress="controllerAddress"
-            :isInvalidController="isInvalidController"
+            :isValidController="isValidController"
             @update:controllerAddress="updateControllerAddress"
           >
             <div class="activity-buttons">
-              <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+              <BadgeButton text="assets.history" data-testid="historyBtn" @click="toggleHistoryBookVisibility" />
 
-              <BadgeButton text="common.paste" @click="paste" />
+              <BadgeButton text="common.paste" data-testid="pasteBtn" @click="paste" />
 
-              <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
+              <BadgeButton
+                v-if="showMyWalletsButton"
+                text="assets.myWallets"
+                data-testid="myWalletsBtn"
+                @click="toggleMyWalletsVisibility"
+              />
             </div>
           </ControllerAccount>
 
@@ -105,11 +112,16 @@
             @update:payoutAddress="setPayoutAddress"
           >
             <div class="activity-buttons">
-              <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+              <BadgeButton text="assets.history" data-testid="historyBtn" @click="toggleHistoryBookVisibility" />
 
-              <BadgeButton text="common.paste" @click="paste" />
+              <BadgeButton text="common.paste" data-testid="pasteBtn" @click="paste" />
 
-              <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
+              <BadgeButton
+                v-if="showMyWalletsButton"
+                text="assets.myWallets"
+                data-testid="myWalletsBtn"
+                @click="toggleMyWalletsVisibility"
+              />
             </div>
           </Payee>
         </template>
@@ -120,6 +132,7 @@
         width="100%"
         size="big"
         fontSize="big"
+        data-testid="confirmBtn"
         :text="btnText"
         :disabled="confirmBtnDisabled"
         @click="confirm"
@@ -186,7 +199,7 @@ export default class MainStakingForm extends Vue {
   isSuggested = false;
   showHistoryBook = false;
   showMyWallets = false;
-  isInvalidController = false;
+  isValidController = true;
   amount = '';
   stashBalance = '0';
   fee = '0';
@@ -300,9 +313,9 @@ export default class MainStakingForm extends Vue {
 
   get confirmBtnDisabled() {
     if (this.isControllerAccount) {
-      if (this.step === 1) return this.isInvalidController;
+      if (this.step === 2) return !this.isValidController || !this.isValidControllerAddress;
 
-      return !this.isValidControllerAddress;
+      return false;
     }
 
     if (this.isPayee) {
@@ -317,19 +330,50 @@ export default class MainStakingForm extends Vue {
   }
 
   get isValidAmountAsset() {
-    // комиссия по всем операциям списывается с transferable баланса
-    // по этому amount важен только при операции bondExtra
-    // в остальных случаях amount-это значение не относящееся к transferable балансу
-    // а значение уже залоченных токенов(bond, unbond, rebond)
-    const amount = this.isBondExtra ? this.amount : '0';
+    // для isRebond подменяем на сумму unbond`ов
+    // для isUnbond подменяем на суммарный стейк(activeStake)
+    // для isRedeem можно не подменять данные, тк инпут всегда isDisabled и значение подставляется автоматически и оно всегда корректное
+    const currencyByTypeOperation: TokenGroup = this.isRebond
+      ? {
+          ...this.stakingCurrency,
+          balances: this.stakingCurrency.balances.map((item) => ({
+            ...item,
+            transferable: this.stakingNetwork.unbond.sum,
+          })),
+        }
+      : this.isUnbond
+      ? {
+          ...this.stakingCurrency,
+          balances: this.stakingCurrency.balances.map((item) => ({
+            ...item,
+            transferable: this.stakingNetwork.activeStake,
+          })),
+        }
+      : this.stakingCurrency;
 
-    // для controller аккаунта подставляем баланс stash аккаунта
+    // Проверяем корерктно ли значение amount, которое ввел юзер
+    const isValid = isValidAmountAsset(currencyByTypeOperation, this.network, '0', this.amount);
+
+    if (!isValid) return false;
+
+    // Далее проверка на то, хватает ли Utility на оплату комиссии
+    // Для controller аккаунта подставляем баланс stash аккаунта, потому что комиссия списывается со stash
     const stakingCurrency: TokenGroup = this.stakingNetwork.isController
       ? {
           ...this.stakingCurrency,
-          balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),
+          balances: this.stakingCurrency.balances.map((item) => ({
+            ...item,
+            transferable: this.stashBalance,
+          })),
         }
       : this.stakingCurrency;
+
+    // при этом для bondExtra проверяется то, что transferable баланса хватает на оплату и amount и fee
+    // комиссия по всем операциям списывается с transferable баланса
+    // по этому amount важен только при операции bondExtra
+    // в остальных случаях amount-это значение не относящееся к transferable балансу(мы проверили его выше)
+    // а значение уже залоченных токенов(unbond, rebond)
+    const amount = this.isBondExtra ? this.amount : '0';
 
     return isValidAmountAsset(stakingCurrency, this.network, this.fee ?? '0', amount);
   }
@@ -383,7 +427,7 @@ export default class MainStakingForm extends Vue {
 
   @Watch('controllerAddress')
   async checkController(value: string) {
-    this.isInvalidController = !(await checkController({ address: value }));
+    this.isValidController = await checkController({ address: value });
   }
 
   async mounted() {

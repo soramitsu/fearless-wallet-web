@@ -108,9 +108,10 @@ const popupControls = reactive({
 });
 
 const errors = reactive({
-  unsufficientFunds: false,
-  incorrenctRecipient: false,
+  insufficientFunds: false,
+  incorrectRecipient: false,
 });
+
 const formInfo = reactive({
   fee: '0',
   to: '',
@@ -140,7 +141,7 @@ const toggleMyWalletsVisibility = () => (popupControls.showMyWallets = !popupCon
 const toggleHistoryBookVisibility = () => (popupControls.showHistoryBook = !popupControls.showHistoryBook);
 const recipientCut = computed(() => cut(formInfo.to));
 
-const isDisabled = computed(() => formInfo.to === '' || errors.incorrenctRecipient || errors.unsufficientFunds);
+const isDisabled = computed(() => formInfo.to === '' || errors.incorrectRecipient || errors.insufficientFunds);
 
 const setRecipient = (address = '') => (formInfo.to = address);
 
@@ -164,7 +165,7 @@ const assetSymbol = computed(() => {
 });
 
 const actionBtnName = computed(() => {
-  if (errors.unsufficientFunds) return t('assets.insufficientBalance', { asset: assetSymbol.value.toUpperCase() });
+  if (errors.insufficientFunds) return t('assets.insufficientBalance', { asset: assetSymbol.value.toUpperCase() });
 
   return `common.${popupControls.showConfirmScreen ? 'confirm' : 'send'}`;
 });
@@ -216,7 +217,7 @@ function validateTx() {
 
   checkNft(tx.value).then((checkData) => {
     if (checkData.error) {
-      if (checkData.error === 'unsufficientFunds') errors.unsufficientFunds = true;
+      if (checkData.error === 'insufficientFunds') errors.insufficientFunds = true;
     }
 
     formInfo.fee = checkData.fee;

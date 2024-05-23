@@ -4,12 +4,19 @@
       <InfoRow
         text="accounts.account"
         borderType="default"
+        data-testid="accountName"
         :value="accountName"
         :price="addressCut"
         :hideLastBorder="false"
       />
 
-      <InfoRow text="staking.payoutAccount" borderType="default" :value="payeeCut" :hideLastBorder="false" />
+      <InfoRow
+        text="staking.payoutAccount"
+        borderType="default"
+        data-testid="infoPayoutAccount"
+        :value="payeeCut"
+        :hideLastBorder="false"
+      />
     </template>
 
     <template v-else>
@@ -18,6 +25,7 @@
         icon="close"
         placeholder="staking.payoutAccount"
         class="payout-account"
+        data-testid="inputAddress"
         @click="setPayoutAddress"
       />
 
@@ -32,13 +40,14 @@
       text="assets.networkFee"
       borderType="default"
       icon="info"
+      data-testid="assetsNetworkFee"
       :value="`${fee} ${asset}`"
       :price="valueString"
       :hideLastBorder="false"
       :iconClasses="['staking-fee']"
     />
 
-    <Tooltip text="staking.stakingFee" target=".staking-fee" placement="right" />
+    <Tooltip text="staking.stakingFee" target=".staking-fee" placement="right" data-testid="stakingFee" />
   </div>
 </template>
 

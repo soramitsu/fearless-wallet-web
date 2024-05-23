@@ -11,19 +11,16 @@ import { ref, watch, computed } from 'vue';
 
 type BackgroundColor = 'polkaswap' | 'default';
 
-const props = defineProps({
-  src: {
-    type: String,
-    default: '',
-  },
-  withBorder: {
-    type: Boolean,
-    default: false,
-  },
-  backgroundColor: {
-    type: String as () => BackgroundColor,
-    default: 'default',
-  },
+type Props = {
+  src: string;
+  withBorder: boolean;
+  backgroundColor: BackgroundColor;
+};
+
+const props = withDefaults(defineProps<Props>(), {
+  src: '',
+  withBorder: false,
+  backgroundColor: 'default',
 });
 
 const widgetLoading = ref(true);

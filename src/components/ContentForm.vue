@@ -12,23 +12,18 @@ import { APP_HEIGHT } from '@/consts/global';
 
 type BackgroundType = 'black' | 'light-black';
 
-const props = defineProps({
-  height: {
-    type: Number,
-    default: 0,
-  },
-  isStaticHeight: {
-    type: Boolean,
-    default: false,
-  },
-  bottomRightCorner: {
-    type: Boolean,
-    default: false,
-  },
-  backgroundColor: {
-    type: String as () => BackgroundType,
-    default: 'light-black',
-  },
+type Props = {
+  height: number;
+  isStaticHeight: boolean;
+  bottomRightCorner: boolean;
+  backgroundColor: BackgroundType;
+};
+
+const props = withDefaults(defineProps<Props>(), {
+  height: 0,
+  isStaticHeight: false,
+  bottomRightCorner: false,
+  backgroundColor: 'light-black',
 });
 
 const contentFormStyle = computed(() => {

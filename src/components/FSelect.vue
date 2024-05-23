@@ -19,28 +19,23 @@ import { computed, defineProps, ref } from 'vue';
 
 type Size = 'small' | 'medium' | 'big';
 
-interface Options {
+type Option = {
   label: string;
   value: string;
-}
+};
 
-const props = defineProps({
-  placeholder: {
-    type: String,
-    default: '',
-  },
-  options: {
-    type: Array as () => Options[],
-    default: () => [],
-  },
-  disabled: {
-    type: Boolean,
-    default: false,
-  },
-  size: {
-    type: String as () => Size,
-    default: 'medium',
-  },
+type Props = {
+  placeholder: string;
+  options: Option[];
+  disabled: boolean;
+  size: Size;
+};
+
+const props = withDefaults(defineProps<Props>(), {
+  placeholder: '',
+  options: () => [],
+  disabled: false,
+  size: 'medium',
 });
 
 const vModel = ref('');

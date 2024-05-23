@@ -6,44 +6,52 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { ref, watch, computed } from 'vue';
 
 type BackgroundColor = 'polkaswap' | 'default';
 
-@Component
-export default class ExternalWidget extends Vue {
-  widgetLoading = true;
+const props = defineProps({
+  src: {
+    type: String,
+    default: '',
+  },
+  withBorder: {
+    type: Boolean,
+    default: false,
+  },
+  backgroundColor: {
+    type: String as () => BackgroundColor,
+    default: 'default',
+  },
+});
 
-  @Prop({ default: '', type: String }) readonly src!: string;
-  @Prop({ default: false, type: Boolean }) readonly withBorder!: boolean;
-  @Prop({ default: 'default' }) readonly backgroundColor!: BackgroundColor;
+const widgetLoading = ref(true);
 
-  get showFrame() {
-    return this.src && !this.widgetLoading;
+watch(
+  () => props.src,
+  (value) => {
+    if (value) widgetLoading.value = true;
   }
+);
 
-  get containerClasses() {
-    const backgroundColor = `background-${this.backgroundColor}`;
+const showFrame = computed(() => props.src && !widgetLoading.value);
 
-    return [
-      'widget-container',
-      {
-        'container-border': this.withBorder,
-        [backgroundColor]: !this.widgetLoading,
-      },
-    ];
-  }
+const containerClasses = computed(() => {
+  const backgroundColor = `background-${props.backgroundColor}`;
 
-  @Watch('src')
-  srcWatcher(value: string) {
-    if (value) this.widgetLoading = true;
-  }
+  return [
+    'widget-container',
+    {
+      'container-border': props.withBorder,
+      [backgroundColor]: !widgetLoading.value,
+    },
+  ];
+});
 
-  onLoadWidget(): void {
-    this.widgetLoading = false;
-  }
-}
+const onLoadWidget = () => {
+  widgetLoading.value = false;
+};
 </script>
 
 <style lang="scss" scoped>

@@ -6,41 +6,52 @@
   </FCorners>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, defineProps } from 'vue';
 import { APP_HEIGHT } from '@/consts/global';
 
 type BackgroundType = 'black' | 'light-black';
 
-@Component({})
-export default class ContentForm extends Vue {
-  @Prop(Number) height!: number;
-  @Prop({ type: Boolean, default: false }) isStaticHeight!: boolean;
-  @Prop({ type: Boolean, default: false }) bottomRightCorner!: boolean;
-  @Prop({ default: 'light-black' }) backgroundColor!: BackgroundType;
+const props = defineProps({
+  height: {
+    type: Number,
+    default: 0,
+  },
+  isStaticHeight: {
+    type: Boolean,
+    default: false,
+  },
+  bottomRightCorner: {
+    type: Boolean,
+    default: false,
+  },
+  backgroundColor: {
+    type: String as () => BackgroundType,
+    default: 'light-black',
+  },
+});
 
-  get contentFormStyle() {
-    const styles: Record<string, string> = {};
+const contentFormStyle = computed(() => {
+  const styles: Record<string, string> = {};
 
-    if (this.isStaticHeight) styles.height = `${this.height}px`;
-    else {
-      const subtractionNumber = APP_HEIGHT - this.height;
+  if (props.isStaticHeight) styles.height = `${props.height}px`;
+  else {
+    const subtractionNumber = APP_HEIGHT - props.height;
 
-      styles.height = `calc(100vh - ${subtractionNumber}px)`;
-      styles.minHeight = `${this.height}px`;
-    }
-
-    return styles;
+    styles.height = `calc(100vh - ${subtractionNumber}px)`;
+    styles.minHeight = `${props.height}px`;
   }
 
-  get contentClasses() {
-    return [
-      'content-form',
-      `background-${this.backgroundColor}`,
-      this.bottomRightCorner ? 'corner-left-top-right-bottom' : 'corner-left-top',
-    ];
-  }
-}
+  return styles;
+});
+
+const contentClasses = computed(() => {
+  return [
+    'content-form',
+    `background-${props.backgroundColor}`,
+    props.bottomRightCorner ? 'corner-left-top-right-bottom' : 'corner-left-top',
+  ];
+});
 </script>
 
 <style lang="scss" scoped>

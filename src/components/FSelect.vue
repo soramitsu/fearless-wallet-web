@@ -15,7 +15,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineProps, ref } from 'vue';
+import { computed, defineProps } from 'vue';
 
 type Size = 'small' | 'medium' | 'big';
 
@@ -25,6 +25,7 @@ type Option = {
 };
 
 type Props = {
+  value: string;
   placeholder: string;
   options: Option[];
   disabled: boolean;
@@ -38,7 +39,12 @@ const props = withDefaults(defineProps<Props>(), {
   size: 'medium',
 });
 
-const vModel = ref('');
+const emit = defineEmits(['change']);
+
+const vModel = computed({
+  get: () => props.value,
+  set: (value: string) => emit('change', value),
+});
 
 const containerSelectClasses = computed(() => {
   const sizeName = props.size === 'big' ? 'big' : 'medium';
@@ -47,7 +53,7 @@ const containerSelectClasses = computed(() => {
 });
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .select-style-default {
   input {
     color: $pink-lavender-color !important;

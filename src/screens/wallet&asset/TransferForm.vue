@@ -218,7 +218,6 @@ import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import BaseApi from '@/util/BaseApi';
-import FloatInput from '@/components/FloatInput.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import {
@@ -243,7 +242,6 @@ import { isNetworkGroup } from '@/helpers/common';
 @Component({
   components: {
     WalletInfo,
-    FloatInput,
     HistoryBook,
     EditAddressBook,
     ExistentialPopup,

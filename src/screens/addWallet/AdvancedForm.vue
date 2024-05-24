@@ -6,11 +6,12 @@
     @saveChanges="saveChanges"
   >
     <FSelect
-      v-model="substrateKeypairType"
+      :value="substrateKeypairType"
       :options="optionsSubstrateKeyPair"
       placeholder="addWallet.substrateCryptoType"
       size="big"
       class="row"
+      @change="changeSubstrateKeypairType"
     />
 
     <FInput
@@ -91,6 +92,10 @@ export default class AdvancedForm extends Vue {
     }
 
     return this.substrateDP !== '' || this.ethereumDP !== '';
+  }
+
+  changeSubstrateKeypairType(value: string) {
+    this.substrateKeypairType = value;
   }
 
   mounted() {

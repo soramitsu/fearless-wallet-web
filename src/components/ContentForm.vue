@@ -6,41 +6,47 @@
   </FCorners>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, defineProps } from 'vue';
 import { APP_HEIGHT } from '@/consts/global';
 
 type BackgroundType = 'black' | 'light-black';
 
-@Component({})
-export default class ContentForm extends Vue {
-  @Prop(Number) height!: number;
-  @Prop({ type: Boolean, default: false }) isStaticHeight!: boolean;
-  @Prop({ type: Boolean, default: false }) bottomRightCorner!: boolean;
-  @Prop({ default: 'light-black' }) backgroundColor!: BackgroundType;
+type Props = {
+  height: number;
+  isStaticHeight: boolean;
+  bottomRightCorner: boolean;
+  backgroundColor: BackgroundType;
+};
 
-  get contentFormStyle() {
-    const styles: Record<string, string> = {};
+const props = withDefaults(defineProps<Props>(), {
+  height: 0,
+  isStaticHeight: false,
+  bottomRightCorner: false,
+  backgroundColor: 'light-black',
+});
 
-    if (this.isStaticHeight) styles.height = `${this.height}px`;
-    else {
-      const subtractionNumber = APP_HEIGHT - this.height;
+const contentFormStyle = computed(() => {
+  const styles: Record<string, string> = {};
 
-      styles.height = `calc(100vh - ${subtractionNumber}px)`;
-      styles.minHeight = `${this.height}px`;
-    }
+  if (props.isStaticHeight) styles.height = `${props.height}px`;
+  else {
+    const subtractionNumber = APP_HEIGHT - props.height;
 
-    return styles;
+    styles.height = `calc(100vh - ${subtractionNumber}px)`;
+    styles.minHeight = `${props.height}px`;
   }
 
-  get contentClasses() {
-    return [
-      'content-form',
-      `background-${this.backgroundColor}`,
-      this.bottomRightCorner ? 'corner-left-top-right-bottom' : 'corner-left-top',
-    ];
-  }
-}
+  return styles;
+});
+
+const contentClasses = computed(() => {
+  return [
+    'content-form',
+    `background-${props.backgroundColor}`,
+    props.bottomRightCorner ? 'corner-left-top-right-bottom' : 'corner-left-top',
+  ];
+});
 </script>
 
 <style lang="scss" scoped>

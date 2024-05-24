@@ -1,13 +1,14 @@
 <template>
   <div class="import-wallet">
     <FSelect
-      v-model="typeImport"
+      :value="typeImport"
       placeholder="common.sourceType"
       size="big"
       class="row"
       :options="optionsImport"
       :disabled="disabledSelect"
       data-testid="sourceTypeSelect"
+      @change="changeTypeImport"
     />
 
     <FInput
@@ -129,6 +130,10 @@ export default class ImportWallet extends Vue {
     }
 
     return this.t('enterPassphrase');
+  }
+
+  changeTypeImport(value: ImportType) {
+    this.typeImport = value;
   }
 
   @Watch('typeImport')

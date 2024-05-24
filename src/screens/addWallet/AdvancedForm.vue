@@ -95,7 +95,7 @@ export default class AdvancedForm extends Vue {
   }
 
   changeSubstrateKeypairType(value: string) {
-    this.substrateDP = value;
+    this.substrateKeypairType = value;
   }
 
   mounted() {

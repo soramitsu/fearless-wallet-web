@@ -5,34 +5,34 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { defineProps, withDefaults, computed } from 'vue';
 
-@Component
-export default class ProgressBar extends Vue {
-  @Prop({ default: '365px' }) width!: string;
-  @Prop(Number) fillFactor!: number;
-
-  get fullBarStyle() {
-    return `width:${this.width}`;
-  }
-
-  get progressStyle() {
-    const width = `${this.fillFactor * 100}%`;
-
-    return `width:${width}`;
-  }
-
-  get classesProgress() {
-    return [
-      'bar',
-      'progress',
-      {
-        'progress-100': this.fillFactor === 1,
-      },
-    ];
-  }
+interface Props {
+  width: string;
+  fillFactor: number;
 }
+
+const props = withDefaults(defineProps<Props>(), {
+  width: '365px',
+  fillFactor: 0,
+});
+
+const fullBarStyle = computed(() => `width:${props.width}`);
+
+const progressStyle = computed(() => {
+  const width = `${props.fillFactor * 100}%`;
+
+  return `width:${width}`;
+});
+
+const classesProgress = computed(() => [
+  'bar',
+  'progress',
+  {
+    'progress-100': props.fillFactor === 1,
+  },
+]);
 </script>
 
 <style lang="scss" scoped>

@@ -27,7 +27,9 @@ const style = computed(() => {
   return styles;
 });
 
-const altName = computed(() => props.alt ?? props.name);
+const altName = computed(() => {
+  return props.alt ?? '';
+});
 
 const iconName = computed(() => {
   if (props.name === undefined || props.name === '') return '';

@@ -12,11 +12,11 @@
     <div class="nft-settings">
       <div class="form-item">
         <span>{{ $t('nft.spam') }}</span>
-        <Switcher v-model="nftSettings.spam" />
+        <Switcher :value="nftSettings.spam" @change="toggleNftSettingsSpam" />
       </div>
       <div class="form-item">
         <span>{{ $t('nft.airdrop') }}</span>
-        <Switcher v-model="nftSettings.airdrop" />
+        <Switcher :value="nftSettings.airdrop" @change="toggleNftSettingsAirdrop" />
       </div>
     </div>
   </Popup>
@@ -53,6 +53,14 @@ onBeforeUnmount(() => {
   accountController.setNftSettings(nftSettings.value);
 });
 const onClose = () => emit('handleClose');
+
+const toggleNftSettingsSpam = () => {
+  nftSettings.value.spam = !nftSettings.value.spam;
+};
+
+const toggleNftSettingsAirdrop = () => {
+  nftSettings.value.airdrop = !nftSettings.value.airdrop;
+};
 </script>
 
 <style lang="scss" scoped>

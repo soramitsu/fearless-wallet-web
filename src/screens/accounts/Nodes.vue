@@ -20,7 +20,7 @@
       <div class="switch-nodes">
         <div class="auto-select-nodes">{{ $t('accounts.autoNodes') }}</div>
 
-        <Switcher v-model="autoSelectNode" />
+        <Switcher :value="autoSelectNode" @change="toggleAutoSelectNode" />
       </div>
     </div>
 
@@ -97,7 +97,7 @@ export default class Nodes extends Vue {
     return this.getAutoSelectNodesValueByNetwork(this.selectedNetwork);
   }
 
-  set autoSelectNode(value: boolean) {
+  toggleAutoSelectNode(value: boolean) {
     this.setAutoSelectNode({ value, network: this.selectedNetwork });
   }
 

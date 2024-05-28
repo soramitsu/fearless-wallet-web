@@ -6,23 +6,35 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { defineProps, withDefaults, computed } from 'vue';
 
-@Component
-export default class SearchInput extends Vue {
-  @VModel({ type: String }) vModel!: string;
-  @Prop(String) placeholder!: string;
-  @Prop(String) width!: string;
-
-  get inputStyle() {
-    const styles: Record<string, string> = {};
-
-    if (this.width) styles.width = `${this.width}`;
-
-    return styles;
-  }
+interface Props {
+  value: string;
+  placeholder: string;
+  width: string;
 }
+
+const props = withDefaults(defineProps<Props>(), {
+  value: '',
+  placeholder: '',
+  width: '',
+});
+
+const emit = defineEmits(['change']);
+
+const vModel = computed({
+  get: () => props.value,
+  set: (value: string) => emit('change', value),
+});
+
+const inputStyle = computed(() => {
+  const styles: Record<string, string> = {};
+
+  if (props.width) styles.width = `${props.width}`;
+
+  return styles;
+});
 </script>
 
 <style lang="scss">

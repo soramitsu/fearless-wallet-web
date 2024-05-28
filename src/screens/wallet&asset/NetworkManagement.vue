@@ -2,11 +2,12 @@
   <AboveForm :header="getLocale('header')" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="management">
       <SearchInput
-        v-model="filterValue"
+        :value="filterValue"
         placeholder="common.searchNetwork"
         class="search-input"
         width="100%"
         data-testid="networkSearch"
+        @change="changeFilterValue"
       />
       <Tooltip text="common.copied" target=".search-input" placement="bottom" />
 
@@ -172,6 +173,10 @@ export default class NetworkManagement extends Vue {
 
   get isNetworksExists() {
     return this.filteredOptionsNetworks.length !== 0;
+  }
+
+  changeFilterValue(value: string) {
+    this.filterValue = value;
   }
 
   getLocale(key: string): string {

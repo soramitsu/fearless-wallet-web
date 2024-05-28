@@ -12,9 +12,9 @@ import { ref, watch, computed } from 'vue';
 type BackgroundColor = 'polkaswap' | 'default';
 
 type Props = {
-  src: string;
-  withBorder: boolean;
-  backgroundColor: BackgroundColor;
+  src?: string;
+  withBorder?: boolean;
+  backgroundColor?: BackgroundColor;
 };
 
 const props = withDefaults(defineProps<Props>(), {

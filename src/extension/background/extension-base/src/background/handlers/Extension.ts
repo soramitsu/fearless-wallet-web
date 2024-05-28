@@ -13,7 +13,7 @@ import { createSubscription, unsubscribe } from '@extension-base/services';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
-import { isRequireEvmAPI, uniqueStringArray, getBalanceItem } from '@extension-base/background/utils/utils';
+import { isNativeEVMNetwork, uniqueStringArray, getBalanceItem } from '@extension-base/background/utils/utils';
 import { type MetadataDef } from '@polkadot/extension-inject/types';
 import {
   isProposalExpired,
@@ -829,7 +829,7 @@ export default class Extension extends FWExtensionBase {
     const errors: BasicTxError[] = [];
 
     // Estimate with EVM API
-    if (isRequireEvmAPI(networkKey)) {
+    if (isNativeEVMNetwork(networkKey)) {
       try {
         const { fee: feeValue } = await getEVMTransactionObject({
           balance,
@@ -899,7 +899,7 @@ export default class Extension extends FWExtensionBase {
       balance,
     };
 
-    if (isRequireEvmAPI(networkKey)) {
+    if (isNativeEVMNetwork(networkKey)) {
       const { privateKey } = this.state.accountExportPrivateKey({ address: from, password });
 
       transferProm = makeEVMTransfer({

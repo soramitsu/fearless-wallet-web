@@ -25,7 +25,7 @@ import {
 } from '@extension-base/services';
 import { api as apiSora, type FPNumber } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
-import { isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isEthereumNetwork, isNativeEVMNetwork } from '@extension-base/background/utils/utils';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
 import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
@@ -553,6 +553,7 @@ export default class State {
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
     const pass = this.passwords[address] ?? password;
     const json = this.keyringService.backupAccount(address, pass!);
+
     if (!json) throw new Error('Json was not exported');
 
     const decoded = decodePair(pass, base64Decode(json.encoded), json.encoding.type);
@@ -608,7 +609,7 @@ export default class State {
     const activeEvmNetworks = this.networkValues.filter(({ name, active }) => {
       if (_networks && !_networks.includes(name)) return false;
 
-      if (!active || !isRequireEvmAPI(name)) return false;
+      if (!active || !isNativeEVMNetwork(name)) return false;
 
       return true;
     });

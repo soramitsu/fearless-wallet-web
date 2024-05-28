@@ -1,5 +1,6 @@
 import assert from 'assert';
-import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isNativeEVMNetwork } from '@extension-base/background/utils/utils';
+import { ethers } from 'ethers';
 import type {
   CachedUnlocks,
   RequestAccountExport,
@@ -24,7 +25,14 @@ export default class FWExtensionBase {
     this.cachedUnlocks = {};
   }
 
-  accountsExport({ address, password }: RequestAccountExport): ResponseAccountExport {
+  accountsExport({ address, password, network }: RequestAccountExport): ResponseAccountExport {
+    if (network && isNativeEVMNetwork(network)) {
+      const { privateKey } = this.state.accountExportPrivateKey({ address, password });
+      const json = ethers.encryptKeystoreJsonSync({ address, privateKey }, password);
+
+      return { exportedJson: JSON.parse(json) };
+    }
+
     return { exportedJson: this.state.keyringService.backupAccount(address, password)! };
   }
 
@@ -53,7 +61,7 @@ export default class FWExtensionBase {
     if (meta.ethereumAddress) {
       const cb = () =>
         Object.keys(this.state.networkMap).forEach((network) => {
-          if (isRequireEvmAPI(network)) this.state.networkService.evmApiHandler.refreshEvmApi(network);
+          if (isNativeEVMNetwork(network)) this.state.networkService.evmApiHandler.refreshEvmApi(network);
         });
 
       if (this.state.currentAccount) {

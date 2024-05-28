@@ -29,7 +29,7 @@ type Props = {
   placeholder: string;
   options: Option[];
   disabled: boolean;
-  size: Size;
+  size?: Size;
 };
 
 const props = withDefaults(defineProps<Props>(), {

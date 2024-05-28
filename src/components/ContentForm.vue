@@ -7,7 +7,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineProps } from 'vue';
+import { computed } from 'vue';
 import { APP_HEIGHT } from '@/consts/global';
 
 type BackgroundType = 'black' | 'light-black';
@@ -20,7 +20,6 @@ type Props = {
 };
 
 const props = withDefaults(defineProps<Props>(), {
-  height: 0,
   isStaticHeight: false,
   bottomRightCorner: false,
   backgroundColor: 'light-black',

@@ -9,8 +9,9 @@
 
       <Loader v-else />
 
-      <MobileWalletPermissionPopup v-if="connectionStatus" :status="connectionStatus" />
+      <PermissionDeniedPopup v-if="isWalletAlreadyExists" />
     </AboveForm>
+
     <div v-else class="finish-form">
       <FinishForm />
 
@@ -30,7 +31,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
-import MobileWalletPermissionPopup from '@/screens/mobile-wallet/MobileWalletPermissionPopup.vue';
+import PermissionDeniedPopup from '@/screens/mobile-wallet/PermissionDeniedPopup.vue';
 import { walletConnectDappInitSession, walletConnectDappSubscribeSession } from '@/extension/messaging';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
 import { Components } from '@/router/routes';
@@ -68,13 +69,7 @@ onMounted(async () => {
   });
 });
 
-const connectionStatus = computed(() => {
-  if (isWalletAlreadyExists.value) return 'wallet_exists';
-
-  return false;
-});
-
-const isQRPrep = computed(() => !connectionStatus.value && qr.value);
+const isQRPrep = computed(() => !isWalletAlreadyExists.value && qr.value);
 
 const onClose = () => router.back();
 const onContinue = () => router.push({ name: Components.Wallet });

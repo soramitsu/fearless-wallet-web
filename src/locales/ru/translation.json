@@ -99,7 +99,7 @@
   },
   "mobileConnector": {
     "connectionSet": "Соединение установлено",
-    "connectionFailed": "Соединение установлено",
+    "connectionFailed": "Соединение не установлено",
     "rejected": "Отказано пользователем",
     "cancelRequest": "Отменить запрос",
     "resetConnection": "Сбросить запрос",

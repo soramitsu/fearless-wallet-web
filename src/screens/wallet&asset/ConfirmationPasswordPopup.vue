@@ -398,6 +398,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     if (this.extrinsicType === 'nft') {
       const result = results as ResponseNftTransfer;
+
       this.hash = result.hash;
     }
 

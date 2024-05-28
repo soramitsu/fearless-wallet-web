@@ -18,8 +18,8 @@
             v-model="substrateAddress"
             class="row"
             size="big"
-            placeholder="Substrate"
             data-testid="addressInput"
+            :placeholder="placeholderJson"
             :readonly="true"
           />
         </div>
@@ -54,6 +54,10 @@ export default class ExportForm extends Vue {
 
   get network() {
     return this.$route.params.network ?? this.$route.params.selectedNetwork;
+  }
+
+  get placeholderJson() {
+    return BaseApi.isEthereumNetwork(this.network) ? 'Ethereum' : 'Substrate';
   }
 
   get substrateAddress() {

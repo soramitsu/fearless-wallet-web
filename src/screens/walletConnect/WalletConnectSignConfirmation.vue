@@ -64,6 +64,7 @@ import { walletConnectRequestReject, walletConnectRequestApprove, isSignLocked }
 import { useStore } from '@/store';
 import { useNotify } from '@/plugins/soramitsuUI';
 import ValidatedInput from '@/components/ValidatedInput.vue';
+
 type Error = { message: TransferErrorCode.UNSUPPORTED | BasicTxErrorCode.KEYRING_ERROR };
 
 const store = useStore();

@@ -1,11 +1,12 @@
 <template>
-  <Popup :isIcon="false" :sizeWidth="320" :showBorder="true" @handlerClose="onClose">
+  <Popup :isIcon="false" :sizeWidth="320" :showBorder="true" @handlerClose="toWalletScreen">
     <div class="connection__status">
       <Icon icon="status__failed" className="connection__status-icon" />
 
-      <span class="connection__status-name connection__status-name--failed">{{
-        $t('mobileConnector.connectionFailed')
-      }}</span>
+      <span class="connection__status-name connection__status-name--failed">
+        {{ $t('mobileConnector.connectionFailed') }}
+      </span>
+
       <span class="connection__status-message">{{ $t('mobileConnector.walletAlreadyExists') }}</span>
     </div>
   </Popup>
@@ -17,13 +18,13 @@ import { Components } from '@/router/routes';
 
 type Props = {
   requestResponse?: object | null;
-  status: 'wallet_exists';
 };
+
 withDefaults(defineProps<Props>(), { requestResponse: null });
+
 const router = useRouter();
 
 const toWalletScreen = () => router.push({ name: Components.Wallet });
-const onClose = () => toWalletScreen();
 </script>
 
 <style lang="scss" scoped>
@@ -34,12 +35,14 @@ const onClose = () => toWalletScreen();
   justify-content: center;
   padding: 16px;
 }
+
 .message {
   color: $gray-color;
   font-weight: 400;
   font-size: 16px;
   line-height: 147.5%;
 }
+
 .icon {
   width: 40px;
   height: 40px;

@@ -14,9 +14,9 @@ export class ScamService {
   }
 
   async refreshScamAddressList() {
-    const { data } = await axios.get<string>(URLS.SCAM);
+    const response = await axios.get<string>(URLS.SCAM).catch(() => console.info('onboarding fetch error'));
 
-    this.scamMap = this.parseSCV(data);
+    if (response?.status === 200) this.scamMap = this.parseSCV(response.data);
   }
 
   checkScamAddress(request: RequestCheckScam): ResponseCheckScam {

@@ -749,7 +749,7 @@ export default class Extension extends FWExtensionBase {
       const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock)
-        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.KEYRING_ERROR }] };
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
     }
 
     apiSora.shouldPairBeLocked = !isSavePass;
@@ -775,47 +775,18 @@ export default class Extension extends FWExtensionBase {
     };
   }
 
-  validatePairPassword(address: string, password: string | undefined) {
-    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
-    const errors = [] as Array<BasicTxError>;
-    const substratePair = this.state.keyringService.getPair(substrateAddress);
+  validatePairPassword(password: string) {
+    const address = this.state.getAccountAddress();
+    const substratePair = this.state.keyringService.getPair(address)!;
 
-    if (!substratePair) {
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        message: String('Could not find substrate pair'),
-      });
+    if (substratePair?.isLocked) {
+      const isUnlock = this.state.keyringService.unlockPair(substratePair, password);
 
-      return errors;
+      if (!isUnlock)
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
     }
 
-    if (password) {
-      try {
-        substratePair.unlock(password);
-
-        const { meta } = substratePair;
-        const ethereumAddress = meta.ethereumAddress as string | undefined;
-
-        if (ethereumAddress) {
-          const pair = this.state.keyringService.getPair(ethereumAddress);
-
-          if (pair) pair.unlock(password);
-        }
-      } catch (e: any) {
-        errors.push({
-          code: BasicTxErrorCode.KEYRING_ERROR,
-          message: String(e.message),
-        });
-      }
-    } else {
-      if (substratePair?.isLocked)
-        errors.push({
-          code: BasicTxErrorCode.KEYRING_ERROR,
-          message: String('Password required to decode encrypted data'),
-        });
-    }
-
-    return errors;
+    return { status: true };
   }
 
   private async checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {

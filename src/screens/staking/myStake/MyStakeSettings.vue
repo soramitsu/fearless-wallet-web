@@ -5,6 +5,7 @@
         <TabButton
           v-if="visibility"
           class="tab"
+          data-testid="myTabButton"
           :key="tabName"
           :target="target"
           :class="classes"

@@ -1,3 +1,12 @@
+import { type AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
+import type {
+  PoolsParamsRequest,
+  PoolsParamsResponse,
+  MakePoolsRequest,
+  GetShareOfPoolResponse,
+  GetShareOfPoolRequest,
+  DefaultParams as DefaultPoolParams,
+} from '@extension-base/services/pools-service/types';
 import type {
   NftTx,
   CheckNftResponse,
@@ -32,6 +41,7 @@ import type {
   StakingNetworkRequest,
   GetPayoutsFeeRequest,
   GetNominateNetworkFeeRequest,
+  RequestBond,
 } from '@extension-base/services/staking-service/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type { SessionTypes } from '@walletconnect/types';
@@ -93,6 +103,8 @@ import type {
   FetchBalanceRequest,
   ResponseNftTransfer,
   FetchEvmBalancePayload,
+  RequestCheckScam,
+  ResponseCheckScam,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -173,15 +185,16 @@ export interface RequestSignatures {
 
   //Transfer, CrossChain, Sora Swap
   'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
-  'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
+  'pri(accounts.makeTransfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
 
   'pri(accounts.checkCrossChain)': [RequestCheckCrossChain, ResponseCheckCrossChain];
-  'pri(accounts.crossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse];
+  'pri(accounts.makeCrossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse];
 
   'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
-  'pri(accounts.swap)': [RequestSwap, ResponseMakeSwap];
+  'pri(accounts.makeSwap)': [RequestSwap, ResponseMakeSwap];
 
-  'pri(accounts.soraFees)': [null, SoraFees];
+  'pri(accounts.getSoraFees)': [null, SoraFees];
+  'pri(accounts.checkScamAddress)': [RequestCheckScam, ResponseCheckScam];
 
   // staking
   'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];
@@ -191,6 +204,15 @@ export interface RequestSignatures {
   'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];
   'pri(staking.getPayoutsFee)': [GetPayoutsFeeRequest, string];
   'pri(staking.getNominateNetworkFee)': [GetNominateNetworkFeeRequest, string];
+  'pri(staking.getBondAndNominateNetworkFee)': [RequestBond, string];
+
+  // pools
+  'pri(pools.poolsParams)': [PoolsParamsRequest, PoolsParamsResponse];
+  'pri(pools.makePool)': [MakePoolsRequest, BasicTxResponse];
+  'pri(pools.shareOfPool)': [GetShareOfPoolRequest, GetShareOfPoolResponse];
+  'pri(pools.unsubscribePools)': [null, void];
+  'pri(pools.accountLiquidity)': [null, boolean, AccountLiquidity[]];
+  'pri(pools.getAmountValue)': [DefaultPoolParams, string];
 
   //ether
   'pri(balance)': [null, BalanceJson];

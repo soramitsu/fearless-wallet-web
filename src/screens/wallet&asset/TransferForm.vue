@@ -109,6 +109,8 @@
                 />
               </div>
 
+              <Alert v-if="isScamAddress" :message="scamMessage" headerText="common.warning" />
+
               <slot name="step1Warning"></slot>
 
               <InfoRow
@@ -186,7 +188,7 @@
     />
 
     <WarningAddressPopup
-      v-if="showWarningAddressPopup"
+      v-if="!isValidAddressByNetwork"
       @handlerAccept="formatAddress"
       @handlerClose="handlerCloseWarningAddressPopup"
     />
@@ -207,6 +209,7 @@ import {
   type ResponseCheckCrossChain,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
+import { Reasons, type ScamInfo } from '@extension-base/services/scam-service/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
@@ -215,7 +218,6 @@ import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import BaseApi from '@/util/BaseApi';
-import FloatInput from '@/components/FloatInput.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import {
@@ -233,14 +235,13 @@ import {
   FAVORITE_NETWORKS,
 } from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
-import { checkTransfer, checkCrossChain } from '@/extension/messaging';
+import { checkTransfer, checkCrossChain, checkScamAddress } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import { isNetworkGroup } from '@/helpers/common';
 
 @Component({
   components: {
     WalletInfo,
-    FloatInput,
     HistoryBook,
     EditAddressBook,
     ExistentialPopup,
@@ -264,6 +265,8 @@ export default class TransferForm extends Vue {
   filterValue = '';
   isFetchingFees = false;
   estimateFeeError = false;
+  isScamAddress = false;
+  scamInfo: Nullable<ScamInfo> = null;
   step = 1;
 
   @Prop(String) header!: string;
@@ -285,6 +288,22 @@ export default class TransferForm extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+
+  get scamMessage() {
+    const key =
+      this.scamInfo?.reason === Reasons.Donation
+        ? 'isDonationAddress'
+        : this.scamInfo?.reason === Reasons.Exchange
+        ? 'isExchangeAddress'
+        : this.scamInfo?.reason === Reasons.Sanctions
+        ? 'isSanctionsAddress'
+        : 'isScamAddress';
+
+    return {
+      text: `assets.${key}`,
+      localeProps: { asset: this.sendAssetName.toUpperCase() },
+    };
+  }
 
   get recipientCut() {
     return cut(this.syncedRecipient);
@@ -385,10 +404,10 @@ export default class TransferForm extends Vue {
     return this.isTransfer ? this.syncedNetwork : this.syncedDestNet;
   }
 
-  get showWarningAddressPopup() {
-    if (!this.isValidRecipientAddress || this.syncedNetwork === '') return false;
+  get isValidAddressByNetwork() {
+    if (!this.isValidRecipientAddress || this.syncedNetwork === '') return true;
 
-    return !BaseApi.validateAddressByNetwork(this.syncedRecipient, this.targetNetwork);
+    return BaseApi.validateAddressByNetwork(this.syncedRecipient, this.targetNetwork);
   }
 
   get top() {
@@ -668,6 +687,19 @@ export default class TransferForm extends Vue {
       originNet: this.syncedNetwork,
       destinationNet: this.syncedDestNet,
     } as RequestCheckCrossChain;
+  }
+
+  @Watch('syncedRecipient')
+  async checkScam() {
+    if (this.isValidRecipientAddress && this.isValidAddressByNetwork) {
+      const { value, info } = await checkScamAddress({ address: this.syncedRecipient, network: this.targetNetwork });
+
+      this.isScamAddress = value;
+      this.scamInfo = info;
+    } else {
+      this.isScamAddress = false;
+      this.scamInfo = null;
+    }
   }
 
   @Watch('showSelectedAssetPopup')

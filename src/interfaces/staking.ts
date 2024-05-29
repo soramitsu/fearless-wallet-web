@@ -1,20 +1,16 @@
-import {
-  type BondExtra,
-  type Nominate,
-  type Rebond,
-  type SetControllerAccount,
-  type SetPayee,
-  type Unbond,
-  type WithdrawUnbonded,
+import type {
+  BondExtra,
+  Nominate,
+  Rebond,
+  SetControllerAccount,
+  SetPayee,
+  Unbond,
+  WithdrawUnbonded,
+  FWValidatorInfoFull,
 } from '@extension-base/services/staking-service/types';
 
-export interface SelectionValidator {
-  name: string;
-  address: string;
-  apy: string;
-  description: string;
+export interface SelectionValidator extends FWValidatorInfoFull {
   isOversubscribed: boolean;
-  onchainIdentity: boolean;
   isSlashed: boolean;
   limitValidatorsIdentity: boolean;
   isSelect: boolean;

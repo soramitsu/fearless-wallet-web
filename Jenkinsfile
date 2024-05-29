@@ -58,6 +58,12 @@ def pipeline = new org.js.AppArtifactsPipeline(
     buildWithCred:              buildWithCred,
     dojoProductType:            'fearless-web',
     sonarSrcPath:               'src',
-    sonarTestsPath:             'tests'
+    sonarTestsPath:             'tests',
+    triggerAutotest:            true,
+    downstreamJob:              '/qa/soramitsu-test-framework/fearless-wallet-web',
+    downstreamJobParams:        [
+        [$class: 'StringParameterValue', name: 'targetBranch', value: env.BRANCH_NAME],
+        [$class: 'StringParameterValue', name: 'typeTest', value: 'tests:fearless-smoke']
+    ]
 )
 pipeline.runPipeline()

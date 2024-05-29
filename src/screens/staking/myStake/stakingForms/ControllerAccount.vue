@@ -1,9 +1,21 @@
 <template>
   <div class="controller-account">
     <template v-if="step === 1">
-      <InfoRow text="staking.stashAccount" borderType="default" :value="accountName" :hideLastBorder="false" />
+      <InfoRow
+        text="staking.stashAccount"
+        data-testid="stashAccount"
+        borderType="default"
+        :value="accountName"
+        :hideLastBorder="false"
+      />
 
-      <InfoRow text="staking.setController" borderType="default" :value="controllerCut" :hideLastBorder="false" />
+      <InfoRow
+        text="staking.setController"
+        data-testid="controllerAccount"
+        borderType="default"
+        :value="controllerCut"
+        :hideLastBorder="false"
+      />
     </template>
 
     <template v-else>
@@ -13,11 +25,12 @@
         v-model="addressCut"
         icon="close"
         placeholder="staking.setController"
+        data-testid="controllerAccountInput"
         @click="setControllerAddress"
       />
 
       <Alert
-        v-if="isInvalidController"
+        v-if="!isValidController"
         message="staking.alreadyControlling"
         sizeText="small"
         class="already-controlling"
@@ -34,6 +47,7 @@
       text="assets.networkFee"
       borderType="default"
       icon="info"
+      data-testid="networkFee"
       :value="`${fee} ${asset}`"
       :price="valueString"
       :hideLastBorder="false"
@@ -59,7 +73,7 @@ export default class ControllerAccount extends Vue {
   @Prop({ type: String }) fee!: string;
   @Prop({ type: Object }) stakingCurrency!: TokenGroup;
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: Boolean }) isInvalidController!: boolean;
+  @Prop({ type: Boolean }) isValidController!: boolean;
   @PropSync('controllerAddress', { type: String }) syncedControllerAddress!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;

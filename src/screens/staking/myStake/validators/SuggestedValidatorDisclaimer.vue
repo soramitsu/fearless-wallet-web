@@ -1,5 +1,5 @@
 <template>
-  <div class="algorithm-validator-disclaimer">
+  <div class="algorithm-validator-disclaimer" data-testid="algorithmValidatorDisclaimer">
     <Icon icon="info-triangle" className="info-triangle" />
 
     <div class="paragraph">{{ $t('staking.warning1') }}</div>

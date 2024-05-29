@@ -38,3 +38,7 @@ yarn lint
 ```
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
+
+commit 1
+commit 2
+commit 3 

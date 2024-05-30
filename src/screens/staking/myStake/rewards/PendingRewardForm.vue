@@ -250,7 +250,7 @@ export default class PendingRewardForm extends Vue {
   async created() {
     await this.getRewards();
 
-    this.getSoraFees();
+    this.getPayoutsFee();
 
     if (this.stakingNetwork.isController)
       this.stashBalance = await fetchBalance({
@@ -270,7 +270,7 @@ export default class PendingRewardForm extends Vue {
     this.showLoader = false;
   }
 
-  async getSoraFees() {
+  async getPayoutsFee() {
     this.fee = await getPayoutsFee({ payouts: this.rewards.payouts, network: this.network });
   }
 

@@ -20,7 +20,7 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, withDefaults } from 'vue';
+import { withDefaults } from 'vue';
 import Row from '@/components/Row.vue';
 
 type BorderType = 'default' | 'secondary';

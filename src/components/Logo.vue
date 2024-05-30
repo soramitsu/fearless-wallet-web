@@ -6,8 +6,8 @@
       </div>
     </div>
 
-    <div v-show="text" class="text">{{ $t(text) }}</div>
-    <div v-show="subtext" class="subtext">{{ $t(subtext) }}</div>
+    <div v-if="text" class="text">{{ $t(text) }}</div>
+    <div v-if="subtext" class="subtext">{{ $t(subtext) }}</div>
   </div>
 </template>
 
@@ -18,15 +18,13 @@ type SizeLogo = 'mini' | 'small' | 'medium' | 'big';
 type TypeLogo = 'primary' | 'secondary';
 
 interface Props {
-  text: string;
-  subtext: string;
+  text?: string;
+  subtext?: string;
   size?: SizeLogo;
   typeLogo?: TypeLogo;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  text: '',
-  subtext: '',
   size: 'medium',
   typeLogo: 'primary',
 });

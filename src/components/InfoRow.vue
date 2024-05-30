@@ -21,9 +21,10 @@
 
 <script lang="ts" setup>
 import { defineProps, withDefaults } from 'vue';
+import Row from '@/components/Row.vue';
 
 type BorderType = 'default' | 'secondary';
-type Color = 'default' | 'pink-lavender';
+type Color = 'white' | 'pink-lavender';
 
 interface Props {
   text: string;
@@ -31,7 +32,7 @@ interface Props {
   price?: string;
   icon?: string;
   iconValue?: string;
-  color: Color;
+  color?: Color;
   iconAppend?: string;
   borderType?: BorderType;
   isIconPrepend?: boolean;
@@ -47,7 +48,7 @@ withDefaults(defineProps<Props>(), {
   price: '',
   icon: '',
   iconValue: '',
-  color: 'default',
+  color: 'white',
   iconAppend: '',
   borderType: 'default',
   isIconPrepend: true,

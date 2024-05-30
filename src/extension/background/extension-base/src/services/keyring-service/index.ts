@@ -146,6 +146,12 @@ export class KeyringService {
     return keyring.restoreAccount(file, password);
   }
 
+  createFromJson(file: KeyringPair$Json) {
+    delete file.meta.genesisHash;
+
+    return keyring.createFromJson(file);
+  }
+
   unlockPair(addressOrPair: string | KeyringPair, password: string) {
     const pair = this.getPair(addressOrPair);
 

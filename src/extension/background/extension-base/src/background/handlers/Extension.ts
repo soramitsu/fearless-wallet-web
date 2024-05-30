@@ -4,7 +4,7 @@ import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
-import { formatUnits, Wallet } from 'ethers';
+import { ethers, formatUnits, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/swaps';
@@ -13,7 +13,7 @@ import { createSubscription, unsubscribe } from '@extension-base/services';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
-import { isRequireEvmAPI, uniqueStringArray, getBalanceItem } from '@extension-base/background/utils/utils';
+import { isNativeEVMNetwork, uniqueStringArray, getBalanceItem } from '@extension-base/background/utils/utils';
 import { type MetadataDef } from '@polkadot/extension-inject/types';
 import {
   isProposalExpired,
@@ -422,9 +422,29 @@ export default class Extension extends FWExtensionBase {
   }
 
   jsonRestore({ file, password }: RequestJsonRestore): Promise<string> {
+    const stringFile = JSON.stringify(file);
+
+    if (ethers.isKeystoreJson(stringFile))
+      return new Promise((resolve, reject) => {
+        try {
+          const { privateKey } = ethers.decryptKeystoreJsonSync(stringFile, password);
+
+          const address = this.state.keyringService.addAccount(
+            privateKey,
+            password,
+            { name: file.meta.name ?? '', isMobile: false },
+            'ethereum'
+          );
+
+          resolve(address);
+        } catch (error) {
+          reject({ error: (error as Error).message });
+        }
+      });
+
     const isPasswordValidated = this.validatePassword(file, password);
 
-    if (isPasswordValidated) {
+    if (isPasswordValidated)
       return new Promise((resolve, reject) => {
         try {
           const { address } = this.state.keyringService.restoreAccount(file, password);
@@ -440,9 +460,7 @@ export default class Extension extends FWExtensionBase {
           reject({ error: (error as Error).message });
         }
       });
-    } else {
-      throw new Error('Unable to decode using the supplied passphrase');
-    }
+    else throw new Error('Unable to decode using the supplied passphrase');
   }
 
   private async setActiveNetworks(type: string): Promise<void> {
@@ -800,7 +818,7 @@ export default class Extension extends FWExtensionBase {
     const errors: BasicTxError[] = [];
 
     // Estimate with EVM API
-    if (isRequireEvmAPI(networkKey)) {
+    if (isNativeEVMNetwork(networkKey)) {
       try {
         const { fee: feeValue } = await getEVMTransactionObject({
           balance,
@@ -870,7 +888,7 @@ export default class Extension extends FWExtensionBase {
       balance,
     };
 
-    if (isRequireEvmAPI(networkKey)) {
+    if (isNativeEVMNetwork(networkKey)) {
       const { privateKey } = this.state.accountExportPrivateKey({ address: from, password });
 
       transferProm = makeEVMTransfer({

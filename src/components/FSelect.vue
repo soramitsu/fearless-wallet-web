@@ -15,7 +15,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineProps } from 'vue';
+import { computed } from 'vue';
 
 type Size = 'small' | 'medium' | 'big';
 
@@ -29,7 +29,7 @@ type Props = {
   placeholder: string;
   options: Option[];
   disabled: boolean;
-  size: Size;
+  size?: Size;
 };
 
 const props = withDefaults(defineProps<Props>(), {

@@ -97,8 +97,12 @@ export default class Nodes extends Vue {
     return this.getAutoSelectNodesValueByNetwork(this.selectedNetwork);
   }
 
-  toggleAutoSelectNode(value: boolean) {
+  set autoSelectNode(value: boolean) {
     this.setAutoSelectNode({ value, network: this.selectedNetwork });
+  }
+
+  toggleAutoSelectNode(value: boolean) {
+    this.autoSelectNode = value;
   }
 
   get activeNode() {

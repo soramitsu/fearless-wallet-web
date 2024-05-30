@@ -540,7 +540,6 @@ export default class SwapForm extends Vue {
 
   created() {
     this.updateComponentParams();
-
     this.getSoraFees();
   }
 
@@ -572,7 +571,9 @@ export default class SwapForm extends Vue {
   async getSoraFees() {
     const { Swap } = await getSoraFees();
 
-    this.fee = Swap;
+    if (Swap === '0') {
+      setTimeout(() => this.getSoraFees(), 10000);
+    } else this.fee = Swap;
   }
 
   async checkSwap() {

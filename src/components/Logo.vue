@@ -20,8 +20,8 @@ type TypeLogo = 'primary' | 'secondary';
 interface Props {
   text: string;
   subtext: string;
-  size: SizeLogo;
-  typeLogo: TypeLogo;
+  size?: SizeLogo;
+  typeLogo?: TypeLogo;
 }
 
 const props = withDefaults(defineProps<Props>(), {

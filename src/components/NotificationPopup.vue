@@ -42,16 +42,16 @@ import { defineProps, withDefaults, computed, defineEmits } from 'vue';
 type Size = 'mini' | 'small' | 'medium' | 'big';
 
 interface Props {
-  headers: { text: string; subtext: string };
-  showAcceptButton: boolean;
-  showRejectButton: boolean;
-  showWarningIcon: boolean;
-  showHeader: boolean;
-  closeByBackground: boolean;
-  sizeWidth: Size;
-  rejectButtonText: string;
-  acceptButtonText: string;
-  zIndex: number;
+  headers?: { text: string; subtext: string };
+  showAcceptButton?: boolean;
+  showRejectButton?: boolean;
+  showWarningIcon?: boolean;
+  showHeader?: boolean;
+  closeByBackground?: boolean;
+  sizeWidth?: Size;
+  rejectButtonText?: string;
+  acceptButtonText?: string;
+  zIndex?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {

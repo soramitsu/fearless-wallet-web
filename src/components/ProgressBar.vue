@@ -9,7 +9,7 @@
 import { defineProps, withDefaults, computed } from 'vue';
 
 interface Props {
-  width: string;
+  width?: string;
   fillFactor: number;
 }
 

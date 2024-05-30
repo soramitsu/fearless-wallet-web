@@ -27,18 +27,18 @@ type Color = 'default' | 'pink-lavender';
 
 interface Props {
   text: string;
-  value: string;
-  price: string;
+  value?: string;
+  price?: string;
   icon?: string;
   iconValue?: string;
   color: Color;
   iconAppend?: string;
-  borderType: BorderType;
-  isIconPrepend: boolean;
-  showBorder: boolean;
-  hideLastBorder: boolean;
-  isLoading: boolean;
-  iconClasses: string[];
+  borderType?: BorderType;
+  isIconPrepend?: boolean;
+  showBorder?: boolean;
+  hideLastBorder?: boolean;
+  isLoading?: boolean;
+  iconClasses?: string[];
 }
 
 withDefaults(defineProps<Props>(), {

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isNativeEVMNetwork } from '@extension-base/background/utils/utils';
 import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
 import type { FetchHistory, AugmentedNetworksContext, ToggleFavorite } from '@/store';
@@ -45,7 +45,7 @@ const actions: ActionTree<State, State> & Actions = {
     const { type, url: historyUrl } = externalApi.history;
     const url = isSora(networkName) ? externalApi.staking!.url : historyUrl; // TODO remove
 
-    const isNativeEvm = isRequireEvmAPI(networkName);
+    const isNativeEvm = isNativeEVMNetwork(networkName);
     const balances: TokenGroup[] = rootState.account.balances ?? [];
 
     const asset = isNativeEvm

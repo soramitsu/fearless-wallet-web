@@ -1,13 +1,14 @@
 <template>
   <div class="import-wallet">
     <FSelect
-      v-model="typeImport"
+      :value="typeImport"
       placeholder="common.sourceType"
       size="big"
       class="row"
       :options="optionsImport"
       :disabled="disabledSelect"
       data-testid="sourceTypeSelect"
+      @change="changeTypeImport"
     />
 
     <FInput
@@ -46,7 +47,7 @@
       </div>
     </template>
 
-    <slot v-if="showSlot"></slot>
+    <AdvancedButton v-if="showSlot" @click="toggleAdvancedFormVisible" />
   </div>
 </template>
 
@@ -54,8 +55,13 @@
 import { Component, Vue, Prop, Watch, VModel, PropSync, Ref } from 'vue-property-decorator';
 import type { ImportType } from '@/interfaces';
 import type Input from '@/components/Input.vue';
+import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 
-@Component
+@Component({
+  components: {
+    AdvancedButton,
+  },
+})
 export default class ImportWallet extends Vue {
   readonly optionsImport = [
     { label: 'Mnemonic passphrase', value: 'mnemonic' },
@@ -92,9 +98,7 @@ export default class ImportWallet extends Vue {
     }
 
     // typeImport === 'json'
-    if (this.isOnlyEthereumAccount) {
-      return 'ethereumJson';
-    }
+    if (this.isOnlyEthereumAccount) return 'ethereumJson';
 
     return this.step === 1 ? 'substrateJson' : 'ethereumJson';
   }
@@ -131,6 +135,10 @@ export default class ImportWallet extends Vue {
     return this.t('enterPassphrase');
   }
 
+  changeTypeImport(value: ImportType) {
+    this.typeImport = value;
+  }
+
   @Watch('typeImport')
   onTypeImportChanged() {
     this.$emit('reset');
@@ -147,6 +155,10 @@ export default class ImportWallet extends Vue {
 
   t(value: string, obj: Record<string, string> = {}) {
     return this.$t(`addWallet.${value}`, obj);
+  }
+
+  toggleAdvancedFormVisible() {
+    this.$emit('toggleAdvancedFormVisible');
   }
 }
 </script>

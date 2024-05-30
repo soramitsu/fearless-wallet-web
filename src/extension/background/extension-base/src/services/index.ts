@@ -12,3 +12,5 @@ export * from '@extension-base/services/nft-service';
 export * from '@extension-base/services/google-service';
 export * from '@extension-base/services/cron-service';
 export * from '@extension-base/services/subscription-service';
+export * from '@extension-base/services/scam-service';
+export * from '@extension-base/services/prices-service';

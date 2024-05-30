@@ -14,31 +14,43 @@
   </FCorners>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 
 type Size = 'small' | 'medium' | 'big';
 
-interface Options {
+type Option = {
   label: string;
   value: string;
-}
+};
 
-@Component
-export default class Select extends Vue {
-  @VModel({ type: String }) vModel!: string;
-  @Prop(String) placeholder!: string;
-  @Prop(Array) options!: Options[];
-  @Prop(Boolean) disabled!: boolean;
-  @Prop({ default: 'medium' }) size!: Size;
+type Props = {
+  value: string;
+  placeholder: string;
+  options: Option[];
+  disabled: boolean;
+  size?: Size;
+};
 
-  get containerSelectClasses() {
-    // for "small" and "mini" sizes also medium
-    const sizeName = this.size === 'big' ? 'big' : 'medium';
+const props = withDefaults(defineProps<Props>(), {
+  placeholder: '',
+  options: () => [],
+  disabled: false,
+  size: 'medium',
+});
 
-    return [`select-style-default`, `select-size-${sizeName}`];
-  }
-}
+const emit = defineEmits(['change']);
+
+const vModel = computed({
+  get: () => props.value,
+  set: (value: string) => emit('change', value),
+});
+
+const containerSelectClasses = computed(() => {
+  const sizeName = props.size === 'big' ? 'big' : 'medium';
+
+  return [`select-style-default`, `select-size-${sizeName}`];
+});
 </script>
 
 <style lang="scss">

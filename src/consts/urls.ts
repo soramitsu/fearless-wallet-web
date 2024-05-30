@@ -22,6 +22,8 @@ const XCM_FEES = IS_PRODUCTION
 
 const ONBOARDING_URL = `${BASE_URL}/master/appConfigs/onboarding/web.json`;
 
+const SCAM = `${BASE_URL}/master/scamDetection/Polkadot_Hot_Wallet_Attributions.csv`;
+
 const BASE_URLS_PREFIX = {
   MOONPAY: 'https://buy.moonpay.com',
   RAMP: 'https://app.ramp.network',
@@ -79,6 +81,7 @@ const URLS = {
   XCM_LOCATIONS,
   XCM_FEES,
   ONBOARDING_URL,
+  SCAM,
 };
 
 function isSafeForExternalOpen(url: string): boolean {
@@ -86,17 +89,11 @@ function isSafeForExternalOpen(url: string): boolean {
     return false;
   }
 
-  if (Object.values(URLS).includes(url)) {
-    return true;
-  }
+  if (Object.values(URLS).includes(url)) return true;
 
-  if (Object.values(BASE_URLS_PREFIX).some((item) => url.startsWith(item))) {
-    return true;
-  }
+  if (Object.values(BASE_URLS_PREFIX).some((item) => url.startsWith(item))) return true;
 
-  if (Object.values(BASE_URLS_SUFFIX).some((item) => url.includes(item))) {
-    return true;
-  }
+  if (Object.values(BASE_URLS_SUFFIX).some((item) => url.includes(item))) return true;
 
   return false;
 }

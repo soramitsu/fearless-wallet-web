@@ -11,7 +11,7 @@
         :errorWithIcon="true"
       />
 
-      <FButton text="common.connect" size="big" fontSize="big" :border="false" @click="onSubmit" />
+      <FButton text="common.connect" size="big" fontSize="big" :disabled="isError" :border="false" @click="onSubmit" />
     </div>
   </AboveForm>
 </template>
@@ -26,6 +26,7 @@ const router = useRouter();
 const uri = ref('');
 const isError = ref(false);
 const errorDescriptions = ref('');
+
 watch(uri, () => {
   if (uri.value === '') isError.value = false;
 });

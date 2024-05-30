@@ -1,11 +1,11 @@
 <template>
   <Popup
     :showHeader="showHeader"
-    @handlerClose="$emit('handlerClose')"
     :sizeWidth="sizeWidth"
     :showBorder="true"
     :closeByBackground="closeByBackground"
     :zIndex="zIndex"
+    @handlerClose="emit('handlerClose')"
   >
     <div class="notification-popup-content">
       <Icon v-if="showWarningIcon" icon="info-triangle" className="img" />
@@ -36,41 +36,42 @@
   </Popup>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-
-interface Headers {
-  text: string;
-  subtext: string;
-}
+<script lang="ts" setup>
+import { defineProps, withDefaults, computed, defineEmits } from 'vue';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 
-@Component
-export default class NotificationPopup extends Vue {
-  @Prop({ default: () => ({ text: '', subtext: '' }) }) headers!: Headers;
-  @Prop({ default: false }) showAcceptButton!: boolean;
-  @Prop({ default: false }) showRejectButton!: boolean;
-  @Prop({ default: true }) showWarningIcon!: boolean;
-  @Prop({ default: true }) showHeader!: boolean;
-  @Prop({ default: true }) closeByBackground!: boolean;
-  @Prop({ default: 'medium' }) sizeWidth!: Size;
-  @Prop({ default: 'common.cancel' }) rejectButtonText!: string;
-  @Prop({ default: 'common.proceed' }) acceptButtonText!: string;
-  @Prop({ default: 299 }) zIndex!: number;
-
-  get text() {
-    return this.headers.text;
-  }
-
-  get subtext() {
-    return this.headers.subtext;
-  }
-
-  get classesSubtext() {
-    return ['subtext', `subtext-${this.sizeWidth}`];
-  }
+interface Props {
+  headers?: { text: string; subtext: string };
+  showAcceptButton?: boolean;
+  showRejectButton?: boolean;
+  showWarningIcon?: boolean;
+  showHeader?: boolean;
+  closeByBackground?: boolean;
+  sizeWidth?: Size;
+  rejectButtonText?: string;
+  acceptButtonText?: string;
+  zIndex?: number;
 }
+
+const props = withDefaults(defineProps<Props>(), {
+  headers: () => ({ text: '', subtext: '' }),
+  showAcceptButton: false,
+  showRejectButton: false,
+  showWarningIcon: true,
+  showHeader: true,
+  closeByBackground: true,
+  sizeWidth: 'medium',
+  rejectButtonText: 'common.cancel',
+  acceptButtonText: 'common.proceed',
+  zIndex: 299,
+});
+
+const emit = defineEmits(['handlerClose', 'handlerAccept']);
+
+const text = computed(() => props.headers.text);
+const subtext = computed(() => props.headers.subtext);
+const classesSubtext = computed(() => ['subtext', `subtext-${props.sizeWidth}`]);
 </script>
 
 <style lang="scss" scoped>

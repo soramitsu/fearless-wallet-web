@@ -1,7 +1,7 @@
 <template>
   <div class="wrapper" @click="click">
     <FInput
-      v-model="model"
+      v-model="vModel"
       size="big"
       class="rotate-input"
       :placeholder="placeholder"
@@ -19,34 +19,41 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { defineProps, withDefaults, computed } from 'vue';
 
-@Component({})
-export default class InputWithIcon extends Vue {
-  showSelectNetworkPopup = false;
+type IconType = 'rotate' | 'close';
 
-  @VModel({ type: String || Number }) vModel!: string;
-  @Prop(String) placeholder!: string;
-  @Prop(Boolean) isActiveRotate!: boolean;
-  @Prop(String) icon!: 'rotate' | 'close';
-
-  get model() {
-    return this.vModel;
-  }
-
-  get isCloseIcon() {
-    return this.icon === 'close' && this.model !== '';
-  }
-
-  click() {
-    if (this.icon === 'rotate') this.$emit('click');
-  }
-
-  clickIcon() {
-    this.$emit('click');
-  }
+interface Props {
+  value: string | number;
+  placeholder: string;
+  isActiveRotate: boolean;
+  icon: IconType;
 }
+
+const props = withDefaults(defineProps<Props>(), {
+  value: '',
+  placeholder: '',
+  isActiveRotate: false,
+  icon: 'rotate',
+});
+
+const emit = defineEmits(['click', 'change']);
+
+const isCloseIcon = computed(() => props.icon === 'close' && props.value !== '');
+
+const vModel = computed({
+  get: () => props.value,
+  set: (value: string | number) => emit('change', value),
+});
+
+const click = () => {
+  if (props.icon === 'rotate') emit('click');
+};
+
+const clickIcon = () => {
+  emit('click');
+};
 </script>
 
 <style lang="scss" scoped>

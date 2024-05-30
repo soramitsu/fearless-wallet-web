@@ -540,12 +540,11 @@ export default class SwapForm extends Vue {
 
   created() {
     this.updateComponentParams();
-
-    this.getSoraFees();
   }
 
   activated() {
     this.updateComponentParams();
+    this.getSoraFees();
   }
 
   deactivated() {

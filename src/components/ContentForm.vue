@@ -7,20 +7,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineProps } from 'vue';
+import { computed } from 'vue';
 import { APP_HEIGHT } from '@/consts/global';
 
 type BackgroundType = 'black' | 'light-black';
 
 type Props = {
-  height: number;
-  isStaticHeight: boolean;
-  bottomRightCorner: boolean;
-  backgroundColor: BackgroundType;
+  height?: number;
+  isStaticHeight?: boolean;
+  bottomRightCorner?: boolean;
+  backgroundColor?: BackgroundType;
 };
 
 const props = withDefaults(defineProps<Props>(), {
-  height: 0,
   isStaticHeight: false,
   bottomRightCorner: false,
   backgroundColor: 'light-black',
@@ -30,7 +29,7 @@ const contentFormStyle = computed(() => {
   const styles: Record<string, string> = {};
 
   if (props.isStaticHeight) styles.height = `${props.height}px`;
-  else {
+  else if (props.height !== undefined) {
     const subtractionNumber = APP_HEIGHT - props.height;
 
     styles.height = `calc(100vh - ${subtractionNumber}px)`;

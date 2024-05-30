@@ -2,14 +2,14 @@ import { getInternalError, getSdkError } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
 import {
   PROJECT_ID_EXTENSION,
-  SUBSTRATE_EVM_HALF_CHAINID,
+  SUBSTRATE_EVM_HALF_CHAIN_IDS,
   WALLET_CONNECT_METADATA,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
 import { generateHalfGenesisHash } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
-import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isNativeEVMNetwork } from '@extension-base/background/utils/utils';
 import Provider from '@walletconnect/universal-provider';
 import { createSubscription } from '@extension-base/services';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
@@ -67,7 +67,7 @@ export class WalletConnectDAppService {
     if (!this.app) await this.initApp();
 
     const optionalChains = this.state.networkService.networksGithub.flatMap((network) => {
-      if (isRequireEvmAPI(network.name) || !network.chainId) return [];
+      if (isNativeEVMNetwork(network.name) || !network.chainId) return [];
       const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
 
       return [`polkadot:${halfChainId}`];
@@ -135,7 +135,7 @@ export class WalletConnectDAppService {
     const substrateAddress = accounts.find((el) => {
       const [, chainId] = el.split(':');
 
-      return !SUBSTRATE_EVM_HALF_CHAINID.includes(chainId);
+      return !SUBSTRATE_EVM_HALF_CHAIN_IDS.includes(chainId);
     });
 
     if (!substrateAddress) throw new Error("couldn't find substrate address");
@@ -145,17 +145,20 @@ export class WalletConnectDAppService {
     const ethAddress = accounts.find((el) => {
       const [, chainId] = el.split(':');
 
-      return SUBSTRATE_EVM_HALF_CHAINID.includes(chainId);
+      return SUBSTRATE_EVM_HALF_CHAIN_IDS.includes(chainId);
     });
+
     let ethereumAddressWC;
 
     if (ethAddress) {
       const [, , ethereumAddress] = ethAddress.split(':');
+
       ethereumAddressWC = ethereumAddress;
     }
 
     const availableNetworks =
       data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].chains?.map((el) => el.split(':')[1]) ?? [];
+
     const isDuplicate = this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress);
 
     if (isDuplicate) {

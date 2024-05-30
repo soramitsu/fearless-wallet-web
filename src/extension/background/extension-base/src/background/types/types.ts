@@ -417,6 +417,7 @@ export interface RequestAccountValidate {
 export interface RequestAccountExport {
   address: string;
   password: string;
+  network?: string;
 }
 
 export type EvmProvider = JsonRpcProvider | WebSocketProvider;

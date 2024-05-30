@@ -2,78 +2,72 @@
   <div class="logo">
     <div :class="circleClasses" :style="styleCircle">
       <div :class="circleBlurClasses">
-        <Icon icon="fw-logo" :className="iconClass" :style="sizeIconLogo" />
+        <Icon icon="fw-logo" className="img" :style="sizeIconLogo" />
       </div>
     </div>
 
-    <div v-show="text" class="text">{{ $t(text) }}</div>
-    <div v-show="subtext" class="subtext">{{ $t(subtext) }}</div>
+    <div v-if="text" class="text">{{ $t(text) }}</div>
+    <div v-if="subtext" class="subtext">{{ $t(subtext) }}</div>
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { defineProps, withDefaults, computed } from 'vue';
 
 type SizeLogo = 'mini' | 'small' | 'medium' | 'big';
 type TypeLogo = 'primary' | 'secondary';
 
-@Component
-export default class Logo extends Vue {
-  @Prop(String) text!: string;
-  @Prop(String) subtext!: string;
-  @Prop({ default: 'medium' }) size!: SizeLogo;
-  @Prop({ default: 'primary' }) typeLogo!: TypeLogo;
-  iconClass = ['img'];
-  readonly circleSizes = {
-    mini: '38px',
-    small: '48px',
-    medium: '72px',
-    big: '96px',
-  };
-  readonly iconSizes = {
-    mini: {
-      height: '18px',
-      width: '32px',
-    },
-    small: {
-      height: '21px',
-      width: '42px',
-    },
-    medium: {
-      height: '32px',
-      width: '64px',
-    },
-    big: {
-      height: '42px',
-      width: '85px',
-    },
-  };
-
-  get circleClasses() {
-    return ['circle', `circle-${this.typeLogo}`];
-  }
-
-  get circleBlurClasses() {
-    return [
-      'circle-blur',
-      {
-        'circle-blur-primary': this.typeLogo === 'primary',
-      },
-    ];
-  }
-
-  get styleCircle() {
-    return { height: this.sizeCircle, width: this.sizeCircle };
-  }
-
-  get sizeCircle() {
-    return this.circleSizes[this.size] ? this.circleSizes[this.size] : this.circleSizes.medium;
-  }
-
-  get sizeIconLogo() {
-    return this.iconSizes[this.size] ? this.iconSizes[this.size] : this.iconSizes.medium;
-  }
+interface Props {
+  text?: string;
+  subtext?: string;
+  size?: SizeLogo;
+  typeLogo?: TypeLogo;
 }
+
+const props = withDefaults(defineProps<Props>(), {
+  size: 'medium',
+  typeLogo: 'primary',
+});
+
+const circleSizes = {
+  mini: '38px',
+  small: '48px',
+  medium: '72px',
+  big: '96px',
+};
+const iconSizes = {
+  mini: {
+    height: '18px',
+    width: '32px',
+  },
+  small: {
+    height: '21px',
+    width: '42px',
+  },
+  medium: {
+    height: '32px',
+    width: '64px',
+  },
+  big: {
+    height: '42px',
+    width: '85px',
+  },
+};
+
+const circleClasses = computed(() => ['circle', `circle-${props.typeLogo}`]);
+
+const circleBlurClasses = computed(() => [
+  'circle-blur',
+  {
+    'circle-blur-primary': props.typeLogo === 'primary',
+  },
+]);
+
+const sizeCircle = computed(() => circleSizes[props.size] ?? circleSizes.medium);
+
+const styleCircle = computed(() => ({ height: sizeCircle.value, width: sizeCircle.value }));
+
+const sizeIconLogo = computed(() => iconSizes[props.size] ?? iconSizes.medium);
 </script>
 
 <style lang="scss" scoped>

@@ -61,7 +61,6 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Action, Getter, Mutation } from 'vuex-class';
 import { type AccountJson } from '@extension-base/background/types/types';
-import { isEthereumNetwork } from '@extension-base/background/utils/utils';
 import NetworkItem from './NetworkItem.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { Tab } from '@/interfaces/ui';
@@ -204,7 +203,7 @@ export default class NetworkManagement extends Vue {
       return available;
     }
 
-    if (this.selectedWallet.ethereumAddress === '' && isEthereumNetwork(network)) return false;
+    if (this.selectedWallet.ethereumAddress === '' && BaseApi.isEthereumNetwork(network)) return false;
 
     return true;
   }

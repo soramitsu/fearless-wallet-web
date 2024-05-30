@@ -21,7 +21,7 @@
 
     <template v-else>
       <InputWithIcon
-        v-model="addressCut"
+        :value="addressCut"
         icon="close"
         placeholder="staking.payoutAccount"
         class="payout-account"

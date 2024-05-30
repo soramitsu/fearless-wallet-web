@@ -4,7 +4,7 @@ import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
-import { formatUnits, Wallet } from 'ethers';
+import { ethers, formatUnits, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/swaps';
@@ -13,7 +13,7 @@ import { createSubscription, unsubscribe } from '@extension-base/services';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
-import { isRequireEvmAPI, uniqueStringArray, getBalanceItem } from '@extension-base/background/utils/utils';
+import { isNativeEVMNetwork, uniqueStringArray, getBalanceItem } from '@extension-base/background/utils/utils';
 import { type MetadataDef } from '@polkadot/extension-inject/types';
 import {
   isProposalExpired,
@@ -422,9 +422,29 @@ export default class Extension extends FWExtensionBase {
   }
 
   jsonRestore({ file, password }: RequestJsonRestore): Promise<string> {
+    const stringFile = JSON.stringify(file);
+
+    if (ethers.isKeystoreJson(stringFile))
+      return new Promise((resolve, reject) => {
+        try {
+          const { privateKey } = ethers.decryptKeystoreJsonSync(stringFile, password);
+
+          const address = this.state.keyringService.addAccount(
+            privateKey,
+            password,
+            { name: file.meta.name ?? '', isMobile: false },
+            'ethereum'
+          );
+
+          resolve(address);
+        } catch (error) {
+          reject({ error: (error as Error).message });
+        }
+      });
+
     const isPasswordValidated = this.validatePassword(file, password);
 
-    if (isPasswordValidated) {
+    if (isPasswordValidated)
       return new Promise((resolve, reject) => {
         try {
           const { address } = this.state.keyringService.restoreAccount(file, password);
@@ -440,9 +460,7 @@ export default class Extension extends FWExtensionBase {
           reject({ error: (error as Error).message });
         }
       });
-    } else {
-      throw new Error('Unable to decode using the supplied passphrase');
-    }
+    else throw new Error('Unable to decode using the supplied passphrase');
   }
 
   private async setActiveNetworks(type: string): Promise<void> {
@@ -749,7 +767,7 @@ export default class Extension extends FWExtensionBase {
       const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock)
-        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.KEYRING_ERROR }] };
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
     }
 
     apiSora.shouldPairBeLocked = !isSavePass;
@@ -775,47 +793,18 @@ export default class Extension extends FWExtensionBase {
     };
   }
 
-  validatePairPassword(address: string, password: string | undefined) {
-    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
-    const errors = [] as Array<BasicTxError>;
-    const substratePair = this.state.keyringService.getPair(substrateAddress);
+  validatePairPassword(password: string) {
+    const address = this.state.getAccountAddress();
+    const substratePair = this.state.keyringService.getPair(address)!;
 
-    if (!substratePair) {
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        message: String('Could not find substrate pair'),
-      });
+    if (substratePair?.isLocked) {
+      const isUnlock = this.state.keyringService.unlockPair(substratePair, password);
 
-      return errors;
+      if (!isUnlock)
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
     }
 
-    if (password) {
-      try {
-        substratePair.unlock(password);
-
-        const { meta } = substratePair;
-        const ethereumAddress = meta.ethereumAddress as string | undefined;
-
-        if (ethereumAddress) {
-          const pair = this.state.keyringService.getPair(ethereumAddress);
-
-          if (pair) pair.unlock(password);
-        }
-      } catch (e: any) {
-        errors.push({
-          code: BasicTxErrorCode.KEYRING_ERROR,
-          message: String(e.message),
-        });
-      }
-    } else {
-      if (substratePair?.isLocked)
-        errors.push({
-          code: BasicTxErrorCode.KEYRING_ERROR,
-          message: String('Password required to decode encrypted data'),
-        });
-    }
-
-    return errors;
+    return { status: true };
   }
 
   private async checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
@@ -829,7 +818,7 @@ export default class Extension extends FWExtensionBase {
     const errors: BasicTxError[] = [];
 
     // Estimate with EVM API
-    if (isRequireEvmAPI(networkKey)) {
+    if (isNativeEVMNetwork(networkKey)) {
       try {
         const { fee: feeValue } = await getEVMTransactionObject({
           balance,
@@ -899,7 +888,7 @@ export default class Extension extends FWExtensionBase {
       balance,
     };
 
-    if (isRequireEvmAPI(networkKey)) {
+    if (isNativeEVMNetwork(networkKey)) {
       const { privateKey } = this.state.accountExportPrivateKey({ address: from, password });
 
       transferProm = makeEVMTransfer({

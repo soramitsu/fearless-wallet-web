@@ -204,7 +204,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet, GetNetwork, GetAssetPrice } from '@/store';
@@ -260,7 +260,6 @@ export default class SwapForm extends Vue {
   showSettings = false;
   showConfirmationPasswordPopup = false;
   isExchangeB = false;
-  fee = '';
   tx: SwapOptions = {} as SwapOptions;
   swapInterval!: NodeJS.Timer;
 
@@ -271,6 +270,10 @@ export default class SwapForm extends Vue {
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
   @Getter(NetworksGettersTypes.soraFees) soraFees!: Nullable<SoraFees>;
+
+  get fee() {
+    return this.soraFees?.Swap ?? '';
+  }
 
   get showCloseIcon() {
     return this.showSettings;
@@ -539,22 +542,12 @@ export default class SwapForm extends Vue {
     return this.receiveAssetPrice * amount;
   }
 
-  @Watch('soraFees', { deep: true })
-  updateFee() {
-    if (!this.soraFees) return;
-
-    const { Swap } = this.soraFees;
-
-    this.fee = Swap;
-  }
-
   created() {
     this.updateComponentParams();
   }
 
   activated() {
     this.updateComponentParams();
-    this.updateFee();
   }
 
   deactivated() {

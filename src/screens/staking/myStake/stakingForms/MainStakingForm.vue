@@ -202,7 +202,6 @@ export default class MainStakingForm extends Vue {
   isValidController = true;
   amount = '';
   stashBalance = '0';
-  fee = '0';
   step = 1;
   controllerAddress = '';
   payoutAddress = '';
@@ -219,6 +218,28 @@ export default class MainStakingForm extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.soraFees) soraFees!: Nullable<SoraFees>;
   @Action(StakingActionTypes.GET_MY_STAKING_INFO) getMyStakingInfo!: AsyncFn<GetStakingNetworkProps>;
+
+  get fee() {
+    if (!this.soraFees) return '';
+
+    const {
+      StakingBondExtra,
+      StakingRebond,
+      StakingUnbond,
+      StakingSetController,
+      StakingWithdrawUnbonded,
+      StakingSetPayee,
+    } = this.soraFees;
+
+    if (this.isBondExtra) return StakingBondExtra;
+    else if (this.isUnbond) return StakingUnbond;
+    else if (this.isRebond) return StakingRebond;
+    else if (this.isRedeem) return StakingWithdrawUnbonded;
+    else if (this.isControllerAccount) return StakingSetController;
+    else if (this.isPayee) return StakingSetPayee;
+
+    return '';
+  }
 
   get showMyWalletsButton() {
     return this.filteredWallets.length !== 0;
@@ -431,27 +452,6 @@ export default class MainStakingForm extends Vue {
     this.isValidController = await checkController({ address: value });
   }
 
-  @Watch('soraFees', { deep: true })
-  updateFee() {
-    if (!this.soraFees) return;
-
-    const {
-      StakingBondExtra,
-      StakingRebond,
-      StakingUnbond,
-      StakingSetController,
-      StakingWithdrawUnbonded,
-      StakingSetPayee,
-    } = this.soraFees;
-
-    if (this.isBondExtra) this.fee = StakingBondExtra;
-    else if (this.isUnbond) this.fee = StakingUnbond;
-    else if (this.isRebond) this.fee = StakingRebond;
-    else if (this.isRedeem) this.fee = StakingWithdrawUnbonded;
-    else if (this.isControllerAccount) this.fee = StakingSetController;
-    else if (this.isPayee) this.fee = StakingSetPayee;
-  }
-
   async mounted() {
     if (this.isRebond) {
       const unlocking = this.stakingNetwork.unbond.unlocking;
@@ -459,8 +459,6 @@ export default class MainStakingForm extends Vue {
 
       this.amount = lastUnbond;
     } else if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
-
-    this.updateFee();
 
     if (this.stakingNetwork.isController)
       this.stashBalance = await fetchBalance({

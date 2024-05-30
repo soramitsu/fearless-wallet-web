@@ -9,7 +9,7 @@ import {
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
 import { generateHalfGenesisHash } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
-import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isNativeEVMNetwork } from '@extension-base/background/utils/utils';
 import Provider from '@walletconnect/universal-provider';
 import { createSubscription } from '@extension-base/services';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
@@ -67,7 +67,7 @@ export class WalletConnectDAppService {
     if (!this.app) await this.initApp();
 
     const optionalChains = this.state.networkService.networksGithub.flatMap((network) => {
-      if (isRequireEvmAPI(network.name) || !network.chainId) return [];
+      if (isNativeEVMNetwork(network.name) || !network.chainId) return [];
       const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
 
       return [`polkadot:${halfChainId}`];

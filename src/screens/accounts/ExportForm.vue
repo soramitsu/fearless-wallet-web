@@ -82,7 +82,7 @@ export default class ExportForm extends Vue {
   }
 
   async keyringPairJson() {
-    return exportAccount(this.addressByNetwork, this.password);
+    return exportAccount(this.addressByNetwork, this.password, this.network);
   }
 
   closeForm() {

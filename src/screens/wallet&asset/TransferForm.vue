@@ -43,7 +43,7 @@
             <template v-if="step === 1">
               <InputWithIcon
                 v-if="isTransfer"
-                v-model="originNetwork"
+                :value="originNetwork"
                 class="row"
                 icon="rotate"
                 :placeholder="placeholderNetwork"
@@ -78,7 +78,7 @@
 
               <InputWithIcon
                 v-if="isCrossChain"
-                v-model="syncedDestNet"
+                :value="syncedDestNet"
                 class="row"
                 icon="rotate"
                 placeholder="assets.destNet"
@@ -88,7 +88,7 @@
               />
 
               <InputWithIcon
-                v-model="recipientCut"
+                :value="recipientCut"
                 class="row"
                 icon="close"
                 placeholder="assets.sendTo"

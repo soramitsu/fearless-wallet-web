@@ -65,7 +65,7 @@
             <Hint class="hint" iconName="notification" :text="textMinHint" />
 
             <InputWithIcon
-              v-model="payoutAddressCut"
+              :value="payoutAddressCut"
               icon="close"
               placeholder="staking.payoutAccount"
               data-testid="payoutAccount"

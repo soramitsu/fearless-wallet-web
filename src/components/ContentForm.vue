@@ -20,7 +20,6 @@ type Props = {
 };
 
 const props = withDefaults(defineProps<Props>(), {
-  height: 0,
   isStaticHeight: false,
   bottomRightCorner: false,
   backgroundColor: 'light-black',

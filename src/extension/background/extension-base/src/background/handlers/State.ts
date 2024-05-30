@@ -1,4 +1,4 @@
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { assert, u8aToHex } from '@polkadot/util';
@@ -73,7 +73,7 @@ export default class State {
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
   public lazyMap: Record<string, unknown> = {};
-  public soraFees: SoraFees = {} as SoraFees;
+  public soraFees: BehaviorSubject<SoraFees> = new BehaviorSubject<SoraFees>(apiSora.NetworkFee);
   public ready = false;
   public currentTabStatus: ActiveTabAuthorizeStatus = {
     isAuthorize: false,

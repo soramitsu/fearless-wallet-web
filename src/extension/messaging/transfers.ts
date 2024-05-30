@@ -46,8 +46,8 @@ export function makeSwap(request: RequestSwap): Promise<ResponseMakeSwap> {
   return sendMessage('pri(accounts.makeSwap)', request);
 }
 
-export function getSoraFees(): Promise<SoraFees> {
-  return sendMessage('pri(accounts.getSoraFees)');
+export function soraFeesSubscribe(callback: (value: SoraFees) => void): Promise<SoraFees> {
+  return sendMessage('pri(accounts.soraFees.subscribe)', null, callback);
 }
 
 export function checkScamAddress(request: RequestCheckScam): Promise<ResponseCheckScam> {

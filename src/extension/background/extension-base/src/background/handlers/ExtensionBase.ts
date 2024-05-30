@@ -135,7 +135,7 @@ export default class FWExtensionBase {
 
   jsonValid({ file, password, isSubstrate }: RequestJsonValidate): ValidateJsonResult {
     try {
-      const pair = this.state.keyringService.restoreAccount(file, password);
+      const pair = this.state.keyringService.createFromJson(file);
 
       pair.decodePkcs8(password);
 
@@ -145,6 +145,18 @@ export default class FWExtensionBase {
     } catch (error: any) {
       const errorType =
         error.message === 'Unable to decode using the supplied passphrase' ? 'jsonPassword' : 'jsonInvalid';
+
+      if (errorType === 'jsonPassword') return { value: false, errorType };
+    }
+
+    try {
+      const stringFile = JSON.stringify(file);
+
+      ethers.decryptKeystoreJsonSync(stringFile, password);
+
+      return { value: true };
+    } catch (error: any) {
+      const errorType = error.message.includes('incorrect password') ? 'jsonPassword' : 'jsonInvalid';
 
       return { value: false, errorType };
     }

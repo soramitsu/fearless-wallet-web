@@ -1,7 +1,7 @@
 <template>
   <div class="wrapper" @click="click">
     <FInput
-      v-model="model"
+      v-model="vModel"
       size="big"
       class="rotate-input"
       :placeholder="placeholder"
@@ -20,29 +20,32 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, withDefaults, ref, computed } from 'vue';
+import { defineProps, withDefaults, computed } from 'vue';
 
 type IconType = 'rotate' | 'close';
 
 interface Props {
-  vModel: string | number;
+  value: string | number;
   placeholder: string;
   isActiveRotate: boolean;
   icon: IconType;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  vModel: '',
+  value: '',
   placeholder: '',
   isActiveRotate: false,
   icon: 'rotate',
 });
 
-const emit = defineEmits(['click']);
+const emit = defineEmits(['click', 'change']);
 
-const model = ref(props.vModel);
+const isCloseIcon = computed(() => props.icon === 'close' && props.value !== '');
 
-const isCloseIcon = computed(() => props.icon === 'close' && model.value !== '');
+const vModel = computed({
+  get: () => props.value,
+  set: (value: string | number) => emit('change', value),
+});
 
 const click = () => {
   if (props.icon === 'rotate') emit('click');

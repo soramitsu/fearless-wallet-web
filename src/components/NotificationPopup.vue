@@ -1,11 +1,11 @@
 <template>
   <Popup
     :showHeader="showHeader"
-    @handlerClose="emit('handlerClose')"
     :sizeWidth="sizeWidth"
     :showBorder="true"
     :closeByBackground="closeByBackground"
     :zIndex="zIndex"
+    @handlerClose="emit('handlerClose')"
   >
     <div class="notification-popup-content">
       <Icon v-if="showWarningIcon" icon="info-triangle" className="img" />

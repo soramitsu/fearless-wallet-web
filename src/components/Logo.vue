@@ -2,7 +2,7 @@
   <div class="logo">
     <div :class="circleClasses" :style="styleCircle">
       <div :class="circleBlurClasses">
-        <Icon icon="fw-logo" :className="iconClass" :style="sizeIconLogo" />
+        <Icon icon="fw-logo" className="img" :style="sizeIconLogo" />
       </div>
     </div>
 
@@ -31,7 +31,6 @@ const props = withDefaults(defineProps<Props>(), {
   typeLogo: 'primary',
 });
 
-const iconClass = ['img'];
 const circleSizes = {
   mini: '38px',
   small: '48px',

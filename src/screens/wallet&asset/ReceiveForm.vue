@@ -3,13 +3,14 @@
     <div class="receive-form">
       <div>
         <InputWithIcon
-          v-model="selectedNetwork"
+          :value="selectedNetwork"
           placeholder="assets.network"
           icon="rotate"
           data-testid="selectedNetwork"
           :ref="selectNetworkInputRef"
           :isActiveRotate="showSelectNetworkPopup"
           @click="toggleSelectNetworkPopupVisible"
+          @change="changeSelectedNetwork"
         />
 
         <div class="receive-content">
@@ -152,6 +153,10 @@ export default class ReceiveForm extends Vue {
     this.selectedNetwork = value;
 
     this.toggleSelectNetworkPopupVisible();
+  }
+
+  changeSelectedNetwork(value: string) {
+    this.selectedNetwork = value;
   }
 
   handlerFilter(value: string) {

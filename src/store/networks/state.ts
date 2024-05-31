@@ -1,11 +1,12 @@
 import type { NetworkJson } from '@extension-base/types';
-import type { AssetsPrice, History, FiatJson } from '@/interfaces';
+import type { AssetsPrice, History, FiatJson, SoraFees } from '@/interfaces';
 
 export type State = {
   networks: NetworkJson[];
   assetsPrice: AssetsPrice;
   fiats: FiatJson[];
   history: History;
+  soraFees: Nullable<SoraFees>;
 };
 
 const state = (): State => {
@@ -17,6 +18,7 @@ const state = (): State => {
     },
     fiats: [],
     history: {},
+    soraFees: null,
   };
 };
 

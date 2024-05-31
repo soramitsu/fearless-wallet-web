@@ -171,10 +171,10 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { calcTransferableSendMinusFee, isValidAmountAsset } from '@/helpers/currencies';
 import BaseApi from '@/util/BaseApi';
-import { checkController, fetchBalance, getSoraFees } from '@/extension/messaging';
+import { checkController, fetchBalance } from '@/extension/messaging';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
-import { type AsyncFn, type StakingOperation, type StakingOperationParams } from '@/interfaces';
+import { type SoraFees, type AsyncFn, type StakingOperation, type StakingOperationParams } from '@/interfaces';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
@@ -202,7 +202,6 @@ export default class MainStakingForm extends Vue {
   isValidController = true;
   amount = '';
   stashBalance = '0';
-  fee = '0';
   step = 1;
   controllerAddress = '';
   payoutAddress = '';
@@ -215,9 +214,32 @@ export default class MainStakingForm extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
+  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
+  @Getter(NetworksGettersTypes.soraFees) soraFees!: Nullable<SoraFees>;
   @Action(StakingActionTypes.GET_MY_STAKING_INFO) getMyStakingInfo!: AsyncFn<GetStakingNetworkProps>;
+
+  get fee() {
+    if (!this.soraFees) return '';
+
+    const {
+      StakingBondExtra,
+      StakingRebond,
+      StakingUnbond,
+      StakingSetController,
+      StakingWithdrawUnbonded,
+      StakingSetPayee,
+    } = this.soraFees;
+
+    if (this.isBondExtra) return StakingBondExtra;
+    else if (this.isUnbond) return StakingUnbond;
+    else if (this.isRebond) return StakingRebond;
+    else if (this.isRedeem) return StakingWithdrawUnbonded;
+    else if (this.isControllerAccount) return StakingSetController;
+    else if (this.isPayee) return StakingSetPayee;
+
+    return '';
+  }
 
   get showMyWalletsButton() {
     return this.filteredWallets.length !== 0;
@@ -438,31 +460,11 @@ export default class MainStakingForm extends Vue {
       this.amount = lastUnbond;
     } else if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
 
-    this.getSoraFees();
-
     if (this.stakingNetwork.isController)
       this.stashBalance = await fetchBalance({
         address: this.stakingNetwork.stashAddress,
         networkName: this.stakingNetwork.network,
       });
-  }
-
-  async getSoraFees() {
-    const {
-      StakingBondExtra,
-      StakingRebond,
-      StakingUnbond,
-      StakingSetController,
-      StakingWithdrawUnbonded,
-      StakingSetPayee,
-    } = await getSoraFees();
-
-    if (this.isBondExtra) this.fee = StakingBondExtra;
-    else if (this.isUnbond) this.fee = StakingUnbond;
-    else if (this.isRebond) this.fee = StakingRebond;
-    else if (this.isRedeem) this.fee = StakingWithdrawUnbonded;
-    else if (this.isControllerAccount) this.fee = StakingSetController;
-    else if (this.isPayee) this.fee = StakingSetPayee;
   }
 
   updateControllerAddress(value: string) {

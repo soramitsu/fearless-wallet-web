@@ -193,7 +193,7 @@ export interface RequestSignatures {
   'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
   'pri(accounts.makeSwap)': [RequestSwap, ResponseMakeSwap];
 
-  'pri(accounts.getSoraFees)': [null, SoraFees];
+  'pri(accounts.soraFees.subscribe)': [null, SoraFees, SoraFees];
   'pri(accounts.checkScamAddress)': [RequestCheckScam, ResponseCheckScam];
 
   // staking

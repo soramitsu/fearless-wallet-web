@@ -13,7 +13,7 @@ import { type ChainNftState } from '@extension-base/services/nft-service/types';
 import { ALL_NETWORKS } from './consts/networks';
 import { setTitle } from './helpers/common';
 import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
-import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
+import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps, SetSoraFee } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
@@ -23,6 +23,7 @@ import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutatio
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import {
+  soraFeesSubscribe,
   isOnboardingRequired,
   pingServiceWorker,
   subscribeAccounts,
@@ -42,23 +43,25 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: Fn<SetNetworksStatusProps>;
   @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: Fn<SetAssetsPriceProps>;
+  @Mutation(NetworksMutationTypes.SET_SORA_FEES) setSoraFees!: Fn<SetSoraFee>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: Fn<SetAccountsProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: Fn<string>;
   @Mutation(AccountsMutationTypes.SET_NFTS) setNfts!: Fn<ChainNftState>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
+  @Mutation(ExtensionMutationTypes.SET_ONBOARDING) setOnboarding!: (payload: boolean) => void;
   @Action(NetworksActionTypes.FETCH_FIATS) fetchFiats!: AsyncFn;
   @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
   @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<AccountJson>;
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: AsyncFn;
   @Action(ExtensionActionTypes.FETCH_FEATURES) fetchFeatures!: AsyncFn;
-  @Mutation(ExtensionMutationTypes.SET_ONBOARDING) setOnboarding!: (payload: boolean) => void;
 
   pingInterval: NodeJS.Timer | undefined = undefined;
 
   get includeKeepAlive() {
     const components = ['Main'];
 
+    // Нужно чтобы не слетало состояние SwapForm при переходе к дисклеймеру
     if (this.showPolkaswapAlert) components.push('SwapForm');
 
     return components;
@@ -149,15 +152,12 @@ export default class App extends Vue {
   }
 
   async setupWallet() {
-    const accounts = await subscribeAccounts((accounts) => {
-      this.onAccountUpdate(accounts);
-    });
+    const accounts = await subscribeAccounts((accounts) => this.onAccountUpdate(accounts));
 
     this.onAccountUpdate(accounts);
 
-    subscribeAddresses((accounts) => {
-      this.onAccountUpdate(accounts, true);
-    });
+    subscribeAddresses((accounts) => this.onAccountUpdate(accounts, true));
+    soraFeesSubscribe((fees) => this.setSoraFees({ fees }));
   }
 }
 </script>

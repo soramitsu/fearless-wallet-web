@@ -202,13 +202,19 @@ export default class InputsForm extends Vue {
   }
 
   updateAmount1(value: string) {
-    this.syncedAmount1 = value;
+    this.syncedAmount1 = FPNumber.gt(new FPNumber(value), new FPNumber(this.poolParams.asset1.myAmount))
+      ? this.poolParams.asset1.myAmount
+      : value;
+
     this.syncedIsExchangeB = false;
     this.isPercentChanging = false;
   }
 
   updateAmount2(value: string) {
-    this.syncedAmount2 = value;
+    this.syncedAmount2 = FPNumber.gt(new FPNumber(value), new FPNumber(this.poolParams.asset2.myAmount))
+      ? this.poolParams.asset2.myAmount
+      : value;
+
     this.syncedIsExchangeB = true;
     this.isPercentChanging = false;
   }

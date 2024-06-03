@@ -198,7 +198,6 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
 import PoolsBanner from '@/screens/pools/PoolsBanner.vue';
 import { checkSwap } from '@/extension/messaging';
-import { Components } from '@/router/routes';
 import {
   getCurrencyOptions,
   getXORCurrency,

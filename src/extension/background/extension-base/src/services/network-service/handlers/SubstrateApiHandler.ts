@@ -104,7 +104,7 @@ export class SubstrateApiHandler {
         this.state.disableNetworkMap(networkName);
       }
     } else {
-      api.apiStatus = NETWORK_STATUS.DISCONNECTED; // попробовали все ноды, не смогил подключиться, ставим статус дисконнект
+      api.apiStatus = NETWORK_STATUS.DISCONNECTED; // попробовали все ноды, не смогли подключиться, ставим статус дисконнект
 
       this.state.disableNetworkMap(networkName);
     }

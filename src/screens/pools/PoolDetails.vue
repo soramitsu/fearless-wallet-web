@@ -137,7 +137,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { GetAssetPrice, GetPoolsParamsProps, PoolParams } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
@@ -156,8 +156,7 @@ import PolkaswapAlert from '@/screens/polkaswap/PolkaswapAlert.vue';
 import { GettersTypes as PoolsGettersTypes } from '@/store/pools/getters';
 import { isSameString } from '@/helpers';
 import { ActionTypes as PoolsActionTypes } from '@/store/pools/actions';
-import { type AsyncFn } from '@/interfaces';
-import { getSoraFees } from '@/extension/messaging';
+import { type SoraFees, type AsyncFn } from '@/interfaces';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 
 @Component({
@@ -181,13 +180,19 @@ export default class PoolDetails extends Vue {
   showSettings = false;
   showConfirmationPasswordPopup = false;
   isExchangeB = false;
-  fee = '';
 
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(PoolsGettersTypes.poolsItems) poolsItems!: PoolParams[];
   @Getter(PoolsGettersTypes.myPoolsItems) myPoolsItems!: PoolParams[];
+  @Getter(NetworksGettersTypes.soraFees) soraFees!: Nullable<SoraFees>;
   @Action(PoolsActionTypes.GET_POOLS_PARAMS) getPoolsParams!: AsyncFn<GetPoolsParamsProps>;
+
+  get fee() {
+    if (!this.soraFees) return '';
+
+    return this.extrinsicType === 'addLiquidity' ? this.soraFees?.AddLiquidity : this.soraFees?.RemoveLiquidity;
+  }
 
   get poolParams() {
     return [...this.poolsItems, ...this.myPoolsItems].find(
@@ -402,23 +407,10 @@ export default class PoolDetails extends Vue {
     } as RequestPool;
   }
 
-  @Watch('extrinsicType')
-  async extrinsicTypeWatcher() {
-    this.getSoraFees();
-  }
-
   async created() {
     if (this.poolsItems.length === 0 && this.myPoolsItems.length === 0) await this.getPoolsParams();
 
     if (this.poolParams?.isMyPool) this.step = 4;
-
-    this.getSoraFees();
-  }
-
-  async getSoraFees() {
-    const { AddLiquidity, RemoveLiquidity } = await getSoraFees();
-
-    this.fee = this.extrinsicType === 'addLiquidity' ? AddLiquidity : RemoveLiquidity;
   }
 
   toggleSettingsVisibility() {

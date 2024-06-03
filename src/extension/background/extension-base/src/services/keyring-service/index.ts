@@ -33,6 +33,14 @@ export class KeyringService {
     return this.currentAccountSubject.value;
   }
 
+  get addressSubject() {
+    return addressesObservable.subject;
+  }
+
+  get accountSubject() {
+    return accountsObservable.subject;
+  }
+
   setCurrentAccount(currentAccountData: CurrentAccountState) {
     this.currentAccountSubject.next(currentAccountData);
     this.currentAccountStore.set('CurrentAccountInfo', currentAccountData);
@@ -63,14 +71,6 @@ export class KeyringService {
 
   getAddresses() {
     return keyring.getAddresses();
-  }
-
-  get addressSubject() {
-    return addressesObservable.subject;
-  }
-
-  get accountSubject() {
-    return accountsObservable.subject;
   }
 
   triggerWalletsSubscription(): boolean {

@@ -61,7 +61,7 @@ const props = withDefaults(defineProps<FButtonProps>(), {
   border: true,
 });
 
-const { t, tc: i18nTC } = useI18n();
+const { t, tc } = useI18n();
 
 const tText = computed(() => {
   if (typeof props.text === 'string') return t(props.text);
@@ -69,9 +69,9 @@ const tText = computed(() => {
   const { text, localeProps } = props.text;
 
   if (localeProps) {
-    const { tc } = localeProps;
+    const { tc: _tc } = localeProps;
 
-    if (tc) return i18nTC(text, tc, localeProps);
+    if (_tc) return tc(text, _tc, localeProps);
   }
 
   return t(text);

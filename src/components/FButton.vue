@@ -19,6 +19,7 @@
 
 <script lang="ts" setup>
 import { computed, withDefaults } from 'vue';
+import { useI18n } from 'vue-i18n-composable';
 import type { ComponentText } from '@/interfaces';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
@@ -60,18 +61,20 @@ const props = withDefaults(defineProps<FButtonProps>(), {
   border: true,
 });
 
+const { t, tc: i18nTC } = useI18n();
+
 const tText = computed(() => {
-  if (typeof props.text === 'string') return props.text;
+  if (typeof props.text === 'string') return t(props.text);
 
   const { text, localeProps } = props.text;
 
   if (localeProps) {
     const { tc } = localeProps;
 
-    if (tc) return tc;
+    if (tc) return i18nTC(text, tc, localeProps);
   }
 
-  return text;
+  return t(text);
 });
 
 const buttonStyle = computed(() => {
@@ -166,7 +169,7 @@ const buttonClasses = computed(() => {
       'google',
       props.border ? 'google-border' : 'google-border-none',
       {
-        'google-hover': !props.disabled && props.hover,
+        'google-hover': props.hover,
         'google-border-hover': props.border && props.hover,
       },
     ];

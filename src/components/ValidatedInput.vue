@@ -30,8 +30,6 @@ type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
 
 @Component({})
 export default class ValidatedInput extends Vue {
-  vModel = '';
-
   @Prop(String) errorDescriptions!: string;
   @Prop(String) placeholder!: string;
   @Prop(Boolean) isError!: boolean;
@@ -43,6 +41,7 @@ export default class ValidatedInput extends Vue {
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: 'big' }) size!: string;
   @Prop({ default: false }) errorWithIcon!: string;
+  @Prop(String) vModel!: string;
 
   @Ref('input') readonly inputComponent!: FInput;
 

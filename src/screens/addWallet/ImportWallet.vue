@@ -13,7 +13,7 @@
 
     <FInput
       v-if="notJsonImport"
-      v-model="inputValue"
+      :value="inputValue"
       ref="valueInput"
       type="textarea"
       class="row"
@@ -38,7 +38,7 @@
         />
 
         <FInput
-          v-model="syncedPasswordJson"
+          :value="syncedPasswordJson"
           size="big"
           placeholder="common.password"
           class="row"

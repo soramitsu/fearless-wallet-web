@@ -54,7 +54,7 @@ const props = withDefaults(defineProps<Props>(), {
   icon: 'chevron-right',
 });
 
-const { t } = useI18n();
+const { n } = useI18n();
 const store = useStore();
 
 const directionIcons = computed(() => [
@@ -64,8 +64,8 @@ const directionIcons = computed(() => [
   },
 ]);
 
-const amount1Cut = computed(() => `${t(props.amount1, 'decimal')} ${props.asset1.toUpperCase()}`);
-const amount2Cut = computed(() => `${t(props.amount2, 'decimal')} ${props.asset2.toUpperCase()}`);
+const amount1Cut = computed(() => `${n(+props.amount1, 'decimal')} ${props.asset1.toUpperCase()}`);
+const amount2Cut = computed(() => `${n(+props.amount2, 'decimal')} ${props.asset2.toUpperCase()}`);
 
 const fiatSymbol = computed<string>(() => store.getters.fiatSymbol);
 const getAssetPrice: GetAssetPrice = (priceId) => store.getters.getAssetPrice(priceId);
@@ -76,8 +76,8 @@ const assetPrice2 = computed(() => getAssetPrice(props.priceId2).price);
 const _value1 = computed(() => props.value1 ?? getCostOfAssets(+props.amount1 ?? 0, assetPrice1.value));
 const _value2 = computed(() => props.value2 ?? getCostOfAssets(+props.amount2 ?? 0, assetPrice2.value));
 
-const value1Cut = computed(() => `${fiatSymbol.value} ${t(_value1.value, 'price')}`);
-const value2Cut = computed(() => `${fiatSymbol.value} ${t(_value2.value, 'price')}`);
+const value1Cut = computed(() => `${fiatSymbol.value} ${n(+_value1.value, 'price')}`);
+const value2Cut = computed(() => `${fiatSymbol.value} ${n(+_value2.value, 'price')}`);
 </script>
 
 <style lang="scss" scoped>

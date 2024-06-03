@@ -22,12 +22,13 @@
       :maxlength="130"
       :height="170"
       data-testid="textarea"
+      @change="changeInputValue"
     />
 
     <template v-else>
       <div class="row">
         <FInput
-          v-model="inputValue"
+          :value="inputValue"
           type="text-file"
           size="big"
           accept="application/JSON"
@@ -43,6 +44,7 @@
           class="row"
           :showPassword="true"
           data-testid="password"
+          @change="changeSyncedPasswordJson"
         />
       </div>
     </template>
@@ -86,6 +88,14 @@ export default class ImportWallet extends Vue {
 
   set inputValue(value: string) {
     this.$emit('setImportValue', value, this.field);
+  }
+
+  changeInputValue(value: string) {
+    this.inputValue = value;
+  }
+
+  changeSyncedPasswordJson(value: string) {
+    this.syncedPasswordJson = value;
   }
 
   get field() {

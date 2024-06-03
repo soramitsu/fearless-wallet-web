@@ -20,7 +20,7 @@
       <div>
         <div class="row direction-column">
           <FInput
-            v-model="selectedWallet.name"
+            :value="selectedWallet.name"
             placeholder="assets.from"
             size="big"
             :readonly="true"
@@ -30,7 +30,7 @@
           <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
 
           <FInput
-            v-model="formattedAddressTo"
+            :value="formattedAddressTo"
             placeholder="assets.to"
             size="big"
             :readonly="true"

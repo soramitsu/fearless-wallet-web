@@ -17,8 +17,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, withDefaults } from 'vue';
 import type { ComponentText } from '@/interfaces';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
@@ -26,142 +26,154 @@ type FontSize = 'small' | 'medium' | 'big';
 type Type = 'primary' | 'secondary' | 'thirdly' | 'link' | 'google' | 'warning';
 type TypeText = 'none' | 'uppercase';
 
-@Component
-export default class Button extends Vue {
-  iconClass = ['icon'];
+type FButtonProps = {
+  text?: ComponentText;
+  width: string;
+  iconName: string;
+  iconType: string;
+  iconColor: string;
+  type?: Type;
+  size?: Size;
+  fontSize?: FontSize;
+  borderRadius?: Size;
+  typeText?: TypeText;
+  disabled?: boolean;
+  loading?: boolean;
+  hover?: boolean;
+  border?: boolean;
+};
 
-  @Prop({ default: '' }) text!: ComponentText;
-  @Prop(String) width!: string;
-  @Prop(String) iconName!: string;
-  @Prop(String) iconType!: string;
-  @Prop({ type: String, default: 'default' }) iconColor!: string;
-  @Prop({ default: 'primary' }) type!: Type;
-  @Prop({ default: 'medium' }) size!: Size;
-  @Prop({ default: 'medium' }) fontSize!: FontSize;
-  @Prop({ default: 'medium' }) borderRadius!: Size;
-  @Prop({ default: 'none' }) typeText!: TypeText;
-  @Prop({ default: false }) disabled!: boolean;
-  @Prop({ default: false }) loading!: boolean;
-  @Prop({ default: true }) hover!: boolean;
-  @Prop({ default: true }) border!: boolean;
+const props = withDefaults(defineProps<FButtonProps>(), {
+  text: '',
+  width: '',
+  iconName: '',
+  iconType: '',
+  iconColor: 'default',
+  type: 'primary',
+  size: 'medium',
+  fontSize: 'medium',
+  borderRadius: 'medium',
+  typeText: 'none',
+  disabled: false,
+  loading: false,
+  hover: true,
+  border: true,
+});
 
-  get tText() {
-    if (typeof this.text === 'string') return this.$t(this.text);
+const tText = computed(() => {
+  if (typeof props.text === 'string') return props.text;
 
-    const { text, localeProps } = this.text;
+  const { text, localeProps } = props.text;
 
-    if (localeProps) {
-      const { tc } = localeProps;
+  if (localeProps) {
+    const { tc } = localeProps;
 
-      if (tc) return this.$tc(text, tc, localeProps);
-    }
-
-    return this.$t(text, localeProps);
+    if (tc) return tc;
   }
 
-  get buttonStyle() {
-    const styles: Record<string, string> = {
-      'text-transform': this.typeText,
-    };
+  return text;
+});
 
-    return styles;
-  }
+const buttonStyle = computed(() => {
+  const styles: Record<string, string> = {
+    'text-transform': props.typeText,
+  };
 
-  get shouldBeWithIcon() {
-    return this.iconName || this.type === 'google';
-  }
+  return styles;
+});
 
-  get prepIconClass() {
-    const result = [...this.iconClass];
-    if (this.text === '') result.push('icon--without-text');
+const shouldBeWithIcon = computed(() => props.iconName || props.type === 'google');
 
-    if (this.iconType === 'loading') result.push('icon--loading');
-    if (this.type === 'google') result.push('icon--google');
+const prepIconClass = computed(() => {
+  const result = ['icon'];
+  if (props.text === '') result.push('icon--without-text');
 
-    return result;
-  }
+  if (props.iconType === 'loading') result.push('icon--loading');
+  if (props.type === 'google') result.push('icon--google');
 
-  get prepIconName() {
-    if (this.type === 'google') return 'google';
+  return result;
+});
 
-    return this.iconName;
-  }
+const prepIconName = computed(() => {
+  if (props.type === 'google') return 'google';
 
-  get containerButtonClasses() {
-    // for "small" and "mini" sizes also medium
-    const sizeName = this.size === 'big' ? 'big' : 'medium';
+  return props.iconName;
+});
 
+const containerButtonClasses = computed(() => {
+  // for "small" and "mini" sizes also medium
+  const sizeName = props.size === 'big' ? 'big' : 'medium';
+
+  return [
+    `button-size-${sizeName}`,
+    {
+      'button-warning': props.type === 'warning',
+    },
+  ];
+});
+
+const containerButtonStyle = computed(() => {
+  const styles: Record<string, string> = {};
+
+  if (props.width) styles.width = `${props.width}`;
+
+  return styles;
+});
+
+const buttonClasses = computed(() => {
+  const classes = ['button', `button-font-size-${props.fontSize}`];
+
+  if (props.iconType === 'big') classes.push('button__icon');
+
+  if (props.type === 'secondary') {
     return [
-      `button-size-${sizeName}`,
+      ...classes,
+      'secondary',
+      props.border ? 'secondary-border' : 'secondary-border-none',
       {
-        'button-warning': this.type === 'warning',
+        'secondary-hover': props.hover,
+        'secondary-border-hover': props.border && props.hover,
       },
     ];
   }
 
-  get containerButtonStyle() {
-    const styles: Record<string, string> = {};
-
-    if (this.width) styles.width = `${this.width}`;
-
-    return styles;
+  if (props.type === 'thirdly') {
+    return [
+      ...classes,
+      'thirdly',
+      props.border ? 'secondary-border' : 'secondary-border-none',
+      {
+        'thirdly-hover': props.hover,
+        'secondary-border-hover': props.border && props.hover,
+      },
+    ];
   }
 
-  get buttonClasses() {
-    const classes = ['button', `button-font-size-${this.fontSize}`];
-
-    if (this.iconType === 'big') classes.push('button__icon');
-
-    if (this.type === 'secondary') {
-      return [
-        ...classes,
-        'secondary',
-        this.border ? 'secondary-border' : 'secondary-border-none',
-        {
-          'secondary-hover': this.hover,
-          'secondary-border-hover': this.border && this.hover,
-        },
-      ];
-    }
-
-    if (this.type === 'thirdly') {
-      return [
-        ...classes,
-        'thirdly',
-        this.border ? 'secondary-border' : 'secondary-border-none',
-        {
-          'thirdly-hover': this.hover,
-          'secondary-border-hover': this.border && this.hover,
-        },
-      ];
-    }
-
-    if (this.type === 'link') {
-      return [
-        `button-font-size-${this.fontSize}`,
-        'link',
-        {
-          'link-hover': this.hover,
-        },
-      ];
-    }
-
-    if (this.type === 'google') {
-      return [
-        ...classes,
-        `button-font-size-${this.fontSize}`,
-        'google',
-        this.border ? 'google-border' : 'google-border-none',
-        {
-          'google-hover': this.hover,
-          'google-border-hover': this.border && this.hover,
-        },
-      ];
-    }
-
-    return classes;
+  if (props.type === 'link') {
+    return [
+      `button-font-size-${props.fontSize}`,
+      'link',
+      {
+        'link-hover': props.hover,
+      },
+    ];
   }
-}
+
+  if (props.type === 'google') {
+    return [
+      ...classes,
+      `button-font-size-${props.fontSize}`,
+      'google',
+      props.border ? 'google-border' : 'google-border-none',
+      {
+        'google-hover': !props.disabled && props.hover,
+        'google-border-hover': props.border && props.hover,
+      },
+    ];
+  }
+
+  return classes;
+});
 </script>
 
 <style lang="scss" scoped>

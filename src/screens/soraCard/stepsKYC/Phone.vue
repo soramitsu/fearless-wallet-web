@@ -3,12 +3,13 @@
     <div>
       <div class="phone-input">
         <FInput
-          v-model="countryCode"
+          :value="countryCode"
           ref="countryCode"
           size="big"
           class="phone-code"
           :placeholder="countryCodePlaceholder"
           :disabled="phoneInputDisabled"
+          @change="changeCountryCode"
         />
 
         <ValidatedInput
@@ -172,6 +173,10 @@ export default class Phone extends Vue {
       if (value.length === 1) this.countryCodeInternal = isDeleteSymbol ? '' : `+${value}`;
       else this.countryCodeInternal = value;
     }
+  }
+
+  changeCountryCode(value: string) {
+    this.countryCode = value;
   }
 
   get phoneNumber() {

@@ -2,13 +2,14 @@
   <div class="add-contact">
     <div class="form">
       <FInput
-        v-model="name"
+        :value="name"
         placeholder="common.name"
         typeText="uppercase"
         size="big"
         class="row"
         :maxlength="45"
         data-testid="nameInput"
+        @change="changeName"
       />
 
       <ValidatedInput
@@ -67,6 +68,10 @@ export default class EditAddressBook extends Vue {
       address.length !== 0 &&
       !(BaseApi.validateAddress(address, 'polkadot') || BaseApi.validateAddress(address, 'moonbeam'))
     );
+  }
+
+  changeName(value: string) {
+    this.name = value;
   }
 
   mounted() {

@@ -15,9 +15,22 @@
       <Hint iconName="notification" text="soraCard.wellSendEmail" class="hint" />
 
       <template v-if="showNameInputs">
-        <FInput v-model="firstName" placeholder="soraCard.firstName" size="big" :maxlength="50" />
+        <FInput
+          :value="firstName"
+          placeholder="soraCard.firstName"
+          size="big"
+          :maxlength="50"
+          @change="changeFirstName"
+        />
 
-        <FInput v-model="lastName" placeholder="soraCard.lastName" size="big" class="last-name" :maxlength="50" />
+        <FInput
+          :value="lastName"
+          placeholder="soraCard.lastName"
+          size="big"
+          class="last-name"
+          :maxlength="50"
+          @change="changeLastName"
+        />
 
         <Hint iconName="notification" text="soraCard.useRealName" class="hint" />
       </template>
@@ -116,6 +129,14 @@ export default class Email extends Vue {
     if (this.unconfirmedEmail === '') return false;
 
     return this.unconfirmedEmail !== this.email;
+  }
+
+  changeFirstName(value: string) {
+    this.firstName = value;
+  }
+
+  changeLastName(value: string) {
+    this.lastName = value;
   }
 
   mounted() {

@@ -18,22 +18,22 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Ref } from 'vue-property-decorator';
-import type Input from '@/components/Input.vue';
+import type FInput from '@/components/FInput.vue';
 
 @Component
 export default class NicknameForm extends Vue {
-  @Ref('nicknameInput') readonly nicknameInputComponent!: Input;
+  @Ref('nicknameInput') readonly nicknameInputComponent!: typeof FInput;
   @Prop({ default: false }) readonly!: boolean;
   @PropSync('nickname', { type: String }) syncedNickname!: string;
-
-  changeSyncedNickname(value: string) {
-    this.syncedNickname = value;
-  }
 
   mounted() {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
     this.nicknameInputComponent.input.focus();
+  }
+
+  changeSyncedNickname(value: string) {
+    this.syncedNickname = value;
   }
 }
 </script>

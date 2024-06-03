@@ -1,8 +1,9 @@
 <template>
   <div class="validate-input">
     <FInput
-      :value="vModel"
       ref="input"
+      data-testid="input"
+      :value="vModel"
       :size="size"
       :placeholder="placeholder"
       :maxlength="maxlength"
@@ -12,12 +13,12 @@
       :disabled="disabled"
       :typeText="typeText"
       :type="type"
-      data-testid="input"
-      @change="chnageVmodel"
+      @change="changeVModel"
     />
 
     <div v-show="showErrorText" class="error-descriptions" data-testid="errorDescriptions">
       <Icon v-if="errorWithIcon" icon="warning" className="warning" />
+
       {{ $t(errorDescriptions) }}
     </div>
   </div>
@@ -42,18 +43,19 @@ export default class ValidatedInput extends Vue {
   @Prop({ default: 'big' }) size!: string;
   @Prop({ default: false }) errorWithIcon!: string;
   @Prop(String) vModel!: string;
-
-  @Ref('input') readonly inputComponent!: FInput;
+  @Ref('input') readonly inputComponent!: typeof FInput;
 
   get showErrorText() {
     return this.isError && this.errorDescriptions;
   }
 
   get input() {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     return this.inputComponent.input as HTMLInputElement;
   }
 
-  chnageVmodel(value: string) {
+  changeVModel(value: string) {
     this.vModel = value;
   }
 }

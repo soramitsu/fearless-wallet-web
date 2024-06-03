@@ -22,7 +22,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, withDefaults, onMounted } from 'vue';
+import { ref, computed, withDefaults } from 'vue';
 
 type Size = 'small' | 'medium' | 'big';
 type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
@@ -78,11 +78,7 @@ const vModel = computed({
   set: (value: string | number) => emit('change', value),
 });
 
-let input = ref<HTMLInputElement | null>(null);
-
-onMounted(() => {
-  input = ref<HTMLInputElement | null>(null);
-});
+const input = ref<HTMLInputElement | null>(null);
 
 const containerInputClasses = computed(() => {
   // for "small" and "mini" sizes also medium
@@ -109,6 +105,7 @@ const inputClasses = computed(() => {
   ];
 });
 </script>
+
 <style lang="scss">
 .cursor-pointer {
   .el-input__inner {

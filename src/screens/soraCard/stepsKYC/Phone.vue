@@ -60,7 +60,7 @@ import { Component, Vue, Ref, Watch, Prop } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
 import { type FPNumber } from '@sora-substrate/util';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
-import type Input from '@/components/Input.vue';
+import type FInput from '@/components/FInput.vue';
 import type { AsyncFn, Fn } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
@@ -93,7 +93,7 @@ export default class Phone extends Vue {
   notPassedKycAndNotHasXorEnough = false;
 
   @Prop({ default: false, type: Boolean }) userApplied!: boolean;
-  @Ref('countryCode') readonly countryCodeComponent!: Input;
+  @Ref('countryCode') readonly countryCodeComponent!: typeof FInput;
   @Ref('phoneNumber') readonly phoneNumberComponent!: ValidatedInput;
   @Ref('verificationCode') private readonly otpComponent!: ValidatedInput;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -173,10 +173,6 @@ export default class Phone extends Vue {
       if (value.length === 1) this.countryCodeInternal = isDeleteSymbol ? '' : `+${value}`;
       else this.countryCodeInternal = value;
     }
-  }
-
-  changeCountryCode(value: string) {
-    this.countryCode = value;
   }
 
   get phoneNumber() {
@@ -354,6 +350,10 @@ export default class Phone extends Vue {
         clearInterval(interval);
       }
     }, 1000);
+  }
+
+  changeCountryCode(value: string) {
+    this.countryCode = value;
   }
 }
 </script>

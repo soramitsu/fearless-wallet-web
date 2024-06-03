@@ -13,37 +13,37 @@
 
     <FInput
       v-if="notJsonImport"
-      :value="inputValue"
       ref="valueInput"
       type="textarea"
       class="row"
       size="big"
+      data-testid="textarea"
       :placeholder="placeholderTypeImportValue"
       :maxlength="130"
       :height="170"
-      data-testid="textarea"
+      :value="inputValue"
       @change="changeInputValue"
     />
 
     <template v-else>
       <div class="row">
         <FInput
-          :value="inputValue"
           type="text-file"
           size="big"
           accept="application/JSON"
           :placeholder="placeholderTypeImportValue"
           :readonly="true"
+          :value="inputValue"
           data-testid="textFile"
         />
 
         <FInput
-          :value="syncedPasswordJson"
           size="big"
           placeholder="common.password"
           class="row"
-          :showPassword="true"
           data-testid="password"
+          :showPassword="true"
+          :value="syncedPasswordJson"
           @change="changeSyncedPasswordJson"
         />
       </div>

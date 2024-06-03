@@ -64,7 +64,7 @@ function sendMessage<TMessageType extends MessageTypes>(
   subscriber?: (data: unknown) => void
 ): Promise<ResponseTypes[TMessageType]> {
   return new Promise((resolve, reject): void => {
-    const id = getId();
+    const id = getId(message);
 
     handlers[id] = { reject, resolve, subscriber };
 

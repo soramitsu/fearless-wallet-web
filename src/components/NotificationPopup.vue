@@ -37,7 +37,7 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, withDefaults, computed, defineEmits } from 'vue';
+import { withDefaults, computed } from 'vue';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 

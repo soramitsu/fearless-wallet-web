@@ -1,4 +1,4 @@
-import { api as apiSora } from '@sora-substrate/util';
+import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import { ApiPromise } from '@polkadot/api';
 import { connection as soraConnection } from '@sora-substrate/connection';
 import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
@@ -10,7 +10,7 @@ import { type NetworkService } from '@extension-base/services/network-service';
 import { type NetworkJson } from '@extension-base/types';
 import { type ApiProps } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
-import type { NetworkName } from '@/interfaces';
+import type { NetworkName, SoraFees } from '@/interfaces';
 import { isSora } from '@/helpers';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 
@@ -112,9 +112,17 @@ export class SubstrateApiHandler {
 
   async onReady(networkName: string) {
     if (isSora(networkName)) {
-      apiSora.initialize(false);
-      apiSora.calcStaticNetworkFees();
+      await apiSora.initialize(false);
+      await apiSora.calcStaticNetworkFees();
 
+      const fees = Object.fromEntries(
+        Object.entries(apiSora.NetworkFee).map(([operation, value]) => [
+          operation,
+          FPNumber.fromCodecValue(value).toString(),
+        ])
+      ) as SoraFees;
+
+      this.state.soraFees.next(fees);
       this.state.subscribeTotalXorBalance();
     }
 

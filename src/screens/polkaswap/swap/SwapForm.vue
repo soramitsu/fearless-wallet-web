@@ -197,7 +197,8 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
 import PoolsBanner from '@/screens/pools/PoolsBanner.vue';
-import { checkSwap, getSoraFees } from '@/extension/messaging';
+import { checkSwap } from '@/extension/messaging';
+import { Components } from '@/router/routes';
 import {
   getCurrencyOptions,
   getXORCurrency,
@@ -205,7 +206,7 @@ import {
   isValidAmountAsset,
 } from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
-import { MarketType, type SwapOptions } from '@/interfaces';
+import { MarketType, type SoraFees, type SwapOptions } from '@/interfaces';
 import { addNumbers } from '@/helpers/numbers';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID } from '@/consts/sora';
 
@@ -243,7 +244,6 @@ export default class SwapForm extends Vue {
   showSettings = false;
   showConfirmationPasswordPopup = false;
   isExchangeB = false;
-  fee = '';
   tx: SwapOptions = {} as SwapOptions;
   swapInterval!: NodeJS.Timer;
 
@@ -252,6 +252,8 @@ export default class SwapForm extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
+  @Getter(NetworksGettersTypes.soraFees) soraFees!: Nullable<SoraFees>;
 
   get showBackIcon() {
     return !this.showSettings;
@@ -259,6 +261,10 @@ export default class SwapForm extends Vue {
 
   get showPolkaswapIcon() {
     return this.step === 1 && !this.showSettings;
+  }
+
+  get fee() {
+    return this.soraFees?.Swap ?? '';
   }
 
   get showCloseIcon() {
@@ -514,8 +520,6 @@ export default class SwapForm extends Vue {
 
   created() {
     this.updateComponentParams();
-
-    this.getSoraFees();
   }
 
   activated() {
@@ -541,12 +545,6 @@ export default class SwapForm extends Vue {
     }
 
     this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
-  }
-
-  async getSoraFees() {
-    const { Swap } = await getSoraFees();
-
-    this.fee = Swap;
   }
 
   async checkSwap() {

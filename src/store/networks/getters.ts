@@ -1,5 +1,5 @@
 import type { NetworkJson } from '@extension-base/types';
-import type { AssetsPrice, FiatJson, GetHistory } from '@/interfaces';
+import type { AssetsPrice, FiatJson, GetHistory, SoraFees } from '@/interfaces';
 import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetActiveNodesByNetwork } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
@@ -20,6 +20,7 @@ export enum GettersTypes {
   getHistory = 'getHistory',
   getActiveNodesByNetwork = 'getActiveNodesByNetwork',
   favoriteNetworksNames = 'favoriteNetworksNames',
+  soraFees = 'soraFees',
 }
 
 export type Getters = {
@@ -49,6 +50,7 @@ export type Getters = {
   [GettersTypes.getNetworkGenesisHash](state: State): GetNetworkGenesisHash;
   [GettersTypes.getAssetPrice](state: State): GetAssetPrice;
   [GettersTypes.prices](state: State): AssetsPrice;
+  [GettersTypes.soraFees](state: State): Nullable<SoraFees>;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -103,6 +105,10 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.prices]: ({ assetsPrice }) => {
     return assetsPrice;
+  },
+
+  [GettersTypes.soraFees]: ({ soraFees }) => {
+    return soraFees;
   },
 
   [GettersTypes.getAssetPrice]:

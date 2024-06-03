@@ -12,7 +12,7 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, withDefaults, computed } from 'vue';
+import { withDefaults, computed } from 'vue';
 
 type SizeLogo = 'mini' | 'small' | 'medium' | 'big';
 type TypeLogo = 'primary' | 'secondary';

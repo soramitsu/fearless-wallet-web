@@ -22,6 +22,7 @@
       :value="fee ? `${fee} ${soraMainAsset}` : undefined"
       :price="`${fiatSymbol} ${feePrice}`"
       icon="info"
+      :isLoading="isLoadingFee"
       :iconClasses="['network-fee']"
     />
 
@@ -52,6 +53,7 @@ type Props = {
   showSwapInfo?: boolean;
   isExchangeB?: boolean;
 };
+
 const props = withDefaults(defineProps<Props>(), {
   marketType: '',
   slippage: 0,
@@ -75,4 +77,5 @@ const soraMainAsset = SORA_UTILITY_ASSET.toUpperCase();
 
 const minMaxLabel = computed(() => (props.isExchangeB ? 'assets.maxSales' : 'assets.minReceived'));
 const marketTypeUP = computed(() => firstCharToUp(props.marketType));
+const isLoadingFee = computed(() => props.fee === '');
 </script>

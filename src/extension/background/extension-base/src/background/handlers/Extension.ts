@@ -1,4 +1,4 @@
-import { api as apiSora, FPNumber } from '@sora-substrate/util';
+import { api as apiSora } from '@sora-substrate/util';
 import { chrome } from '@extension-base/utils/crossenv';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
@@ -133,7 +133,6 @@ import type {
   ICreateFile,
   IGetFilesResponse,
   OnboardingStories,
-  SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
@@ -729,15 +728,20 @@ export default class Extension extends FWExtensionBase {
     };
   }
 
-  public async getSoraFees() {
-    this.state.soraFees = Object.fromEntries(
-      Object.entries(apiSora.NetworkFee).map(([operation, value]) => [
-        operation,
-        FPNumber.fromCodecValue(value).toString(),
-      ])
-    ) as SoraFees;
+  public async soraFeesSubscribe(id: string, port: Port) {
+    const cb = createSubscription<'pri(accounts.soraFees.subscribe)'>(id, port);
 
-    return this.state.soraFees;
+    const soraFeesSubscription = this.state.soraFees.subscribe({
+      next: (rs) => cb(rs!),
+    });
+
+    this.createUnsubscriptionHandle(id, soraFeesSubscription.unsubscribe);
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+    });
+
+    return this.state.soraFees.value;
   }
 
   private async checkSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
@@ -1685,8 +1689,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.makeSwap)':
         return this.makeSwap(request as RequestSwap);
 
-      case 'pri(accounts.getSoraFees)':
-        return this.getSoraFees();
+      case 'pri(accounts.soraFees.subscribe)':
+        return this.soraFeesSubscribe(id, port);
 
       case 'pri(accounts.checkScamAddress)':
         return this.checkScamAddress(request as RequestCheckScam);

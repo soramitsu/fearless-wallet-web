@@ -3,7 +3,13 @@
     <FCorners size="big" :topLeftCorner="showBorder" :bottomRightCorner="showBorder" :style="popupContainerStyle">
       <div :class="popupContainerClasses" :style="popupContainerStyles">
         <div v-if="showHeader" class="header" :class="headerCentered">
-          <SearchInput v-if="showSearch" v-model="filterValue" :placeholder="placeholder" width="235px" />
+          <SearchInput
+            v-if="showSearch"
+            :value="filterValue"
+            :placeholder="placeholder"
+            width="235px"
+            @change="changeFilterValue"
+          />
 
           <template v-else>
             <div class="button-close"></div>
@@ -147,6 +153,10 @@ export default class Popup extends Vue {
   @Watch('filterValue')
   filter(value: string) {
     this.$emit('handlerFilter', value);
+  }
+
+  changeFilterValue(value: string) {
+    this.filterValue = value;
   }
 
   backgroundClick(event: CustomEvent) {

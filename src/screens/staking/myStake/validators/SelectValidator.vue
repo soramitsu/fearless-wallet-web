@@ -23,11 +23,12 @@
 
         <div class="settings">
           <SearchInput
-            v-model="filterValue"
+            :value="filterValue"
             placeholder="common.searchByAddress"
             width="450px"
             class="search"
             data-testid="searchInput"
+            @change="changeFilterValue"
           />
 
           <Icon icon="filter" @click.native="openFiltersPopup" class="filter" data-testid="filter" />
@@ -137,6 +138,10 @@ export default class SelectValidator extends Vue {
 
   openValidatorInfo(validator: FWValidatorInfoFull) {
     this.$emit('openValidatorInfo', validator);
+  }
+
+  changeFilterValue(value: string) {
+    this.filterValue = value;
   }
 }
 </script>

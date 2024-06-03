@@ -9,16 +9,33 @@
   />
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { defineProps, withDefaults, defineEmits, computed } from 'vue';
 
-@Component
-export default class Switcher extends Vue {
-  @VModel({ type: Boolean }) vModel!: boolean;
-  @Prop({ default: '' }) activeText!: string;
-  @Prop({ default: '' }) inactiveText!: string;
-  @Prop({ default: false }) disabled!: boolean;
+interface Props {
+  value: boolean;
+  activeText?: string;
+  inactiveText?: string;
+  disabled?: boolean;
 }
+
+const props = withDefaults(defineProps<Props>(), {
+  value: false,
+  activeText: '',
+  inactiveText: '',
+  disabled: false,
+});
+
+const emit = defineEmits(['change']);
+
+const vModel = computed({
+  get: () => props.value,
+  set: (value: boolean) => emit('change', value),
+});
+
+const activeText = computed(() => props.activeText);
+const inactiveText = computed(() => props.inactiveText);
+const disabled = computed(() => props.disabled);
 </script>
 
 <style lang="scss">

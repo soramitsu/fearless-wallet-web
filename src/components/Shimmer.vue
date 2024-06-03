@@ -2,29 +2,34 @@
   <div :class="shimmerClasses" :style="shimmerStyles"></div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, defineProps, withDefaults } from 'vue';
 
-@Component
-export default class Shimmer extends Vue {
-  @Prop({ default: 'line' }) type!: boolean;
-  @Prop({ default: '10px' }) height!: string;
-  @Prop({ default: '10px' }) width!: string;
-
-  get shimmerStyles() {
-    const styles: Record<string, string> = {};
-
-    if (this.height) styles.height = this.height;
-
-    if (this.width) styles.width = this.width;
-
-    return styles;
-  }
-
-  get shimmerClasses() {
-    return ['shimmer', 'shimmer-animate', `shimmer-${this.type}`];
-  }
+interface Props {
+  type?: string;
+  height?: string;
+  width?: string;
 }
+
+const props = withDefaults(defineProps<Props>(), {
+  type: 'line',
+  height: '10px',
+  width: '10px',
+});
+
+const shimmerStyles = computed(() => {
+  const styles: Record<string, string> = {};
+
+  if (props.height) styles.height = props.height;
+
+  if (props.width) styles.width = props.width;
+
+  return styles;
+});
+
+const shimmerClasses = computed(() => {
+  return ['shimmer', 'shimmer-animate', `shimmer-${props.type}`];
+});
 </script>
 
 <style lang="scss">

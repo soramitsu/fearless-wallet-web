@@ -59,7 +59,7 @@
         <Tooltip text="common.networkDisconnected" target=".warning-img" placement="left" />
       </template>
 
-      <Switcher v-if="showAssetsManagementForm" v-model="currencyVisible" />
+      <Switcher v-if="showAssetsManagementForm" :value="currencyVisible" @change="toggleCurrencyVisible" />
 
       <template v-else-if="!showWarning">
         <CircleButton
@@ -205,8 +205,8 @@ export default class CurrencyItem extends Vue {
     return !this.hiddenAssets.includes(this.assetData.groupId);
   }
 
-  set currencyVisible(value: boolean) {
-    this.setHiddenAssets({ groupId: this.assetData.groupId, value });
+  toggleCurrencyVisible(value: boolean) {
+    this.setHiddenAssets({ groupId: this.assetData.groupId, value: value });
   }
 
   get showCurrencyItem() {

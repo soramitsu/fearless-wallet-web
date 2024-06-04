@@ -65,8 +65,12 @@ export default class GoogleWalletsList extends Vue {
   @Prop(Array) items!: FilesState[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
+  setItemValue(index: number, data: Record<string, string | boolean>) {
+    this.$emit('setItemValue', index, data);
+  }
+
   async onConfirm(index: number) {
-    this.$emit('setItemValue', index, { isLoading: true });
+    this.setItemValue(index, { isLoading: true });
 
     const { json, ethJson, password } = this.items[index];
 
@@ -75,19 +79,19 @@ export default class GoogleWalletsList extends Vue {
     const { value: isValid } = await isJsonValid(json, password);
 
     if (!isValid) {
-      this.$emit('setItemValue', index, { isError: true, isLoading: false });
+      this.setItemValue(index, { isError: true, isLoading: false });
 
       return false;
     }
 
-    if (this.items[index].isError) this.$emit('setItemValue', index, { isError: false });
+    if (this.items[index].isError) this.setItemValue(index, { isError: false });
 
     if (ethJson) await jsonRestore(ethJson, password);
 
     const address = await jsonRestore(json, password);
 
     await updateCurrentAccount(address || this.selectedWallet.address);
-    this.$emit('setItemValue', index, { isComplete: true, isLoading: false });
+    this.setItemValue(index, { isComplete: true, isLoading: false });
 
     return true;
   }

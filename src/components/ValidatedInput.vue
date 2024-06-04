@@ -1,8 +1,9 @@
 <template>
   <div class="validate-input">
     <FInput
-      v-model="vModel"
+      :value="value"
       ref="input"
+      data-testid="input"
       :size="size"
       :placeholder="placeholder"
       :maxlength="maxlength"
@@ -12,24 +13,24 @@
       :disabled="disabled"
       :typeText="typeText"
       :type="type"
-      data-testid="input"
+      @change="changeValue"
     />
 
     <div v-show="showErrorText" class="error-descriptions" data-testid="errorDescriptions">
       <Icon v-if="errorWithIcon" icon="warning" className="warning" />
+
       {{ $t(errorDescriptions) }}
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, VModel, Ref } from 'vue-property-decorator';
+import { Component, Vue, Prop, Ref } from 'vue-property-decorator';
 import type FInput from '@/components/FInput.vue';
 type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
 
 @Component({})
 export default class ValidatedInput extends Vue {
-  @VModel({ type: String }) vModel!: string;
   @Prop(String) errorDescriptions!: string;
   @Prop(String) placeholder!: string;
   @Prop(Boolean) isError!: boolean;
@@ -41,15 +42,21 @@ export default class ValidatedInput extends Vue {
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: 'big' }) size!: string;
   @Prop({ default: false }) errorWithIcon!: string;
-
-  @Ref('input') readonly inputComponent!: FInput;
+  @Prop(String) value!: string;
+  @Ref('input') readonly inputComponent!: typeof FInput;
 
   get showErrorText() {
     return this.isError && this.errorDescriptions;
   }
 
   get input() {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     return this.inputComponent.input as HTMLInputElement;
+  }
+
+  changeValue(newValue: string) {
+    this.$emit('change', newValue);
   }
 }
 </script>

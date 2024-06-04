@@ -2,22 +2,24 @@
   <div class="add-contact">
     <div class="form">
       <FInput
-        v-model="name"
+        :value="name"
         placeholder="common.name"
         typeText="uppercase"
         size="big"
         class="row"
         :maxlength="45"
         data-testid="nameInput"
+        @change="changeName"
       />
 
       <ValidatedInput
-        v-model="address"
+        :value="address"
         placeholder="assets.walletAddress"
         class="row"
         errorDescriptions="accounts.invalidAccountAddress"
         :isError="isErrorAddress"
         data-testId="walletAddressInput"
+        @change="changeAddress"
       />
 
       <Checkbox
@@ -67,6 +69,14 @@ export default class EditAddressBook extends Vue {
       address.length !== 0 &&
       !(BaseApi.validateAddress(address, 'polkadot') || BaseApi.validateAddress(address, 'moonbeam'))
     );
+  }
+
+  changeName(value: string) {
+    this.name = value;
+  }
+
+  changeAddress(value: string) {
+    this.address = value;
   }
 
   mounted() {

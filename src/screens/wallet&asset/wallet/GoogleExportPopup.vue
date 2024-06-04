@@ -14,7 +14,7 @@
         <div class="text row" data-testid="popupMessage">{{ popupMessage }}</div>
 
         <ValidatedInput
-          v-model="password"
+          :value="password"
           placeholder="common.password"
           size="big"
           class="password-input row"
@@ -22,6 +22,7 @@
           data-testid="passwordGoogle"
           :isError="isErrorPassword"
           :showPassword="true"
+          @change="changePassword"
         />
 
         <Hint class="hint" iconName="notification" :text="hintGoogleDriveText" />
@@ -107,6 +108,10 @@ export default class GoogleExportPopup extends Vue {
     if (this.status === 'upload') return this.$t('googleExport.uploading');
 
     return '';
+  }
+
+  changePassword(value: string) {
+    this.password = value;
   }
 
   @Watch('password')

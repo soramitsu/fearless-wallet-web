@@ -9,7 +9,7 @@
         <ValidatedInput
           v-if="isLocked"
           ref="passInput"
-          v-model="password"
+          :value="password"
           placeholder="common.password"
           size="big"
           errorDescriptions="common.invalidPassword"
@@ -19,6 +19,7 @@
           :isError="isErrorPassword"
           :showPassword="true"
           @keypress.native="keypress"
+          @change="changePassword"
         />
 
         <div v-if="isExtension" class="remember-checkbox">
@@ -336,6 +337,10 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   onSavePassChange(value: boolean) {
     this.isSavePass = value;
+  }
+
+  changePassword(value: string) {
+    this.password = value;
   }
 
   async onSignMobile() {

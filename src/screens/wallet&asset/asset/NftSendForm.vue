@@ -9,7 +9,7 @@
     <div class="nft-send-form">
       <template v-if="showSendForm">
         <div class="container">
-          <FInput v-model="recipientCut" icon="close" placeholder="assets.sendTo" @click="setRecipient" />
+          <FInput :value="recipientCut" icon="close" placeholder="assets.sendTo" @click="setRecipient" />
           <div class="activity-buttons row">
             <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
 

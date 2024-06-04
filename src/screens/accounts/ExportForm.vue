@@ -6,7 +6,7 @@
       <template v-else>
         <div class="export-content">
           <FInput
-            v-model="exportType"
+            :value="exportType"
             placeholder="common.sourceType"
             size="big"
             class="export-type-input"
@@ -15,7 +15,7 @@
           />
 
           <FInput
-            v-model="substrateAddress"
+            :value="substrateAddress"
             class="row"
             size="big"
             data-testid="addressInput"

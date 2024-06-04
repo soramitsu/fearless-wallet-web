@@ -54,7 +54,7 @@
 
               <FInput
                 v-else
-                v-model="originNetwork"
+                :value="originNetwork"
                 class="row"
                 size="big"
                 :placeholder="placeholderNetwork"

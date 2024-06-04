@@ -3,16 +3,17 @@
     <div>
       <div class="phone-input">
         <FInput
-          v-model="countryCode"
+          :value="countryCode"
           ref="countryCode"
           size="big"
           class="phone-code"
           :placeholder="countryCodePlaceholder"
           :disabled="phoneInputDisabled"
+          @change="changeCountryCode"
         />
 
         <ValidatedInput
-          v-model="phoneNumber"
+          :value="phoneNumber"
           ref="phoneNumber"
           placeholder="soraCard.phoneNumber"
           size="big"
@@ -21,6 +22,7 @@
           :maxlength="10"
           :isError="isErrorPhoneNumber"
           :disabled="phoneInputDisabled"
+          @change="changePhoneNumber"
         />
 
         <button :class="sendButtonClasses" :disabled="disabledSendOtpButton" @click="sendCode">
@@ -29,13 +31,14 @@
       </div>
 
       <ValidatedInput
-        v-model="verificationCode"
+        :value="verificationCode"
         ref="verificationCode"
         placeholder="soraCard.verificationCode"
         :errorDescriptions="errorDescriptionsOtp"
         :isError="isErrorCode"
         :disabled="otpInputDisabled"
         :maxlength="otpCodeLength"
+        @change="changeVerificationCode"
       />
 
       <Disclaimer />
@@ -59,7 +62,7 @@ import { Component, Vue, Ref, Watch, Prop } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
 import { type FPNumber } from '@sora-substrate/util';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
-import type Input from '@/components/Input.vue';
+import type FInput from '@/components/FInput.vue';
 import type { AsyncFn, Fn } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
@@ -92,7 +95,7 @@ export default class Phone extends Vue {
   notPassedKycAndNotHasXorEnough = false;
 
   @Prop({ default: false, type: Boolean }) userApplied!: boolean;
-  @Ref('countryCode') readonly countryCodeComponent!: Input;
+  @Ref('countryCode') readonly countryCodeComponent!: typeof FInput;
   @Ref('phoneNumber') readonly phoneNumberComponent!: ValidatedInput;
   @Ref('verificationCode') private readonly otpComponent!: ValidatedInput;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -187,6 +190,14 @@ export default class Phone extends Vue {
     const isNumber = !Number.isNaN(+value[value.length - 1]);
 
     if (isNumber || isDeleteSymbol) this.phoneNumberInternal = value;
+  }
+
+  changePhoneNumber(value: string) {
+    this.phoneNumberInternal = value;
+  }
+
+  changeVerificationCode(value: string) {
+    this.verificationCode = value;
   }
 
   get isPhoneNumberValid() {
@@ -349,6 +360,10 @@ export default class Phone extends Vue {
         clearInterval(interval);
       }
     }, 1000);
+  }
+
+  changeCountryCode(value: string) {
+    this.countryCode = value;
   }
 }
 </script>

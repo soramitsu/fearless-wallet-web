@@ -45,7 +45,7 @@
 
           <FInput
             v-if="showWalletName"
-            v-model="accountName"
+            :value="accountName"
             placeholder="accounts.account"
             size="big"
             data-testid="accountName"

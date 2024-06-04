@@ -104,8 +104,8 @@ export default class GoogleWalletsList extends Vue {
     return !file.password || !file.password.length || file.isLoading || file.isComplete;
   }
 
-  changePassword(index: number, value: string) {
-    this.$emit('setItemPassword', index, { password: value });
+  changePassword(index: number, password: string) {
+    this.$emit('setItemPassword', index, { password });
   }
 
   onSelect(value: boolean, index: number) {

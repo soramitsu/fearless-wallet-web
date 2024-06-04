@@ -23,7 +23,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineProps, withDefaults } from 'vue';
+import { computed, withDefaults } from 'vue';
 import { useI18n } from 'vue-i18n-composable';
 import { type GetAssetPrice, useStore } from '@/store';
 import { getCostOfAssets } from '@/controllers/transferHelpers';

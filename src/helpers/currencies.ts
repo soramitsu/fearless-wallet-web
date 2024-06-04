@@ -209,9 +209,7 @@ export function getSummaryTransferableBalanceFilteredByActiveNetworks(
   token: TokenGroup,
   network: string = ALL_NETWORKS
 ) {
-  if (!isNetworkGroup(network)) {
-    return getTransferableBalanceInNetwork(token, network);
-  }
+  if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
 
   const store = useStore();
 

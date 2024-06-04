@@ -2,7 +2,7 @@
   <AboveForm :fullScreen="true" :showBackIcon="false" @closeHandler="onBack">
     <div class="wc-init-form">
       <ValidatedInput
-        v-model="uri"
+        :value="uri"
         :placeholder="$t('walletConnect.insertUrl')"
         :maxlength="500"
         size="big"

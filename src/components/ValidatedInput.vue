@@ -1,9 +1,9 @@
 <template>
   <div class="validate-input">
     <FInput
+      :value="value"
       ref="input"
       data-testid="input"
-      :value="vModel"
       :size="size"
       :placeholder="placeholder"
       :maxlength="maxlength"
@@ -13,7 +13,7 @@
       :disabled="disabled"
       :typeText="typeText"
       :type="type"
-      @change="changeVModel"
+      @change="changeValue"
     />
 
     <div v-show="showErrorText" class="error-descriptions" data-testid="errorDescriptions">
@@ -42,7 +42,7 @@ export default class ValidatedInput extends Vue {
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: 'big' }) size!: string;
   @Prop({ default: false }) errorWithIcon!: string;
-  @Prop(String) vModel!: string;
+  @Prop(String) value!: string;
   @Ref('input') readonly inputComponent!: typeof FInput;
 
   get showErrorText() {
@@ -55,8 +55,8 @@ export default class ValidatedInput extends Vue {
     return this.inputComponent.input as HTMLInputElement;
   }
 
-  changeVModel(value: string) {
-    this.vModel = value;
+  changeValue(newValue: string) {
+    this.$emit('change', newValue);
   }
 }
 </script>

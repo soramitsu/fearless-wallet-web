@@ -9,6 +9,7 @@
         :isError="isError"
         :errorDescriptions="$t(errorDescriptions)"
         :errorWithIcon="true"
+        @change="changeUri"
       />
 
       <FButton text="common.connect" size="big" fontSize="big" :disabled="isError" :border="false" @click="onSubmit" />
@@ -36,6 +37,10 @@ onMounted(() => {
 
   if (clipboard.startsWith('wc:')) uri.value = clipboard;
 });
+
+const changeUri = (value: string) => {
+  uri.value = value;
+};
 
 const onSubmit = async () => {
   const result = await newConnection({ uri: uri.value });

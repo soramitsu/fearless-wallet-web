@@ -34,7 +34,7 @@
         <ValidatedInput
           v-if="state.isLocked"
           ref="passInputComponent"
-          v-model="state.password"
+          :value="state.password"
           placeholder="common.password"
           size="big"
           :class="classesInput"
@@ -43,6 +43,7 @@
           :isError="state.isErrorPassword"
           :showPassword="true"
           @keypress.native="keypress"
+          @change="changePassword"
         />
 
         <Checkbox :value="state.isSavePass" size="medium" :label="min15Label" @change="onSavePassChange" />
@@ -188,6 +189,8 @@ watch(
 
 const onSavePassChange = (value: boolean) => (state.isSavePass = value);
 const onReject = async () => store.dispatch('SIGN_CANCEL', request.value.id);
+
+const changePassword = (value: string) => (state.password = value);
 
 const sendExtrinsic = async () => {
   state.isDisabled = true;

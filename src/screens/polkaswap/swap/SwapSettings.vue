@@ -11,7 +11,7 @@
     />
 
     <ValidatedInput
-      v-model="slippagePercent"
+      :value="slippagePercent"
       placeholder="assets.slippageTolerance"
       class="row"
       :errorDescriptions="warningMessage"

@@ -23,13 +23,14 @@
         />
 
         <ValidatedInput
-          v-model="url"
+          :value="url"
           placeholder="accounts.urlAddress"
           class="row"
           data-testid="urlAddress"
           :errorDescriptions="errorMessage"
           :isError="isError"
           :maxlength="150"
+          @change="changeUrl"
         />
       </div>
 
@@ -127,6 +128,10 @@ export default class EditNodeForm extends Vue {
 
   changeName(value: string) {
     this.name = value;
+  }
+
+  changeUrl(value: string) {
+    this.url = value;
   }
 
   mounted() {

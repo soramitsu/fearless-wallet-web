@@ -20,7 +20,7 @@
             <transition name="fade">
               <div v-show="file.active" class="json__controls">
                 <ValidatedInput
-                  v-model="file.password"
+                  :value="file.password"
                   class="input__validate-pass"
                   typeText="text"
                   placeholder="addWallet.enterPassword"
@@ -28,6 +28,7 @@
                   :showPassword="true"
                   :readonly="file.isComplete || file.isLoading"
                   :isError="file.isError"
+                  @change="changePassword(index, $event)"
                 />
 
                 <FButton
@@ -64,12 +65,8 @@ export default class GoogleWalletsList extends Vue {
   @Prop(Array) items!: FilesState[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
-  setItemValue(index: number, data: Record<string, string | boolean>) {
-    this.items.splice(index, 1, { ...this.items[index], ...data });
-  }
-
   async onConfirm(index: number) {
-    this.setItemValue(index, { isLoading: true });
+    this.$emit('setItemValue', index, { isLoading: true });
 
     const { json, ethJson, password } = this.items[index];
 
@@ -78,19 +75,19 @@ export default class GoogleWalletsList extends Vue {
     const { value: isValid } = await isJsonValid(json, password);
 
     if (!isValid) {
-      this.setItemValue(index, { isError: true, isLoading: false });
+      this.$emit('setItemValue', index, { isError: true, isLoading: false });
 
       return false;
     }
 
-    if (this.items[index].isError) this.setItemValue(index, { isError: false });
+    if (this.items[index].isError) this.$emit('setItemValue', index, { isError: false });
 
     if (ethJson) await jsonRestore(ethJson, password);
 
     const address = await jsonRestore(json, password);
 
     await updateCurrentAccount(address || this.selectedWallet.address);
-    this.setItemValue(index, { isComplete: true, isLoading: false });
+    this.$emit('setItemValue', index, { isComplete: true, isLoading: false });
 
     return true;
   }
@@ -101,6 +98,10 @@ export default class GoogleWalletsList extends Vue {
 
   isDisabled(file: FilesState) {
     return !file.password || !file.password.length || file.isLoading || file.isComplete;
+  }
+
+  changePassword(index: number, value: string) {
+    this.$emit('setItemPassword', index, { password: value });
   }
 
   onSelect(value: boolean, index: number) {

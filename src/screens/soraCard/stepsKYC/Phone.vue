@@ -13,7 +13,7 @@
         />
 
         <ValidatedInput
-          v-model="phoneNumber"
+          :value="phoneNumber"
           ref="phoneNumber"
           placeholder="soraCard.phoneNumber"
           size="big"
@@ -22,6 +22,7 @@
           :maxlength="10"
           :isError="isErrorPhoneNumber"
           :disabled="phoneInputDisabled"
+          @change="changePhoneNumber"
         />
 
         <button :class="sendButtonClasses" :disabled="disabledSendOtpButton" @click="sendCode">
@@ -30,13 +31,14 @@
       </div>
 
       <ValidatedInput
-        v-model="verificationCode"
+        :value="verificationCode"
         ref="verificationCode"
         placeholder="soraCard.verificationCode"
         :errorDescriptions="errorDescriptionsOtp"
         :isError="isErrorCode"
         :disabled="otpInputDisabled"
         :maxlength="otpCodeLength"
+        @change="changeVerificationCode"
       />
 
       <Disclaimer />
@@ -188,6 +190,14 @@ export default class Phone extends Vue {
     const isNumber = !Number.isNaN(+value[value.length - 1]);
 
     if (isNumber || isDeleteSymbol) this.phoneNumberInternal = value;
+  }
+
+  changePhoneNumber(value: string) {
+    this.phoneNumberInternal = value;
+  }
+
+  changeVerificationCode(value: string) {
+    this.verificationCode = value;
   }
 
   get isPhoneNumberValid() {

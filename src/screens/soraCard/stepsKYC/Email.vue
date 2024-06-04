@@ -4,12 +4,13 @@
 
     <div v-else>
       <ValidatedInput
-        v-model="email"
+        :value="email"
         placeholder="common.email"
         errorDescriptions="soraCard.invalidEmail"
         type="email"
         :maxlength="320"
         :isError="isErrorEmail"
+        @change="changeEmail"
       />
 
       <Hint iconName="notification" text="soraCard.wellSendEmail" class="hint" />
@@ -154,6 +155,10 @@ export default class Email extends Vue {
 
   closeVerifyEmailForm() {
     this.showVerifyEmailForm = false;
+  }
+
+  changeEmail(value: string) {
+    this.email = value;
   }
 
   sendEmail() {

@@ -1,7 +1,7 @@
 <template>
   <div class="password-form">
     <ValidatedInput
-      v-model="pass1"
+      :value="pass1"
       ref="pass1Input"
       :errorDescriptions="t('shortPassword')"
       :placeholder="t('enterPassword')"
@@ -9,17 +9,19 @@
       :showPassword="true"
       data-testid="enterPasswordInput"
       class="row"
+      @change="changePass1"
     />
 
     <ValidatedInput
       v-show="showPasswordConfirmation"
-      v-model="pass2"
+      :value="pass2"
       :errorDescriptions="t('notMatchPassword')"
       :placeholder="t('reEnterPassword')"
       :isError="isWrongPassword"
       :showPassword="true"
       data-testid="reEnterPasswordInput"
       class="row"
+      @change="changePass2"
     />
 
     <Hint class="hint" iconName="notification" :text="hintText" data-testid="hintText" />
@@ -89,6 +91,14 @@ export default class PasswordForm extends Vue {
 
   setPassword(password: string) {
     this.$emit('updateWalletPassword', password);
+  }
+
+  changePass1(value: string) {
+    this.pass1 = value;
+  }
+
+  changePass2(value: string) {
+    this.pass2 = value;
   }
 
   t(value: string, obj: Record<string, string> = {}) {

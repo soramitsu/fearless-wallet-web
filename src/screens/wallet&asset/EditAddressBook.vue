@@ -13,12 +13,13 @@
       />
 
       <ValidatedInput
-        v-model="address"
+        :value="address"
         placeholder="assets.walletAddress"
         class="row"
         errorDescriptions="accounts.invalidAccountAddress"
         :isError="isErrorAddress"
         data-testId="walletAddressInput"
+        @change="changeAddress"
       />
 
       <Checkbox
@@ -72,6 +73,10 @@ export default class EditAddressBook extends Vue {
 
   changeName(value: string) {
     this.name = value;
+  }
+
+  changeAddress(value: string) {
+    this.address = value;
   }
 
   mounted() {

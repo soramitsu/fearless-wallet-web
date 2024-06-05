@@ -10,7 +10,7 @@
 </template>
 
 <script lang="ts" setup>
-import { withDefaults, defineEmits, computed } from 'vue';
+import { withDefaults, computed } from 'vue';
 
 interface Props {
   value: boolean;

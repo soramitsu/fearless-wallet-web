@@ -28,7 +28,7 @@ type IconType = 'rotate' | 'close';
 interface Props {
   value: string | number;
   placeholder: string;
-  isActiveRotate: boolean;
+  isActiveRotate?: boolean;
   icon: IconType;
 }
 

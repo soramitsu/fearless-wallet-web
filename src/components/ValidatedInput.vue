@@ -2,7 +2,7 @@
   <div class="validate-input">
     <FInput
       :value="value"
-      ref="input"
+      ref="inputRef"
       data-testid="input"
       :size="size"
       :placeholder="placeholder"
@@ -70,17 +70,12 @@ const emitChange = (value: string | number) => {
   emit('change', value);
 };
 
-const inputComponent = ref<typeof FInput | null>(null);
+const inputRef = ref<typeof FInput | null>(null);
 
-const showErrorText = computed(() => {
-  return props.isError && props.errorDescriptions;
-});
+const showErrorText = computed(() => props.isError && props.errorDescriptions);
+const input = computed(() => inputRef.value?.input as HTMLInputElement);
 
-const input = computed(() => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  //@ts-ignore
-  return inputComponent.value?.input as HTMLInputElement;
-});
+defineExpose({ input });
 </script>
 
 <style lang="scss" scoped>

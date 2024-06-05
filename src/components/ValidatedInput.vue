@@ -2,7 +2,7 @@
   <div class="validate-input">
     <FInput
       :value="value"
-      ref="input"
+      ref="inputRef"
       data-testid="input"
       :size="size"
       :placeholder="placeholder"
@@ -13,7 +13,7 @@
       :disabled="disabled"
       :typeText="typeText"
       :type="type"
-      @change="changeValue"
+      @change="emitChange"
     />
 
     <div v-show="showErrorText" class="error-descriptions" data-testid="errorDescriptions">
@@ -24,41 +24,58 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Ref } from 'vue-property-decorator';
-import type FInput from '@/components/FInput.vue';
+<script lang="ts" setup>
+import { ref, computed, defineProps, withDefaults } from 'vue';
+import FInput from '@/components/FInput.vue';
+
 type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
 
-@Component({})
-export default class ValidatedInput extends Vue {
-  @Prop(String) errorDescriptions!: string;
-  @Prop(String) placeholder!: string;
-  @Prop(Boolean) isError!: boolean;
-  @Prop({ default: 50 }) maxlength!: number;
-  @Prop({ default: false }) showPassword!: boolean;
-  @Prop({ default: false }) readonly!: boolean;
-  @Prop({ default: 'none' }) typeText!: string;
-  @Prop({ default: 'text' }) type!: Type;
-  @Prop({ default: false }) disabled!: boolean;
-  @Prop({ default: 'big' }) size!: string;
-  @Prop({ default: false }) errorWithIcon!: string;
-  @Prop(String) value!: string;
-  @Ref('input') readonly inputComponent!: typeof FInput;
+type FInputProps = {
+  errorDescriptions: string;
+  placeholder: string;
+  isError: boolean;
+  maxlength?: number;
+  showPassword?: boolean;
+  readonly?: boolean;
+  typeText?: string;
+  type?: Type;
+  disabled?: boolean;
+  size?: string;
+  errorWithIcon?: boolean;
+  value: string;
+};
 
-  get showErrorText() {
-    return this.isError && this.errorDescriptions;
-  }
+const props = withDefaults(defineProps<FInputProps>(), {
+  errorDescriptions: '',
+  isError: false,
+  value: '',
+  placeholder: '',
+  accept: '',
+  height: 0,
+  size: 'medium',
+  type: 'text',
+  typeText: 'none',
+  maxlength: 999,
+  readonly: false,
+  disabled: false,
+  showPassword: false,
+  styleInput: 'default',
+  errorWithIcon: false,
+  cursorPointer: false,
+});
 
-  get input() {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    return this.inputComponent.input as HTMLInputElement;
-  }
+const emit = defineEmits(['change']);
 
-  changeValue(newValue: string) {
-    this.$emit('change', newValue);
-  }
-}
+const emitChange = (value: string | number) => {
+  emit('change', value);
+};
+
+const inputRef = ref<typeof FInput | null>(null);
+
+const showErrorText = computed(() => props.isError && props.errorDescriptions);
+const input = computed(() => inputRef.value?.input as HTMLInputElement);
+
+defineExpose({ input });
 </script>
 
 <style lang="scss" scoped>

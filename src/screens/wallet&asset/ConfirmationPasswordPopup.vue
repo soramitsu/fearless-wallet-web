@@ -159,7 +159,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   transactionState: 'pending' | 'success' | 'failed' | null = null;
   showUnknownErrorPopup = false;
 
-  @Ref('passInput') readonly passInputComponent!: ValidatedInput;
+  @Ref('passInput') readonly passInputComponent!: typeof ValidatedInput;
   @Prop({ type: String, default: '0' }) amount!: string;
   @Prop({ type: String, default: '0' }) value!: string;
   @Prop({ type: String, default: '0' }) fee!: string;
@@ -308,6 +308,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   async mounted() {
     if (!IS_EXTENSION || this.isSignMobile) return;
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     this.passInputComponent.input.focus();
     this.resetTxStatus();
 

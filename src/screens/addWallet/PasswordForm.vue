@@ -39,7 +39,7 @@ export default class PasswordForm extends Vue {
   pass1 = '';
   pass2 = '';
 
-  @Ref('pass1Input') readonly pass1InputComponent!: ValidatedInput;
+  @Ref('pass1Input') readonly pass1InputComponent!: typeof ValidatedInput;
   @Prop(Boolean) showMockPassword!: boolean;
   @Prop({ type: Boolean, default: false }) isGoogleFlow!: boolean;
   @Prop(Boolean) showSamePasswordText!: boolean;
@@ -67,6 +67,8 @@ export default class PasswordForm extends Vue {
   }
 
   mounted() {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     this.pass1InputComponent.input.focus();
 
     if (this.showMockPassword) this.pass1 = '000000';

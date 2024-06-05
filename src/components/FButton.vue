@@ -29,10 +29,10 @@ type TypeText = 'none' | 'uppercase';
 
 type FButtonProps = {
   text?: ComponentText;
-  width: string;
-  iconName: string;
-  iconType: string;
-  iconColor: string;
+  width?: string;
+  iconName?: string;
+  iconType?: string;
+  iconColor?: string;
   type?: Type;
   size?: Size;
   fontSize?: FontSize;
@@ -74,7 +74,7 @@ const tText = computed(() => {
     if (_tc) return tc(text, _tc, localeProps);
   }
 
-  return t(text);
+  return t(text, localeProps);
 });
 
 const buttonStyle = computed(() => {

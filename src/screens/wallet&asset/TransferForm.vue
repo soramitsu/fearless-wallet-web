@@ -627,9 +627,7 @@ export default class TransferForm extends Vue {
   }
 
   get sendAssetName() {
-    if (this.currency === undefined) return '';
-
-    return this.currency.symbol;
+    return this.currency?.symbol ?? '';
   }
 
   get isValidSendAsset() {

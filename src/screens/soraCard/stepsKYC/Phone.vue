@@ -96,8 +96,8 @@ export default class Phone extends Vue {
 
   @Prop({ default: false, type: Boolean }) userApplied!: boolean;
   @Ref('countryCode') readonly countryCodeComponent!: typeof FInput;
-  @Ref('phoneNumber') readonly phoneNumberComponent!: ValidatedInput;
-  @Ref('verificationCode') private readonly otpComponent!: ValidatedInput;
+  @Ref('phoneNumber') readonly phoneNumberComponent!: typeof ValidatedInput;
+  @Ref('verificationCode') private readonly otpComponent!: typeof ValidatedInput;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(SoraCardGettersTypes.authLogin) authLogin!: any;
@@ -166,6 +166,8 @@ export default class Phone extends Vue {
   }
 
   set countryCode(value: string) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     if (value.length > 3) this.phoneNumberComponent.input.focus();
 
     const isDeleteSymbol = value.length < this.countryCodeInternal.length;
@@ -261,6 +263,8 @@ export default class Phone extends Vue {
       .on('SendOtp-Success', () => {
         this.smsSent = true;
 
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //@ts-ignore
         this.$nextTick(() => this.otpComponent.input.focus());
       })
       .on('MinimalRegistrationReq', () => {

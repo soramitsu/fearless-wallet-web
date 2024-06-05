@@ -32,8 +32,8 @@ type TypeText = 'none' | 'uppercase';
 type FInputProps = {
   value: string | number;
   placeholder: string;
-  accept: string;
-  height: number;
+  accept?: string;
+  height?: number;
   size?: Size;
   type?: Type;
   typeText?: TypeText;
@@ -104,6 +104,8 @@ const inputClasses = computed(() => {
     },
   ];
 });
+
+defineExpose({ input });
 </script>
 
 <style lang="scss">

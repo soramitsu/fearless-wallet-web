@@ -232,6 +232,8 @@ export default class InputsForm extends Vue {
   }
 
   setMax(isExchangeB: boolean) {
+    this.isPercentChanging = false;
+
     if (this.isRemoveLiquidity) {
       this.syncedIsExchangeB = isExchangeB;
 

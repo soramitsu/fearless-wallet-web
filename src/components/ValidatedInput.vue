@@ -1,8 +1,9 @@
 <template>
   <div class="validate-input">
     <FInput
-      v-model="vModel"
-      ref="input"
+      :value="value"
+      ref="inputRef"
+      data-testid="input"
       :size="size"
       :placeholder="placeholder"
       :maxlength="maxlength"
@@ -12,46 +13,69 @@
       :disabled="disabled"
       :typeText="typeText"
       :type="type"
-      data-testid="input"
+      @change="emitChange"
     />
 
     <div v-show="showErrorText" class="error-descriptions" data-testid="errorDescriptions">
       <Icon v-if="errorWithIcon" icon="warning" className="warning" />
+
       {{ $t(errorDescriptions) }}
     </div>
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, VModel, Ref } from 'vue-property-decorator';
-import type FInput from '@/components/FInput.vue';
+<script lang="ts" setup>
+import { ref, computed, defineProps, withDefaults } from 'vue';
+import FInput from '@/components/FInput.vue';
+
 type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
 
-@Component({})
-export default class ValidatedInput extends Vue {
-  @VModel({ type: String }) vModel!: string;
-  @Prop(String) errorDescriptions!: string;
-  @Prop(String) placeholder!: string;
-  @Prop(Boolean) isError!: boolean;
-  @Prop({ default: 50 }) maxlength!: number;
-  @Prop({ default: false }) showPassword!: boolean;
-  @Prop({ default: false }) readonly!: boolean;
-  @Prop({ default: 'none' }) typeText!: string;
-  @Prop({ default: 'text' }) type!: Type;
-  @Prop({ default: false }) disabled!: boolean;
-  @Prop({ default: 'big' }) size!: string;
-  @Prop({ default: false }) errorWithIcon!: string;
+type FInputProps = {
+  errorDescriptions: string;
+  placeholder: string;
+  isError: boolean;
+  maxlength?: number;
+  showPassword?: boolean;
+  readonly?: boolean;
+  typeText?: string;
+  type?: Type;
+  disabled?: boolean;
+  size?: string;
+  errorWithIcon?: boolean;
+  value: string;
+};
 
-  @Ref('input') readonly inputComponent!: FInput;
+const props = withDefaults(defineProps<FInputProps>(), {
+  errorDescriptions: '',
+  isError: false,
+  value: '',
+  placeholder: '',
+  accept: '',
+  height: 0,
+  size: 'medium',
+  type: 'text',
+  typeText: 'none',
+  maxlength: 999,
+  readonly: false,
+  disabled: false,
+  showPassword: false,
+  styleInput: 'default',
+  errorWithIcon: false,
+  cursorPointer: false,
+});
 
-  get showErrorText() {
-    return this.isError && this.errorDescriptions;
-  }
+const emit = defineEmits(['change']);
 
-  get input() {
-    return this.inputComponent.input as HTMLInputElement;
-  }
-}
+const emitChange = (value: string | number) => {
+  emit('change', value);
+};
+
+const inputRef = ref<typeof FInput | null>(null);
+
+const showErrorText = computed(() => props.isError && props.errorDescriptions);
+const input = computed(() => inputRef.value?.input as HTMLInputElement);
+
+defineExpose({ input });
 </script>
 
 <style lang="scss" scoped>

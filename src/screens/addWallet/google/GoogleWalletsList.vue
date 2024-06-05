@@ -20,7 +20,7 @@
             <transition name="fade">
               <div v-show="file.active" class="json__controls">
                 <ValidatedInput
-                  v-model="file.password"
+                  :value="file.password"
                   class="input__validate-pass"
                   typeText="text"
                   placeholder="addWallet.enterPassword"
@@ -28,6 +28,7 @@
                   :showPassword="true"
                   :readonly="file.isComplete || file.isLoading"
                   :isError="file.isError"
+                  @change="changePassword(index, $event)"
                 />
 
                 <FButton
@@ -65,7 +66,7 @@ export default class GoogleWalletsList extends Vue {
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   setItemValue(index: number, data: Record<string, string | boolean>) {
-    this.items.splice(index, 1, { ...this.items[index], ...data });
+    this.$emit('setItemValue', index, data);
   }
 
   async onConfirm(index: number) {
@@ -101,6 +102,10 @@ export default class GoogleWalletsList extends Vue {
 
   isDisabled(file: FilesState) {
     return !file.password || !file.password.length || file.isLoading || file.isComplete;
+  }
+
+  changePassword(index: number, password: string) {
+    this.$emit('setItemPassword', index, { password });
   }
 
   onSelect(value: boolean, index: number) {

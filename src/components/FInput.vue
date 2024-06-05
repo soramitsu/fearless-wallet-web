@@ -21,66 +21,93 @@
   </FCorners>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, VModel, Ref } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { ref, computed, withDefaults } from 'vue';
 
 type Size = 'small' | 'medium' | 'big';
 type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
 type Style = 'default' | 'pink';
 type TypeText = 'none' | 'uppercase';
 
-@Component
-export default class Input extends Vue {
-  @VModel({ type: String || Number }) vModel!: string | number;
-  @Prop(String) placeholder!: string;
-  @Prop(String) accept!: string;
-  @Prop(Number) height!: number;
-  @Prop({ default: 'medium' }) size!: Size;
-  @Prop({ default: 'text' }) type!: Type;
-  @Prop({ default: 'none' }) typeText!: TypeText;
-  @Prop({ default: 999 }) maxlength!: number;
-  @Prop({ default: false }) readonly!: boolean;
-  @Prop({ default: false }) disabled!: boolean;
-  @Prop({ default: false }) showPassword!: boolean;
-  @Prop({ default: 'default' }) styleInput!: Style;
-  @Prop({ default: false }) isError!: boolean;
-  @Prop({ default: false }) cursorPointer!: boolean;
-  @Ref('input') readonly input!: HTMLInputElement;
+type FInputProps = {
+  value: string | number;
+  placeholder: string;
+  accept?: string;
+  height?: number;
+  size?: Size;
+  type?: Type;
+  typeText?: TypeText;
+  maxlength?: number;
+  readonly?: boolean;
+  disabled?: boolean;
+  showPassword?: boolean;
+  styleInput?: Style;
+  isError?: boolean;
+  cursorPointer?: boolean;
+};
 
-  get wrapperClasses() {
-    return [
-      {
-        'cursor-pointer': this.cursorPointer,
-      },
-    ];
-  }
+const props = withDefaults(defineProps<FInputProps>(), {
+  value: '',
+  placeholder: '',
+  accept: '',
+  height: 0,
+  size: 'medium',
+  type: 'text',
+  typeText: 'none',
+  maxlength: 999,
+  readonly: false,
+  disabled: false,
+  showPassword: false,
+  styleInput: 'default',
+  isError: false,
+  cursorPointer: false,
+});
 
-  get containerInputClasses() {
-    // for "small" and "mini" sizes also medium
-    const sizeName = this.size === 'big' ? 'big' : 'medium';
+const wrapperClasses = computed(() => {
+  return [
+    {
+      'cursor-pointer': props.cursorPointer,
+    },
+  ];
+});
 
-    return ['input', `input-style-${this.styleInput}`, `input-size-${sizeName}`];
-  }
+const emit = defineEmits(['blur', 'change']);
 
-  get inputStyle() {
-    const styles: Record<string, string> = {
-      'text-transform': this.typeText,
-    };
+const vModel = computed({
+  get: () => props.value,
+  set: (value: string | number) => emit('change', value),
+});
 
-    if (this.height) styles.height = `${this.height}px`;
+const input = ref<HTMLInputElement | null>(null);
 
-    return styles;
-  }
+const containerInputClasses = computed(() => {
+  // for "small" and "mini" sizes also medium
+  const sizeName = props.size === 'big' ? 'big' : 'medium';
 
-  get inputClasses() {
-    return [
-      {
-        'error-input': this.isError,
-      },
-    ];
-  }
-}
+  return ['input', `input-style-${props.styleInput}`, `input-size-${sizeName}`];
+});
+
+const inputStyle = computed(() => {
+  const styles: Record<string, string> = {
+    'text-transform': props.typeText,
+  };
+
+  if (props.height) styles.height = `${props.height}px`;
+
+  return styles;
+});
+
+const inputClasses = computed(() => {
+  return [
+    {
+      'error-input': props.isError,
+    },
+  ];
+});
+
+defineExpose({ input });
 </script>
+
 <style lang="scss">
 .cursor-pointer {
   .el-input__inner {

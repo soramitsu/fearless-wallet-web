@@ -2,7 +2,7 @@
   <Scroll>
     <div class="validator-info">
       <FInput
-        v-model="address"
+        :value="address"
         :placeholder="validatorName"
         size="big"
         data-testid="validatorNameInput"

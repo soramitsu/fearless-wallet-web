@@ -1,12 +1,13 @@
 <template>
   <div class="wrapper" @click="click">
     <FInput
-      v-model="vModel"
+      :value="value"
       size="big"
       class="rotate-input"
       :placeholder="placeholder"
       :readonly="true"
       :cursorPointer="true"
+      @change="changeValue"
     />
 
     <Rotate v-if="icon === 'rotate'" :isActive="isActiveRotate" class="icon">
@@ -27,7 +28,7 @@ type IconType = 'rotate' | 'close';
 interface Props {
   value: string | number;
   placeholder: string;
-  isActiveRotate: boolean;
+  isActiveRotate?: boolean;
   icon: IconType;
 }
 
@@ -42,10 +43,9 @@ const emit = defineEmits(['click', 'change']);
 
 const isCloseIcon = computed(() => props.icon === 'close' && props.value !== '');
 
-const vModel = computed({
-  get: () => props.value,
-  set: (value: string | number) => emit('change', value),
-});
+const changeValue = (newValue: string | number) => {
+  emit('change', newValue);
+};
 
 const click = () => {
   if (props.icon === 'rotate') emit('click');

@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineProps, withDefaults } from 'vue';
+import { computed, withDefaults } from 'vue';
 
 interface Props {
   type?: string;

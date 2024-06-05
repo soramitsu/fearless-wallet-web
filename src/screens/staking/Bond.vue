@@ -41,7 +41,7 @@
         <div v-else>
           <template v-if="step === 1">
             <FInput
-              v-model="accountName"
+              :value="accountName"
               placeholder="accounts.account"
               size="big"
               data-testid="account"

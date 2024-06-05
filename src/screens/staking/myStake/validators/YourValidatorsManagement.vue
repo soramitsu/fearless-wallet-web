@@ -18,7 +18,7 @@
 
       <div v-else-if="step === 6">
         <FInput
-          v-model="selectedAccountName"
+          :value="selectedAccountName"
           placeholder="accounts.account"
           size="big"
           data-testid="accountName"

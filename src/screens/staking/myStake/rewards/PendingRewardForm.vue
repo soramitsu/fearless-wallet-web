@@ -30,7 +30,7 @@
 
         <div v-else-if="step === 2">
           <FInput
-            v-model="selectedAccountName"
+            :value="selectedAccountName"
             placeholder="accounts.account"
             data-testid="account"
             size="big"
@@ -49,7 +49,7 @@
           />
 
           <FInput
-            v-model="payeeName"
+            :value="payeeName"
             :readonly="true"
             placeholder="staking.setPayee"
             data-testid="setPayee"

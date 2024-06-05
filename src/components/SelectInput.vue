@@ -38,7 +38,7 @@
           {{ $t('assets.balance') }}
 
           <div :class="balanceValueClasses" data-testid="balanceValue" @click="setMax">
-            &nbsp;{{ $n(totalAmount, 'decimal') }}
+            &nbsp;{{ $n(+totalAmount, 'decimal') }}
           </div>
         </div>
       </div>

@@ -1,13 +1,13 @@
 <template>
   <div class="search-input-wrapper" data-testid="searchInput">
-    <FInput v-model="vModel" :placeholder="placeholder" size="small" :style="inputStyle" />
+    <FInput :value="value" :placeholder="placeholder" size="small" :style="inputStyle" @change="changeInputValue" />
 
     <SIcon name="basic-search-24" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { defineProps, withDefaults, computed } from 'vue';
+import { withDefaults, computed } from 'vue';
 
 interface Props {
   value: string;
@@ -23,10 +23,9 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits(['change']);
 
-const vModel = computed({
-  get: () => props.value,
-  set: (value: string) => emit('change', value),
-});
+const changeInputValue = (newValue: string) => {
+  emit('change', newValue);
+};
 
 const inputStyle = computed(() => {
   const styles: Record<string, string> = {};

@@ -15,18 +15,19 @@
     />
 
     <FInput
-      v-model="substrateDP"
+      :value="substrateDP"
       class="row"
       placeholder="addWallet.substrateDP"
       size="big"
       data-testid="substrateDP"
+      @change="changeSubstrateDP"
     />
 
     <div class="example-prompt">{{ $t('addWallet.example', { example }) }}</div>
 
     <template v-if="showEthereumDP">
       <FInput
-        v-model="ethereumKeypairType"
+        :value="ethereumKeypairType"
         class="row"
         placeholder="addWallet.ethereumCryptoType"
         :readonly="true"
@@ -34,12 +35,13 @@
       />
 
       <FInput
-        v-model="ethereumDP"
+        :value="ethereumDP"
         class="row"
         placeholder="addWallet.ethereumDP"
         :maxlength="25"
         size="big"
         data-testid="ethereumDP"
+        @change="changeEthereumDP"
       />
 
       <div class="example-prompt">{{ $t('addWallet.example', { example: ethereumDefaultDerivationPath }) }}</div>
@@ -106,6 +108,14 @@ export default class AdvancedForm extends Vue {
 
   closeAdvancedForm() {
     this.$emit('toggleAdvancedFormVisible', false);
+  }
+
+  changeSubstrateDP(value: string) {
+    this.substrateDP = value;
+  }
+
+  changeEthereumDP(value: string) {
+    this.ethereumDP = value;
   }
 
   saveChanges() {

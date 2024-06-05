@@ -7,6 +7,7 @@ import { type Extrinsic } from '@extension-base/api/substrate/utils/types';
 import type State from '@extension-base/background/handlers/State';
 
 import { type NetworkName } from '@/interfaces';
+import { isSameString } from '@/helpers';
 
 type ExtrinsicTransferProps = {
   to: string;
@@ -23,7 +24,7 @@ export function createExtrinsicTransfer(props: ExtrinsicTransferProps, state: St
 
   if (!api) return null;
 
-  const { precision, type, id } = tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKeyLCase)!;
+  const { precision, type, id } = tokenBalance.balances.find(({ name }) => isSameString(name, networkKey))!;
   const ormlOptions = getAssetOptions(id, state.networkService.assetsMap);
   const precisionAmount = getPrecisionValue(amount, precision) as string;
 
@@ -86,6 +87,7 @@ export async function estimateFee(
 
   try {
     const paymentInfo = await extrinsic.paymentInfo(to);
+
     const partialFee = paymentInfo ? +paymentInfo.partialFee : '0';
     const result = FPNumber.fromCodecValue(partialFee, utilityPrecision);
 

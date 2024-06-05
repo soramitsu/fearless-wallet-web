@@ -71,14 +71,22 @@ export default class InputsForm extends Vue {
   @Prop(String) extrinsicType!: 'addLiquidity' | 'removeLiquidity' | '';
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
+  get isRemoveLiquidity() {
+    return this.extrinsicType === 'removeLiquidity';
+  }
+
+  get isAddLiquidity() {
+    return this.extrinsicType === 'addLiquidity';
+  }
+
   get transferableAmount1() {
-    if (this.extrinsicType === 'removeLiquidity') return this.poolParams.asset1.myAmount;
+    if (this.isRemoveLiquidity) return this.poolParams.asset1.myAmount;
 
     return this.poolParams.asset1.transferableAmount;
   }
 
   get transferableAmount2() {
-    if (this.extrinsicType === 'removeLiquidity') return this.poolParams.asset2.myAmount;
+    if (this.isRemoveLiquidity) return this.poolParams.asset2.myAmount;
 
     return this.poolParams.asset2.transferableAmount;
   }
@@ -155,7 +163,7 @@ export default class InputsForm extends Vue {
   async watcherAmount1() {
     if (this.syncedIsExchangeB || this.isPercentChanging) return;
 
-    if (this.extrinsicType === 'addLiquidity') {
+    if (this.isAddLiquidity) {
       if (this.poolParams.asset1.reserve === '0') return;
 
       this.syncedAmount2 = new FPNumber(this.syncedAmount1)
@@ -180,7 +188,7 @@ export default class InputsForm extends Vue {
   async watcherAmount2() {
     if (!this.syncedIsExchangeB || this.isPercentChanging) return;
 
-    if (this.extrinsicType === 'addLiquidity') {
+    if (this.isAddLiquidity) {
       if (this.poolParams.asset2.reserve === '0') return;
 
       this.syncedAmount1 = new FPNumber(this.syncedAmount2)
@@ -202,19 +210,17 @@ export default class InputsForm extends Vue {
   }
 
   updateAmount1(value: string) {
-    this.syncedAmount1 = FPNumber.gt(new FPNumber(value), new FPNumber(this.poolParams.asset1.myAmount))
-      ? this.poolParams.asset1.myAmount
-      : value;
+    const isOverValue = FPNumber.gt(new FPNumber(value), new FPNumber(this.poolParams.asset1.myAmount));
 
+    this.syncedAmount1 = this.isRemoveLiquidity && isOverValue ? this.poolParams.asset1.myAmount : value;
     this.syncedIsExchangeB = false;
     this.isPercentChanging = false;
   }
 
   updateAmount2(value: string) {
-    this.syncedAmount2 = FPNumber.gt(new FPNumber(value), new FPNumber(this.poolParams.asset2.myAmount))
-      ? this.poolParams.asset2.myAmount
-      : value;
+    const isOverValue = FPNumber.gt(new FPNumber(value), new FPNumber(this.poolParams.asset2.myAmount));
 
+    this.syncedAmount2 = this.isRemoveLiquidity && isOverValue ? this.poolParams.asset2.myAmount : value;
     this.syncedIsExchangeB = true;
     this.isPercentChanging = false;
   }
@@ -226,7 +232,7 @@ export default class InputsForm extends Vue {
   }
 
   setMax(isExchangeB: boolean) {
-    if (this.extrinsicType === 'removeLiquidity') {
+    if (this.isRemoveLiquidity) {
       this.syncedIsExchangeB = isExchangeB;
 
       if (isExchangeB) this.syncedAmount2 = this.transferableAmount2;

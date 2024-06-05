@@ -477,20 +477,20 @@ export default class State {
     return true;
   }
 
-  public setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null, updateNetworks = true): void {
+  public setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null): void {
     this.keyringService.setCurrentAccount(data);
 
-    if (updateNetworks) {
-      // logic for Sora library
-      if (data?.address && !data.isMobile) {
-        const pair = this.keyringService.getPair(data?.address)!;
+    // logic for Sora library
+    if (data?.address && !data.isMobile) {
+      this.poolsService.unsubscribePools();
 
-        apiSora.account = { json: null as any, pair };
-        apiSora.bridgeProxy.sub.account = { json: null as any, pair };
+      const pair = this.keyringService.getPair(data?.address)!;
 
-        // TODO добавить фича тогл
-        this.subscribeTotalXorBalance();
-      }
+      apiSora.account = { json: null as any, pair };
+      apiSora.bridgeProxy.sub.account = { json: null as any, pair };
+
+      // TODO добавить фича тогл
+      // this.subscribeTotalXorBalance();
     }
 
     this.updateServiceInfo();

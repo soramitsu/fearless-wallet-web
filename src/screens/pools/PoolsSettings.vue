@@ -16,7 +16,13 @@
     </div>
 
     <div class="settings-part">
-      <SearchInput v-model="syncedFilterValue" placeholder="common.search" width="185px" class="search" />
+      <SearchInput
+        :value="syncedFilterValue"
+        placeholder="common.search"
+        width="185px"
+        class="search"
+        @change="changeSyncedFilterValue"
+      />
     </div>
   </div>
 </template>
@@ -65,6 +71,10 @@ export default class PoolsSettings extends Vue {
 
   openTab(name: PoolsTab) {
     this.syncedActiveTabName = name;
+  }
+
+  changeSyncedFilterValue(value: string) {
+    this.syncedFilterValue = value;
   }
 }
 </script>

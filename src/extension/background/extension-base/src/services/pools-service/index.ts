@@ -136,6 +136,11 @@ export class PoolsService {
     this.liquidityUpdatedSubscription?.unsubscribe();
     this.demeterFarmingSubscription?.unsubscribe();
     this.ceresLiquidityLockerSubscription?.unsubscribe();
+
+    this.userPoolsSubscription = null;
+    this.liquidityUpdatedSubscription = null;
+    this.demeterFarmingSubscription = null;
+    this.ceresLiquidityLockerSubscription = null;
   }
 
   public async getAllReserves(network: NetworkName, address: string): Promise<DefaultPoolsParams[]> {

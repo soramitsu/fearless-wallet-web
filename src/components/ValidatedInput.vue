@@ -25,7 +25,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, defineProps, withDefaults } from 'vue';
+import { ref, computed, withDefaults } from 'vue';
 import FInput from '@/components/FInput.vue';
 
 type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
@@ -51,11 +51,10 @@ const props = withDefaults(defineProps<FInputProps>(), {
   value: '',
   placeholder: '',
   accept: '',
-  height: 0,
-  size: 'medium',
+  size: 'big',
   type: 'text',
   typeText: 'none',
-  maxlength: 999,
+  maxlength: 50,
   readonly: false,
   disabled: false,
   showPassword: false,
@@ -94,6 +93,7 @@ defineExpose({ input });
     text-align: left;
     margin-top: 15px;
   }
+
   .warning {
     color: #ee7700;
     width: 16px;

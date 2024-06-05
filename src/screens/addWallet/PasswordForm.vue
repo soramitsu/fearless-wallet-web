@@ -1,26 +1,26 @@
 <template>
   <div class="password-form">
     <ValidatedInput
-      :value="pass1"
       ref="pass1Input"
+      data-testid="enterPasswordInput"
+      class="row"
+      :value="pass1"
       :errorDescriptions="t('shortPassword')"
       :placeholder="t('enterPassword')"
       :isError="isShortPassword"
       :showPassword="true"
-      data-testid="enterPasswordInput"
-      class="row"
       @change="changePass1"
     />
 
     <ValidatedInput
       v-show="showPasswordConfirmation"
+      data-testid="reEnterPasswordInput"
+      class="row"
       :value="pass2"
       :errorDescriptions="t('notMatchPassword')"
       :placeholder="t('reEnterPassword')"
       :isError="isWrongPassword"
       :showPassword="true"
-      data-testid="reEnterPasswordInput"
-      class="row"
       @change="changePass2"
     />
 

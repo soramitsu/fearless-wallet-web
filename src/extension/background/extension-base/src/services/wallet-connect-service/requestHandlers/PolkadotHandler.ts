@@ -30,11 +30,10 @@ export default class Eip155RequestHandler {
 
   private handleError(topic: string, id: number, e: unknown) {
     console.info(e);
+
     let message = (e as Error).message;
 
-    if (message.includes('User Rejected Request')) {
-      message = getSdkError('USER_REJECTED').message;
-    }
+    if (message.includes('User Rejected Request')) message = getSdkError('USER_REJECTED').message;
 
     this.walletConnectService
       .responseRequest({

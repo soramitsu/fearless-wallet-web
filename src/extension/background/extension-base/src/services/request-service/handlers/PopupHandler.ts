@@ -1,7 +1,5 @@
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
-import { DEFAULT_NOTIFICATION_TYPE } from '@extension-base/services/request-service/consts';
 import { type RequestService } from '@extension-base/services';
-import { type BrowserConfirmationType } from '@extension-base/services/request-service/types';
 import { chrome } from '@extension-base/utils/crossenv';
 
 const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
@@ -22,7 +20,6 @@ export const NORMAL_WINDOW_OPTS: chrome.windows.CreateData = {
 
 export class PopupHandler {
   readonly requestService: RequestService;
-  notification: BrowserConfirmationType = DEFAULT_NOTIFICATION_TYPE;
   windows: number[] = [];
 
   constructor(requestService: RequestService) {
@@ -48,19 +45,17 @@ export class PopupHandler {
   }
 
   public popupOpen(): void {
-    if (this.notification && this.notification !== 'extension') {
-      chrome.windows.getCurrent((win) => {
-        const popupOptions = { ...POPUP_WINDOW_OPTS };
+    chrome.windows.getCurrent((win) => {
+      const popupOptions = { ...POPUP_WINDOW_OPTS };
 
-        if (win) {
-          popupOptions.left = (win.left || 0) + (win.width || 0) - (POPUP_WINDOW_OPTS.width || 0) - 20;
-          popupOptions.top = (win.top || 0) + 75;
-        }
+      if (win) {
+        popupOptions.left = (win.left || 0) + (win.width || 0) - (POPUP_WINDOW_OPTS.width || 0) - 20;
+        popupOptions.top = (win.top || 0) + 75;
+      }
 
-        chrome.windows.create(popupOptions, (window): void => {
-          if (window) this.windows.push(window.id || 0);
-        });
+      chrome.windows.create(popupOptions, (window): void => {
+        if (window) this.windows.push(window.id || 0);
       });
-    }
+    });
   }
 }

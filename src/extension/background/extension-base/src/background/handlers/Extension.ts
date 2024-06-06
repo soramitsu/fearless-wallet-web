@@ -165,9 +165,7 @@ export default class Extension extends FWExtensionBase {
     // cycle through authUrls and prepare the array of diff
     this.state.requestService.getAuthorize((authUrls) => {
       Object.entries(authUrls).forEach(([url, urlInfo]) => {
-        if (!urlInfo.authorizedAccounts.includes(address)) {
-          return;
-        }
+        if (!urlInfo.authorizedAccounts.includes(address)) return;
 
         authorizedAccountsDiff.push([
           url,
@@ -182,9 +180,7 @@ export default class Extension extends FWExtensionBase {
       const pair = this.state.keyringService.getAccount(address);
       const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
 
-      if (ethereumAddress) {
-        this.state.keyringService.forgetAccount(ethereumAddress);
-      }
+      if (ethereumAddress) this.state.keyringService.forgetAccount(ethereumAddress);
 
       this.state.walletConnectService.sessions.forEach((session) => {
         const evm = session.namespaces[WALLET_CONNECT_EIP155_NAMESPACE] ?? [];
@@ -192,9 +188,8 @@ export default class Extension extends FWExtensionBase {
         if (evm && evm.accounts && evm.accounts.length) {
           const [, , evmAddress] = evm.accounts[0].split(':');
 
-          if (ethereumAddress && ethereumAddress.toLowerCase() === evmAddress.toLowerCase()) {
+          if (ethereumAddress && ethereumAddress.toLowerCase() === evmAddress.toLowerCase())
             return this.state.walletConnectService.disconnect(session.topic);
-          }
         }
 
         const polkadot = session.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE];
@@ -202,14 +197,15 @@ export default class Extension extends FWExtensionBase {
         if (polkadot && polkadot.accounts && polkadot.accounts.length) {
           const [, , substaddress] = polkadot.accounts[0].split(':');
 
-          if (substaddress.toLowerCase() === address.toLowerCase()) {
+          if (substaddress.toLowerCase() === address.toLowerCase())
             this.state.walletConnectService.disconnect(session.topic);
-          }
         }
       });
+
       this.state.keyringService.forgetAccount(address);
     } else {
       const account = this.state.keyringService.getAddress(address);
+
       this.state.keyringService.forgetAddress(address);
       this.state.walletConnectDappService.disconnect(account?.meta.wcTopic as string);
     }
@@ -238,7 +234,9 @@ export default class Extension extends FWExtensionBase {
   accountsValidatePassword({ address, password }: RequestAccountValidate): boolean {
     try {
       const pair = this.state.keyringService.getPair(address);
+
       if (!pair) throw new Error('Unable to get pair');
+
       pair.unlock(password);
 
       if (!pair.isLocked) pair.lock();
@@ -305,6 +303,7 @@ export default class Extension extends FWExtensionBase {
     assert(queued, 'Unable to find request');
 
     const { resolve } = queued;
+
     resolve({ authorizedAccounts, result: true });
 
     return true;

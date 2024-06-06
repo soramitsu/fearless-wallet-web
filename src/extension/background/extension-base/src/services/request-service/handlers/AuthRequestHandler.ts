@@ -31,6 +31,7 @@ export class AuthRequestHandler {
       if (!auths) this.authorizeCached = {};
       else this.authorizeCached = auths;
     });
+
     this.requestService = requestService;
   }
 
@@ -53,30 +54,27 @@ export class AuthRequestHandler {
 
       this.evmChainSubject.next(this.authorizeCached);
       this.authorizeUrlSubject.next(this.authorizeCached);
-      callback && callback();
+
+      callback?.();
     });
   }
 
   public getAuthorize(update: (value: AuthUrls) => void): void {
     // This action can be use many by DApp interaction => caching it in memory
-    if (Object.keys(this.authorizeCached).length) {
-      update(this.authorizeCached);
-    } else {
+
+    if (Object.keys(this.authorizeCached).length) update(this.authorizeCached);
+    else
       this.authorizeStore.get('authUrls', (data) => {
         this.authorizeCached = data || {};
         this.evmChainSubject.next(this.authorizeCached);
         this.authorizeUrlSubject.next(this.authorizeCached);
+
         update(this.authorizeCached);
       });
-    }
   }
 
   public getAuthList(): Promise<AuthUrls> {
-    return new Promise<AuthUrls>((resolve) => {
-      this.getAuthorize((rs: AuthUrls) => {
-        resolve(rs ?? {});
-      });
-    });
+    return new Promise<AuthUrls>((resolve) => this.getAuthorize((rs: AuthUrls) => resolve(rs ?? {})));
   }
 
   public authComplete = (

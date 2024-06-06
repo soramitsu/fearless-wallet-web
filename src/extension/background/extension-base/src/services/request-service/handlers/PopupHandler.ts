@@ -12,12 +12,6 @@ export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
   url: NOTIFICATION_URL,
 };
 
-export const NORMAL_WINDOW_OPTS: chrome.windows.CreateData = {
-  focused: true,
-  type: 'normal',
-  url: NOTIFICATION_URL,
-};
-
 export class PopupHandler {
   readonly requestService: RequestService;
   windows: number[] = [];

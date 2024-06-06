@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 import { type NftTx, type NftSettings } from '@extension-base/services/nft-service/types';
-import { chrome } from '@extension-base/utils/crossenv';
+import { type chrome } from '@extension-base/utils/crossenv';
 import type { ScamInfo } from '@extension-base/services/scam-service/types';
 import type { ALLOWED_PATH } from '@extension-base/defaults';
 import type { Subscription } from 'rxjs';
@@ -32,6 +32,8 @@ import type {
   MarketType,
   SwapOptions,
 } from '@/interfaces';
+import { type WarningValueName } from '@/consts/messages';
+
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
 }[keyof T];
@@ -617,33 +619,13 @@ export interface SignRequest extends Resolver<ResponseSigning> {
   url: string;
 }
 
-export const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
-
-export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
-  focused: true,
-  height: 640,
-  width: 577,
-  type: 'popup',
-  url: NOTIFICATION_URL,
-};
-
-export const NORMAL_WINDOW_OPTS: chrome.windows.CreateData = {
-  focused: true,
-  type: 'normal',
-  url: NOTIFICATION_URL,
-};
-
-export enum NotificationOptions {
-  None,
-  Normal,
-  PopUp,
-}
-
 export type CachedUnlocks = Record<string, number>;
+
 export interface AccountSub {
   subscription: Subscription;
   url: string;
 }
+
 export type Subscriptions = Record<string, Port>;
 
 export type Address = {
@@ -709,18 +691,6 @@ export interface TransactionHistoryItem {
 export interface RequestAuthorizeCancel {
   id: string;
 }
-
-type WarningValueName =
-  | 'mnemonicSequence'
-  | 'mnemonic'
-  | 'substrateDP'
-  | 'ethereumDP'
-  | 'rawSeed'
-  | 'jsonPassword'
-  | 'jsonInvalid'
-  | 'isNotSamePassword'
-  | 'duplicateMobileWallet'
-  | '';
 
 interface ValidateJsonResultPositive {
   value: true;

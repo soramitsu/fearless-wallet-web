@@ -611,7 +611,7 @@ export default class Extension extends FWExtensionBase {
     return { list: newList };
   }
 
-  async deleteAuthRequest(requestId: string): Promise<void> {
+  deleteAuthRequest(requestId: string): void {
     this.state.requestService.authorizeCancel({ id: requestId });
   }
 

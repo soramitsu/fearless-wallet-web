@@ -46,6 +46,7 @@ import type {
   RequestAccountExportPrivateKey,
   ResponseAccountExportPrivateKey,
   FetchEvmBalancePayload,
+  AuthUrls,
 } from '@extension-base/background/types/types';
 import type { ChainRegistry, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
@@ -187,16 +188,18 @@ export default class State {
     const isSelf = url.hostname === EXTENSION_ID || url.hostname === EXTENSION_HOSTNAME;
     const tabHostName = isSelf ? 'header.currentExtensionPage' : url.hostname;
 
-    this.requestService.getAuthorize((authUrls) => {
-      const authorizeUrl = Object.keys(authUrls).filter((url) => url === tabHostName);
-      const isAuthorize = authorizeUrl.length !== 0;
+    const cb = () => (authUrls: AuthUrls) => {
+      const authorizeUrls = Object.keys(authUrls).filter((url) => url === tabHostName);
+      const isAuthorize = authorizeUrls.length !== 0;
 
       this.currentTabStatus = {
         isAuthorize,
         authorizeAccountsCount: isAuthorize ? authUrls[tabHostName].authorizedAccounts.length : 0,
         dAppName: tabHostName,
       };
-    });
+    };
+
+    this.requestService.getAuthorize(cb);
   }
 
   public async onInstall() {
@@ -336,10 +339,6 @@ export default class State {
     if (singleNetwork) uniqNetworks.add(singleNetwork);
 
     return uniqNetworks;
-  }
-
-  getCurrentTabStatus() {
-    return this.currentTabStatus;
   }
 
   public getAllAddresses(): string[] {

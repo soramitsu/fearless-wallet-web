@@ -1,14 +1,10 @@
-// Copyright 2019-2023 @polkadot/extension-base authors & contributors
-// SPDX-License-Identifier: Apache-2.0
 type StoreValue = Record<string, unknown>;
 import { chrome } from '@extension-base/utils/crossenv';
 
 const lastError = (type: string): void => {
   const error = chrome.runtime.lastError;
 
-  if (error) {
-    console.error(`BaseStore.${type}:: runtime.lastError:`, error);
-  }
+  if (error) console.error(`BaseStore.${type}:: runtime.lastError:`, error);
 };
 
 export default abstract class BaseStore<T> {
@@ -23,15 +19,11 @@ export default abstract class BaseStore<T> {
   }
 
   public all(update: (key: string, value: T) => void): void {
-    this.allMap((map): void => {
-      Object.entries(map).forEach(([key, value]): void => {
-        update(key, value);
-      });
-    });
+    this.allMap((map) => Object.entries(map).forEach(([key, value]) => update(key, value)));
   }
 
   public allMap(update: (value: Record<string, T>) => void): void {
-    chrome.storage.local.get(null, (result: StoreValue): void => {
+    chrome.storage.local.get(null, (result: StoreValue) => {
       lastError('all');
 
       const entries = Object.entries(result);
@@ -52,7 +44,7 @@ export default abstract class BaseStore<T> {
   public get(_key: string, update: (value: T) => void): void {
     const key = `${this.#prefix}${_key}`;
 
-    chrome.storage.local.get([key], (result: StoreValue): void => {
+    chrome.storage.local.get([key], (result: StoreValue) => {
       lastError('get');
 
       update(result[key] as T);
@@ -62,20 +54,20 @@ export default abstract class BaseStore<T> {
   public remove(_key: string, update?: () => void): void {
     const key = `${this.#prefix}${_key}`;
 
-    chrome.storage.local.remove(key, (): void => {
+    chrome.storage.local.remove(key, () => {
       lastError('remove');
 
-      update && update();
+      update?.();
     });
   }
 
   public set(_key: string, value: T, update?: () => void): void {
     const key = `${this.#prefix}${_key}`;
 
-    chrome.storage.local.set({ [key]: value }, (): void => {
+    chrome.storage.local.set({ [key]: value }, () => {
       lastError('set');
 
-      update && update();
+      update?.();
     });
   }
 }

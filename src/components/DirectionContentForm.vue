@@ -29,13 +29,13 @@ import { type GetAssetPrice, useStore } from '@/store';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 
 interface Props {
-  isExchangeB: boolean;
+  isExchangeB?: boolean;
   asset1: string;
   asset2: string;
   amount1: string;
   amount2: string;
-  value1: string;
-  value2: string;
+  value1?: string;
+  value2?: string;
   priceId1: string;
   priceId2: string;
   icon?: string;

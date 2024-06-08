@@ -35,6 +35,7 @@ import { getXORCurrency } from '@/helpers/currencies';
 @Component({})
 export default class PoolDescription extends Vue {
   estimatedYourShare = '';
+  _poolParams: PoolParams | null = null;
 
   @Prop({ type: Object }) poolParams!: PoolParams;
   @Prop(Boolean) showAdditionalInfo!: boolean;
@@ -82,11 +83,34 @@ export default class PoolDescription extends Vue {
 
   @Watch('amount1')
   @Watch('amount2')
-  @Watch('poolParams')
   async calculateShare() {
     if (!this.poolParams) return;
 
-    this.estimatedYourShare = await getShareOfPool({
+    this.estimatedYourShare = await this.getShareOfPool();
+  }
+
+  @Watch('poolParams')
+  async calculateShare2() {
+    if (!this.poolParams) return;
+
+    if (
+      this._poolParams?.asset1.id === this.poolParams.asset1.id &&
+      this._poolParams?.asset2.id === this.poolParams.asset2.id &&
+      this._poolParams?.network === this.poolParams.network
+    )
+      return;
+
+    this.estimatedYourShare = await this.getShareOfPool();
+
+    this._poolParams = this.poolParams;
+  }
+
+  created() {
+    this.calculateShare();
+  }
+
+  async getShareOfPool() {
+    return await getShareOfPool({
       amount1: this.amount1,
       amount2: this.amount2,
       assetId1: this.poolParams.asset1.id,
@@ -95,10 +119,6 @@ export default class PoolDescription extends Vue {
       type: this.extrinsicType || 'addLiquidity',
       isExchangeB: this.isExchangeB,
     });
-  }
-
-  created() {
-    this.calculateShare();
   }
 }
 </script>

@@ -422,6 +422,19 @@ export interface RequestAccountExport {
   network?: string;
 }
 
+export interface ResponseAccountExport {
+  json: KeyringPair$Json;
+}
+
+export interface RequestExportMnemonic {
+  address: string;
+  password: string;
+}
+
+export interface ResponseExportMnemonic {
+  seed: string;
+}
+
 export type EvmProvider = JsonRpcProvider | WebSocketProvider;
 
 export type EvmApiMap = Record<string, EvmApiProps>;
@@ -509,10 +522,6 @@ export type TransportResponseMessage<TMessageType extends MessageTypes> =
     : TMessageType extends MessageTypesWithSubscriptions
     ? TransportResponseMessageSub<TMessageType>
     : never;
-
-export interface ResponseAccountExport {
-  exportedJson: KeyringPair$Json;
-}
 
 export type ResponseRpcListProviders = ProviderList;
 

@@ -92,6 +92,7 @@ import type {
   RequestNftTransfer,
   FetchEvmBalancePayload,
   RequestCheckScam,
+  RequestExportMnemonic,
 } from '@extension-base/background/types/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type {
@@ -1595,8 +1596,11 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.update.meta)':
         return this.updatePairMeta(request as RequestUpdateMeta);
 
-      case 'pri(accounts.export)':
-        return this.accountsExport(request as RequestAccountExport);
+      case 'pri(accounts.export.json)':
+        return this.exportJSON(request as RequestAccountExport);
+
+      case 'pri(accounts.export.mnemonic)':
+        return this.exportMnemonic(request as RequestExportMnemonic);
 
       case 'pri(accounts.forget)':
         return this.accountsForget(request as RequestAccountForget);

@@ -105,6 +105,8 @@ import type {
   FetchEvmBalancePayload,
   RequestCheckScam,
   ResponseCheckScam,
+  RequestExportMnemonic,
+  ResponseExportMnemonic,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -134,7 +136,8 @@ export interface RequestSignatures {
   'pri(accounts.create.mobile)': [RequestAddressCreate, boolean];
   'pri(addresses.create)': [RequestAddressCreate, boolean];
   'pri(accounts.update.meta)': [RequestUpdateMeta, boolean];
-  'pri(accounts.export)': [RequestAccountExport, ResponseAccountExport];
+  'pri(accounts.export.json)': [RequestAccountExport, ResponseAccountExport];
+  'pri(accounts.export.mnemonic)': [RequestExportMnemonic, ResponseExportMnemonic];
   'pri(accounts.forget)': [RequestAccountForget, boolean];
   'pri(accounts.list)': [RequestAccountList, InjectedAccount[]];
   'pri(accounts.name)': [RequestAccountName, boolean];

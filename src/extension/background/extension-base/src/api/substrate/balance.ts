@@ -112,7 +112,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
             ? {
                 free: FPNumber.fromCodecValue(balances.toJSON()?.balance ?? 0, precision),
               }
-            : balances?.data ?? balances
+            : balances.data
             ? balances.data
             : balances;
 

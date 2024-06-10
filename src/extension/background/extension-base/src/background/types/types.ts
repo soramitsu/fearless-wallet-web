@@ -134,16 +134,16 @@ export interface DisableNetworkResponse {
   activeNetworkCount?: number;
 }
 
-export type RequestSubscribePrice = null;
 export interface RequestCurrentAccountAddress {
   address: string;
 }
+
 export type MessageTypes = keyof RequestSignatures;
 
 // Requests
 
 export type RequestTypes = {
-  [MessageType in keyof RequestSignatures]: RequestSignatures[MessageType][0];
+  [MessageType in MessageTypes]: RequestSignatures[MessageType][0];
 };
 
 export type MessageTypesWithNullRequest = NullKeys<RequestTypes>;
@@ -498,10 +498,10 @@ export interface ResponseSigningIsLocked {
 // Responses
 
 export type ResponseTypes = {
-  [MessageType in keyof RequestSignatures]: RequestSignatures[MessageType][1];
+  [MessageType in MessageTypes]: RequestSignatures[MessageType][1];
 };
 
-export type ResponseType<TMessageType extends keyof RequestSignatures> = RequestSignatures[TMessageType][1];
+export type ResponseType<TMessageType extends MessageTypes> = RequestSignatures[TMessageType][1];
 
 interface TransportResponseMessageSub<TMessageType extends MessageTypesWithSubscriptions> {
   error?: string;
@@ -528,7 +528,7 @@ export type ResponseRpcListProviders = ProviderList;
 // Subscriptions
 
 export type SubscriptionMessageTypes = NoUndefinedValues<{
-  [MessageType in keyof RequestSignatures]: RequestSignatures[MessageType][2];
+  [MessageType in MessageTypes]: RequestSignatures[MessageType][2];
 }>;
 
 export type MessageTypesWithSubscriptions = keyof SubscriptionMessageTypes;

@@ -86,7 +86,6 @@ import type {
   ResponseCheckCrossChain,
   BalanceJson,
   PriceJson,
-  RequestSubscribePrice,
   RequestAccountUnsubscribe,
   RequestAuthorizeTab,
   AuthResponse,
@@ -223,7 +222,7 @@ export interface RequestSignatures {
   'pri(fetch.balance)': [FetchBalanceRequest, string];
 
   'pri(price.update.currency)': [string, void];
-  'pri(price.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];
+  'pri(price.subscription)': [null, PriceJson, PriceJson];
   'pri(soraCard.token)': [null, boolean, string];
 
   //OnBoarding

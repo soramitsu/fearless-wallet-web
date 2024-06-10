@@ -249,6 +249,7 @@ export class KeyringService {
 
   exportMnemonic({ address, password }: RequestExportMnemonic): ResponseExportMnemonic {
     const pair = keyring.getPair(address);
+
     password;
     pair;
 

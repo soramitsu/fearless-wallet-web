@@ -171,7 +171,7 @@ export default class Extension extends FWExtensionBase {
     this.state.requestService.updateAuthorizedAccounts(authorizedAccountsDiff);
 
     if (type === 'native') {
-      const pair = this.state.keyringService.getAccount(address);
+      const pair = this.state.keyringService.getPair(address);
       const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
 
       if (ethereumAddress) this.state.keyringService.forgetAccount(ethereumAddress);
@@ -787,7 +787,7 @@ export default class Extension extends FWExtensionBase {
       console.info(`Swap transaction failed ${ex}`);
     }
 
-    const ethereumAddress = this.state.keyringService.getAccount(address)?.meta.ethereumAddress as string | undefined;
+    const ethereumAddress = this.state.keyringService.getPair(address)?.meta.ethereumAddress as string | undefined;
 
     this.savePass(address, ethereumAddress, !!isSavePass, false);
 
@@ -1151,7 +1151,7 @@ export default class Extension extends FWExtensionBase {
     }
 
     const address = this.state.keyringService.getSubstrateAddress(from);
-    const ethereumAddress = this.state.keyringService.getAccount(address)?.meta.ethereumAddress as string | undefined;
+    const ethereumAddress = this.state.keyringService.getPair(address)?.meta.ethereumAddress as string | undefined;
 
     const result = await this.state.stakingService.makeStaking(request);
 

@@ -2,7 +2,6 @@ import { formatJsonRpcError, formatJsonRpcResult } from '@json-rpc-tools/utils';
 import { type SignClientTypes } from '@walletconnect/types';
 import { getSdkError } from '@walletconnect/utils';
 import { isSameAddress } from '@extension-base/utils';
-import { keyring } from '@polkadot/ui-keyring';
 import { POLKADOT_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
 import { getWCId, parseRequestParams } from '@extension-base/services/wallet-connect-service/utils';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
@@ -56,7 +55,7 @@ export default class Eip155RequestHandler {
 
       this.checkAccount(param.address, sessionAccounts);
 
-      const pair = keyring.getPair(param.address);
+      const pair = this.state.keyringService.getPair(param.address)!;
       const address = pair.address;
 
       this.requestService
@@ -84,8 +83,9 @@ export default class Eip155RequestHandler {
 
       this.checkAccount(param.address, sessionAccounts);
 
-      const pair = keyring.getPair(param.address);
+      const pair = this.state.keyringService.getPair(param.address)!;
       const address = pair.address;
+
       this.requestService
         .sign(
           url,
@@ -103,9 +103,7 @@ export default class Eip155RequestHandler {
             response: formatJsonRpcResult(id, { signature }),
           });
         })
-        .catch((e) => {
-          this.handleError(topic, id, e);
-        });
+        .catch((e) => this.handleError(topic, id, e));
     } else {
       throw Error(`${getSdkError('INVALID_METHOD').message} ${method as string}`);
     }

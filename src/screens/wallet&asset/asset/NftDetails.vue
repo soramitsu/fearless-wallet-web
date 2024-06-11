@@ -40,8 +40,9 @@
             :border="false"
             @click="onSend"
           />
-          <Tooltip text="common.copied" target=".share" trigger="click" arrow />
         </div>
+
+        <Tooltip text="common.copied" target=".share" trigger="click" :arrow="true" />
       </div>
     </Scroll>
   </AboveForm>

@@ -49,38 +49,37 @@ const router = useRouter();
 const store = useStore();
 const { t } = useI18n();
 
+const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+
 const contract = computed(() => route.params.contract);
 const availableNftsFromStore = computed<AvailableNftState>(() => store.getters.availableNfts);
+
 const nftCollectionFromStore = computed<FearlessNft[]>(() => {
   const availableNfts = store.getters.availableNfts;
-  if (availableNfts[contract.value]) return availableNfts[contract.value].collection;
+  const availableByContract = availableNfts[contract.value];
 
-  return [];
+  return availableByContract?.collection ?? [];
 });
+
+const availableNfts = ref<FearlessNft[]>(nftCollectionFromStore.value);
+const isAvailableNfts = computed(() => availableNfts.value.length);
+
 const state = reactive<{ pageKey?: string; canLoadMore: boolean }>({
   pageKey: availableNftsFromStore.value[contract.value]?.pageKey,
   canLoadMore: true,
 });
+
 const tooltip = ref<Tooltip>();
 const nfts = computed<NftCollection[]>(() => store.getters.nfts ?? []);
 const collection = computed(() => nfts.value.find((el) => el.address === contract.value));
 const name = computed(() => collection.value?.name);
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
-const availableNfts = ref<FearlessNft[]>(nftCollectionFromStore.value);
-const isAvailableNfts = computed(() => availableNfts.value.length);
-watch(availableNfts, () => {
-  tooltip.value?.createTooltip();
-});
+
 const header = computed(() => (collection.value ? collection.value.name : ''));
 const additionalNftsHeader = computed(() => t('nft.availableNfts', { name: collection.value?.name }));
-const network = computed<string>(() => {
-  if (collection.value) {
-    return collection.value.network;
-  }
+const network = computed<string>(() => collection.value?.network ?? '');
 
-  return '';
-});
-const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+watch(availableNfts, () => tooltip.value?.createTooltip());
 
 const onClose = () => router.back();
 
@@ -118,6 +117,7 @@ const onScroll = async () => {
 
   state.pageKey = nfts.pageKey;
   availableNfts.value.push(...nfts.nfts);
+
   const avNfts: AvailableNftState = {};
 
   avNfts[contract.value] = {

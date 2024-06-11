@@ -2,6 +2,7 @@
   <Scroll>
     <div :class="containerClass">
       <span v-if="isEmpty">{{ $t('nft.noNft') }}</span>
+
       <template v-else>
         <NftCollectionItem v-for="(nft, i) of filteredNfts" :collection="nft" :key="i" />
       </template>
@@ -19,34 +20,32 @@ import NftCollectionItem from '@/screens/wallet&asset/asset/NftCollectionItem.vu
 import { type SelectedWallet, useStore } from '@/store';
 import NftSettings from '@/screens/wallet&asset/asset/NftSettings.vue';
 import { fetchNfts } from '@/extension/messaging/nfts';
+import { isSameString } from '@/helpers';
 
 const emit = defineEmits(['toggleAssetsManagementForm']);
 const props = defineProps<{ showAssetsManagementForm: boolean; filterValue: string }>();
 const store = useStore();
 
+const selectedNetwork = computed<string>(() => store.getters.selectedNetwork);
+const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
 const nfts = computed<NftCollection[]>(() => store.getters.nfts);
-
 const activeNetworkForSelectedWallet = computed<NetworkJson[]>(() => store.getters.activeNetworkForSelectedWallet);
 
 const filteredNfts = computed(() => {
   return nfts.value.filter(({ network, name }) =>
     activeNetworkForSelectedWallet.value.some((net) => {
-      return net.name === network && name?.toLowerCase()?.includes(props.filterValue.toLowerCase());
+      return isSameString(net.name, network) && name?.toLowerCase()?.includes(props.filterValue.toLowerCase());
     })
   );
 });
-const selectedNetwork = computed<string>(() => store.getters.selectedNetwork);
-const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
 
-watch([selectedWallet, selectedNetwork], () => {
-  setTimeout(() => fetchNfts(selectedWallet.value.ethereumAddress), 2000);
-});
-const isEmpty = computed(() => !Object.keys(filteredNfts.value).length);
+const isEmpty = computed(() => Object.keys(filteredNfts.value).length === 0);
 const containerClass = computed(() => (isEmpty.value ? 'no-nfts' : 'nft-list'));
 
-onMounted(() => {
-  fetchNfts(selectedWallet.value.ethereumAddress);
-});
+watch([selectedWallet, selectedNetwork], () => setTimeout(() => fetchNfts(selectedWallet.value.ethereumAddress), 2000));
+
+onMounted(() => fetchNfts(selectedWallet.value.ethereumAddress));
+
 const onClose = () => emit('toggleAssetsManagementForm', false);
 </script>
 

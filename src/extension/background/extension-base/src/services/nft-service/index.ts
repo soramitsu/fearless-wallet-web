@@ -45,6 +45,7 @@ export class NftService {
 
   async init() {
     const { nftSettings } = await storage.get(['nftSettings']);
+
     if (nftSettings) this.hideSettings = nftSettings;
   }
 
@@ -125,11 +126,7 @@ export class NftService {
 
           this.nftMap[address][sdk.chainId] = JSON.parse(JSON.stringify(networkNfts)) as NftState;
 
-          const account = this.state.currentAccount;
-
-          if (account && account.ethereumAddress === address) {
-            this.nftSubject.next(this.nftMap[address]);
-          }
+          if (this.state.currentAccount?.ethereumAddress === address) this.nftSubject.next(this.nftMap[address]);
         });
       }
     }
@@ -146,6 +143,7 @@ export class NftService {
       this.hideSettings[address] = settings;
 
       const currentAccount = this.state.currentAccount;
+
       if (currentAccount) this.getNftForActiveNetworks(currentAccount.ethereumAddress, true);
     }
 
@@ -164,31 +162,28 @@ export class NftService {
     if (pair?.isLocked) {
       const isUnlock = this.state.keyringService.unlockPair(pair, tx.password);
 
-      if (!isUnlock) {
+      if (!isUnlock)
         return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
-      }
     }
 
     const res = await this.checkSend(tx);
 
-    if (res.error) {
+    if (res.error)
       return { status: false, errors: [{ message: 'Balance to low', code: BasicTxErrorCode.BALANCE_TO_LOW }] };
-    }
 
     const { privateKey } = this.state.accountExportPrivateKey({ address: from, password: tx.password });
     const signer = new Wallet(privateKey, api);
     const isApproved: boolean = await contract.isApprovedForAll(contract, tx.to);
     const contractMaster = contract.connect(signer) as Contract;
-    let txResponse;
 
     try {
-      if (!isApproved) {
-        await contractMaster.setApprovalForAll(tx.to, true);
-      }
+      let txResponse;
 
-      if (tx.type === 'ERC721') {
+      if (!isApproved) await contractMaster.setApprovalForAll(tx.to, true);
+
+      if (tx.type === 'ERC721')
         txResponse = await contractMaster['safeTransferFrom(address,address,uint256)'](from, tx.to, tx.tokenId);
-      } else if (tx.type === 'ERC1155') {
+      else if (tx.type === 'ERC1155')
         txResponse = await contractMaster['safeTransferFrom(address,address,uint256,uint256,bytes)'](
           from,
           tx.to,
@@ -196,11 +191,8 @@ export class NftService {
           1,
           res.data
         );
-      }
 
-      txResponse.wait().then(() => {
-        this.getNftForActiveNetworks(from, true);
-      });
+      txResponse.wait().then(() => this.getNftForActiveNetworks(from, true));
 
       const substrateAddress = this.state.keyringService.getSubstrateAddress(tx.from);
 
@@ -233,6 +225,7 @@ export class NftService {
 
     const accountBalance = this.state.balanceService.getAccountBalance(substrateAddress);
     const tokenBalance = accountBalance.find((el) => el.symbol === utilityAsset.symbol && el.relayChain === 'ethereum');
+
     if (!tokenBalance) return { error: 'insufficientFunds', fee: '0', data: '0x' };
 
     const balance = getBalanceItem(tokenBalance.balances, network);
@@ -250,6 +243,7 @@ export class NftService {
         value: parseEther('0'),
         maxFeePerGas: feeData.maxFeePerGas,
       });
+
       const block = await api.provider.getBlock('latest');
 
       const estimateFee = calcEvmFees(feeData.maxFeePerGas ?? feeData.gasPrice, block?.baseFeePerGas, gasLimit);
@@ -257,13 +251,12 @@ export class NftService {
 
       const isInsufficientFunds = new FPNumber(formatFees).isGreaterThan(new FPNumber(balance?.total ?? 0));
 
-      if (isInsufficientFunds) {
+      if (isInsufficientFunds)
         return {
           error: 'insufficientFunds',
           data,
           fee: formatFees,
         };
-      }
 
       return {
         data,
@@ -279,27 +272,21 @@ export class NftService {
     }
   }
 
-  async publishNfts() {
+  publishNfts() {
     const account = this.state.currentAccount;
 
-    if (account && account.ethereumAddress) {
-      const nfts = this.nftMap[account.ethereumAddress];
+    if (account?.ethereumAddress) {
+      const nfts = this.nftMap[account.ethereumAddress] ?? {};
 
-      if (nfts) this.nftSubject.next(this.nftMap[account.ethereumAddress]);
-
-      return;
+      this.nftSubject.next(nfts);
     }
-
-    this.nftSubject.next({});
   }
 
-  async nftSubscribe(id: string, port: Port): Promise<ChainNftState> {
+  nftSubscribe(id: string, port: Port): ChainNftState {
     const cb = createSubscription<'pri(nft.subscribe)'>(id, port);
 
     const subscription = this.nftSubject.subscribe({
-      next: (rs) => {
-        cb(rs);
-      },
+      next: (rs) => cb(rs),
     });
 
     port.onDisconnect.addListener((): void => {

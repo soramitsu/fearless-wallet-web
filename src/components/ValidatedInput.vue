@@ -25,7 +25,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, defineProps, withDefaults } from 'vue';
+import { ref, computed, withDefaults } from 'vue';
 import FInput from '@/components/FInput.vue';
 
 type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';

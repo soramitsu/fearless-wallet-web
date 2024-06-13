@@ -467,6 +467,7 @@ export default class Extension extends FWExtensionBase {
     const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
+
     const account = this.state.keyringService
       .getAllAccounts()
       .find(({ address }) => address === queued.account.address);
@@ -475,6 +476,7 @@ export default class Extension extends FWExtensionBase {
 
     if (account && account?.meta.isMobile) {
       const res = await this.state.walletConnectDappService.onRequest(queued.request.payload as SignerPayloadJSON);
+
       resolve({ ...res, id });
 
       return true;

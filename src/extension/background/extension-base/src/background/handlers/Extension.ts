@@ -101,9 +101,7 @@ import type {
   MyStakingInfoResponse,
   CheckControllerRequest,
   getRewardsRequest,
-  RewardsResponse,
   MakeStakingRequest,
-  StakingParamsResponse,
   GetPayoutsFeeRequest,
   GetNominateNetworkFeeRequest,
   RequestBond,
@@ -126,7 +124,6 @@ import type {
   GoogleAuthTypes,
   ICreateFile,
   IGetFilesResponse,
-  OnboardingStories,
   VerifyTokenResponse,
 } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
@@ -1096,22 +1093,6 @@ export default class Extension extends FWExtensionBase {
     return this.state.approvePolkaswap(authorizedAccounts);
   }
 
-  isOnboardingRequired(): boolean {
-    return this.state.onboardingService.isRequired;
-  }
-
-  setOnboardingSeen(): void {
-    this.state.onboardingService.setSeen();
-  }
-
-  getOnboardingStories(lang: string): OnboardingStories {
-    return this.state.onboardingService.getStories(lang);
-  }
-
-  getStakingParams(params: StakingParamsRequest): Promise<StakingParamsResponse> {
-    return this.state.stakingService.getStakingParams(params);
-  }
-
   async checkController(params: CheckControllerRequest): Promise<boolean> {
     const address = this.state.getCurrentAddress('westend');
     const stashAddress = await this.state.stakingService.getStashByController(params.address);
@@ -1125,10 +1106,6 @@ export default class Extension extends FWExtensionBase {
     );
 
     return isValidController;
-  }
-
-  async getRewards({ network, address }: getRewardsRequest): Promise<RewardsResponse> {
-    return this.state.stakingService.getRewards(network, address);
   }
 
   async getMyStakingInfo(params: StakingNetworkRequest): Promise<MyStakingInfoResponse> {
@@ -1158,18 +1135,6 @@ export default class Extension extends FWExtensionBase {
     this.savePass(address, ethereumAddress, isSavePass, false);
 
     return result;
-  }
-
-  async getPayoutsFee(params: GetPayoutsFeeRequest) {
-    return this.state.stakingService.getPayoutsFee(params);
-  }
-
-  async getNominateNetworkFee(params: GetNominateNetworkFeeRequest) {
-    return this.state.stakingService.getNominateNetworkFee(params);
-  }
-
-  async getBondAndNominateNetworkFee(params: RequestBond) {
-    return this.state.stakingService.getBondAndNominateNetworkFee(params);
   }
 
   async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
@@ -1650,13 +1615,13 @@ export default class Extension extends FWExtensionBase {
 
       // staking
       case 'pri(staking.stakingParams)':
-        return this.getStakingParams(request as StakingParamsRequest);
+        return this.state.stakingService.getStakingParams(request as StakingParamsRequest);
 
       case 'pri(staking.checkController)':
         return this.checkController(request as CheckControllerRequest);
 
       case 'pri(staking.rewards)':
-        return this.getRewards(request as getRewardsRequest);
+        return this.state.stakingService.getRewards(request as getRewardsRequest);
 
       case 'pri(staking.myStaking)':
         return this.getMyStakingInfo(request as StakingNetworkRequest);
@@ -1665,13 +1630,13 @@ export default class Extension extends FWExtensionBase {
         return this.makeStaking(request as MakeStakingRequest);
 
       case 'pri(staking.getPayoutsFee)':
-        return this.getPayoutsFee(request as GetPayoutsFeeRequest);
+        return this.state.stakingService.getPayoutsFee(request as GetPayoutsFeeRequest);
 
       case 'pri(staking.getNominateNetworkFee)':
-        return this.getNominateNetworkFee(request as GetNominateNetworkFeeRequest);
+        return this.state.stakingService.getNominateNetworkFee(request as GetNominateNetworkFeeRequest);
 
       case 'pri(staking.getBondAndNominateNetworkFee)':
-        return this.getBondAndNominateNetworkFee(request as RequestBond);
+        return this.state.stakingService.getBondAndNominateNetworkFee(request as RequestBond);
 
       // price
       case 'pri(price.update.currency)':
@@ -1790,13 +1755,13 @@ export default class Extension extends FWExtensionBase {
 
       //OnBoarding
       case 'pri(onboarding.get.stories)':
-        return this.getOnboardingStories(request as string);
+        return this.state.onboardingService.getStories(request as string);
 
       case 'pri(onboarding.seen)':
-        return this.setOnboardingSeen();
+        return this.state.onboardingService.setSeen();
 
       case 'pri(onboarding.isRequired)':
-        return this.isOnboardingRequired();
+        return this.state.onboardingService.isRequired;
 
       //Nfts
       case 'pri(nft.subscribe)':

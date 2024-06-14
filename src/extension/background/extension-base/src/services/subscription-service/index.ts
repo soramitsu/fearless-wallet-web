@@ -229,9 +229,7 @@ export class SubscriptionService {
 export function unsubscribe(id: string): void {
   if (SubscriptionService.subscriptions[id]) {
     delete SubscriptionService.subscriptions[id];
-  } else {
-    console.error(`Unable to unsubscribe from ${id}`);
-  }
+  } else console.error(`Unable to unsubscribe from ${id}`);
 }
 
 export function createSubscription<TMessageType extends MessageTypesWithSubscriptions>(

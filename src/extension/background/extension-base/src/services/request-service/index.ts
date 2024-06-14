@@ -70,9 +70,8 @@ export class RequestService {
     // Not open new popup and use existed
     const popupList = this.popupHandler.popup;
 
-    if (popupList && popupList.length > 0) {
-      chrome.windows.update(popupList[0], { focused: true })?.catch(console.error);
-    } else this.popupHandler.popupOpen();
+    if (popupList && popupList.length > 0) chrome.windows.update(popupList[0], { focused: true })?.catch(console.error);
+    else this.popupHandler.popupOpen();
   }
 
   // Metadata
@@ -257,8 +256,8 @@ export class RequestService {
     return this.setAuthorize(entries);
   }
 
-  async authorizeCancel({ id }: RequestAuthorizeCancel): Promise<boolean> {
-    const queued = await this.getAuthRequest(id);
+  authorizeCancel({ id }: RequestAuthorizeCancel): boolean {
+    const queued = this.getAuthRequest(id);
 
     assert(queued, 'Unable to find request');
 

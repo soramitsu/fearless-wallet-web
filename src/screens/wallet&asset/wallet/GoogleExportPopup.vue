@@ -59,7 +59,7 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { AccountJson } from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import { createGoogleFile, exportAccount, validatePassword } from '@/extension/messaging';
+import { createGoogleFile, exportAccountJSON, validatePassword } from '@/extension/messaging';
 import { type ICreateFile } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
@@ -139,14 +139,14 @@ export default class GoogleExportPopup extends Vue {
 
     let ethWalletId;
     let substrateWalletId;
-    const { exportedJson: substrateJson } = await exportAccount(this.selectedWalletAddress, this.password);
+    const { json: substrateJson } = await exportAccountJSON(this.selectedWalletAddress, this.password);
     const isEthereumAddress = !!substrateJson.meta.ethereumAddress;
     const stringifyJson = JSON.stringify(substrateJson);
 
     this.status = 'upload';
 
     if (isEthereumAddress) {
-      const { exportedJson: ethereumJson } = await exportAccount(
+      const { json: ethereumJson } = await exportAccountJSON(
         substrateJson.meta.ethereumAddress as string,
         this.password
       );

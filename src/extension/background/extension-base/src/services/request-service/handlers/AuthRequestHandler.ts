@@ -65,32 +65,26 @@ export class AuthRequestHandler {
       this.authorizeCached = data;
 
       this.authorizeUrlSubject.next(this.authorizeCached);
-      callback && callback();
+
+      callback?.();
     });
   }
 
   public getAuthorize(update: (value: AuthUrls) => void): void {
     // This action can be use many by DApp interaction => caching it in memory
-    if (Object.keys(this.authorizeCached).length) {
-      update(this.authorizeCached);
 
-      return;
-    }
+    if (Object.keys(this.authorizeCached).length) update(this.authorizeCached);
+    else
+      this.authorizeStore.get('authUrls', (data) => {
+        this.authorizeCached = data || {};
+        this.authorizeUrlSubject.next(this.authorizeCached);
 
-    this.authorizeStore.get('authUrls', (data) => {
-      this.authorizeCached = data || {};
-
-      this.authorizeUrlSubject.next(this.authorizeCached);
-      update(this.authorizeCached);
-    });
+        update(this.authorizeCached);
+      });
   }
 
   public getAuthList(): Promise<AuthUrls> {
-    return new Promise<AuthUrls>((resolve) => {
-      this.getAuthorize((rs: AuthUrls) => {
-        resolve(rs ?? {});
-      });
-    });
+    return new Promise<AuthUrls>((resolve) => this.getAuthorize((rs: AuthUrls) => resolve(rs ?? {})));
   }
 
   public authComplete = (

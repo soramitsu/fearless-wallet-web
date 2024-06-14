@@ -11,6 +11,8 @@ import type {
   ResponseSigningIsLocked,
   ValidateJsonResult,
   RequestUpdateMeta,
+  RequestExportMnemonic,
+  ResponseExportMnemonic,
 } from '@extension-base/background/types/types';
 
 import type State from '@extension-base/background/handlers/State';
@@ -25,15 +27,19 @@ export default class FWExtensionBase {
     this.cachedUnlocks = {};
   }
 
-  accountsExport({ address, password, network }: RequestAccountExport): ResponseAccountExport {
+  exportMnemonic(request: RequestExportMnemonic): ResponseExportMnemonic {
+    return this.state.keyringService.exportMnemonic(request);
+  }
+
+  exportJSON({ address, password, network }: RequestAccountExport): ResponseAccountExport {
     if (network && isNativeEVMNetwork(network)) {
       const { privateKey } = this.state.accountExportPrivateKey({ address, password });
       const json = ethers.encryptKeystoreJsonSync({ address, privateKey }, password);
 
-      return { exportedJson: JSON.parse(json) };
+      return { json: JSON.parse(json) };
     }
 
-    return { exportedJson: this.state.keyringService.backupAccount(address, password)! };
+    return { json: this.state.keyringService.backupAccount(address, password)! };
   }
 
   validateDerivationPath({ value, keypairType }: DerivationPath): boolean {

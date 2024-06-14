@@ -280,10 +280,10 @@ export class WalletConnectDAppService {
     const account = this.state.keyringService.getAddress(encodedAddress);
 
     const chainId = payload.genesisHash.slice(2);
-    const halfChainid = chainId.slice(0, Math.ceil(chainId.length / 2));
+    const halfChainId = chainId.slice(0, Math.ceil(chainId.length / 2));
 
     const request = {
-      chainId: `polkadot:${halfChainid}`,
+      chainId: `polkadot:${halfChainId}`,
       topic: account?.meta.wcTopic as string,
       request: {
         method: 'polkadot_signTransaction',

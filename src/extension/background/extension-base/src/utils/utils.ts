@@ -28,32 +28,22 @@ export function canDerive(type?: KeypairType): boolean {
 export const getCurrentProvider = (data: NetworkJson): string | undefined => {
   if (!data?.currentProvider) return undefined;
 
-  if (data.currentProvider.startsWith('custom') && data.customNodes.length) {
+  if (data.currentProvider.startsWith('custom') && data.customNodes.length)
     return data.customNodes.find((value) => value.url === data.currentProvider)?.url;
-  } else {
-    return data.nodes.find((value) => value.url === data.currentProvider)?.url;
-  }
+  else return data.nodes.find((value) => value.url === data.currentProvider)?.url;
 };
 
 export function reformatAddress(address: string, networkPrefix = 42, isEthereum = false): string {
   try {
-    if (!address || address === '') {
-      return '';
-    }
+    if (!address || address === '') return '';
 
-    if (isEthereumAddress(address)) {
-      return address;
-    }
+    if (isEthereumAddress(address)) return address;
 
     const publicKey = decodeAddress(address);
 
-    if (isEthereum) {
-      return ethereumEncode(publicKey);
-    }
+    if (isEthereum) return ethereumEncode(publicKey);
 
-    if (networkPrefix < 0) {
-      return address;
-    }
+    if (networkPrefix < 0) return address;
 
     return encodeAddress(publicKey, networkPrefix);
   } catch (e) {
@@ -64,9 +54,7 @@ export function reformatAddress(address: string, networkPrefix = 42, isEthereum 
 }
 
 export function isSameAddress(address1: string, address2: string) {
-  if (isEthereumAddress(address1)) {
-    return address1.toLowerCase() === address2.toLowerCase();
-  }
+  if (isEthereumAddress(address1)) return address1.toLowerCase() === address2.toLowerCase();
 
   return reformatAddress(address1, 0) === reformatAddress(address2, 0);
 }

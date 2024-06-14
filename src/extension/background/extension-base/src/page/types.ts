@@ -1,7 +1,4 @@
-// Copyright 2019-2022 @polkadot/extension-base authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
-import { type JsonRpcPayload, type JsonRpcResponse } from '@json-rpc-tools/utils';
+import type { JsonRpcPayload, JsonRpcResponse } from '@json-rpc-tools/utils';
 import type {
   MessageTypesWithNoSubscriptions,
   MessageTypesWithNullRequest,
@@ -10,11 +7,10 @@ import type {
   ResponseTypes,
   SubscriptionMessageTypes,
 } from '@extension-base/background/types/types';
+
 export interface Handler {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resolve: (data?: any) => void;
   reject: (error: Error) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   subscriber?: (data: any) => void;
 }
 

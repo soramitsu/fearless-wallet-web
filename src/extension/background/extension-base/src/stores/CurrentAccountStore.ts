@@ -7,6 +7,7 @@ export interface CurrentAccountInfo {
   name: string;
   isMobile: boolean;
 }
+
 export type CurrentAccountState = CurrentAccountInfo | null;
 
 export default class CurrentAccountStore extends SubscribableStore<CurrentAccountState> {

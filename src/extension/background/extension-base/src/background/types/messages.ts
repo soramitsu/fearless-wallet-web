@@ -94,7 +94,6 @@ import type {
   ResponseCheckCrossChain,
   BalanceJson,
   PriceJson,
-  RequestSubscribePrice,
   RequestAccountUnsubscribe,
   RequestAuthorizeTab,
   AuthResponse,
@@ -113,6 +112,8 @@ import type {
   FetchEvmBalancePayload,
   RequestCheckScam,
   ResponseCheckScam,
+  RequestExportMnemonic,
+  ResponseExportMnemonic,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -142,7 +143,8 @@ export interface RequestSignatures {
   'pri(accounts.create.mobile)': [RequestAddressCreate, boolean];
   'pri(addresses.create)': [RequestAddressCreate, boolean];
   'pri(accounts.update.meta)': [RequestUpdateMeta, boolean];
-  'pri(accounts.export)': [RequestAccountExport, ResponseAccountExport];
+  'pri(accounts.export.json)': [RequestAccountExport, ResponseAccountExport];
+  'pri(accounts.export.mnemonic)': [RequestExportMnemonic, ResponseExportMnemonic];
   'pri(accounts.forget)': [RequestAccountForget, boolean];
   'pri(accounts.list)': [RequestAccountList, InjectedAccount[]];
   'pri(accounts.name)': [RequestAccountName, boolean];
@@ -175,7 +177,6 @@ export interface RequestSignatures {
   'pri(metadata.approve)': [RequestMetadataApprove, boolean];
   'pri(metadata.reject)': [RequestMetadataReject, boolean];
   'pri(metadata.requests)': [null, boolean, MetadataRequest[]];
-  'pri(settings.notification)': [string, boolean];
   'pri(signing.approve.password)': [RequestSigningApprovePassword, boolean];
   'pri(signing.approve.signature)': [RequestSigningApproveSignature, boolean];
   'pri(signing.cancel)': [RequestSigningCancel, boolean];
@@ -230,7 +231,7 @@ export interface RequestSignatures {
   'pri(signing.evmrequests)': [null, boolean, EvmRequests];
 
   'pri(price.update.currency)': [string, void];
-  'pri(price.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];
+  'pri(price.subscription)': [null, PriceJson, PriceJson];
   'pri(soraCard.token)': [null, boolean, string];
   // Evm
   'evm(events.subscribe)': [RequestEvmEvents, boolean, EvmEvent];

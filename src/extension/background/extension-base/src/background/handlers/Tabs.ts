@@ -1,6 +1,5 @@
 import { PHISHING_PAGE_REDIRECT } from '@extension-base/defaults';
 import { checkIfDenied } from '@polkadot/phishing';
-import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { chrome } from '@extension-base/utils/crossenv';
 import { assert, isNumber } from '@polkadot/util';
 import {
@@ -71,7 +70,7 @@ export default class Tabs {
   }
 
   async accountsListAuthorized(url: string, { anyType }: RequestAccountList): Promise<InjectedAccount[]> {
-    const transformedAccounts = transformAccounts(accountsObservable.subject.getValue(), anyType);
+    const transformedAccounts = transformAccounts(this.state.keyringService.accountSubjectValue, anyType);
     const transformedAddresses = transformAddresses(this.state.keyringService.addressesSubjectValue);
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
 
@@ -92,7 +91,7 @@ export default class Tabs {
     const cb = createSubscription<'pub(accounts.subscribe)'>(id, port);
 
     this.accountSubs[id] = {
-      subscription: accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
+      subscription: this.state.keyringService.accountSubject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
         const transformedAccounts = transformAccounts(accounts);
         const transformedMobileAccount = transformAddresses(this.state.keyringService.addressesSubjectValue);
         const allAccounts = [...transformedAccounts, ...transformedMobileAccount];

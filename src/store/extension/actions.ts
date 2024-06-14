@@ -35,10 +35,11 @@ import {
   walletConnectRequestSubscribe,
   subscribeWalletConnectRequest,
   subscribeWalletNotSupportedConnectRequest,
+  approveSignPassword,
+  approveSignSignature,
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
-import { ExtensionController } from '@/controllers';
 import { URLS } from '@/consts/urls';
 
 export enum ActionTypes {
@@ -205,7 +206,7 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.APPROVE_SIGN_PASSWORD]({ commit, dispatch }, { id, isSavePass, password }) {
-    ExtensionController.approveSignPassword(id, isSavePass, password).then(() => {
+    approveSignPassword(id, isSavePass, password).then(() => {
       commit(MutationTypes.DELETE_REQUEST, 'signRequests');
 
       router.push({ name: Components.Wallet });
@@ -215,7 +216,7 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.SIGN_SIGNATURE]({ commit, dispatch }, { payload, id }) {
-    ExtensionController.approveSignSignature(id, payload.signature);
+    approveSignSignature(id, payload.signature);
 
     commit(MutationTypes.DELETE_REQUEST, 'signRequests');
 
@@ -226,6 +227,7 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.SIGN_CANCEL]({ commit }, id) {
     await cancelSignRequest(id);
+
     commit(MutationTypes.DELETE_REQUEST, 'signRequests');
 
     router.push({ name: Components.Wallet });

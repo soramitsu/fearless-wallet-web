@@ -92,9 +92,9 @@ import type {
   RequestNftTransfer,
   FetchEvmBalancePayload,
   RequestCheckScam,
+  RequestExportMnemonic,
 } from '@extension-base/background/types/types';
 import type {
-  PoolsParamsResponse,
   PoolsParamsRequest,
   MakePoolsRequest,
   GetShareOfPoolRequest,
@@ -107,9 +107,7 @@ import type {
   MyStakingInfoResponse,
   CheckControllerRequest,
   getRewardsRequest,
-  RewardsResponse,
   MakeStakingRequest,
-  StakingParamsResponse,
   GetPayoutsFeeRequest,
   GetNominateNetworkFeeRequest,
   RequestBond,
@@ -132,7 +130,6 @@ import type {
   GoogleAuthTypes,
   ICreateFile,
   IGetFilesResponse,
-  OnboardingStories,
   VerifyTokenResponse,
 } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
@@ -177,7 +174,7 @@ export default class Extension extends FWExtensionBase {
     this.state.requestService.updateAuthorizedAccounts(authorizedAccountsDiff);
 
     if (type === 'native') {
-      const pair = this.state.keyringService.getAccount(address);
+      const pair = this.state.keyringService.getPair(address);
       const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
 
       if (ethereumAddress) this.state.keyringService.forgetAccount(ethereumAddress);
@@ -490,6 +487,7 @@ export default class Extension extends FWExtensionBase {
     const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
+
     const account = this.state.keyringService
       .getAllAccounts()
       .find(({ address }) => address === queued.account.address);
@@ -498,6 +496,7 @@ export default class Extension extends FWExtensionBase {
 
     if (account && account?.meta.isMobile) {
       const res = await this.state.walletConnectDappService.onRequest(queued.request.payload as SignerPayloadJSON);
+
       resolve({ ...res, id });
 
       return true;
@@ -618,7 +617,7 @@ export default class Extension extends FWExtensionBase {
     return { list: newList };
   }
 
-  async deleteAuthRequest(requestId: string): Promise<void> {
+  deleteAuthRequest(requestId: string): void {
     this.state.requestService.authorizeCancel({ id: requestId });
   }
 
@@ -791,7 +790,7 @@ export default class Extension extends FWExtensionBase {
       console.info(`Swap transaction failed ${ex}`);
     }
 
-    const ethereumAddress = this.state.keyringService.getAccount(address)?.meta.ethereumAddress as string | undefined;
+    const ethereumAddress = this.state.keyringService.getPair(address)?.meta.ethereumAddress as string | undefined;
 
     this.savePass(address, ethereumAddress, !!isSavePass, false);
 
@@ -1100,22 +1099,6 @@ export default class Extension extends FWExtensionBase {
     return this.state.approvePolkaswap(authorizedAccounts);
   }
 
-  isOnboardingRequired(): boolean {
-    return this.state.onboardingService.isRequired;
-  }
-
-  setOnboardingSeen(): void {
-    this.state.onboardingService.setSeen();
-  }
-
-  getOnboardingStories(lang: string): OnboardingStories {
-    return this.state.onboardingService.getStories(lang);
-  }
-
-  getStakingParams(params: StakingParamsRequest): Promise<StakingParamsResponse> {
-    return this.state.stakingService.getStakingParams(params);
-  }
-
   async checkController(params: CheckControllerRequest): Promise<boolean> {
     const address = this.state.getCurrentAddress('westend');
     const stashAddress = await this.state.stakingService.getStashByController(params.address);
@@ -1129,10 +1112,6 @@ export default class Extension extends FWExtensionBase {
     );
 
     return isValidController;
-  }
-
-  getRewards({ network, address }: getRewardsRequest): Promise<RewardsResponse> {
-    return this.state.stakingService.getRewards(network, address);
   }
 
   async getMyStakingInfo(params: StakingNetworkRequest): Promise<MyStakingInfoResponse> {
@@ -1155,29 +1134,13 @@ export default class Extension extends FWExtensionBase {
     }
 
     const address = this.state.keyringService.getSubstrateAddress(from);
-    const ethereumAddress = this.state.keyringService.getAccount(address)?.meta.ethereumAddress as string | undefined;
+    const ethereumAddress = this.state.keyringService.getPair(address)?.meta.ethereumAddress as string | undefined;
 
     const result = await this.state.stakingService.makeStaking(request);
 
     this.savePass(address, ethereumAddress, isSavePass, false);
 
     return result;
-  }
-
-  getPayoutsFee(params: GetPayoutsFeeRequest) {
-    return this.state.stakingService.getPayoutsFee(params);
-  }
-
-  getNominateNetworkFee(params: GetNominateNetworkFeeRequest) {
-    return this.state.stakingService.getNominateNetworkFee(params);
-  }
-
-  getBondAndNominateNetworkFee(params: RequestBond) {
-    return this.state.stakingService.getBondAndNominateNetworkFee(params);
-  }
-
-  getPoolsParams(params: PoolsParamsRequest): Promise<PoolsParamsResponse> {
-    return this.state.poolsService.getPoolsParams(params);
   }
 
   async makePool(request: MakePoolsRequest): Promise<BasicTxResponse> {
@@ -1207,18 +1170,6 @@ export default class Extension extends FWExtensionBase {
     return params.type === 'addLiquidity'
       ? await this.state.poolsService.getShareOfPoolByAddLiquidity(params)
       : this.state.poolsService.getShareOfPoolByRemoveLiquidity(params);
-  }
-
-  unsubscribePools(): void {
-    this.state.poolsService.unsubscribePools();
-  }
-
-  async accountLiquiditySubscribe(id: string, port: Port): Promise<boolean> {
-    return this.state.poolsService.accountLiquiditySubscribe(id, port);
-  }
-
-  getPoolAmountValue(params: DefaultPoolParams): string {
-    return this.state.poolsService.getPoolAmountValue(params);
   }
 
   async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
@@ -1645,8 +1596,11 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.update.meta)':
         return this.updatePairMeta(request as RequestUpdateMeta);
 
-      case 'pri(accounts.export)':
-        return this.accountsExport(request as RequestAccountExport);
+      case 'pri(accounts.export.json)':
+        return this.exportJSON(request as RequestAccountExport);
+
+      case 'pri(accounts.export.mnemonic)':
+        return this.exportMnemonic(request as RequestExportMnemonic);
 
       case 'pri(accounts.forget)':
         return this.accountsForget(request as RequestAccountForget);
@@ -1696,13 +1650,13 @@ export default class Extension extends FWExtensionBase {
 
       // staking
       case 'pri(staking.stakingParams)':
-        return this.getStakingParams(request as StakingParamsRequest);
+        return this.state.stakingService.getStakingParams(request as StakingParamsRequest);
 
       case 'pri(staking.checkController)':
         return this.checkController(request as CheckControllerRequest);
 
       case 'pri(staking.rewards)':
-        return this.getRewards(request as getRewardsRequest);
+        return this.state.stakingService.getRewards(request as getRewardsRequest);
 
       case 'pri(staking.myStaking)':
         return this.getMyStakingInfo(request as StakingNetworkRequest);
@@ -1711,17 +1665,17 @@ export default class Extension extends FWExtensionBase {
         return this.makeStaking(request as MakeStakingRequest);
 
       case 'pri(staking.getPayoutsFee)':
-        return this.getPayoutsFee(request as GetPayoutsFeeRequest);
+        return this.state.stakingService.getPayoutsFee(request as GetPayoutsFeeRequest);
 
       case 'pri(staking.getNominateNetworkFee)':
-        return this.getNominateNetworkFee(request as GetNominateNetworkFeeRequest);
+        return this.state.stakingService.getNominateNetworkFee(request as GetNominateNetworkFeeRequest);
 
       case 'pri(staking.getBondAndNominateNetworkFee)':
-        return this.getBondAndNominateNetworkFee(request as RequestBond);
+        return this.state.stakingService.getBondAndNominateNetworkFee(request as RequestBond);
 
       // pools
       case 'pri(pools.poolsParams)':
-        return this.getPoolsParams(request as PoolsParamsRequest);
+        return this.state.poolsService.getPoolsParams(request as PoolsParamsRequest);
 
       case 'pri(pools.makePool)':
         return this.makePool(request as MakePoolsRequest);
@@ -1730,13 +1684,13 @@ export default class Extension extends FWExtensionBase {
         return this.getShareOfPool(request as GetShareOfPoolRequest);
 
       case 'pri(pools.unsubscribePools)':
-        return this.unsubscribePools();
+        return this.state.poolsService.unsubscribePools();
 
       case 'pri(pools.accountLiquidity)':
-        return this.accountLiquiditySubscribe(id, port);
+        return this.state.poolsService.accountLiquiditySubscribe(id, port);
 
       case 'pri(pools.getAmountValue)':
-        return this.getPoolAmountValue(request as DefaultPoolParams);
+        return this.state.poolsService.getPoolAmountValue(request as DefaultPoolParams);
 
       // price
       case 'pri(price.update.currency)':
@@ -1855,13 +1809,13 @@ export default class Extension extends FWExtensionBase {
 
       //OnBoarding
       case 'pri(onboarding.get.stories)':
-        return this.getOnboardingStories(request as string);
+        return this.state.onboardingService.getStories(request as string);
 
       case 'pri(onboarding.seen)':
-        return this.setOnboardingSeen();
+        return this.state.onboardingService.setSeen();
 
       case 'pri(onboarding.isRequired)':
-        return this.isOnboardingRequired();
+        return this.state.onboardingService.isRequired;
 
       //Nfts
       case 'pri(nft.subscribe)':

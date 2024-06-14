@@ -6,6 +6,7 @@ import type {
   AccountJson,
   ResponseTotalBalances,
   ResponseAccountExport,
+  ResponseExportMnemonic,
 } from '@extension-base/background/types/types';
 import type { DerivationPath } from '@/interfaces';
 import { sendMessage } from '@/extension/messaging/index';
@@ -31,8 +32,12 @@ export function subscribeAddresses(cb: (accounts: AccountJson[]) => void): Promi
   return sendMessage('pri(addresses.subscribe)', null, cb);
 }
 
-export function exportAccount(address: string, password: string, network?: string): Promise<ResponseAccountExport> {
-  return sendMessage('pri(accounts.export)', { address, password, network });
+export function exportAccountJSON(address: string, password: string, network?: string): Promise<ResponseAccountExport> {
+  return sendMessage('pri(accounts.export.json)', { address, password, network });
+}
+
+export function exportAccountMnemonic(address: string, password: string): Promise<ResponseExportMnemonic> {
+  return sendMessage('pri(accounts.export.mnemonic)', { address, password });
 }
 
 export function accountUpdateName(address: string, name: string): Promise<boolean> {

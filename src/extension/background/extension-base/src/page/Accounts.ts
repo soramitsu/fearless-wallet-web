@@ -26,7 +26,7 @@ export default class Accounts implements InjectedAccounts {
       .catch(console.error);
 
     return (): void => {
-      id && sendRequest('pub(accounts.unsubscribe)', { id }).catch(console.error);
+      if (id) sendRequest('pub(accounts.unsubscribe)', { id }).catch(console.error);
     };
   }
 }

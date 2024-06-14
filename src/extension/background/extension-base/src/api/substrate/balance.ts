@@ -19,6 +19,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
     assets,
     name: networkName,
   } = state.networkService.networksGithub.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())!;
+
   const relayChain = CHAIN_IDS[parentId!] ?? (networkName as RelayChainName);
 
   if (networkName === 'Equilibrium') {
@@ -94,16 +95,16 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
 
       const query = api.rx.query;
 
-      let pallet;
-
       const isSoraXOR =
         symbol === SORA_UTILITY_ASSET &&
         (isSameString(networkName, SORA_MAINNET) || isSameString(networkName, SORA_TEST));
 
-      if (type === 'normal' || isSoraXOR) pallet = query.system.account(address);
-      else if (type === 'assets') {
-        pallet = (query.assets as any).account(options, address);
-      } else pallet = query.tokens.accounts(address, options);
+      const pallet =
+        type === 'normal' || isSoraXOR
+          ? query.system.account(address)
+          : type === 'assets'
+          ? (query.assets as any).account(options, address)
+          : query.tokens.accounts(address, options);
 
       const onBalanceFetch = (balances: any) => {
         const balance =
@@ -195,22 +196,18 @@ export function subscribeBalance(
           if (!apiProps.api) {
             if (network?.networkStatus !== NETWORK_STATUS.DISCONNECTED) setTimeout(subscribeOnReady, 1000);
             else res({ networkName, unsub: () => {} });
+          } else
+            apiProps.api.isReadyOrError
+              .then(() => {
+                try {
+                  const unsub = subscribeTokensBalance(addressForNetwork, networkName, apiProps.api!, state);
 
-            return;
-          }
-
-          apiProps.api.isReadyOrError
-            .then(() => {
-              try {
-                const unsub = subscribeTokensBalance(addressForNetwork, networkName, apiProps.api!, state);
-                res({ networkName, unsub });
-              } catch (e) {
-                res({ networkName, unsub: () => {} });
-              }
-            })
-            .catch(() => {
-              res({ networkName, unsub: () => {} });
-            });
+                  res({ networkName, unsub });
+                } catch (e) {
+                  res({ networkName, unsub: () => {} });
+                }
+              })
+              .catch(() => res({ networkName, unsub: () => {} }));
         };
 
         if (isSoraNetwork) {
@@ -218,6 +215,7 @@ export function subscribeBalance(
             .then(() => {
               try {
                 const unsub = subscribeTokensBalance(addressForNetwork, networkName, apiProps.api!, state);
+
                 res({ networkName, unsub });
               } catch (e) {
                 res({ networkName, unsub: () => {} });
@@ -254,9 +252,8 @@ export async function fetchBalance(address: string, networkKey: string, state: S
     symbol === SORA_UTILITY_ASSET && (isSameString(networkKey, SORA_MAINNET) || isSameString(networkKey, SORA_TEST));
 
   if (type === 'normal' || isSoraXOR) response = query.system.account(address);
-  else if (type === 'assets') {
-    response = (query.assets as any).account(options, address);
-  } else response = query.tokens.accounts(address, options);
+  else if (type === 'assets') response = (query.assets as any).account(options, address);
+  else response = query.tokens.accounts(address, options);
 
   const balances = await response;
 

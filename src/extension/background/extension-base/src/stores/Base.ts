@@ -1,5 +1,6 @@
-type StoreValue = Record<string, unknown>;
 import { chrome } from '@extension-base/utils/crossenv';
+
+type StoreValue = Record<string, unknown>;
 
 const lastError = (type: string): void => {
   const error = chrome.runtime.lastError;
@@ -19,7 +20,10 @@ export default abstract class BaseStore<T> {
   }
 
   public all(update: (key: string, value: T) => void): void {
-    this.allMap((map) => Object.entries(map).forEach(([key, value]) => update(key, value)));
+    const cb1 = ([key, value]: [string, T]) => update(key, value);
+    const cb2 = (map: Record<string, T>) => Object.entries(map).forEach(cb1);
+
+    this.allMap(cb2);
   }
 
   public allMap(update: (value: Record<string, T>) => void): void {
@@ -32,9 +36,7 @@ export default abstract class BaseStore<T> {
       for (let i = 0; i < entries.length; i++) {
         const [key, value] = entries[i];
 
-        if (key.startsWith(this.#prefix)) {
-          map[key.replace(this.#prefix, '')] = value as T;
-        }
+        if (key.startsWith(this.#prefix)) map[key.replace(this.#prefix, '')] = value as T;
       }
 
       update(map);

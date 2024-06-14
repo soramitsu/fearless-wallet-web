@@ -23,6 +23,7 @@ import type {
   ValidatorStatuses,
   GetPayoutsFeeRequest,
   GetNominateNetworkFeeRequest,
+  getRewardsRequest,
 } from '@extension-base/services/staking-service/types';
 import { type NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
@@ -209,7 +210,7 @@ export class StakingService {
     return { validatorsOversubscribed, validatorsWaiting, validatorsActive, validatorsInactive };
   }
 
-  public async getRewards(network: NetworkName, address: string): Promise<RewardsResponse> {
+  public async getRewards({ address, network }: getRewardsRequest): Promise<RewardsResponse> {
     const rewards = await apiSora.staking.getNominatorsReward(address);
 
     const validatorsRewards = rewards.reduce((result, { validators }) => {

@@ -40,8 +40,9 @@
             :border="false"
             @click="onSend"
           />
-          <Tooltip text="common.copied" target=".share" trigger="click" arrow />
         </div>
+
+        <Tooltip text="common.copied" target=".share" trigger="click" :arrow="true" />
       </div>
     </Scroll>
   </AboveForm>
@@ -126,8 +127,7 @@ const onShare = () => {
   &__desc {
     font-weight: 400;
     font-size: 14px;
-    padding-top: 20px;
-    padding-bottom: 20px;
+    padding: 15px 0;
     color: $default-white;
     overflow-wrap: anywhere;
   }

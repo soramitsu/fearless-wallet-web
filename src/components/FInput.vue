@@ -50,7 +50,6 @@ const props = withDefaults(defineProps<FInputProps>(), {
   value: '',
   placeholder: '',
   accept: '',
-  height: 0,
   size: 'medium',
   type: 'text',
   typeText: 'none',

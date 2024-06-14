@@ -28,13 +28,14 @@
     <template v-else>
       <div class="row">
         <FInput
+          data-testid="textFile"
           type="text-file"
           size="big"
           accept="application/JSON"
           :placeholder="placeholderTypeImportValue"
           :readonly="true"
           :value="inputValue"
-          data-testid="textFile"
+          @change="changeInputValue"
         />
 
         <FInput

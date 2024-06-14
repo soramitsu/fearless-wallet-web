@@ -4,10 +4,9 @@ import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { handlers, state } from '@extension-base/background/handlers';
 import AccountsStore from '@extension-base/stores/Accounts';
 import { initStorage } from '@extension-base/stores/Storage';
-import { type RequestSignatures } from '@extension-base/background/types/messages';
-import { type TransportRequestMessage, type Port } from '@extension-base/background/types/types';
 import MigrationService from '@extension-base/services/migration-service';
 import axios from 'axios';
+import type { TransportRequestMessage, Port, MessageTypes } from '@extension-base/background/types/types';
 import { APP_VERSION } from '@/consts/global';
 
 console.info('background initialization');
@@ -45,9 +44,9 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 chrome.runtime.onUpdateAvailable.addListener(() => chrome.runtime.reload());
 
-chrome.runtime.onConnect.addListener((port: Port) => {
-  port.onMessage.addListener((data: TransportRequestMessage<keyof RequestSignatures>) => handlers(data, port));
-});
+chrome.runtime.onConnect.addListener((port: Port) =>
+  port.onMessage.addListener((data: TransportRequestMessage<MessageTypes>) => handlers(data, port))
+);
 
 // listen to tab updates this is fired on url change
 chrome.tabs.onUpdated.addListener((_, changeInfo) => {
@@ -69,7 +68,7 @@ chrome.tabs.onActivated.addListener(() => getActiveTabs());
 chrome.tabs.onRemoved.addListener(() => getActiveTabs());
 
 cryptoWaitReady()
-  .then((): void => {
+  .then(() => {
     state.keyringService.loadAll(new AccountsStore());
     state.eventService.emit('crypto.ready', true);
 
@@ -77,6 +76,4 @@ cryptoWaitReady()
 
     migrationService.start();
   })
-  .catch((error): void => {
-    console.error('initialization failed', error);
-  });
+  .catch((error) => console.error('initialization failed', error));

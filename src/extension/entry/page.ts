@@ -1,10 +1,8 @@
 import '@polkadot/extension-inject/crossenv';
-
 import { MESSAGE_ORIGIN_CONTENT } from '@extension-base/defaults';
 import { enable, handleResponse, redirectIfPhishing, saveSoraCardToken } from '@extension-base/page';
-import { type RequestSignatures } from '@extension-base/background/types/messages';
 import type { Message } from '@extension-base/types';
-import type { TransportRequestMessage } from '@extension-base/background/types/types';
+import type { MessageTypes, TransportRequestMessage } from '@extension-base/background/types/types';
 import { APP_VERSION } from '@/consts/global';
 
 console.info('page.ts initialization');
@@ -42,7 +40,7 @@ class Page {
       // only allow messages from our window, by the loader
       if (source !== window || data.origin !== MESSAGE_ORIGIN_CONTENT) return;
 
-      if (data.id) handleResponse(data as TransportRequestMessage<keyof RequestSignatures>);
+      if (data.id) handleResponse(data as TransportRequestMessage<MessageTypes>);
       else console.error('Missing id for response.');
     });
   }

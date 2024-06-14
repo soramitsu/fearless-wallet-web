@@ -1,7 +1,7 @@
 import { addMetadata } from '@polkadot/extension-chains';
-import { type MetadataDef } from '@polkadot/extension-inject/types';
 import { knownGenesis } from '@polkadot/networks/defaults';
-import { type HexString } from '@polkadot/util/types';
+import type { MetadataDef } from '@polkadot/extension-inject/types';
+import type { HexString } from '@polkadot/util/types';
 import type MetadataStore from '@extension-base/stores/Metadata';
 
 export const extractMetadata = (store: MetadataStore): void => {
@@ -20,20 +20,19 @@ export const extractMetadata = (store: MetadataStore): void => {
         // flatten the known metadata based on the genesis index
         // (lower is better/newer)
         if (!defs[name] || defs[name].index > index) {
-          if (defs[name]) {
+          if (defs[name])
             // remove the old version of the metadata
             removals.push(defs[name].key);
-          }
 
           defs[name] = { def, index, key };
         }
-      } else {
-        // this is not a known entry, so we will just apply it
-        defs[key] = { def, index: 0, key };
       }
+      // this is not a known entry, so we will just apply it
+      else defs[key] = { def, index: 0, key };
     });
 
     removals.forEach((key) => store.remove(key));
+
     Object.values(defs).forEach(({ def }) => addMetadata(def));
   });
 };

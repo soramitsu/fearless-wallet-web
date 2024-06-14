@@ -33,7 +33,7 @@
         <ValidatedInput
           v-if="state.isLocked"
           ref="passInputComponent"
-          v-model="state.password"
+          :value="state.password"
           placeholder="common.password"
           size="big"
           :class="classesInput"
@@ -42,6 +42,7 @@
           :isError="state.isErrorPassword"
           :showPassword="true"
           @keypress.native="keypress"
+          @change="changePassword"
         />
 
         <Checkbox :value="state.isSavePass" size="medium" :label="min15Label" @change="onSavePassChange" />
@@ -83,10 +84,9 @@ import InfoList from '@/screens/extension-ui/InfoList.vue';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import { useStore, type SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
-import { isSignLocked, validatePassword } from '@/extension/messaging';
-import { ExtensionController } from '@/controllers';
 import { type SignRequestList } from '@/store/extension/types';
 import { cut } from '@/helpers';
+import { isSignLocked, validatePassword, approveSignPassword } from '@/extension/messaging';
 
 const state = reactive({
   isLocked: true,
@@ -195,9 +195,9 @@ const txInfo = computed(() => {
 });
 
 const min15Label = computed((): string => t(state.isLocked ? 'assets.15min' : 'assets.15minExtend').toString());
-const passInputComponent = ref<ValidatedInput>();
+const passInputComponent = ref<typeof ValidatedInput>();
 
-const onSignMobile = () => ExtensionController.approveSignPassword(transactionId.value, false);
+const onSignMobile = () => approveSignPassword(transactionId.value, false);
 
 onMounted(async () => {
   if (isSignMobile.value) onSignMobile();
@@ -221,6 +221,8 @@ watch(
 
 const onSavePassChange = (value: boolean) => (state.isSavePass = value);
 const onReject = () => store.dispatch('SIGN_CANCEL', transactionId.value);
+
+const changePassword = (value: string) => (state.password = value);
 
 const sendExtrinsic = async () => {
   state.isDisabled = true;

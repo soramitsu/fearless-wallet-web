@@ -1,10 +1,10 @@
-import { api as apiSora, FPNumber } from '@sora-substrate/util';
+import { api as apiSora } from '@sora-substrate/util';
 import { chrome } from '@extension-base/utils/crossenv';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
-import { formatUnits, Wallet } from 'ethers';
+import { ethers, formatUnits, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/swaps';
@@ -13,7 +13,7 @@ import { createSubscription, unsubscribe } from '@extension-base/services';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
-import { isRequireEvmAPI, uniqueStringArray, getBalanceItem } from '@extension-base/background/utils/utils';
+import { isNativeEVMNetwork, uniqueStringArray, getBalanceItem } from '@extension-base/background/utils/utils';
 import { type MetadataDef } from '@polkadot/extension-inject/types';
 import {
   isProposalExpired,
@@ -23,59 +23,7 @@ import {
   getEip155MessageAddress,
 } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
-import {
-  type RequestUpdateMeta,
-  type PriceJson,
-  type RequestSigningIsLocked,
-  type NotificationResponse,
-  type ResponseCheckTransfer,
-  type SigningRequest,
-  type ActiveTabAuthorizeStatus,
-  type BalanceJson,
-  type BasicTxError,
-  type Port,
-  type RequestCheckSwap,
-  type RequestCheckTransfer,
-  type RequestCheckCrossChain,
-  type RequestSwap,
-  type RequestTransfer,
-  type RequestCrossChain,
-  type ResponseCheckSwap,
-  type ResponseCheckCrossChain,
-  type ResponseMakeSwap,
-  type AccountJson,
-  type AllowedPath,
-  type AuthorizedAccountsDiff,
-  type AuthorizeRequest,
-  type GoogleFileId,
-  type MessageTypes,
-  type MetadataRequest,
-  type RequestAccountCreateSuri,
-  type RequestAccountExport,
-  type RequestAccountForget,
-  type RequestAccountName,
-  type RequestAccountValidate,
-  type RequestActiveTabsUrlUpdate,
-  type RequestAddressCreate,
-  type RequestAuthorizeApprove,
-  type RequestJsonRestore,
-  type RequestMetadataApprove,
-  type RequestMetadataReject,
-  type RequestSigningApprovePassword,
-  type RequestSigningApproveSignature,
-  type RequestSigningCancel,
-  type RequestTypes,
-  type RequestUpdateAuthorizedAccounts,
-  type ResponseAuthorizeList,
-  type ResponseType,
-  BasicTxErrorCode,
-  type BasicTxResponse,
-  TransferErrorCode,
-  type FetchBalanceRequest,
-  type RequestNftTransfer,
-  type FetchEvmBalancePayload,
-  type AuthUrls,
-} from '@extension-base/background/types/types';
+import { BasicTxErrorCode, TransferErrorCode } from '@extension-base/background/types/types';
 import {
   type RequestConnectWalletConnect,
   type WalletConnectSessionRequest,
@@ -95,7 +43,58 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
-import { type EvmRequestsSubjectPayload } from '@extension-base/services/request-service/types';
+import type { EvmRequestsSubjectPayload } from '@extension-base/services/request-service/types';
+import type {
+  RequestUpdateMeta,
+  PriceJson,
+  RequestSigningIsLocked,
+  NotificationResponse,
+  ResponseCheckTransfer,
+  SigningRequest,
+  ActiveTabAuthorizeStatus,
+  BalanceJson,
+  BasicTxError,
+  Port,
+  RequestCheckSwap,
+  RequestCheckTransfer,
+  RequestCheckCrossChain,
+  RequestSwap,
+  RequestTransfer,
+  RequestCrossChain,
+  ResponseCheckSwap,
+  ResponseCheckCrossChain,
+  ResponseMakeSwap,
+  AccountJson,
+  AllowedPath,
+  AuthorizedAccountsDiff,
+  AuthorizeRequest,
+  GoogleFileId,
+  MessageTypes,
+  MetadataRequest,
+  RequestAccountCreateSuri,
+  RequestAccountExport,
+  RequestAccountForget,
+  RequestAccountName,
+  RequestAccountValidate,
+  RequestActiveTabsUrlUpdate,
+  RequestAddressCreate,
+  RequestAuthorizeApprove,
+  RequestJsonRestore,
+  RequestMetadataApprove,
+  RequestMetadataReject,
+  RequestSigningApprovePassword,
+  RequestSigningApproveSignature,
+  RequestSigningCancel,
+  RequestTypes,
+  RequestUpdateAuthorizedAccounts,
+  ResponseAuthorizeList,
+  ResponseType,
+  BasicTxResponse,
+  FetchBalanceRequest,
+  RequestNftTransfer,
+  FetchEvmBalancePayload,
+  RequestCheckScam,
+} from '@extension-base/background/types/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type {
   StakingNetworkRequest,
@@ -103,11 +102,10 @@ import type {
   MyStakingInfoResponse,
   CheckControllerRequest,
   getRewardsRequest,
-  RewardsResponse,
   MakeStakingRequest,
-  StakingParamsResponse,
   GetPayoutsFeeRequest,
   GetNominateNetworkFeeRequest,
+  RequestBond,
 } from '@extension-base/services/staking-service/types';
 import type {
   RequestSettingsChangePayload,
@@ -127,8 +125,6 @@ import type {
   GoogleAuthTypes,
   ICreateFile,
   IGetFilesResponse,
-  OnboardingStories,
-  SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
@@ -451,9 +447,29 @@ export default class Extension extends FWExtensionBase {
   }
 
   jsonRestore({ file, password }: RequestJsonRestore): Promise<string> {
+    const stringFile = JSON.stringify(file);
+
+    if (ethers.isKeystoreJson(stringFile))
+      return new Promise((resolve, reject) => {
+        try {
+          const { privateKey } = ethers.decryptKeystoreJsonSync(stringFile, password);
+
+          const address = this.state.keyringService.addAccount(
+            privateKey,
+            password,
+            { name: file.meta.name ?? '', isMobile: false },
+            'ethereum'
+          );
+
+          resolve(address);
+        } catch (error) {
+          reject({ error: (error as Error).message });
+        }
+      });
+
     const isPasswordValidated = this.validatePassword(file, password);
 
-    if (isPasswordValidated) {
+    if (isPasswordValidated)
       return new Promise((resolve, reject) => {
         try {
           const { address } = this.state.keyringService.restoreAccount(file, password);
@@ -469,9 +485,7 @@ export default class Extension extends FWExtensionBase {
           reject({ error: (error as Error).message });
         }
       });
-    } else {
-      throw new Error('Unable to decode using the supplied passphrase');
-    }
+    else throw new Error('Unable to decode using the supplied passphrase');
   }
 
   private async setActiveNetworks(type: string): Promise<void> {
@@ -553,6 +567,7 @@ export default class Extension extends FWExtensionBase {
       const txData = request.data[0] as { to: string; value: string };
 
       const { hash } = await signer.sendTransaction(txData);
+
       request.resolve({ id: request.id, payload: hash as HexString });
     } else {
       const params = request.data;
@@ -566,28 +581,20 @@ export default class Extension extends FWExtensionBase {
           'eth_signTypedData_v3',
           'eth_signTypedData_v4',
         ].indexOf(method) < 0
-      ) {
+      )
         throw new Error('Not found sign method');
-      }
 
       let payload;
 
-      if (typeof params[0] === 'string' && isEthereumAddress(params[0])) {
-        payload = params[1];
-      } else if (typeof params[1] === 'string' && isEthereumAddress(params[1])) {
-        payload = params[0];
-      }
+      if (typeof params[0] === 'string' && isEthereumAddress(params[0])) payload = params[1];
+      else if (typeof params[1] === 'string' && isEthereumAddress(params[1])) payload = params[0];
 
-      if (address === '' || !payload) {
-        throw new Error('Not found address or payload to sign');
-      }
+      if (address === '' || !payload) throw new Error('Not found address or payload to sign');
 
       const message =
         ['eth_sign', 'personal_sign'].indexOf(method) > -1 ? convertHexToUtf8(payload) : JSON.parse(payload);
 
-      if (!(['eth_sign', 'personal_sign'].indexOf(method) > -1)) {
-        delete message.types['EIP712Domain'];
-      }
+      if (!(['eth_sign', 'personal_sign'].indexOf(method) > -1)) delete message.types['EIP712Domain'];
 
       const signature = await (['eth_sign', 'personal_sign'].indexOf(method) > -1
         ? signer.signMessage(message)
@@ -623,6 +630,7 @@ export default class Extension extends FWExtensionBase {
 
     if (account && account?.meta.isMobile) {
       const res = await this.state.walletConnectDappService.onRequest(queued.request.payload as SignerPayloadJSON);
+
       resolve({ payload: res.signature, id });
 
       return true;
@@ -868,19 +876,24 @@ export default class Extension extends FWExtensionBase {
     };
   }
 
-  public async getSoraFees() {
-    this.state.soraFees = Object.fromEntries(
-      Object.entries(apiSora.NetworkFee).map(([operation, value]) => [
-        operation,
-        FPNumber.fromCodecValue(value).toString(),
-      ])
-    ) as SoraFees;
+  public async soraFeesSubscribe(id: string, port: Port) {
+    const cb = createSubscription<'pri(accounts.soraFees.subscribe)'>(id, port);
 
-    return this.state.soraFees;
+    const soraFeesSubscription = this.state.soraFees.subscribe({
+      next: (rs) => cb(rs!),
+    });
+
+    this.createUnsubscriptionHandle(id, soraFeesSubscription.unsubscribe);
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+    });
+
+    return this.state.soraFees.value;
   }
 
   private async checkSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
-    const { AToB, BToA, amountA, amountB, minMaxValue, swapOptions, providerFee, route } = await createSwap(
+    const { AToB, BToA, amountA, amountB, minMaxValue, swapOptions, route } = await createSwap(
       options,
       apiSora,
       this.state
@@ -888,7 +901,6 @@ export default class Extension extends FWExtensionBase {
 
     return {
       swapOptions,
-      fee: providerFee,
       AToB,
       BToA,
       amountA,
@@ -912,7 +924,7 @@ export default class Extension extends FWExtensionBase {
       const isUnlock = this.state.keyringService.unlockPair(pair, password);
 
       if (!isUnlock)
-        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.KEYRING_ERROR }] };
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
     }
 
     apiSora.shouldPairBeLocked = !isSavePass;
@@ -938,47 +950,18 @@ export default class Extension extends FWExtensionBase {
     };
   }
 
-  validatePairPassword(address: string, password: string | undefined) {
-    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
-    const errors = [] as Array<BasicTxError>;
-    const substratePair = this.state.keyringService.getPair(substrateAddress);
+  validatePairPassword(password: string) {
+    const address = this.state.getAccountAddress();
+    const substratePair = this.state.keyringService.getPair(address)!;
 
-    if (!substratePair) {
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        message: String('Could not find substrate pair'),
-      });
+    if (substratePair?.isLocked) {
+      const isUnlock = this.state.keyringService.unlockPair(substratePair, password);
 
-      return errors;
+      if (!isUnlock)
+        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
     }
 
-    if (password) {
-      try {
-        substratePair.unlock(password);
-
-        const { meta } = substratePair;
-        const ethereumAddress = meta.ethereumAddress as string | undefined;
-
-        if (ethereumAddress) {
-          const pair = this.state.keyringService.getPair(ethereumAddress);
-
-          if (pair) pair.unlock(password);
-        }
-      } catch (e: any) {
-        errors.push({
-          code: BasicTxErrorCode.KEYRING_ERROR,
-          message: String(e.message),
-        });
-      }
-    } else {
-      if (substratePair?.isLocked)
-        errors.push({
-          code: BasicTxErrorCode.KEYRING_ERROR,
-          message: String('Password required to decode encrypted data'),
-        });
-    }
-
-    return errors;
+    return { status: true };
   }
 
   private async checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
@@ -992,7 +975,7 @@ export default class Extension extends FWExtensionBase {
     const errors: BasicTxError[] = [];
 
     // Estimate with EVM API
-    if (isRequireEvmAPI(networkKey)) {
+    if (isNativeEVMNetwork(networkKey)) {
       try {
         const { fee: feeValue } = await getEVMTransactionObject({
           balance,
@@ -1042,7 +1025,7 @@ export default class Extension extends FWExtensionBase {
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
     const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
 
-    const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
+    const cb = createSubscription<'pri(accounts.makeTransfer)'>(id, port);
     const savePass = () => this.savePass(substrateAddress, ethereumAddress, !!isSavePass, !!isMobile);
     const callback = this.makeExtrinsicCallback(cb, savePass);
 
@@ -1062,7 +1045,7 @@ export default class Extension extends FWExtensionBase {
       balance,
     };
 
-    if (isRequireEvmAPI(networkKey)) {
+    if (isNativeEVMNetwork(networkKey)) {
       const { privateKey } = this.state.accountExportPrivateKey({ address: from, password });
 
       transferProm = makeEVMTransfer({
@@ -1179,7 +1162,7 @@ export default class Extension extends FWExtensionBase {
     const ethereumAddress = this.state.keyringService.getEthereumAddress(from);
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
 
-    const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
+    const cb = createSubscription<'pri(accounts.makeCrossChain)'>(id, port);
     const savePass = () => this.savePass(substrateAddress, ethereumAddress, !!isSavePass, !!isMobile);
     const callback = this.makeExtrinsicCallback(cb, savePass);
 
@@ -1231,6 +1214,10 @@ export default class Extension extends FWExtensionBase {
     return { status: true };
   }
 
+  public checkScamAddress(request: RequestCheckScam) {
+    return this.state.scamService.checkScamAddress(request);
+  }
+
   private createMobileWallet({ address, meta }: RequestAddressCreate) {
     this.state.keyringService.saveAddress(address, meta, 'address');
 
@@ -1262,22 +1249,6 @@ export default class Extension extends FWExtensionBase {
     return this.state.approvePolkaswap(authorizedAccounts);
   }
 
-  isOnboardingRequired(): boolean {
-    return this.state.onboardingService.isRequired;
-  }
-
-  setOnboardingSeen(): void {
-    this.state.onboardingService.setSeen();
-  }
-
-  getOnboardingStories(lang: string): OnboardingStories {
-    return this.state.onboardingService.getStories(lang);
-  }
-
-  getStakingParams(params: StakingParamsRequest): Promise<StakingParamsResponse> {
-    return this.state.stakingService.getStakingParams(params);
-  }
-
   async checkController(params: CheckControllerRequest): Promise<boolean> {
     const address = this.state.getCurrentAddress('westend');
     const stashAddress = await this.state.stakingService.getStashByController(params.address);
@@ -1291,10 +1262,6 @@ export default class Extension extends FWExtensionBase {
     );
 
     return isValidController;
-  }
-
-  async getRewards({ network, address }: getRewardsRequest): Promise<RewardsResponse> {
-    return this.state.stakingService.getRewards(network, address);
   }
 
   async getMyStakingInfo(params: StakingNetworkRequest): Promise<MyStakingInfoResponse> {
@@ -1324,14 +1291,6 @@ export default class Extension extends FWExtensionBase {
     this.savePass(address, ethereumAddress, isSavePass, false);
 
     return result;
-  }
-
-  async getPayoutsFee(params: GetPayoutsFeeRequest) {
-    return this.state.stakingService.getPayoutsFee(params);
-  }
-
-  async getNominateNetworkFee(params: GetNominateNetworkFeeRequest) {
-    return this.state.stakingService.getNominateNetworkFee(params);
   }
 
   async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
@@ -1591,21 +1550,15 @@ export default class Extension extends FWExtensionBase {
           'eth_signTypedData_v3',
           'eth_signTypedData_v4',
         ].indexOf(method) < 0
-      ) {
+      )
         throw new Error('Not found sign method');
-      }
 
       let payload;
 
-      if (typeof params[0] === 'string' && isEthereumAddress(params[0])) {
-        payload = params[1];
-      } else if (typeof params[1] === 'string' && isEthereumAddress(params[1])) {
-        payload = params[0];
-      }
+      if (typeof params[0] === 'string' && isEthereumAddress(params[0])) payload = params[1];
+      else if (typeof params[1] === 'string' && isEthereumAddress(params[1])) payload = params[0];
 
-      if (address === '' || !payload) {
-        throw new Error('Not found address or payload to sign');
-      }
+      if (address === '' || !payload) throw new Error('Not found address or payload to sign');
 
       const message =
         ['eth_sign', 'personal_sign'].indexOf(method) > -1 ? convertHexToUtf8(payload) : JSON.parse(payload);
@@ -1623,9 +1576,9 @@ export default class Extension extends FWExtensionBase {
 
     if (password) {
       const subst = this.state.keyringService.getPair(substrateAddress);
-      subst?.unlock(password);
-
       const eth = this.state.keyringService.getPair(ethereumAddress);
+
+      subst?.unlock(password);
       eth?.unlock(password);
     }
 
@@ -1786,33 +1739,36 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.checkTransfer)':
         return this.checkTransfer(request as RequestCheckTransfer);
 
-      case 'pri(accounts.transfer)':
+      case 'pri(accounts.makeTransfer)':
         return this.makeTransfer(id, port, request as RequestTransfer);
 
       case 'pri(accounts.checkCrossChain)':
         return this.checkCrossChain(request as RequestCheckCrossChain);
 
-      case 'pri(accounts.crossChain)':
+      case 'pri(accounts.makeCrossChain)':
         return this.makeCrossChain(id, port, request as RequestCrossChain);
 
       case 'pri(accounts.checkSwap)':
         return this.checkSwap(request as RequestCheckSwap);
 
-      case 'pri(accounts.swap)':
+      case 'pri(accounts.makeSwap)':
         return this.makeSwap(request as RequestSwap);
 
-      case 'pri(accounts.soraFees)':
-        return this.getSoraFees();
+      case 'pri(accounts.soraFees.subscribe)':
+        return this.soraFeesSubscribe(id, port);
+
+      case 'pri(accounts.checkScamAddress)':
+        return this.checkScamAddress(request as RequestCheckScam);
 
       // staking
       case 'pri(staking.stakingParams)':
-        return this.getStakingParams(request as StakingParamsRequest);
+        return this.state.stakingService.getStakingParams(request as StakingParamsRequest);
 
       case 'pri(staking.checkController)':
         return this.checkController(request as CheckControllerRequest);
 
       case 'pri(staking.rewards)':
-        return this.getRewards(request as getRewardsRequest);
+        return this.state.stakingService.getRewards(request as getRewardsRequest);
 
       case 'pri(staking.myStaking)':
         return this.getMyStakingInfo(request as StakingNetworkRequest);
@@ -1821,10 +1777,13 @@ export default class Extension extends FWExtensionBase {
         return this.makeStaking(request as MakeStakingRequest);
 
       case 'pri(staking.getPayoutsFee)':
-        return this.getPayoutsFee(request as GetPayoutsFeeRequest);
+        return this.state.stakingService.getPayoutsFee(request as GetPayoutsFeeRequest);
 
       case 'pri(staking.getNominateNetworkFee)':
-        return this.getNominateNetworkFee(request as GetNominateNetworkFeeRequest);
+        return this.state.stakingService.getNominateNetworkFee(request as GetNominateNetworkFeeRequest);
+
+      case 'pri(staking.getBondAndNominateNetworkFee)':
+        return this.state.stakingService.getBondAndNominateNetworkFee(request as RequestBond);
 
       // price
       case 'pri(price.update.currency)':
@@ -1946,13 +1905,13 @@ export default class Extension extends FWExtensionBase {
 
       //OnBoarding
       case 'pri(onboarding.get.stories)':
-        return this.getOnboardingStories(request as string);
+        return this.state.onboardingService.getStories(request as string);
 
       case 'pri(onboarding.seen)':
-        return this.setOnboardingSeen();
+        return this.state.onboardingService.setSeen();
 
       case 'pri(onboarding.isRequired)':
-        return this.isOnboardingRequired();
+        return this.state.onboardingService.isRequired;
 
       //Nfts
       case 'pri(nft.subscribe)':

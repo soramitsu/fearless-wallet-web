@@ -3,7 +3,7 @@
     <div class="receive-form">
       <div>
         <InputWithIcon
-          v-model="selectedNetwork"
+          :value="selectedNetwork"
           placeholder="assets.network"
           icon="rotate"
           data-testid="selectedNetwork"

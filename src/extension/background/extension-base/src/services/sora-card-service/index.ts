@@ -9,11 +9,8 @@ import { URLS } from '@/consts/urls';
 
 export class SoraCardService {
   private readonly soraCardTokenSubject: BehaviorSubject<string> = new BehaviorSubject<string>('');
-  requestService: RequestService;
 
-  constructor(requestService: RequestService) {
-    this.requestService = requestService;
-  }
+  constructor(private requestService: RequestService) {}
 
   public get tokenSubject() {
     return this.soraCardTokenSubject;

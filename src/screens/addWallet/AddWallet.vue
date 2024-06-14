@@ -44,10 +44,9 @@
           :step="step"
           :mnemonic="mnemonic"
           :selectedMnemonicElements="selectedMnemonicElements"
+          @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
           @update:selectedMnemonicElements="updateSelectedMnemonicElements"
-        >
-          <AdvancedButton @click="toggleAdvancedFormVisible" />
-        </CreateWallet>
+        />
 
         <ImportWallet
           v-if="showImportForm"
@@ -62,10 +61,9 @@
           :isOnlyEthereumAccount="isOnlyEthereumAccount"
           @setImportValue="setImportValue"
           @reset="reset"
+          @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
           @update:passwordJson="setPasswordJson"
-        >
-          <AdvancedButton @click="toggleAdvancedFormVisible" />
-        </ImportWallet>
+        />
 
         <AdvancedForm
           v-if="showAdvancedForm"
@@ -83,6 +81,7 @@
 
         <FinishForm v-if="showFinishForm" />
       </div>
+
       <div class="controls">
         <FButton
           v-if="confirmMnemonicStep"
@@ -155,7 +154,6 @@ import PasswordForm from '@/screens/addWallet/PasswordForm.vue';
 import ImportWallet from '@/screens/addWallet/ImportWallet.vue';
 import NicknameForm from '@/screens/addWallet/NicknameForm.vue';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
-import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 import AddEthereumAccountPopup from '@/screens/addWallet/AddEthereumAccountPopup.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
@@ -185,7 +183,6 @@ type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'sub
     PasswordForm,
     NicknameForm,
     AdvancedForm,
-    AdvancedButton,
     AddEthereumAccountPopup,
   },
 })
@@ -395,9 +392,13 @@ export default class AddWallet extends Vue {
 
   @Watch('substrateJson')
   substrateJsonChanged(value: string) {
-    this.nickname = (this.substrateJSON?.meta?.name as string) || '';
+    if (this.isLengthZero(this.substrateJSON) && value !== '') {
+      this.warningValueName = 'jsonInvalid';
 
-    if (this.isLengthZero(this.substrateJSON) && value !== '') this.warningValueName = 'jsonInvalid';
+      return;
+    }
+
+    this.nickname = (this.substrateJSON?.meta?.name as string) || '';
   }
 
   @Watch('ethereumJson')

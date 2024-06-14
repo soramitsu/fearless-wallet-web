@@ -5,7 +5,7 @@
       :value="props.selectAll"
       size="big"
       :label="$t('common.selectAll')"
-      @change="(value) => emit('onSelectAll', value)"
+      @change="emit('onSelectAll', $event)"
     />
 
     <Scroll>
@@ -17,7 +17,7 @@
               size="big"
               :label="$t(account.name)"
               :value="account.active"
-              @change="(value) => emit('onSelect', value, account.name)"
+              @change="emit('onSelect', $event, account.name)"
             />
 
             <div v-if="account.isMobile" class="account__checkbox--mobile-icon">{{ $t('mobile') }}</div>

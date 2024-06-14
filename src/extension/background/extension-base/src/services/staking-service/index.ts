@@ -23,6 +23,7 @@ import type {
   ValidatorStatuses,
   GetPayoutsFeeRequest,
   GetNominateNetworkFeeRequest,
+  getRewardsRequest,
 } from '@extension-base/services/staking-service/types';
 import { type NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
@@ -209,7 +210,7 @@ export class StakingService {
     return { validatorsOversubscribed, validatorsWaiting, validatorsActive, validatorsInactive };
   }
 
-  public async getRewards(network: NetworkName, address: string): Promise<RewardsResponse> {
+  public async getRewards({ address, network }: getRewardsRequest): Promise<RewardsResponse> {
     const rewards = await apiSora.staking.getNominatorsReward(address);
 
     const validatorsRewards = rewards.reduce((result, { validators }) => {
@@ -252,6 +253,7 @@ export class StakingService {
     const { precision } = getUtilityProps(network, this.state);
 
     const validatorsInfo = await apiSora.staking.getValidatorsInfo();
+
     const validators: FWValidatorInfoFull[] = validatorsInfo.map((validator) => {
       const info = validator.identity?.info;
 
@@ -339,7 +341,21 @@ export class StakingService {
 
   public async getNominateNetworkFee({ validators, network }: GetNominateNetworkFeeRequest) {
     const precision = getUtilityProps(network, this.state).precision;
+
     const fee = await apiSora.staking.getNominateNetworkFee({ validators });
+
+    return FPNumber.fromCodecValue(fee, precision).toString();
+  }
+
+  public async getBondAndNominateNetworkFee({ validators, payoutAddress, from, networkName, amount }: RequestBond) {
+    const precision = getUtilityProps(networkName, this.state).precision;
+
+    const fee = await apiSora.staking.getBondAndNominateNetworkFee({
+      validators,
+      controller: from,
+      payee: payoutAddress,
+      value: amount,
+    });
 
     return FPNumber.fromCodecValue(fee, precision).toString();
   }
@@ -380,8 +396,10 @@ export class StakingService {
   public async bondAndNominate(params: RequestBond): Promise<BasicTxResponse> {
     const { amount, payoutAddress, from, validators } = params;
 
+    const payee = payoutAddress === '' ? from : payoutAddress;
+
     try {
-      await apiSora.staking.bondAndNominate({ value: amount, controller: from, payee: payoutAddress, validators }); // Controller аккаунт по умолчанию это Stash
+      await apiSora.staking.bondAndNominate({ value: amount, controller: from, payee, validators }); // Controller аккаунт по умолчанию это Stash
     } catch (ex) {
       const message = `[STAKING] Bond failed: ${ex}`;
 

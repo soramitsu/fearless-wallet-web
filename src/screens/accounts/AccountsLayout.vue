@@ -282,7 +282,7 @@ export default class AccountsLayout extends Vue {
   childUpdatedNode(setAuto = false) {
     const nodesComponent = this.$refs[this.routerViewRef] as Nodes;
 
-    if (setAuto && this.selectedNodeIsActive) nodesComponent.autoSelectNode = true;
+    if (setAuto && this.selectedNodeIsActive) nodesComponent.toggleAutoSelectNode(true);
   }
 
   openNotificationPopup(type: NotificationType) {

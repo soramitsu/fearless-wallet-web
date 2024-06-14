@@ -1,5 +1,6 @@
 import assert from 'assert';
-import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isNativeEVMNetwork } from '@extension-base/background/utils/utils';
+import { ethers } from 'ethers';
 import type {
   CachedUnlocks,
   RequestAccountExport,
@@ -24,7 +25,14 @@ export default class FWExtensionBase {
     this.cachedUnlocks = {};
   }
 
-  accountsExport({ address, password }: RequestAccountExport): ResponseAccountExport {
+  accountsExport({ address, password, network }: RequestAccountExport): ResponseAccountExport {
+    if (network && isNativeEVMNetwork(network)) {
+      const { privateKey } = this.state.accountExportPrivateKey({ address, password });
+      const json = ethers.encryptKeystoreJsonSync({ address, privateKey }, password);
+
+      return { exportedJson: JSON.parse(json) };
+    }
+
     return { exportedJson: this.state.keyringService.backupAccount(address, password)! };
   }
 
@@ -53,7 +61,7 @@ export default class FWExtensionBase {
     if (meta.ethereumAddress) {
       const cb = () =>
         Object.keys(this.state.networkMap).forEach((network) => {
-          if (isRequireEvmAPI(network)) this.state.networkService.evmApiHandler.refreshEvmApi(network);
+          if (isNativeEVMNetwork(network)) this.state.networkService.evmApiHandler.refreshEvmApi(network);
         });
 
       if (this.state.currentAccount) {
@@ -127,7 +135,7 @@ export default class FWExtensionBase {
 
   jsonValid({ file, password, isSubstrate }: RequestJsonValidate): ValidateJsonResult {
     try {
-      const pair = this.state.keyringService.restoreAccount(file, password);
+      const pair = this.state.keyringService.createFromJson(file);
 
       pair.decodePkcs8(password);
 
@@ -137,6 +145,18 @@ export default class FWExtensionBase {
     } catch (error: any) {
       const errorType =
         error.message === 'Unable to decode using the supplied passphrase' ? 'jsonPassword' : 'jsonInvalid';
+
+      if (errorType === 'jsonPassword') return { value: false, errorType };
+    }
+
+    try {
+      const stringFile = JSON.stringify(file);
+
+      ethers.decryptKeystoreJsonSync(stringFile, password);
+
+      return { value: true };
+    } catch (error: any) {
+      const errorType = error.message.includes('incorrect password') ? 'jsonPassword' : 'jsonInvalid';
 
       return { value: false, errorType };
     }

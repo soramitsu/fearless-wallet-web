@@ -35,7 +35,6 @@ import type {
 import type { DAppChainInfoPayload, EvmRequests, WCSignRequest } from '@extension-base/services/request-service/types';
 
 export class RequestService {
-  readonly keyringService: KeyringService;
   readonly popupHandler: PopupHandler;
   readonly connectWCRequestHandler: ConnectWCRequestHandler;
   readonly notSupportWCRequestHandler: NotSupportWCRequestHandler;
@@ -44,13 +43,11 @@ export class RequestService {
   readonly substrateRequestHandler: SubstrateRequestHandler;
   readonly evmRequestHandler: EvmRequestHandler;
 
-  constructor(keyringService: KeyringService, networkService: NetworkService) {
-    this.keyringService = keyringService;
+  constructor(readonly keyringService: KeyringService, networkService: NetworkService) {
     this.popupHandler = new PopupHandler(this);
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
-    this.substrateRequestHandler = new SubstrateRequestHandler(this, this.keyringService);
     this.authRequestHandler = new AuthRequestHandler(this, networkService);
     this.substrateRequestHandler = new SubstrateRequestHandler(this, this.keyringService);
     this.evmRequestHandler = new EvmRequestHandler(this);
@@ -104,7 +101,6 @@ export class RequestService {
   }
 
   // Auth
-
   public get authSubject(): BehaviorSubject<AuthorizeRequest[]> {
     return this.authRequestHandler.authSubject;
   }

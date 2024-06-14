@@ -13,19 +13,15 @@ import {
   type SigningRequest,
 } from '@extension-base/background/types/types';
 import { getId, isInternalRequest } from '@extension-base/utils';
-import { type KeyringService, type RequestService } from '@extension-base/services';
+import type { KeyringService, RequestService } from '@extension-base/services';
 
 export class SubstrateRequestHandler {
   readonly logger: Logger;
-  private readonly requestService: RequestService;
-  private readonly keyringService: KeyringService;
 
   readonly substrateRequests: Record<string, SignRequest> = {};
   public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
 
-  constructor(requestService: RequestService, keyringService: KeyringService) {
-    this.requestService = requestService;
-    this.keyringService = keyringService;
+  constructor(private readonly requestService: RequestService, private readonly keyringService: KeyringService) {
     this.logger = createLogger('SubstrateRequestHandler');
   }
 
@@ -55,13 +51,15 @@ export class SubstrateRequestHandler {
   ): Resolver<ResponseSigning> => {
     const complete = (): void => {
       delete this.substrateRequests[id];
+
       this.updateIconSign(true);
     };
 
     return {
       reject: (error: Error): void => {
-        complete();
         this.logger.log(error);
+
+        complete();
         reject(error);
       },
       resolve: (result: ResponseSigning): void => {
@@ -100,6 +98,7 @@ export class SubstrateRequestHandler {
   ): Promise<ResponseSigning> {
     return new Promise((resolve, reject): void => {
       const existingAccount = this.keyringService.getAccounts().find((el) => el.address === address);
+
       if (!existingAccount) return reject();
 
       const account: AccountJson = {
@@ -119,16 +118,12 @@ export class SubstrateRequestHandler {
 
       this.updateIconSign();
 
-      if (!isInternalRequest(url)) {
-        this.requestService.popupOpen();
-      }
+      if (!isInternalRequest(url)) this.requestService.popupOpen();
     });
   }
 
   public resetWallet() {
-    for (const request of Object.values(this.substrateRequests)) {
-      request.reject(new Error('Reset wallet'));
-    }
+    for (const request of Object.values(this.substrateRequests)) request.reject(new Error('Reset wallet'));
 
     this.signSubject.next([]);
   }

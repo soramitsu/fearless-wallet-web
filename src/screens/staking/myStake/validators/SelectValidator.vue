@@ -1,49 +1,73 @@
 <template>
   <div class="select-validator">
-    <div v-if="step === 5">
-      <div>
-        {{ $t('staking.haveSelected') }}
+    <ValidatorInfo
+      v-if="showValidatorInfo"
+      :validator="selectedValidator"
+      :stakingNetwork="stakingNetwork"
+      :stakingCurrency="stakingCurrency"
+    />
 
-        <span class="highlight">{{ selectedQuantity }}</span>
+    <template v-else>
+      <div v-if="step === 5">
+        <div data-testid="haveSelectedText">
+          {{ $t('staking.haveSelected') }}
 
-        {{ $t('staking.outOf') }}
+          <span class="highlight">{{ selectedQuantity }}</span>
 
-        <span class="highlight">{{ maxNominations }}&nbsp;</span>
+          {{ $t('staking.outOf') }}
 
-        <span class="validators">{{ $t('staking.validators') }}</span>
-      </div>
+          <span class="highlight">{{ maxNominations }}&nbsp;</span>
 
-      <div class="settings">
-        <SearchInput v-model="filterValue" placeholder="common.searchByAddress" width="450px" class="search" />
+          <span class="validators">{{ $t('staking.validators') }}</span>
+        </div>
 
-        <Icon icon="filter" @click.native="openFiltersPopup" class="filter" />
-      </div>
-    </div>
-    <div class="validators-items">
-      <Scroll>
-        <template v-if="haveFilteredValidators">
-          <ValidatorItem
-            v-for="validator in filteredValidators"
-            :key="validator.address"
-            :validator="validator"
-            @onSelect="onSelect"
+        <div class="settings">
+          <SearchInput
+            :value="filterValue"
+            placeholder="common.searchByAddress"
+            width="450px"
+            class="search"
+            data-testid="searchInput"
+            @change="changeFilterValue"
           />
-        </template>
 
-        <div v-else class="nothing-found">{{ $t('common.nothingFound') }}</div>
-      </Scroll>
-    </div>
+          <Icon icon="filter" @click.native="openFiltersPopup" class="filter" data-testid="filter" />
+        </div>
+      </div>
+
+      <div class="validators-items">
+        <Scroll>
+          <template v-if="haveFilteredValidators">
+            <ValidatorItem
+              v-for="validator in filteredValidators"
+              :key="validator.address"
+              :validator="validator"
+              @onSelect="onSelect"
+              @openValidatorInfo="openValidatorInfo"
+            />
+          </template>
+
+          <div v-else class="nothing-found">{{ $t('common.nothingFound') }}</div>
+        </Scroll>
+      </div>
+    </template>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { SelectionValidator } from '@/interfaces';
+import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
+import type { NetworkParams } from '@/store';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import ValidatorItem from '@/screens/staking/myStake/validators/ValidatorItem.vue';
-import Scroll from '@/components/Scroll.vue';
+import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vue';
 
 @Component({
-  components: { ValidatorItem, Scroll },
+  components: {
+    ValidatorItem,
+    ValidatorInfo,
+  },
 })
 export default class SelectValidator extends Vue {
   filterValue = '';
@@ -56,10 +80,17 @@ export default class SelectValidator extends Vue {
   @Prop({ type: Boolean }) sortByApy!: boolean;
   @Prop({ type: Array }) validators!: SelectionValidator[];
   @Prop({ type: Number }) maxNominations!: number;
+  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
+  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
+  @Prop({ type: Object }) selectedValidator!: FWValidatorInfoFull;
+
+  get showValidatorInfo() {
+    return this.selectedValidator !== null;
+  }
 
   get filteredValidatorsBySettings() {
-    return this.validators.filter(({ isOversubscribed, onchainIdentity, isSlashed, limitValidatorsIdentity }) => {
-      if (this.onchainIdentity && !onchainIdentity) return false;
+    return this.validators.filter(({ isOversubscribed, isKnownGood, isSlashed, limitValidatorsIdentity }) => {
+      if (this.onchainIdentity && !isKnownGood) return false;
 
       if (this.notSlashed && isSlashed) return false;
 
@@ -104,12 +135,19 @@ export default class SelectValidator extends Vue {
   openFiltersPopup() {
     this.$emit('openFiltersPopup');
   }
+
+  openValidatorInfo(validator: FWValidatorInfoFull) {
+    this.$emit('openValidatorInfo', validator);
+  }
+
+  changeFilterValue(value: string) {
+    this.filterValue = value;
+  }
 }
 </script>
 
 <style lang="scss" scoped>
 .select-validator {
-  padding: $default-padding;
   color: $default-white;
   text-align: left;
   height: 100%;

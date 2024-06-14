@@ -12,7 +12,7 @@ async function createExchangeB(
   props: BaseExchangeProps,
   api: Api<void>
 ): Promise<Omit<CreateSwapResult, 'swapOptions'>> {
-  const { expectedAmount, providerFee, route, assetA, assetB, amountB, slippage } = props;
+  const { expectedAmount, route, assetA, assetB, amountB, slippage } = props;
   const minMaxValue = api.swap.getMinMaxValue(assetA, assetB, expectedAmount.toString(), amountB!, true, slippage!);
 
   return {
@@ -21,7 +21,6 @@ async function createExchangeB(
     AToB: expectedAmount.div(new FPNumber(amountB!)).toString(),
     BToA: new FPNumber(amountB!).div(expectedAmount).toString(),
     minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
-    providerFee: FPNumber.fromCodecValue(providerFee).toString(),
     route,
   };
 }
@@ -30,7 +29,7 @@ async function createExchangeA(
   props: BaseExchangeProps,
   api: Api<void>
 ): Promise<Omit<CreateSwapResult, 'swapOptions'>> {
-  const { expectedAmount, providerFee, route, assetA, assetB, amountA, slippage } = props;
+  const { expectedAmount, route, assetA, assetB, amountA, slippage } = props;
   const minMaxValue = api.swap.getMinMaxValue(assetA, assetB, amountA!, expectedAmount.toString(), false, slippage!);
 
   return {
@@ -39,7 +38,6 @@ async function createExchangeA(
     AToB: new FPNumber(amountA!).div(expectedAmount).toString(),
     BToA: expectedAmount.div(new FPNumber(amountA!)).toString(),
     minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
-    providerFee: FPNumber.fromCodecValue(providerFee).toString(),
     route,
   };
 }
@@ -71,19 +69,16 @@ export async function createSwap(
   const assetBAddress = getAssetOptions(aIB!.id, state.assetsMap) as string;
   const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
   const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
-  const assetA: Asset = { address: assetAAddress, decimals: 18, name: symbolA!, symbol: symbolA! };
+  const assetA: Asset = { address: assetAAddress, decimals: 18, name: symbolA!, symbol: symbolA!, isMintable: false };
   const assetB: Asset = {
     address: assetBAddress,
     decimals: 18,
     name: symbolB!,
     symbol: symbolB!,
+    isMintable: false,
   };
 
-  const {
-    amount: amountDexIdXOR,
-    fee: providerFeeDexIdXOR,
-    route: routeDexIdXOR,
-  } = await api.swap.getResultFromDexRpc(
+  const { amount: amountDexIdXOR, route: routeDexIdXOR } = await api.swap.getResultFromDexRpc(
     assetAAddress,
     assetBAddress,
     amountWithDirection,
@@ -93,11 +88,7 @@ export async function createSwap(
     DexId.XOR
   );
 
-  const {
-    amount: amountDexIdXSTUSD,
-    fee: providerFeeDexIdXSTUSD,
-    route: routeDexIdXSTUSD,
-  } = await api.swap.getResultFromDexRpc(
+  const { amount: amountDexIdXSTUSD, route: routeDexIdXSTUSD } = await api.swap.getResultFromDexRpc(
     assetAAddress,
     assetBAddress,
     amountWithDirection,
@@ -112,25 +103,21 @@ export async function createSwap(
 
   let isDexXor;
   let expectedAmount;
-  let providerFee;
   let route;
 
   if (amountDexIdXORFP.isZero()) {
     isDexXor = false;
     expectedAmount = amountDexIdXSTUSDFP;
-    providerFee = providerFeeDexIdXSTUSD;
     route = routeDexIdXSTUSD;
   } else if (amountDexIdXSTUSDFP.isZero()) {
     isDexXor = true;
     expectedAmount = amountDexIdXORFP;
-    providerFee = providerFeeDexIdXOR;
     route = routeDexIdXOR;
   } else {
     isDexXor = isExchangeB
       ? FPNumber.lt(amountDexIdXORFP, amountDexIdXSTUSDFP)
       : FPNumber.gt(amountDexIdXORFP, amountDexIdXSTUSDFP);
     expectedAmount = isDexXor ? amountDexIdXORFP : amountDexIdXSTUSDFP;
-    providerFee = isDexXor ? providerFeeDexIdXOR : providerFeeDexIdXSTUSD;
     route = isDexXor ? routeDexIdXOR : routeDexIdXSTUSD;
   }
 
@@ -152,7 +139,6 @@ export async function createSwap(
 
   const baseOptions: BaseExchangeProps = {
     expectedAmount,
-    providerFee,
     isDexXor,
     route,
     assetA,

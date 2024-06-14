@@ -7,7 +7,7 @@ import { storage } from '@extension-base/stores/Storage';
 import { EvmApiHandler } from '@extension-base/services/network-service/handlers/EvmApiHandler';
 import { SubstrateApiHandler } from '@extension-base/services/network-service/handlers/SubstrateApiHandler';
 import { type KeyringService } from '@extension-base/services';
-import { isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isEthereumNetwork, isNativeEVMNetwork } from '@extension-base/background/utils/utils';
 import { type ApiMap } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
@@ -206,7 +206,7 @@ export class NetworkService {
     for (const network of activeNetworks) {
       const { name, isEthereum } = network;
 
-      if (isEthereum && isRequireEvmAPI(name)) {
+      if (isEthereum && isNativeEVMNetwork(name)) {
         if (!this.evmApiHandler.api[name] || !this.evmApiHandler.api[name].api?.ready)
           this.evmApiHandler.initEvmApi(network);
       } else {
@@ -262,7 +262,7 @@ export class NetworkService {
 
       if (isEthereum && name in this.evmApiHandler.api) delete this.evmApiHandler.api[name];
 
-      if (isEthereum && isRequireEvmAPI(name)) this.evmApiHandler.initEvmApi(data);
+      if (isEthereum && isNativeEVMNetwork(name)) this.evmApiHandler.initEvmApi(data);
       else this.substrateApiHandler.initApi(data);
     }
 

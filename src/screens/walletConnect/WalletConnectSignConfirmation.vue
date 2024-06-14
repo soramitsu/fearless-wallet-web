@@ -15,12 +15,13 @@
         <div class="pass-form">
           <ValidatedInput
             v-if="isLocked"
-            v-model="password"
+            :value="password"
             placeholder="common.enterAccountPass"
             errorDescriptions="common.invalidPassword"
             :showPassword="true"
             class="wc-request__input"
             :isError="state.isPassValid"
+            @change="changePassword"
           />
           <Checkbox :value="state.isSavePass" @change="onSavePass" size="medium" :label="$t(min15Label)" />
         </div>
@@ -65,6 +66,7 @@ import { walletConnectRequestReject, walletConnectRequestApprove, isSignLocked }
 import { useStore } from '@/store';
 import { useNotify } from '@/plugins/soramitsuUI';
 import ValidatedInput from '@/components/ValidatedInput.vue';
+
 type Error = { message: TransferErrorCode.UNSUPPORTED | BasicTxErrorCode.KEYRING_ERROR };
 
 const store = useStore();
@@ -155,6 +157,10 @@ const onError = (error: Error) => {
   onReject();
 
   router.back();
+};
+
+const changePassword = (value: string) => {
+  password.value = value;
 };
 
 const onApprove = async () => {

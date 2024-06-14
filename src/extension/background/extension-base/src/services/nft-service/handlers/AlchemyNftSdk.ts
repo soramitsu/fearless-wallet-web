@@ -1,21 +1,26 @@
 import { type Network, Alchemy, type Nft } from 'alchemy-sdk';
 import { type NftService } from '@extension-base/services/nft-service';
 import type { AvailableNftResponse, FearlessNft, NftState } from '@extension-base/services/nft-service/types';
+import type State from '@extension-base/background/handlers/State';
 
 export default class AlchemyNftController {
   sdk: Alchemy;
-  chainId: string;
-  nftService: NftService;
   timespan: Record<string, number>;
 
-  constructor(private network: Network, chainId: string, nftService: NftService) {
+  constructor(private network: Network, public chainId: string, private nftService: NftService, private state: State) {
     this.sdk = new Alchemy({
       apiKey: process.env.FL_WEB_ALCHEMY_API_ETHEREUM_KEY,
       network,
     });
-    this.nftService = nftService;
-    this.chainId = chainId;
+
     this.timespan = {};
+  }
+
+  get readableNetwork() {
+    return (
+      Object.values(this.state.networkMap).find((net) => net.chainId.toLowerCase() === this.chainId.toString())?.name ??
+      this.network
+    );
   }
 
   getNfts(address: string) {
@@ -26,14 +31,6 @@ export default class AlchemyNftController {
 
   getCollectionsForOwner(address: string) {
     return this.sdk.nft.getContractsForOwner(address, { excludeFilters: this.nftService.excludeFilters(address) });
-  }
-
-  get readableNetwork() {
-    return (
-      Object.values(this.nftService.state.networkMap).find(
-        (net) => net.chainId.toLowerCase() === this.chainId.toString()
-      )?.name ?? this.network
-    );
   }
 
   convertNft(nft: Nft): FearlessNft {
@@ -76,9 +73,7 @@ export default class AlchemyNftController {
     const ownedNfts = await this.getNfts(address);
     const collections = await this.getCollectionsForOwner(address);
 
-    const network = Object.values(this.nftService.state.networkMap).find(
-      (net) => net.chainId === this.chainId.toString()
-    );
+    const network = Object.values(this.state.networkMap).find((net) => net.chainId === this.chainId.toString());
     const ownedCollections: NftState = {};
 
     for (const nft of ownedNfts.ownedNfts) {

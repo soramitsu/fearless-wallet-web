@@ -4,7 +4,7 @@
       <div class="history">
         <template v-if="showHistoryAndBook">
           <template v-if="showHistory">
-            <div class="label">
+            <div class="label" data-testid="recentLabel">
               {{ $t('assets.recent') }}
             </div>
 
@@ -17,12 +17,12 @@
                 </div>
               </div>
 
-              <Icon icon="plus-pink" class="plus" @click="setAddress(address)" />
+              <Icon icon="plus-pink" class="plus" data-testid="setAddress" @click="setAddress(address)" />
             </div>
           </template>
 
           <template v-for="[key, addressBook] in splitAddressBook">
-            <div class="label" :key="key">{{ key }}</div>
+            <div class="label" data-testid="labelKey" :key="key">{{ key }}</div>
 
             <div
               v-for="{ name, address } in addressBook"
@@ -34,20 +34,27 @@
                 <Identicon :address="address" />
 
                 <div class="full-description">
-                  <div class="name">{{ name }}</div>
+                  <div class="name" data-testid="name">{{ name }}</div>
 
-                  <div class="address">{{ cut(address) }}</div>
+                  <div class="address" data-testid="address">{{ cut(address) }}</div>
                 </div>
               </div>
             </div>
           </template>
         </template>
 
-        <div v-else>{{ $t('assets.noHistory') }}</div>
+        <div v-else data-testid="noHistory">{{ $t('assets.noHistory') }}</div>
       </div>
     </Scroll>
 
-    <FButton size="big" fontSize="big" width="100%" text="assets.createContact" @click="setAddress(' ')" />
+    <FButton
+      size="big"
+      fontSize="big"
+      width="100%"
+      text="assets.createContact"
+      data-testid="createContactBtn"
+      @click="setAddress(' ')"
+    />
   </div>
 </template>
 

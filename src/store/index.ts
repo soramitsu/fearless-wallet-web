@@ -5,6 +5,7 @@ import account from './accounts';
 import extension from './extension';
 import soraCard from './soraCard';
 import staking from './staking';
+import pools from './pools';
 import type Modules from './types';
 
 const files = require.context('.', false, /\.ts$/);
@@ -15,6 +16,7 @@ const modules: Modules = {
   extension,
   soraCard,
   staking,
+  pools,
 };
 
 files.keys().forEach((key) => {
@@ -39,3 +41,4 @@ export * from './accounts/types';
 export * from './networks/types';
 export * from './soraCard/types';
 export * from './staking/types';
+export * from './pools/types';

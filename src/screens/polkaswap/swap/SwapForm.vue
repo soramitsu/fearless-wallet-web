@@ -48,6 +48,7 @@
               :assetId="sendAssetId"
               :amount="sendAmount"
               :isRotate="isSendAssetType"
+              :showOriginValue="isExchangeB"
               @update:amount="updateSendAmount"
               @setMax="setMax"
               @togglePopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'send')"
@@ -62,6 +63,7 @@
               :assetId="receiveAssetId"
               :amount="receiveAmount"
               :isRotate="isReceiveAssetType"
+              :showOriginValue="!isExchangeB"
               @update:amount="updateReceiveAmount"
               @togglePopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'receive')"
             />
@@ -102,7 +104,6 @@
               :minMaxAmountPrice="minMaxAmountPrice"
               :fee="fee"
               :feePrice="feePrice"
-              :providerFee="providerFee"
               :sendAssetUP="sendAssetUP"
               :receiveAssetUP="receiveAssetUP"
               :isExchangeB="isExchangeB"
@@ -122,7 +123,6 @@
             :minMaxAmountPrice="minMaxAmountPrice"
             :fee="fee"
             :feePrice="feePrice"
-            :providerFee="providerFee"
             :sendAssetUP="sendAssetUP"
             :receiveAssetUP="receiveAssetUP"
             :isExchangeB="isExchangeB"
@@ -131,7 +131,7 @@
         </div>
 
         <div>
-          <Alert v-if="showPolkaswapAlert" message="common.readPolkaswapDisclaimer" headerMessage="common.disclaimer">
+          <Alert v-if="showPolkaswapAlert" message="common.readPolkaswapDisclaimer" headerText="common.disclaimer">
             <div class="alert-content" data-testid="alertContent">
               {{ $t('common.readPolkaswapDisclaimer') }}
 
@@ -217,7 +217,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
 import { Components } from '@/router/routes';
-import { checkSwap, getSoraFees } from '@/extension/messaging';
+import { checkSwap } from '@/extension/messaging';
 import {
   getCurrencyOptions,
   getXORCurrency,
@@ -225,7 +225,7 @@ import {
   isValidAmountAsset,
 } from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
-import { MarketType, type SwapOptions } from '@/interfaces';
+import { MarketType, type SoraFees, type SwapOptions } from '@/interfaces';
 import { addNumbers } from '@/helpers/numbers';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID } from '@/consts/sora';
 
@@ -252,7 +252,6 @@ export default class SwapForm extends Vue {
   sendAmount = '';
   receiveAmount = '';
   minMaxAmount = '';
-  providerFee = '';
   selectAssetType = '';
   route = '';
   AToB = '';
@@ -261,7 +260,6 @@ export default class SwapForm extends Vue {
   showSettings = false;
   showConfirmationPasswordPopup = false;
   isExchangeB = false;
-  fee = '';
   tx: SwapOptions = {} as SwapOptions;
   swapInterval!: NodeJS.Timer;
 
@@ -271,6 +269,11 @@ export default class SwapForm extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
+  @Getter(NetworksGettersTypes.soraFees) soraFees!: Nullable<SoraFees>;
+
+  get fee() {
+    return this.soraFees?.Swap ?? '';
+  }
 
   get showCloseIcon() {
     return this.showSettings;
@@ -541,8 +544,6 @@ export default class SwapForm extends Vue {
 
   created() {
     this.updateComponentParams();
-
-    this.getSoraFees();
   }
 
   activated() {
@@ -570,12 +571,6 @@ export default class SwapForm extends Vue {
     this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
   }
 
-  async getSoraFees() {
-    const { Swap } = await getSoraFees();
-
-    this.fee = Swap;
-  }
-
   async checkSwap() {
     if (this.sendAssetId === '' || this.receiveAssetId === '') {
       if (this.isExchangeB) this.sendAmount = '';
@@ -592,7 +587,7 @@ export default class SwapForm extends Vue {
     }
 
     const createSwap = async () => {
-      const { amountA, amountB, AToB, BToA, fee, swapOptions, minMaxValue, route } = await checkSwap({
+      const { amountA, amountB, AToB, BToA, swapOptions, minMaxValue, route } = await checkSwap({
         network: this.soraNetworkName,
         amountA: this.sendAmount,
         amountB: this.receiveAmount,
@@ -610,7 +605,6 @@ export default class SwapForm extends Vue {
 
       this.tx = swapOptions!;
       this.minMaxAmount = minMaxValue;
-      this.providerFee = fee;
       this.AToB = AToB;
       this.BToA = BToA;
       this.route = route;

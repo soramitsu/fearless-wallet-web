@@ -11,7 +11,7 @@
 
     <CrossChainForm
       v-if="showCrossChainForm"
-      :_originalNetwork="selectedAssetNetwork"
+      :_originalNetwork="selectedLocalNetwork"
       :_selectedAssetId="selectedAssetId"
       @closeForm="toggleVisible('showCrossChainForm', false)"
     />
@@ -20,7 +20,7 @@
       v-if="showHistoryDetailsForm"
       :historyElement="historyElement"
       :assetId="selectedAssetId"
-      :selectedNetwork="selectedAssetNetwork"
+      :selectedNetwork="selectedLocalNetwork"
       @handlerClose="closeHistoryDetailsForm"
     />
 
@@ -99,14 +99,14 @@ export default class Asset extends Vue {
     return this.getNetwork(this.selectedNetwork).icon;
   }
 
-  get selectedAssetNetwork() {
+  get selectedLocalNetwork() {
     return this.$route.params.selectedNetwork ?? '';
   }
 
-  get isSelectedNetworkHistory() {
+  get isHistoryPage() {
     if (!NETWORKS_GROUPS.includes(this.selectedNetwork)) return false;
 
-    return this.selectedAssetNetwork === '';
+    return this.selectedLocalNetwork === '';
   }
 
   get providers() {
@@ -129,9 +129,9 @@ export default class Asset extends Vue {
   }
 
   get displayAddressByNetwork() {
-    if (this.isSelectedNetworkHistory) return BaseApi.formatAddress(this.selectedWallet, this.mainNetwork);
+    if (this.isHistoryPage) return BaseApi.formatAddress(this.selectedWallet, this.mainNetwork);
 
-    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
+    return BaseApi.formatAddress(this.selectedWallet, this.selectedLocalNetwork);
   }
 
   get selectedAssetId() {

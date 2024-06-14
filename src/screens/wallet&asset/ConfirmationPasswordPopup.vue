@@ -9,7 +9,7 @@
         <ValidatedInput
           v-if="isLocked"
           ref="passInput"
-          v-model="password"
+          :value="password"
           placeholder="common.password"
           size="big"
           errorDescriptions="common.invalidPassword"
@@ -19,6 +19,7 @@
           :isError="isErrorPassword"
           :showPassword="true"
           @keypress.native="keypress"
+          @change="changePassword"
         />
 
         <div v-if="isExtension" class="remember-checkbox">
@@ -158,7 +159,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   transactionState: 'pending' | 'success' | 'failed' | null = null;
   showUnknownErrorPopup = false;
 
-  @Ref('passInput') readonly passInputComponent!: ValidatedInput;
+  @Ref('passInput') readonly passInputComponent!: typeof ValidatedInput;
   @Prop({ type: String, default: '0' }) amount!: string;
   @Prop({ type: String, default: '0' }) value!: string;
   @Prop({ type: String, default: '0' }) fee!: string;
@@ -307,6 +308,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   async mounted() {
     if (!IS_EXTENSION || this.isSignMobile) return;
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     this.passInputComponent.input.focus();
     this.resetTxStatus();
 
@@ -336,6 +339,10 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   onSavePassChange(value: boolean) {
     this.isSavePass = value;
+  }
+
+  changePassword(value: string) {
+    this.password = value;
   }
 
   async onSignMobile() {
@@ -398,6 +405,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     if (this.extrinsicType === 'nft') {
       const result = results as ResponseNftTransfer;
+
       this.hash = result.hash;
     }
 

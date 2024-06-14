@@ -94,7 +94,7 @@ async function fetchEthereumHistory(url: string, address: string, contractAddres
   return res.data.result.map(({ timeStamp, value: amount, gasUsed: fee, gasPrice, from, to, hash }, index) => {
     const calcFee = new FPNumber(formatUnits(fee, 'gwei'))
       .mul(new FPNumber(formatUnits(gasPrice, 'gwei')))
-      .bnToString();
+      .toCodecString();
 
     return {
       address,

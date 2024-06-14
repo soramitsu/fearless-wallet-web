@@ -3,7 +3,7 @@
     <div class="add-node-form">
       <div>
         <FInput
-          v-model="network"
+          :value="network"
           placeholder="accounts.network"
           size="big"
           class="row"
@@ -12,23 +12,25 @@
         />
 
         <FInput
-          v-model="name"
+          :value="name"
           placeholder="common.name"
           typeText="uppercase"
           size="big"
           class="row"
           data-testid="name"
           :maxlength="45"
+          @change="changeName"
         />
 
         <ValidatedInput
-          v-model="url"
+          :value="url"
           placeholder="accounts.urlAddress"
           class="row"
           data-testid="urlAddress"
           :errorDescriptions="errorMessage"
           :isError="isError"
           :maxlength="150"
+          @change="changeUrl"
         />
       </div>
 
@@ -122,6 +124,14 @@ export default class EditNodeForm extends Vue {
 
   get buttonDisabled() {
     return this.name === '' || this.urlLength === 0 || this.isError || (!this.isUrlChanged && !this.isNameChanged);
+  }
+
+  changeName(value: string) {
+    this.name = value;
+  }
+
+  changeUrl(value: string) {
+    this.url = value;
   }
 
   mounted() {

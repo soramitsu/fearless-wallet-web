@@ -6,7 +6,7 @@
       <template v-else>
         <div class="export-content">
           <FInput
-            v-model="exportType"
+            :value="exportType"
             placeholder="common.sourceType"
             size="big"
             class="export-type-input"
@@ -15,11 +15,11 @@
           />
 
           <FInput
-            v-model="substrateAddress"
+            :value="substrateAddress"
             class="row"
             size="big"
-            placeholder="Substrate"
             data-testid="addressInput"
+            :placeholder="placeholderJson"
             :readonly="true"
           />
         </div>
@@ -56,6 +56,10 @@ export default class ExportForm extends Vue {
     return this.$route.params.network ?? this.$route.params.selectedNetwork;
   }
 
+  get placeholderJson() {
+    return BaseApi.isEthereumNetwork(this.network) ? 'Ethereum' : 'Substrate';
+  }
+
   get substrateAddress() {
     const json = Object.entries(this.json)
       .sort(([key]) => (key === 'address' ? -1 : 0))
@@ -78,7 +82,7 @@ export default class ExportForm extends Vue {
   }
 
   async keyringPairJson() {
-    return exportAccount(this.addressByNetwork, this.password);
+    return exportAccount(this.addressByNetwork, this.password, this.network);
   }
 
   closeForm() {

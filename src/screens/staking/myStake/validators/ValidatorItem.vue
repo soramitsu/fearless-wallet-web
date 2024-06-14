@@ -7,18 +7,19 @@
         size="medium"
         label=""
         class="validator-checkbox"
+        data-testid="validatorCheckbox"
         @change="onSelect"
       />
 
       <Identicon :address="validator.address" class="ident" />
 
-      <div>{{ validator.name }}</div>
+      <div data-testid="validatorName">{{ validator.name }}</div>
     </div>
 
     <div class="right-part">
-      <div>{{ validator.apy }}%</div>
+      <div data-testid="validatorApy">{{ validator.apy }}%</div>
 
-      <Icon icon="info" :class="iconClasses" />
+      <Icon icon="info" data-testid="validatorInfo" :class="iconClasses" />
 
       <Tooltip :text="validator.description" :target="`.${validator.address}`" placement="left" />
     </div>
@@ -27,7 +28,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { SelectionValidator } from '@/interfaces';
+import type { SelectionValidator, CustomEvent } from '@/interfaces';
 
 @Component
 export default class ValidatorItem extends Vue {
@@ -39,16 +40,17 @@ export default class ValidatorItem extends Vue {
   }
 
   get classes() {
-    return [
-      'validator',
-      {
-        'validator-cursor': !this.showCheckbox,
-      },
-    ];
+    return ['validator', 'validator-cursor'];
   }
 
-  click() {
-    if (!this.showCheckbox) this.$emit('openValidatorInfo', this.validator);
+  click(event: CustomEvent) {
+    if (
+      event.target?.classList.contains('el-checkbox__inner') ||
+      event.target?.classList.contains('el-checkbox__original')
+    )
+      return;
+
+    this.$emit('openValidatorInfo', this.validator);
   }
 
   onSelect(value: boolean) {

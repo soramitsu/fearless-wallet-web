@@ -16,11 +16,10 @@ export class PopupHandler {
   public updateIcon(shouldClose?: boolean): void {
     const numRequests = this.requestService.numRequests;
     const text = numRequests > 0 ? numRequests.toString() : '';
+
     withErrorLog(() => chrome.action.setBadgeText({ text }));
 
-    if (shouldClose && text === '') {
-      this.popupClose();
-    }
+    if (shouldClose && text === '') this.popupClose();
   }
 
   public get popup() {

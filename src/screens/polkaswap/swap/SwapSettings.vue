@@ -1,19 +1,19 @@
 <template>
   <div>
     <FSelect
-      v-model="syncedMarketType"
+      :value="syncedMarketType"
       :options="optionsSubstrateKeyPair"
+      :disabled="false"
       placeholder="assets.market"
       size="big"
       class="row"
-      data-testid="marketType"
+      @change="updateSyncedMarketType"
     />
 
     <ValidatedInput
-      v-model="slippagePercent"
+      :value="slippagePercent"
       placeholder="assets.slippageTolerance"
       class="row"
-      data-testid="slippageTolerance"
       :errorDescriptions="warningMessage"
       :isError="isErrorSlippageInput"
       :readonly="true"
@@ -79,6 +79,10 @@ export default class SwapSettings extends Vue {
 
   setSlippage(value: number) {
     this.syncedSlippage = value;
+  }
+
+  updateSyncedMarketType(value: string) {
+    this.syncedMarketType = value;
   }
 
   getSlippageClasses(value: number) {

@@ -22,6 +22,7 @@ const showAuthDetails = computed(() => route.params.index !== undefined);
 
 const header = computed(() => {
   const authDetailHeader = { text: 'authorize.accountsConnected', localeProps: { url: route.params.index } };
+
   if (showAuthDetails.value) return authDetailHeader;
 
   return 'common.manageDApp';

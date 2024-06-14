@@ -81,8 +81,7 @@ import InfoList from '@/screens/extension-ui/InfoList.vue';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import { useStore, type SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
-import { isSignLocked, validatePassword } from '@/extension/messaging';
-import { ExtensionController } from '@/controllers';
+import { isSignLocked, validatePassword, approveSignPassword } from '@/extension/messaging';
 
 const state = reactive({
   isLocked: true,
@@ -161,9 +160,10 @@ const txInfo = computed(() => ({
 }));
 
 const min15Label = computed((): string => t(state.isLocked ? 'assets.15min' : 'assets.15minExtend').toString());
-const passInputComponent = ref<ValidatedInput>();
+const passInputComponent = ref<typeof ValidatedInput>();
 
-const onSignMobile = () => ExtensionController.approveSignPassword(transactionId.value, false);
+const onSignMobile = () => approveSignPassword(transactionId.value, false);
+
 onMounted(async () => {
   if (isSignMobile.value && isSupportedNetwork) onSignMobile();
 

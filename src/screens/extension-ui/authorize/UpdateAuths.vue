@@ -7,7 +7,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, set, ref, watch } from 'vue';
+import { computed, onMounted, set, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
 import type { AuthUrls } from '@extension-base/background/types/types';
 import { updateAuthorization } from '@/extension/messaging';
@@ -64,19 +64,20 @@ onMounted(async () => {
 
 const onSelect = (value: boolean, name: string) => {
   state.value[name].active = value;
+
   selectAll.value = isAllSelected();
 };
 
-const onSelectAll = (value: boolean) => (selectAll.value = value);
+const onSelectAll = (value: boolean) => {
+  selectAll.value = value;
 
-watch(selectAll, (value: boolean) => {
   Object.keys(state.value).forEach((key) => {
     set(state.value, key, {
       ...state.value[key],
       active: value,
     });
   });
-});
+};
 
 const updateAuths = async () => {
   await updateAuthorization(prepAccounts.value, url.value);

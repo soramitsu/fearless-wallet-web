@@ -46,14 +46,6 @@ export class KeyringService {
     return keyring.accounts.subject.value;
   }
 
-  get addressSubject() {
-    return addressesObservable.subject;
-  }
-
-  get accountSubject() {
-    return accountsObservable.subject;
-  }
-
   setCurrentAccount(currentAccountData: CurrentAccountState) {
     this.currentAccountSubject.next(currentAccountData);
     this.currentAccountStore.set('CurrentAccountInfo', currentAccountData);

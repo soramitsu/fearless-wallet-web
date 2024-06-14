@@ -4,9 +4,9 @@ import { stripUrl } from '@extension-base/background/handlers/helpers';
 import AuthorizeStore from '@extension-base/stores/Authorize';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { getId } from '@extension-base/utils';
-import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
 import { type DAppChainInfoPayload } from '@extension-base/services/request-service/types';
 import { type NetworkJson } from '@extension-base/types';
+import { isNativeEVMNetwork } from '../../../background/utils/utils';
 import type {
   Resolver,
   AuthorizeRequest,
@@ -233,7 +233,7 @@ export class AuthRequestHandler {
     let chainInfo: NetworkJson | undefined;
 
     if (['both', 'evm'].includes(options.accessType)) {
-      const evmChains = Object.values(networks).filter(({ name }) => isRequireEvmAPI(name));
+      const evmChains = Object.values(networks).filter(({ name }) => isNativeEVMNetwork(name));
 
       chainInfo =
         (defaultChain

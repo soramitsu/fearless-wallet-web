@@ -94,6 +94,7 @@ import type {
   RequestNftTransfer,
   FetchEvmBalancePayload,
   RequestCheckScam,
+  AuthUrls,
 } from '@extension-base/background/types/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type {

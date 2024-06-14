@@ -88,13 +88,14 @@ export class WalletConnectDAppService {
 
     const optionalChains = this.state.networkService.networksGithub.flatMap((network) => {
       if (isNativeEVMNetwork(network.name) || !network.chainId) return [];
+
       const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
 
       return [`polkadot:${halfChainId}`];
     });
 
     const optionalEvmChains = this.state.networkService.networksGithub.flatMap((network) => {
-      if (!isRequireEvmAPI(network.name) || !network.chainId) return [];
+      if (!isNativeEVMNetwork(network.name) || !network.chainId) return [];
 
       const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
 

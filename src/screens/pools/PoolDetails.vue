@@ -317,6 +317,8 @@ export default class PoolDetails extends Vue {
   }
 
   get confirmBtnDisabled() {
+    if (this.showSettings) return false;
+
     if (this.step === 1 || this.step === 4) return false;
 
     if (this.step === 2) {

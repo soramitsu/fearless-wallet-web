@@ -1416,6 +1416,7 @@ export default class Extension extends FWExtensionBase {
       const txData = request.request.params.request.params[0] as { to: string; value: string };
 
       const { hash } = await signer.sendTransaction(txData);
+
       request.resolve({ id: request.request.topic, signature: hash as HexString });
     } else {
       const params = request.request.params.request.params;

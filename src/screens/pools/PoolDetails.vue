@@ -225,11 +225,11 @@ export default class PoolDetails extends Vue {
   }
 
   get asset1MyAmount() {
-    return this.$n(+(this.poolParams?.asset1.myAmount ?? 0), 'decimal');
+    return this.$n(+(this.poolParams?.asset1.tokenBalance ?? 0), 'decimal');
   }
 
   get asset2MyAmount() {
-    return this.$n(+(this.poolParams?.asset2.myAmount ?? 0), 'decimal');
+    return this.$n(+(this.poolParams?.asset2.tokenBalance ?? 0), 'decimal');
   }
 
   get asset1PooledStr() {
@@ -284,7 +284,7 @@ export default class PoolDetails extends Vue {
             ...this.currency1!,
             balances: this.currency1!.balances.map((item) => ({
               ...item,
-              transferable: this.poolParams?.asset1.myAmount,
+              transferable: this.poolParams?.asset1.tokenBalance,
             })),
           }
         : this.currency1;
@@ -304,7 +304,7 @@ export default class PoolDetails extends Vue {
             ...this.currency2!,
             balances: this.currency2!.balances.map((item) => ({
               ...item,
-              transferable: this.poolParams?.asset2.myAmount,
+              transferable: this.poolParams?.asset2.tokenBalance,
             })),
           }
         : this.currency2;

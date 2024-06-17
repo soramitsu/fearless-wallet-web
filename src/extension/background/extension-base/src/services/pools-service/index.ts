@@ -172,6 +172,15 @@ export class PoolsService {
 
       const accountLiquidityPool = this.getAccountLiquidityPool(asset1.currencyId!, asset2.currencyId!);
 
+      const { firstTokenBalance, secondTokenBalance } = this.getTokensBalance({
+        amount1: '',
+        amount2: '',
+        assetId1: asset1.id,
+        assetId2: asset2.id,
+        isExchangeB: false,
+        networkName: network,
+      });
+
       return {
         network,
         rewardAsset: 'PSWAP',
@@ -179,14 +188,14 @@ export class PoolsService {
         yourShare: accountLiquidityPool?.poolShare,
         isMyPool: accountLiquidityPool !== undefined,
         asset1: {
-          myAmount: FPNumber.fromCodecValue(accountLiquidityPool?.firstBalance ?? 0).toString(),
+          tokenBalance: firstTokenBalance.toString(),
           id: groupId1,
           reserve: toReserve(value1),
           icon: getSvgUrl(asset1.symbol),
           name: asset1.symbol!,
         },
         asset2: {
-          myAmount: FPNumber.fromCodecValue(accountLiquidityPool?.secondBalance ?? 0).toString(),
+          tokenBalance: secondTokenBalance.toString(),
           id: groupId2,
           reserve: toReserve(value2),
           icon: getSvgUrl(asset2.symbol),
@@ -272,12 +281,12 @@ export class PoolsService {
   }
 
   public getLiquidityBalance(params: DefaultParams): FPNumber {
-    const liquidityInfo = this.getPoolInfo(params);
-    const demeterLockedBalance = this.getDemeterLockedBalance(liquidityInfo);
-    const ceresLockedBalance = this.getCeresLockedBalance(liquidityInfo);
+    const poolInfo = this.getPoolInfo(params);
+    const demeterLockedBalance = this.getDemeterLockedBalance(poolInfo);
+    const ceresLockedBalance = this.getCeresLockedBalance(poolInfo);
     const maxLocked = FPNumber.max(demeterLockedBalance, ceresLockedBalance) as FPNumber;
 
-    return FPNumber.fromCodecValue(liquidityInfo.balance).sub(maxLocked);
+    return FPNumber.fromCodecValue(poolInfo.balance).sub(maxLocked);
   }
 
   public async getReserves(address1: string, address2: string): Promise<Array<CodecString>> {
@@ -347,19 +356,17 @@ export class PoolsService {
   public getPoolAmountValue(params: DefaultParams): string {
     const { isExchangeB } = params;
 
-    const liquidityInfo = this.getPoolInfo(params);
-    const part = this.getPart(liquidityInfo, isExchangeB);
+    const poolInfo = this.getPoolInfo(params);
+    const part = this.getPart(poolInfo, isExchangeB);
 
-    const result = isExchangeB
-      ? part.mul(liquidityInfo.firstBalance.valueFP)
-      : part.mul(liquidityInfo.secondBalance.valueFP);
+    const result = isExchangeB ? part.mul(poolInfo.firstBalance.valueFP) : part.mul(poolInfo.secondBalance.valueFP);
 
     return result.toString();
   }
 
   public getRemoved(params: DefaultParams): string {
-    const liquidityInfo = this.getPoolInfo(params);
-    const part = this.getPart(liquidityInfo, params.isExchangeB);
+    const poolInfo = this.getPoolInfo(params);
+    const part = this.getPart(poolInfo, params.isExchangeB);
     const liquidityBalance = this.getLiquidityBalance(params);
 
     return part.mul(liquidityBalance).toString();
@@ -380,6 +387,25 @@ export class PoolsService {
     return FPNumber.lte(result, FPNumber.ZERO) || FPNumber.gte(result, FPNumber.HUNDRED)
       ? '0'
       : result.toString() || '0';
+  }
+
+  public getTokensBalance(params: DefaultParams) {
+    const { asset1, asset2, firstBalance, secondBalance, balance } = this.getPoolInfo(params);
+
+    const liquidityBalance = this.getLiquidityBalance(params).toString();
+    const balanceFP = FPNumber.fromCodecValue(balance);
+
+    const tokenBalance1 = FPNumber.fromCodecValue(firstBalance.value, asset1.decimals);
+    const tokenBalance2 = FPNumber.fromCodecValue(secondBalance.value, asset2.decimals);
+
+    const firstTokenBalance = tokenBalance1.mul(liquidityBalance).div(balanceFP);
+    const secondTokenBalance = tokenBalance2.mul(liquidityBalance).div(balanceFP);
+
+    return {
+      firstTokenBalance,
+      secondTokenBalance,
+      liquidityBalance,
+    };
   }
 
   public async makePool({ params, type }: MakePoolsRequest): Promise<BasicTxResponse> {
@@ -428,28 +454,19 @@ export class PoolsService {
 
   public async removeLiquidity(params: RequestRemoveLiquidity): Promise<BasicTxResponse> {
     const { amount1, amount2, slippage, isExchangeB } = params;
-    const { asset1, asset2, supply, reserveA, reserveB, firstBalance, secondBalance, balance } =
-      this.getPoolInfo(params);
-
-    const liquidityBalance = this.getLiquidityBalance(params).toString();
-    const balanceFP = FPNumber.fromCodecValue(balance);
-
-    const tokenBalance1 = FPNumber.fromCodecValue(firstBalance.value, asset1.decimals);
-    const tokenBalance2 = FPNumber.fromCodecValue(secondBalance.value, asset2.decimals);
-
-    const firstTokenBalance = tokenBalance1.mul(liquidityBalance).div(balanceFP);
-    const secondTokenBalance = tokenBalance2.mul(liquidityBalance).div(balanceFP);
+    const { asset1, asset2, supply, reserveA, reserveB } = this.getPoolInfo(params);
+    const { firstTokenBalance, secondTokenBalance, liquidityBalance } = this.getTokensBalance(params);
 
     const part1 = new FPNumber(amount1).div(firstTokenBalance);
     const part2 = new FPNumber(amount2).div(secondTokenBalance);
 
-    const liquidityAmount1 = part1.mul(liquidityBalance).toString();
-    const liquidityAmount2 = part2.mul(liquidityBalance).toString();
+    const desiredMarker1 = part1.mul(liquidityBalance).toString();
+    const desiredMarker2 = part2.mul(liquidityBalance).toString();
 
-    const liquidityAmount = isExchangeB ? liquidityAmount2 : liquidityAmount1;
+    const desiredMarker = isExchangeB ? desiredMarker2 : desiredMarker1;
 
     try {
-      await apiSora.poolXyk.remove(asset1, asset2, liquidityAmount, reserveA, reserveB, supply, slippage);
+      await apiSora.poolXyk.remove(asset1, asset2, desiredMarker, reserveA, reserveB, supply, slippage);
     } catch (ex) {
       const message = `[POOLS] Remove Liquidity failed: ${ex}`;
 

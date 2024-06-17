@@ -33,13 +33,15 @@
       <Icon icon="plus-pink" class="img" :hover="false" />
     </div>
 
-    <div class="slider-info">
-      <div class="slider-value">{{ percent }}%</div>
+    <template v-if="isRemoveLiquidity">
+      <div class="slider-info">
+        <div class="slider-value">{{ percent }}%</div>
 
-      <EllipseButton text="common.max" :disabled="percentIsMax" @click="updateValue" />
-    </div>
+        <EllipseButton text="common.max" :disabled="percentIsMax" @click="updatePercent" />
+      </div>
 
-    <Slider :value="percent" class="percent-slider" @updateValue="updateValue" />
+      <Slider :value="percent" class="percent-slider" @updateValue="updatePercent" />
+    </template>
   </div>
 </template>
 
@@ -80,13 +82,13 @@ export default class InputsForm extends Vue {
   }
 
   get transferableAmount1() {
-    if (this.isRemoveLiquidity) return this.poolParams.asset1.myAmount;
+    if (this.isRemoveLiquidity) return this.poolParams.asset1.tokenBalance;
 
     return this.poolParams.asset1.transferableAmount;
   }
 
   get transferableAmount2() {
-    if (this.isRemoveLiquidity) return this.poolParams.asset2.myAmount;
+    if (this.isRemoveLiquidity) return this.poolParams.asset2.tokenBalance;
 
     return this.poolParams.asset2.transferableAmount;
   }
@@ -105,10 +107,6 @@ export default class InputsForm extends Vue {
 
   get asset2() {
     return this.poolParams.asset2.name;
-  }
-
-  get asset1Amount() {
-    return this.poolParams.asset1.myAmount;
   }
 
   get assetPrice1() {
@@ -174,10 +172,7 @@ export default class InputsForm extends Vue {
       this.syncedAmount2 = await getAmountPoolValue(this.poolValueParams);
 
       const percent = Math.round(
-        new FPNumber(this.syncedAmount1)
-          .div(new FPNumber(this.poolParams.asset1.myAmount))
-          .mul(FPNumber.HUNDRED)
-          .toNumber()
+        new FPNumber(this.syncedAmount1).div(new FPNumber(this.transferableAmount1)).mul(FPNumber.HUNDRED).toNumber()
       );
 
       this.percent = Math.min(percent, 100);
@@ -199,10 +194,7 @@ export default class InputsForm extends Vue {
       this.syncedAmount1 = await getAmountPoolValue(this.poolValueParams);
 
       const percent = Math.round(
-        new FPNumber(this.syncedAmount2)
-          .div(new FPNumber(this.poolParams.asset2.myAmount))
-          .mul(FPNumber.HUNDRED)
-          .toNumber()
+        new FPNumber(this.syncedAmount2).div(new FPNumber(this.transferableAmount2)).mul(FPNumber.HUNDRED).toNumber()
       );
 
       this.percent = Math.min(percent, 100);
@@ -210,17 +202,33 @@ export default class InputsForm extends Vue {
   }
 
   updateAmount1(value: string) {
-    const isOverValue = FPNumber.gt(new FPNumber(value), new FPNumber(this.poolParams.asset1.myAmount));
+    const isOverValue = FPNumber.gt(new FPNumber(value), new FPNumber(this.transferableAmount1));
 
-    this.syncedAmount1 = this.isRemoveLiquidity && isOverValue ? this.poolParams.asset1.myAmount : value;
+    if (this.isRemoveLiquidity && isOverValue) {
+      this.isPercentChanging = true;
+
+      this.setMax(this.syncedIsExchangeB);
+
+      return;
+    }
+
+    this.syncedAmount1 = value;
     this.syncedIsExchangeB = false;
     this.isPercentChanging = false;
   }
 
   updateAmount2(value: string) {
-    const isOverValue = FPNumber.gt(new FPNumber(value), new FPNumber(this.poolParams.asset2.myAmount));
+    const isOverValue = FPNumber.gt(new FPNumber(value), new FPNumber(this.transferableAmount2));
 
-    this.syncedAmount2 = this.isRemoveLiquidity && isOverValue ? this.poolParams.asset2.myAmount : value;
+    if (this.isRemoveLiquidity && isOverValue) {
+      this.isPercentChanging = true;
+
+      this.setMax(this.syncedIsExchangeB);
+
+      return;
+    }
+
+    this.syncedAmount2 = value;
     this.syncedIsExchangeB = true;
     this.isPercentChanging = false;
   }
@@ -232,22 +240,17 @@ export default class InputsForm extends Vue {
   }
 
   setMax(isExchangeB: boolean) {
-    this.isPercentChanging = false;
-
-    if (this.isRemoveLiquidity) {
+    if (this.isRemoveLiquidity) this.updatePercent(100);
+    else {
       this.syncedIsExchangeB = isExchangeB;
-
-      if (isExchangeB) this.syncedAmount2 = this.transferableAmount2;
-      else this.syncedAmount1 = this.transferableAmount1;
-    } else {
-      this.syncedIsExchangeB = isExchangeB;
+      this.isPercentChanging = false;
 
       if (isExchangeB) this.syncedAmount2 = this.calcTransferableSendMinusFee(isExchangeB);
       else this.syncedAmount1 = this.calcTransferableSendMinusFee(isExchangeB);
     }
   }
 
-  updateValue(percent = 100) {
+  updatePercent(percent = 100) {
     this.percent = percent;
     this.isPercentChanging = true;
     this.syncedIsExchangeB = false;

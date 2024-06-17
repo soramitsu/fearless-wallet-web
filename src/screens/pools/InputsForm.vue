@@ -56,9 +56,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { getAmountPoolValue } from '@/extension/messaging';
 
-@Component({
-  components: {},
-})
+@Component({})
 export default class InputsForm extends Vue {
   percent = 0;
   isPercentChanging = false;
@@ -165,8 +163,8 @@ export default class InputsForm extends Vue {
       if (this.poolParams.asset1.reserve === '0') return;
 
       this.syncedAmount2 = new FPNumber(this.syncedAmount1)
-        .mul(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
-        .div(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
+        .mul(new FPNumber(this.poolParams.asset2.reserve))
+        .div(new FPNumber(this.poolParams.asset1.reserve))
         .toString();
     } else {
       this.syncedAmount2 = await getAmountPoolValue(this.poolValueParams);
@@ -187,8 +185,8 @@ export default class InputsForm extends Vue {
       if (this.poolParams.asset2.reserve === '0') return;
 
       this.syncedAmount1 = new FPNumber(this.syncedAmount2)
-        .mul(FPNumber.fromCodecValue(this.poolParams.asset1.reserve))
-        .div(FPNumber.fromCodecValue(this.poolParams.asset2.reserve))
+        .mul(new FPNumber(this.poolParams.asset1.reserve))
+        .div(new FPNumber(this.poolParams.asset2.reserve))
         .toString();
     } else {
       this.syncedAmount1 = await getAmountPoolValue(this.poolValueParams);

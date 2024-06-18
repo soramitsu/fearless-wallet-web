@@ -28,7 +28,7 @@ type Props = {
   value: string;
   placeholder: string;
   options: Option[];
-  disabled: boolean;
+  disabled?: boolean;
   size?: Size;
 };
 

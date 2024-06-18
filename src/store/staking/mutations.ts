@@ -26,6 +26,8 @@ const mutations: MutationTree<State> & Mutations = {
 
       state.allStakingNetworks.splice(index, 1, newItem);
     });
+
+    state.allStakingNetworks = [...state.allStakingNetworks];
   },
 
   [MutationTypes.CLEAR_STAKING_PARAMS](state) {
@@ -36,7 +38,7 @@ const mutations: MutationTree<State> & Mutations = {
       });
     });
 
-    return;
+    state.allStakingNetworks = [...state.allStakingNetworks];
   },
 
   [MutationTypes.UPDATE_MY_STAKING_INFO](state, { network, stakingInfo }) {
@@ -47,6 +49,8 @@ const mutations: MutationTree<State> & Mutations = {
       ...oldItem,
       ...stakingInfo,
     });
+
+    state.allStakingNetworks = [...state.allStakingNetworks];
   },
 };
 

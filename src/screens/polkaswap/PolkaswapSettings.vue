@@ -1,6 +1,7 @@
 <template>
   <div>
     <FSelect
+      v-if="showMarketType"
       :value="syncedMarketType"
       :options="optionsSubstrateKeyPair"
       :disabled="false"
@@ -40,7 +41,7 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { MarketType } from '@/interfaces';
 
 @Component
-export default class SwapSettings extends Vue {
+export default class PolkaswapSettings extends Vue {
   readonly optionsSubstrateKeyPair = [
     { label: MarketType.SMART, value: MarketType.SMART },
     { label: MarketType.TBC, value: MarketType.TBC },
@@ -59,6 +60,10 @@ export default class SwapSettings extends Vue {
   @Prop({ default: '' }) text!: string;
   @PropSync('temporaryMarketType', { type: String }) syncedMarketType!: string;
   @PropSync('temporarySlippage', { type: Number }) syncedSlippage!: number;
+
+  get showMarketType() {
+    return this.syncedMarketType !== undefined;
+  }
 
   get slippagePercent() {
     return `${this.syncedSlippage} %`;

@@ -54,7 +54,7 @@ const props = withDefaults(defineProps<FInputProps>(), {
   size: 'big',
   type: 'text',
   typeText: 'none',
-  maxlength: 999,
+  maxlength: 50,
   readonly: false,
   disabled: false,
   showPassword: false,
@@ -93,6 +93,7 @@ defineExpose({ input });
     text-align: left;
     margin-top: 15px;
   }
+
   .warning {
     color: #ee7700;
     width: 16px;

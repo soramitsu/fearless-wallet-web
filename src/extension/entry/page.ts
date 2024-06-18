@@ -5,6 +5,8 @@ import type { Message } from '@extension-base/types';
 import type { MessageTypes, TransportRequestMessage } from '@extension-base/background/types/types';
 import { APP_VERSION } from '@/consts/global';
 
+console.info('page.ts initialization');
+
 class Page {
   private inject() {
     // small helper with the typescript types, just cast window

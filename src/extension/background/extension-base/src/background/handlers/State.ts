@@ -10,6 +10,7 @@ import {
   OnboardingService,
   KeyringService,
   StakingService,
+  PoolsService,
   NetworkService,
   RequestService,
   WalletConnectService,
@@ -93,6 +94,7 @@ export default class State {
   public nftService = new NftService(this);
   public soraCardService = new SoraCardService(this.requestService);
   public stakingService = new StakingService(this);
+  public poolsService = new PoolsService(this);
   public googleService = new GoogleService();
   public cronService = new CronService(this);
   public scamService = new ScamService(this);
@@ -106,14 +108,6 @@ export default class State {
 
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
-  }
-
-  public get networkValues() {
-    return this.networkService.networkValues;
-  }
-
-  public get assetsMap() {
-    return this.networkValues.map(({ assets }) => assets).flat();
   }
 
   public getEvmApi(key: string) {
@@ -137,9 +131,7 @@ export default class State {
   }
 
   public cancelSubscription(id: string): boolean {
-    if (isSubscriptionRunning(id)) {
-      unsubscribe(id);
-    }
+    if (isSubscriptionRunning(id)) unsubscribe(id);
 
     if (this.unsubscriptionMap[id]) {
       this.unsubscriptionMap[id]();
@@ -314,7 +306,7 @@ export default class State {
 
   getActiveNetworksCurrentWallet(address: string) {
     const uniqNetworks = new Set<NetworkJson>();
-    const networks = this.networkValues;
+    const networks = this.networkService.networkValues;
     const selectedNetwork = this.networkService.selectedNetworks[address];
 
     if (selectedNetwork === ALL_NETWORKS) return networks;
@@ -484,20 +476,20 @@ export default class State {
     return true;
   }
 
-  public setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null, updateNetworks = true): void {
+  public setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null): void {
     this.keyringService.setCurrentAccount(data);
 
-    if (updateNetworks) {
-      // logic for Sora library
-      if (data?.address && !data.isMobile) {
-        const pair = this.keyringService.getPair(data?.address)!;
+    // logic for Sora library
+    if (data?.address && !data.isMobile) {
+      this.poolsService.unsubscribePools();
 
-        apiSora.account = { json: null as any, pair };
-        apiSora.bridgeProxy.sub.account = { json: null as any, pair };
+      const pair = this.keyringService.getPair(data?.address)!;
 
-        // TODO добавить фича тогл
-        this.subscribeTotalXorBalance();
-      }
+      apiSora.account = { json: null as any, pair };
+      apiSora.bridgeProxy.sub.account = { json: null as any, pair };
+
+      // TODO добавить фича тогл
+      // this.subscribeTotalXorBalance();
     }
 
     this.updateServiceInfo();
@@ -605,7 +597,7 @@ export default class State {
 
     if (ethereumAddress === '') return;
 
-    const activeEvmNetworks = this.networkValues.filter(({ name, active }) => {
+    const activeEvmNetworks = this.networkService.networkValues.filter(({ name, active }) => {
       if (_networks && !_networks.includes(name)) return false;
 
       if (!active || !isNativeEVMNetwork(name)) return false;

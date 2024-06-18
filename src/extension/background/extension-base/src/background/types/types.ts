@@ -200,7 +200,6 @@ export interface RequestMobileSign {
 export interface PriceJson {
   ready?: boolean;
   currency: string;
-  priceMap: Record<string, number>;
   tokenPriceMap: Record<string, number>;
   tokenPriceChange: Record<string, number>;
 }
@@ -211,6 +210,8 @@ export enum TransferErrorCode {
   SWAP_ERROR = 'swapError',
   BOND_ERROR = 'bondError',
   BONDEXTRA_ERROR = 'bondExtraError',
+  ADD_LIQUIDITY_ERROR = 'addLiquidityError',
+  REMOVE_LIQUIDITY_ERROR = 'removeLiquidityError',
   UNBOND_ERROR = 'unbondError',
   REBOND_ERROR = 'rebondError',
   REDEEM_ERROR = 'redeemError',

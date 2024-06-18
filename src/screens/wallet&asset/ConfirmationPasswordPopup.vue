@@ -130,13 +130,15 @@ import {
   type ResponseMakeSwap,
   type ResponseNftTransfer,
 } from '@extension-base/background/types/types';
-import { type RequestStaking } from '@extension-base/services/staking-service/types';
-import { type NftTx } from '@extension-base/services/nft-service/types';
+import type { RequestStaking } from '@extension-base/services/staking-service/types';
+import type { RequestPool } from '@extension-base/services/pools-service/types';
+import type { NftTx } from '@extension-base/services/nft-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { SwapOptions, StakingOperation } from '@/interfaces';
 import type { GetNetwork, GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
-import { isSignLocked, makeSwap, makeTransfer, makeCrossChain, makeStaking } from '@/extension/messaging';
+import type { PoolsOperation } from '@/interfaces/pools';
+import { isSignLocked, makeSwap, makeTransfer, makeCrossChain, makeStaking, makePool } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
@@ -167,8 +169,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) firstIcon!: string;
   @Prop(String) secondIcon!: string;
   @Prop(Object) currency?: TokenGroup;
-  @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain | RequestStaking | SwapOptions | NftTx;
-  @Prop(String) extrinsicType!: 'transfer' | 'crossChain' | 'swap' | 'nft' | StakingOperation;
+  @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain | RequestStaking | SwapOptions | NftTx | RequestPool;
+  @Prop(String) extrinsicType!: 'transfer' | 'crossChain' | 'swap' | 'nft' | StakingOperation | PoolsOperation;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -202,7 +204,11 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.extrinsicType === 'crossChain')
       return this.networks.find(({ name }) => name.toLowerCase() === this.secondIcon.toLowerCase())?.icon ?? '';
 
-    return this.balances.find(({ groupId }) => groupId === this.secondIcon)?.icon;
+    const tokenGroup = this.balances.find(({ groupId }) => groupId === this.secondIcon);
+
+    if (tokenGroup) return tokenGroup.icon;
+
+    return this.secondIcon;
   }
 
   get request() {
@@ -284,6 +290,10 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   get isTransactionFinished() {
     return this.isSuccess || this.isFailed;
+  }
+
+  get isPool() {
+    return this.extrinsicType === 'addLiquidity' || this.extrinsicType === 'removeLiquidity';
   }
 
   get isStaking() {
@@ -380,8 +390,14 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     if (this.isStaking)
       return makeStaking({
-        type: this.extrinsicType,
+        type: this.extrinsicType as StakingOperation,
         params: this.request as RequestStaking,
+      });
+
+    if (this.isPool)
+      return makePool({
+        type: this.extrinsicType as PoolsOperation,
+        params: this.request as RequestPool,
       });
   }
 
@@ -426,6 +442,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     // функции выполняются через "@sora-substrate/util, для них не работают колбеки с подпиской
     if (
       this.isStaking ||
+      this.isPool ||
       this.extrinsicType === 'swap' ||
       this.extrinsicType === 'nft' ||
       (this.extrinsicType === 'crossChain' && isSora(txCross.originNet))

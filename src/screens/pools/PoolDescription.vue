@@ -8,16 +8,17 @@
 
     <InfoRow v-if="showAdditionalInfo" text="pools.yourPoolShare" :value="yourShare" />
 
-    <Tooltip text="assets.networkFeeSora" target=".network-fee" placement="right" />
+    <template v-if="showAdditionalInfo && isActivityForm">
+      <Tooltip text="assets.networkFeeSora" target=".network-fee" placement="right" />
 
-    <InfoRow
-      v-if="showAdditionalInfo && isActivityForm"
-      text="assets.networkFee"
-      :value="fee ? `${fee} ${soraMainAsset}` : undefined"
-      :price="`${fiatSymbol} ${feePrice}`"
-      icon="info"
-      :iconClasses="['network-fee']"
-    />
+      <InfoRow
+        text="assets.networkFee"
+        :value="fee ? `${fee} ${soraMainAsset}` : undefined"
+        :price="`${fiatSymbol} ${feePrice}`"
+        icon="info"
+        :iconClasses="['network-fee']"
+      />
+    </template>
   </div>
 </template>
 

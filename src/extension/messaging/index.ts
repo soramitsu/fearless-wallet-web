@@ -67,6 +67,7 @@ function sendMessage<TMessageType extends MessageTypes>(
     const id = getId(message);
 
     handlers[id] = { reject, resolve, subscriber };
+
     port?.postMessage({ id, message, request: request || {} });
   });
 }
@@ -76,6 +77,7 @@ connect();
 export { sendMessage, connect };
 
 export * from '@/extension/messaging/staking';
+export * from '@/extension/messaging/pools';
 export * from '@/extension/messaging/accounts';
 export * from '@/extension/messaging/transfers';
 export * from '@/extension/messaging/substrate-requests';

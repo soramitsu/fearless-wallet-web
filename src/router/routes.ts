@@ -1,11 +1,17 @@
 import { type RouteConfig } from 'vue-router';
-import store, { type NetworkParams } from '@/store';
+import {
+  getStakingNetwork,
+  haveAuthRequests,
+  haveMetaRequests,
+  haveSelectedWallet,
+  haveSignRequests,
+  showSoraCard,
+} from './helpers';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
-import { type NetworkName } from '@/interfaces';
 import WcAuths from '@/screens/extension-ui/WcAuths.vue';
 import DAppsAuths from '@/screens/extension-ui/DAppsAuths.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
@@ -19,7 +25,7 @@ const Accounts = () => import('@/screens/accounts/Accounts.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
 const MobileWalletAuth = () => import('@/screens/mobile-wallet/MobileWalletAuth.vue');
 const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue');
-const AuthManagment = () => import('@/screens/extension-ui/AuthManagment.vue');
+const AuthManagement = () => import('@/screens/extension-ui/AuthManagement.vue');
 const ManageAuths = () => import('@/screens/extension-ui/ManageAuths.vue');
 const UpdateAuths = () => import('@/screens/extension-ui/authorize/UpdateAuths.vue');
 
@@ -37,11 +43,11 @@ const AssetNetworks = () =>
   import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetNetworks.vue');
 const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetHistory.vue');
 
-const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
 const SendForm = () => import('@/screens/wallet&asset/SendForm.vue');
 const ReceiveForm = () => import('@/screens/wallet&asset/ReceiveForm.vue');
 
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
+const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
 const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/Disclaimer.vue');
 
 const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/AddWallet.vue');
@@ -50,6 +56,9 @@ const CreateGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screen
 
 const MyStake = () => import(/* webpackChunkName: "staking */ '@/screens/staking/myStake/MyStake.vue');
 const Staking = () => import(/* webpackChunkName: "staking */ '@/screens/staking/StakingPage.vue');
+
+const Pools = () => import(/* webpackChunkName: "pools */ '@/screens/pools/PoolsPage.vue');
+const PoolDetails = () => import(/* webpackChunkName: "pools */ '@/screens/pools/PoolDetails.vue');
 
 export enum Components {
   Welcome = 'Welcome',
@@ -78,6 +87,8 @@ export enum Components {
   SoraCard = 'SoraCard',
   Staking = 'Staking',
   MyStake = 'MyStake',
+  Pools = 'Pools',
+  PoolDetails = 'PoolDetails',
   NoFound = 'NoFound',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
@@ -97,17 +108,6 @@ export enum Components {
   NftCollection = 'NftCollection',
   NftSendForm = 'NftSendForm',
 }
-
-const haveSelectedWallet = () => {
-  return store.getters.selectedWallet.address.length !== 0;
-};
-
-const haveAuthRequests = (): number => store.getters.authList.length;
-const haveSignRequests = (): number => store.getters.signList.length;
-const haveMetaRequests = (): number => store.getters.metaRequests.length;
-const showSoraCard = (): boolean => store.getters.features?.fiat?.soraCard;
-const getStakingNetwork = async (network: NetworkName): Promise<NetworkParams> =>
-  await new Promise((res) => setTimeout(() => res(store.getters.getStakingNetwork(network)), 100));
 
 const routes: Array<RouteConfig> = [
   {
@@ -240,7 +240,7 @@ const routes: Array<RouteConfig> = [
   },
   {
     path: '/auth-management',
-    component: AuthManagment,
+    component: AuthManagement,
     children: [
       {
         path: '/',
@@ -290,6 +290,22 @@ const routes: Array<RouteConfig> = [
     component: SoraSwap,
     meta: {
       title: 'soraSwap',
+    },
+  },
+  {
+    path: '/pools',
+    name: Components.Pools,
+    component: Pools,
+    meta: {
+      title: 'pools',
+    },
+  },
+  {
+    path: '/pool-details/:poolName',
+    name: Components.PoolDetails,
+    component: PoolDetails,
+    meta: {
+      title: 'poolDetails',
     },
   },
   {

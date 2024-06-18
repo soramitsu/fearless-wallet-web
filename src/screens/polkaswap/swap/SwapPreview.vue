@@ -1,24 +1,13 @@
 <template>
   <div>
-    <ContentForm class="direction-form">
-      <div class="direction">
-        <div class="column left-column">
-          <div class="amount" data-testid="sendAmount">{{ sendAmountCut }}</div>
-          <div class="price" data-testid="sendPrice">{{ sendValueCut }}</div>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="chevron-right">
-          <Icon icon="chevron-right" class="img" />
-        </div>
-
-        <div class="column right-column">
-          <div class="amount" data-testid="receiveAmount">{{ receiveAmountCut }}</div>
-          <div class="price" data-testid="receivePrice">{{ receiveValueCut }}</div>
-        </div>
-      </div>
-    </ContentForm>
+    <DirectionContentForm
+      :asset1="sendAssetUP"
+      :asset2="receiveAssetUP"
+      :amount1="sendAmount"
+      :amount2="receiveAmount"
+      :value1="sendValue"
+      :value2="receiveValue"
+    />
 
     <ContentForm>
       <SwapInfo
@@ -43,8 +32,6 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
 
 @Component({
@@ -65,113 +52,5 @@ export default class SwapPreview extends Vue {
   @Prop({ default: '' }) receiveAssetUP!: string;
   @Prop({ default: '' }) route!: string;
   @Prop(Boolean) isExchangeB!: boolean;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-
-  get sendAmountCut() {
-    return `${this.$n(+this.sendAmount, 'decimal')} ${this.sendAssetUP}`;
-  }
-
-  get receiveAmountCut() {
-    return `${this.$n(+this.receiveAmount, 'decimal')} ${this.receiveAssetUP}`;
-  }
-
-  get sendValueCut() {
-    return `${this.fiatSymbol} ${this.$n(+this.sendValue, 'price')}`;
-  }
-
-  get receiveValueCut() {
-    return `${this.fiatSymbol} ${this.$n(+this.receiveValue, 'price')}`;
-  }
 }
 </script>
-
-<style lang="scss" scoped>
-.direction-form {
-  margin-bottom: 16px !important;
-
-  .direction {
-    padding: 24px 16px;
-    display: flex;
-    justify-content: space-between;
-    height: 95px;
-
-    .column {
-      display: flex;
-      flex-direction: column;
-      width: 245px;
-      max-width: 220px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-
-      .amount {
-        font-weight: 800;
-        font-size: 22px;
-        color: white;
-        margin-bottom: 5px;
-
-        .price {
-          font-size: 12px;
-          color: $gray-color;
-        }
-      }
-    }
-
-    .left-column {
-      text-align: left;
-    }
-
-    .right-column {
-      text-align: right;
-    }
-
-    .hr {
-      height: 95px;
-      margin: -24px auto 0;
-      width: 1px;
-      border-left: 2px solid $secondary-background-color;
-    }
-  }
-}
-
-.row {
-  margin: 0 16px;
-  height: 55px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: $secondary-border;
-
-  .value {
-    text-align: right;
-
-    .price {
-      color: $gray-color;
-    }
-  }
-}
-
-.chevron-right {
-  border-radius: 50%;
-  background-color: rgb(29, 29, 29);
-  width: 46px;
-  height: 46px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: -46px auto 0;
-  border: $secondary-border;
-  opacity: 1;
-  position: absolute;
-  top: 70px;
-  left: 241px;
-  cursor: pointer;
-}
-
-.img {
-  height: 20px;
-  width: 20px;
-  margin-left: 4px;
-  color: #ee0077;
-}
-</style>

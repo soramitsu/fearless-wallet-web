@@ -8,8 +8,8 @@ import type { FWEvmProvider } from '@extension-base/page/types';
 import type Injected from '@extension-base/page/Injected';
 import type { Message } from '@extension-base/types';
 import type { MessageTypes, TransportRequestMessage } from '@extension-base/background/types/types';
+import type { InjectedWindow } from '@/extension/entry/types';
 import { APP_VERSION } from '@/consts/global';
-import { type InjectedWindow } from '@/extension/entry/types';
 
 const win = window as Window & InjectedWindow;
 const walletKey = 'fearlessWallet';
@@ -125,8 +125,6 @@ class FearlessWalletPlaceholder {
   }
 }
 
-win.injectedWeb3 = win.injectedWeb3 || {};
-
 if (!win.injectedWeb3[walletKey]) {
   win.injectedWeb3[walletKey] = {
     isPlaceholder: true,
@@ -177,6 +175,7 @@ const announceProvider = () => {
     },
     provider: win.fearlessWallet,
   });
+
   const event = new CustomEvent('eip6963:announceProvider', { detail });
 
   window.dispatchEvent(event);
@@ -185,6 +184,7 @@ const announceProvider = () => {
 win.addEventListener('eip6963:requestProvider', announceProvider);
 
 announceProvider();
+
 class Page {
   version: string = packages.version;
 
@@ -200,6 +200,7 @@ class Page {
       version: APP_VERSION,
     };
   }
+
   // Inject EVM Provider
   injectEvmExtension(evmProvider: FWEvmProvider): void {
     // small helper with the typescript types, just cast window

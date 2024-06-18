@@ -114,7 +114,11 @@
             <div class="asset-logo">
               <Icon icon="asset-background" class="asset-background" :hover="false" />
 
-              <AssetIcon :icon="stakingCurrency.icon" :shadowColor="stakingCurrency.color" class="asset-highlight" />
+              <AssetHighlightIcon
+                :icon="stakingCurrency.icon"
+                :shadowColor="stakingCurrency.color"
+                class="asset-highlight"
+              />
             </div>
 
             <ContentForm :height="200" :isStaticHeight="true" :bottomRightCorner="true">

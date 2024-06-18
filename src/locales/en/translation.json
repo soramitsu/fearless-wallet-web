@@ -172,8 +172,8 @@
     "wallet": "Wallet",
     "crowdloans": "Crowdloans",
     "staking": "Staking",
-    "polkaswap": "Polkaswap",
-    "history": "History"
+    "pools": "Pools",
+    "polkaswap": "Polkaswap"
   },
   "wallet": {
     "currencies": "Currencies",
@@ -236,6 +236,7 @@
     "polkaswap": "Polkaswap",
     "resetToDefault": "Reset to default",
     "swapSettings": "Swap settings",
+    "poolSettings": "Pool settings",
     "from": "From",
     "to": "To",
     "assetsAmount": "Assets Amount",
@@ -637,6 +638,25 @@
       }
     }
   },
+  "pools": {
+    "noPools": "Selected networks do not have pools",
+    "myPools": "My pools",
+    "pool": "Pool",
+    "poolDetails": "Pool Details",
+    "supply": "Supply",
+    "remove": "Remove",
+    "supplyLiquidity": "Supply liquidity",
+    "removeLiquidity": "Remove liquidity",
+    "confirmSupply": "Confirm supply",
+    "yourPoolShare": "Your pool share",
+    "rewardsPayout": "Rewards payout in",
+    "yourPooled": "Your {asset} pooled",
+    "stakeYourPoolShare": "Stake your pool share for extra rewards",
+    "liquidityPools": "Liquidity pools",
+    "showDetails": "Show details",
+    "emptyLiquidityWarning": "The ratio of tokens you add will set the price of this pool. Once you are happy with the rate click supply to review.",
+    "removeWarning": "Removing pool tokens converts your position back into underlying tokens at the current rate, proportional to your share of the pool. Accrued fees are included in the amounts you receive."
+  },
   "browserTabs": {
     "welcome": "Welcome",
     "onboarding": "Onboarding",
@@ -656,7 +676,9 @@
     "crowdloans": "Crowdloans",
     "staking": "Staking",
     "myStake": "My staking",
-    "polkaswap": "Polkaswap"
+    "polkaswap": "Polkaswap",
+    "pools": "Pools",
+    "poolDetails": "Pool Details"
   },
   "nft": {
     "owned": "Owned",

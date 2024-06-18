@@ -39,7 +39,7 @@
                 />
               </template>
 
-              <template v-else->
+              <template v-else>
                 <MyStakingItem v-for="item in filteredMyStakingItems" :key="item.network" :stakingNetwork="item" />
               </template>
             </template>
@@ -85,7 +85,6 @@ import { getCostOfAssets } from '@/controllers/transferHelpers';
   },
 })
 export default class StakingPage extends Vue {
-  showNetworkManagement = false;
   activeTabName: StakingTab | '' = '';
   filterValue = '';
   isLoading = false;

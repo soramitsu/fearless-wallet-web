@@ -1,61 +1,70 @@
 <template>
   <div class="import-wallet">
     <FSelect
-      v-model="typeImport"
+      :value="typeImport"
       placeholder="common.sourceType"
       size="big"
       class="row"
       :options="optionsImport"
       :disabled="disabledSelect"
       data-testid="sourceTypeSelect"
+      @change="changeTypeImport"
     />
 
     <FInput
       v-if="notJsonImport"
-      v-model="inputValue"
       ref="valueInput"
       type="textarea"
       class="row"
       size="big"
+      data-testid="textarea"
       :placeholder="placeholderTypeImportValue"
       :maxlength="130"
       :height="170"
-      data-testid="textarea"
+      :value="inputValue"
+      @change="changeInputValue"
     />
 
     <template v-else>
       <div class="row">
         <FInput
-          v-model="inputValue"
+          data-testid="textFile"
           type="text-file"
           size="big"
           accept="application/JSON"
           :placeholder="placeholderTypeImportValue"
           :readonly="true"
-          data-testid="textFile"
+          :value="inputValue"
+          @change="changeInputValue"
         />
 
         <FInput
-          v-model="syncedPasswordJson"
           size="big"
           placeholder="common.password"
           class="row"
-          :showPassword="true"
           data-testid="password"
+          :showPassword="true"
+          :value="syncedPasswordJson"
+          @change="changeSyncedPasswordJson"
         />
       </div>
     </template>
 
-    <slot v-if="showSlot"></slot>
+    <AdvancedButton v-if="showSlot" @click="toggleAdvancedFormVisible" />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch, VModel, PropSync, Ref } from 'vue-property-decorator';
 import type { ImportType } from '@/interfaces';
-import type Input from '@/components/Input.vue';
+import type FInput from '@/components/FInput.vue';
+import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 
-@Component
+@Component({
+  components: {
+    AdvancedButton,
+  },
+})
 export default class ImportWallet extends Vue {
   readonly optionsImport = [
     { label: 'Mnemonic passphrase', value: 'mnemonic' },
@@ -72,7 +81,7 @@ export default class ImportWallet extends Vue {
   @Prop(Number) step!: number;
   @Prop(Boolean) isOnlyEthereumAccount!: boolean;
   @PropSync('passwordJson', { type: String }) syncedPasswordJson!: string;
-  @Ref('valueInput') readonly valueInputComponent!: Input;
+  @Ref('valueInput') readonly valueInputComponent!: typeof FInput;
 
   get inputValue() {
     return this[this.field];
@@ -92,9 +101,7 @@ export default class ImportWallet extends Vue {
     }
 
     // typeImport === 'json'
-    if (this.isOnlyEthereumAccount) {
-      return 'ethereumJson';
-    }
+    if (this.isOnlyEthereumAccount) return 'ethereumJson';
 
     return this.step === 1 ? 'substrateJson' : 'ethereumJson';
   }
@@ -147,6 +154,22 @@ export default class ImportWallet extends Vue {
 
   t(value: string, obj: Record<string, string> = {}) {
     return this.$t(`addWallet.${value}`, obj);
+  }
+
+  toggleAdvancedFormVisible() {
+    this.$emit('toggleAdvancedFormVisible');
+  }
+
+  changeInputValue(value: string) {
+    this.inputValue = value;
+  }
+
+  changeSyncedPasswordJson(value: string) {
+    this.syncedPasswordJson = value;
+  }
+
+  changeTypeImport(value: ImportType) {
+    this.typeImport = value;
   }
 }
 </script>

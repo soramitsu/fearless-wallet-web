@@ -95,7 +95,7 @@ export function isEthereumNetwork(network: string) {
   return ETHEREUM_NETWORKS.includes(network.toLowerCase());
 }
 
-export function isRequireEvmAPI(network: string) {
+export function isNativeEVMNetwork(network: string) {
   return NATIVE_ETHEREUM_NETWORKS.includes(network.toLowerCase());
 }
 

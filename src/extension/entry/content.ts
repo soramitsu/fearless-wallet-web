@@ -5,6 +5,8 @@ import type { Message } from '@extension-base/types';
 
 let port: Port;
 
+console.info('content.ts initialization');
+
 class Content {
   private setListeners() {
     port = chrome.runtime.connect({ name: PORT_CONTENT });

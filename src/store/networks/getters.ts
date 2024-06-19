@@ -1,5 +1,5 @@
 import type { NetworkJson } from '@extension-base/types';
-import type { AssetsPrice, FiatJson, GetHistory } from '@/interfaces';
+import type { AssetsPrice, FiatJson, GetHistory, SoraFees } from '@/interfaces';
 import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetActiveNodesByNetwork } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
@@ -20,6 +20,7 @@ export enum GettersTypes {
   getHistory = 'getHistory',
   getActiveNodesByNetwork = 'getActiveNodesByNetwork',
   favoriteNetworksNames = 'favoriteNetworksNames',
+  soraFees = 'soraFees',
 }
 
 export type Getters = {
@@ -49,6 +50,7 @@ export type Getters = {
   [GettersTypes.getNetworkGenesisHash](state: State): GetNetworkGenesisHash;
   [GettersTypes.getAssetPrice](state: State): GetAssetPrice;
   [GettersTypes.prices](state: State): AssetsPrice;
+  [GettersTypes.soraFees](state: State): Nullable<SoraFees>;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -59,22 +61,24 @@ const getters: GetterTree<State, State> & Getters = {
   },
 
   [GettersTypes.activeNetworkForSelectedWallet](state, getters, rootState, rootGetters): NetworkJson[] {
-    const selectedNetwork: string = rootGetters.selectedNetwork;
+    const selectedNetwork: string = rootGetters.selectedNetwork.toLowerCase();
     const selectedWallet: SelectedWallet = rootGetters.selectedWallet;
-    const activeNetworks = state.networks.filter((el) => el.active);
+    const activeNetworks = state.networks.filter(({ active }) => active);
 
     if (NETWORKS_GROUPS.includes(selectedNetwork)) {
       if (selectedNetwork === ALL_NETWORKS) return activeNetworks;
-      if (selectedNetwork === POPULAR_NETWORKS) return activeNetworks.filter((el) => el.rank && el.active);
+
+      if (selectedNetwork === POPULAR_NETWORKS) return activeNetworks.filter(({ rank }) => rank);
+
       if (selectedNetwork === FAVORITE_NETWORKS)
-        return activeNetworks.filter((el) => el.favorite.includes(selectedWallet.address));
+        return activeNetworks.filter(({ favorite }) => favorite.includes(selectedWallet.address));
     }
 
-    return activeNetworks.filter((el) => el.name.toLowerCase() === selectedNetwork.toLowerCase());
+    return activeNetworks.filter(({ name }) => name.toLowerCase() === selectedNetwork);
   },
 
   [GettersTypes.favoriteNetworksNames]({ networks }): { name: string; favorite: string[] }[] {
-    return networks.filter((el) => el.favorite.length).map(({ name, favorite }) => ({ name, favorite }));
+    return networks.filter(({ favorite }) => favorite.length).map(({ name, favorite }) => ({ name, favorite }));
   },
 
   [GettersTypes.allNetworks]({ networks }): NetworkJson[] {
@@ -103,6 +107,10 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.prices]: ({ assetsPrice }) => {
     return assetsPrice;
+  },
+
+  [GettersTypes.soraFees]: ({ soraFees }) => {
+    return soraFees;
   },
 
   [GettersTypes.getAssetPrice]:

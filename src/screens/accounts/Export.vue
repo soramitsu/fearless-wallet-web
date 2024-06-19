@@ -8,13 +8,14 @@
 
     <div>
       <ValidatedInput
-        v-model="password"
+        :value="password"
         errorDescriptions="common.invalidPassword"
         placeholder="accounts.passwordWallet"
         data-testid="passwordExport"
         :isError="isWrongPassword"
         :showPassword="true"
         :readonly="noEthereumAccount"
+        @change="changePassword"
       />
 
       <FButton
@@ -64,6 +65,10 @@ const noEthereumAccount = computed(
 const warningText = computed(() => {
   return noEthereumAccount.value ? 'accounts.notEthereumAccount' : 'accounts.exportWarning';
 });
+
+const changePassword = (value: string) => {
+  password.value = value;
+};
 
 const checkPassword = async () => {
   const addressByNetwork = BaseApi.formatAddress(selectedWallet.value, network.value);

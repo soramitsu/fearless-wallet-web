@@ -1,4 +1,4 @@
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { assert, u8aToHex } from '@polkadot/util';
@@ -10,6 +10,7 @@ import {
   OnboardingService,
   KeyringService,
   StakingService,
+  PoolsService,
   NetworkService,
   RequestService,
   WalletConnectService,
@@ -25,7 +26,7 @@ import {
 } from '@extension-base/services';
 import { api as apiSora, type FPNumber } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
-import { isEthereumNetwork, isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isEthereumNetwork, isNativeEVMNetwork } from '@extension-base/background/utils/utils';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
 import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
@@ -46,6 +47,7 @@ import type {
   RequestAccountExportPrivateKey,
   ResponseAccountExportPrivateKey,
   FetchEvmBalancePayload,
+  AuthUrls,
 } from '@extension-base/background/types/types';
 import type { ChainRegistry, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
@@ -73,7 +75,7 @@ export default class State {
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
   public lazyMap: Record<string, unknown> = {};
-  public soraFees: SoraFees = {} as SoraFees;
+  public soraFees: BehaviorSubject<SoraFees> = new BehaviorSubject<SoraFees>(apiSora.NetworkFee);
   public ready = false;
   public currentTabStatus: ActiveTabAuthorizeStatus = {
     isAuthorize: false,
@@ -92,6 +94,7 @@ export default class State {
   public nftService = new NftService(this);
   public soraCardService = new SoraCardService(this.requestService);
   public stakingService = new StakingService(this);
+  public poolsService = new PoolsService(this);
   public googleService = new GoogleService();
   public cronService = new CronService(this);
   public scamService = new ScamService(this);
@@ -105,14 +108,6 @@ export default class State {
 
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
-  }
-
-  public get networkValues() {
-    return this.networkService.networkValues;
-  }
-
-  public get assetsMap() {
-    return this.networkValues.map(({ assets }) => assets).flat();
   }
 
   public getEvmApi(key: string) {
@@ -136,9 +131,7 @@ export default class State {
   }
 
   public cancelSubscription(id: string): boolean {
-    if (isSubscriptionRunning(id)) {
-      unsubscribe(id);
-    }
+    if (isSubscriptionRunning(id)) unsubscribe(id);
 
     if (this.unsubscriptionMap[id]) {
       this.unsubscriptionMap[id]();
@@ -187,16 +180,18 @@ export default class State {
     const isSelf = url.hostname === EXTENSION_ID || url.hostname === EXTENSION_HOSTNAME;
     const tabHostName = isSelf ? 'header.currentExtensionPage' : url.hostname;
 
-    this.requestService.getAuthorize((authUrls) => {
-      const authorizeUrl = Object.keys(authUrls).filter((url) => url === tabHostName);
-      const isAuthorize = authorizeUrl.length !== 0;
+    const cb = () => (authUrls: AuthUrls) => {
+      const authorizeUrls = Object.keys(authUrls).filter((url) => url === tabHostName);
+      const isAuthorize = authorizeUrls.length !== 0;
 
       this.currentTabStatus = {
         isAuthorize,
         authorizeAccountsCount: isAuthorize ? authUrls[tabHostName].authorizedAccounts.length : 0,
         dAppName: tabHostName,
       };
-    });
+    };
+
+    this.requestService.getAuthorize(cb);
   }
 
   public async onInstall() {
@@ -311,7 +306,7 @@ export default class State {
 
   getActiveNetworksCurrentWallet(address: string) {
     const uniqNetworks = new Set<NetworkJson>();
-    const networks = this.networkValues;
+    const networks = this.networkService.networkValues;
     const selectedNetwork = this.networkService.selectedNetworks[address];
 
     if (selectedNetwork === ALL_NETWORKS) return networks;
@@ -336,10 +331,6 @@ export default class State {
     if (singleNetwork) uniqNetworks.add(singleNetwork);
 
     return uniqNetworks;
-  }
-
-  getCurrentTabStatus() {
-    return this.currentTabStatus;
   }
 
   public getAllAddresses(): string[] {
@@ -485,20 +476,20 @@ export default class State {
     return true;
   }
 
-  public setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null, updateNetworks = true): void {
+  public setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null): void {
     this.keyringService.setCurrentAccount(data);
 
-    if (updateNetworks) {
-      // logic for Sora library
-      if (data?.address && !data.isMobile) {
-        const pair = this.keyringService.getPair(data?.address)!;
+    // logic for Sora library
+    if (data?.address && !data.isMobile) {
+      this.poolsService.unsubscribePools();
 
-        apiSora.account = { json: null as any, pair };
-        apiSora.bridgeProxy.sub.account = { json: null as any, pair };
+      const pair = this.keyringService.getPair(data?.address)!;
 
-        // TODO добавить фича тогл
-        this.subscribeTotalXorBalance();
-      }
+      apiSora.account = { json: null as any, pair };
+      apiSora.bridgeProxy.sub.account = { json: null as any, pair };
+
+      // TODO добавить фича тогл
+      // this.subscribeTotalXorBalance();
     }
 
     this.updateServiceInfo();
@@ -553,6 +544,7 @@ export default class State {
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
     const pass = this.passwords[address] ?? password;
     const json = this.keyringService.backupAccount(address, pass!);
+
     if (!json) throw new Error('Json was not exported');
 
     const decoded = decodePair(pass, base64Decode(json.encoded), json.encoding.type);
@@ -605,10 +597,10 @@ export default class State {
 
     if (ethereumAddress === '') return;
 
-    const activeEvmNetworks = this.networkValues.filter(({ name, active }) => {
+    const activeEvmNetworks = this.networkService.networkValues.filter(({ name, active }) => {
       if (_networks && !_networks.includes(name)) return false;
 
-      if (!active || !isRequireEvmAPI(name)) return false;
+      if (!active || !isNativeEVMNetwork(name)) return false;
 
       return true;
     });

@@ -1,12 +1,13 @@
 <template>
   <div class="accounts">
     <FInput
-      v-model="newName"
+      :value="newName"
       placeholder="accounts.walletName"
       size="big"
       data-testid="walletNameAccounts"
       :maxlength="35"
       @blur="blurInputName"
+      @change="changeNewName"
     />
 
     <template>
@@ -72,6 +73,10 @@ export default class Account extends Vue {
 
   openAccountSettingsPopup(network: string, event: Event) {
     this.$emit('openAccountSettingsPopup', network, event);
+  }
+
+  changeNewName(value: string) {
+    this.newName = value;
   }
 
   blurInputName() {

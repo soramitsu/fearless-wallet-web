@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 import { type NftTx, type NftSettings } from '@extension-base/services/nft-service/types';
-import { chrome } from '@extension-base/utils/crossenv';
+import { type chrome } from '@extension-base/utils/crossenv';
 import type { ScamInfo } from '@extension-base/services/scam-service/types';
 import type { ALLOWED_PATH } from '@extension-base/defaults';
 import type { Subscription } from 'rxjs';
@@ -32,6 +32,8 @@ import type {
   MarketType,
   SwapOptions,
 } from '@/interfaces';
+import { type WarningValueName } from '@/consts/messages';
+
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
 }[keyof T];
@@ -132,16 +134,16 @@ export interface DisableNetworkResponse {
   activeNetworkCount?: number;
 }
 
-export type RequestSubscribePrice = null;
 export interface RequestCurrentAccountAddress {
   address: string;
 }
+
 export type MessageTypes = keyof RequestSignatures;
 
 // Requests
 
 export type RequestTypes = {
-  [MessageType in keyof RequestSignatures]: RequestSignatures[MessageType][0];
+  [MessageType in MessageTypes]: RequestSignatures[MessageType][0];
 };
 
 export type MessageTypesWithNullRequest = NullKeys<RequestTypes>;
@@ -198,7 +200,6 @@ export interface RequestMobileSign {
 export interface PriceJson {
   ready?: boolean;
   currency: string;
-  priceMap: Record<string, number>;
   tokenPriceMap: Record<string, number>;
   tokenPriceChange: Record<string, number>;
 }
@@ -209,6 +210,8 @@ export enum TransferErrorCode {
   SWAP_ERROR = 'swapError',
   BOND_ERROR = 'bondError',
   BONDEXTRA_ERROR = 'bondExtraError',
+  ADD_LIQUIDITY_ERROR = 'addLiquidityError',
+  REMOVE_LIQUIDITY_ERROR = 'removeLiquidityError',
   UNBOND_ERROR = 'unbondError',
   REBOND_ERROR = 'rebondError',
   REDEEM_ERROR = 'redeemError',
@@ -417,6 +420,20 @@ export interface RequestAccountValidate {
 export interface RequestAccountExport {
   address: string;
   password: string;
+  network?: string;
+}
+
+export interface ResponseAccountExport {
+  json: KeyringPair$Json;
+}
+
+export interface RequestExportMnemonic {
+  address: string;
+  password: string;
+}
+
+export interface ResponseExportMnemonic {
+  seed: string;
 }
 
 export type EvmProvider = JsonRpcProvider | WebSocketProvider;
@@ -482,10 +499,10 @@ export interface ResponseSigningIsLocked {
 // Responses
 
 export type ResponseTypes = {
-  [MessageType in keyof RequestSignatures]: RequestSignatures[MessageType][1];
+  [MessageType in MessageTypes]: RequestSignatures[MessageType][1];
 };
 
-export type ResponseType<TMessageType extends keyof RequestSignatures> = RequestSignatures[TMessageType][1];
+export type ResponseType<TMessageType extends MessageTypes> = RequestSignatures[TMessageType][1];
 
 interface TransportResponseMessageSub<TMessageType extends MessageTypesWithSubscriptions> {
   error?: string;
@@ -507,16 +524,12 @@ export type TransportResponseMessage<TMessageType extends MessageTypes> =
     ? TransportResponseMessageSub<TMessageType>
     : never;
 
-export interface ResponseAccountExport {
-  exportedJson: KeyringPair$Json;
-}
-
 export type ResponseRpcListProviders = ProviderList;
 
 // Subscriptions
 
 export type SubscriptionMessageTypes = NoUndefinedValues<{
-  [MessageType in keyof RequestSignatures]: RequestSignatures[MessageType][2];
+  [MessageType in MessageTypes]: RequestSignatures[MessageType][2];
 }>;
 
 export type MessageTypesWithSubscriptions = keyof SubscriptionMessageTypes;
@@ -616,33 +629,13 @@ export interface SignRequest extends Resolver<ResponseSigning> {
   url: string;
 }
 
-export const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
-
-export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
-  focused: true,
-  height: 640,
-  width: 577,
-  type: 'popup',
-  url: NOTIFICATION_URL,
-};
-
-export const NORMAL_WINDOW_OPTS: chrome.windows.CreateData = {
-  focused: true,
-  type: 'normal',
-  url: NOTIFICATION_URL,
-};
-
-export enum NotificationOptions {
-  None,
-  Normal,
-  PopUp,
-}
-
 export type CachedUnlocks = Record<string, number>;
+
 export interface AccountSub {
   subscription: Subscription;
   url: string;
 }
+
 export type Subscriptions = Record<string, Port>;
 
 export type Address = {
@@ -708,18 +701,6 @@ export interface TransactionHistoryItem {
 export interface RequestAuthorizeCancel {
   id: string;
 }
-
-type WarningValueName =
-  | 'mnemonicSequence'
-  | 'mnemonic'
-  | 'substrateDP'
-  | 'ethereumDP'
-  | 'rawSeed'
-  | 'jsonPassword'
-  | 'jsonInvalid'
-  | 'isNotSamePassword'
-  | 'duplicateMobileWallet'
-  | '';
 
 interface ValidateJsonResultPositive {
   value: true;

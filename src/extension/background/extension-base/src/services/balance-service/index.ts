@@ -15,7 +15,7 @@ import { getSummaryTransferableWalletBalance, getChangeWalletBalance } from '@/h
 import { type NetworkName } from '@/interfaces';
 
 export default class BalanceService {
-  private balanceMap: BalanceMap = {};
+  public balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
 
   constructor(private state: State) {}
@@ -187,12 +187,14 @@ export default class BalanceService {
   }
 
   getTokenBalance(address: string, assetId: string, relayChain?: string) {
-    // TODO проверить будет ли корррктно работать если заменить на поиск по groupId
-    return this.balanceMap[address].find(
-      (balance) =>
-        balance.balances.some(({ id }) => id === assetId) &&
-        balance.relayChain?.toLowerCase() === relayChain?.toLowerCase()
-    )!;
+    // TODO проверить будет ли корректно работать если заменить на поиск по groupId
+    return this.balanceMap[address].find((tokenGroup) => {
+      const existId = tokenGroup.balances.some(({ id }) => id === assetId);
+
+      if (relayChain) return existId && isSameString(tokenGroup.relayChain, relayChain);
+
+      return existId;
+    })!;
   }
 
   public async fetchBalance(address: string, networkName: NetworkName) {

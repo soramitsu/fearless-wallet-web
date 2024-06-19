@@ -1,15 +1,18 @@
 <template>
   <div>
     <FSelect
-      v-model="syncedMarketType"
+      v-if="showMarketType"
+      :value="syncedMarketType"
       :options="optionsSubstrateKeyPair"
+      :disabled="false"
       placeholder="assets.market"
       size="big"
       class="row"
+      @change="updateSyncedMarketType"
     />
 
     <ValidatedInput
-      v-model="slippagePercent"
+      :value="slippagePercent"
       placeholder="assets.slippageTolerance"
       class="row"
       :errorDescriptions="warningMessage"
@@ -38,7 +41,7 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { MarketType } from '@/interfaces';
 
 @Component
-export default class SwapSettings extends Vue {
+export default class PolkaswapSettings extends Vue {
   readonly optionsSubstrateKeyPair = [
     { label: MarketType.SMART, value: MarketType.SMART },
     { label: MarketType.TBC, value: MarketType.TBC },
@@ -57,6 +60,10 @@ export default class SwapSettings extends Vue {
   @Prop({ default: '' }) text!: string;
   @PropSync('temporaryMarketType', { type: String }) syncedMarketType!: string;
   @PropSync('temporarySlippage', { type: Number }) syncedSlippage!: number;
+
+  get showMarketType() {
+    return this.syncedMarketType !== undefined;
+  }
 
   get slippagePercent() {
     return `${this.syncedSlippage} %`;
@@ -77,6 +84,10 @@ export default class SwapSettings extends Vue {
 
   setSlippage(value: number) {
     this.syncedSlippage = value;
+  }
+
+  updateSyncedMarketType(value: string) {
+    this.syncedMarketType = value;
   }
 
   getSlippageClasses(value: number) {

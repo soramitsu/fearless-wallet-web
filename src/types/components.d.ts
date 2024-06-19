@@ -5,15 +5,18 @@ declare module 'vue' {
     Loading: typeof import('@/components/Loading.vue')['Loading'];
     AboveForm: typeof import('@/components/AboveForm.vue')['AboveForm'];
     Alert: typeof import('@/components/Alert.vue')['Alert'];
-    AssetIcon: typeof import('@/components/AssetIcon.vue')['AssetIcon'];
+    AssetHighlightIcon: typeof import('@/components/AssetHighlightIcon.vue')['AssetHighlightIcon'];
+    DoubleAssetHighlightIcon: typeof import('@/components/DoubleAssetHighlightIcon.vue')['DoubleAssetHighlightIcon'];
     BadgeButton: typeof import('@/components/BadgeButton.vue')['BadgeButton'];
     BorderButton: typeof import('@/components/BorderButton.vue')['BorderButton'];
     FButton: typeof import('@/components/FButton.vue')['Button'];
     Checkbox: typeof import('@/components/Checkbox.vue')['Checkbox'];
     CircleButton: typeof import('@/components/CircleButton.vue')['CircleButton'];
+    EllipseButton: typeof import('@/components/EllipseButton.vue')['EllipseButton'];
     ComingSoon: typeof import('@/components/ComingSoon.vue')['ComingSoon'];
     ConfirmationPopup: typeof import('@/components/ConfirmationPopup.vue')['ConfirmationPopup'];
     ContentForm: typeof import('@/components/ContentForm.vue')['ContentForm'];
+    DirectionContentForm: typeof import('@/components/DirectionContentForm.vue')['DirectionContentForm'];
     FCorners: typeof import('@/components/FCorners.vue')['FCorners'];
     Dropdown: typeof import('@/components/Dropdown.vue')['Dropdown'];
     ExternalLogo: typeof import('@/components/ExternalLogo.vue')['ExternalLogo'];
@@ -39,6 +42,7 @@ declare module 'vue' {
     SelectPopup: typeof import('@/components/SelectPopup.vue')['SelectPopup'];
     Shimmer: typeof import('@/components/Shimmer.vue')['Shimmer'];
     SelectInput: typeof import('@/components/SelectInput.vue')['SelectInput'];
+    Slider: typeof import('@/components/Slider.vue')['Slider'];
     Switcher: typeof import('@/components/Switcher.vue')['Switcher'];
     TabButton: typeof import('@/components/TabButton.vue')['TabButton'];
     Tooltip: typeof import('@/components/Tooltip.vue')['Tooltip'];

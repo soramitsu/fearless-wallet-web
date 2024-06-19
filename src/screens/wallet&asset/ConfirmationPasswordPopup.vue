@@ -70,7 +70,7 @@
           </div>
 
           <template v-if="isSuccess">
-            <span class="nft-success-msg">{{ $t('nft.txSuccessMessage') }}</span>
+            <span class="nft-success-msg" data-testid="nftSuccessMsg">{{ $t('nft.txSuccessMessage') }}</span>
             <FButton
               text="common.copyHash"
               class="copy-hash"
@@ -80,6 +80,7 @@
               size="small"
               fontSize="small"
               type="secondary"
+              data-testid="copyHashBtn"
               :border="false"
               @click="copyHash"
             />
@@ -92,6 +93,7 @@
               size="small"
               fontSize="small"
               type="secondary"
+              data-testid="viewInEtherscanBtn"
               :border="false"
               @click="openExplorer"
             />
@@ -102,6 +104,7 @@
               size="small"
               fontSize="small"
               type="secondary"
+              data-testid="closeBtn"
               :border="false"
               @click="close"
             />

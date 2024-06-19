@@ -1,7 +1,7 @@
 <template>
   <Scroll>
     <div :class="containerClass">
-      <span v-if="isEmpty">{{ $t('nft.noNft') }}</span>
+      <span v-if="isEmpty" data-testid="noNft">{{ $t('nft.noNft') }}</span>
 
       <template v-else>
         <NftCollectionItem v-for="(nft, i) of filteredNfts" :collection="nft" :key="i" />

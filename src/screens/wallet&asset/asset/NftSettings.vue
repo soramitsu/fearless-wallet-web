@@ -3,6 +3,7 @@
     sizeWidth="mini"
     verticalPlacement="top"
     horizontalPlacement="right"
+    data-testid="hidNfts"
     :top="40"
     :left="-40"
     :showBorder="true"
@@ -11,12 +12,12 @@
   >
     <div class="nft-settings">
       <div class="form-item">
-        <span>{{ $t('nft.spam') }}</span>
-        <Switcher :value="nftSettings.spam" @change="toggleNftSettingsSpam" />
+        <span data-testid="spam">{{ $t('nft.spam') }}</span>
+        <Switcher data-testid="spamSwitcher" :value="nftSettings.spam" @change="toggleNftSettingsSpam" />
       </div>
       <div class="form-item">
-        <span>{{ $t('nft.airdrop') }}</span>
-        <Switcher :value="nftSettings.airdrop" @change="toggleNftSettingsAirdrop" />
+        <span data-testid="airdrop">{{ $t('nft.airdrop') }}</span>
+        <Switcher data-testid="airdropSwitcher" :value="nftSettings.airdrop" @change="toggleNftSettingsAirdrop" />
       </div>
     </div>
   </Popup>

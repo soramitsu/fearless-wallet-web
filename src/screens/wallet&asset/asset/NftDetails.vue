@@ -2,19 +2,19 @@
   <AboveForm :fullScreen="true" :header="meta.name" showBackIcon @closeHandler="onBack" @handlerBack="onBack">
     <Scroll>
       <div class="nft-details">
-        <img :src="image" class="nft-details__img" :alt="id" width="500" height="500" />
+        <img data-testid="nftImage" :src="image" class="nft-details__img" :alt="id" width="500" height="500" />
 
-        <div v-if="isOwned" class="icon-ownership">
+        <div v-if="isOwned" class="icon-ownership" data-testid="iconOwnership">
           <Icon icon="check" className="icon-ownership-size" iconColor="success" width="20px" height="20px" />
         </div>
 
-        <p class="nft-details__desc">{{ meta.description }}</p>
+        <p class="nft-details__desc" data-testid="nftDescription">{{ meta.description }}</p>
 
-        <InfoRow text="nft.collection" :value="collection.name" />
-        <InfoRow v-if="nft.isOwned" text="nft.owned" :value="ownedBy" />
-        <InfoRow text="nft.id" :value="tokenId" />
-        <InfoRow text="common.network" :value="network" />
-        <InfoRow text="nft.type" :value="nft.type" />
+        <InfoRow text="nft.collection" data-testid="collection" :value="collection.name" />
+        <InfoRow v-if="nft.isOwned" data-testid="owned" text="nft.owned" :value="ownedBy" />
+        <InfoRow text="nft.id" data-testid="tokenId" :value="tokenId" />
+        <InfoRow text="common.network" data-testid="network" :value="network" />
+        <InfoRow text="nft.type" data-testid="type" :value="nft.type" />
 
         <div class="send-btn">
           <FButton
@@ -23,6 +23,7 @@
             width="100%"
             size="big"
             class="share"
+            data-testid="copyMetadataBtn"
             :type="shareBtnType"
             fontSize="big"
             :border="false"
@@ -37,6 +38,7 @@
             width="100%"
             size="big"
             fontSize="big"
+            data-testid="sendBtn"
             :border="false"
             @click="onSend"
           />

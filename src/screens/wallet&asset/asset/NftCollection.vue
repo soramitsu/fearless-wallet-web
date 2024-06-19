@@ -1,9 +1,10 @@
 <template>
   <AboveForm :fullScreen="true" :header="header" @closeHandler="onClose">
     <InfiniteScroll class="nft-list" :canLoadMore="state.canLoadMore" @onScroll="onScroll">
-      <div class="nft-group">
+      <div class="nft-group" data-testid="nftGroupOwned">
         <NftItem
           v-for="nft in ownedNfts"
+          data-testid="nftOwned"
           :collectionName="name"
           class="ownedNfts"
           :key="nft.id"
@@ -16,9 +17,10 @@
       <template v-if="isAvailableNfts">
         <span>{{ additionalNftsHeader }}</span>
 
-        <div class="nft-group">
+        <div class="nft-group" data-testid="nftGroupAvailable">
           <NftItem
             v-for="nft in availableNfts"
+            data-testid="nftAvailable"
             :collectionName="name"
             :key="nft.id"
             :nft="nft"

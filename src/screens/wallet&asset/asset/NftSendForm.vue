@@ -9,19 +9,30 @@
     <div class="nft-send-form">
       <template v-if="showSendForm">
         <div class="container">
-          <FInput :value="recipientCut" icon="close" placeholder="assets.sendTo" @click="setRecipient" />
+          <FInput
+            :value="recipientCut"
+            icon="close"
+            placeholder="assets.sendTo"
+            data-testid="sendToInput"
+            @click="setRecipient"
+          />
           <div class="activity-buttons row">
-            <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+            <BadgeButton text="assets.history" data-testid="historyBtn" @click="toggleHistoryBookVisibility" />
 
-            <BadgeButton text="common.paste" @click="paste" />
+            <BadgeButton text="common.paste" data-testid="pasteBtn" @click="paste" />
 
-            <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
+            <BadgeButton
+              v-if="showMyWalletsButton"
+              text="assets.myWallets"
+              data-testid="myWalletsBtn"
+              @click="toggleMyWalletsVisibility"
+            />
           </div>
         </div>
 
         <dl class="fees">
           <dt>{{ $t('common.networkFees') }}</dt>
-          <dd>{{ formatFeeString }}</dd>
+          <dd data-testid="networkFeeValue">{{ formatFeeString }}</dd>
         </dl>
       </template>
 
@@ -69,6 +80,7 @@
       <FButton
         v-if="showSubmitBtn"
         size="big"
+        data-testid="proceedBtn"
         :disabled="isDisabled"
         class="button"
         :text="actionBtnName"

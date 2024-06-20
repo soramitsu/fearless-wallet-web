@@ -1,12 +1,12 @@
 <template>
   <FCorners size="big" :topLeftCorner="false" :bottomRightCorner="false">
-    <div class="nft" @click="onClick">
-      <div v-if="collection.total" class="nft-counter">{{ counter }}</div>
+    <div class="nft" data-testid="nft" @click="onClick">
+      <div v-if="collection.total" class="nft-counter" data-testid="nftCounter">{{ counter }}</div>
 
       <img :src="image" :alt="collection.name" loading="lazy" width="240" height="200" />
 
       <div class="nft-info">
-        <span class="title title--main">{{ collection.name }}</span>
+        <span class="title title--main" data-testid="titleMain">{{ collection.name }}</span>
       </div>
     </div>
   </FCorners>

@@ -4,22 +4,23 @@
 
     <div class="nft-info">
       <div class="titles">
-        <span class="title">{{ upperTitle }}</span>
-        <span class="title title--main">{{ title }}</span>
-        <span class="title">{{ subTitle }}</span>
+        <span class="title" data-testid="title">{{ upperTitle }}</span>
+        <span class="title title--main" data-testid="titleMain">{{ title }}</span>
+        <span class="title" data-testid="subTitle">{{ subTitle }}</span>
       </div>
 
-      <div v-if="isOwned" class="icon-ownership">
+      <div v-if="isOwned" class="icon-ownership" data-testid="ownership">
         <Icon
           icon="check"
           className="icon-ownership-size"
+          data-testid="check"
           :hover="false"
           iconColor="success"
           width="20px"
           height="20px"
         />
       </div>
-      <Icon v-else icon="export-nft" className="share" @click.native.stop="$emit('share', nft)" />
+      <Icon v-else icon="export-nft" className="share" data-testid="export" @click.native.stop="$emit('share', nft)" />
     </div>
   </FCorners>
 </template>

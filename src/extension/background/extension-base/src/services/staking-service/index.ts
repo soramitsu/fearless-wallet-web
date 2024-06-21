@@ -46,7 +46,8 @@ export class StakingService {
       const validators = await this.getValidators(network);
       const minBond = await this.getMinNominatorBond(validators, network);
       const myStakingInfo = await this.getMyStakingInfo(network, validators, minBond);
-      const apy = validators.reduce((result, { apy }) => result + +apy, 0) / validators.length;
+      const validatorsFilters = validators.filter(({ apy }) => apy !== '0');
+      const apy = validatorsFilters.reduce((result, { apy }) => result + +apy, 0) / validatorsFilters.length;
 
       return {
         ...myStakingInfo,

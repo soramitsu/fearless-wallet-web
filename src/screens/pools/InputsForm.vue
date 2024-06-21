@@ -142,8 +142,14 @@ export default class InputsForm extends Vue {
     };
   }
 
+  @Watch('transferableAmount1')
+  @Watch('transferableAmount2')
+  watcherTransferable() {
+    if (this.isPercentChanging) this.setMaxLiquidity();
+  }
+
   @Watch('percent')
-  watcherPercent() {
+  setMaxLiquidity() {
     if (!this.isPercentChanging) return;
 
     const part = new FPNumber(this.percent).div(FPNumber.HUNDRED);

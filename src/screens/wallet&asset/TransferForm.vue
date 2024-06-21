@@ -619,7 +619,7 @@ export default class TransferForm extends Vue {
       const { name, icon } = this.getNetwork(chainId);
 
       return {
-        name: firstCharToUp(name),
+        name: name,
         value: name,
         icon,
       };

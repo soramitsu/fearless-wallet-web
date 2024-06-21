@@ -1,7 +1,7 @@
 import { PHISHING_PAGE_REDIRECT } from '@extension-base/defaults';
 import { checkIfDenied } from '@polkadot/phishing';
 import { chrome } from '@extension-base/utils/crossenv';
-import { assert, isNumber } from '@polkadot/util';
+import { isNumber } from '@polkadot/util';
 import {
   stripUrl,
   transformAccounts,
@@ -33,7 +33,6 @@ import type {
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
-import type { KeyringPair } from '@polkadot/keyring/types';
 import type {
   InjectedAccount,
   InjectedMetadataKnown,

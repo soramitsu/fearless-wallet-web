@@ -173,6 +173,7 @@ export class WalletConnectService {
         case POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_MESSAGE:
         case POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_TRANSACTION:
           this.polkadotRequestHandler.handleRequest(requestEvent);
+
           break;
         case EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION:
         case EIP155_SIGNING_METHODS.PERSONAL_SIGN:
@@ -181,6 +182,7 @@ export class WalletConnectService {
         case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4:
         case EIP155_SIGNING_METHODS.ETH_SIGN:
           this.eip155RequestHandler.handleRequest(requestEvent);
+
           break;
         default:
           throw Error(getSdkError('INVALID_METHOD').message + ' ' + method);

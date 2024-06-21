@@ -32,6 +32,7 @@ import type {
   RequestAuthorizeCancel,
 } from '@extension-base/background/types/types';
 import type { WCSignRequest } from '@extension-base/services/request-service/types';
+import type State from '@extension-base/background/handlers/State';
 
 export class RequestService {
   readonly popupHandler: PopupHandler;
@@ -42,13 +43,13 @@ export class RequestService {
   readonly substrateRequestHandler: SubstrateRequestHandler;
   readonly evmRequestHandler: EvmRequestHandler;
 
-  constructor(readonly keyringService: KeyringService) {
+  constructor(readonly keyringService: KeyringService, private readonly state: State) {
     this.popupHandler = new PopupHandler(this);
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
     this.authRequestHandler = new AuthRequestHandler(this);
-    this.substrateRequestHandler = new SubstrateRequestHandler(this, keyringService);
+    this.substrateRequestHandler = new SubstrateRequestHandler(this, keyringService, this.state);
     this.evmRequestHandler = new EvmRequestHandler(this);
   }
 
@@ -99,7 +100,6 @@ export class RequestService {
   }
 
   // Auth
-
   public get authSubject(): BehaviorSubject<AuthorizeRequest[]> {
     return this.authRequestHandler.authSubject;
   }

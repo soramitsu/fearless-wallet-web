@@ -1,16 +1,16 @@
+import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import { ApiPromise } from '@polkadot/api';
-import { type ApiInterfaceEvents } from '@polkadot/api/types';
-import { WsProvider } from '@polkadot/rpc-provider';
-import { type ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
+import { connection as soraConnection } from '@sora-substrate/connection';
 import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
+import { NETWORK_STATUS } from '@extension-base/api/types/networks';
+import { WsProvider } from '@polkadot/rpc-provider';
+import { type ApiInterfaceEvents } from '@polkadot/api/types';
+import { type ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import { type NetworkService } from '@extension-base/services/network-service';
 import { type NetworkJson } from '@extension-base/types';
-import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { type ApiProps } from '@extension-base/background/types/types';
-import { api as apiSora } from '@sora-substrate/util';
-import { connection as soraConnection } from '@sora-substrate/connection';
 import type State from '@extension-base/background/handlers/State';
-import type { NetworkName } from '@/interfaces';
+import type { NetworkName, SoraFees } from '@/interfaces';
 import { isSora } from '@/helpers';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 
@@ -104,7 +104,7 @@ export class SubstrateApiHandler {
         this.state.disableNetworkMap(networkName);
       }
     } else {
-      api.apiStatus = NETWORK_STATUS.DISCONNECTED; // попробовали все ноды, не смогил подключиться, ставим статус дисконнект
+      api.apiStatus = NETWORK_STATUS.DISCONNECTED; // попробовали все ноды, не смогли подключиться, ставим статус дисконнект
 
       this.state.disableNetworkMap(networkName);
     }
@@ -112,9 +112,17 @@ export class SubstrateApiHandler {
 
   async onReady(networkName: string) {
     if (isSora(networkName)) {
-      apiSora.initialize(false);
-      apiSora.calcStaticNetworkFees();
+      await apiSora.initialize(false);
+      await apiSora.calcStaticNetworkFees();
 
+      const fees = Object.fromEntries(
+        Object.entries(apiSora.NetworkFee).map(([operation, value]) => [
+          operation,
+          FPNumber.fromCodecValue(value).toString(),
+        ])
+      ) as SoraFees;
+
+      this.state.soraFees.next(fees);
       this.state.subscribeTotalXorBalance();
     }
 

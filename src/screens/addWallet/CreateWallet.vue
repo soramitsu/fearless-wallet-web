@@ -11,7 +11,11 @@
         text="common.copyToClipboard"
         @click="onCopy"
       />
+
+      <AdvancedButton @click="toggleAdvancedFormVisible" />
+
       <slot></slot>
+
       <Tooltip text="common.copied" target=".copy__phrase" trigger="click" :arrow="true" />
     </MnemonicBackupForm>
 
@@ -29,11 +33,13 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import MnemonicConfirmationForm from './MnemonicConfirmationForm.vue';
 import MnemonicBackupForm from './MnemonicBackupForm.vue';
 import type { MnemonicConfirmation } from '@/interfaces/common';
+import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 
 @Component({
   components: {
-    MnemonicConfirmationForm,
+    AdvancedButton,
     MnemonicBackupForm,
+    MnemonicConfirmationForm,
   },
 })
 export default class CreateWallet extends Vue {
@@ -63,6 +69,10 @@ export default class CreateWallet extends Vue {
 
   onCopy() {
     navigator.clipboard.writeText(this.mnemonic);
+  }
+
+  toggleAdvancedFormVisible() {
+    this.$emit('toggleAdvancedFormVisible');
   }
 }
 </script>

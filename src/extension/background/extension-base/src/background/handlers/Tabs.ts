@@ -1,8 +1,7 @@
 import { PHISHING_PAGE_REDIRECT } from '@extension-base/defaults';
 import { checkIfDenied } from '@polkadot/phishing';
-import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { chrome } from '@extension-base/utils/crossenv';
-import { assert, isNumber } from '@polkadot/util';
+import { isNumber } from '@polkadot/util';
 import {
   stripUrl,
   transformAccounts,
@@ -34,7 +33,6 @@ import type {
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
-import type { KeyringPair } from '@polkadot/keyring/types';
 import type {
   InjectedAccount,
   InjectedMetadataKnown,
@@ -71,7 +69,7 @@ export default class Tabs {
   }
 
   async accountsListAuthorized(url: string, { anyType }: RequestAccountList): Promise<InjectedAccount[]> {
-    const transformedAccounts = transformAccounts(accountsObservable.subject.getValue(), anyType);
+    const transformedAccounts = transformAccounts(this.state.keyringService.accountSubjectValue, anyType);
     const transformedAddresses = transformAddresses(this.state.keyringService.addressesSubjectValue);
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
 
@@ -92,7 +90,7 @@ export default class Tabs {
     const cb = createSubscription<'pub(accounts.subscribe)'>(id, port);
 
     this.accountSubs[id] = {
-      subscription: accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
+      subscription: this.state.keyringService.accountSubject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
         const transformedAccounts = transformAccounts(accounts);
         const transformedMobileAccount = transformAddresses(this.state.keyringService.addressesSubjectValue);
         const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
@@ -126,19 +124,11 @@ export default class Tabs {
     return true;
   }
 
-  getSigningPair(address: string): KeyringPair {
-    const pair = this.state.keyringService.getPair(address);
-
-    assert(pair, 'Unable to find keypair');
-
-    return pair;
-  }
-
   bytesSign(url: string, request: SignerPayloadRaw): Promise<ResponseSigning> {
     const address = request.address;
 
-    const pair = this.getSigningPair(address);
-    const signer = new RequestBytesSign(request);
+    const pair = this.state.keyringService.getPair(address)!;
+    const signer = new RequestBytesSign(request, this.state);
 
     return this.state.requestService.substrateRequestHandler.sign(url, signer, {
       address: pair.address,
@@ -151,12 +141,14 @@ export default class Tabs {
   extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
     const address = this.state.keyringService.encodeAddress(request.address);
     const isMobile = !!this.state.keyringService.getAddress(address, 'address')?.meta.isMobile;
+    const pair = this.state.keyringService.getPair(address);
+
     let meta;
 
-    if (this.state.keyringService.getAccount(address)) meta = this.getSigningPair(address).meta;
+    if (pair) meta = pair.meta;
     else if (isMobile) meta = this.state.keyringService.getAddress(address, 'address')?.meta;
 
-    const signer = new RequestExtrinsicSign(request);
+    const signer = new RequestExtrinsicSign(request, this.state);
 
     return this.state.requestService.substrateRequestHandler.sign(url, signer, {
       address: address,

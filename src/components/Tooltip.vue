@@ -16,10 +16,8 @@ export default class Tooltip extends Vue {
   @Prop(String) target!: string;
   @Prop({ default: 'top' }) placement!: Placement;
   @Prop({ default: false }) arrow!: boolean;
-
   @Prop({ default: 250 }) maxWidth!: number;
   @Prop({ default: 1500 }) delay!: number;
-
   @Prop(String) trigger?: string;
 
   get language() {

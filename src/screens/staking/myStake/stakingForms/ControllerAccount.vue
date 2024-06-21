@@ -22,7 +22,7 @@
       <Hint text="staking.stashBond" iconName="notification" class="hint row" />
 
       <InputWithIcon
-        v-model="addressCut"
+        :value="addressCut"
         icon="close"
         placeholder="staking.setController"
         data-testid="controllerAccountInput"

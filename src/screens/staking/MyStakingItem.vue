@@ -119,24 +119,6 @@ export default class MyStakingItem extends Vue {
     return `${this.$n(this.stakingNetwork.apy, 'price')}%`;
   }
 
-  get changeBalance() {
-    const value = 40.51;
-
-    return `+${this.fiatSymbol}${value}`;
-  }
-
-  get changeStakingAmount() {
-    const value = 1.2;
-
-    return `+${this.fiatSymbol}${value}`;
-  }
-
-  get changeAmount() {
-    const value = 40.51;
-
-    return `+${this.fiatSymbol}${value}`;
-  }
-
   get period() {
     return `${this.unbondPeriod} ${this.$t('common.days')}`;
   }
@@ -248,12 +230,6 @@ export default class MyStakingItem extends Vue {
       display: flex;
       align-items: center;
     }
-  }
-
-  .change {
-    color: $success-color;
-    font-size: 12px;
-    margin-right: 15px;
   }
 }
 </style>

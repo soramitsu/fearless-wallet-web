@@ -6,10 +6,10 @@
       <Icon v-if="icon" :icon="icon" class="icon-info" :class="iconClasses" />
     </div>
 
-    <div v-if="value" :class="valueClasses">
+    <div v-if="isExistValue" :class="valueClasses">
       <div>
         <div class="value-container">
-          <Loading v-if="isLoading" />
+          <Loading v-if="isLoading" :width="28" />
 
           <template v-else>
             <Icon v-if="iconValue" :icon="iconValue" :hover="false" :iconColor="iconValueColor" class="icon-value" />
@@ -18,12 +18,13 @@
           </template>
         </div>
 
-        <div v-if="price" class="price">
+        <div v-if="price && !isLoading" class="price">
           <span data-testid="price">{{ price }}</span>
         </div>
       </div>
       <slot name="details"></slot>
     </div>
+
     <div v-else>-</div>
   </div>
 </template>
@@ -66,6 +67,8 @@ const iconColor = computed(() => {
 const valueClasses = computed(() => ['value', `color-${props.color}`]);
 
 const iconValueColor = computed(() => (props.iconValue === 'polkaswap' ? 'pink' : undefined));
+
+const isExistValue = computed(() => props.value !== null && props.value !== undefined);
 
 const internalRowClasses = computed(() => {
   const classes = ['row'];

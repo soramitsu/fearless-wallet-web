@@ -1,7 +1,7 @@
 <template>
   <div class="nickname">
     <FInput
-      v-model="syncedNickname"
+      :value="syncedNickname"
       ref="nicknameInput"
       placeholder="addWallet.walletNickname"
       size="big"
@@ -9,6 +9,7 @@
       :readonly="readonly"
       data-testid="nicknameInput"
       class="input"
+      @change="changeSyncedNickname"
     />
 
     <Hint class="hint" iconName="notification" text="addWallet.exampleNameWallet" data-testid="exampleText" />
@@ -17,11 +18,11 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Ref } from 'vue-property-decorator';
-import type Input from '@/components/Input.vue';
+import type FInput from '@/components/FInput.vue';
 
 @Component
 export default class NicknameForm extends Vue {
-  @Ref('nicknameInput') readonly nicknameInputComponent!: Input;
+  @Ref('nicknameInput') readonly nicknameInputComponent!: typeof FInput;
   @Prop({ default: false }) readonly!: boolean;
   @PropSync('nickname', { type: String }) syncedNickname!: string;
 
@@ -29,6 +30,10 @@ export default class NicknameForm extends Vue {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
     this.nicknameInputComponent.input.focus();
+  }
+
+  changeSyncedNickname(value: string) {
+    this.syncedNickname = value;
   }
 }
 </script>

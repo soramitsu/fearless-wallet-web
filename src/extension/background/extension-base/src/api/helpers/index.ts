@@ -13,7 +13,7 @@ export const setBalance = (networkKey: string, rs: Partial<BalanceItem>, address
 };
 
 export function getAssetInfo(assetId: string, state: State): Asset {
-  return state.assetsMap.find(({ id }) => id === assetId)!;
+  return state.networkService.assetsMap.find(({ id }) => id === assetId)!;
 }
 
 export function getAssetBalance(network: NetworkName, tokenBalance: TokenGroup): BalanceItem {

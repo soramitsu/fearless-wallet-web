@@ -14,6 +14,7 @@ import type {
   GiantsquidHistoryItem,
   HistoryElement,
   SoraHistoryElement,
+  SoraFees,
 } from '@/interfaces';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { KeyringJson } from '@polkadot/ui-keyring/types';
@@ -93,7 +94,7 @@ export type SetNetworkStatusProps = {
 };
 
 export type SetSoraFee = {
-  fee: string;
+  fees: SoraFees;
 };
 
 // Actions

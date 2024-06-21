@@ -20,7 +20,7 @@
       <div class="switch-nodes">
         <div class="auto-select-nodes">{{ $t('accounts.autoNodes') }}</div>
 
-        <Switcher v-model="autoSelectNode" />
+        <Switcher :value="autoSelectNode" @change="toggleAutoSelectNode" />
       </div>
     </div>
 
@@ -64,7 +64,7 @@
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isNativeEVMNetwork } from '@extension-base/background/utils/utils';
 import NodeItem from './NodeItem.vue';
 import type {
   SelectedWallet,
@@ -101,6 +101,10 @@ export default class Nodes extends Vue {
     this.setAutoSelectNode({ value, network: this.selectedNetwork });
   }
 
+  toggleAutoSelectNode(value: boolean) {
+    this.autoSelectNode = value;
+  }
+
   get activeNode() {
     const { currentProvider } = this.networkJson;
     const activeNode =
@@ -123,7 +127,8 @@ export default class Nodes extends Vue {
   get defaultNodes() {
     if (!this.networkJson) return [];
 
-    if (isRequireEvmAPI(this.networkJson.name)) return this.networkJson.nodes.filter((el) => !el.url.startsWith('wss'));
+    if (isNativeEVMNetwork(this.networkJson.name))
+      return this.networkJson.nodes.filter((el) => !el.url.startsWith('wss'));
 
     return this.networkJson.nodes ?? [];
   }

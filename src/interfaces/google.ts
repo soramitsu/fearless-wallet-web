@@ -20,6 +20,7 @@ interface FileData extends IGDriveFile {
 }
 
 type FilesState = Partial<FileData>;
+
 interface FilesResponse {
   id: string;
   name: string;

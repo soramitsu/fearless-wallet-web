@@ -41,7 +41,7 @@
         <div v-else>
           <template v-if="step === 1">
             <FInput
-              v-model="accountName"
+              :value="accountName"
               placeholder="accounts.account"
               size="big"
               data-testid="account"
@@ -65,7 +65,7 @@
             <Hint class="hint" iconName="notification" :text="textMinHint" />
 
             <InputWithIcon
-              v-model="payoutAddressCut"
+              :value="payoutAddressCut"
               icon="close"
               placeholder="staking.payoutAccount"
               data-testid="payoutAccount"
@@ -114,7 +114,11 @@
             <div class="asset-logo">
               <Icon icon="asset-background" class="asset-background" :hover="false" />
 
-              <AssetIcon :icon="stakingCurrency.icon" :shadowColor="stakingCurrency.color" class="asset-highlight" />
+              <AssetHighlightIcon
+                :icon="stakingCurrency.icon"
+                :shadowColor="stakingCurrency.color"
+                class="asset-highlight"
+              />
             </div>
 
             <ContentForm :height="200" :isStaticHeight="true" :bottomRightCorner="true">

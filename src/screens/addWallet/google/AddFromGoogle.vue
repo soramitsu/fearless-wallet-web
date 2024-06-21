@@ -10,7 +10,13 @@
   >
     <NegativeMessage v-if="isAccessDenied" :message="$t('addWallet.google.somethingWrong')" />
 
-    <GoogleWalletsList v-else-if="haveWalletsToImport" :items="files" @getFile="getFile" />
+    <GoogleWalletsList
+      v-else-if="haveWalletsToImport"
+      :items="files"
+      @getFile="getFile"
+      @setItemValue="setItemValue"
+      @setItemPassword="setItemPassword"
+    />
 
     <template v-slot:control>
       <FButton
@@ -185,6 +191,10 @@ export default class AddFromGoogle extends Vue {
 
   setItemValue(index: number, data: Record<string, unknown>) {
     this.$set(this.files, index, { ...this.files[index], ...data });
+  }
+
+  setItemPassword(index: number, password: string) {
+    this.$set(this.files, index, { ...this.files[index], password });
   }
 
   async isTokenValid() {

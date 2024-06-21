@@ -20,7 +20,7 @@ export interface AssetPool {
   icon: string;
   id: string;
   reserve: string;
-  myAmount: string;
+  tokenBalance: string;
 }
 
 export interface DefaultPoolsParams {

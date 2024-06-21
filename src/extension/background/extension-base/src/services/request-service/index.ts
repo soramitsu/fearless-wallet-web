@@ -32,6 +32,7 @@ import type {
   RequestAuthorizeCancel,
 } from '@extension-base/background/types/types';
 import type { WCSignRequest } from '@extension-base/services/request-service/types';
+import type State from '@extension-base/background/handlers/State';
 
 export class RequestService {
   readonly popupHandler: PopupHandler;
@@ -42,13 +43,13 @@ export class RequestService {
   readonly substrateRequestHandler: SubstrateRequestHandler;
   readonly evmRequestHandler: EvmRequestHandler;
 
-  constructor(readonly keyringService: KeyringService) {
+  constructor(readonly keyringService: KeyringService, private readonly state: State) {
     this.popupHandler = new PopupHandler(this);
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
     this.authRequestHandler = new AuthRequestHandler(this);
-    this.substrateRequestHandler = new SubstrateRequestHandler(this, keyringService);
+    this.substrateRequestHandler = new SubstrateRequestHandler(this, keyringService, this.state);
     this.evmRequestHandler = new EvmRequestHandler(this);
   }
 
@@ -69,9 +70,8 @@ export class RequestService {
     // Not open new popup and use existed
     const popupList = this.popupHandler.popup;
 
-    if (popupList && popupList.length > 0) {
-      chrome.windows.update(popupList[0], { focused: true })?.catch(console.error);
-    } else this.popupHandler.popupOpen();
+    if (popupList && popupList.length > 0) chrome.windows.update(popupList[0], { focused: true })?.catch(console.error);
+    else this.popupHandler.popupOpen();
   }
 
   // Metadata
@@ -100,7 +100,6 @@ export class RequestService {
   }
 
   // Auth
-
   public get authSubject(): BehaviorSubject<AuthorizeRequest[]> {
     return this.authRequestHandler.authSubject;
   }
@@ -252,8 +251,8 @@ export class RequestService {
     return this.setAuthorize(entries);
   }
 
-  async authorizeCancel({ id }: RequestAuthorizeCancel): Promise<boolean> {
-    const queued = await this.getAuthRequest(id);
+  authorizeCancel({ id }: RequestAuthorizeCancel): boolean {
+    const queued = this.getAuthRequest(id);
 
     assert(queued, 'Unable to find request');
 

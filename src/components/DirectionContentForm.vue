@@ -22,70 +22,62 @@
   </ContentForm>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { GetAssetPrice } from '@/store';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+<script lang="ts" setup>
+import { computed, withDefaults } from 'vue';
+import { useI18n } from 'vue-i18n-composable';
+import { type GetAssetPrice, useStore } from '@/store';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
-@Component({})
-export default class DirectionContentForm extends Vue {
-  @Prop(Boolean) isExchangeB!: boolean;
-  @Prop(String) asset1!: string;
-  @Prop(String) asset2!: string;
-  @Prop(String) amount1!: string;
-  @Prop(String) amount2!: string;
-  @Prop(String) value1!: string;
-  @Prop(String) value2!: string;
-  @Prop(String) priceId1!: string;
-  @Prop(String) priceId2!: string;
-  @Prop({ default: 'chevron-right' }) icon!: string;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-
-  get directionIcons() {
-    return [
-      'img',
-      {
-        'img-margin': this.icon === 'chevron-right',
-      },
-    ];
-  }
-
-  get amount1Cut() {
-    return `${this.$n(+this.amount1, 'decimal')} ${this.asset1.toUpperCase()}`;
-  }
-
-  get amount2Cut() {
-    return `${this.$n(+this.amount2, 'decimal')} ${this.asset2.toUpperCase()}`;
-  }
-
-  get assetPrice1() {
-    return this.getAssetPrice(this.priceId1).price;
-  }
-
-  get assetPrice2() {
-    return this.getAssetPrice(this.priceId2).price;
-  }
-
-  get _value1() {
-    return this.value1 ?? getCostOfAssets(+this.amount1 ?? 0, this.assetPrice1);
-  }
-
-  get _value2() {
-    return this.value2 ?? getCostOfAssets(+this.amount2 ?? 0, this.assetPrice2);
-  }
-
-  get value1Cut() {
-    return `${this.fiatSymbol} ${this.$n(+this._value1, 'price')}`;
-  }
-
-  get value2Cut() {
-    return `${this.fiatSymbol} ${this.$n(+this._value2, 'price')}`;
-  }
+interface Props {
+  isExchangeB?: boolean;
+  asset1: string;
+  asset2: string;
+  amount1: string;
+  amount2: string;
+  value1?: string;
+  value2?: string;
+  priceId1: string;
+  priceId2: string;
+  icon?: string;
 }
+
+const props = withDefaults(defineProps<Props>(), {
+  isExchangeB: false,
+  asset1: '',
+  asset2: '',
+  amount1: '',
+  amount2: '',
+  value1: '',
+  value2: '',
+  priceId1: '',
+  priceId2: '',
+  icon: 'chevron-right',
+});
+
+const { n } = useI18n();
+const store = useStore();
+
+const directionIcons = computed(() => [
+  'img',
+  {
+    'img-margin': props.icon === 'chevron-right',
+  },
+]);
+
+const amount1Cut = computed(() => `${n(+props.amount1, 'decimal')} ${props.asset1.toUpperCase()}`);
+const amount2Cut = computed(() => `${n(+props.amount2, 'decimal')} ${props.asset2.toUpperCase()}`);
+
+const fiatSymbol = computed<string>(() => store.getters.fiatSymbol);
+const getAssetPrice: GetAssetPrice = (priceId) => store.getters.getAssetPrice(priceId);
+
+const assetPrice1 = computed(() => getAssetPrice(props.priceId1).price);
+const assetPrice2 = computed(() => getAssetPrice(props.priceId2).price);
+
+const _value1 = computed(() => props.value1 ?? getCostOfAssets(+props.amount1 ?? 0, assetPrice1.value));
+const _value2 = computed(() => props.value2 ?? getCostOfAssets(+props.amount2 ?? 0, assetPrice2.value));
+
+const value1Cut = computed(() => `${fiatSymbol.value} ${n(+_value1.value, 'price')}`);
+const value2Cut = computed(() => `${fiatSymbol.value} ${n(+_value2.value, 'price')}`);
 </script>
 
 <style lang="scss" scoped>

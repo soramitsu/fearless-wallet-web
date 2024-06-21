@@ -254,6 +254,7 @@ export default class StakingPage extends Vue {
       justify-content: center;
       align-items: center;
       height: 100%;
+      margin: auto;
     }
   }
 

@@ -61,7 +61,7 @@ export default class Eip155RequestHandler {
       this.requestService
         .sign(
           url,
-          new RequestBytesSign({ address, data: param.message, type: 'bytes' }),
+          new RequestBytesSign({ address, data: param.message, type: 'bytes' }, this.state),
           {
             address,
             name: pair.meta.name as string,
@@ -89,7 +89,7 @@ export default class Eip155RequestHandler {
       this.requestService
         .sign(
           url,
-          new RequestExtrinsicSign(param.transactionPayload),
+          new RequestExtrinsicSign(param.transactionPayload, this.state),
           {
             address,
             name: pair.meta.name as string,

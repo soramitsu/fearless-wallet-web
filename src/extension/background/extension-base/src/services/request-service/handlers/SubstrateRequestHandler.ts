@@ -116,7 +116,7 @@ export class SubstrateRequestHandler {
         ...this.signComplete(id, resolve, reject),
         account,
         id,
-        request: new RequestExtrinsicSign(payload, this.state),
+        request: new RequestExtrinsicSign(payload),
         url,
       };
 

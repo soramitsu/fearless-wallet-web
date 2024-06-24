@@ -89,7 +89,7 @@ export default class Eip155RequestHandler {
       this.requestService
         .sign(
           url,
-          new RequestExtrinsicSign(param.transactionPayload, this.state),
+          new RequestExtrinsicSign(param.transactionPayload),
           {
             address,
             name: pair.meta.name as string,

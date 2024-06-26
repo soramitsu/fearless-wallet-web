@@ -9,7 +9,6 @@
           class="ownedNfts"
           :key="nft.id"
           :nft="nft"
-          isNft
           @share="onShare"
         />
       </div>
@@ -24,7 +23,6 @@
             :collectionName="name"
             :key="nft.id"
             :nft="nft"
-            isNft
             @share="onShare"
           />
         </div>
@@ -43,7 +41,6 @@ import type { NftCollection, AvailableNftState, FearlessNft } from '@extension-b
 import { fetchAvailableNftsForContract } from '@/extension/messaging/nfts';
 import { type SelectedWallet, useStore } from '@/store';
 import NftItem from '@/screens/wallet&asset/asset/NftItem.vue';
-import InfiniteScroll from '@/components/InfiniteScroll.vue';
 import Tooltip from '@/components/Tooltip.vue';
 
 const route = useRoute();

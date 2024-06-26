@@ -317,17 +317,17 @@ export default class Extension extends FWExtensionBase {
         const addressList = Object.keys(this.state.keyringService.getAllAccounts());
         const urlList = Object.keys(authUrls);
 
-        if (Object.keys(authUrls[urlList[0]].allowedAccountsMap).toString() !== addressList.toString()) {
+        if (Object.keys(authUrls[urlList[0]]?.allowedAccountsMap).toString() !== addressList.toString()) {
           urlList.forEach((url) => {
             const authUrl = authUrls[url];
-            const keys = Object.keys(authUrl.allowedAccountsMap);
+            const keys = Object.keys(authUrl?.allowedAccountsMap);
 
             addressList.forEach((address) => {
               if (!keys.includes(address)) authUrl.allowedAccountsMap[address] = false;
             });
 
             keys.forEach((address) => {
-              if (!addressList.includes(address)) delete authUrl.allowedAccountsMap[address];
+              if (!addressList.includes(address)) delete authUrl?.allowedAccountsMap[address];
             });
           });
 
@@ -561,7 +561,9 @@ export default class Extension extends FWExtensionBase {
     const auth = authList[stripUrl(request.url)];
 
     const network = Object.values(this.state.networkMap).find(
-      (el) => el.name.toLowerCase() === auth.currentEvmNetworkKey?.toLowerCase()
+      (el) =>
+        el.genesisHash.toLowerCase() === auth.currentEvmNetworkKey?.toLowerCase() ||
+        el.name.toLowerCase() === auth.currentEvmNetworkKey?.toLowerCase()
     );
 
     if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);

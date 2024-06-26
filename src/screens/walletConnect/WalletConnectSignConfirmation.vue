@@ -166,14 +166,12 @@ const changePassword = (value: string) => {
 const onApprove = async () => {
   state.isPassValid = false;
   state.isSigning = true;
-  const res = await walletConnectRequestApprove(
+  await walletConnectRequestApprove(
     address.value.toLowerCase(),
     password.value,
     request.value.topic,
     state.isSavePass
   ).catch(onError);
-
-  if (res) router.back();
 };
 </script>
 

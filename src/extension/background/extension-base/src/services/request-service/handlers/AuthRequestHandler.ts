@@ -98,6 +98,7 @@ export class AuthRequestHandler {
         request: { origin },
         accountAuthType,
         url,
+        currentEvmNetworkKey,
       } = this.authRequests[id];
 
       if (!isAllowed) {
@@ -118,6 +119,7 @@ export class AuthRequestHandler {
         id: idStr,
         origin,
         url,
+        currentEvmNetworkKey,
       };
 
       this.setAuthorize(this.authorizeCached);

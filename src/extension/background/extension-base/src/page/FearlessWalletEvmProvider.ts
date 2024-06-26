@@ -76,9 +76,9 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
   }
 
   request<T>({ method, params }: RequestArguments): Promise<T> {
-    if (!this.isEnable && method === 'eth_accounts') {
-      return this.request<T>({ method: 'eth_requestAccounts' });
-    }
+    // if (!this.isEnable && method === 'eth_accounts') {
+    //   return this.request<T>({ method: 'eth_requestAccounts' });
+    // }
 
     // Subscribe events
     switch (method) {
@@ -88,7 +88,6 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
 
           this.sendMessage('pub(authorize.tab)', { origin, accountAuthType: 'evm' })
             .then(() => {
-              this.isEnable = true;
               // Return account list
               this.request<T>({ method: 'eth_accounts' })
                 .then((accounts) => resolve(accounts))

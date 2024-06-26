@@ -123,7 +123,7 @@ const isSignMobile = computed(() => {
 });
 
 const address = computed(() => {
-  if (request.value && 'data' in request.value) return request.value.data[0].from;
+  if (request.value && 'data' in request.value) return request.value.data[0].from ?? request.value.data[1];
 
   return request.value?.account.address;
 });
@@ -141,7 +141,7 @@ const accountName = computed(() => {
 
   if ('account' in request.value) return request.value.account.name;
 
-  return request.value.data[0].from;
+  return request.value.data[0].from ?? request.value.data[0];
 });
 
 const mortalityAsString = (era: ExtrinsicEra | undefined, hexBlockNumber: string): string | undefined => {
@@ -165,13 +165,17 @@ const txInfo = computed(() => {
     if (typeof request.value.data === 'object') {
       const [payload] = request.value.data;
 
-      if ('gas' in payload) info.gas = formatUnits(payload.gas, 'gwei');
-      if ('value' in payload) info.value = formatUnits(payload.value);
-      if ('to' in payload) info.to = cut(payload.to.toString(), 15);
-      if ('from' in payload) info.from = cut(payload.from.toString(), 15);
-      if ('data' in payload) info.data = cut(payload.data.toString(), 15);
+      if (typeof payload === 'object') {
+        if ('gas' in payload) info.gas = formatUnits(payload.gas, 'gwei');
+        if ('value' in payload) info.value = formatUnits(payload.value);
+        if ('to' in payload) info.to = cut(payload.to.toString(), 15);
+        if ('from' in payload) info.from = cut(payload.from.toString(), 15);
+        if ('data' in payload) info.data = cut(payload.data.toString(), 15);
+      } else {
+        info.data = request.value.data[0];
+      }
     } else {
-      info.data = request.value.data;
+      info.data = request.value.data[0];
     }
   } else {
     const data: Record<string, string | number | undefined> = {

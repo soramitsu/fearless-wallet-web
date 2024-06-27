@@ -1016,22 +1016,22 @@ export default class Extension extends FWExtensionBase {
     const savePass = () => this.savePass(substrateAddress, ethereumAddress, !!isSavePass, !!isMobile);
     const callback = this.makeExtrinsicCallback(cb, savePass);
 
+    const params = {
+      assetId,
+      originNet,
+      destinationNet,
+      amount,
+      from,
+      to,
+      password,
+      isSavePass,
+      tokenBalance,
+      callback,
+      isMobile: !!isMobile,
+    };
+
     try {
-      const transferProm: Promise<void> | undefined = makeCrossChain(
-        {
-          assetId,
-          originNet,
-          destinationNet,
-          amount,
-          from,
-          to,
-          password,
-          isSavePass,
-          tokenBalance,
-          callback,
-        },
-        this.state
-      );
+      const transferProm: Promise<void> | undefined = makeCrossChain(params, this.state);
 
       await transferProm;
 

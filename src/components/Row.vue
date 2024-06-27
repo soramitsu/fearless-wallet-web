@@ -30,7 +30,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 type BorderType = 'default' | 'secondary';
 type Color = 'white' | 'pink-lavender';
 

@@ -7,8 +7,8 @@
     @closeHandler="onClose"
   >
     <div class="nft-send-form">
-      <template v-if="showSendForm">
-        <div class="container">
+      <div class="container">
+        <template v-if="showSendForm">
           <FInput
             :value="recipientCut"
             icon="close"
@@ -37,51 +37,51 @@
             :hideLastBorder="true"
             data-testid="networkFeeValue"
           />
-        </div>
-      </template>
+        </template>
 
-      <template v-if="popupControls.showConfirmScreen">
-        <img :src="image" class="nft-img" alt="nft" width="180px" height="180px" />
+        <template v-else-if="popupControls.showConfirmScreen">
+          <img :src="image" class="nft-img" alt="nft" />
 
-        <ContentForm bottomRightCorner>
-          <InfoRow v-for="(value, key) in nftDetails" :text="key" :value="value" :key="key" />
-        </ContentForm>
-      </template>
+          <ContentForm bottomRightCorner>
+            <InfoRow v-for="(value, key) in nftDetails" :text="key" :value="value" :key="key" />
+          </ContentForm>
+        </template>
 
-      <EditAddressBook
-        v-if="showEditAddressBook"
-        :network="network"
-        :_address="formInfo.newAddress"
-        @setAddress="setAddress"
-      />
-
-      <HistoryBook
-        v-else-if="popupControls.showHistoryBook"
-        :network="network"
-        :assetId="formInfo.assetId"
-        @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
-        @setRecipient="setRecipient"
-        @setAddress="setAddress"
-      />
-
-      <div v-else-if="popupControls.showMyWallets">
-        <WalletInfo
-          v-for="{ name, address, ethereumAddress, isMobile } in filteredWallets"
-          :key="ethereumAddress"
-          :name="name"
-          :isSelected="getStatusWallet(ethereumAddress)"
-          :isMobile="isMobile"
-          :address="address"
-          :showMenu="false"
-          class="wallet"
-          @setWallet="setWallet(ethereumAddress)"
+        <EditAddressBook
+          v-if="showEditAddressBook"
+          :network="network"
+          :_address="formInfo.newAddress"
+          @setAddress="setAddress"
         />
+
+        <HistoryBook
+          v-else-if="popupControls.showHistoryBook"
+          :network="network"
+          :assetId="formInfo.assetId"
+          @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
+          @setRecipient="setRecipient"
+          @setAddress="setAddress"
+        />
+
+        <div v-else-if="popupControls.showMyWallets">
+          <WalletInfo
+            v-for="{ name, address, ethereumAddress, isMobile } in filteredWallets"
+            :key="ethereumAddress"
+            :name="name"
+            :isSelected="getStatusWallet(ethereumAddress)"
+            :isMobile="isMobile"
+            :address="address"
+            :showMenu="false"
+            class="wallet"
+            @setWallet="setWallet(ethereumAddress)"
+          />
+        </div>
       </div>
 
       <ConfirmationPasswordPopup
         v-if="popupControls.showConfirmationPasswordPopup"
-        :tx="tx"
         extrinsicType="nft"
+        :tx="tx"
         :firstIcon="image"
         @close="onConfirmClose"
       />
@@ -162,7 +162,6 @@ const recipientCut = computed(() => cut(formInfo.to));
 const network = computed(() => nft.value?.network ?? '');
 
 const isSameAddress = computed(() => BaseApi.isSameAddress(selectedWallet.value, formInfo.to, network.value));
-
 const isDisabled = computed(() => formInfo.to === '' || errors.incorrectRecipient || errors.insufficientFunds);
 
 const assetSymbol = computed(() => {
@@ -170,6 +169,8 @@ const assetSymbol = computed(() => {
 
   return net?.assets.find(({ isUtility }) => isUtility)?.symbol ?? '';
 });
+
+const formatFeeString = computed(() => `${n(+formInfo.fee, 'decimalPrecise')} ${assetSymbol.value?.toUpperCase()}`);
 
 const actionBtnName = computed(() => {
   if (errors.insufficientFunds) return t('assets.insufficientBalance', { asset: assetSymbol.value.toUpperCase() });
@@ -193,6 +194,7 @@ const nftDetails = computed(() => ({
   'nft.owned': cut(selectedWallet.value.ethereumAddress),
   'common.network': collection.value?.network ?? '',
   'nft.type': nft.value?.type ?? '',
+  'assets.networkFee': formatFeeString,
 }));
 
 const tx = computed<NftTx>(() => ({
@@ -215,8 +217,6 @@ const showSendForm = computed(
 const showSubmitBtn = computed(
   () => !popupControls.showHistoryBook && !showEditAddressBook.value && !popupControls.showMyWallets
 );
-
-const formatFeeString = computed(() => `${n(+formInfo.fee, 'decimalPrecise')} ${assetSymbol.value?.toUpperCase()}`);
 
 watch(formInfo, validateAddress);
 watch(tx, validateTx);
@@ -280,12 +280,11 @@ function validateTx() {
   display: flex;
   flex-flow: column;
   justify-content: space-between;
-  margin-bottom: 10px;
 
   .activity-buttons {
     display: flex;
     user-select: none;
-    margin-bottom: 30px;
+    margin: 10px 0 30px;
   }
 
   .container {
@@ -297,11 +296,11 @@ function validateTx() {
   .wallet {
     cursor: pointer;
   }
+
   .nft-img {
-    margin-left: auto;
-    margin-right: auto;
-    width: 150px;
-    height: 150px;
+    margin: 0 auto 20px;
+    width: 180px;
+    height: 180px;
     clip-path: $big-clip-path-left-top-and-right-bottom;
     border-radius: $default-border-radius;
   }

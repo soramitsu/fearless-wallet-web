@@ -43,7 +43,7 @@
             <div class="summary-label">{{ $t('assets.summary') }}</div>
 
             <InfoRow text="assets.assetsAmount" :value="amountString" :price="valueString" />
-            <InfoRow text="assets.fee" :value="partialFeeString" :price="fiatFeeString" />
+            <InfoRow text="assets.networkFee" :value="partialFeeString" :price="fiatFeeString" />
             <InfoRow v-if="isUtilityAsset" text="assets.total" :value="totalString" :price="fiatTotalString" />
           </div>
         </FCorners>

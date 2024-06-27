@@ -80,7 +80,7 @@ const internalRowClasses = computed(() => {
   return classes;
 });
 
-const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
+const direction = computed(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
 </script>
 
 <style lang="scss" scoped>

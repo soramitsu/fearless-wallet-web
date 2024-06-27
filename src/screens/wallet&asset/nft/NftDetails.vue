@@ -2,20 +2,24 @@
   <AboveForm :fullScreen="true" :header="meta.name" @closeHandler="onClose">
     <Scroll>
       <div class="nft-details">
-        <img v-if="isPng" data-testid="nftImage" :src="imageUrl" :alt="id" width="500" height="500" />
-        <video v-else-if="isMp4" :src="imageUrl" autoplay></video>
+        <div>
+          <video v-if="isMp4" :src="imageUrl" autoplay></video>
+          <img v-else data-testid="nftImage" :src="imageUrl" :alt="id" width="500" height="500" />
 
-        <div v-if="isOwned" class="icon-ownership" data-testid="iconOwnership">
-          <Icon icon="check" className="icon-ownership-size" iconColor="success" width="20px" height="20px" />
+          <div v-if="isOwned" class="icon-ownership" data-testid="iconOwnership">
+            <Icon icon="check" className="icon-ownership-size" iconColor="success" width="20px" height="20px" />
+          </div>
+
+          <p class="nft-details__desc" data-testid="nftDescription">{{ meta.description }}</p>
+
+          <InfoRow text="nft.collection" data-testid="collection" :value="collection.name" />
+          <InfoRow v-if="nft.isOwned" data-testid="owned" text="nft.owned" :value="ownedBy" />
+          <InfoRow text="nft.id" data-testid="tokenId" :value="tokenId" />
+          <InfoRow text="common.network" data-testid="network" :value="network" />
+          <InfoRow text="nft.type" data-testid="type" :value="nft.type" />
+
+          <Tooltip text="common.copied" target=".share" trigger="click" :arrow="true" />
         </div>
-
-        <p class="nft-details__desc" data-testid="nftDescription">{{ meta.description }}</p>
-
-        <InfoRow text="nft.collection" data-testid="collection" :value="collection.name" />
-        <InfoRow v-if="nft.isOwned" data-testid="owned" text="nft.owned" :value="ownedBy" />
-        <InfoRow text="nft.id" data-testid="tokenId" :value="tokenId" />
-        <InfoRow text="common.network" data-testid="network" :value="network" />
-        <InfoRow text="nft.type" data-testid="type" :value="nft.type" />
 
         <div class="send-btn">
           <FButton
@@ -44,8 +48,6 @@
             @click="onSend"
           />
         </div>
-
-        <Tooltip text="common.copied" target=".share" trigger="click" :arrow="true" />
       </div>
     </Scroll>
   </AboveForm>
@@ -84,7 +86,6 @@ const nft = computed<Partial<FearlessNft>>(() => {
 const network = computed(() => nft.value.network ?? '');
 
 const contentType = computed(() => nft.value.contentType);
-const isPng = computed(() => contentType.value === 'image/png');
 const isMp4 = computed(() => contentType.value === 'video/mp4');
 const imageUrl = computed(() => nft.value.image ?? require('@/assets/fearless-logo-animated.gif'));
 
@@ -122,8 +123,10 @@ const onShare = () => {
   position: relative;
   display: flex;
   flex-flow: column;
+  justify-content: space-between;
   padding-left: 4px;
   padding-right: 4px;
+  height: 100%;
 
   &__img {
     width: 500px;
@@ -159,6 +162,7 @@ const onShare = () => {
     }
   }
 }
+
 .send-btn {
   width: 100%;
   position: sticky;

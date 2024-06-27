@@ -16,9 +16,9 @@
 import { computed, onMounted, watch } from 'vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { NftCollection } from '@extension-base/services/nft-service/types';
-import NftCollectionItem from '@/screens/wallet&asset/asset/NftCollectionItem.vue';
+import NftCollectionItem from '@/screens/wallet&asset/nft/NftCollectionItem.vue';
 import { type SelectedWallet, useStore } from '@/store';
-import NftSettings from '@/screens/wallet&asset/asset/NftSettings.vue';
+import NftSettings from '@/screens/wallet&asset/nft/NftSettings.vue';
 import { fetchNfts } from '@/extension/messaging/nfts';
 import { isSameString } from '@/helpers';
 
@@ -32,11 +32,13 @@ const nfts = computed<NftCollection[]>(() => store.getters.nfts);
 const activeNetworkForSelectedWallet = computed<NetworkJson[]>(() => store.getters.activeNetworkForSelectedWallet);
 
 const filteredNfts = computed(() => {
-  return nfts.value.filter(({ network, name }) =>
-    activeNetworkForSelectedWallet.value.some((net) => {
-      return isSameString(net.name, network) && name?.toLowerCase()?.includes(props.filterValue.toLowerCase());
-    })
-  );
+  return nfts.value.filter(({ network, name }) => {
+    const filterValue = props.filterValue.toLowerCase();
+
+    if (!name?.toLowerCase().includes(filterValue)) return false;
+
+    return activeNetworkForSelectedWallet.value.some((net) => isSameString(net.name, network));
+  });
 });
 
 const isEmpty = computed(() => Object.keys(filteredNfts.value).length === 0);

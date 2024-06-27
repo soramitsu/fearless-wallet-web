@@ -289,6 +289,7 @@ const buttonClasses = computed(() => {
 .secondary-hover:hover {
   background-color: $default-background-color !important;
 }
+
 .thirdly {
   background-color: $secondary-btn-color !important;
   color: #fff !important;

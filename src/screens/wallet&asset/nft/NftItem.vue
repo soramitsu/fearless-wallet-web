@@ -1,7 +1,7 @@
 <template>
   <FCorners class="nft" size="big" :topLeftCorner="false" :bottomRightCorner="false" @click.native="onNavigate">
-    <img v-if="isPng" :src="imageUrl" :alt="nft.meta?.name" width="240" height="240" />
-    <video v-else-if="isMp4" :src="imageUrl" width="240" height="240"></video>
+    <video v-if="isMp4" :src="imageUrl" width="240" height="240"></video>
+    <img v-else :src="imageUrl" :alt="nft.meta?.name" width="240" height="240" />
 
     <div class="nft-info">
       <div class="titles">
@@ -48,7 +48,6 @@ const subTitle = computed(() => props.nft.meta.description ?? '');
 const upperTitle = computed(() => props.collectionName ?? '');
 
 const contentType = computed(() => props.nft.contentType);
-const isPng = computed(() => contentType.value === 'image/png');
 const isMp4 = computed(() => contentType.value === 'video/mp4');
 const imageUrl = computed(() => props.nft.image ?? require('@/assets/fearless-logo-animated.gif'));
 

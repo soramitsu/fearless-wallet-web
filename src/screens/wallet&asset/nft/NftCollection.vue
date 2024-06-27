@@ -40,7 +40,7 @@ import { useI18n } from 'vue-i18n-composable';
 import type { NftCollection, AvailableNftState, FearlessNft } from '@extension-base/services/nft-service/types';
 import { fetchAvailableNftsForContract } from '@/extension/messaging/nfts';
 import { type SelectedWallet, useStore } from '@/store';
-import NftItem from '@/screens/wallet&asset/asset/NftItem.vue';
+import NftItem from '@/screens/wallet&asset/nft/NftItem.vue';
 import Tooltip from '@/components/Tooltip.vue';
 
 const route = useRoute();

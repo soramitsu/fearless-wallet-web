@@ -259,7 +259,6 @@
     "reserved": "Reserved",
     "frozen": "Frozen",
     "transferable": "Transferable",
-    "fee": "Fee",
     "total": "Total",
     "signTransaction": "Sign the transaction",
     "passwordTransaction": "Enter password to confirm the transaction",

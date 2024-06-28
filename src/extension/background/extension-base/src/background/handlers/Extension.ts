@@ -137,6 +137,7 @@ import type {
 } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
+import { isSameString } from '@/helpers';
 
 function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
   return (value as SignerPayloadJSON).genesisHash !== undefined;
@@ -562,8 +563,7 @@ export default class Extension extends FWExtensionBase {
 
     const network = Object.values(this.state.networkMap).find(
       (el) =>
-        el.genesisHash.toLowerCase() === auth.currentEvmNetworkKey?.toLowerCase() ||
-        el.name.toLowerCase() === auth.currentEvmNetworkKey?.toLowerCase()
+        isSameString(el.genesisHash, auth.currentEvmNetworkKey) || isSameString(el.name, auth.currentEvmNetworkKey)
     );
 
     if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);

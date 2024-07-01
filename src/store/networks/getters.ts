@@ -6,6 +6,7 @@ import type { State } from './state';
 import type { SelectedWallet } from '@/store/accounts/types';
 import BaseApi from '@/util/BaseApi';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, NETWORKS_GROUPS, POPULAR_NETWORKS } from '@/consts/networks';
+import { isSameString } from '@/helpers';
 
 export enum GettersTypes {
   networks = 'networks',
@@ -74,7 +75,7 @@ const getters: GetterTree<State, State> & Getters = {
         return activeNetworks.filter(({ favorite }) => favorite.includes(selectedWallet.address));
     }
 
-    return activeNetworks.filter(({ name }) => name.toLowerCase() === selectedNetwork);
+    return activeNetworks.filter(({ name }) => isSameString(name, selectedNetwork));
   },
 
   [GettersTypes.favoriteNetworksNames]({ networks }): { name: string; favorite: string[] }[] {

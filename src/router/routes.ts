@@ -15,11 +15,11 @@ import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import WcAuths from '@/screens/extension-ui/WcAuths.vue';
 import SubstrateAuths from '@/screens/extension-ui/SubstrateAuths.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
-import NftsList from '@/screens/wallet&asset/asset/NftsList.vue';
-import NftCollection from '@/screens/wallet&asset/asset/NftCollection.vue';
-import NftDetails from '@/screens/wallet&asset/asset/NftDetails.vue';
+import NftCollectionList from '@/screens/wallet&asset/nft/NftCollectionList.vue';
+import NftCollection from '@/screens/wallet&asset/nft/NftCollection.vue';
+import NftDetails from '@/screens/wallet&asset/nft/NftDetails.vue';
 
-const NftSendForm = () => import('@/screens/wallet&asset/asset/NftSendForm.vue');
+const NftSendForm = () => import('@/screens/wallet&asset/nft/NftSendForm.vue');
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
@@ -369,7 +369,7 @@ const routes: Array<RouteConfig> = [
           {
             path: '/nft-collections',
             name: Components.Nfts,
-            component: NftsList,
+            component: NftCollectionList,
             meta: {
               title: 'wallet',
             },

@@ -9,7 +9,6 @@
           class="ownedNfts"
           :key="nft.id"
           :nft="nft"
-          isNft
           @share="onShare"
         />
       </div>
@@ -19,12 +18,11 @@
 
         <div class="nft-group" data-testid="nftGroupAvailable">
           <NftItem
-            v-for="nft in availableNfts"
+            v-for="nft in nftCollectionFromStore"
             data-testid="nftAvailable"
             :collectionName="name"
             :key="nft.id"
             :nft="nft"
-            isNft
             @share="onShare"
           />
         </div>
@@ -42,8 +40,7 @@ import { useI18n } from 'vue-i18n-composable';
 import type { NftCollection, AvailableNftState, FearlessNft } from '@extension-base/services/nft-service/types';
 import { fetchAvailableNftsForContract } from '@/extension/messaging/nfts';
 import { type SelectedWallet, useStore } from '@/store';
-import NftItem from '@/screens/wallet&asset/asset/NftItem.vue';
-import InfiniteScroll from '@/components/InfiniteScroll.vue';
+import NftItem from '@/screens/wallet&asset/nft/NftItem.vue';
 import Tooltip from '@/components/Tooltip.vue';
 
 const route = useRoute();
@@ -55,16 +52,10 @@ const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWall
 
 const contract = computed(() => route.params.contract);
 const availableNftsFromStore = computed<AvailableNftState>(() => store.getters.availableNfts);
-
-const nftCollectionFromStore = computed<FearlessNft[]>(() => {
-  const availableNfts = store.getters.availableNfts;
-  const availableByContract = availableNfts[contract.value];
-
-  return availableByContract?.collection ?? [];
-});
-
-const availableNfts = ref<FearlessNft[]>(nftCollectionFromStore.value);
-const isAvailableNfts = computed(() => availableNfts.value.length);
+const nftCollectionFromStore = computed<FearlessNft[]>(
+  () => availableNftsFromStore.value[contract.value]?.collection ?? []
+);
+const isAvailableNfts = computed(() => nftCollectionFromStore.value.length);
 
 const state = reactive<{ pageKey?: string; canLoadMore: boolean }>({
   pageKey: availableNftsFromStore.value[contract.value]?.pageKey,
@@ -81,7 +72,7 @@ const header = computed(() => (collection.value ? collection.value.name : ''));
 const additionalNftsHeader = computed(() => t('nft.availableNfts', { name: collection.value?.name }));
 const network = computed<string>(() => collection.value?.network ?? '');
 
-watch(availableNfts, () => tooltip.value?.createTooltip());
+watch(nftCollectionFromStore, () => tooltip.value?.createTooltip());
 
 const onClose = () => router.back();
 
@@ -118,13 +109,12 @@ const onScroll = async () => {
   if (nfts.pageKey) state.canLoadMore = true;
 
   state.pageKey = nfts.pageKey;
-  availableNfts.value.push(...nfts.nfts);
 
-  const avNfts: AvailableNftState = {};
-
-  avNfts[contract.value] = {
-    collection: nfts.nfts,
-    pageKey: nfts.pageKey,
+  const avNfts: AvailableNftState = {
+    [contract.value]: {
+      collection: nfts.nfts,
+      pageKey: nfts.pageKey,
+    },
   };
 
   store.commit('SET_AVAILABLE_NFTS', avNfts);

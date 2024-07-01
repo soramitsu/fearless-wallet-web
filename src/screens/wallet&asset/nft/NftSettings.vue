@@ -32,6 +32,7 @@ const store = useStore();
 const emit = defineEmits(['handleClose']);
 const nftSettings = ref({ spam: false, airdrop: false });
 const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+
 onMounted(() => {
   const settings = accountController.getNftSettings();
 
@@ -51,8 +52,10 @@ onBeforeUnmount(() => {
     address: selectedWallet.value.ethereumAddress,
     settings: nftSettings.value,
   });
+
   accountController.setNftSettings(nftSettings.value);
 });
+
 const onClose = () => emit('handleClose');
 
 const toggleNftSettingsSpam = () => {

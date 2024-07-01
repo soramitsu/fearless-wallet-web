@@ -44,6 +44,7 @@ export interface MakeCrossChainProps extends CrossChainProps {
   isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;
   relayChain?: RelayChainName;
+  isMobile: boolean;
 }
 
 const XCM_NATIVE_PALLETS = ['xcmPallet', 'polkadotXcm'];
@@ -394,7 +395,19 @@ async function estimateCrossChainFee(props: CrossChainProps, state: State): Prom
 }
 
 async function makeCrossChain(props: MakeCrossChainProps, state: State): Promise<void> {
-  const { assetId, originNet, destinationNet, from, to, isSavePass, password, amount, tokenBalance, callback } = props;
+  const {
+    assetId,
+    originNet,
+    destinationNet,
+    from,
+    to,
+    isSavePass,
+    password,
+    amount,
+    tokenBalance,
+    callback,
+    isMobile,
+  } = props;
 
   if (isSora(originNet, true)) {
     await makeSoraCrossChain(props, state);
@@ -424,7 +437,7 @@ async function makeCrossChain(props: MakeCrossChainProps, state: State): Promise
 
   await signAndSendExtrinsic(
     {
-      type: SignerType.PASSWORD,
+      type: isMobile ? SignerType.MOBILE : SignerType.PASSWORD,
       apiProps,
       callback,
       extrinsic,

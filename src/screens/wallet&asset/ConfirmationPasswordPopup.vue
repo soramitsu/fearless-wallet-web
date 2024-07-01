@@ -379,8 +379,6 @@ export default class ConfirmationPasswordPopup extends Vue {
       this.transactionState = data.status ? 'success' : 'failed';
     };
 
-    if (this.isSignMobile) return makeTransfer(this.request as RequestTransfer, callback);
-
     if (this.extrinsicType === 'transfer') return makeTransfer(this.request as RequestTransfer, callback);
 
     if (this.extrinsicType === 'crossChain') return makeCrossChain(this.request as RequestCrossChain, callback);

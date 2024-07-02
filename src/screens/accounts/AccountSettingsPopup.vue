@@ -7,6 +7,7 @@
     :left="-17"
     :showBorder="true"
     :showHeader="false"
+    :zIndex="399"
     @handlerClose="$emit('handlerClose')"
   >
     <div class="account-settings">

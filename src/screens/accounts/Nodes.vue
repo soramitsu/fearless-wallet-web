@@ -1,62 +1,82 @@
 <template>
-  <div class="network">
-    <div class="network-description">
-      <div class="description">
-        <div class="img-container">
-          <ExternalLogo class="img" :name="selectedNetwork" />
-        </div>
+  <div class="nodes-page">
+    <div>
+      <ContentForm :height="75" :isStaticHeight="true" :bottomRightCorner="true">
+        <div class="network-description">
+          <div class="description">
+            <div class="img-container">
+              <ExternalLogo class="img" :name="selectedNetwork" />
+            </div>
 
-        <div>
-          <div class="network-name" data-testid="networkName">{{ selectedNetworkUpper }}</div>
-          <div class="address-wrapper" @click="copyAddress">
-            <div class="address">{{ address }}</div>
+            <div>
+              <div class="network-name" data-testid="networkName">{{ selectedNetworkUpper }}</div>
+              <div class="address-wrapper" @click="copyAddress">
+                <div class="address">{{ address }}</div>
 
-            <Icon icon="copy" className="copy" />
+                <Icon icon="copy" className="copy" />
+              </div>
+              <Tooltip text="common.copied" target=".address-wrapper" placement="top-end" trigger="click" />
+            </div>
           </div>
-          <Tooltip text="common.copied" target=".address-wrapper" placement="top-end" trigger="click" />
+
+          <div class="switch-nodes">
+            <div class="auto-select-nodes">{{ $t('accounts.autoNodes') }}</div>
+
+            <Switcher :value="autoSelectNode" @change="toggleAutoSelectNode" />
+          </div>
         </div>
-      </div>
+      </ContentForm>
 
-      <div class="switch-nodes">
-        <div class="auto-select-nodes">{{ $t('accounts.autoNodes') }}</div>
+      <ContentForm :height="heightDefaultNodesForm" :isStaticHeight="true" :bottomRightCorner="true" class="nodes-form">
+        <div class="container-nodes">
+          <div class="row label" data-testid="defaultNodes">{{ $t('accounts.defaultNodes') }}</div>
 
-        <Switcher :value="autoSelectNode" @change="toggleAutoSelectNode" />
-      </div>
+          <div class="row">
+            <NodeItem
+              v-for="({ url, name }, index) in defaultNodes"
+              :key="name + index"
+              :name="name"
+              :url="url"
+              :isActive="getActiveStatus(name, url)"
+              :isRemoveBorderBottom="getRemoveBorderBottomValue(index)"
+              @changeNode="changeNode(url)"
+            />
+          </div>
+        </div>
+      </ContentForm>
+
+      <ContentForm
+        v-if="showCustomNodesForm"
+        :height="heightCustomNodesForm"
+        :isStaticHeight="true"
+        :bottomRightCorner="true"
+      >
+        <div class="container-nodes">
+          <div class="label">{{ $t('accounts.customNodes') }}</div>
+
+          <div class="row">
+            <NodeItem
+              v-for="({ url, name }, index) in customNodes"
+              :key="name + index"
+              :name="name"
+              :url="url"
+              :isCustomNode="true"
+              :isActive="getActiveStatus(name, url)"
+              :isRemoveBorderBottom="getRemoveBorderBottomValue(index, true)"
+              @changeNode="changeNode(url)"
+              @openNodeSettingsPopup="openNodeSettingsPopup(name, url, ...arguments)"
+            />
+          </div>
+        </div>
+      </ContentForm>
     </div>
 
-    <div class="row label" data-testid="defaultNodes">{{ $t('accounts.defaultNodes') }}</div>
-
-    <div class="row">
-      <NodeItem
-        v-for="({ url, name }, index) in defaultNodes"
-        :key="name + index"
-        :name="name"
-        :url="url"
-        :isActive="getActiveStatus(name, url)"
-        :isRemoveBorderBottom="getRemoveBorderBottomValue(index)"
-        @changeNode="changeNode(url)"
-      />
-    </div>
-    <div class="custom-nodes" data-testid="customNodes">
-      <div class="label">{{ $t('accounts.customNodes') }}</div>
-
-      <div class="add-node" data-testid="openEditNodeFormBtn" @click="$emit('openEditNodeForm', selectedNetwork)">
-        <Icon icon="plus" className="plus" />
-
-        <div>{{ $t('accounts.addNode') }}</div>
-      </div>
-    </div>
-
-    <NodeItem
-      v-for="({ url, name }, index) in customNodes"
-      :key="name + index"
-      :name="name"
-      :url="url"
-      :isCustomNode="true"
-      :isActive="getActiveStatus(name, url)"
-      :isRemoveBorderBottom="getRemoveBorderBottomValue(index, true)"
-      @changeNode="changeNode(url)"
-      @openNodeSettingsPopup="openNodeSettingsPopup(name, url, ...arguments)"
+    <FButton
+      class="row"
+      size="big"
+      text="accounts.addCustomNode"
+      data-testid="openEditNodeFormBtn"
+      @click="$emit('openEditNodeForm', selectedNetwork)"
     />
   </div>
 </template>
@@ -93,16 +113,28 @@ export default class Nodes extends Vue {
   @Getter(NetworksGettersTypes.getActiveNodesByNetwork) getActiveNodesByNetwork!: GetActiveNodesByNetwork;
   @Mutation(AccountsMutationTypes.SET_AUTO_SELECT_NODE) setAutoSelectNode!: Fn<SetAutoSelectNode>;
 
+  get heightDefaultNodesForm() {
+    const countNodes = this.defaultNodes.length;
+
+    return countNodes * 60 + 80;
+  }
+
+  get heightCustomNodesForm() {
+    const countNodes = this.customNodes.length;
+
+    return countNodes * 60 + 80;
+  }
+
+  get showCustomNodesForm() {
+    return this.customNodes.length !== 0;
+  }
+
   get autoSelectNode() {
     return this.getAutoSelectNodesValueByNetwork(this.selectedNetwork);
   }
 
   set autoSelectNode(value: boolean) {
     this.setAutoSelectNode({ value, network: this.selectedNetwork });
-  }
-
-  toggleAutoSelectNode(value: boolean) {
-    this.autoSelectNode = value;
   }
 
   get activeNode() {
@@ -158,7 +190,12 @@ export default class Nodes extends Vue {
   @Watch('autoSelectNode')
   toggleAutoSelectNodesValue() {
     const [{ url }] = this.defaultNodes;
+
     this.changeNode(url);
+  }
+
+  toggleAutoSelectNode(value: boolean) {
+    this.autoSelectNode = value;
   }
 
   openNodeSettingsPopup(name: string, url: string, buttonTop: number, isActive: boolean) {
@@ -206,10 +243,22 @@ export default class Nodes extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.network {
+.nodes-page {
   display: flex;
   flex-direction: column;
-  margin-right: 16px;
+  justify-content: space-between;
+  height: 100%;
+
+  .container-nodes {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    padding: $default-padding;
+  }
+
+  .nodes-form {
+    margin: 16px 0;
+  }
 
   .row {
     margin-top: 16px;
@@ -222,40 +271,10 @@ export default class Nodes extends Vue {
     margin-left: 9px;
   }
 
-  .custom-nodes {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-right: 9px;
-    padding-bottom: $default-padding;
-
-    .plus {
-      filter: invert(0.5);
-      margin-right: 14px;
-      width: 20px;
-      height: 20px;
-    }
-
-    .add-node {
-      display: flex;
-      font-weight: 600;
-      color: $default-white;
-
-      &:hover {
-        cursor: pointer;
-
-        color: rgba(255, 255, 255, 0.9);
-
-        .plus {
-          filter: invert(0.3);
-        }
-      }
-    }
-  }
-
   .network-description {
     display: flex;
     justify-content: space-between;
+    padding: $default-padding;
 
     .switch-nodes {
       display: flex;

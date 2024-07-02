@@ -52,6 +52,7 @@ export default class EditNodeForm extends Vue {
   name = '';
   url = '';
   isError = false;
+
   @Prop(String) network!: string;
   @Prop({ type: String, default: '' }) nodeName!: string;
   @Prop({ type: String, default: '' }) nodeUrl!: string;

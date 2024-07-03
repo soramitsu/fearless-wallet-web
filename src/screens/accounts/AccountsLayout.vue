@@ -252,9 +252,7 @@ export default class AccountsLayout extends Vue {
 
   deleteNode() {
     const network = this.getNetwork(this.selectedNetwork);
-    const customNodes = network.customNodes.filter(
-      (node) => node.name !== this.selectedNodeName && node.url !== this.selectedNodeUrl
-    );
+    const customNodes = network.customNodes.filter((node) => node.url !== this.selectedNodeUrl);
 
     upsertNetworkMap({
       ...network,

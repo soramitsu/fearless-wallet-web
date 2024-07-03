@@ -1,7 +1,7 @@
 <template>
   <div class="nodes-page">
     <div>
-      <ContentForm :height="75" :isStaticHeight="true" :bottomRightCorner="true">
+      <ContentForm :isStaticHeight="true" :bottomRightCorner="true">
         <div class="network-description">
           <div class="description">
             <div class="img-container">
@@ -27,7 +27,7 @@
         </div>
       </ContentForm>
 
-      <ContentForm :height="heightDefaultNodesForm" :isStaticHeight="true" :bottomRightCorner="true" class="nodes-form">
+      <ContentForm :isStaticHeight="true" :bottomRightCorner="true" class="nodes-form">
         <div class="container-nodes">
           <div class="row label" data-testid="defaultNodes">{{ $t('accounts.defaultNodes') }}</div>
 
@@ -45,12 +45,7 @@
         </div>
       </ContentForm>
 
-      <ContentForm
-        v-if="showCustomNodesForm"
-        :height="heightCustomNodesForm"
-        :isStaticHeight="true"
-        :bottomRightCorner="true"
-      >
+      <ContentForm v-if="showCustomNodesForm" :isStaticHeight="true" :bottomRightCorner="true">
         <div class="container-nodes">
           <div class="label">{{ $t('accounts.customNodes') }}</div>
 

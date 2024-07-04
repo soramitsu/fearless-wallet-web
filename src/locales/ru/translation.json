@@ -319,10 +319,13 @@
     "autoNodes": "Автовыбор ноды",
     "defaultNodes": "Стандартные ноды",
     "customNodes": "Пользовательские ноды",
+    "addCustomNode": "Добавить пользовательскую ноду",
     "editNode": "Редактировать ноду",
     "deleteNode": "Удалить ноду",
     "newNode": "Новая нода",
     "account": "Аккаунт",
+    "chainAccounts": "чейн аккаунты",
+    "substrateChainAccounts": "Сабстрейт чейн аккаунты",
     "addEthereumAccounts": "Добавить аккаунты Moonbeam и Moonriver?"
   },
   "auth": {
@@ -638,6 +641,7 @@
     "soraSwap": "Sora swap",
     "polkaswapDisclaimer": "Polkaswap дисклеймер",
     "wallet": "кошелек",
+    "accountSetting": "Настройки аккаунта",
     "accounts": "Аккаунты",
     "nodes": "Ноды",
     "export": "Экспорт",

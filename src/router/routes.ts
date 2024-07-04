@@ -21,7 +21,8 @@ import NftDetails from '@/screens/wallet&asset/nft/NftDetails.vue';
 
 const NftSendForm = () => import('@/screens/wallet&asset/nft/NftSendForm.vue');
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
-const Accounts = () => import('@/screens/accounts/Accounts.vue');
+const AccountSetting = () => import('@/screens/accounts/AccountSetting.vue');
+const ChainAccounts = () => import('@/screens/accounts/Accounts.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
 const MobileWalletAuth = () => import('@/screens/mobile-wallet/MobileWalletAuth.vue');
 const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue');
@@ -69,7 +70,8 @@ export enum Components {
   Crowdloans = 'Crowdloans',
   Asset = 'Asset',
   AccountsLayout = 'AccountsLayout',
-  Accounts = 'Accounts',
+  AccountSetting = 'AccountSetting',
+  ChainAccounts = 'ChainAccounts',
   Nodes = 'Nodes',
   Export = 'Export',
   Authorize = 'Authorize',
@@ -377,36 +379,6 @@ const routes: Array<RouteConfig> = [
         ],
       },
       {
-        path: 'accounts',
-        component: AccountsLayout,
-        children: [
-          {
-            path: '/',
-            name: Components.Accounts,
-            component: Accounts,
-            meta: {
-              title: 'accounts',
-            },
-          },
-          {
-            path: ':network',
-            name: Components.Nodes,
-            component: Nodes,
-            meta: {
-              title: 'nodes',
-            },
-          },
-          {
-            path: ':network/export',
-            name: Components.Export,
-            component: Export,
-            meta: {
-              title: 'export',
-            },
-          },
-        ],
-      },
-      {
         path: 'asset/:assetId',
         component: Asset,
         children: [
@@ -443,6 +415,44 @@ const routes: Array<RouteConfig> = [
       if (!haveSelectedWallet()) next({ name: Components.Welcome });
       else next();
     },
+  },
+  {
+    path: '/accounts',
+    component: AccountsLayout,
+    children: [
+      {
+        path: '/',
+        name: Components.AccountSetting,
+        component: AccountSetting,
+        meta: {
+          title: 'accountSetting',
+        },
+      },
+      {
+        path: '/chain-accounts',
+        name: Components.ChainAccounts,
+        component: ChainAccounts,
+        meta: {
+          title: 'accounts',
+        },
+      },
+      {
+        path: ':network',
+        name: Components.Nodes,
+        component: Nodes,
+        meta: {
+          title: 'nodes',
+        },
+      },
+      {
+        path: ':network/export',
+        name: Components.Export,
+        component: Export,
+        meta: {
+          title: 'export',
+        },
+      },
+    ],
   },
   {
     path: '*',

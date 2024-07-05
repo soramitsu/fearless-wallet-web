@@ -37,7 +37,7 @@ module.exports = (browser) => {
       default_popup: 'popup.html#/',
     },
     host_permissions: ['<all_urls>'],
-    key: env.EXTENSION_PUBLIC_KEY.replace(/ /g, ''),
+    key: env.EXTENSION_PUBLIC_KEY?.replace(/ /g, '') ?? '',
     oauth2: {
       scopes: ['https://www.googleapis.com/auth/drive.appdata'],
       client_id: env.OAUTH_CLIENT_ID,

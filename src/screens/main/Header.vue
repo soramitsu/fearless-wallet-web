@@ -1,7 +1,7 @@
 <template>
   <header class="header">
     <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
-      <div class="logo-container">
+      <div :class="showBackIcon ? 'logo-container-back' : 'logo-container'">
         <CircleButton
           v-if="showBackIcon"
           backgroundColor="light-black"
@@ -10,7 +10,7 @@
           @click.stop="back"
         />
 
-        <Logo v-else size="small" />
+        <Logo v-else size="mini" />
       </div>
 
       <div class="wallet-name">
@@ -313,6 +313,11 @@ export default class Header extends Vue {
 
   .logo-container {
     width: 48px;
+    margin: auto;
+  }
+
+  .logo-container-back {
+    width: 40px;
     margin: auto;
   }
 

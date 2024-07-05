@@ -19,7 +19,7 @@
     :left="left"
   >
     <div
-      v-for="{ name, value, icon, iconType } in options"
+      v-for="{ name, value, icon, iconType, tokenName } in options"
       :key="value"
       :class="rowClasses(value)"
       @click="toggle(value)"
@@ -33,7 +33,12 @@
           <ExternalLogo v-else :name="icon" class="img" />
         </template>
 
-        {{ name }}
+        <div class="description-name">
+          {{ name }}
+          <span class="description-name__token">
+            {{ tokenName }}
+          </span>
+        </div>
       </div>
 
       <SIcon name="basic-check-mark-24" v-show="getIconVisible(value)" />
@@ -194,6 +199,17 @@ export default class SelectPopup extends Vue {
   .warning {
     height: 48px;
     line-height: 48px;
+  }
+
+  .description-name {
+    display: flex;
+    flex-direction: column;
+    font-weight: 400;
+
+    &__token {
+      font-size: 12px;
+      color: $gray-color;
+    }
   }
 }
 </style>

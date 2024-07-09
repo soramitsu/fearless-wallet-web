@@ -109,7 +109,7 @@ function getCurrencyOptions(tokenGroup: TokenGroup[]) {
     return {
       name: getNativeAssetName(label).toUpperCase(),
       value: groupId,
-      tokenName,
+      subName: tokenName,
       icon,
     };
   });

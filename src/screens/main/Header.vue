@@ -1,7 +1,7 @@
 <template>
   <header class="header">
     <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
-      <div :class="showBackIcon ? 'logo-container-back' : 'logo-container'">
+      <div :class="iconClassname">
         <CircleButton
           v-if="showBackIcon"
           backgroundColor="light-black"
@@ -229,6 +229,10 @@ export default class Header extends Vue {
 
   get name() {
     return this.selectedWallet.name;
+  }
+
+  get iconClassname() {
+    return this.showBackIcon ? 'logo-container-back' : 'logo-container';
   }
 
   get statusConnectedClasses() {

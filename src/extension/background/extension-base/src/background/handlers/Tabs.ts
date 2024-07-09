@@ -128,7 +128,7 @@ export default class Tabs {
     const address = request.address;
 
     const pair = this.state.keyringService.getPair(address)!;
-    const signer = new RequestBytesSign(request, this.state);
+    const signer = new RequestBytesSign(request);
 
     return this.state.requestService.substrateRequestHandler.sign(url, signer, {
       address: pair.address,

@@ -19,7 +19,7 @@
     @update:destNetFee="updateDestNetFee"
     @update:destinationNetwork="setDestinationNetwork"
     @update:recipient="updateRecipient"
-    @closeForm="$emit('closeForm')"
+    @closeForm="closeForm"
   >
     <template v-slot:step1Warning>
       <Alert v-if="showSoraAlert" :message="soraCrossChainALert" />
@@ -90,7 +90,7 @@ import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetNetwork } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { firstCharToUp, cut, isSora } from '@/helpers/';
+import { firstCharToUp, cut, isSora, isSameString } from '@/helpers/';
 import { formattedNumber } from '@/helpers/numbers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { BRIDGE_MIN_VALUES_TO_SORA, BRIDGE_MIN_VALUES_FROM_SORA } from '@/consts/sora';
@@ -211,15 +211,15 @@ export default class CrossChainForm extends Vue {
   }
 
   created() {
-    this.assetId = this._selectedAssetId;
-    this.originalNetwork = this._originalNetwork;
+    this.assetId = this.$route.params.assetId;
+    this.originalNetwork = this.$route.params.network;
 
     this.$nextTick(() => {
-      const originNet = this.getNetwork(this._originalNetwork);
+      const originNet = this.getNetwork(this.originalNetwork);
       const asset = getNativeAssetName(this.assetName);
 
       const destChainId = originNet?.xcm?.availableDestinations.find(({ assets }) =>
-        assets.some(({ symbol }) => symbol.toLowerCase() === asset.toLowerCase())
+        assets.some(({ symbol }) => isSameString(symbol, asset))
       )?.chainId;
 
       if (!destChainId) return;
@@ -231,7 +231,7 @@ export default class CrossChainForm extends Vue {
   }
 
   closeForm() {
-    this.$emit('closeForm');
+    this.$router.back();
   }
 
   cut(value: string) {

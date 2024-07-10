@@ -3,10 +3,10 @@
     <div class="receive-form">
       <div>
         <InputWithIcon
-          :value="selectedNetwork"
           placeholder="assets.network"
           icon="rotate"
           data-testid="selectedNetwork"
+          :value="selectedNetwork"
           :ref="selectNetworkInputRef"
           :isActiveRotate="showSelectNetworkPopup"
           @click="toggleSelectNetworkPopupVisible"
@@ -80,10 +80,11 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
 import type { TokenGroup } from '@extension-base/background/types/types';
+import type { GetNetwork, SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { type SelectedWallet } from '@/store';
 import { cut } from '@/helpers';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class ReceiveForm extends Vue {
@@ -99,10 +100,7 @@ export default class ReceiveForm extends Vue {
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-
-  get _selectedNetwork() {
-    return this.$route.params.network ?? '';
-  }
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get selectedAssetId() {
     return this.$route.params.assetId ?? '';
@@ -110,11 +108,20 @@ export default class ReceiveForm extends Vue {
 
   get assetNetworks() {
     const currency = this.balances.find(({ groupId }) => groupId === this.selectedAssetId)!;
+    const filter = this.filterValue.toLowerCase();
 
     return (
       currency?.balances
-        .map(({ name, icon }) => ({ name, icon, value: name }))
-        .filter(({ name }) => name.toLowerCase().includes(this.filterValue.toLowerCase())) ?? []
+        .map(({ name, icon }) => {
+          const network = this.getNetwork(name);
+
+          return {
+            name: network.name,
+            value: network.name,
+            icon,
+          };
+        })
+        .filter(({ name }) => name.toLowerCase().includes(filter)) ?? []
     );
   }
 
@@ -137,7 +144,7 @@ export default class ReceiveForm extends Vue {
   }
 
   mounted() {
-    this.selectedNetwork = this._selectedNetwork;
+    this.selectedNetwork = this.$route.params.network ?? '';
   }
 
   closeForm() {

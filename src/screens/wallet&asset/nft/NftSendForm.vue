@@ -1,6 +1,6 @@
 <template>
   <AboveForm
-    header="common.send"
+    :header="header"
     :fullScreen="true"
     :showBackIcon="showBackIcon"
     @handlerBack="onBack"
@@ -171,6 +171,16 @@ const assetSymbol = computed(() => {
 });
 
 const formatFeeString = computed(() => `${n(+formInfo.fee, 'decimalPrecise')} ${assetSymbol.value?.toUpperCase()}`);
+
+const header = computed(() => {
+  if (popupControls.showHistoryBook) return 'assets.chooseFromHistory';
+
+  if (popupControls.showMyWallets) return 'assets.wallets';
+
+  if (showEditAddressBook.value) return 'assets.addContact';
+
+  return 'common.send';
+});
 
 const actionBtnName = computed(() => {
   if (errors.insufficientFunds) return t('assets.insufficientBalance', { asset: assetSymbol.value.toUpperCase() });

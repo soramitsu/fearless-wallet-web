@@ -170,7 +170,6 @@
   },
   "menu": {
     "wallet": "Wallet",
-    "crowdloans": "Crowdloans",
     "staking": "Staking",
     "pools": "Pools",
     "polkaswap": "Polkaswap"
@@ -675,12 +674,14 @@
     "accounts": "Accounts",
     "nodes": "Nodes",
     "export": "Export",
-    "crowdloans": "Crowdloans",
     "staking": "Staking",
     "myStake": "My staking",
     "polkaswap": "Polkaswap",
     "pools": "Pools",
-    "poolDetails": "Pool Details"
+    "poolDetails": "Pool Details",
+    "send": "Send",
+    "receive": "Receive",
+    "crossChain": "Cross-Chain"
   },
   "nft": {
     "owned": "Owned",

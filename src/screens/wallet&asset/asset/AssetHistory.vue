@@ -23,7 +23,7 @@
           class="activity-button"
           text="assets.buy"
           iconName="plus-pink"
-          @click="$emit('toggleVisible', 'showBuyPopup')"
+          @click="$emit('toggleVisible')"
         />
       </div>
     </Blur>

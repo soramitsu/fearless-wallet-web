@@ -8,8 +8,6 @@
     :showBorder="showBorder"
     :height="height"
     :maxHeight="maxHeight"
-    @handlerFilter="$emit('handlerFilter', ...arguments)"
-    @handlerClose="$emit('handlerClose')"
     :horizontalPlacement="horizontalPlacement"
     :verticalPlacement="verticalPlacement"
     :showBlur="showBlur"
@@ -17,6 +15,8 @@
     :showBackground="showBackground"
     :top="top"
     :left="left"
+    @handlerFilter="$emit('handlerFilter', ...arguments)"
+    @handlerClose="$emit('handlerClose')"
   >
     <div
       v-for="{ name, value, icon, iconType, subName } in options"

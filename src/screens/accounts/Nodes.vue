@@ -47,7 +47,7 @@
 
       <ContentForm v-if="showCustomNodesForm" :isStaticHeight="true" :bottomRightCorner="true">
         <div class="container-nodes">
-          <div class="label">{{ $t('accounts.customNodes') }}</div>
+          <div class="label" data-testid="customNodes">{{ $t('accounts.customNodes') }}</div>
 
           <div class="row">
             <NodeItem

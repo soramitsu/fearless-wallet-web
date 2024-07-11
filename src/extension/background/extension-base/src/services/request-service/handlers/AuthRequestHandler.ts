@@ -26,6 +26,7 @@ export class AuthRequestHandler {
   readonly authRequests: Record<string, AuthRequest> = {};
   private authorizeCached: AuthUrls = {};
   private readonly authorizeStore = new AuthorizeStore();
+  private readonly evmChainSubject = new BehaviorSubject<AuthUrls>({});
   private readonly authorizeUrlSubject = new BehaviorSubject<AuthUrls>({});
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
 
@@ -42,6 +43,10 @@ export class AuthRequestHandler {
 
   private get authValues() {
     return Object.values(this.authRequests);
+  }
+
+  public get subscribeEvmChainChange() {
+    return this.evmChainSubject;
   }
 
   private get allAuthRequests(): AuthorizeRequest[] {

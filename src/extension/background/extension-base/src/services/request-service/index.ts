@@ -49,7 +49,7 @@ export class RequestService {
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
-    this.authRequestHandler = new AuthRequestHandler(this);
+    this.authRequestHandler = new AuthRequestHandler(this, state.networkService);
     this.substrateRequestHandler = new SubstrateRequestHandler(this, keyringService, this.state);
     this.evmRequestHandler = new EvmRequestHandler(this);
   }

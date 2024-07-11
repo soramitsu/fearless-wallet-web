@@ -15,13 +15,13 @@ import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import WcAuths from '@/screens/extension-ui/WcAuths.vue';
 import DAppsAuths from '@/screens/extension-ui/DAppsAuths.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
-import NftsList from '@/screens/wallet&asset/asset/NftsList.vue';
-import NftCollection from '@/screens/wallet&asset/asset/NftCollection.vue';
-import NftDetails from '@/screens/wallet&asset/asset/NftDetails.vue';
+import NftCollectionList from '@/screens/wallet&asset/nft/NftCollectionList.vue';
+import NftCollection from '@/screens/wallet&asset/nft/NftCollection.vue';
+import NftDetails from '@/screens/wallet&asset/nft/NftDetails.vue';
 
-const NftSendForm = () => import('@/screens/wallet&asset/asset/NftSendForm.vue');
-const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
-const Accounts = () => import('@/screens/accounts/Accounts.vue');
+const NftSendForm = () => import('@/screens/wallet&asset/nft/NftSendForm.vue');
+const AccountSetting = () => import('@/screens/accounts/AccountSetting.vue');
+const ChainAccounts = () => import('@/screens/accounts/Accounts.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
 const MobileWalletAuth = () => import('@/screens/mobile-wallet/MobileWalletAuth.vue');
 const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue');
@@ -45,6 +45,7 @@ const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screen
 
 const SendForm = () => import('@/screens/wallet&asset/SendForm.vue');
 const ReceiveForm = () => import('@/screens/wallet&asset/ReceiveForm.vue');
+const CrossChainForm = () => import('@/screens/wallet&asset/CrossChainForm.vue');
 
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
 const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
@@ -66,10 +67,10 @@ export enum Components {
   MobileWalletAuth = 'MobileWalletAuth',
   Main = 'Main',
   Wallet = 'Wallet',
-  Crowdloans = 'Crowdloans',
   Asset = 'Asset',
   AccountsLayout = 'AccountsLayout',
-  Accounts = 'Accounts',
+  AccountSetting = 'AccountSetting',
+  ChainAccounts = 'ChainAccounts',
   Nodes = 'Nodes',
   Export = 'Export',
   Authorize = 'Authorize',
@@ -84,6 +85,7 @@ export enum Components {
   SoraSwap = 'SoraSwap',
   SendForm = 'SendForm',
   ReceiveForm = 'ReceiveForm',
+  CrossChainForm = 'CrossChainForm',
   SoraCard = 'SoraCard',
   Staking = 'Staking',
   MyStake = 'MyStake',
@@ -239,6 +241,14 @@ const routes: Array<RouteConfig> = [
     },
   },
   {
+    path: '/cross-chain/:assetId/:network',
+    name: Components.CrossChainForm,
+    component: CrossChainForm,
+    meta: {
+      title: 'crossChain',
+    },
+  },
+  {
     path: '/auth-management',
     component: AuthManagement,
     children: [
@@ -369,39 +379,9 @@ const routes: Array<RouteConfig> = [
           {
             path: '/nft-collections',
             name: Components.Nfts,
-            component: NftsList,
+            component: NftCollectionList,
             meta: {
               title: 'wallet',
-            },
-          },
-        ],
-      },
-      {
-        path: 'accounts',
-        component: AccountsLayout,
-        children: [
-          {
-            path: '/',
-            name: Components.Accounts,
-            component: Accounts,
-            meta: {
-              title: 'accounts',
-            },
-          },
-          {
-            path: ':network',
-            name: Components.Nodes,
-            component: Nodes,
-            meta: {
-              title: 'nodes',
-            },
-          },
-          {
-            path: ':network/export',
-            name: Components.Export,
-            component: Export,
-            meta: {
-              title: 'export',
             },
           },
         ],
@@ -423,14 +403,6 @@ const routes: Array<RouteConfig> = [
         ],
       },
       {
-        path: 'crowdloans',
-        name: Components.Crowdloans,
-        component: Crowdloans,
-        meta: {
-          title: 'crowdloans',
-        },
-      },
-      {
         path: 'staking',
         name: Components.Staking,
         component: Staking,
@@ -443,6 +415,44 @@ const routes: Array<RouteConfig> = [
       if (!haveSelectedWallet()) next({ name: Components.Welcome });
       else next();
     },
+  },
+  {
+    path: '/accounts',
+    component: AccountsLayout,
+    children: [
+      {
+        path: '/',
+        name: Components.AccountSetting,
+        component: AccountSetting,
+        meta: {
+          title: 'accountSetting',
+        },
+      },
+      {
+        path: '/chain-accounts',
+        name: Components.ChainAccounts,
+        component: ChainAccounts,
+        meta: {
+          title: 'accounts',
+        },
+      },
+      {
+        path: ':network',
+        name: Components.Nodes,
+        component: Nodes,
+        meta: {
+          title: 'nodes',
+        },
+      },
+      {
+        path: ':network/export',
+        name: Components.Export,
+        component: Export,
+        meta: {
+          title: 'export',
+        },
+      },
+    ],
   },
   {
     path: '*',

@@ -9,7 +9,7 @@ import {
   MetadataRequestHandler,
   SubstrateRequestHandler,
 } from '@extension-base/services/request-service/handlers';
-import { type NetworkService, type KeyringService } from '@extension-base/services';
+import { type KeyringService } from '@extension-base/services';
 import { assert } from '@polkadot/util';
 import { type NetworkJson } from '@extension-base/types';
 import type {
@@ -33,6 +33,7 @@ import type {
   RequestAuthorizeCancel,
 } from '@extension-base/background/types/types';
 import type { DAppChainInfoPayload, EvmRequests, WCSignRequest } from '@extension-base/services/request-service/types';
+import type State from '@extension-base/background/handlers/State';
 
 export class RequestService {
   readonly popupHandler: PopupHandler;
@@ -43,13 +44,13 @@ export class RequestService {
   readonly substrateRequestHandler: SubstrateRequestHandler;
   readonly evmRequestHandler: EvmRequestHandler;
 
-  constructor(readonly keyringService: KeyringService, networkService: NetworkService) {
+  constructor(readonly keyringService: KeyringService, private readonly state: State) {
     this.popupHandler = new PopupHandler(this);
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
-    this.authRequestHandler = new AuthRequestHandler(this, networkService);
-    this.substrateRequestHandler = new SubstrateRequestHandler(this, this.keyringService);
+    this.authRequestHandler = new AuthRequestHandler(this);
+    this.substrateRequestHandler = new SubstrateRequestHandler(this, keyringService, this.state);
     this.evmRequestHandler = new EvmRequestHandler(this);
   }
 
@@ -126,6 +127,10 @@ export class RequestService {
 
   public getAuthRequest(id: string): AuthRequest {
     return this.authRequestHandler.getAuthRequest(id);
+  }
+
+  public get subscribeEvmChainChange() {
+    return this.authRequestHandler.subscribeEvmChainChange;
   }
 
   public get subscribeAuthorizeUrlSubject() {

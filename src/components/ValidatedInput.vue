@@ -29,6 +29,8 @@ import { ref, computed, withDefaults } from 'vue';
 import FInput from '@/components/FInput.vue';
 
 type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
+type TypeText = 'none' | 'uppercase';
+type Size = 'small' | 'medium' | 'big';
 
 type FInputProps = {
   errorDescriptions: string;
@@ -37,10 +39,10 @@ type FInputProps = {
   maxlength?: number;
   showPassword?: boolean;
   readonly?: boolean;
-  typeText?: string;
+  typeText?: TypeText;
   type?: Type;
   disabled?: boolean;
-  size?: string;
+  size?: Size;
   errorWithIcon?: boolean;
   value: string;
 };
@@ -65,9 +67,7 @@ const props = withDefaults(defineProps<FInputProps>(), {
 
 const emit = defineEmits(['change']);
 
-const emitChange = (value: string | number) => {
-  emit('change', value);
-};
+const emitChange = (value: string | number) => emit('change', value);
 
 const inputRef = ref<typeof FInput | null>(null);
 

@@ -170,7 +170,6 @@
   },
   "menu": {
     "wallet": "Wallet",
-    "crowdloans": "Crowdloans",
     "staking": "Staking",
     "pools": "Pools",
     "polkaswap": "Polkaswap"
@@ -259,7 +258,6 @@
     "reserved": "Reserved",
     "frozen": "Frozen",
     "transferable": "Transferable",
-    "fee": "Fee",
     "total": "Total",
     "signTransaction": "Sign the transaction",
     "passwordTransaction": "Enter password to confirm the transaction",
@@ -305,7 +303,6 @@
     "dontNeedAccount": "I don’t need an account",
     "exportWarning": "Sharing or copying your secret is a high risk operation, don’t send it to anyone. Would you like to proceed with sharing/copying process?",
     "notEthereumAccount": "You didn’t add an ethereum account.",
-    "accountsDefaultSecrets": "Default accounts with a shared secret",
     "export": "Export account",
     "exportJson": "Export JSON",
     "wantExportJson": "I want to export JSON",
@@ -326,10 +323,13 @@
     "autoNodes": "Auto select nodes",
     "defaultNodes": "Default nodes",
     "customNodes": "Custom nodes",
+    "addCustomNode": "Add custom nodes",
     "editNode": "Edit node",
     "deleteNode": "Delete node",
     "newNode": "New Node",
     "account": "Account",
+    "chainAccounts": "chain accounts",
+    "substrateChainAccounts": "Substrate chain accounts",
     "addEthereumAccounts": "Add Moonbeam and Moonriver accounts?"
   },
   "auth": {
@@ -670,15 +670,18 @@
     "soraSwap": "Sora swap",
     "polkaswapDisclaimer": "Polkaswap disclaimer",
     "wallet": "Wallet",
+    "accountSetting": "Account setting",
     "accounts": "Accounts",
     "nodes": "Nodes",
     "export": "Export",
-    "crowdloans": "Crowdloans",
     "staking": "Staking",
     "myStake": "My staking",
     "polkaswap": "Polkaswap",
     "pools": "Pools",
-    "poolDetails": "Pool Details"
+    "poolDetails": "Pool Details",
+    "send": "Send",
+    "receive": "Receive",
+    "crossChain": "Cross-Chain"
   },
   "nft": {
     "owned": "Owned",

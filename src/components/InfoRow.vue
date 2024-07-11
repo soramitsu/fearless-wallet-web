@@ -4,6 +4,8 @@
     :price="price"
     :icon="icon"
     :iconValue="iconValue"
+    :hoverIconValue="hoverIconValue"
+    :isHoverRow="isHoverRow"
     :iconAppend="iconAppend"
     :isLoading="isLoading"
     :borderType="borderType"
@@ -11,7 +13,9 @@
     :hideLastBorder="hideLastBorder"
     :color="color"
     :isIconPrepend="isIconPrepend"
+    :isIconValuePrepend="isIconValuePrepend"
     :iconClasses="iconClasses"
+    @click="emit('click')"
   >
     {{ $t(text) }}
 
@@ -32,10 +36,13 @@ interface Props {
   price?: string;
   icon?: string;
   iconValue?: string;
+  hoverIconValue?: boolean;
+  isHoverRow?: boolean;
   color?: Color;
   iconAppend?: string;
   borderType?: BorderType;
   isIconPrepend?: boolean;
+  isIconValuePrepend?: boolean;
   showBorder?: boolean;
   hideLastBorder?: boolean;
   isLoading?: boolean;
@@ -57,4 +64,6 @@ withDefaults(defineProps<Props>(), {
   isLoading: false,
   iconClasses: () => [],
 });
+
+const emit = defineEmits(['click']);
 </script>

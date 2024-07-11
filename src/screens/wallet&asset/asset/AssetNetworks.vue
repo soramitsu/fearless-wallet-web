@@ -140,13 +140,8 @@ export default class AssetNetworks extends Vue {
       return this.getNetwork(name).active;
     });
 
-    if (this.activeTabName === 'MyAssets') {
-      return baseFilter.filter(({ transferable }) => {
-        if (transferable && +transferable > 0) return true;
-
-        return false;
-      });
-    }
+    if (this.activeTabName === 'MyAssets')
+      return baseFilter.filter(({ transferable }) => transferable && +transferable > 0);
 
     return baseFilter;
   }
@@ -190,11 +185,13 @@ export default class AssetNetworks extends Vue {
   }
 
   openAsset(name: string) {
+    const network = this.getNetwork(name);
+
     this.$router.push({
       name: Components.AssetHistory,
       params: {
         assetId: this.currency.groupId,
-        selectedNetwork: name.toLowerCase(),
+        selectedNetwork: network.name,
       },
     });
   }

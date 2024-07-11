@@ -3,7 +3,7 @@ const packageJson = require('../../package.json');
 
 module.exports = (browser) => {
   const baseContentSecurityPolicy =
-    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self';  style-src 'unsafe-inline';img-src 'self' https: data:; frame-src https://soracard.com/; connect-src https: wss: ws:";
+    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self';  style-src 'unsafe-inline';img-src 'self' https: data:; frame-src https://soracard.com/; connect-src https: wss: ws:; media-src https:";
 
   const firefoxBase = {
     manifest_version: 2,
@@ -37,7 +37,7 @@ module.exports = (browser) => {
       default_popup: 'popup.html#/',
     },
     host_permissions: ['<all_urls>'],
-    key: env.EXTENSION_PUBLIC_KEY.replace(/ /g, ''),
+    key: env.EXTENSION_PUBLIC_KEY?.replace(/ /g, '') ?? '',
     oauth2: {
       scopes: ['https://www.googleapis.com/auth/drive.appdata'],
       client_id: env.OAUTH_CLIENT_ID,

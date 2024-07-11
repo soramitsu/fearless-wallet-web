@@ -28,7 +28,7 @@
         title="header.settings.accounts"
         icon="account"
         data-testid="accounts"
-        @onOpen="open('Accounts')"
+        @onOpen="open('AccountSetting')"
       />
 
       <SettingMenuItem v-if="showSoraCard" title="soraCard.title" icon="card" @onOpen="open('SoraCard')" />
@@ -75,7 +75,7 @@ import { type SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
-type SettingsItemType = 'Accounts' | 'SoraCard' | 'PolkaswapDisclaimer' | 'WalletConnectInitAuth';
+type SettingsItemType = 'AccountSetting' | 'SoraCard' | 'PolkaswapDisclaimer' | 'WalletConnectInitAuth';
 
 @Component({
   components: { SettingMenuItem },

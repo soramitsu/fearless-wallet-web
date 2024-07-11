@@ -70,7 +70,7 @@
           </div>
 
           <template v-if="isSuccess">
-            <span class="nft-success-msg">{{ $t('nft.txSuccessMessage') }}</span>
+            <span class="nft-success-msg" data-testid="nftSuccessMsg">{{ $t('nft.txSuccessMessage') }}</span>
             <FButton
               text="common.copyHash"
               class="copy-hash"
@@ -80,6 +80,7 @@
               size="small"
               fontSize="small"
               type="secondary"
+              data-testid="copyHashBtn"
               :border="false"
               @click="copyHash"
             />
@@ -92,6 +93,7 @@
               size="small"
               fontSize="small"
               type="secondary"
+              data-testid="viewInEtherscanBtn"
               :border="false"
               @click="openExplorer"
             />
@@ -102,6 +104,7 @@
               size="small"
               fontSize="small"
               type="secondary"
+              data-testid="closeBtn"
               :border="false"
               @click="close"
             />
@@ -117,18 +120,18 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch, Ref } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import {
-  type AccountJson,
-  type RequestCheckTransfer,
-  type RequestCheckCrossChain,
-  type RequestTransfer,
-  type RequestCrossChain,
-  type TokenGroup,
-  type RequestSwap,
-  BasicTxErrorCode,
-  type BasicTxResponse,
-  type ResponseMakeSwap,
-  type ResponseNftTransfer,
+import { BasicTxErrorCode } from '@extension-base/background/types/types';
+import type {
+  AccountJson,
+  RequestCheckTransfer,
+  RequestCheckCrossChain,
+  RequestTransfer,
+  RequestCrossChain,
+  TokenGroup,
+  RequestSwap,
+  BasicTxResponse,
+  ResponseMakeSwap,
+  ResponseNftTransfer,
 } from '@extension-base/background/types/types';
 import type { RequestStaking } from '@extension-base/services/staking-service/types';
 import type { RequestPool } from '@extension-base/services/pools-service/types';
@@ -376,10 +379,6 @@ export default class ConfirmationPasswordPopup extends Vue {
       this.transactionState = data.status ? 'success' : 'failed';
     };
 
-    if (this.isSignMobile) {
-      return makeTransfer(this.request as RequestTransfer, callback);
-    }
-
     if (this.extrinsicType === 'transfer') return makeTransfer(this.request as RequestTransfer, callback);
 
     if (this.extrinsicType === 'crossChain') return makeCrossChain(this.request as RequestCrossChain, callback);
@@ -516,22 +515,26 @@ export default class ConfirmationPasswordPopup extends Vue {
     display: flex;
     align-items: flex-start;
   }
+
   .nft-img {
     margin-left: auto;
     margin-right: auto;
     width: 150px;
     height: 150px;
   }
+
   .nft-finished {
     display: flex;
     flex-flow: column;
     justify-content: space-between;
   }
+
   .nft-success-msg {
     color: $gray-color;
     font-size: 16px;
     font-weight: 400;
   }
+
   .icon-circle {
     background-color: #ffffff08;
     border-radius: 50%;

@@ -50,7 +50,6 @@ interface MnemonicConfirmation {
 
 enum MenuItems {
   wallet = 'Wallet',
-  crowdloans = 'Crowdloans',
   staking = 'Staking',
   polkaswap = 'Polkaswap',
 }

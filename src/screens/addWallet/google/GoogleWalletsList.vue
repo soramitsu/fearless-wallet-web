@@ -17,6 +17,7 @@
 
               <span @click.self="onSelect(!file.active, index)">{{ cutAddress(file.address) }}</span>
             </div>
+
             <transition name="fade">
               <div v-show="file.active" class="json__controls">
                 <ValidatedInput
@@ -91,6 +92,7 @@ export default class GoogleWalletsList extends Vue {
     const address = await jsonRestore(json, password);
 
     await updateCurrentAccount(address || this.selectedWallet.address);
+
     this.setItemValue(index, { isComplete: true, isLoading: false });
 
     return true;
@@ -105,18 +107,17 @@ export default class GoogleWalletsList extends Vue {
   }
 
   changePassword(index: number, password: string) {
-    this.$emit('setItemPassword', index, { password });
+    this.$emit('setItemPassword', index, password);
   }
 
   onSelect(value: boolean, index: number) {
     const file = this.items[index];
 
     if (file.isComplete) return;
-    else if (file.isComplete === undefined) {
-      this.setItemValue(index, { isLoading: false, isComplete: false });
-    }
+    else if (file.isComplete === undefined) this.setItemValue(index, { isLoading: false, isComplete: false });
 
     if (file.json === undefined) this.$emit('getFile', file.id, index);
+
     if (file.ethJson === undefined && file.ethWalletID) this.$emit('getFile', file.ethWalletID, index);
 
     this.setItemValue(index, { active: value });

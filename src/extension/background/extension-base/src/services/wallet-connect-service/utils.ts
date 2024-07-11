@@ -20,6 +20,7 @@ import {
 import type { NetworkJson } from '@extension-base/types';
 import type { SignClientTypes } from '@walletconnect/types';
 import type { ProposalTypes } from '@walletconnect/types/dist/types/sign-client/proposal';
+import { SEC1 } from '@/consts/time';
 
 export const getWCId = (id: number): string => {
   return [WALLET_CONNECT_REQUEST_KEY, Date.now(), id].join('.');
@@ -88,7 +89,7 @@ export const isWalletConnectRequest = (id?: string): boolean => {
 
 export const isProposalExpired = (params: ProposalTypes.Struct): boolean => {
   const timeNum = params.expiry;
-  const expireTime = new Date(timeNum > 10 ** 12 ? timeNum : timeNum * 1000);
+  const expireTime = new Date(timeNum > 10 ** 12 ? timeNum : timeNum * SEC1);
   const now = new Date();
 
   return now.getTime() >= expireTime.getTime();

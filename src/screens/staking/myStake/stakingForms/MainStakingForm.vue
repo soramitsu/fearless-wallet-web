@@ -282,6 +282,12 @@ export default class MainStakingForm extends Vue {
   }
 
   get header() {
+    if (this.showHistoryBook) return 'assets.chooseFromHistory';
+
+    if (this.showMyWallets) return 'assets.wallets';
+
+    if (this.showEditAddressBook) return 'assets.addContact';
+
     return `staking.${this.type}`;
   }
 

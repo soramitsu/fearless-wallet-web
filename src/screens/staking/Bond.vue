@@ -367,6 +367,12 @@ export default class Bond extends Vue {
   }
 
   get header() {
+    if (this.showHistoryBook) return 'assets.chooseFromHistory';
+
+    if (this.showMyWallets) return 'assets.wallets';
+
+    if (this.showEditAddressBook) return 'assets.addContact';
+
     if (this.step === 1) return 'staking.bond';
 
     if (this.step === 2) return 'staking.validators';

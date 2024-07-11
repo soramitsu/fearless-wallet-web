@@ -20,7 +20,6 @@ import NftCollection from '@/screens/wallet&asset/nft/NftCollection.vue';
 import NftDetails from '@/screens/wallet&asset/nft/NftDetails.vue';
 
 const NftSendForm = () => import('@/screens/wallet&asset/nft/NftSendForm.vue');
-const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const AccountSetting = () => import('@/screens/accounts/AccountSetting.vue');
 const ChainAccounts = () => import('@/screens/accounts/Accounts.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
@@ -46,6 +45,7 @@ const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screen
 
 const SendForm = () => import('@/screens/wallet&asset/SendForm.vue');
 const ReceiveForm = () => import('@/screens/wallet&asset/ReceiveForm.vue');
+const CrossChainForm = () => import('@/screens/wallet&asset/CrossChainForm.vue');
 
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
 const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
@@ -67,7 +67,6 @@ export enum Components {
   MobileWalletAuth = 'MobileWalletAuth',
   Main = 'Main',
   Wallet = 'Wallet',
-  Crowdloans = 'Crowdloans',
   Asset = 'Asset',
   AccountsLayout = 'AccountsLayout',
   AccountSetting = 'AccountSetting',
@@ -86,6 +85,7 @@ export enum Components {
   SoraSwap = 'SoraSwap',
   SendForm = 'SendForm',
   ReceiveForm = 'ReceiveForm',
+  CrossChainForm = 'CrossChainForm',
   SoraCard = 'SoraCard',
   Staking = 'Staking',
   MyStake = 'MyStake',
@@ -241,6 +241,14 @@ const routes: Array<RouteConfig> = [
     },
   },
   {
+    path: '/cross-chain/:assetId/:network',
+    name: Components.CrossChainForm,
+    component: CrossChainForm,
+    meta: {
+      title: 'crossChain',
+    },
+  },
+  {
     path: '/auth-management',
     component: AuthManagement,
     children: [
@@ -393,14 +401,6 @@ const routes: Array<RouteConfig> = [
             component: AssetHistory,
           },
         ],
-      },
-      {
-        path: 'crowdloans',
-        name: Components.Crowdloans,
-        component: Crowdloans,
-        meta: {
-          title: 'crowdloans',
-        },
       },
       {
         path: 'staking',

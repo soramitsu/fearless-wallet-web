@@ -23,7 +23,7 @@
       text="assets.crossChain"
       iconName="cross-chain"
       data-testid="crossChainBtn"
-      @click="$emit('toggleVisible', 'showCrossChainForm')"
+      @click="onRoute('crossChain')"
     />
 
     <BorderButton
@@ -41,7 +41,7 @@
       text="assets.buy"
       iconName="plus-pink"
       data-testid="buyBtn"
-      @click="$emit('toggleVisible', 'showBuyPopup')"
+      @click="$emit('toggleVisible')"
     />
 
     <BorderButton
@@ -93,9 +93,12 @@ export default class AssetActionButtons extends Vue {
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
 
-  onRoute(form: 'send' | 'receive') {
+  onRoute(form: 'send' | 'receive' | 'crossChain') {
+    const name =
+      form === 'send' ? Components.SendForm : form === 'receive' ? Components.ReceiveForm : Components.CrossChainForm;
+
     this.$router.push({
-      name: form === 'send' ? Components.SendForm : Components.ReceiveForm,
+      name,
       params: {
         assetId: this.$route.params.assetId,
         network: this.selectedNetwork,

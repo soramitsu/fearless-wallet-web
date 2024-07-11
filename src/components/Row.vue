@@ -156,6 +156,7 @@ const directionValue = computed(() => (props.isIconValuePrepend ? 'row' : 'row-r
 }
 
 .row {
+  margin: 0 16px;
   height: 55px;
   display: flex;
   justify-content: space-between;

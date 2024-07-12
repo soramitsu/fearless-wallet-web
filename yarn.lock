@@ -10110,7 +10110,7 @@ __metadata:
     "@walletconnect/universal-provider": ^2.10.4
     alchemy-sdk: ^3.0.0
     autoprefixer: ^10.4.14
-    axios: ^0.27.2
+    axios: ^0.28.0
     bignumber.js: ^9.0.2
     country-code-emoji: ^2.3.0
     css-unicode-loader: ^1.0.3

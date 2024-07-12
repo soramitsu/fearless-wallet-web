@@ -2,11 +2,12 @@
   <AboveForm :header="getLocale('header')" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="management">
       <SearchInput
-        v-model="filterValue"
+        :value="filterValue"
         placeholder="common.searchNetwork"
         class="search-input"
         width="100%"
         data-testid="networkSearch"
+        @change="changeFilterValue"
       />
       <Tooltip text="common.copied" target=".search-input" placement="bottom" />
 
@@ -29,6 +30,7 @@
         <Scroll>
           <ul class="network__list">
             <template> </template>
+
             <NetworkItem
               v-for="network in filteredOptionsNetworks"
               :network="network"
@@ -39,6 +41,7 @@
               @onChangeNetwork="enableSingleNetwork(network.name)"
               @onToggleFavorite="toggleFavorite(network.name)"
             />
+
             <Tooltip
               text="common.unavailableNetworkMessage"
               :maxWidth="300"
@@ -58,7 +61,6 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Action, Getter, Mutation } from 'vuex-class';
 import { type AccountJson } from '@extension-base/background/types/types';
-import { isEthereumNetwork } from '@extension-base/background/utils/utils';
 import NetworkItem from './NetworkItem.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { Tab } from '@/interfaces/ui';
@@ -125,31 +127,31 @@ export default class NetworkManagement extends Vue {
     return { name: this.$t(`header.networkManagement.${this.activeTab}`), icon: 'all-networks' };
   }
 
-  get filterNetworks() {
+  get filterByGroupNetworks() {
     if (this.activeTab === ALL_NETWORKS) return this.allNetworks;
 
-    const networks = this.allNetworks.filter(({ favorite, rank }) => {
-      if (this.activeTab === POPULAR_NETWORKS) return rank !== undefined;
-
-      if (this.activeTab === FAVORITE_NETWORKS)
-        return favorite.some((address) => address === this.selectedWallet.address);
-    });
-
     if (this.activeTab === POPULAR_NETWORKS) {
-      return networks.sort((a, b) => {
-        if (a.rank === undefined || b.rank === undefined) return 0;
+      return this.allNetworks
+        .filter(({ rank }) => rank !== undefined)
+        .sort((a, b) => {
+          if (a.rank === undefined || b.rank === undefined) return 0;
 
-        return a.rank > b.rank ? 1 : -1;
-      });
+          return a.rank > b.rank ? 1 : -1;
+        });
     }
 
-    return networks;
+    return this.allNetworks.filter(({ favorite }) =>
+      favorite.some((address) => address === this.selectedWallet.address)
+    );
   }
 
   get sortAvailableNetworks() {
-    return this.filterNetworks.sort((a, b) =>
-      this.isAvailableNetwork(a.name) > this.isAvailableNetwork(b.name) ? -1 : 1
-    );
+    return this.filterByGroupNetworks.sort((a, b) => {
+      const aAvailable = this.isAvailableNetwork(a.name);
+      const bAvailable = this.isAvailableNetwork(b.name);
+
+      return aAvailable === bAvailable ? 0 : aAvailable === true ? -1 : 1;
+    });
   }
 
   get filteredOptionsNetworks() {
@@ -172,6 +174,10 @@ export default class NetworkManagement extends Vue {
     return this.filteredOptionsNetworks.length !== 0;
   }
 
+  changeFilterValue(value: string) {
+    this.filterValue = value;
+  }
+
   getLocale(key: string): string {
     return `header.networkManagement.${key}`;
   }
@@ -189,6 +195,7 @@ export default class NetworkManagement extends Vue {
 
     if (this.selectedWallet.isMobile) {
       if (!this.selectedAccount) return false;
+
       if (!this.selectedAccount.chains) return false;
 
       const available = this.selectedAccount.chains.some((el) => selectedNetwork.chainId.includes(el));
@@ -196,7 +203,7 @@ export default class NetworkManagement extends Vue {
       return available;
     }
 
-    if (this.selectedWallet.ethereumAddress === '' && isEthereumNetwork(network)) return false;
+    if (this.selectedWallet.ethereumAddress === '' && BaseApi.isEthereumNetwork(network)) return false;
 
     return true;
   }

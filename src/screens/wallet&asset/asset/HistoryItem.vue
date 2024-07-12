@@ -6,7 +6,7 @@
       <div class="first-row">
         <div data-testid="hash">{{ hash }}</div>
 
-        <div data-testid="valueHistory">{{ value }} {{ assetToUpperCase }}</div>
+        <div :class="valueClasses" data-testid="valueHistory">{{ value }} {{ assetToUpperCase }}</div>
       </div>
 
       <div class="second-row">
@@ -59,6 +59,16 @@ export default class HistoryItem extends Vue {
     return isSora(this.network);
   }
 
+  get success() {
+    return this.historyElement.success;
+  }
+
+  get valueClasses() {
+    return {
+      reject: !this.success,
+    };
+  }
+
   get date() {
     return getFormattedDate(this.historyElement.timestamp);
   }
@@ -89,12 +99,12 @@ export default class HistoryItem extends Vue {
 
   get hash() {
     if (this.isSora) {
-      const element = this.historyElement as SoraHistoryElement;
+      const element = this.historyElement as unknown as SoraHistoryElement;
 
       return this.$t(`history.${element.method}`);
     }
 
-    const { transfer, reward, extrinsic } = this.historyElement;
+    const { transfer, reward } = this.historyElement;
 
     if (this.type === TransactionType.transfer) {
       const value = this.typeFormatted === 'incomingTransfer' ? transfer!.from : transfer!.to;
@@ -102,10 +112,8 @@ export default class HistoryItem extends Vue {
       return cut(value);
     }
 
-    if (this.type === TransactionType.reward) return cut(reward!.validator);
-
-    // extrinsic
-    return cut(extrinsic!.hash);
+    // reward
+    return cut(reward!.validator);
   }
 
   get typeFormatted() {
@@ -134,6 +142,10 @@ export default class HistoryItem extends Vue {
 
   &:last-child {
     border: none;
+  }
+
+  .reject {
+    color: $reject-color;
   }
 
   .column {

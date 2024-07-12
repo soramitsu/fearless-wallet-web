@@ -1,25 +1,13 @@
 <template>
   <div class="layout">
-    <ContentForm :height="440">
+    <AboveForm
+      :fullScreen="true"
+      :header="header"
+      :showBackIcon="showBackIcon"
+      @handlerBack="handlerBack"
+      @closeHandler="close"
+    >
       <div class="accounts-layout">
-        <div class="navigation">
-          <div class="left-part">
-            <Icon icon="arrow-left-circle" className="chevron" data-testid="backBtn" @click="back" />
-
-            <div data-testid="path">{{ path }}</div>
-          </div>
-
-          <CircleButton
-            v-if="showHeaderMenu"
-            :ref="dotsVerticalRef"
-            iconName="dots-vertical"
-            backgroundColor="none"
-            backgroundColorHover="light-black"
-            data-testid="dotsVertical"
-            @click="openAccountSettingsPopup(network)"
-          />
-        </div>
-
         <Scroll>
           <router-view
             :ref="routerViewRef"
@@ -33,7 +21,7 @@
           />
         </Scroll>
       </div>
-    </ContentForm>
+    </AboveForm>
 
     <AccountSettingsPopup
       v-if="showAccountSettingsPopup"
@@ -85,7 +73,7 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Watch } from 'vue-property-decorator';
+import { Vue, Component } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import ExportForm from './ExportForm.vue';
 import EditNodeForm from './EditNodeForm.vue';
@@ -112,7 +100,6 @@ type NotificationType = 'delete' | 'export' | '';
   },
 })
 export default class AccountsLayout extends Vue {
-  readonly dotsVerticalRef = 'dotsVertical';
   readonly routerViewRef = 'routerView';
   password = '';
   selectedNetwork = '';
@@ -141,12 +128,22 @@ export default class AccountsLayout extends Vue {
       : '';
   }
 
-  get showExportForm() {
-    return this.password !== '';
+  get header() {
+    if (this.isAccountsRoute) return 'accounts.chainAccounts';
+
+    if (this.isExportRoute) return 'accounts.export';
+
+    return 'addWallet.accounts';
   }
 
-  get showHeaderMenu() {
-    return !this.isAccountsRoute;
+  get showBackIcon() {
+    if (this.isAccountSetting) return false;
+
+    return true;
+  }
+
+  get showExportForm() {
+    return this.password !== '';
   }
 
   get showWarningIcon() {
@@ -161,20 +158,16 @@ export default class AccountsLayout extends Vue {
       : '';
   }
 
-  get path() {
-    const path = 'Accounts';
-    const networkPath = `${path} / ${this.network?.toUpperCase()}`;
-    const exportPath = `${networkPath} / Export account`;
-
-    return this.isAccountsRoute ? path : this.isNodesRoute ? networkPath : this.isExportRoute ? exportPath : '';
-  }
-
   get network() {
     return this.$route.params.network;
   }
 
+  get isAccountSetting() {
+    return this.routeName === Components.AccountSetting;
+  }
+
   get isAccountsRoute() {
-    return this.routeName === Components.Accounts;
+    return this.routeName === Components.ChainAccounts;
   }
 
   get isNodesRoute() {
@@ -195,13 +188,6 @@ export default class AccountsLayout extends Vue {
 
   get showNotificationPopup() {
     return this.notificationType !== '';
-  }
-
-  @Watch('showAccountSettingsPopup')
-  updateZIndexDotsVertical(value: boolean) {
-    const targetElement = (this.$refs[this.dotsVerticalRef] as Vue)?.$el as HTMLElement;
-
-    if (targetElement) targetElement.style.zIndex = value ? '200' : '0';
   }
 
   setPassword(password: string) {
@@ -266,9 +252,7 @@ export default class AccountsLayout extends Vue {
 
   deleteNode() {
     const network = this.getNetwork(this.selectedNetwork);
-    const customNodes = network.customNodes.filter(
-      (node) => node.name !== this.selectedNodeName && node.url !== this.selectedNodeUrl
-    );
+    const customNodes = network.customNodes.filter((node) => node.url !== this.selectedNodeUrl);
 
     upsertNetworkMap({
       ...network,
@@ -282,7 +266,7 @@ export default class AccountsLayout extends Vue {
   childUpdatedNode(setAuto = false) {
     const nodesComponent = this.$refs[this.routerViewRef] as Nodes;
 
-    if (setAuto && this.selectedNodeIsActive) nodesComponent.autoSelectNode = true;
+    if (setAuto && this.selectedNodeIsActive) nodesComponent.toggleAutoSelectNode(true);
   }
 
   openNotificationPopup(type: NotificationType) {
@@ -310,9 +294,12 @@ export default class AccountsLayout extends Vue {
     this.showAddEthereumAccountPopup = false;
   }
 
-  back() {
-    if (this.isAccountsRoute) this.$router.push({ name: Components.Wallet });
-    else this.$router.back();
+  handlerBack() {
+    this.$router.back();
+  }
+
+  close() {
+    this.$router.push({ name: Components.Wallet });
   }
 }
 </script>
@@ -322,36 +309,9 @@ export default class AccountsLayout extends Vue {
   height: 100%;
 
   .accounts-layout {
-    padding: 10px 0 0 $default-padding;
     display: flex;
     flex-direction: column;
     height: 100%;
-
-    .navigation {
-      display: flex;
-      justify-content: space-between;
-      color: $default-white;
-      font-weight: 700;
-      margin: 0 10px 16px 10px;
-      min-height: 32px;
-
-      .left-part {
-        display: flex;
-        align-items: center;
-      }
-
-      .chevron {
-        margin-right: 15px;
-        filter: invert(0.35);
-        width: 20px;
-        height: 20px;
-
-        &:hover {
-          cursor: pointer;
-          filter: invert(0);
-        }
-      }
-    }
   }
 }
 </style>

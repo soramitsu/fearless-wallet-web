@@ -3,6 +3,9 @@
     :value="value"
     :price="price"
     :icon="icon"
+    :iconValue="iconValue"
+    :hoverIconValue="hoverIconValue"
+    :isHoverRow="isHoverRow"
     :iconAppend="iconAppend"
     :isLoading="isLoading"
     :borderType="borderType"
@@ -10,7 +13,9 @@
     :hideLastBorder="hideLastBorder"
     :color="color"
     :isIconPrepend="isIconPrepend"
+    :isIconValuePrepend="isIconValuePrepend"
     :iconClasses="iconClasses"
+    @click="emit('click')"
   >
     {{ $t(text) }}
 
@@ -18,28 +23,47 @@
   </Row>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
-import Row from './Row.vue';
+<script lang="ts" setup>
+import { withDefaults } from 'vue';
+import Row from '@/components/Row.vue';
 
 type BorderType = 'default' | 'secondary';
-type Color = 'default' | 'pink-lavender';
+type Color = 'white' | 'pink-lavender';
 
-@Component({
-  components: { Row },
-})
-export default class InfoRow extends Vue {
-  @Prop(String) text!: string;
-  @Prop({ default: '' }) value!: string;
-  @Prop(String) price!: string;
-  @Prop(String) icon?: string;
-  @Prop(String) color!: Color;
-  @Prop(String) iconAppend?: string;
-  @Prop({ default: 'secondary' }) borderType!: BorderType;
-  @Prop({ default: true }) isIconPrepend!: boolean;
-  @Prop({ default: true }) showBorder!: boolean;
-  @Prop({ default: true }) hideLastBorder!: boolean;
-  @Prop({ default: false }) isLoading!: boolean;
-  @Prop({ default: () => [] }) iconClasses!: string[];
+interface Props {
+  text: string;
+  value?: string;
+  price?: string;
+  icon?: string;
+  iconValue?: string;
+  hoverIconValue?: boolean;
+  isHoverRow?: boolean;
+  color?: Color;
+  iconAppend?: string;
+  borderType?: BorderType;
+  isIconPrepend?: boolean;
+  isIconValuePrepend?: boolean;
+  showBorder?: boolean;
+  hideLastBorder?: boolean;
+  isLoading?: boolean;
+  iconClasses?: string[];
 }
+
+withDefaults(defineProps<Props>(), {
+  text: '',
+  value: '',
+  price: '',
+  icon: '',
+  iconValue: '',
+  color: 'white',
+  iconAppend: '',
+  borderType: 'default',
+  isIconPrepend: true,
+  showBorder: true,
+  hideLastBorder: true,
+  isLoading: false,
+  iconClasses: () => [],
+});
+
+const emit = defineEmits(['click']);
 </script>

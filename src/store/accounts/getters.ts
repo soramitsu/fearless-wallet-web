@@ -1,3 +1,5 @@
+import { type NftCollection, type AvailableNftState } from '@extension-base/services/nft-service/types';
+import { type NetworkJson } from '@extension-base/types';
 import type { TokenGroup, AccountJson } from '@extension-base/background/types/types';
 import type { GetterTree } from 'vuex';
 import type { SelectedWallet, WalletInfo, GetAutoSelectNodesValueByNetwork, GetShowWarningNetworks } from './types';
@@ -7,11 +9,6 @@ import type { Features } from '@/store/extension/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import store from '@/store';
 import { ALL_NETWORKS } from '@/consts/networks';
-import {
-  type NftCollection,
-  type AvailableNftState,
-} from '@/extension/background/extension-base/src/services/nft-service/types';
-import { type NetworkJson } from '@/extension/background/extension-base/src/types';
 
 export enum GettersTypes {
   selectedWallet = 'selectedWallet',
@@ -69,19 +66,18 @@ const getters: GetterTree<State, State> & Getters = {
     return selectedWallet;
   },
 
-  [GettersTypes.getBalances]({ balances }): TokenGroup[] {
-    return balances;
+  [GettersTypes.getBalances](state): TokenGroup[] {
+    return state.balances;
   },
 
   [GettersTypes.nfts](state): NftCollection[] {
     const activeNetworks: NetworkJson[] = store.getters.activeNetworkForSelectedWallet;
     const nfts: NftCollection[] = [];
-    activeNetworks.forEach((network) => {
-      if (state.nfts[network.chainId]) {
-        const values = Object.values(state.nfts[network.chainId]);
 
-        nfts.push(...values);
-      }
+    activeNetworks.forEach(({ chainId }) => {
+      const nftChain = state.nfts[chainId];
+
+      if (nftChain) nfts.push(...Object.values(nftChain));
     });
 
     return nfts;
@@ -143,6 +139,7 @@ const getters: GetterTree<State, State> & Getters = {
     accounts.forEach((account) => {
       wallets.push({
         name: account.name,
+        ethereumAddress: account.ethereumAddress,
         address: account.address,
         isMobile: !!account.isMobile,
         active: !!account.active,

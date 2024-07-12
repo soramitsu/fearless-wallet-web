@@ -96,7 +96,7 @@ import { type DerivationPaths, type MnemonicConfirmation, type AsyncFn } from '@
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import BaseApi from '@/util/BaseApi';
-import { addAccount, createGoogleFile, exportAccount, updateCurrentAccount } from '@/extension/messaging';
+import { addAccount, createGoogleFile, exportAccountJSON, updateCurrentAccount } from '@/extension/messaging';
 import { type SelectedWallet } from '@/store/accounts/types';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -316,13 +316,13 @@ export default class CreateGoogle extends Vue {
   }
 
   async backupWallet(address: string) {
-    const { exportedJson: json } = await exportAccount(address, this.walletPassword);
+    const { json } = await exportAccountJSON(address, this.walletPassword);
     const ethAddress = json.meta.ethereumAddress as string;
     const token = this.$route.params.access_token;
     let ethRes;
 
     if (ethAddress) {
-      const { exportedJson: ethJson } = await exportAccount(ethAddress, this.walletPassword);
+      const { json: ethJson } = await exportAccountJSON(ethAddress, this.walletPassword);
 
       ethRes = await createGoogleFile({
         json: JSON.stringify(ethJson),

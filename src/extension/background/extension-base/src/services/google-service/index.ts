@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { chrome } from '@extension-base/utils/crossenv';
+
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
 import { FEARLESS_TITLE } from '@/consts/global';
-
 export class GoogleService {
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
   private readonly baseUploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
@@ -67,29 +68,33 @@ ${json}
   }
 
   public async authExtension(type: 'main' | 'export' = 'main', wallet?: string) {
-    chrome.identity.launchWebAuthFlow(
-      {
-        url: this.authURL('extension'),
-        interactive: true,
-      },
-      async (redirect_url) => {
-        const searchParams = new URLSearchParams(redirect_url);
-        const token = searchParams.get('access_token') || searchParams.get(`${this.extensionRedirectURL}#access_token`);
-        const baseURL = `${chrome.runtime.getURL(`popup.html#/${this.urlTypes[type]}/${token}`)}`;
-        const url = type === 'export' && wallet ? `${baseURL}?wallet=${wallet}` : baseURL;
-        const tabs = await chrome.tabs.query({});
+    return new Promise<void>((res) => {
+      chrome.identity.launchWebAuthFlow(
+        {
+          url: this.authURL('extension'),
+          interactive: true,
+        },
+        async (redirect_url) => {
+          res();
+          const searchParams = new URLSearchParams(redirect_url);
+          const token =
+            searchParams.get('access_token') || searchParams.get(`${this.extensionRedirectURL}#access_token`);
+          const baseURL = `${chrome.runtime.getURL(`popup.html#/${this.urlTypes[type]}/${token}`)}`;
+          const url = type === 'export' && wallet ? `${baseURL}?wallet=${wallet}` : baseURL;
+          const tabs = await chrome.tabs.query({});
 
-        const [openTab] = tabs.filter((el) => el.title?.includes(FEARLESS_TITLE));
+          const [openTab] = tabs.filter((el) => el.title?.includes(FEARLESS_TITLE));
 
-        if (openTab && openTab.id) {
-          chrome.tabs.update(openTab.id, { active: true, url });
+          if (openTab && openTab.id) {
+            chrome.tabs.update(openTab.id, { active: true, url });
 
-          return;
+            return;
+          }
+
+          chrome.tabs.create({ active: true, url });
         }
-
-        chrome.tabs.create({ active: true, url });
-      }
-    );
+      );
+    });
   }
 
   public authDesktop() {

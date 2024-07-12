@@ -14,8 +14,12 @@
       :sortByApy="sortByApy"
       :validators="validators"
       :maxNominations="maxNominations"
+      :stakingNetwork="stakingNetwork"
+      :stakingCurrency="stakingCurrency"
+      :selectedValidator="selectedValidator"
       @updateSelectedValidators="updateSelectedValidators"
       @openFiltersPopup="toggleFiltersPopupVisibility"
+      @openValidatorInfo="$emit('openValidatorInfo', $event)"
     />
 
     <FiltersPopup
@@ -37,7 +41,10 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import type { SelectionValidator } from '@/interfaces';
+import type { NetworkParams } from '@/store';
+import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
 import SuggestedValidatorDisclaimer from '@/screens/staking/myStake/validators/SuggestedValidatorDisclaimer.vue';
 import OfferValidators from '@/screens/staking/myStake/validators/OfferValidators.vue';
 import SelectValidator from '@/screens/staking/myStake/validators/SelectValidator.vue';
@@ -62,6 +69,9 @@ export default class SelectionValidatorsForm extends Vue {
   @Prop({ type: Number }) step!: number;
   @Prop({ type: Array }) validators!: SelectionValidator[];
   @Prop({ type: Number }) maxNominations!: number;
+  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
+  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
+  @Prop({ type: Object }) selectedValidator!: FWValidatorInfoFull;
 
   openValidatorList(isSuggested: boolean) {
     this.$emit('openValidatorList', isSuggested);

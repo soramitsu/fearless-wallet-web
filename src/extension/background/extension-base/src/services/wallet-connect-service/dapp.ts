@@ -1,26 +1,35 @@
 import { getInternalError, getSdkError } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
-import { createSubscription } from '@extension-base/background/handlers/subscriptions';
 import {
   PROJECT_ID_EXTENSION,
-  SUBSTRATE_EVM_HALF_CHAINID,
+  SUBSTRATE_EVM_HALF_CHAIN_IDS,
+  WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_METADATA,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
-import { generateHalfGenesisHash } from '@extension-base/services/wallet-connect-service/utils';
+import {
+  generateHalfGenesisHash,
+  getEip155MessageAddress,
+  parseRequestParams,
+} from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
-import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isNativeEVMNetwork } from '@extension-base/background/utils/utils';
 import Provider from '@walletconnect/universal-provider';
+import { createSubscription } from '@extension-base/services';
+import {
+  EIP155_SIGNING_METHODS,
+  type AppSessionInitResponse,
+  type PairingSubjectType,
+} from '@extension-base/services/wallet-connect-service/types';
+import { isSameAddress } from '@extension-base/utils';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
-import type { SessionTypes } from '@walletconnect/types';
-import type { AppSessionInitResponse, PairingSubjectType } from '@extension-base/services/wallet-connect-service/types';
-import type { Port } from '@extension-base/background/types/types';
+import type { EngineTypes, SessionTypes } from '@walletconnect/types';
+import type { Port, ResponseSigning } from '@extension-base/background/types/types';
 
 export class WalletConnectDAppService {
-  state: State;
   private app?: Provider;
 
   public readonly uriSubject: BehaviorSubject<string> = new BehaviorSubject<string>('');
@@ -28,8 +37,7 @@ export class WalletConnectDAppService {
     Record<string, AppSessionInitResponse>
   >({});
 
-  constructor(state: State) {
-    this.state = state;
+  constructor(private state: State) {
     this.initApp().catch(console.error);
   }
 
@@ -65,14 +73,33 @@ export class WalletConnectDAppService {
     this.pairingSubject.next({ ...this.pairingSubject.value, [key]: data });
   }
 
+  public getSession(topic: string): SessionTypes.Struct {
+    const session = this.sessions.find((el) => el.topic === topic);
+
+    if (!session) {
+      throw new Error(getInternalError('MISMATCHED_TOPIC').message);
+    } else {
+      return session;
+    }
+  }
+
   async initPairing() {
     if (!this.app) await this.initApp();
 
-    const optionalChains = this.state.networksGithub.flatMap((network) => {
-      if (isRequireEvmAPI(network.name) || !network.chainId) return [];
+    const optionalChains = this.state.networkService.networksGithub.flatMap((network) => {
+      if (isNativeEVMNetwork(network.name) || !network.chainId) return [];
+
       const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
 
       return [`polkadot:${halfChainId}`];
+    });
+
+    const optionalEvmChains = this.state.networkService.networksGithub.flatMap((network) => {
+      if (!isNativeEVMNetwork(network.name) || !network.chainId) return [];
+
+      const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
+
+      return [`eip155:${halfChainId}`];
     });
 
     const pairing = await this.app?.client.connect({
@@ -82,8 +109,12 @@ export class WalletConnectDAppService {
           chains: [
             'polkadot:91b171bb158e2d3848fa23a9f1c25182', //dot
             'polkadot:7e4e32d0feafd4f9c9414b0be86373f9', //sora mainnet
-            'polkadot:401a1f9dca3da46f5c4091016c8a2f26', //moonriver
           ],
+          events: [],
+        },
+        eip155: {
+          chains: ['eip155:1'],
+          methods: ['personal_sign', 'eth_sendTransaction'],
           events: [],
         },
       },
@@ -92,6 +123,21 @@ export class WalletConnectDAppService {
           methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
           chains: optionalChains,
           events: [],
+        },
+        eip155: {
+          chains: optionalEvmChains,
+          methods: [
+            'eth_sendTransaction',
+            'personal_sign',
+            'eth_sign',
+            'eth_signTransaction',
+            'eth_signTypedData',
+            'eth_signTypedData_v1',
+            'eth_signTypedData_v3',
+            'eth_signTypedData_v4',
+            'eth_sendRawTransaction',
+          ],
+          events: ['accountsChanged', 'chainChanged'],
         },
       },
     });
@@ -126,18 +172,18 @@ export class WalletConnectDAppService {
 
     activePairing
       ?.approval()
-      .then((data) => this.onApproval(data, cb))
+      .then((data) => this.onAuthApproval(data, cb))
       .catch(() => cb({ status: false, message: 'rejected' }));
 
     return this.pairingSubject.value?.uri;
   }
 
-  onApproval(data: SessionTypes.Struct, cb: (data: PairingSubjectType) => void) {
+  onAuthApproval(data: SessionTypes.Struct, cb: (data: PairingSubjectType) => void) {
     const accounts = data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].accounts;
     const substrateAddress = accounts.find((el) => {
       const [, chainId] = el.split(':');
 
-      return !SUBSTRATE_EVM_HALF_CHAINID.includes(chainId);
+      return !SUBSTRATE_EVM_HALF_CHAIN_IDS.includes(chainId);
     });
 
     if (!substrateAddress) throw new Error("couldn't find substrate address");
@@ -147,17 +193,23 @@ export class WalletConnectDAppService {
     const ethAddress = accounts.find((el) => {
       const [, chainId] = el.split(':');
 
-      return SUBSTRATE_EVM_HALF_CHAINID.includes(chainId);
+      return SUBSTRATE_EVM_HALF_CHAIN_IDS.includes(chainId);
     });
+
     let ethereumAddressWC;
 
     if (ethAddress) {
       const [, , ethereumAddress] = ethAddress.split(':');
+
       ethereumAddressWC = ethereumAddress;
     }
 
-    const availableNetworks =
+    const availableSubstrateNetworks =
       data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].chains?.map((el) => el.split(':')[1]) ?? [];
+
+    const availableEvmNetworks =
+      data.namespaces[WALLET_CONNECT_EIP155_NAMESPACE].chains?.map((el) => el.split(':')[1]) ?? [];
+
     const isDuplicate = this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress);
 
     if (isDuplicate) {
@@ -177,7 +229,7 @@ export class WalletConnectDAppService {
         isMobile: true,
         wcTopic: data.topic,
         ethereumAddress: ethereumAddressWC,
-        chains: availableNetworks,
+        chains: [...availableSubstrateNetworks, ...availableEvmNetworks],
       },
       'address'
     );
@@ -209,11 +261,11 @@ export class WalletConnectDAppService {
     const account = this.state.keyringService.getAddresses().find((el) => el.meta.wcTopic === topic);
 
     if (account) {
-      const current = await this.state.currentAccount;
+      const current = this.state.currentAccount;
       this.state.keyringService.forgetAddress(account?.address);
 
       if (current?.address === account.address) {
-        const accounts = this.state.getSubstrateAccounts();
+        const accounts = this.state.keyringService.getSubstrateAccounts();
 
         if (accounts.length) this.state.updateCurrentAccount(accounts[0].address);
         else this.state.setCurrentAccount(null);
@@ -228,10 +280,10 @@ export class WalletConnectDAppService {
     const account = this.state.keyringService.getAddress(encodedAddress);
 
     const chainId = payload.genesisHash.slice(2);
-    const halfChainid = chainId.slice(0, Math.ceil(chainId.length / 2));
+    const halfChainId = chainId.slice(0, Math.ceil(chainId.length / 2));
 
     const request = {
-      chainId: `polkadot:${halfChainid}`,
+      chainId: `polkadot:${halfChainId}`,
       topic: account?.meta.wcTopic as string,
       request: {
         method: 'polkadot_signTransaction',
@@ -269,5 +321,84 @@ export class WalletConnectDAppService {
     });
 
     return result ?? { signature: '0x' as HexString };
+  }
+
+  public async onEvmRequest(
+    id: string,
+    url: string,
+    method: string,
+    params: any,
+    topic: string
+  ): Promise<ResponseSigning> {
+    const requestSession = this.getSession(topic);
+
+    const sessionAccounts = requestSession.namespaces.eip155.accounts.map((account) => account.split(':')[2]);
+
+    const authInfo = await this.state.getAuthInfo(url);
+
+    if (!authInfo || !authInfo?.currentEvmNetworkKey) {
+      throw new Error(getSdkError('UNSUPPORTED_CHAINS').message);
+    }
+
+    const networkKey = authInfo.currentEvmNetworkKey;
+    const chainState = this.state.networkMap[networkKey];
+
+    const requestEvent: EngineTypes.RequestParams = {
+      chainId: `${WALLET_CONNECT_EIP155_NAMESPACE}:${chainState.chainId}`,
+      request: {
+        method,
+        params,
+      },
+      topic,
+    };
+
+    const signMethods: string[] = [
+      EIP155_SIGNING_METHODS.PERSONAL_SIGN,
+      EIP155_SIGNING_METHODS.ETH_SIGN,
+      EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA,
+      EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3,
+      EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4,
+    ];
+
+    if (!this.app) throw new Error('Wallet Connect is not init!');
+
+    if (signMethods.includes(method)) {
+      const address = getEip155MessageAddress(method, params);
+
+      this.checkAccount(address, sessionAccounts);
+
+      const res = await this.app.client.request<{ payload: HexString }>(requestEvent as any);
+
+      return { id, payload: res.payload };
+    }
+
+    const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(params);
+
+    const address = tx.from;
+
+    this.state.walletConnectService.eip155RequestHandler.checkAccount(address, sessionAccounts);
+
+    const createRequest = () => {
+      if (!this.app) throw new Error('Wallet Connect is not init!');
+
+      return this.app.client.request<{ payload: HexString }>(requestEvent as any);
+    };
+
+    if (!chainState.active) {
+      await this.state.setActiveNetworks(networkKey);
+    }
+
+    const res = await createRequest();
+
+    return {
+      id,
+      payload: res.payload,
+    };
+  }
+
+  checkAccount(address: string, accounts: string[]) {
+    if (!accounts.find((account) => isSameAddress(account, address))) {
+      throw new Error(getSdkError('UNSUPPORTED_ACCOUNTS').message + ' ' + address);
+    }
   }
 }

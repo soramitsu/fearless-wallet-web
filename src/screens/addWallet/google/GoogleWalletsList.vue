@@ -17,10 +17,11 @@
 
               <span @click.self="onSelect(!file.active, index)">{{ cutAddress(file.address) }}</span>
             </div>
+
             <transition name="fade">
               <div v-show="file.active" class="json__controls">
                 <ValidatedInput
-                  v-model="file.password"
+                  :value="file.password"
                   class="input__validate-pass"
                   typeText="text"
                   placeholder="addWallet.enterPassword"
@@ -28,6 +29,7 @@
                   :showPassword="true"
                   :readonly="file.isComplete || file.isLoading"
                   :isError="file.isError"
+                  @change="changePassword(index, $event)"
                 />
 
                 <FButton
@@ -51,23 +53,21 @@
 </template>
 
 <script lang="ts">
-import { Getter, Action } from 'vuex-class';
+import { Getter } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { FilesState, AsyncFn } from '@/interfaces';
+import type { FilesState } from '@/interfaces';
 import { cut } from '@/helpers';
 import { type SelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
-import { isJsonValid, jsonRestore } from '@/extension/messaging';
+import { isJsonValid, jsonRestore, updateCurrentAccount } from '@/extension/messaging';
 
 @Component
 export default class GoogleWalletsList extends Vue {
   @Prop(Array) items!: FilesState[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
 
   setItemValue(index: number, data: Record<string, string | boolean>) {
-    this.items.splice(index, 1, { ...this.items[index], ...data });
+    this.$emit('setItemValue', index, data);
   }
 
   async onConfirm(index: number) {
@@ -91,7 +91,8 @@ export default class GoogleWalletsList extends Vue {
 
     const address = await jsonRestore(json, password);
 
-    await this.setSelectedWallet(address || this.selectedWallet.address);
+    await updateCurrentAccount(address || this.selectedWallet.address);
+
     this.setItemValue(index, { isComplete: true, isLoading: false });
 
     return true;
@@ -105,15 +106,18 @@ export default class GoogleWalletsList extends Vue {
     return !file.password || !file.password.length || file.isLoading || file.isComplete;
   }
 
+  changePassword(index: number, password: string) {
+    this.$emit('setItemPassword', index, password);
+  }
+
   onSelect(value: boolean, index: number) {
     const file = this.items[index];
 
     if (file.isComplete) return;
-    else if (file.isComplete === undefined) {
-      this.setItemValue(index, { isLoading: false, isComplete: false });
-    }
+    else if (file.isComplete === undefined) this.setItemValue(index, { isLoading: false, isComplete: false });
 
     if (file.json === undefined) this.$emit('getFile', file.id, index);
+
     if (file.ethJson === undefined && file.ethWalletID) this.$emit('getFile', file.ethWalletID, index);
 
     this.setItemValue(index, { active: value });

@@ -1,5 +1,6 @@
 import assert from 'assert';
-import { getSubstrateAddress, isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isNativeEVMNetwork } from '@extension-base/background/utils/utils';
+import { ethers } from 'ethers';
 import type {
   CachedUnlocks,
   RequestAccountExport,
@@ -10,6 +11,8 @@ import type {
   ResponseSigningIsLocked,
   ValidateJsonResult,
   RequestUpdateMeta,
+  RequestExportMnemonic,
+  ResponseExportMnemonic,
 } from '@extension-base/background/types/types';
 
 import type State from '@extension-base/background/handlers/State';
@@ -18,18 +21,25 @@ import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { type DerivationPath } from '@/interfaces';
 
 export default class FWExtensionBase {
-  protected token: string;
   public cachedUnlocks: CachedUnlocks;
-  protected state: State;
 
-  constructor(state: State) {
+  constructor(protected state: State) {
     this.cachedUnlocks = {};
-    this.state = state;
-    this.token = '';
   }
 
-  accountsExport({ address, password }: RequestAccountExport): ResponseAccountExport {
-    return { exportedJson: this.state.keyringService.backupAccount(address, password)! };
+  exportMnemonic(request: RequestExportMnemonic): ResponseExportMnemonic {
+    return this.state.keyringService.exportMnemonic(request);
+  }
+
+  exportJSON({ address, password, network }: RequestAccountExport): ResponseAccountExport {
+    if (network && isNativeEVMNetwork(network)) {
+      const { privateKey } = this.state.accountExportPrivateKey({ address, password });
+      const json = ethers.encryptKeystoreJsonSync({ address, privateKey }, password);
+
+      return { json: JSON.parse(json) };
+    }
+
+    return { json: this.state.keyringService.backupAccount(address, password)! };
   }
 
   validateDerivationPath({ value, keypairType }: DerivationPath): boolean {
@@ -57,18 +67,18 @@ export default class FWExtensionBase {
     if (meta.ethereumAddress) {
       const cb = () =>
         Object.keys(this.state.networkMap).forEach((network) => {
-          if (isRequireEvmAPI(network)) this.state.refreshWeb3Api(network);
+          if (isNativeEVMNetwork(network)) this.state.networkService.evmApiHandler.refreshEvmApi(network);
         });
 
-      this.state.getCurrentAccount((account) =>
+      if (this.state.currentAccount) {
         this.state.setCurrentAccount(
           {
-            ...account!,
+            ...this.state.currentAccount,
             ethereumAddress: (meta.ethereumAddress as string) ?? '',
           },
           cb
-        )
-      );
+        );
+      }
 
       this.state.updateServiceInfo();
     }
@@ -116,7 +126,7 @@ export default class FWExtensionBase {
   }
 
   signingIsLocked({ address }: RequestSigningIsLocked): ResponseSigningIsLocked {
-    const substrateAddress = getSubstrateAddress(address, this.state);
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
     const pair = this.state.keyringService.getPair(substrateAddress);
 
     assert(pair, 'Unable to find pair');
@@ -131,7 +141,7 @@ export default class FWExtensionBase {
 
   jsonValid({ file, password, isSubstrate }: RequestJsonValidate): ValidateJsonResult {
     try {
-      const pair = this.state.keyringService.restoreAccount(file, password);
+      const pair = this.state.keyringService.createFromJson(file);
 
       pair.decodePkcs8(password);
 
@@ -141,6 +151,18 @@ export default class FWExtensionBase {
     } catch (error: any) {
       const errorType =
         error.message === 'Unable to decode using the supplied passphrase' ? 'jsonPassword' : 'jsonInvalid';
+
+      if (errorType === 'jsonPassword') return { value: false, errorType };
+    }
+
+    try {
+      const stringFile = JSON.stringify(file);
+
+      ethers.decryptKeystoreJsonSync(stringFile, password);
+
+      return { value: true };
+    } catch (error: any) {
+      const errorType = error.message.includes('incorrect password') ? 'jsonPassword' : 'jsonInvalid';
 
       return { value: false, errorType };
     }

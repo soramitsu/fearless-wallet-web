@@ -17,16 +17,24 @@
       <YourValidators v-else-if="step === 1" :stakingNetwork="stakingNetwork" @openValidatorInfo="openValidatorInfo" />
 
       <div v-else-if="step === 6">
-        <FInput v-model="selectedAccountName" placeholder="accounts.account" size="big" :readonly="true" />
+        <FInput
+          :value="selectedAccountName"
+          placeholder="accounts.account"
+          size="big"
+          data-testid="accountName"
+          :readonly="true"
+        />
 
         <InfoRow
           text="staking.selectedValidators"
+          data-testid="selectedValidators"
           :value="`${selectedValidatorsLength} (${$t('common.max')} ${maxNominations})`"
           borderType="default"
         />
 
         <InfoRow
           text="assets.networkFee"
+          data-testid="networkFee"
           :value="`${fee} ${stakingAssetName}`"
           :price="feeValueString"
           borderType="default"
@@ -42,8 +50,12 @@
         :step="step"
         :validators="validators"
         :maxNominations="maxNominations"
+        :stakingCurrency="stakingCurrency"
+        :stakingNetwork="stakingNetwork"
+        :selectedValidator="selectedValidator"
         @openValidatorList="openValidatorList"
         @updateSelectedValidators="updateSelectedValidators"
+        @openValidatorInfo="openValidatorInfo"
       />
 
       <FButton
@@ -51,6 +63,7 @@
         size="big"
         fontSize="big"
         width="100%"
+        data-testId="confirmBtn"
         :text="buttontext"
         :disabled="confirmBtnDisabled"
         @click="openSelectionValidatorsForm"
@@ -71,9 +84,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { type FWValidatorInfoFull, type RequestNominate } from '@extension-base/services/staking-service/types';
+import type { FWValidatorInfoFull, RequestNominate } from '@extension-base/services/staking-service/types';
 import type { AsyncFn, SelectionValidator } from '@/interfaces';
 import type { GetAssetPrice, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
@@ -83,7 +96,7 @@ import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vu
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import { fetchBalance, getSoraFees } from '@/extension/messaging';
+import { fetchBalance, getNominateNetworkFee } from '@/extension/messaging';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { isValidAmountAsset } from '@/helpers/currencies';
@@ -155,15 +168,25 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   get confirmBtnDisabled() {
-    if (this.step === 4 || this.step === 5) return this.selectedValidatorsLength === 0;
+    if (this.step === 4 || this.step === 5) return this.selectedValidatorsLength === 0 || this.fullMatchValidators;
 
     if (this.step === 6) return !this.isValidAmountAsset;
 
     return false;
   }
 
+  get fullMatchValidators() {
+    return this.stakingNetwork.myValidators.every(({ address }) =>
+      this.selectedValidators.some((_address) => address === _address)
+    );
+  }
+
   get buttontext() {
     if (this.step === 1) return 'common.edit';
+
+    if (this.step === 4 || this.step === 5) {
+      if (this.fullMatchValidators) return 'staking.validatorsAlreadyNominated';
+    }
 
     if (this.step === 6 && !this.isValidAmountAsset)
       return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
@@ -232,38 +255,30 @@ export default class YourValidatorsManagement extends Vue {
     } as RequestNominate;
   }
 
+  @Watch('selectedValidators')
+  async srcWatcher() {
+    this.fee = await getNominateNetworkFee({ validators: this.selectedValidators, network: this.network });
+  }
+
   async mounted() {
     // TODO staking
     const isSlashed = false;
     const limitValidatorsIdentity = false;
 
-    this.stakingNetwork.validators.forEach(({ address, apy, name, description, isOversubscribed, isKnownGood }) => {
-      Vue.set(this.state, address, {
-        name,
-        address,
-        apy,
-        description,
-        isOversubscribed,
-        onchainIdentity: isKnownGood,
+    this.stakingNetwork.validators.forEach((info) => {
+      Vue.set(this.state, info.address, {
+        ...info,
         isSlashed,
         limitValidatorsIdentity,
         isSelect: false,
       });
     });
 
-    this.getSoraFees();
-
     if (this.stakingNetwork.isController)
       this.stashBalance = await fetchBalance({
         address: this.stakingNetwork.stashAddress,
         networkName: this.stakingNetwork.network,
       });
-  }
-
-  async getSoraFees() {
-    const { StakingNominate } = await getSoraFees();
-
-    this.fee = StakingNominate.toString();
   }
 
   closeForm() {

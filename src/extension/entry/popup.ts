@@ -1,3 +1,5 @@
+import '@polkadot/extension-inject/crossenv';
+
 import Vue from 'vue';
 import { Plugin } from 'vue-fragment';
 import router from '@/router';
@@ -8,7 +10,6 @@ import '@/styles';
 import '@/plugins';
 import '@/assets';
 import '@/components';
-import '@polkadot/extension-inject/crossenv';
 
 Vue.use(Plugin);
 

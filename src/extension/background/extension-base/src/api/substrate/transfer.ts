@@ -1,13 +1,13 @@
 import { FPNumber } from '@sora-substrate/util';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { getAssetOptions, getPrecisionValue } from '@extension-base/api/substrate/utils';
-import { getUtilityProps, getSubstrateAddress } from '@extension-base/background/utils/utils';
+import { getUtilityProps } from '@extension-base/background/utils/utils';
 import { type BasicTxResponse, type TokenGroup, SignerType } from '@extension-base/background/types/types';
 import { type Extrinsic } from '@extension-base/api/substrate/utils/types';
 import type State from '@extension-base/background/handlers/State';
 
 import { type NetworkName } from '@/interfaces';
-import { KUSAMA, ROCOCO } from '@/consts/networks';
+import { isSameString } from '@/helpers';
 
 type ExtrinsicTransferProps = {
   to: string;
@@ -24,17 +24,18 @@ export function createExtrinsicTransfer(props: ExtrinsicTransferProps, state: St
 
   if (!api) return null;
 
-  const { precision, type, id } = tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKeyLCase)!;
-  const ormlOptions = getAssetOptions(id, state.assetsMap);
+  const { precision, type, id } = tokenBalance.balances.find(({ name }) => isSameString(name, networkKey))!;
+  const ormlOptions = getAssetOptions(id, state.networkService.assetsMap);
   const precisionAmount = getPrecisionValue(amount, precision) as string;
 
   try {
     switch (type) {
       case 'normal':
-        if (networkKeyLCase === ROCOCO || networkKeyLCase === KUSAMA)
-          return api.tx.balances.transferKeepAlive(to, precisionAmount);
+        if (api.tx.balances.transfer) return api.tx.balances.transfer(to, precisionAmount);
 
-        return api.tx.balances.transfer(to, precisionAmount);
+        if (api.tx.balances.transferAllowDeath) return api.tx.balances.transferAllowDeath(to, precisionAmount);
+
+        return api.tx.balances.transferKeepAlive(to, precisionAmount);
 
       case 'ormlChain':
         return api.tx.tokens.transfer(to, ormlOptions, precisionAmount);
@@ -86,6 +87,7 @@ export async function estimateFee(
 
   try {
     const paymentInfo = await extrinsic.paymentInfo(to);
+
     const partialFee = paymentInfo ? +paymentInfo.partialFee : '0';
     const result = FPNumber.fromCodecValue(partialFee, utilityPrecision);
 
@@ -128,7 +130,7 @@ export async function makeTransfer({
 
   await api?.isReady;
 
-  const address = getSubstrateAddress(from, state);
+  const address = state.keyringService.getSubstrateAddress(from);
   const tokenBalance = state.balanceService.getAccountBalance(address).find(({ groupId }) => groupId === assetId)!;
 
   const extrinsic = createExtrinsicTransfer(

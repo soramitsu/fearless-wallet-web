@@ -1,13 +1,14 @@
 <template>
   <Popup
     sizeWidth="mini"
-    :showHeader="false"
-    :showBorder="true"
-    @handlerClose="$emit('handlerClose')"
-    :top="top"
-    :left="-35"
     verticalPlacement="top"
     horizontalPlacement="right"
+    :showHeader="false"
+    :showBorder="true"
+    :top="top"
+    :left="-35"
+    :zIndex="399"
+    @handlerClose="$emit('handlerClose')"
   >
     <div class="node-settings">
       <div class="row" @click="$emit('openEditNodeForm', selectedNetwork, name, url)">

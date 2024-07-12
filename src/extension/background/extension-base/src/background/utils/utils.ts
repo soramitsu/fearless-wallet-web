@@ -1,11 +1,15 @@
 import { APIItemState } from '@extension-base/api/types/networks';
-import { isEthereumAddress } from '@polkadot/util-crypto';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type State from '@extension-base/background/handlers/State';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { AssetName, NetworkName, RelayChainName } from '@/interfaces';
-import { MAIN_NETWORKS, ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
+import {
+  MAIN_NETWORKS,
+  ETHEREUM_NETWORKS,
+  NATIVE_ETHEREUM_NETWORKS,
+  SUBSTRATE_ETHEREUM_NETWORKS,
+} from '@/consts/networks';
 import { ETHEREUM_UTILITY_ASSETS } from '@/consts/currencies';
 
 export function getMockCurrencies(networkMap: Record<string, NetworkJson>) {
@@ -96,12 +100,17 @@ export function isEthereumNetwork(network: string) {
   return ETHEREUM_NETWORKS.includes(network.toLowerCase());
 }
 
-export function isRequireEvmAPI(network: string) {
+export function isEthereumSubstrateNetwork(network: string) {
+  return SUBSTRATE_ETHEREUM_NETWORKS.includes(network.toLowerCase());
+}
+
+export function isNativeEVMNetwork(network: string) {
   return NATIVE_ETHEREUM_NETWORKS.includes(network.toLowerCase());
 }
 
 export function getUtilityProps(_network: NetworkName, state: State) {
-  return state.networksGithub.find(({ name }) => name.toLowerCase() === _network.toLowerCase())!.assets[0];
+  return state.networkService.networksGithub.find(({ name }) => name.toLowerCase() === _network.toLowerCase())!
+    .assets[0];
 }
 
 export function getNativeAssetName(asset: AssetName) {
@@ -118,27 +127,6 @@ export function getMoonbeamMoonriverAssetName(asset: AssetName, network: Network
   return isEthereumNetwork(network) && !Object.values(ETHEREUM_UTILITY_ASSETS).includes(assetLower)
     ? `xc${assetLower}`
     : assetLower;
-}
-
-export function getSubstrateAddress(address: string, state: State) {
-  if (!isEthereumAddress(address)) return address;
-
-  const accounts = state.keyringService.getAllAccounts();
-
-  const account = accounts.find(
-    ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
-  );
-
-  return account?.address ?? address;
-}
-
-export function getEthereumAddress(address: string, state: State) {
-  if (isEthereumAddress(address)) return address;
-
-  const accounts = state.keyringService.getAllAccounts();
-  const account = accounts.find(({ address: _address }) => _address === address);
-
-  return (account?.meta.ethereumAddress as string) ?? '';
 }
 
 export const uniqueStringArray = (array: string[]): string[] => {

@@ -56,39 +56,35 @@ export const computedGiantSquidRequest = (address: string): string =>
 export const computedSubsquidRequest = (address: string): string =>
   `{
   historyElements(
-    orderBy: id_DESC
+    orderBy: timestamp_DESC
     where: {
       address_eq: "${address}"
     }
   ) {
     timestamp
+    type
+    success
+    name
+    module
+    method
     id
     extrinsicIdx
     extrinsicHash
-    blockNumber
+    entityType
+    blockHeight
+    blockHash
     address
     transfer {
       amount
-      eventIdx
       fee
       from
-      success
       to
     }
     reward {
       amount
       era
-      eventIdx
-      isReward
       stash
       validator
-    }
-    extrinsic {
-      call
-      fee
-      hash
-      module
-      success
     }
   }
 }`;

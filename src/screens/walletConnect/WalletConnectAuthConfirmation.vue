@@ -86,9 +86,10 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
 import { Fragment } from 'vue-fragment';
+import { WALLET_CONNECT_SUPPORTED_METHODS } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import WalletChooseForm from './WalletChooseForm.vue';
-import type { ChainData } from './types';
+import type { ChainData } from '@/interfaces/walletconnect';
 import type { WalletConnectSessionRequest } from '@extension-base/services/wallet-connect-service/types';
 import type { AccountJson } from '@extension-base/background/types/types';
 import { useStore } from '@/store';
@@ -97,7 +98,6 @@ import { useNotify } from '@/plugins/soramitsuUI';
 import { transformNamespaces } from '@/util/walletConnect';
 import { cut } from '@/helpers';
 import { Components } from '@/router/routes';
-import { WALLET_CONNECT_SUPPORTED_METHODS } from '@/extension/background/extension-base/src/services/wallet-connect-service/consts';
 import BaseApi from '@/util/BaseApi';
 const notificationPopupMessage = {
   subtext: 'walletConnect.unsupportedMethodsPopup',
@@ -264,7 +264,6 @@ const onReject = () => {
 .auth-confirmation {
   display: flex;
   align-items: center;
-  justify-content: space-around;
   flex-direction: column;
   gap: 10px;
   height: 100%;

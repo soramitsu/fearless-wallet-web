@@ -1,7 +1,8 @@
 import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import { SubNetworkId } from '@sora-substrate/util/build/bridgeProxy/sub/consts';
-import { getAssetBalance, getAssetInfo } from '../helpers';
+import { type SubNetwork } from '@sora-substrate/util/build/bridgeProxy/sub/types';
 import { type CrossChainProps, type MakeCrossChainProps } from './crossChain';
+import { getSoraAsset } from './sora';
 import type State from '@extension-base/background/handlers/State';
 import type { Asset } from '@sora-substrate/util/src/assets/types';
 import { type NetworkName } from '@/interfaces';
@@ -11,22 +12,23 @@ const POLKADOT_PARACHAIN_ID = 'e92d165ad41e41e215d09713788173aecfdbe34d3bed29409
 const ROCOCO_PARACHAIN_ID = '8685a8d3e57fa8024b91b8ead6cc97acf953889c6fb0a355602826a1e2db198f';
 
 function getSoraParaId(network: NetworkName, state: State): string {
-  if (network.toLowerCase() === 'kusama')
-    return state.networksGithub.find(({ chainId }) => chainId === KUSAMA_PARACHAIN_ID)!.paraId!;
+  const networks = state.networkService.networksGithub;
+  const paraChainTypes: Record<string, string> = {
+    kusama: KUSAMA_PARACHAIN_ID,
+    polkadot: POLKADOT_PARACHAIN_ID,
+    rococo: ROCOCO_PARACHAIN_ID,
+  };
 
-  if (network.toLowerCase() === 'polkadot')
-    return state.networksGithub.find(({ chainId }) => chainId === POLKADOT_PARACHAIN_ID)!.paraId!;
+  const parachainId = paraChainTypes[network.toLowerCase()];
 
-  if (network.toLowerCase() === 'rococo')
-    return state.networksGithub.find(({ chainId }) => chainId === ROCOCO_PARACHAIN_ID)!.paraId!;
+  if (!parachainId) return '-1';
 
-  return '-1';
+  return networks.find(({ chainId }) => chainId === parachainId)!.paraId!;
 }
 
-function getSoraParams(props: CrossChainProps, state: State): [Asset, SubNetworkId] {
-  const { originNet, tokenBalance, destinationNet, assetId } = props;
-  const { precision, symbol } = getAssetBalance(originNet, tokenBalance);
-  const { currencyId } = getAssetInfo(assetId, state);
+function getSoraParams(props: CrossChainProps, state: State): [Asset, SubNetwork] {
+  const { destinationNet } = props;
+  const asset = getSoraAsset({ ...props, network: props.originNet }, state);
 
   const subNetworkId =
     destinationNet.toLowerCase() === 'kusama'
@@ -35,15 +37,7 @@ function getSoraParams(props: CrossChainProps, state: State): [Asset, SubNetwork
       ? SubNetworkId.Polkadot
       : SubNetworkId.Rococo;
 
-  return [
-    {
-      address: currencyId!,
-      symbol: symbol,
-      name: symbol,
-      decimals: precision,
-    },
-    subNetworkId,
-  ];
+  return [asset, subNetworkId];
 }
 
 async function estimateSoraCrossChainFee(props: CrossChainProps, state: State): Promise<FPNumber> {

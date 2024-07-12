@@ -4,7 +4,6 @@ import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
 import type { AccountBalance } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export function formatBalance(data: AccountData | OrmlAccountData | u128, assetDecimals: number): AccountBalance {
   const free = new FPNumber((data as AccountData)?.free ?? 0, assetDecimals);
   const reserved = new FPNumber((data as AccountData)?.reserved ?? 0, assetDecimals);
@@ -25,4 +24,3 @@ export function formatBalance(data: AccountData | OrmlAccountData | u128, assetD
     total: freeAndReserved.toString(),
   };
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */

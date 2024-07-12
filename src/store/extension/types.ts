@@ -1,14 +1,11 @@
 import { type SessionTypes } from '@walletconnect/types';
-import {
-  type AuthorizeRequest,
-  type MetadataRequest,
-  type SigningRequest,
-} from '@/extension/background/extension-base/src/background/types/types';
-import {
-  type WalletConnectSessionRequest,
-  type WalletConnectNotSupportRequest,
-  type WalletConnectTransactionRequest,
-} from '@/extension/background/extension-base/src/services/wallet-connect-service/types';
+import { type EvmRequests } from '@extension-base/services/request-service/types';
+import type { AuthorizeRequest, MetadataRequest, SigningRequest } from '@extension-base/background/types/types';
+import type {
+  WalletConnectSessionRequest,
+  WalletConnectNotSupportRequest,
+  WalletConnectTransactionRequest,
+} from '@extension-base/services/wallet-connect-service/types';
 
 export interface Features {
   fiat: {
@@ -46,4 +43,13 @@ export type SetRequestsPayload =
   | {
       type: 'wcSessions';
       requests: SessionTypes.Struct[];
+    }
+  | {
+      type: 'signEvmRequests';
+      requests: EvmRequests;
     };
+
+export type SignRequestList = {
+  substrate: SigningRequest[];
+  evm: EvmRequests;
+};

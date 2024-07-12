@@ -1,11 +1,12 @@
 <template>
-  <AboveForm header="assets.receiveFunds" :fullScreen="true" @closeHandler="$emit('closeForm')">
+  <AboveForm header="assets.receiveFunds" :fullScreen="true" @closeHandler="closeForm">
     <div class="receive-form">
       <div>
         <InputWithIcon
-          v-model="selectedNetwork"
           placeholder="assets.network"
           icon="rotate"
+          data-testid="selectedNetwork"
+          :value="selectedNetwork"
           :ref="selectNetworkInputRef"
           :isActiveRotate="showSelectNetworkPopup"
           @click="toggleSelectNetworkPopupVisible"
@@ -15,14 +16,14 @@
           <div class="address-wrapper">
             <span>{{ $t('assets.walletAddress') }}</span>
 
-            <div class="address">
+            <div class="address" data-testid="cutAddress">
               {{ cutAddress }}
 
-              <Icon icon="copy" className="copy-icon" @click="copyAddress" />
+              <Icon icon="copy" className="copy-icon" data-testid="copyAddress" @click="copyAddress" />
             </div>
           </div>
 
-          <QR class="qr" ref="qr" :showLogo="true" :width="200" :payload="address" />
+          <QR class="qr" ref="qr" data-testid="qr" :showLogo="true" :width="200" :payload="address" />
         </div>
 
         <Tooltip text="common.copied" target=".copy-icon" placement="bottom" trigger="click" />
@@ -33,17 +34,20 @@
           size="big"
           class="button"
           text="assets.saveQR"
-          width="260px"
           iconName="receive-white"
+          data-testid="saveQR"
+          :width="widthSaveBtn"
           @click="saveQR"
         />
 
         <FButton
+          v-if="showCopyBtn"
           size="big"
           class="button copy-qr"
-          width="260px"
           text="assets.copyQR"
           iconName="share"
+          data-testid="copyQR"
+          width="260px"
           @click="copyQR"
         />
 
@@ -72,14 +76,15 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
 import type { TokenGroup } from '@extension-base/background/types/types';
+import type { GetNetwork, SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { type SelectedWallet } from '@/store';
 import { cut } from '@/helpers';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class ReceiveForm extends Vue {
@@ -93,18 +98,30 @@ export default class ReceiveForm extends Vue {
   selectedNetwork = 'polkadot';
   showSelectNetworkPopup = false;
 
-  @Prop(String) _selectedNetwork!: string;
-  @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+
+  get selectedAssetId() {
+    return this.$route.params.assetId ?? '';
+  }
 
   get assetNetworks() {
-    const currency = this.balances.find(({ groupId }) => groupId === this.selectedAssetId)!;
+    const currency = this.balances.find(({ groupId }) => groupId === this.selectedAssetId);
+    const filter = this.filterValue.toLowerCase();
 
     return (
       currency?.balances
-        .map(({ name, icon }) => ({ name, icon, value: name }))
-        .filter(({ name }) => name.toLowerCase().includes(this.filterValue.toLowerCase())) ?? []
+        .map(({ name, icon }) => {
+          const network = this.getNetwork(name);
+
+          return {
+            name: network.name,
+            value: network.name,
+            icon,
+          };
+        })
+        .filter(({ name }) => name.toLowerCase().includes(filter)) ?? []
     );
   }
 
@@ -118,12 +135,20 @@ export default class ReceiveForm extends Vue {
     return cut(this.address, 5);
   }
 
+  get widthSaveBtn() {
+    return this.showCopyBtn ? '260px' : '530px';
+  }
+
+  get showCopyBtn() {
+    return !window.navigator.userAgent.toLowerCase().includes('firefox');
+  }
+
   mounted() {
-    this.selectedNetwork = this._selectedNetwork;
+    this.selectedNetwork = this.$route.params.network ?? '';
   }
 
   closeForm() {
-    this.$emit('closeForm');
+    this.$router.back();
   }
 
   toggleSelectNetworkPopupVisible() {
@@ -221,10 +246,10 @@ export default class ReceiveForm extends Vue {
   }
 
   .button {
-    margin-right: 10px;
+    margin-left: 10px;
 
-    &:last-child {
-      margin-right: 0;
+    &:first-child {
+      margin-left: 0;
     }
   }
 

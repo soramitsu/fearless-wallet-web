@@ -21,7 +21,7 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_SEPOLIA_KEY', variable: 'FL_BLAST_API_SEPOLIA_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_GOERLI_KEY', variable: 'FL_BLAST_API_GOERLI_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_POLYGON_KEY', variable: 'FL_BLAST_API_POLYGON_KEY'],
-    [$class: 'StringBinding', credentialsId: 'FL_ALCHEMY_API_ETHEREUM_KEY', variable: 'FL_ALCHEMY_API_ETHEREUM_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_WEB_ALCHEMY_API_ETHEREUM_KEY', variable: 'FL_WEB_ALCHEMY_API_ETHEREUM_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_MOONBEAM_KEY', variable: 'FL_BLAST_API_MOONBEAM_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_MOONRIVER_KEY', variable: 'FL_BLAST_API_MOONRIVER_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_BLAST_API_OKTC_MAINNET_KEY', variable: 'FL_BLAST_API_OKTC_MAINNET_KEY'],
@@ -44,11 +44,11 @@ def pipeline = new org.js.AppArtifactsPipeline(
     sonarProjectKey:            'fearless:fearless-wallet-web',
     sonarProjectName:           'fearless-wallet-web',
     sonarCredential:            'sonar_fearless_token',
-    mozillaSlug:                'fearless-wallet',
+    extSlug:                    'fearless-wallet',
     mozillaChannel:             'listed',
     distFolders:                ['./dist/extension/firefox','./dist/extension/chrome'],
     distFoldersTestNets:        ['./dist/extension/chrome-test'],
-    preBuildCmds:               ['apt-get update && apt-get install zip jq -y && yarn set version 3.4.1 && yarn install'],
+    preBuildCmds:               ['apt-get update && apt-get install zip jq -y && corepack enable &&yarn set version 3.4.1 && yarn install'],
     nexusFiles:                 [ '.zip'],
     chromeExtFile:              'fearless-wallet-extension-chrome.zip',
     mozillaExtFile:             'fearless-wallet-extension-firefox.zip',
@@ -58,6 +58,12 @@ def pipeline = new org.js.AppArtifactsPipeline(
     buildWithCred:              buildWithCred,
     dojoProductType:            'fearless-web',
     sonarSrcPath:               'src',
-    sonarTestsPath:             'tests'
+    sonarTestsPath:             'tests',
+    triggerAutotest:            true,
+    downstreamJob:              '/qa/soramitsu-test-framework/fearless-wallet-web',
+    downstreamJobParams:        [
+        [$class: 'StringParameterValue', name: 'targetBranch', value: env.BRANCH_NAME],
+        [$class: 'StringParameterValue', name: 'typeTest', value: 'tests:fearless-smoke']
+    ]
 )
 pipeline.runPipeline()

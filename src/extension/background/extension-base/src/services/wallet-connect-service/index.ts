@@ -21,17 +21,13 @@ import type State from '@extension-base/background/handlers/State';
 import type { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
 import type { RequestService } from '@extension-base/services';
 export class WalletConnectService {
-  private readonly state: State;
-  private readonly requestService: RequestService;
   private client?: WalletConnect;
 
   readonly eip155RequestHandler: Eip155Handler;
   readonly polkadotRequestHandler: PolkadotHandler;
   readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]>;
 
-  constructor(state: State, requestService: RequestService) {
-    this.state = state;
-    this.requestService = requestService;
+  constructor(private state: State, private readonly requestService: RequestService) {
     this.sessionSubject = new BehaviorSubject<SessionTypes.Struct[]>([]);
     this.eip155RequestHandler = new Eip155Handler(this.state, this, requestService);
     this.polkadotRequestHandler = new PolkadotHandler(this.state, this, requestService);
@@ -160,10 +156,9 @@ export class WalletConnectService {
       const { requiredNamespaces, optionalNamespaces } = this.getSession(topic);
 
       const namespaces = Object.keys({ ...requiredNamespaces, ...optionalNamespaces });
-      const chains = Object.values({ ...requiredNamespaces, ...optionalNamespaces })
-        .map((namespace) => namespace.chains)
-        .flat();
-
+      const chains = Object.values(requiredNamespaces).flatMap((namespace) => namespace.chains ?? []);
+      const optionalChains = Object.values(optionalNamespaces).flatMap((namespace) => namespace.chains ?? []);
+      chains.push(...optionalChains);
       const [requestNamespace] = chainId.split(':');
 
       if (namespaces.length && !namespaces.includes(requestNamespace)) {
@@ -178,6 +173,7 @@ export class WalletConnectService {
         case POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_MESSAGE:
         case POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_TRANSACTION:
           this.polkadotRequestHandler.handleRequest(requestEvent);
+
           break;
         case EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION:
         case EIP155_SIGNING_METHODS.PERSONAL_SIGN:
@@ -186,6 +182,7 @@ export class WalletConnectService {
         case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4:
         case EIP155_SIGNING_METHODS.ETH_SIGN:
           this.eip155RequestHandler.handleRequest(requestEvent);
+
           break;
         default:
           throw Error(getSdkError('INVALID_METHOD').message + ' ' + method);

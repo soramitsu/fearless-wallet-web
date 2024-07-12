@@ -36,12 +36,13 @@
 
     <AboutPopup v-if="showAboutPopup" @handlerClose="toggleAboutPopupVisible" />
 
-    <router-view
-      class="main-child"
-      @openFiatsPopup="toggleFiatsPopupVisible"
-      @closeSelectWalletPopup="setSelectWalletPopupVisible"
-    />
-
+    <keep-alive :include="['Wallet']">
+      <router-view
+        class="main-child"
+        @openFiatsPopup="toggleFiatsPopupVisible"
+        @closeSelectWalletPopup="setSelectWalletPopupVisible"
+      />
+    </keep-alive>
     <Menu />
   </div>
 </template>

@@ -11,16 +11,18 @@
       <template v-if="isAwaiting">
         <Icon icon="lock-green" className="icon" iconColor="success" />
 
-        <div class="text row">{{ popupMessage }}</div>
+        <div class="text row" data-testid="popupMessage">{{ popupMessage }}</div>
 
         <ValidatedInput
-          v-model="password"
+          :value="password"
           placeholder="common.password"
           size="big"
           class="password-input row"
           errorDescriptions="common.invalidPassword"
+          data-testid="passwordGoogle"
           :isError="isErrorPassword"
           :showPassword="true"
+          @change="changePassword"
         />
 
         <Hint class="hint" iconName="notification" :text="hintGoogleDriveText" />
@@ -31,9 +33,9 @@
       <div v-if="isFinishedUpload">
         <Icon icon="check" className="icon" iconColor="success" />
 
-        <div class="saved">{{ $t('addWallet.google.saved') }}</div>
+        <div class="saved" data-testid="googleSaved">{{ $t('addWallet.google.saved') }}</div>
 
-        <span class="descriptions">{{ $t('wallet.googleExportSuccess') }}</span>
+        <span class="descriptions" data-testid="googleDescriptions">{{ $t('wallet.googleExportSuccess') }}</span>
       </div>
 
       <FButton
@@ -45,6 +47,7 @@
         type="primary"
         :disabled="disabledButton"
         :border="false"
+        data-testid="confirmPassword"
         @click="onConfirm"
       />
     </div>
@@ -56,7 +59,7 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { AccountJson } from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import { createGoogleFile, exportAccount, validatePassword } from '@/extension/messaging';
+import { createGoogleFile, exportAccountJSON, validatePassword } from '@/extension/messaging';
 import { type ICreateFile } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
@@ -107,6 +110,10 @@ export default class GoogleExportPopup extends Vue {
     return '';
   }
 
+  changePassword(value: string) {
+    this.password = value;
+  }
+
   @Watch('password')
   resetStatusError() {
     this.isErrorPassword = false;
@@ -132,14 +139,14 @@ export default class GoogleExportPopup extends Vue {
 
     let ethWalletId;
     let substrateWalletId;
-    const { exportedJson: substrateJson } = await exportAccount(this.selectedWalletAddress, this.password);
+    const { json: substrateJson } = await exportAccountJSON(this.selectedWalletAddress, this.password);
     const isEthereumAddress = !!substrateJson.meta.ethereumAddress;
     const stringifyJson = JSON.stringify(substrateJson);
 
     this.status = 'upload';
 
     if (isEthereumAddress) {
-      const { exportedJson: ethereumJson } = await exportAccount(
+      const { json: ethereumJson } = await exportAccountJSON(
         substrateJson.meta.ethereumAddress as string,
         this.password
       );

@@ -1,15 +1,17 @@
 import { type NftMetadata } from 'alchemy-sdk';
 
 type NftMeta = Partial<NftMetadata>;
+
 export type FearlessNft = {
   id: string;
-  image?: string;
   type: string;
   isOwned: boolean;
   ownedBy: string;
   creator?: string;
   network: string;
   meta: NftMeta;
+  image?: string;
+  contentType?: string;
 };
 
 export type NftCollection = {
@@ -18,6 +20,7 @@ export type NftCollection = {
   network: string;
   address: string;
   total?: string;
+  isSpam?: boolean;
   ownedNfts: FearlessNft[];
 };
 
@@ -49,7 +52,7 @@ export type NftTx = {
 export type CheckNftResponse = {
   fee: string;
   data: string;
-  error?: 'unsufficientFunds' | 'incorrenctRecipient';
+  error?: 'insufficientFunds' | 'incorrectRecipient';
 };
 
 export type NftSettings = {

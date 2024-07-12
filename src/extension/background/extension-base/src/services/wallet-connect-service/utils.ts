@@ -7,7 +7,10 @@ import {
   type WalletConnectSessionRequest,
   type WalletConnectSigningMethod,
 } from '@extension-base/services/wallet-connect-service/types';
-import { findChainInfoByHalfGenesisHash, findChainInfoByChainId } from '@extension-base/services/chain-service/helpers';
+import {
+  findChainInfoByHalfGenesisHash,
+  findChainInfoByChainId,
+} from '@extension-base/services/network-service/helpers';
 import {
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
@@ -17,6 +20,7 @@ import {
 import type { NetworkJson } from '@extension-base/types';
 import type { SignClientTypes } from '@walletconnect/types';
 import type { ProposalTypes } from '@walletconnect/types/dist/types/sign-client/proposal';
+import { SEC1 } from '@/consts/time';
 
 export const getWCId = (id: number): string => {
   return [WALLET_CONNECT_REQUEST_KEY, Date.now(), id].join('.');
@@ -51,23 +55,34 @@ export const parseRequestParams = <T = keyof WalletConnectSigningMethod>(params:
   return params as WalletConnectParamMap[T];
 };
 
-export const getEip155MessageAddress = (method: EIP155_SIGNING_METHODS, param: unknown): string => {
+export function parseAddressFromSendTxRequest(params: unknown) {
+  const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(params);
+
+  return tx.from;
+}
+
+export function parseAddressFromPersonalSign(params: unknown) {
+  const [p1, p2] = parseRequestParams<EIP155_SIGNING_METHODS.PERSONAL_SIGN>(params);
+
+  if (typeof p1 === 'string' && isEthereumAddress(p1)) {
+    return p1;
+  } else if (typeof p2 === 'string' && isEthereumAddress(p2)) return p2;
+
+  return '';
+}
+
+export const getEip155MessageAddress = (method: string, param: unknown): string => {
   switch (method) {
     case EIP155_SIGNING_METHODS.PERSONAL_SIGN:
     case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA:
     case EIP155_SIGNING_METHODS.ETH_SIGN:
     case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3:
     case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4:
-      // eslint-disable-next-line no-case-declarations
-      const [p1, p2] = parseRequestParams<EIP155_SIGNING_METHODS.PERSONAL_SIGN>(param);
+      return parseAddressFromPersonalSign(param);
 
-      if (typeof p1 === 'string' && isEthereumAddress(p1)) {
-        return p1;
-      } else if (typeof p2 === 'string' && isEthereumAddress(p2)) {
-        return p2;
-      }
+    case EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION:
+      return parseAddressFromSendTxRequest(param);
 
-      return '';
     default:
       return '';
   }
@@ -85,7 +100,7 @@ export const isWalletConnectRequest = (id?: string): boolean => {
 
 export const isProposalExpired = (params: ProposalTypes.Struct): boolean => {
   const timeNum = params.expiry;
-  const expireTime = new Date(timeNum > 10 ** 12 ? timeNum : timeNum * 1000);
+  const expireTime = new Date(timeNum > 10 ** 12 ? timeNum : timeNum * SEC1);
   const now = new Date();
 
   return now.getTime() >= expireTime.getTime();

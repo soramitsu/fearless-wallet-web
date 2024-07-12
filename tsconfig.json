@@ -6,9 +6,11 @@
     "jsx": "preserve",
     "importHelpers": true,
     "moduleResolution": "node",
+    "moduleDetection": "force",
     "experimentalDecorators": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
+    "noEmit": true,
     "allowSyntheticDefaultImports": true,
     "sourceMap": true,
     "noImplicitAny": true,
@@ -21,6 +23,7 @@
       "node",
       "element-ui",
       "chrome",
+      "firefox-webext-browser",
       "network-information-types"
     ],
     "paths": {

@@ -8,6 +8,7 @@ import type {
   SetAssetsPriceProps,
   SetNetworkFavoriteProps,
   RemoveNetworkFavoriteProps,
+  SetSoraFee,
 } from './types';
 import { getFormattedHistory } from '@/helpers/history';
 import { type AssetId, type SoraHistoryElement } from '@/interfaces';
@@ -21,6 +22,7 @@ export enum MutationTypes {
   SET_HISTORY = 'SET_HISTORY',
   SET_FAVORITE_NETWORK = 'SET_FAVORITE_NETWORK',
   REMOVE_FAVORITE_NETWORK = 'REMOVE_FAVORITE_NETWORK',
+  SET_SORA_FEES = 'SET_SORA_FEES',
 }
 
 export type Mutations = {
@@ -30,6 +32,7 @@ export type Mutations = {
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
   [MutationTypes.SET_FAVORITE_NETWORK](state: State, props: SetNetworkFavoriteProps): void;
   [MutationTypes.REMOVE_FAVORITE_NETWORK](state: State, props: RemoveNetworkFavoriteProps): void;
+  [MutationTypes.SET_SORA_FEES](state: State, props: SetSoraFee): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -82,7 +85,10 @@ const mutations: MutationTree<State> & Mutations = {
 
         if (result[id] === undefined) result[id] = [];
 
-        result[id].push(item);
+        result[id].push({
+          ...item,
+          success: item.execution.success,
+        });
 
         return result;
       }, {} as Record<string, SoraHistoryElement[]>);
@@ -103,6 +109,12 @@ const mutations: MutationTree<State> & Mutations = {
     const network = state.networks[networkIndex];
 
     network.favorite.splice(index, 1);
+  },
+
+  [MutationTypes.SET_SORA_FEES](state, { fees }): void {
+    if (Object.values(fees).every((value) => value === '0')) return;
+
+    state.soraFees = fees;
   },
 };
 

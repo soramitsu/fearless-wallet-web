@@ -97,6 +97,9 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
 
   const parsedValue = parseUnits(amount, balance.precision);
   const data = erc20Contract.interface.encodeFunctionData('transfer', [to, parsedValue]);
+
+  if (!web3Api) throw new Error(`${networkKey} API not found`);
+
   const { maxFeePerGas, gasPrice } = await web3Api.getFeeData();
   const block = await web3Api.provider.getBlock('latest');
 
@@ -136,7 +139,7 @@ async function makeUtilityTransfer(params: MakeTransferParams): Promise<void> {
     tx,
   };
 
-  await handleTransfer(props);
+  return handleTransfer(props);
 }
 
 async function makeERC20Transfer(params: MakeTransferParams) {
@@ -150,7 +153,7 @@ async function makeERC20Transfer(params: MakeTransferParams) {
     tx,
   };
 
-  await handleTransfer(props);
+  return handleTransfer(props);
 }
 
 export function getEVMTransactionObject(params: TransferParams): Promise<TransactionObject> {
@@ -162,9 +165,9 @@ export function getEVMTransactionObject(params: TransferParams): Promise<Transac
 export function makeEVMTransfer(params: MakeTransferParams): Promise<void> {
   const transfer = params.balance.isUtility ? makeUtilityTransfer(params) : makeERC20Transfer(params);
 
-  return transfer.then(() => {
+  return transfer.finally(() => {
     setTimeout(() => {
-      state.fetchEvmBalance({ _ethereumAddress: params.from, assetId: params.balance.id, force: true });
-    }, 10000);
+      state.fetchEvmBalance({ ethereumAddress: params.from, assetId: params.balance.id, force: true });
+    }, 8000);
   });
 }

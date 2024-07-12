@@ -22,7 +22,7 @@
           </Rotate>
         </div>
 
-        <div v-if="isAddressExists" class="copy-address" @click.stop="copyAddress">
+        <div v-if="isAddressExists" class="copy-address" data-testid="copyAddress" @click.stop="copyAddress">
           <span>{{ cutAddress }}</span>
 
           <Icon icon="copy" className="copy" />
@@ -305,6 +305,7 @@ export default class Header extends Vue {
 .header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   height: $header-height;
   min-height: $header-height;
   margin-bottom: 16px;
@@ -312,6 +313,7 @@ export default class Header extends Vue {
 
   .logo-container {
     width: 48px;
+    margin: auto;
   }
 
   i {

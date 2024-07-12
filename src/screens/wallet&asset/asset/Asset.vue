@@ -9,32 +9,11 @@
     >
     </router-view>
 
-    <SendForm
-      v-if="showSendForm"
-      :_selectedNetwork="selectedAssetNetwork"
-      :_selectedAssetId="selectedAssetId"
-      @closeForm="toggleVisible('showSendForm', false)"
-    />
-
-    <ReceiveForm
-      v-if="showReceiveForm"
-      :_selectedNetwork="selectedAssetNetwork"
-      :selectedAssetId="selectedAssetId"
-      @closeForm="toggleVisible('showReceiveForm', false)"
-    />
-
-    <CrossChainForm
-      v-if="showCrossChainForm"
-      :_originalNetwork="selectedAssetNetwork"
-      :_selectedAssetId="selectedAssetId"
-      @closeForm="toggleVisible('showCrossChainForm', false)"
-    />
-
     <HistoryDetailsForm
       v-if="showHistoryDetailsForm"
       :historyElement="historyElement"
       :assetId="selectedAssetId"
-      :selectedNetwork="selectedAssetNetwork"
+      :selectedNetwork="selectedLocalNetwork"
       @handlerClose="closeHistoryDetailsForm"
     />
 
@@ -43,7 +22,7 @@
       :asset="selectedAssetUpper"
       :address="displayAddressByNetwork"
       :providers="providers"
-      @closePopup="toggleVisible('showBuyPopup', false)"
+      @closePopup="toggleVisible(false)"
     />
   </div>
 </template>
@@ -69,8 +48,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NETWORKS_GROUPS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common/index';
 
-type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
-
 @Component({
   components: {
     AssetInfo,
@@ -85,9 +62,6 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'sh
 })
 export default class Asset extends Vue {
   historyElement: HistoryElement | Record<string, string> | null = null;
-  showSendForm = false;
-  showReceiveForm = false;
-  showCrossChainForm = false;
   showBuyPopup = false;
   showTipPopup = false;
   filterValue = '';
@@ -115,14 +89,14 @@ export default class Asset extends Vue {
     return this.getNetwork(this.selectedNetwork).icon;
   }
 
-  get selectedAssetNetwork() {
+  get selectedLocalNetwork() {
     return this.$route.params.selectedNetwork ?? '';
   }
 
-  get isSelectedNetworkHistory() {
+  get isHistoryPage() {
     if (!NETWORKS_GROUPS.includes(this.selectedNetwork)) return false;
 
-    return this.selectedAssetNetwork === '';
+    return this.selectedLocalNetwork === '';
   }
 
   get providers() {
@@ -139,15 +113,15 @@ export default class Asset extends Vue {
     return (
       this.balances.find(
         ({ groupId: id, balances }) =>
-          id === this.selectedAssetId || balances.some((el) => el.id === this.selectedAssetId)
+          id === this.selectedAssetId || balances.some(({ id }) => id === this.selectedAssetId)
       )! ?? {}
     );
   }
 
   get displayAddressByNetwork() {
-    if (this.isSelectedNetworkHistory) return BaseApi.formatAddress(this.selectedWallet, this.mainNetwork);
+    if (this.isHistoryPage) return BaseApi.formatAddress(this.selectedWallet, this.mainNetwork);
 
-    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
+    return BaseApi.formatAddress(this.selectedWallet, this.selectedLocalNetwork);
   }
 
   get selectedAssetId() {
@@ -172,8 +146,8 @@ export default class Asset extends Vue {
     return this.getAssetPrice(this.currentCurrency.priceId ?? '');
   }
 
-  toggleVisible(field: ShowField, value = true) {
-    this[field] = value;
+  toggleVisible(value = true) {
+    this.showBuyPopup = value;
   }
 
   handlerFilter(value: string) {

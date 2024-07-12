@@ -1,14 +1,14 @@
 <template>
-  <div class="alert-item">
+  <div class="alert-item" data-testid="alertItem">
     <Icon icon="info-triangle" className="img" :hover="false" />
 
     <div class="full-descriptions">
-      <div class="name">{{ tName }}</div>
-      <div class="descriptions">{{ tDescriptions }}</div>
-      <div class="date">{{ date }}</div>
+      <div class="name" data-testid="alertName">{{ tName }}</div>
+      <div class="descriptions" data-testid="alertDescription">{{ tDescriptions }}</div>
+      <div class="date" data-testid="alertDate">{{ date }}</div>
     </div>
 
-    <Icon icon="chevron-right" class="img chevron" @click="click" />
+    <Icon icon="chevron-right" class="img chevron" data-testid="alertDetails" @click="click" />
   </div>
 </template>
 

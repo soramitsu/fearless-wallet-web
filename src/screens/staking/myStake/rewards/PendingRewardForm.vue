@@ -13,7 +13,9 @@
 
           <div v-show="!showLoader" class="form-layout">
             <Scroll>
-              <div class="descriptions">{{ $t('staking.validatorsPayoutRewards') }}</div>
+              <div class="descriptions" data-testid="validatorsPayoutRewards">
+                {{ $t('staking.validatorsPayoutRewards') }}
+              </div>
 
               <ValidatorItem
                 v-for="validator in myRewards"
@@ -27,7 +29,13 @@
         </ContentForm>
 
         <div v-else-if="step === 2">
-          <FInput v-model="selectedAccountName" placeholder="accounts.account" size="big" :readonly="true" />
+          <FInput
+            :value="selectedAccountName"
+            placeholder="accounts.account"
+            data-testid="account"
+            size="big"
+            :readonly="true"
+          />
 
           <SelectInput
             class="amount-input"
@@ -40,7 +48,13 @@
             :readonly="true"
           />
 
-          <FInput v-model="payeeName" :readonly="true" placeholder="staking.setPayee" size="big" />
+          <FInput
+            :value="payeeName"
+            :readonly="true"
+            placeholder="staking.setPayee"
+            data-testid="setPayee"
+            size="big"
+          />
         </div>
 
         <InfoRow
@@ -55,7 +69,15 @@
         <Tooltip text="staking.stakingFee" target=".network-fee" placement="right" />
       </div>
 
-      <FButton width="100%" size="big" fontSize="big" :disabled="disabledBtn" :text="btnText" @click="confirm" />
+      <FButton
+        width="100%"
+        size="big"
+        fontSize="big"
+        data-testid="confirmBtn"
+        :disabled="disabledBtn"
+        :text="btnText"
+        @click="confirm"
+      />
     </div>
 
     <WarningPopup v-if="showWarningPopup" :handlerAccept="handlerAccept" :handlerClose="closeWarningPopup" />
@@ -79,6 +101,7 @@
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
+import { type PayoutRewards, type RewardsResponse } from '@extension-base/services/staking-service/types';
 import type { GetAssetPrice, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -87,11 +110,7 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
 import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
-import { checkPayoutsFee, fetchBalance, getRewards } from '@/extension/messaging';
-import {
-  type PayoutRewards,
-  type RewardsResponse,
-} from '@/extension/background/extension-base/src/services/staking-service/types';
+import { getPayoutsFee, fetchBalance, getRewards } from '@/extension/messaging';
 import { isValidAmountAsset } from '@/helpers/currencies';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { type AsyncFn } from '@/interfaces';
@@ -231,7 +250,7 @@ export default class PendingRewardForm extends Vue {
   async created() {
     await this.getRewards();
 
-    this.getSoraFees();
+    this.getPayoutsFee();
 
     if (this.stakingNetwork.isController)
       this.stashBalance = await fetchBalance({
@@ -251,8 +270,8 @@ export default class PendingRewardForm extends Vue {
     this.showLoader = false;
   }
 
-  async getSoraFees() {
-    this.fee = await checkPayoutsFee({ payouts: this.rewards.payouts, network: this.network });
+  async getPayoutsFee() {
+    this.fee = await getPayoutsFee({ payouts: this.rewards.payouts, network: this.network });
   }
 
   closeForm() {

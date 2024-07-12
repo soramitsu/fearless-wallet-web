@@ -1,5 +1,6 @@
 import { type BehaviorSubject } from 'rxjs';
 import EvmRequestHandler from '@extension-base/services/request-service/handlers/EvmRequestHandler';
+import { chrome } from '@extension-base/utils/crossenv';
 import {
   ConnectWCRequestHandler,
   NotSupportWCRequestHandler,
@@ -8,13 +9,15 @@ import {
   MetadataRequestHandler,
   SubstrateRequestHandler,
 } from '@extension-base/services/request-service/handlers';
+import { type KeyringService } from '@extension-base/services';
+import { assert } from '@polkadot/util';
+import { type NetworkJson } from '@extension-base/types';
 import type {
   WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
-import type State from '@extension-base/background/handlers/State';
 import type {
   SigningRequest,
   AuthRequest,
@@ -26,11 +29,13 @@ import type {
   AccountJson,
   AuthorizeRequest,
   MetadataRequest,
+  AuthorizedAccountsDiff,
+  RequestAuthorizeCancel,
 } from '@extension-base/background/types/types';
-import type { WCSignRequest } from '@extension-base/services/request-service/types';
+import type { DAppChainInfoPayload, EvmRequests, WCSignRequest } from '@extension-base/services/request-service/types';
+import type State from '@extension-base/background/handlers/State';
 
 export class RequestService {
-  private readonly state: State;
   readonly popupHandler: PopupHandler;
   readonly connectWCRequestHandler: ConnectWCRequestHandler;
   readonly notSupportWCRequestHandler: NotSupportWCRequestHandler;
@@ -39,14 +44,13 @@ export class RequestService {
   readonly substrateRequestHandler: SubstrateRequestHandler;
   readonly evmRequestHandler: EvmRequestHandler;
 
-  constructor(state: State) {
-    this.state = state;
+  constructor(readonly keyringService: KeyringService, private readonly state: State) {
     this.popupHandler = new PopupHandler(this);
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
-    this.authRequestHandler = new AuthRequestHandler(this.state, this);
-    this.substrateRequestHandler = new SubstrateRequestHandler(this);
+    this.authRequestHandler = new AuthRequestHandler(this, state.networkService);
+    this.substrateRequestHandler = new SubstrateRequestHandler(this, keyringService, this.state);
     this.evmRequestHandler = new EvmRequestHandler(this);
   }
 
@@ -67,9 +71,8 @@ export class RequestService {
     // Not open new popup and use existed
     const popupList = this.popupHandler.popup;
 
-    if (popupList && popupList.length > 0) {
-      chrome.windows.update(popupList[0], { focused: true })?.catch(console.error);
-    } else this.popupHandler.popupOpen();
+    if (popupList && popupList.length > 0) chrome.windows.update(popupList[0], { focused: true })?.catch(console.error);
+    else this.popupHandler.popupOpen();
   }
 
   // Metadata
@@ -98,7 +101,6 @@ export class RequestService {
   }
 
   // Auth
-
   public get authSubject(): BehaviorSubject<AuthorizeRequest[]> {
     return this.authRequestHandler.authSubject;
   }
@@ -157,18 +159,27 @@ export class RequestService {
   }
 
   public getSignRequest(id: string) {
+    if (this.evmRequestHandler.getEvmSignRequest(id)) return this.evmRequestHandler.getEvmSignRequest(id);
+
     return this.substrateRequestHandler.getSignRequest(id);
   }
 
   //Evm
   public get signWcSubject(): BehaviorSubject<WalletConnectTransactionRequest[]> {
-    return this.evmRequestHandler.signSubject;
+    return this.evmRequestHandler.signWcSubject;
+  }
+
+  public get signEvmSubject(): BehaviorSubject<EvmRequests> {
+    return this.evmRequestHandler.signEvmSubject;
   }
 
   public signWcRequest(topic: string): WCSignRequest {
     return this.evmRequestHandler.getSignWCRequest(topic);
   }
 
+  public getDAppNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {
+    return this.authRequestHandler.getDAppNetworkInfo(options);
+  }
   // WalletConnect Connect requests
   public getConnectWCRequest(id: string) {
     return this.connectWCRequestHandler.getConnectWCRequest(id);
@@ -225,5 +236,41 @@ export class RequestService {
       this.numNotSupportWCRequests +
       this.numSignWCRequests
     );
+  }
+
+  async removeAuthorization(url: string): Promise<AuthUrls> {
+    const entries = await this.getAuthList();
+    const entry = entries[url];
+
+    assert(entry, `The source ${url} is not known`);
+
+    delete entries[url];
+
+    this.setAuthorize(entries);
+
+    return entries;
+  }
+
+  async updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
+    const entries = await this.getAuthList();
+
+    authorizedAccountDiff.forEach(([url, authorizedAccountDiff]) => {
+      entries[url].authorizedAccounts = authorizedAccountDiff;
+    });
+
+    return this.setAuthorize(entries);
+  }
+
+  authorizeCancel({ id }: RequestAuthorizeCancel): boolean {
+    const queued = this.getAuthRequest(id);
+
+    assert(queued, 'Unable to find request');
+
+    const { reject } = queued;
+
+    // Reject without error meaning cancel
+    reject(new Error('Cancelled'));
+
+    return true;
   }
 }

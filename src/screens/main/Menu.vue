@@ -28,7 +28,13 @@ type MenuItemType = 'Wallet' | 'Staking' | 'Polkaswap';
   components: { MenuItem },
 })
 export default class Menu extends Vue {
-  walletItems: string[] = [Components.Accounts, Components.Export, Components.Nodes];
+  walletItems: string[] = [
+    Components.Currencies,
+    Components.Nfts,
+    Components.AccountSetting,
+    Components.Export,
+    Components.Nodes,
+  ];
   stakingItems: string[] = [Components.MyStake];
 
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -75,20 +81,10 @@ export default class Menu extends Vue {
 
     const route = menuItem as keyof typeof Components;
 
-    const accountParams = {
-      address: this.selectedWallet.address,
-      name: this.selectedWallet.name,
-      ethereumAddress: this.selectedWallet.ethereumAddress,
-      isMobile: this.selectedWallet.isMobile ? 'mobile' : '',
-    };
-
     const name = menuItem === 'Polkaswap' ? Components.SoraSwap : Components[route];
 
     this.$router.push({
       name,
-      params: {
-        ...(route === Components.Accounts ? accountParams : {}),
-      },
     });
   }
 }

@@ -1,5 +1,4 @@
 import type { WarningValueName } from '@/consts/messages';
-import type { AssetName } from './assets';
 import { type INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import { type Components } from '@/router/routes';
 
@@ -21,11 +20,10 @@ interface AddressMeta extends Meta {
   isMobile: boolean;
 }
 
-type ParentAddress = string;
-
 type TabWallet = Components.Currencies | Components.Nfts;
 type StakingTab = 'all' | 'my';
 type MyStakingTab = 'about' | 'alerts' | 'history';
+type PoolsTab = 'all' | 'my';
 type ImportType = 'mnemonic' | 'rawSeed' | 'json';
 type FilterHistory = 'all' | 'transfer' | 'reward' | 'extrinsic';
 
@@ -52,7 +50,6 @@ interface MnemonicConfirmation {
 
 enum MenuItems {
   wallet = 'Wallet',
-  crowdloans = 'Crowdloans',
   staking = 'Staking',
   polkaswap = 'Polkaswap',
 }
@@ -114,7 +111,6 @@ export {
   MenuItem,
   ToggleFnProp,
   MenuItems,
-  ParentAddress,
   Fn,
   AsyncFn,
   TabWallet,
@@ -123,7 +119,6 @@ export {
   Meta,
   MnemonicConfirmation,
   ChainAccount,
-  AssetName,
   ComponentText,
   AddressMeta,
   CustomEvent,
@@ -131,4 +126,5 @@ export {
   ChangeWalletBalance,
   StakingTab,
   MyStakingTab,
+  PoolsTab,
 };

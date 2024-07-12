@@ -2,22 +2,24 @@
   <div class="add-contact">
     <div class="form">
       <FInput
-        v-model="name"
+        :value="name"
         placeholder="common.name"
         typeText="uppercase"
         size="big"
         class="row"
         :maxlength="45"
         data-testid="nameInput"
+        @change="changeName"
       />
 
       <ValidatedInput
-        v-model="address"
+        :value="address"
         placeholder="assets.walletAddress"
         class="row"
         errorDescriptions="accounts.invalidAccountAddress"
         :isError="isErrorAddress"
         data-testId="walletAddressInput"
+        @change="changeAddress"
       />
 
       <Checkbox
@@ -25,6 +27,7 @@
         size="medium"
         :label="$t('assets.saveAddressForAllNetwork')"
         class="row"
+        data-testid="saveForAllNetworks"
         @change="onSave"
       />
     </div>
@@ -42,8 +45,8 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { storage } from '@extension-base/stores/Storage';
-import BaseApi from '@/util/BaseApi';
 
+import BaseApi from '@/util/BaseApi';
 @Component
 export default class EditAddressBook extends Vue {
   name = '';
@@ -68,6 +71,14 @@ export default class EditAddressBook extends Vue {
     );
   }
 
+  changeName(value: string) {
+    this.name = value;
+  }
+
+  changeAddress(value: string) {
+    this.address = value;
+  }
+
   mounted() {
     this.name = this._name;
     this.address = this._address;
@@ -78,7 +89,7 @@ export default class EditAddressBook extends Vue {
     const key = this.saveForAllNetworks ? 'all' : this.network;
     const value = addressBook[key] ?? [];
 
-    chrome.storage.local.set({
+    storage.set({
       addressBook: {
         ...addressBook,
         [key]: [...value, { name: this.name, address: BaseApi.encodeAddress(this.address.trim()) }],

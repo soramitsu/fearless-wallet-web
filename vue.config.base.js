@@ -28,6 +28,7 @@ module.exports = {
       const def = definitions[0]['process.env'];
 
       def.EXTENSION_PREFIX = JSON.stringify(process.env.EXTENSION_PREFIX);
+      def.IS_EXTENSION = JSON.stringify(process.env.IS_EXTENSION);
       def.OAUTH_CLIENT_ID = JSON.stringify(process.env.OAUTH_CLIENT_ID);
       def.PORT_PREFIX = JSON.stringify(process.env.PORT_PREFIX);
       def.RAMP_TEST_API_KEY = JSON.stringify(process.env.RAMP_TEST_API_KEY);
@@ -42,7 +43,7 @@ module.exports = {
       def.FL_BLAST_API_SEPOLIA_KEY = JSON.stringify(process.env.FL_BLAST_API_SEPOLIA_KEY);
       def.FL_BLAST_API_GOERLI_KEY = JSON.stringify(process.env.FL_BLAST_API_GOERLI_KEY);
       def.FL_BLAST_API_POLYGON_KEY = JSON.stringify(process.env.FL_BLAST_API_POLYGON_KEY);
-      def.FL_ALCHEMY_API_ETHEREUM_KEY = JSON.stringify(process.env.FL_ALCHEMY_API_ETHEREUM_KEY);
+      def.FL_WEB_ALCHEMY_API_ETHEREUM_KEY = JSON.stringify(process.env.FL_WEB_ALCHEMY_API_ETHEREUM_KEY);
       def.FL_BLAST_API_MOONBEAM_KEY = JSON.stringify(process.env.FL_BLAST_API_MOONBEAM_KEY);
       def.FL_BLAST_API_MOONRIVER_KEY = JSON.stringify(process.env.FL_BLAST_API_MOONRIVER_KEY);
       def.FL_BLAST_API_OKTC_MAINNET_KEY = JSON.stringify(process.env.FL_BLAST_API_OKTC_MAINNET_KEY);

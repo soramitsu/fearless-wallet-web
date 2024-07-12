@@ -1,13 +1,20 @@
 <template>
   <div class="activity">
     <BorderButton
-      v-for="(button, index) in basicButtons"
-      :class="button.class"
-      :text="button.text"
-      :iconName="button.icon"
-      data-testid="basicBtn"
-      @click="onToggleVisible(button.formName)"
-      :key="index"
+      class="activity-button"
+      text="assets.sendButtonText"
+      iconName="send"
+      data-testid="sendBtn"
+      @click="onRoute('send')"
+    />
+
+    <BorderButton
+      class="activity-button"
+      width="100%"
+      text="assets.receiveButtonText"
+      iconName="receive"
+      data-testid="receiveBtn"
+      @click="onRoute('receive')"
     />
 
     <BorderButton
@@ -16,7 +23,7 @@
       text="assets.crossChain"
       iconName="cross-chain"
       data-testid="crossChainBtn"
-      @click="$emit('toggleVisible', 'showCrossChainForm')"
+      @click="onRoute('crossChain')"
     />
 
     <BorderButton
@@ -34,7 +41,7 @@
       text="assets.buy"
       iconName="plus-pink"
       data-testid="buyBtn"
-      @click="$emit('toggleVisible', 'showBuyPopup')"
+      @click="$emit('toggleVisible')"
     />
 
     <BorderButton
@@ -73,13 +80,6 @@ export default class AssetActionButtons extends Vue {
   readonly basicButtons: ControlButtons[] = [
     {
       class: 'activity-button',
-      text: 'assets.sendButtonText',
-      icon: 'send',
-      formName: 'showSendForm',
-      isActive: true,
-    },
-    {
-      class: 'activity-button',
       text: 'assets.receiveButtonText',
       icon: 'receive',
       formName: 'showReceiveForm',
@@ -92,6 +92,19 @@ export default class AssetActionButtons extends Vue {
   @Prop(String) assetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
+
+  onRoute(form: 'send' | 'receive' | 'crossChain') {
+    const name =
+      form === 'send' ? Components.SendForm : form === 'receive' ? Components.ReceiveForm : Components.CrossChainForm;
+
+    this.$router.push({
+      name,
+      params: {
+        assetId: this.$route.params.assetId,
+        network: this.selectedNetwork,
+      },
+    });
+  }
 
   get selectedNetwork() {
     return this.$route.params.selectedNetwork ?? '';
@@ -110,7 +123,7 @@ export default class AssetActionButtons extends Vue {
   }
 
   get showCrossChainButton() {
-    if (this.selectedNetwork === '' || this.selectedWallet.isMobile) return false;
+    if (this.selectedNetwork === '') return false;
 
     const network = this.getNetwork(this.selectedNetwork);
 

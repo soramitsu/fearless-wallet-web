@@ -1,24 +1,54 @@
 import { keyring } from '@polkadot/ui-keyring';
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import { getSubstrateAddress, isEthereumNetwork } from '@extension-base/background/utils/utils';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
-import type State from '@extension-base/background/handlers/State';
+import { BehaviorSubject } from 'rxjs';
+import CurrentAccountStore, { type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import { type EventService } from '@extension-base/services';
+import { type RequestExportMnemonic, type ResponseExportMnemonic } from '../../background/types/types';
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-keyring/types';
 import type { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
 import { isSameString } from '@/helpers';
-type Wallet = {
-  address: string;
-  ethereumAddress: string;
-};
 
 export class KeyringService {
-  constructor(readonly state: State) {}
+  private readonly currentAccountStore = new CurrentAccountStore();
+  readonly currentAccountSubject = new BehaviorSubject<CurrentAccountState>(null);
+
+  constructor(eventService: EventService) {
+    eventService.waitCryptoReady
+      .then(() => {
+        this.currentAccountStore.get('CurrentAccountInfo', (rs) => {
+          rs && this.currentAccountSubject.next(rs);
+        });
+      })
+      .catch(console.error);
+  }
+
+  get currentAccount(): CurrentAccountState {
+    return this.currentAccountSubject.value;
+  }
+
+  get addressSubject() {
+    return addressesObservable.subject;
+  }
+
+  get accountSubject() {
+    return accountsObservable.subject;
+  }
 
   get addressesSubjectValue() {
     return keyring.addresses.subject.value;
+  }
+
+  get accountSubjectValue() {
+    return keyring.accounts.subject.value;
+  }
+
+  setCurrentAccount(currentAccountData: CurrentAccountState) {
+    this.currentAccountSubject.next(currentAccountData);
+    this.currentAccountStore.set('CurrentAccountInfo', currentAccountData);
   }
 
   loadAll(store: KeyringStore, type: KeypairType = 'sr25519') {
@@ -32,20 +62,20 @@ export class KeyringService {
     return [...this.getAccounts(), ...this.getAddresses()];
   }
 
+  getAllSubstrateAccounts() {
+    return this.getAllAccounts().filter(({ address }) => !isEthereumAddress(address));
+  }
+
+  getAllEthereumAccounts() {
+    return this.getAllAccounts().filter(({ address }) => isEthereumAddress(address));
+  }
+
   getAccounts() {
     return keyring.getAccounts();
   }
 
   getAddresses() {
     return keyring.getAddresses();
-  }
-
-  get addressSubject() {
-    return addressesObservable.subject;
-  }
-
-  get accountSubject() {
-    return accountsObservable.subject;
   }
 
   triggerWalletsSubscription(): boolean {
@@ -72,6 +102,8 @@ export class KeyringService {
 
   backupAccount(address: string, password: string) {
     const pair = this.getPair(address);
+
+    pair?.toJson;
 
     if (!pair) return;
 
@@ -121,6 +153,12 @@ export class KeyringService {
     return keyring.restoreAccount(file, password);
   }
 
+  createFromJson(file: KeyringPair$Json) {
+    delete file.meta.genesisHash;
+
+    return keyring.createFromJson(file);
+  }
+
   unlockPair(addressOrPair: string | KeyringPair, password: string) {
     const pair = this.getPair(addressOrPair);
 
@@ -128,7 +166,7 @@ export class KeyringService {
 
     const { address } = pair;
     const isEthereum = isEthereumAddress(address);
-    const substrateAddress = getSubstrateAddress(address, this.state);
+    const substrateAddress = this.getSubstrateAddress(address);
 
     const substratePair = isEthereum ? this.getPair(substrateAddress) : pair;
     const ethereumAddress = isEthereum ? address : (substratePair?.meta.ethereumAddress as string | undefined);
@@ -173,31 +211,69 @@ export class KeyringService {
     if (pair) return keyring.saveAccountMeta(pair, { ...pair.meta, ...meta });
 
     const account = this.getAddress(address);
+
     if (account) this.saveAddress(address, { ...account.meta, ...meta }, 'address');
   }
 
   createFromUri(suri: string, keypairType: KeypairType, meta: FWKeyringMeta = {}) {
-    keyring.createFromUri(suri, meta, keypairType);
+    return keyring.createFromUri(suri, meta, keypairType);
   }
 
-  formatAddress({ address, ethereumAddress }: Wallet, networkName: string = 'westend'): string {
-    const isEthereumNet = isEthereumNetwork(networkName);
+  getSubstrateAccounts() {
+    const accounts = this.getAccounts().filter((el) => !isEthereumAddress(el.address));
+    const addresses = this.getAddresses();
 
-    if (isEthereumNet) return ethereumAddress;
-
-    const network = this.state.networksGithub.find(({ name }) => isSameString(name, networkName));
-    const prefix = network?.addressPrefix;
-
-    // the only case for try/catch
-    // if the user used ethereum account instead of a substratum account(via json or private key)
-    try {
-      return this.encodeAddress(address, prefix);
-    } catch {
-      return ethereumAddress;
-    }
+    return [...accounts, ...addresses];
   }
 
-  isSameAddress(wallet1: Wallet, wallet2: Wallet): boolean {
-    return this.state.keyringService.formatAddress(wallet1) === this.state.keyringService.formatAddress(wallet2);
+  getSubstrateAddress(address: string) {
+    if (!isEthereumAddress(address)) return address;
+
+    const accounts = this.getSubstrateAccounts();
+    const addresses = this.getAddresses();
+
+    const account =
+      accounts.find(
+        ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
+      ) ||
+      addresses.find(
+        ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
+      );
+
+    return account?.address ?? address;
+  }
+
+  getEthereumAddress(address: string) {
+    if (isEthereumAddress(address)) return address;
+
+    const accounts = this.getAllAccounts();
+    const addresses = this.getAddresses();
+
+    const account =
+      accounts.find(({ address: _address }) => _address === address) ||
+      addresses.find(({ address: _address }) => _address === address);
+
+    return (account?.meta.ethereumAddress as string) ?? '';
+  }
+
+  isMobileAccount(address: string): boolean {
+    const account =
+      this.getAllAccounts().find((el) => el.address === address) ||
+      this.getAddresses().find((el) => el.address === address || el.meta.ethereumAddress === address);
+
+    if (!account) throw new Error('Couldnt find account');
+
+    return !!account.meta.isMobile;
+  }
+
+  exportMnemonic({ address, password }: RequestExportMnemonic): ResponseExportMnemonic {
+    const pair = keyring.getPair(address);
+
+    password;
+    pair;
+
+    // const seed = pair.exportMnemonic(password);
+
+    return { seed: '' };
   }
 }

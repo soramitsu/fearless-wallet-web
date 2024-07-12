@@ -64,6 +64,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { type TokenGroup } from '@extension-base/background/types/types';
+import { APIItemState } from '@extension-base/api/types/networks';
 import HistoryItem from './HistoryItem.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
@@ -73,7 +74,6 @@ import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
 import { Components } from '@/router/routes';
 import { NetworksController } from '@/controllers';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 import { fetchEvmBalance } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { type GetHistory } from '@/interfaces';
@@ -140,13 +140,8 @@ export default class AssetNetworks extends Vue {
       return this.getNetwork(name).active;
     });
 
-    if (this.activeTabName === 'MyAssets') {
-      return baseFilter.filter(({ transferable }) => {
-        if (transferable && +transferable > 0) return true;
-
-        return false;
-      });
-    }
+    if (this.activeTabName === 'MyAssets')
+      return baseFilter.filter(({ transferable }) => transferable && +transferable > 0);
 
     return baseFilter;
   }
@@ -190,11 +185,13 @@ export default class AssetNetworks extends Vue {
   }
 
   openAsset(name: string) {
+    const network = this.getNetwork(name);
+
     this.$router.push({
       name: Components.AssetHistory,
       params: {
         assetId: this.currency.groupId,
-        selectedNetwork: name.toLowerCase(),
+        selectedNetwork: network.name,
       },
     });
   }

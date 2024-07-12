@@ -3,25 +3,32 @@
     <ContentForm :height="210" :isStaticHeight="true" :bottomRightCorner="true" class="about-form">
       <div class="about-stake">
         <div class="one block">
-          <div class="label">{{ $t('staking.stakingActiveBalance') }}</div>
-          <div class="amount">{{ activeStake }} {{ stakingAssetName }}</div>
-          <div class="value">{{ fiatSymbol }}{{ activeStakeValue }}</div>
+          <div class="label" data-testid="labelOne">{{ $t('staking.stakingActiveBalance') }}</div>
+          <div class="amount-info" data-testid="amountOne">
+            <div class="amount">{{ activeStake }}</div>
+            <div>{{ stakingAssetName }}</div>
+          </div>
+          <div class="value" data-testid="valueOne">{{ fiatSymbol }}{{ activeStakeValue }}</div>
         </div>
 
         <div class="two block">
-          <div class="label">{{ $t('staking.rewarded') }}</div>
+          <div class="label" data-testid="labelTwo">{{ $t('staking.rewarded') }}</div>
 
           <Loading v-if="isLoading" class="loading" />
 
-          <div v-else class="amount">{{ $n(rewardAmount, 'decimal') }} {{ rewardedAsset }}</div>
+          <div v-else class="amount-info" data-testid="amountTwo">
+            <div class="amount">{{ $n(rewardAmount, 'decimal') }}</div>
+            <div>{{ rewardedAsset }}</div>
+          </div>
 
-          <div class="value">{{ fiatSymbol }}{{ rewardedValue }}</div>
+          <div class="value" data-testid="valueTwo">{{ fiatSymbol }}{{ rewardedValue }}</div>
         </div>
 
         <div class="three block">
-          <div class="label">{{ $t('staking.unstaking') }}</div>
-          <div class="amount">
-            {{ unbondAmount }} {{ stakingAssetName }}
+          <div class="label" data-testid="labelThree">{{ $t('staking.unstaking') }}</div>
+          <div class="amount-info" data-testid="amountThree">
+            <div class="amount">{{ unbondAmount }}</div>
+            <div>{{ stakingAssetName }}</div>
 
             <template v-if="showUnbondDetails">
               <Icon icon="info" class="info-unbond" />
@@ -29,23 +36,26 @@
               <Tooltip :text="unbondDetails" target=".info-unbond" />
             </template>
           </div>
-          <div class="value">{{ fiatSymbol }}{{ unbondValue }}</div>
+          <div class="value" data-testid="valueThree">{{ fiatSymbol }}{{ unbondValue }}</div>
         </div>
 
         <div class="four block">
-          <div class="label">{{ $t('staking.redeemable') }}</div>
-          <div class="amount">{{ redeemAmount }} {{ stakingAssetName }}</div>
-          <div class="value">{{ fiatSymbol }}{{ redeemableValue }}</div>
+          <div class="label" data-testid="labelFour">{{ $t('staking.redeemable') }}</div>
+          <div class="amount-info" data-testid="amountFour">
+            <div class="amount">{{ redeemAmount }}</div>
+            <div>{{ stakingAssetName }}</div>
+          </div>
+          <div class="value" data-testid="valueFour">{{ fiatSymbol }}{{ redeemableValue }}</div>
         </div>
       </div>
     </ContentForm>
 
-    <div class="about-label">
+    <div class="about-label" data-testid="aboutLabel">
       {{ $t('common.about') }}
     </div>
 
     <!-- TODO: staking Поправить, когда будут другие сети -->
-    <div class="descriptions">
+    <div class="descriptions" data-testid="descriptions">
       {{ $t('staking.about.sora') }}
     </div>
   </div>
@@ -217,11 +227,21 @@ export default class About extends Vue {
       margin-bottom: 5px;
     }
 
-    .amount {
+    .amount-info {
+      display: flex;
+      align-items: center;
       font-size: 20px;
       font-weight: 600;
       margin-bottom: 5px;
       height: 23px;
+
+      .amount {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 125px;
+        margin-right: 5px;
+      }
     }
 
     .value {

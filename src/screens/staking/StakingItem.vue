@@ -1,12 +1,12 @@
 <template>
-  <div class="staking-item" @click="click">
+  <div class="staking-item" data-testid="stakingItem" @click="click">
     <div class="description-part left-part">
       <ExternalLogo :name="icon" class="network-icon" />
 
       <div class="network-description">
-        <div class="stake-name">{{ $t(`staking.${type}`) }}</div>
+        <div class="stake-name" data-testid="stakeName">{{ $t(`staking.${type}`) }}</div>
 
-        <div class="network-name">{{ network }}</div>
+        <div class="network-name" data-testid="networkName">{{ network }}</div>
       </div>
     </div>
 
@@ -14,18 +14,18 @@
       <div class="values">
         <Shimmer v-if="isLoading" height="12px" width="135px" />
 
-        <div v-else class="unstaking">{{ $t('staking.unstakingDays', days) }}</div>
+        <div v-else class="unstaking" data-testid="unstaking">{{ $t('staking.unstakingDays', days) }}</div>
 
         <Shimmer v-if="isLoading" height="20px" width="155px" />
 
-        <div v-else class="apy">{{ apy }} APY</div>
+        <div v-else class="apy" data-testid="apy">{{ apy }} APY</div>
 
         <Shimmer v-if="isLoading" height="12px" width="55px" />
 
-        <div v-else class="min-bond">{{ $t('common.min') }} {{ minBond }} {{ asset }}</div>
+        <div v-else class="min-bond" data-testid="minBond">{{ $t('common.min') }} {{ minBond }} {{ asset }}</div>
       </div>
 
-      <Icon icon="chevron-right" class="chevron" />
+      <Icon icon="chevron-right" class="chevron" data-testid="chevronRight" />
     </div>
   </div>
 </template>
@@ -43,16 +43,16 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component
 export default class StakingItem extends Vue {
-  @Prop(Object) networkParams!: NetworkParams;
+  @Prop(Object) stakingNetwork!: NetworkParams;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
   get network() {
-    return this.networkParams.network;
+    return this.stakingNetwork.network;
   }
 
   get assetId() {
-    return this.networkParams.assetId;
+    return this.stakingNetwork.assetId;
   }
 
   get stakingCurrency() {
@@ -70,31 +70,31 @@ export default class StakingItem extends Vue {
   }
 
   get apy() {
-    return `${this.$n(this.networkParams.apy, 'price')}%`;
+    return `${this.$n(this.stakingNetwork.apy, 'price')}%`;
   }
 
   get asset() {
-    return this.networkParams.asset.toUpperCase();
+    return this.stakingNetwork.asset.toUpperCase();
   }
 
   get icon() {
-    return this.networkParams.icon;
+    return this.stakingNetwork.icon;
   }
 
   get unbondPeriod() {
-    return this.networkParams.unbondPeriod;
+    return this.stakingNetwork.unbondPeriod;
   }
 
   get minBond() {
-    return this.networkParams.minBond;
+    return this.stakingNetwork.minBond;
   }
 
   get type() {
-    return this.networkParams.type;
+    return this.stakingNetwork.type;
   }
 
   get days() {
-    return { value: this.networkParams.unbondPeriod };
+    return { value: this.stakingNetwork.unbondPeriod };
   }
 
   click() {

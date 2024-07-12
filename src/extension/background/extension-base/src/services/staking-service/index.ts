@@ -1,7 +1,7 @@
 import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
 import { BasicTxErrorCode, type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
-import { getEthereumAddress, getSubstrateAddress, getUtilityProps } from '@extension-base/background/utils/utils';
+import { getUtilityProps } from '@extension-base/background/utils/utils';
 import type State from '@extension-base/background/handlers/State';
 import type {
   RequestBond,
@@ -21,7 +21,9 @@ import type {
   RewardsResponse,
   RequestPayoutRewards,
   ValidatorStatuses,
-  CheckPayoutsFeeRequest,
+  GetPayoutsFeeRequest,
+  GetNominateNetworkFeeRequest,
+  getRewardsRequest,
 } from '@extension-base/services/staking-service/types';
 import { type NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
@@ -44,7 +46,8 @@ export class StakingService {
       const validators = await this.getValidators(network);
       const minBond = await this.getMinNominatorBond(validators, network);
       const myStakingInfo = await this.getMyStakingInfo(network, validators, minBond);
-      const apy = validators.reduce((result, { apy }) => result + +apy, 0) / validators.length;
+      const validatorsFilters = validators.filter(({ apy }) => apy !== '0');
+      const apy = validatorsFilters.reduce((result, { apy }) => result + +apy, 0) / validatorsFilters.length;
 
       return {
         ...myStakingInfo,
@@ -66,18 +69,16 @@ export class StakingService {
     validators: FWValidatorInfoFull[],
     _minBond?: number
   ): Promise<MyStakingInfo> {
-    const _address = await this.state.getCurrentAddress(network);
+    const _address = this.state.getCurrentAddress(network);
     const currentWallet = { address: _address, ethereumAddress: _address };
-    const stashByController = await this.state.stakingService.getStashByController(_address);
-    const stashAddress =
-      stashByController !== '' ? stashByController : this.state.keyringService.formatAddress(currentWallet);
+    const stashByController = await this.getStashByController(_address);
+    const stashAddress = stashByController !== '' ? stashByController : this.state.formatAddress(currentWallet);
 
     const stashWallet = { address: stashAddress, ethereumAddress: stashAddress };
 
-    const isController =
-      stashByController !== '' && !this.state.keyringService.isSameAddress(stashWallet, currentWallet);
+    const isController = stashByController !== '' && !this.state.isSameAddress(stashWallet, currentWallet);
 
-    const address = isController ? this.state.keyringService.formatAddress(stashWallet) : _address;
+    const address = isController ? this.state.formatAddress(stashWallet) : _address;
 
     const stakingInfo = await apiSora.staking.getMyStakingInfo(address);
     const { addressBook } = await storage.get(['addressBook']);
@@ -94,7 +95,7 @@ export class StakingService {
     const stashName = stashAccountName ?? stashBookName ?? stashAddress;
 
     const payeeAddress = isControllerAndPayeeController
-      ? this.state.keyringService.formatAddress(currentWallet, network)
+      ? this.state.formatAddress(currentWallet, network)
       : isControllerAndPayeeStaked || isControllerAndPayeeStash
       ? stashAddress
       : stakingInfo.payee;
@@ -112,11 +113,11 @@ export class StakingService {
     )?.name;
     const controllerName = controllerAccountName ?? controllerBookName ?? controllerAddress;
 
-    const isOtherPayee = payeeAddress !== this.state.keyringService.formatAddress(stashWallet, network);
+    const isOtherPayee = payeeAddress !== this.state.formatAddress(stashWallet, network);
 
     const isOtherController = isController
       ? false
-      : controllerAddress !== this.state.keyringService.formatAddress(stashWallet, network);
+      : controllerAddress !== this.state.formatAddress(stashWallet, network);
 
     const result = {
       ...stakingInfo,
@@ -152,9 +153,9 @@ export class StakingService {
     network: NetworkName,
     myValidators: string[]
   ): Promise<ValidatorStatuses> {
-    const substrateAddress = getSubstrateAddress(_address, this.state);
-    const ethereumAddress = getEthereumAddress(_address, this.state);
-    const address = this.state.keyringService.formatAddress({ address: substrateAddress, ethereumAddress }, network);
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(_address);
+    const ethereumAddress = this.state.keyringService.getEthereumAddress(_address);
+    const address = this.state.formatAddress({ address: substrateAddress, ethereumAddress }, network);
     const max = this.maxNominatorRewardedPerValidator();
     const activeEra = await apiSora.staking.getCurrentEra();
     const submittedIn = (await apiSora.staking.getNominations(address))?.submittedIn;
@@ -210,7 +211,7 @@ export class StakingService {
     return { validatorsOversubscribed, validatorsWaiting, validatorsActive, validatorsInactive };
   }
 
-  public async getRewards(network: NetworkName, address: string): Promise<RewardsResponse> {
+  public async getRewards({ address, network }: getRewardsRequest): Promise<RewardsResponse> {
     const rewards = await apiSora.staking.getNominatorsReward(address);
 
     const validatorsRewards = rewards.reduce((result, { validators }) => {
@@ -253,6 +254,7 @@ export class StakingService {
     const { precision } = getUtilityProps(network, this.state);
 
     const validatorsInfo = await apiSora.staking.getValidatorsInfo();
+
     const validators: FWValidatorInfoFull[] = validatorsInfo.map((validator) => {
       const info = validator.identity?.info;
 
@@ -331,9 +333,30 @@ export class StakingService {
     return apiSora.staking.getMaxNominatorRewardedPerValidator();
   }
 
-  public async checkPayoutsFee({ payouts, network }: CheckPayoutsFeeRequest) {
+  public async getPayoutsFee({ payouts, network }: GetPayoutsFeeRequest) {
     const precision = getUtilityProps(network, this.state).precision;
     const fee = await apiSora.staking.getPayoutNetworkFee({ payouts });
+
+    return FPNumber.fromCodecValue(fee, precision).toString();
+  }
+
+  public async getNominateNetworkFee({ validators, network }: GetNominateNetworkFeeRequest) {
+    const precision = getUtilityProps(network, this.state).precision;
+
+    const fee = await apiSora.staking.getNominateNetworkFee({ validators });
+
+    return FPNumber.fromCodecValue(fee, precision).toString();
+  }
+
+  public async getBondAndNominateNetworkFee({ validators, payoutAddress, from, networkName, amount }: RequestBond) {
+    const precision = getUtilityProps(networkName, this.state).precision;
+
+    const fee = await apiSora.staking.getBondAndNominateNetworkFee({
+      validators,
+      controller: from,
+      payee: payoutAddress,
+      value: amount,
+    });
 
     return FPNumber.fromCodecValue(fee, precision).toString();
   }
@@ -374,8 +397,10 @@ export class StakingService {
   public async bondAndNominate(params: RequestBond): Promise<BasicTxResponse> {
     const { amount, payoutAddress, from, validators } = params;
 
+    const payee = payoutAddress === '' ? from : payoutAddress;
+
     try {
-      await apiSora.staking.bondAndNominate({ value: amount, controller: from, payee: payoutAddress, validators }); // Controller аккаунт по умолчанию это Stash
+      await apiSora.staking.bondAndNominate({ value: amount, controller: from, payee, validators }); // Controller аккаунт по умолчанию это Stash
     } catch (ex) {
       const message = `[STAKING] Bond failed: ${ex}`;
 

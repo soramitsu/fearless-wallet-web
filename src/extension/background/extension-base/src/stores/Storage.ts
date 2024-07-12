@@ -1,3 +1,4 @@
+import { chrome } from '@extension-base/utils/crossenv';
 import type { IState } from '@extension-base/background/types/types';
 
 class Storage {

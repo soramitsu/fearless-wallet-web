@@ -8,7 +8,7 @@
     :value="value"
     :partialFee="partialFee"
     :recipient="recipient"
-    @closeForm="$emit('closeForm')"
+    @closeForm="closeForm"
     @update:assetId="updateAssetId"
     @update:selectedNetwork="updateSelectedNetwork"
     @update:amount="updateAmount"
@@ -20,7 +20,7 @@
       <div>
         <div class="row direction-column">
           <FInput
-            v-model="selectedWallet.name"
+            :value="selectedWallet.name"
             placeholder="assets.from"
             size="big"
             :readonly="true"
@@ -30,7 +30,7 @@
           <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
 
           <FInput
-            v-model="formattedAddressTo"
+            :value="formattedAddressTo"
             placeholder="assets.to"
             size="big"
             :readonly="true"
@@ -43,7 +43,7 @@
             <div class="summary-label">{{ $t('assets.summary') }}</div>
 
             <InfoRow text="assets.assetsAmount" :value="amountString" :price="valueString" />
-            <InfoRow text="assets.fee" :value="partialFeeString" :price="fiatFeeString" />
+            <InfoRow text="assets.networkFee" :value="partialFeeString" :price="fiatFeeString" />
             <InfoRow v-if="isUtilityAsset" text="assets.total" :value="totalString" :price="fiatTotalString" />
           </div>
         </FCorners>
@@ -53,9 +53,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { GetAssetPrice, SelectedWallet } from '@/store';
+import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -74,17 +74,16 @@ export default class SendForm extends Vue {
   amount = '';
   value = '';
 
-  @Prop(String) _selectedNetwork!: string;
-  @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get currency() {
     return this.balances.find(({ balances }) =>
-      balances.some((el) => el.id.toLowerCase() === this.assetId.toLowerCase())
-    )!;
+      balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase())
+    );
   }
 
   get isUtilityAsset() {
@@ -92,7 +91,8 @@ export default class SendForm extends Vue {
   }
 
   get partialFeeString() {
-    const { symbol } = getUtilityAsset(this.balances, this.selectedNetwork);
+    const utilityAsset = getUtilityAsset(this.balances, this.selectedNetwork);
+    const symbol = utilityAsset ? utilityAsset.symbol : '';
 
     return `${this.$n(+this.partialFee, 'decimalPrecise')} ${symbol.toUpperCase()}`;
   }
@@ -102,11 +102,26 @@ export default class SendForm extends Vue {
   }
 
   get assetPrice() {
-    return this.getAssetPrice(this.currency.priceId ?? '')?.price ?? 0;
+    return this.getAssetPrice(this.currency?.priceId ?? '')?.price ?? 0;
+  }
+
+  get originNet() {
+    return this.getNetwork(this.selectedNetwork);
+  }
+
+  get originalUtilityId() {
+    return this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
+  }
+
+  get feeAssetPrice() {
+    const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === this.originalUtilityId));
+    const priceId = currency?.priceId ?? '';
+
+    return this.getAssetPrice(priceId).price;
   }
 
   get fiatFeeString() {
-    return `${this.fiatSymbol}${this.$n(+this.partialFee * this.assetPrice, 'price')}`;
+    return `${this.fiatSymbol}${this.$n(+this.partialFee * this.feeAssetPrice, 'price')}`;
   }
 
   get valueString() {
@@ -122,14 +137,14 @@ export default class SendForm extends Vue {
   }
 
   get selectedAsset() {
-    return this.currency.balances.find(
+    return this.currency?.balances?.find(
       (el) =>
         el.symbol.toLowerCase() === this.assetId.toLowerCase() || el.id.toLowerCase() === this.assetId.toLowerCase()
-    )!;
+    );
   }
 
   get selectedAssetUpper() {
-    return this.selectedAsset.symbol.toUpperCase();
+    return this.selectedAsset?.symbol.toUpperCase();
   }
 
   get total() {
@@ -145,13 +160,12 @@ export default class SendForm extends Vue {
   }
 
   created() {
-    this.assetId = this._selectedAssetId;
-
-    this.selectedNetwork = this._selectedNetwork;
+    this.assetId = this.$route.params.assetId;
+    this.selectedNetwork = this.$route.params.network;
   }
 
   closeForm() {
-    this.$emit('closeForm');
+    this.$router.back();
   }
 
   updateAssetId(value: string) {

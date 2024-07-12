@@ -59,7 +59,7 @@
         <Tooltip text="common.networkDisconnected" target=".warning-img" placement="left" />
       </template>
 
-      <Switcher v-if="showAssetsManagementForm" v-model="currencyVisible" />
+      <Switcher v-if="showAssetsManagementForm" :value="currencyVisible" @change="toggleCurrencyVisible" />
 
       <template v-else-if="!showWarning">
         <CircleButton
@@ -69,7 +69,7 @@
           tooltipText="assets.sendButtonText"
           target=".send"
           data-testid="sendBtn"
-          @click="$emit('toggleVisibleActivityForm', 'showSendForm', { mainNetwork, assetId })"
+          @click="onRoute('send')"
         />
 
         <CircleButton
@@ -79,7 +79,7 @@
           tooltipText="assets.receiveButtonText"
           target=".receive"
           data-testid="receiveBtn"
-          @click="$emit('toggleVisibleActivityForm', 'showReceiveForm', { mainNetwork, assetId })"
+          @click="onRoute('receive')"
         />
 
         <CircleButton
@@ -114,6 +114,7 @@ import {
 } from '@/helpers/currencies';
 import { isNetworkGroup } from '@/helpers/common';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
+import { isSameString } from '@/helpers';
 
 @Component
 export default class CurrencyItem extends Vue {
@@ -125,7 +126,6 @@ export default class CurrencyItem extends Vue {
   @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
-
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
@@ -176,25 +176,15 @@ export default class CurrencyItem extends Vue {
   get mainNetwork() {
     if (this.assetData.relayChain === 'ethereum') {
       if (!isNetworkGroup(this.selectedNetwork))
-        return this.assetData.balances
-          .find((el) => {
-            return el.name.toLowerCase() === this.selectedNetwork.toLowerCase();
-          })
-          ?.name?.toLowerCase();
+        return this.assetData.balances.find(({ name }) => isSameString(name, this.selectedNetwork))?.name;
 
-      return this.assetData.balances
-        .find((el) => {
-          const network = this.getNetwork(el.name);
-
-          return network.active;
-        })
-        ?.name?.toLowerCase();
+      return this.assetData.balances.find(({ name }) => this.getNetwork(name).active)?.name;
     }
 
-    return this.assetData.mainNetwork?.toLowerCase();
+    return this.assetData.mainNetwork;
   }
 
-  get assetId() {
+  get groupId() {
     return this.assetData.groupId;
   }
 
@@ -204,10 +194,6 @@ export default class CurrencyItem extends Vue {
 
   get currencyVisible(): boolean {
     return !this.hiddenAssets.includes(this.assetData.groupId);
-  }
-
-  set currencyVisible(value: boolean) {
-    this.setHiddenAssets({ groupId: this.assetData.groupId, value });
   }
 
   get showCurrencyItem() {
@@ -318,11 +304,16 @@ export default class CurrencyItem extends Vue {
       const network = this.getNetwork(name);
 
       if (this.selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
+
       if (this.selectedNetwork === FAVORITE_NETWORKS)
         return network.favorite.some((address) => address === this.selectedWallet.address);
 
       return this.getNetwork(name).active;
     });
+  }
+
+  toggleCurrencyVisible(value: boolean) {
+    this.setHiddenAssets({ groupId: this.assetData.groupId, value: value });
   }
 
   openAssetPage(event: CustomEvent) {
@@ -338,22 +329,29 @@ export default class CurrencyItem extends Vue {
     )
       return;
 
-    if (this.isCurrentNetwork || this.computeActiveNetworks.length === 1) {
+    if (this.isCurrentNetwork || this.computeActiveNetworks.length === 1)
       this.$router.push({
         name: Components.AssetHistory,
         params: {
-          assetId: this.assetId ?? this.assetData.groupId,
+          assetId: this.groupId,
           selectedNetwork: this.redirectNetwork === '' ? this.computeActiveNetworks[0].name : this.redirectNetwork,
         },
       });
+    else
+      this.$router.push({
+        name: Components.AssetNetworks,
+        params: {
+          assetId: this.groupId,
+        },
+      });
+  }
 
-      return;
-    }
-
+  onRoute(form: 'send' | 'receive') {
     this.$router.push({
-      name: Components.AssetNetworks,
+      name: form === 'send' ? Components.SendForm : Components.ReceiveForm,
       params: {
-        assetId: this.assetData.groupId,
+        assetId: this.groupId ?? '',
+        network: this.mainNetwork ?? '',
       },
     });
   }

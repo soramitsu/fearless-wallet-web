@@ -9,10 +9,8 @@ import type { Resolver } from '@extension-base/background/types/types';
 // WC = WalletConnect
 export class ConnectWCRequestHandler {
   private readonly requestService: RequestService;
-  readonly connectWCRequests: Record<string, RequestWalletConnectSession> = {};
-  public readonly connectWCSubject: BehaviorSubject<WalletConnectSessionRequest[]> = new BehaviorSubject<
-    WalletConnectSessionRequest[]
-  >([]);
+  public readonly connectWCRequests: Record<string, RequestWalletConnectSession> = {};
+  public readonly connectWCSubject = new BehaviorSubject<WalletConnectSessionRequest[]>([]);
 
   constructor(requestService: RequestService) {
     this.requestService = requestService;

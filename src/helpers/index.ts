@@ -12,7 +12,9 @@ function firstCharToUp(string: string, onlyFirstChat = true) {
   return `${string.charAt(0).toUpperCase()}${end}`;
 }
 
-function isSameString(string1: string, string2: string) {
+function isSameString(string1: string | undefined, string2: string | undefined) {
+  if (string1 === undefined || string2 === undefined) return false;
+
   return string1.toLowerCase() === string2.toLowerCase();
 }
 
@@ -43,7 +45,9 @@ function validateEmail(email: string) {
   return EmailValidator.validate(email);
 }
 
-function cut(value: string, length = 7) {
+function cut(value: string | undefined, length = 7) {
+  if (value === undefined) return '';
+
   const endNumber = length + 1;
 
   if (value.length <= length * 2 + 1) return value;

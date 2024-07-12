@@ -24,8 +24,7 @@
     "test:e2e": "vue-cli-service test:e2e",
     "lint": "eslint --fix 'src/**/*.{js,jsx,vue,ts,tsx}'",
     "lint:precommit": "NODE_ENV=production eslint --fix --quiet 'src/**/*.{js,jsx,vue,ts,tsx}'",
-    "test:all": "yarn test:unit --coverage",
-    "audit:desktop": "npx electronegativity -i ./ -x LimitNavigationGlobalCheck,PermissionRequestHandlerGlobalCheck"
+    "test:all": "yarn test:unit --coverage"
   },
   "main": "index.js",
   "dependencies": {
@@ -128,7 +127,6 @@
     "ts-jest": "^27.0.5",
     "typescript": "5.2.2",
     "vue-cli-plugin-chrome-extension-cli": "^1.1.4",
-    "vue-cli-plugin-electron-builder": "^3.0.0-alpha.4",
     "vue-template-compiler": "^2.6.14",
     "webpack-extension-manifest-plugin": "^0.8.0"
   },

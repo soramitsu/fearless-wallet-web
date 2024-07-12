@@ -72,7 +72,7 @@ module.exports = (browser) => {
     web_accessible_resources: [
       {
         resources: ['page.js'],
-        matches: ['https://*/*', 'http://localhost/*'],
+        matches: ['https://*/*', 'http://*/*', 'http://localhost/*'],
         use_dynamic_url: true,
       },
     ],

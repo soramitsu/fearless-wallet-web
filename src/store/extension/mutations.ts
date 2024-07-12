@@ -38,6 +38,8 @@ const mutations: MutationTree<State> & Mutations = {
 
     if (type === 'signRequests') return (state.signRequests = requests);
 
+    if (type === 'signEvmRequests') return (state.signEvmRequests = requests);
+
     if (type === 'wcConnectRequests') return (state.wcConnectRequests = requests);
 
     if (type === 'wcNotSupportedRequests') return (state.wcNotSupportedRequests = requests);

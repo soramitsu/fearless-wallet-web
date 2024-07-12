@@ -1,7 +1,7 @@
 import { assert } from '@polkadot/util';
-import { canDerive } from '@extension-base/utils/utils';
+import { type TransformAccountPayload } from '@extension-base/background/types/types';
 import type { InjectedAccount } from '@polkadot/extension-inject/types';
-import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { SingleAddress, SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 export function withErrorLog(fn: () => unknown): void {
   try {
@@ -26,28 +26,16 @@ export function stripUrl(url: string): string {
   return parts[2];
 }
 
-export function transformAccounts(accounts: SubjectInfo, anyType = false): InjectedAccount[] {
-  return Object.values(accounts)
-    .filter(({ type }) => (anyType ? true : canDerive(type)))
-    .sort((a, b) => (a.json.meta.whenCreated || 0) - (b.json.meta.whenCreated || 0))
-    .map(
-      ({
-        json: {
-          address,
-          meta: { genesisHash, name },
-        },
-        type,
-      }): InjectedAccount => ({
-        address,
-        genesisHash: genesisHash ?? '',
-        name,
-        type,
-      })
-    );
-}
+export function transformAccounts({ accounts, accountAuthType }: TransformAccountPayload): InjectedAccount[] {
+  const authTypeFilter = ({ type }: SingleAddress): boolean => {
+    if (accountAuthType === 'substrate') return type !== 'ethereum';
+    if (accountAuthType === 'evm') return type === 'ethereum';
 
-export function transformAddresses(addresses: SubjectInfo): InjectedAccount[] {
-  return Object.values(addresses)
+    return true;
+  };
+
+  return Object.values(accounts)
+    .filter(authTypeFilter)
     .sort((a, b) => (a.json.meta.whenCreated || 0) - (b.json.meta.whenCreated || 0))
     .map(
       ({
@@ -56,11 +44,27 @@ export function transformAddresses(addresses: SubjectInfo): InjectedAccount[] {
           meta: { name },
         },
         type,
-      }): InjectedAccount => ({
-        address,
-        name,
+      }): InjectedAccount => ({ address, name, type })
+    );
+}
+
+export function transformAddresses(addresses: SubjectInfo, authType?: string): InjectedAccount[] {
+  return Object.values(addresses)
+    .sort((a, b) => (a.json.meta.whenCreated || 0) - (b.json.meta.whenCreated || 0))
+    .map(
+      ({
+        json: {
+          address,
+          meta: { name, ethereumAddress },
+        },
         type,
-        genesisHash: '',
-      })
+      }): InjectedAccount => {
+        return {
+          address: authType === 'evm' ? (ethereumAddress as string) : address,
+          name,
+          type,
+          genesisHash: '',
+        };
+      }
     );
 }

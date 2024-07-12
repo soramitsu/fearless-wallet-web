@@ -19,7 +19,7 @@ export default class Eip155RequestHandler {
     this.requestService = requestService;
   }
 
-  private checkAccount(address: string, accounts: string[]) {
+  checkAccount(address: string, accounts: string[]) {
     if (!accounts.find((account) => isSameAddress(account, address))) {
       throw new Error(getSdkError('UNSUPPORTED_ACCOUNTS').message + ' ' + address);
     }
@@ -62,12 +62,10 @@ export default class Eip155RequestHandler {
       this.checkAccount(address, sessionAccounts);
 
       this.requestService.evmRequestHandler
-        .sign(requestEvent)
-        .then(async ({ signature }) => {
-          this.walletConnectService.responseRequest({
-            topic,
-            response: formatJsonRpcResult(id, signature),
-          });
+        .onWCSign(requestEvent)
+        .then(async ({ payload }) => {
+          const response = formatJsonRpcResult(id, payload);
+          this.walletConnectService.responseRequest({ topic, response });
         })
         .catch((e: any) => this.handleError(topic, id, e));
     } else if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
@@ -89,11 +87,11 @@ export default class Eip155RequestHandler {
 
       const createRequest = () => {
         this.requestService.evmRequestHandler
-          .sign(requestEvent)
-          .then(async ({ signature }) => {
+          .onWCSign(requestEvent)
+          .then(async ({ payload }) => {
             await this.walletConnectService.responseRequest({
               topic,
-              response: formatJsonRpcResult(id, signature),
+              response: formatJsonRpcResult(id, payload),
             });
           })
           .catch((e) => {

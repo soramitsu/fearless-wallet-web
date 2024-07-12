@@ -48,7 +48,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     mozillaChannel:             'listed',
     distFolders:                ['./dist/extension/firefox','./dist/extension/chrome'],
     distFoldersTestNets:        ['./dist/extension/chrome-test'],
-    preBuildCmds:               ['apt-get update && apt-get install zip jq -y && yarn set version 3.4.1 && yarn install'],
+    preBuildCmds:               ['apt-get update && apt-get install zip jq -y && corepack enable &&yarn set version 3.4.1 && yarn install'],
     nexusFiles:                 [ '.zip'],
     chromeExtFile:              'fearless-wallet-extension-chrome.zip',
     mozillaExtFile:             'fearless-wallet-extension-firefox.zip',
@@ -58,6 +58,12 @@ def pipeline = new org.js.AppArtifactsPipeline(
     buildWithCred:              buildWithCred,
     dojoProductType:            'fearless-web',
     sonarSrcPath:               'src',
-    sonarTestsPath:             'tests'
+    sonarTestsPath:             'tests',
+    triggerAutotest:            true,
+    downstreamJob:              '/qa/soramitsu-test-framework/fearless-wallet-web',
+    downstreamJobParams:        [
+        [$class: 'StringParameterValue', name: 'targetBranch', value: env.BRANCH_NAME],
+        [$class: 'StringParameterValue', name: 'typeTest', value: 'tests:fearless-smoke']
+    ]
 )
 pipeline.runPipeline()

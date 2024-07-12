@@ -1,25 +1,27 @@
 <template>
   <div class="password-form">
     <ValidatedInput
-      v-model="pass1"
       ref="pass1Input"
+      data-testid="enterPasswordInput"
+      class="row"
+      :value="pass1"
       :errorDescriptions="t('shortPassword')"
       :placeholder="t('enterPassword')"
       :isError="isShortPassword"
       :showPassword="true"
-      data-testid="enterPasswordInput"
-      class="row"
+      @change="changePass1"
     />
 
     <ValidatedInput
       v-show="showPasswordConfirmation"
-      v-model="pass2"
+      data-testid="reEnterPasswordInput"
+      class="row"
+      :value="pass2"
       :errorDescriptions="t('notMatchPassword')"
       :placeholder="t('reEnterPassword')"
       :isError="isWrongPassword"
       :showPassword="true"
-      data-testid="reEnterPasswordInput"
-      class="row"
+      @change="changePass2"
     />
 
     <Hint class="hint" iconName="notification" :text="hintText" data-testid="hintText" />
@@ -37,7 +39,7 @@ export default class PasswordForm extends Vue {
   pass1 = '';
   pass2 = '';
 
-  @Ref('pass1Input') readonly pass1InputComponent!: ValidatedInput;
+  @Ref('pass1Input') readonly pass1InputComponent!: typeof ValidatedInput;
   @Prop(Boolean) showMockPassword!: boolean;
   @Prop({ type: Boolean, default: false }) isGoogleFlow!: boolean;
   @Prop(Boolean) showSamePasswordText!: boolean;
@@ -65,6 +67,8 @@ export default class PasswordForm extends Vue {
   }
 
   mounted() {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     this.pass1InputComponent.input.focus();
 
     if (this.showMockPassword) this.pass1 = '000000';
@@ -89,6 +93,14 @@ export default class PasswordForm extends Vue {
 
   setPassword(password: string) {
     this.$emit('updateWalletPassword', password);
+  }
+
+  changePass1(value: string) {
+    this.pass1 = value;
+  }
+
+  changePass2(value: string) {
+    this.pass2 = value;
   }
 
   t(value: string, obj: Record<string, string> = {}) {

@@ -170,10 +170,9 @@
   },
   "menu": {
     "wallet": "Wallet",
-    "crowdloans": "Crowdloans",
     "staking": "Staking",
-    "polkaswap": "Polkaswap",
-    "history": "History"
+    "pools": "Pools",
+    "polkaswap": "Polkaswap"
   },
   "wallet": {
     "currencies": "Currencies",
@@ -236,6 +235,7 @@
     "polkaswap": "Polkaswap",
     "resetToDefault": "Reset to default",
     "swapSettings": "Swap settings",
+    "poolSettings": "Pool settings",
     "from": "From",
     "to": "To",
     "assetsAmount": "Assets Amount",
@@ -258,7 +258,6 @@
     "reserved": "Reserved",
     "frozen": "Frozen",
     "transferable": "Transferable",
-    "fee": "Fee",
     "total": "Total",
     "signTransaction": "Sign the transaction",
     "passwordTransaction": "Enter password to confirm the transaction",
@@ -287,6 +286,12 @@
     "crossChainFee": "Cross-Chain fee",
     "networkFee": "Network fee",
     "slippage": "Slippage",
+
+    "isScamAddress": "This address has been flagged due to evidence of a scam. We strongly recommend that you don't send {asset} to this account.",
+    "isSanctionsAddress": "This address has been flagged due to an entity related to a country under sanctions. We strongly recommend that you don't send {asset} to this account.",
+    "isExchangeAddress": "This address is marked as an exchange, be careful as the deposit and withdrawal addresses may different.",
+    "isDonationAddress": "This address has been flagged as suspicious. We strongly recommend that you don't send %s to this account.",
+
     "networkFeeSora": "Network fee is used to ensure SORA system's growth and stable performance.",
     "minMaxReceiveInfo": "Your transaction will revert if there is a large, unfavorable price movement before it is confirmed.",
     "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;"
@@ -298,7 +303,6 @@
     "dontNeedAccount": "I don’t need an account",
     "exportWarning": "Sharing or copying your secret is a high risk operation, don’t send it to anyone. Would you like to proceed with sharing/copying process?",
     "notEthereumAccount": "You didn’t add an ethereum account.",
-    "accountsDefaultSecrets": "Default accounts with a shared secret",
     "export": "Export account",
     "exportJson": "Export JSON",
     "wantExportJson": "I want to export JSON",
@@ -319,10 +323,13 @@
     "autoNodes": "Auto select nodes",
     "defaultNodes": "Default nodes",
     "customNodes": "Custom nodes",
+    "addCustomNode": "Add custom nodes",
     "editNode": "Edit node",
     "deleteNode": "Delete node",
     "newNode": "New Node",
     "account": "Account",
+    "chainAccounts": "chain accounts",
+    "substrateChainAccounts": "Substrate chain accounts",
     "addEthereumAccounts": "Add Moonbeam and Moonriver accounts?"
   },
   "auth": {
@@ -607,6 +614,7 @@
     "minimumStake": "The minimum stake to receive the reward is {value} {asset}",
     "unstakingDays": "Unstaking period {value} days",
     "daysLeft": "days left",
+    "validatorsAlreadyNominated": "Selected validators already nominated",
     "alertsList": {
       "redeem": {
         "name": "Redeem unstaked tokens.",
@@ -630,6 +638,25 @@
       }
     }
   },
+  "pools": {
+    "noPools": "Selected networks do not have pools",
+    "myPools": "My pools",
+    "pool": "Pool",
+    "poolDetails": "Pool Details",
+    "supply": "Supply",
+    "remove": "Remove",
+    "supplyLiquidity": "Supply liquidity",
+    "removeLiquidity": "Remove liquidity",
+    "confirmSupply": "Confirm supply",
+    "yourPoolShare": "Your pool share",
+    "rewardsPayout": "Rewards payout in",
+    "yourPooled": "Your {asset} pooled",
+    "stakeYourPoolShare": "Stake your pool share for extra rewards",
+    "liquidityPools": "Liquidity pools",
+    "showDetails": "Show details",
+    "emptyLiquidityWarning": "The ratio of tokens you add will set the price of this pool. Once you are happy with the rate click supply to review.",
+    "removeWarning": "Removing pool tokens converts your position back into underlying tokens at the current rate, proportional to your share of the pool. Accrued fees are included in the amounts you receive."
+  },
   "browserTabs": {
     "welcome": "Welcome",
     "onboarding": "Onboarding",
@@ -643,13 +670,18 @@
     "soraSwap": "Sora swap",
     "polkaswapDisclaimer": "Polkaswap disclaimer",
     "wallet": "Wallet",
+    "accountSetting": "Account setting",
     "accounts": "Accounts",
     "nodes": "Nodes",
     "export": "Export",
-    "crowdloans": "Crowdloans",
     "staking": "Staking",
     "myStake": "My staking",
-    "polkaswap": "Polkaswap"
+    "polkaswap": "Polkaswap",
+    "pools": "Pools",
+    "poolDetails": "Pool Details",
+    "send": "Send",
+    "receive": "Receive",
+    "crossChain": "Cross-Chain"
   },
   "nft": {
     "owned": "Owned",
@@ -667,7 +699,7 @@
     "approve": "Approve",
     "sign": "Sign",
     "wc": "Wallet Connect",
-    "substrate": "Substrate",
+    "dapps": "DApps",
     "connect": "Connect",
     "enterAccountPass": "Password for this account",
     "reject": "Reject",

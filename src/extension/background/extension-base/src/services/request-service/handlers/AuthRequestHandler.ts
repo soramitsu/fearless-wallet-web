@@ -4,6 +4,9 @@ import { stripUrl } from '@extension-base/background/handlers/helpers';
 import AuthorizeStore from '@extension-base/stores/Authorize';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { getId } from '@extension-base/utils';
+import { type DAppChainInfoPayload } from '@extension-base/services/request-service/types';
+import { type NetworkJson } from '@extension-base/types';
+import { isNativeEVMNetwork } from '../../../background/utils/utils';
 import type {
   Resolver,
   AuthorizeRequest,
@@ -12,34 +15,49 @@ import type {
   AuthUrls,
   RequestAuthorizeTab,
 } from '@extension-base/background/types/types';
-import type { RequestService } from '@extension-base/services';
+import type { NetworkService, RequestService } from '@extension-base/services';
 
 const AUTH_URLS_KEY = 'authUrls';
 
 export class AuthRequestHandler {
   private readonly requestService: RequestService;
+  private readonly networkService: NetworkService;
 
   readonly authRequests: Record<string, AuthRequest> = {};
   private authorizeCached: AuthUrls = {};
   private readonly authorizeStore = new AuthorizeStore();
-  private readonly authorizeUrlSubject = new BehaviorSubject<AuthUrls>({});
   private readonly evmChainSubject = new BehaviorSubject<AuthUrls>({});
+  private readonly authorizeUrlSubject = new BehaviorSubject<AuthUrls>({});
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
 
-  constructor(requestService: RequestService) {
-    this.getAuthorize((auths) => {
-      if (!auths) this.authorizeCached = {};
-      else this.authorizeCached = auths;
-    });
+  constructor(requestService: RequestService, networkService: NetworkService) {
+    this.getAuthorize((auths) => (this.authorizeCached = auths ?? {}));
+
     this.requestService = requestService;
+    this.networkService = networkService;
   }
 
   public get numAuthRequests(): number {
     return Object.keys(this.authRequests).length;
   }
 
+  private get authValues() {
+    return Object.values(this.authRequests);
+  }
+
+  public get subscribeEvmChainChange() {
+    return this.evmChainSubject;
+  }
+
   private get allAuthRequests(): AuthorizeRequest[] {
-    return Object.values(this.authRequests).map(({ id, request, url }): AuthorizeRequest => ({ id, request, url }));
+    return this.authValues.map(
+      ({ id, request, url, accountAuthType }): AuthorizeRequest => ({
+        id,
+        request,
+        url,
+        accountAuthType: accountAuthType ?? 'substrate',
+      })
+    );
   }
 
   private updateIconAuth(shouldClose?: boolean): void {
@@ -51,32 +69,27 @@ export class AuthRequestHandler {
     this.authorizeStore.set(AUTH_URLS_KEY, data, () => {
       this.authorizeCached = data;
 
-      this.evmChainSubject.next(this.authorizeCached);
       this.authorizeUrlSubject.next(this.authorizeCached);
-      callback && callback();
+
+      callback?.();
     });
   }
 
   public getAuthorize(update: (value: AuthUrls) => void): void {
     // This action can be use many by DApp interaction => caching it in memory
-    if (Object.keys(this.authorizeCached).length) {
-      update(this.authorizeCached);
-    } else {
+
+    if (Object.keys(this.authorizeCached).length) update(this.authorizeCached);
+    else
       this.authorizeStore.get('authUrls', (data) => {
         this.authorizeCached = data || {};
-        this.evmChainSubject.next(this.authorizeCached);
         this.authorizeUrlSubject.next(this.authorizeCached);
+
         update(this.authorizeCached);
       });
-    }
   }
 
   public getAuthList(): Promise<AuthUrls> {
-    return new Promise<AuthUrls>((resolve) => {
-      this.getAuthorize((rs: AuthUrls) => {
-        resolve(rs ?? {});
-      });
-    });
+    return new Promise<AuthUrls>((resolve) => this.getAuthorize((rs: AuthUrls) => resolve(rs ?? {})));
   }
 
   public authComplete = (
@@ -90,6 +103,7 @@ export class AuthRequestHandler {
         request: { origin },
         accountAuthType,
         url,
+        currentEvmNetworkKey,
       } = this.authRequests[id];
 
       if (!isAllowed) {
@@ -105,11 +119,12 @@ export class AuthRequestHandler {
         authorizedAccounts,
         count: 0,
         isAllowed: true,
-        isAllowedMap: {},
         accountAuthType,
+        allowedAccountsMap: {},
         id: idStr,
         origin,
         url,
+        currentEvmNetworkKey,
       };
 
       this.setAuthorize(this.authorizeCached);
@@ -140,7 +155,7 @@ export class AuthRequestHandler {
 
     const idStr = stripUrl(url);
     // Do not enqueue duplicate authorization requests.
-    const isDuplicate = Object.values(this.authRequests).some((request) => request.idStr === idStr);
+    const isDuplicate = this.authValues.some((request) => request.idStr === idStr);
 
     assert(!isDuplicate, `The source ${url} has a pending authorization request`);
 
@@ -158,10 +173,12 @@ export class AuthRequestHandler {
 
       let allowedListByRequestType = [...existedAuth.authorizedAccounts];
 
-      if (accountAuthType === 'evm')
-        allowedListByRequestType = allowedListByRequestType.filter((a) => isEthereumAddress(a));
-      else if (accountAuthType === 'substrate')
-        allowedListByRequestType = allowedListByRequestType.filter((a) => !isEthereumAddress(a));
+      allowedListByRequestType = allowedListByRequestType.filter((a) => {
+        if (accountAuthType === 'evm') return isEthereumAddress(a);
+        if (accountAuthType === 'substrate') return !isEthereumAddress(a);
+
+        return true;
+      });
 
       // Prevent appear confirmation popup
       if (!confirmAnotherType && !request.reConfirm && allowedListByRequestType.length !== 0) return false;
@@ -176,7 +193,8 @@ export class AuthRequestHandler {
         idStr,
         request,
         url,
-        accountAuthType: 'both',
+        accountAuthType: existedAuth && existedAuth.accountAuthType !== accountAuthType ? 'both' : accountAuthType,
+        currentEvmNetworkKey: existedAuth ? existedAuth.currentEvmNetworkKey : '0x1',
       };
 
       this.updateIconAuth();
@@ -187,10 +205,6 @@ export class AuthRequestHandler {
 
   public getAuthRequest(id: string): AuthRequest {
     return this.authRequests[id];
-  }
-
-  public get subscribeEvmChainChange() {
-    return this.evmChainSubject;
   }
 
   public get subscribeAuthorizeUrlSubject() {
@@ -213,8 +227,25 @@ export class AuthRequestHandler {
     });
   }
 
+  getDAppNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {
+    const networks = this.networkService.networkMap;
+    const defaultChain = options.defaultChain;
+
+    let chainInfo: NetworkJson | undefined;
+
+    if (['both', 'evm'].includes(options.accessType)) {
+      const evmChains = Object.values(networks).filter(({ name }) => isNativeEVMNetwork(name));
+
+      chainInfo =
+        (defaultChain
+          ? networks[defaultChain]
+          : evmChains.find((chain) => networks[chain.name.toLowerCase()]?.active)) || evmChains[0];
+    }
+
+    return chainInfo;
+  }
   public resetWallet() {
-    for (const request of Object.values(this.authRequests)) {
+    for (const request of this.authValues) {
       request.reject(new Error('Reset wallet'));
     }
 

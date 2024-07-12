@@ -23,6 +23,7 @@ interface AddressMeta extends Meta {
 type TabWallet = Components.Currencies | Components.Nfts;
 type StakingTab = 'all' | 'my';
 type MyStakingTab = 'about' | 'alerts' | 'history';
+type PoolsTab = 'all' | 'my';
 type ImportType = 'mnemonic' | 'rawSeed' | 'json';
 type FilterHistory = 'all' | 'transfer' | 'reward' | 'extrinsic';
 
@@ -49,7 +50,6 @@ interface MnemonicConfirmation {
 
 enum MenuItems {
   wallet = 'Wallet',
-  crowdloans = 'Crowdloans',
   staking = 'Staking',
   polkaswap = 'Polkaswap',
 }
@@ -126,4 +126,5 @@ export {
   ChangeWalletBalance,
   StakingTab,
   MyStakingTab,
+  PoolsTab,
 };

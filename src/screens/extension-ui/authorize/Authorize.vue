@@ -64,14 +64,14 @@ const prepAccounts = computed(() =>
 );
 
 onMounted(() => {
-  accounts.value.forEach(({ name, address, isMobile }) =>
+  accounts.value.forEach(({ name, address, ethereumAddress, isMobile }) => {
     set(state.value, name, {
       name: name,
-      address: address,
+      address: request.value.accountAuthType === 'evm' ? ethereumAddress : address,
       isMobile: isMobile,
       active: true,
-    })
-  );
+    });
+  });
 });
 
 const onSelect = (value: boolean, name: string) => {

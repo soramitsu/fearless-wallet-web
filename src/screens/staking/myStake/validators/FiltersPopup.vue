@@ -9,18 +9,22 @@
     @handlerClose="$emit('handlerClose')"
   >
     <div class="settings">
-      <div class="label">{{ $t('staking.show') }}</div>
+      <div class="label" data-testid="showLabel">{{ $t('staking.show') }}</div>
 
       <div class="row">
-        <div>
+        <div data-testid="onchainIdentity">
           {{ $t('staking.onchainIdentity') }}
 
-          <div class="descriptions">
+          <div class="descriptions" data-testid="identityContact">
             {{ $t('staking.identityContact') }}
           </div>
         </div>
 
-        <Switcher v-model="syncedOnchainIdentity" />
+        <Switcher
+          v-model="syncedOnchainIdentity"
+          data-testid="identitySwitcher"
+          @change="toggleSyncedOnchainIdentity"
+        />
       </div>
 
       <!-- <div class="row">
@@ -29,10 +33,14 @@
         <Switcher v-model="syncedNotSlashed" />
       </div> -->
 
-      <div class="row">
+      <div class="row" data-testid="notOversubscribed">
         {{ $t('staking.notOversubscribed') }}
 
-        <Switcher v-model="syncedNotOversubscribed" />
+        <Switcher
+          :value="syncedNotOversubscribed"
+          data-testid="notOversubscribedSwitcher"
+          @change="toggleSyncedNotOversubscribed"
+        />
       </div>
 
       <!-- <div class="row">
@@ -41,9 +49,9 @@
         <Switcher v-model="syncedLimitValidatorsIdentity" />
       </div> -->
 
-      <div class="label">{{ $t('staking.sort') }}</div>
+      <div class="label" data-testid="sortByLabel">{{ $t('staking.sort') }}</div>
 
-      <div class="row" @click="toggleSortByApy">
+      <div class="row" data-testid="estimatedRewardsToggle" @click="toggleSortByApy">
         {{ $t('staking.estimatedRewards') }}
 
         <Icon v-if="syncedSortByApy" icon="check" className="check" />
@@ -66,6 +74,13 @@ export default class FiltersPopup extends Vue {
 
   toggleSortByApy() {
     this.syncedSortByApy = !this.syncedSortByApy;
+  }
+
+  toggleSyncedNotOversubscribed() {
+    this.syncedNotOversubscribed = !this.syncedNotOversubscribed;
+  }
+  toggleSyncedOnchainIdentity() {
+    this.syncedOnchainIdentity = !this.syncedOnchainIdentity;
   }
 }
 </script>

@@ -40,7 +40,13 @@
 
         <div v-else>
           <template v-if="step === 1">
-            <FInput v-model="accountName" placeholder="accounts.account" size="big" :readonly="true" />
+            <FInput
+              :value="accountName"
+              placeholder="accounts.account"
+              size="big"
+              data-testid="account"
+              :readonly="true"
+            />
 
             <SelectInput
               v-if="showAmountInput"
@@ -59,20 +65,26 @@
             <Hint class="hint" iconName="notification" :text="textMinHint" />
 
             <InputWithIcon
-              v-model="payoutAddressCut"
+              :value="payoutAddressCut"
               icon="close"
               placeholder="staking.payoutAccount"
+              data-testid="payoutAccount"
               @click="setPayoutAddress"
             />
 
             <Hint class="hint" iconName="notification" text="staking.defaultPayout" />
 
             <div class="activity-buttons">
-              <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+              <BadgeButton text="assets.history" data-testid="historyBtn" @click="toggleHistoryBookVisibility" />
 
-              <BadgeButton text="common.paste" @click="paste" />
+              <BadgeButton text="common.paste" data-testid="pasteBtn" @click="paste" />
 
-              <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
+              <BadgeButton
+                v-if="showMyWalletsButton"
+                text="assets.myWallets"
+                data-testid="myWalletsBtn"
+                @click="toggleMyWalletsVisibility"
+              />
             </div>
 
             <InfoRow
@@ -90,32 +102,53 @@
             :step="step"
             :validators="validators"
             :maxNominations="maxNominations"
+            :stakingCurrency="stakingCurrency"
+            :stakingNetwork="stakingNetwork"
+            :selectedValidator="selectedValidator"
             @openValidatorList="openValidatorList"
             @updateSelectedValidators="updateSelectedValidators"
+            @openValidatorInfo="openValidatorInfo"
           />
 
           <template v-if="step === 6">
             <div class="asset-logo">
               <Icon icon="asset-background" class="asset-background" :hover="false" />
 
-              <AssetIcon :icon="stakingCurrency.icon" :shadowColor="stakingCurrency.color" class="asset-highlight" />
+              <AssetHighlightIcon
+                :icon="stakingCurrency.icon"
+                :shadowColor="stakingCurrency.color"
+                class="asset-highlight"
+              />
             </div>
 
             <ContentForm :height="200" :isStaticHeight="true" :bottomRightCorner="true">
               <InfoRow
                 text="staking.selectedValidators"
+                data-testid="selectedValidators"
                 :value="`${selectedValidatorsLength} (${$t('common.max')} ${maxNominations})`"
                 borderType="default"
               />
 
-              <InfoRow text="assets.amount" :value="amountString" borderType="default" :price="amountValueString" />
+              <InfoRow
+                text="assets.amount"
+                data-testid="amount"
+                :value="amountString"
+                borderType="default"
+                :price="amountValueString"
+              />
 
-              <InfoRow text="accounts.account" :value="selectedAccountName" borderType="default" />
+              <InfoRow
+                text="accounts.account"
+                data-testid="account"
+                :value="selectedAccountName"
+                borderType="default"
+              />
 
               <InfoRow
                 text="assets.networkFee"
                 borderType="default"
                 icon="info"
+                data-testid="networkFee"
                 :value="`${fee} ${stakingAssetName}`"
                 :price="feeValueString"
                 :isIconPrepend="false"
@@ -129,7 +162,7 @@
           </template>
 
           <template v-if="step === 6">
-            <div class="descriptions-row">
+            <div class="descriptions-row" data-testid="descriptionRowStaked">
               <Icon icon="gift" class="icon" />
 
               <!-- TODO: staking Переделать, когда будут новые сети -->
@@ -138,7 +171,7 @@
               </div>
             </div>
 
-            <div class="descriptions-row">
+            <div class="descriptions-row" data-testid="descriptionRowUnstake">
               <Icon icon="information-rectangle" class="icon" />
 
               <div>
@@ -146,7 +179,7 @@
               </div>
             </div>
 
-            <div class="descriptions-row">
+            <div class="descriptions-row" data-testid="descriptionRowDisclaimers1">
               <Icon icon="wallet-remove" class="icon" />
 
               <div>
@@ -154,7 +187,7 @@
               </div>
             </div>
 
-            <div class="descriptions-row">
+            <div class="descriptions-row" data-testid="descriptionRowDisclaimers2">
               <Icon icon="logout" class="icon" />
 
               <div>
@@ -171,6 +204,7 @@
           fontSize="big"
           :text="btnText"
           :disabled="confirmBtnDisabled"
+          data-testid="confirmBtn"
           @click="confirm"
         />
       </div>
@@ -194,7 +228,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { type RequestBond } from '@extension-base/services/staking-service/types';
+import { type RequestBond, type FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
 import type { GetAssetPrice, SelectedWallet, NetworkParams } from '@/store';
 import type { SelectionValidator } from '@/interfaces';
 import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
@@ -204,7 +238,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectValidator from '@/screens/staking/myStake/validators/SelectValidator.vue';
 import FiltersPopup from '@/screens/staking/myStake/validators/FiltersPopup.vue';
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
-import { getNominateNetworkFee, getSoraFees } from '@/extension/messaging';
+import { getBondAndNominateNetworkFee } from '@/extension/messaging';
 import { calcTransferableSendMinusFee, getUtilityAsset, isValidAmountAsset } from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import BaseApi from '@/util/BaseApi';
@@ -226,6 +260,7 @@ import WalletInfo from '@/screens/main/WalletInfo.vue';
 })
 export default class Bond extends Vue {
   state: Record<string, SelectionValidator> = {};
+  selectedValidator: FWValidatorInfoFull | null = null;
   payoutAddress = '';
   step = 1;
   isSuggested = false;
@@ -237,7 +272,7 @@ export default class Bond extends Vue {
   amount = '';
   newAddress = '';
 
-  @Prop({ type: Object }) networkParams!: NetworkParams;
+  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -263,7 +298,7 @@ export default class Bond extends Vue {
   }
 
   get network() {
-    return this.networkParams.network;
+    return this.stakingNetwork.network;
   }
 
   get stakingAssetId() {
@@ -332,6 +367,12 @@ export default class Bond extends Vue {
   }
 
   get header() {
+    if (this.showHistoryBook) return 'assets.chooseFromHistory';
+
+    if (this.showMyWallets) return 'assets.wallets';
+
+    if (this.showEditAddressBook) return 'assets.addContact';
+
     if (this.step === 1) return 'staking.bond';
 
     if (this.step === 2) return 'staking.validators';
@@ -363,7 +404,7 @@ export default class Bond extends Vue {
     return {
       text: 'staking.minimumStake',
       localeProps: {
-        value: this.networkParams.minBond,
+        value: this.stakingNetwork.minBond,
         asset: this.stakingAssetName.toUpperCase(),
       },
     };
@@ -402,7 +443,7 @@ export default class Bond extends Vue {
   }
 
   get maxNominations() {
-    const maxNominations = this.networkParams.maxNominations;
+    const maxNominations = this.stakingNetwork.maxNominations;
 
     // Если количество валидаторов в сети меньше, чем maxNominations, то отображаем количество валидаторов как maxNominations
     if (this.validators.length < maxNominations) return this.validators.length;
@@ -421,7 +462,7 @@ export default class Bond extends Vue {
   }
 
   get days() {
-    return { value: this.networkParams.unbondPeriod };
+    return { value: this.stakingNetwork.unbondPeriod };
   }
 
   get tx() {
@@ -440,7 +481,7 @@ export default class Bond extends Vue {
 
   @Watch('selectedValidators')
   async srcWatcher() {
-    this.fee = await getNominateNetworkFee({ validators: this.selectedValidators, network: this.network });
+    this.fee = await getBondAndNominateNetworkFee(this.tx);
   }
 
   mounted() {
@@ -448,14 +489,9 @@ export default class Bond extends Vue {
     const isSlashed = false;
     const limitValidatorsIdentity = false;
 
-    this.networkParams.validators.forEach(({ address, apy, name, description, isOversubscribed, isKnownGood }) => {
-      Vue.set(this.state, address, {
-        name,
-        address,
-        apy,
-        description,
-        isOversubscribed,
-        onchainIdentity: isKnownGood,
+    this.stakingNetwork.validators.forEach((info) => {
+      Vue.set(this.state, info.address, {
+        ...info,
         isSlashed,
         limitValidatorsIdentity,
         isSelect: false,
@@ -467,14 +503,10 @@ export default class Bond extends Vue {
 
   async getSoraFees() {
     // TODO: staking в сетях кроме соры, контроллер устанавливается отдельным вызовом, по этому нужно прибавлять и комиссию за StakingSetController
-    const { StakingBond } = await getSoraFees();
-
-    const feeMaxNominations = await getNominateNetworkFee({
-      validators: new Array(this.networkParams.maxNominations),
-      network: this.network,
+    this.feeMax = await getBondAndNominateNetworkFee({
+      ...this.tx,
+      validators: new Array(this.stakingNetwork.maxNominations),
     });
-
-    this.feeMax = (+feeMaxNominations + +StakingBond).toString();
   }
 
   openValidatorList(isSuggested = false) {
@@ -490,6 +522,10 @@ export default class Bond extends Vue {
     this.amount = amount;
   }
 
+  openValidatorInfo(validator: FWValidatorInfoFull) {
+    this.selectedValidator = validator;
+  }
+
   toggleHistoryBookVisibility() {
     this.showHistoryBook = !this.showHistoryBook;
   }
@@ -499,6 +535,12 @@ export default class Bond extends Vue {
   }
 
   handlerBack() {
+    if (this.selectedValidator) {
+      this.selectedValidator = null;
+
+      return;
+    }
+
     if (this.step === 1) {
       this.showMyWallets = false;
       this.showHistoryBook = false;
@@ -527,11 +569,11 @@ export default class Bond extends Vue {
   confirmationPasswordPopupClose(closeForm: boolean) {
     this.showConfirmationPasswordPopup = false;
 
-    if (closeForm) this.closeForm();
+    if (closeForm) this.closeForm(true);
   }
 
-  closeForm() {
-    this.$emit('closeBond');
+  closeForm(updated = false) {
+    this.$emit('closeBond', null, updated);
   }
 
   calcTransferableSendMinusFee() {

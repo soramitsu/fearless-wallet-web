@@ -6,7 +6,7 @@
       <template v-else>
         <div class="export-content">
           <FInput
-            v-model="exportType"
+            :value="exportType"
             placeholder="common.sourceType"
             size="big"
             class="export-type-input"
@@ -15,11 +15,11 @@
           />
 
           <FInput
-            v-model="substrateAddress"
+            :value="substrateAddress"
             class="row"
             size="big"
-            placeholder="Substrate"
             data-testid="addressInput"
+            :placeholder="placeholderJson"
             :readonly="true"
           />
         </div>
@@ -40,7 +40,7 @@ import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { exportAccount } from '@/extension/messaging';
+import { exportAccountJSON } from '@/extension/messaging';
 
 @Component
 export default class ExportForm extends Vue {
@@ -54,6 +54,10 @@ export default class ExportForm extends Vue {
 
   get network() {
     return this.$route.params.network ?? this.$route.params.selectedNetwork;
+  }
+
+  get placeholderJson() {
+    return BaseApi.isEthereumNetwork(this.network) ? 'Ethereum' : 'Substrate';
   }
 
   get substrateAddress() {
@@ -71,14 +75,14 @@ export default class ExportForm extends Vue {
   async mounted() {
     this.isLoading = true;
 
-    const { exportedJson: json } = await this.keyringPairJson();
+    const { json } = await this.keyringPairJson();
     this.json = json;
 
     this.isLoading = false;
   }
 
   async keyringPairJson() {
-    return exportAccount(this.addressByNetwork, this.password);
+    return exportAccountJSON(this.addressByNetwork, this.password, this.network);
   }
 
   closeForm() {

@@ -99,7 +99,7 @@
   },
   "mobileConnector": {
     "connectionSet": "Соединение установлено",
-    "connectionFailed": "Соединение установлено",
+    "connectionFailed": "Соединение не установлено",
     "rejected": "Отказано пользователем",
     "cancelRequest": "Отменить запрос",
     "resetConnection": "Сбросить запрос",
@@ -168,7 +168,6 @@
   },
   "menu": {
     "wallet": "Кошелек",
-    "crowdloans": "Краудлоны",
     "staking": "Стэйкинг",
     "polkaswap": "Polkaswap",
     "history": "История"
@@ -232,7 +231,7 @@
     "buy": "Купить",
     "polkaswap": "Polkaswap",
     "resetToDefault": "Сбросить настройки",
-    "swapSettings": "Настрйоки Свопа",
+    "swapSettings": "Настройки Свопа",
     "swap": "Своп",
     "from": "От",
     "to": "Кому",
@@ -256,7 +255,6 @@
     "reserved": "Зарезервировано",
     "frozen": "Заморожено",
     "transferable": "Доступно",
-    "fee": "Комиссия",
     "total": "Общий баланс",
     "signTransaction": "Подпишите транзакцию",
     "passwordTransaction": "Введите пароль для подтверждения транзакции",
@@ -285,6 +283,10 @@
     "crossChainFee": "Cross-Chain комиссия",
     "networkFee": "Комиссия сети",
     "slippage": "Допустимое проскальзование",
+    "isScamAddress": "Этот адрес был помечен из-за признаков мошенничества. Мы настоятельно рекомендуем вам не отправлять {asset} на этот аккаунт.",
+    "isSanctionsAddress": "Этот адрес помечен как объект, связанный со страной, находящейся под санкциями. Мы настоятельно рекомендуем вам не отправлять {asset} на этот аккаунт.",
+    "isExchangeAddress": "Этот адрес помечен как обменный, будьте осторожны, так как адреса депозита и вывода могут отличаться.",
+    "isDonationAddress": "Этот адрес помечен как подозрительный. Мы настоятельно рекомендуем вам не отправлять {asset} на этот аккаунт.",
     "networkFeeSora": "Комиссия сети используется для обеспечения роста и стабильной работы системы SORA.",
     "minMaxReceiveInfo": "Ваша транзакция будет отменена, если произойдет значительное неблагоприятное изменение цены до ее подтверждения.",
     "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;"
@@ -296,7 +298,6 @@
     "dontNeedAccount": "Мне не нужен аккаунт",
     "exportWarning": "Передача или копирование вашего секрета — операция с высоким риском, никому не отправляйте его. Хотите продолжить процесс обмена/копирования?",
     "notEthereumAccount": "Вы не добавили учетную запись ethereum.",
-    "accountsDefaultSecrets": "Аккаунты с общим секретом",
     "export": "Экспорт аккаунта",
     "exportJson": "Экспорт JSON",
     "wantExportJson": "Я хочу экспортировать JSON",
@@ -317,10 +318,13 @@
     "autoNodes": "Автовыбор ноды",
     "defaultNodes": "Стандартные ноды",
     "customNodes": "Пользовательские ноды",
+    "addCustomNode": "Добавить пользовательскую ноду",
     "editNode": "Редактировать ноду",
     "deleteNode": "Удалить ноду",
     "newNode": "Новая нода",
     "account": "Аккаунт",
+    "chainAccounts": "чейн аккаунты",
+    "substrateChainAccounts": "Сабстрейт чейн аккаунты",
     "addEthereumAccounts": "Добавить аккаунты Moonbeam и Moonriver?"
   },
   "auth": {
@@ -599,6 +603,7 @@
     "minimumStake": "Минимальная ставка для получения вознаграждения составляет {value} {asset}",
     "unstakingDays": "Период анстейкинга {value} дней",
     "daysLeft": "Дней осталось",
+    "validatorsAlreadyNominated": "Выбранные валидаторы уже номинированы",
     "alertsList": {
       "redeem": {
         "name": "Выкупить анстейкинг токены.",
@@ -635,13 +640,16 @@
     "soraSwap": "Sora swap",
     "polkaswapDisclaimer": "Polkaswap дисклеймер",
     "wallet": "кошелек",
+    "accountSetting": "Настройки аккаунта",
     "accounts": "Аккаунты",
     "nodes": "Ноды",
     "export": "Экспорт",
-    "crowdloans": "Краудлоны",
     "staking": "Стейкинг",
     "myStake": "Мой стейкинг",
-    "polkaswap": "Polkaswap"
+    "polkaswap": "Polkaswap",
+    "send": "Отправить",
+    "receive": "Получить",
+    "crossChain": "Скросс-чейн"
   },
   "nft": {
     "owned": "Принадлежит",

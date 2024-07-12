@@ -1,9 +1,10 @@
-import {
-  type ActiveTabAuthorizeStatus,
-  type AuthorizeRequest,
-  type AuthUrlInfo,
-  type MetadataRequest,
-  type SigningRequest,
+import type { EvmRequests } from '@extension-base/services/request-service/types';
+import type {
+  ActiveTabAuthorizeStatus,
+  AuthorizeRequest,
+  AuthUrlInfo,
+  MetadataRequest,
+  SigningRequest,
 } from '@extension-base/background/types/types';
 import type { Features } from '@/store/extension/types';
 import type {
@@ -21,6 +22,7 @@ export type State = {
   wcNotSupportedRequests: WalletConnectNotSupportRequest[];
   wcRequests: WalletConnectTransactionRequest[];
   wcSessions: WalletConnectSessions;
+  signEvmRequests: EvmRequests;
   authList: Record<string, AuthUrlInfo>;
   tabStatus: ActiveTabAuthorizeStatus | null;
   features: Nullable<Features>;
@@ -36,6 +38,7 @@ const state = (): State => {
     wcNotSupportedRequests: [],
     wcRequests: [],
     wcSessions: [],
+    signEvmRequests: {},
     authList: {},
     tabStatus: null,
     features: null,

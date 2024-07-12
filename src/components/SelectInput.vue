@@ -38,7 +38,7 @@
           {{ $t('assets.balance') }}
 
           <div :class="balanceValueClasses" data-testid="balanceValue" @click="setMax">
-            &nbsp;{{ $n(totalAmount, 'decimal') }}
+            &nbsp;{{ $n(+totalAmount, 'decimal') }}
           </div>
         </div>
       </div>
@@ -65,6 +65,7 @@ export default class SelectInput extends Vue {
   @Prop({ default: true }) showBalance!: boolean;
   @Prop({ default: false }) readonly!: boolean;
   @Prop({ default: true }) showIcon!: boolean;
+  @Prop({ default: false }) showOriginValue!: boolean;
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -81,15 +82,20 @@ export default class SelectInput extends Vue {
   get amountInternal() {
     if (this.syncedAmount === '') return '';
 
-    if (this.syncedAmount.endsWith('0')) return this.syncedAmount;
+    if (this.showOriginValue) return this.syncedAmount;
 
-    const localString = FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
+    if (this.syncedAmount.includes('.')) {
+      const [wholePart, fractionalPart] = this.syncedAmount.split('.');
+      const localString = FPNumber.fromCodecValue(wholePart || 0, 0).toLocaleString();
 
-    if (this.syncedAmount.endsWith('.')) return `${localString}.`;
+      if (this.syncedAmount.endsWith('.')) return `${localString}.`;
 
-    if (localString === 'NaN') return this.syncedAmount;
+      if (localString === 'NaN') return this.syncedAmount;
 
-    return localString;
+      return `${localString}.${fractionalPart}`;
+    }
+
+    return FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
   }
 
   set amountInternal(_value: string) {
@@ -102,23 +108,21 @@ export default class SelectInput extends Vue {
     }
 
     if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN') {
-      const string = FPNumber.fromCodecValue(value || 0, 0).toString();
+      if (value.includes('.')) {
+        const [wholePart, fractionalPart] = value.split('.');
 
-      if (value.endsWith('0') && value.includes('.')) {
-        const zeros = value.match(/[0]*$/)!;
+        if (value.endsWith('.')) {
+          this.syncedAmount = this.syncedAmount = `${wholePart}.`;
 
-        this.syncedAmount = `${string}.${zeros}`;
+          return;
+        }
 
-        return;
-      }
-
-      if (value.endsWith('.')) {
-        this.syncedAmount = this.syncedAmount = `${string}.`;
+        this.syncedAmount = `${wholePart}.${fractionalPart}`;
 
         return;
       }
 
-      this.syncedAmount = string;
+      this.syncedAmount = value;
     }
   }
 
@@ -126,8 +130,12 @@ export default class SelectInput extends Vue {
     return this.$t(this.text);
   }
 
+  get tokenGroup() {
+    return this.balances.find(({ groupId }) => groupId === this.assetId);
+  }
+
   get assetIcon() {
-    return this.balances.find(({ groupId }) => groupId === this.assetId)?.icon;
+    return this.tokenGroup?.icon;
   }
 
   get valueCut() {
@@ -168,7 +176,11 @@ export default class SelectInput extends Vue {
   setFocusValue(value: boolean) {
     this.inputIsFocused = value;
 
-    if (!value) this.syncedAmount = FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toString();
+    if (!value) {
+      const [wholePart, fractionalPart] = this.syncedAmount.split('.');
+
+      if (+fractionalPart === 0) this.syncedAmount = wholePart;
+    }
   }
 
   setMax() {

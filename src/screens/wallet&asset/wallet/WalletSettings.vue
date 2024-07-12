@@ -30,11 +30,12 @@
     <div class="settings-part">
       <SearchInput
         v-if="!syncedShowAssetsManagementForm"
-        v-model="syncedFilterValue"
+        :value="syncedFilterValue"
         placeholder="common.search"
         width="185px"
         class="search"
         data-testid="searchInput"
+        @change="changeSyncedFilterValue"
       />
 
       <CircleButton
@@ -115,6 +116,10 @@ export default class ContentSettings extends Vue {
 
   openTab(name: TabWallet) {
     this.syncedActiveTabName = name;
+  }
+
+  changeSyncedFilterValue(value: string) {
+    this.syncedFilterValue = value;
   }
 
   toggleAssetsManagementVisible() {

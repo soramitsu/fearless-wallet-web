@@ -6,7 +6,7 @@
           <ExternalLogo :name="icon" class="network-icon" />
 
           <div class="network-description">
-            <div class="network-name">{{ network }}</div>
+            <div class="network-name" data-testid="networkName">{{ network }}</div>
           </div>
         </div>
 
@@ -14,49 +14,49 @@
           <Loading v-if="isLoading" :width="28" />
 
           <template v-else>
-            <div class="fiat">{{ fiatSymbol }}{{ fiatValue }}</div>
+            <div class="fiat" data-testid="fiat">{{ fiatSymbol }}{{ fiatValue }}</div>
 
-            <Icon icon="chevron-right" class="chevron" />
+            <Icon icon="chevron-right" class="chevron" data-testid="stakingDetails" />
           </template>
         </div>
       </div>
 
       <div class="row">
-        <div>
+        <div data-testid="stakingBalanceTitle">
           {{ $t('staking.stakingBalance') }}
         </div>
 
         <Loading v-if="isLoading" :width="28" />
 
-        <div v-else class="value">{{ totalStake }} {{ asset }}</div>
+        <div v-else class="value" data-testid="stakingBalanceValue">{{ totalStake }} {{ asset }}</div>
       </div>
 
       <div class="row">
-        <div>
+        <div data-testid="unstakingTitle">
           {{ $t('staking.unstaking') }}
         </div>
 
         <Loading v-if="isLoading" :width="28" />
 
-        <div v-else class="value">{{ unbondAmount }} {{ asset }}</div>
+        <div v-else class="value" data-testid="unstakingValue">{{ unbondAmount }} {{ asset }}</div>
       </div>
 
       <div class="row">
-        <div>APY</div>
+        <div data-testid="apyTitle">APY</div>
 
         <Loading v-if="isLoading" :width="28" />
 
-        <div v-else class="value">{{ apy }}</div>
+        <div v-else class="value" data-testid="apyValue">{{ apy }}</div>
       </div>
 
       <div class="row">
-        <div>
+        <div data-testid="unstakingPeriodTitle">
           {{ $t('staking.unstakingPeriod') }}
         </div>
 
         <Loading v-if="isLoading" :width="28" />
 
-        <div v-else class="value">{{ period }}</div>
+        <div v-else class="value" data-testid="unstakingPeriodValue">{{ period }}</div>
       </div>
     </div>
   </ContentForm>
@@ -76,7 +76,7 @@ import { getUtilityAsset } from '@/helpers/currencies';
 
 @Component
 export default class MyStakingItem extends Vue {
-  @Prop(Object) networkParams!: NetworkParams;
+  @Prop(Object) stakingNetwork!: NetworkParams;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
@@ -92,49 +92,31 @@ export default class MyStakingItem extends Vue {
   }
 
   get network() {
-    return this.networkParams.network;
+    return this.stakingNetwork.network;
   }
 
   get icon() {
-    return this.networkParams.icon;
+    return this.stakingNetwork.icon;
   }
 
   get unbondPeriod() {
-    return this.networkParams.unbondPeriod;
+    return this.stakingNetwork.unbondPeriod;
   }
 
   get unbondAmount() {
-    return this.networkParams.unbond.sum;
+    return this.stakingNetwork.unbond.sum;
   }
 
   get asset() {
-    return this.networkParams.asset;
+    return this.stakingNetwork.asset;
   }
 
   get isLoading() {
-    return this.networkParams.loading;
+    return this.stakingNetwork.loading;
   }
 
   get apy() {
-    return `${this.$n(this.networkParams.apy, 'price')}%`;
-  }
-
-  get changeBalance() {
-    const value = 40.51;
-
-    return `+${this.fiatSymbol}${value}`;
-  }
-
-  get changeStakingAmount() {
-    const value = 1.2;
-
-    return `+${this.fiatSymbol}${value}`;
-  }
-
-  get changeAmount() {
-    const value = 40.51;
-
-    return `+${this.fiatSymbol}${value}`;
+    return `${this.$n(this.stakingNetwork.apy, 'price')}%`;
   }
 
   get period() {
@@ -142,7 +124,7 @@ export default class MyStakingItem extends Vue {
   }
 
   get totalStake() {
-    return this.networkParams.totalStake;
+    return this.stakingNetwork.totalStake;
   }
 
   openStakingInfo() {
@@ -248,12 +230,6 @@ export default class MyStakingItem extends Vue {
       display: flex;
       align-items: center;
     }
-  }
-
-  .change {
-    color: $success-color;
-    font-size: 12px;
-    margin-right: 15px;
   }
 }
 </style>

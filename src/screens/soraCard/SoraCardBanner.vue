@@ -2,7 +2,7 @@
   <div v-if="showSoraCardBanner" class="sora-banner">
     <img src="@/assets/icons/sora-card-banner.png" class="banner" alt="sora card banner" />
 
-    <div class="close-button close-circle" @click="hideBanner">
+    <div class="close-button" @click="hideBanner">
       <Icon icon="close-thin" class="close-icon" />
     </div>
 
@@ -22,7 +22,7 @@ import BaseApi from '@/util/BaseApi';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { windowOpen } from '@/extension/messaging';
 
-@Component
+@Component({})
 export default class SoraCardBanner extends Vue {
   @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
   @Mutation(AccountsMutationTypes.SET_SORA_CARD_BANNER_VISIBILITY)

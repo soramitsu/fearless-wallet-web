@@ -1,3 +1,20 @@
+import type { EvmRequests } from '@extension-base/services/request-service/types';
+import type { AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
+import type { RequestArguments } from '@json-rpc-tools/utils';
+import type {
+  RequestEvmEvents,
+  EvmEvent,
+  ResponseEvmProviderSend,
+  RequestEvmProviderSend,
+} from '@extension-base/page/types';
+import type {
+  PoolsParamsRequest,
+  PoolsParamsResponse,
+  MakePoolsRequest,
+  GetShareOfPoolResponse,
+  GetShareOfPoolRequest,
+  DefaultParams as DefaultPoolParams,
+} from '@extension-base/services/pools-service/types';
 import type {
   NftTx,
   CheckNftResponse,
@@ -32,6 +49,7 @@ import type {
   StakingNetworkRequest,
   GetPayoutsFeeRequest,
   GetNominateNetworkFeeRequest,
+  RequestBond,
 } from '@extension-base/services/staking-service/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type { SessionTypes } from '@walletconnect/types';
@@ -76,7 +94,6 @@ import type {
   ResponseCheckCrossChain,
   BalanceJson,
   PriceJson,
-  RequestSubscribePrice,
   RequestAccountUnsubscribe,
   RequestAuthorizeTab,
   AuthResponse,
@@ -93,6 +110,10 @@ import type {
   FetchBalanceRequest,
   ResponseNftTransfer,
   FetchEvmBalancePayload,
+  RequestCheckScam,
+  ResponseCheckScam,
+  RequestExportMnemonic,
+  ResponseExportMnemonic,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -122,7 +143,8 @@ export interface RequestSignatures {
   'pri(accounts.create.mobile)': [RequestAddressCreate, boolean];
   'pri(addresses.create)': [RequestAddressCreate, boolean];
   'pri(accounts.update.meta)': [RequestUpdateMeta, boolean];
-  'pri(accounts.export)': [RequestAccountExport, ResponseAccountExport];
+  'pri(accounts.export.json)': [RequestAccountExport, ResponseAccountExport];
+  'pri(accounts.export.mnemonic)': [RequestExportMnemonic, ResponseExportMnemonic];
   'pri(accounts.forget)': [RequestAccountForget, boolean];
   'pri(accounts.list)': [RequestAccountList, InjectedAccount[]];
   'pri(accounts.name)': [RequestAccountName, boolean];
@@ -155,7 +177,6 @@ export interface RequestSignatures {
   'pri(metadata.approve)': [RequestMetadataApprove, boolean];
   'pri(metadata.reject)': [RequestMetadataReject, boolean];
   'pri(metadata.requests)': [null, boolean, MetadataRequest[]];
-  'pri(settings.notification)': [string, boolean];
   'pri(signing.approve.password)': [RequestSigningApprovePassword, boolean];
   'pri(signing.approve.signature)': [RequestSigningApproveSignature, boolean];
   'pri(signing.cancel)': [RequestSigningCancel, boolean];
@@ -173,15 +194,16 @@ export interface RequestSignatures {
 
   //Transfer, CrossChain, Sora Swap
   'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
-  'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
+  'pri(accounts.makeTransfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
 
   'pri(accounts.checkCrossChain)': [RequestCheckCrossChain, ResponseCheckCrossChain];
-  'pri(accounts.crossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse];
+  'pri(accounts.makeCrossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse];
 
   'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
-  'pri(accounts.swap)': [RequestSwap, ResponseMakeSwap];
+  'pri(accounts.makeSwap)': [RequestSwap, ResponseMakeSwap];
 
-  'pri(accounts.soraFees)': [null, SoraFees];
+  'pri(accounts.soraFees.subscribe)': [null, SoraFees, SoraFees];
+  'pri(accounts.checkScamAddress)': [RequestCheckScam, ResponseCheckScam];
 
   // staking
   'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];
@@ -191,16 +213,30 @@ export interface RequestSignatures {
   'pri(staking.makeStaking)': [MakeStakingRequest, BasicTxResponse];
   'pri(staking.getPayoutsFee)': [GetPayoutsFeeRequest, string];
   'pri(staking.getNominateNetworkFee)': [GetNominateNetworkFeeRequest, string];
+  'pri(staking.getBondAndNominateNetworkFee)': [RequestBond, string];
+
+  // pools
+  'pri(pools.poolsParams)': [PoolsParamsRequest, PoolsParamsResponse];
+  'pri(pools.makePool)': [MakePoolsRequest, BasicTxResponse];
+  'pri(pools.shareOfPool)': [GetShareOfPoolRequest, GetShareOfPoolResponse];
+  'pri(pools.unsubscribePools)': [null, void];
+  'pri(pools.accountLiquidity)': [null, boolean, AccountLiquidity[]];
+  'pri(pools.getAmountValue)': [DefaultPoolParams, string];
 
   //ether
   'pri(balance)': [null, BalanceJson];
   'pri(fetch.evm.balance)': [FetchEvmBalancePayload, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
   'pri(fetch.balance)': [FetchBalanceRequest, string];
+  'pri(signing.evmrequests)': [null, boolean, EvmRequests];
 
   'pri(price.update.currency)': [string, void];
-  'pri(price.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];
+  'pri(price.subscription)': [null, PriceJson, PriceJson];
   'pri(soraCard.token)': [null, boolean, string];
+  // Evm
+  'evm(events.subscribe)': [RequestEvmEvents, boolean, EvmEvent];
+  'evm(request)': [RequestArguments, unknown];
+  'evm(provider.send)': [RequestEvmProviderSend, string | number, ResponseEvmProviderSend];
 
   //OnBoarding
   'pri(onboarding.isRequired)': [null, boolean];

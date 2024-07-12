@@ -13,7 +13,6 @@ export type State = {
   balances: TokenGroup[];
   nfts: ChainNftState;
   availableNfts: AvailableNftState;
-
   hiddenAssets: Record<WalletAddress, string[]>;
   autoSelectNode: AutoSelectNode;
   isCustomSort: Record<string, boolean>;

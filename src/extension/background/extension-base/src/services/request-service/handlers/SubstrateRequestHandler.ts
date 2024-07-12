@@ -1,31 +1,31 @@
 import { BehaviorSubject } from 'rxjs';
-
-import { type SignerPayloadJSON } from '@polkadot/types/types/extrinsic';
 import { logger as createLogger } from '@polkadot/util/logger';
-import { type Logger } from '@polkadot/util/types';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
-import {
-  type Resolver,
-  type SignRequest,
-  type ResponseSigning,
-  type RequestSign,
-  type AccountJson,
-  type SigningRequest,
-} from '@extension-base/background/types/types';
 import { getId, isInternalRequest } from '@extension-base/utils';
-import { type KeyringService, type RequestService } from '@extension-base/services';
+import type { Logger } from '@polkadot/util/types';
+import type { SignerPayloadJSON } from '@polkadot/types/types/extrinsic';
+import type {
+  Resolver,
+  SignRequest,
+  ResponseSigning,
+  RequestSign,
+  AccountJson,
+  SigningRequest,
+} from '@extension-base/background/types/types';
+import type { KeyringService, RequestService } from '@extension-base/services';
+import type State from '@extension-base/background/handlers/State';
 
 export class SubstrateRequestHandler {
   readonly logger: Logger;
-  private readonly requestService: RequestService;
-  private readonly keyringService: KeyringService;
 
   readonly substrateRequests: Record<string, SignRequest> = {};
-  public readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
+  public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
 
-  constructor(requestService: RequestService, keyringService: KeyringService) {
-    this.requestService = requestService;
-    this.keyringService = keyringService;
+  constructor(
+    private readonly requestService: RequestService,
+    private readonly keyringService: KeyringService,
+    public readonly state: State
+  ) {
     this.logger = createLogger('SubstrateRequestHandler');
   }
 
@@ -55,13 +55,15 @@ export class SubstrateRequestHandler {
   ): Resolver<ResponseSigning> => {
     const complete = (): void => {
       delete this.substrateRequests[id];
+
       this.updateIconSign(true);
     };
 
     return {
       reject: (error: Error): void => {
-        complete();
         this.logger.log(error);
+
+        complete();
         reject(error);
       },
       resolve: (result: ResponseSigning): void => {
@@ -100,6 +102,7 @@ export class SubstrateRequestHandler {
   ): Promise<ResponseSigning> {
     return new Promise((resolve, reject): void => {
       const existingAccount = this.keyringService.getAccounts().find((el) => el.address === address);
+
       if (!existingAccount) return reject();
 
       const account: AccountJson = {
@@ -119,16 +122,12 @@ export class SubstrateRequestHandler {
 
       this.updateIconSign();
 
-      if (!isInternalRequest(url)) {
-        this.requestService.popupOpen();
-      }
+      if (!isInternalRequest(url)) this.requestService.popupOpen();
     });
   }
 
   public resetWallet() {
-    for (const request of Object.values(this.substrateRequests)) {
-      request.reject(new Error('Reset wallet'));
-    }
+    for (const request of Object.values(this.substrateRequests)) request.reject(new Error('Reset wallet'));
 
     this.signSubject.next([]);
   }

@@ -2,7 +2,7 @@
   <div class="staking">
     <header class="staking-header">
       <div class="staking-balance">
-        <span class="label"> {{ $t('staking.stakingBalance') }} </span>
+        <span class="label" data-testid="labelStakingbalance"> {{ $t('staking.stakingBalance') }} </span>
 
         <div class="balance">
           <WalletBalance class="wallet-balance" :balance="stakingBalance" />
@@ -34,23 +34,23 @@
                 <StakingItem
                   v-for="item in filteredStakingItems"
                   :key="item.network"
-                  :networkParams="item"
+                  :stakingNetwork="item"
                   @click="updateNetworkBond(item)"
                 />
               </template>
 
-              <template v-else->
-                <MyStakingItem v-for="item in filteredMyStakingItems" :key="item.network" :networkParams="item" />
+              <template v-else>
+                <MyStakingItem v-for="item in filteredMyStakingItems" :key="item.network" :stakingNetwork="item" />
               </template>
             </template>
 
-            <div v-else class="nothing-found">{{ $t('common.nothingFound') }}</div>
+            <div v-else class="nothing-found" data-testid="nothingFound">{{ $t('common.nothingFound') }}</div>
           </Scroll>
         </template>
       </div>
     </ContentForm>
 
-    <Bond v-if="showBond" :networkParams="networkParams" @closeBond="updateNetworkBond" />
+    <Bond v-if="showBond" :stakingNetwork="stakingNetwork" @closeBond="updateNetworkBond" />
   </div>
 </template>
 
@@ -85,11 +85,10 @@ import { getCostOfAssets } from '@/controllers/transferHelpers';
   },
 })
 export default class StakingPage extends Vue {
-  showNetworkManagement = false;
   activeTabName: StakingTab | '' = '';
   filterValue = '';
   isLoading = false;
-  networkParams: Nullable<NetworkParams> = null;
+  stakingNetwork: Nullable<NetworkParams> = null;
 
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -136,7 +135,7 @@ export default class StakingPage extends Vue {
   }
 
   get showBond() {
-    return this.networkParams !== null;
+    return this.stakingNetwork !== null;
   }
 
   get showLoading() {
@@ -202,8 +201,10 @@ export default class StakingPage extends Vue {
     this.activeTabName = name;
   }
 
-  updateNetworkBond(networkParams: Nullable<NetworkParams> = null) {
-    this.networkParams = networkParams;
+  updateNetworkBond(stakingNetwork: Nullable<NetworkParams> = null, updated = false) {
+    this.stakingNetwork = stakingNetwork;
+
+    if (updated) this.updateTabStakingParams();
   }
 }
 </script>
@@ -253,6 +254,7 @@ export default class StakingPage extends Vue {
       justify-content: center;
       align-items: center;
       height: 100%;
+      margin: auto;
     }
   }
 

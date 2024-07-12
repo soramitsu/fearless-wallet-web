@@ -175,7 +175,7 @@ export class SubscriptionService {
 
       if (previousAuth && Object.keys(previousAuth).length) {
         Object.keys(previousAuth).forEach((url) => {
-          previousAuth[url].isAllowedMap = previousAuth[url].isAllowed
+          previousAuth[url].allowedAccountsMap = previousAuth[url].isAllowed
             ? this.state.getAddressList(true)
             : this.state.getAddressList();
         });
@@ -228,12 +228,8 @@ export class SubscriptionService {
 // clear a previous subscriber
 export function unsubscribe(id: string): void {
   if (SubscriptionService.subscriptions[id]) {
-    console.info(`Unsubscribing from ${id}`);
-
     delete SubscriptionService.subscriptions[id];
-  } else {
-    console.error(`Unable to unsubscribe from ${id}`);
-  }
+  } else console.error(`Unable to unsubscribe from ${id}`);
 }
 
 export function createSubscription<TMessageType extends MessageTypesWithSubscriptions>(

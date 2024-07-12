@@ -1,10 +1,10 @@
 import { APIItemState } from '@extension-base//api/types/networks';
-import { type NetworkJson } from '@extension-base/types';
 import { isSameString } from '..';
+import type { NetworkJson } from '@extension-base/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
+import type { AssetsPrice, ChangeWalletBalance, NetworkName } from '@/interfaces';
 import { addNumbers } from '@/helpers/numbers';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, NETWORKS_GROUPS, POPULAR_NETWORKS } from '@/consts/networks';
-import { type AssetsPrice, type ChangeWalletBalance, type NetworkName } from '@/interfaces';
 import { FEARLESS_TITLE } from '@/consts/global';
 
 export function isNetworkGroup(network: string) {
@@ -34,11 +34,11 @@ export function getSummaryTransferableWalletBalance(
     }
 
     balances.forEach(({ state, transferable, name }) => {
-      const networkParams = networks.find(({ name: _name }) => isSameString(_name.toLowerCase(), name.toLowerCase()));
+      const stakingNetwork = networks.find(({ name: _name }) => isSameString(_name.toLowerCase(), name.toLowerCase()));
 
-      if (isSameString(network, POPULAR_NETWORKS) && networkParams?.rank === undefined) return result;
+      if (isSameString(network, POPULAR_NETWORKS) && stakingNetwork?.rank === undefined) return result;
 
-      if (isSameString(network, FAVORITE_NETWORKS) && !networkParams?.favorite.includes(address)) return result;
+      if (isSameString(network, FAVORITE_NETWORKS) && !stakingNetwork?.favorite.includes(address)) return result;
 
       if (state === APIItemState.READY) {
         const assetCount = +(transferable ?? 0);
@@ -76,23 +76,30 @@ export function getChangeWalletBalance(
   price: AssetsPrice,
   network: NetworkName // network name or group name
 ): ChangeWalletBalance {
-  const changeAssets = tokens.map((token) => {
-    const priceChange = price?.tokenPriceChange[token.priceId ?? ''] ?? 0;
-    const totalBalance = +getSummaryTransferableBalance(token, network);
-    const currentPercent = 100 + (priceChange ?? 0);
-    const oldBalance = (totalBalance / currentPercent) * 100;
-    const changeAmount = totalBalance - oldBalance;
+  const changeAssets = tokens.map((tokenGroup) => {
+    const priceChange = price?.tokenPriceChange[tokenGroup.priceId ?? ''] ?? 0;
+    const tokenPrice = price?.tokenPriceMap[tokenGroup.priceId ?? ''] ?? 0;
 
-    return { totalBalance, changeAmount };
+    const currentPercent = 100 + (priceChange ?? 0);
+
+    const totalBalance = +getSummaryTransferableBalance(tokenGroup, network);
+    const oldBalance = (totalBalance / currentPercent) * 100;
+
+    const changeAmount = totalBalance - oldBalance;
+    const changeFiat = changeAmount * tokenPrice;
+
+    const currentFiat = totalBalance * tokenPrice;
+
+    return { changeFiat, currentFiat };
   });
 
-  const totalChange = +addNumbers(changeAssets.map(({ changeAmount }) => changeAmount));
-  const totalBalance = +addNumbers(changeAssets.map(({ totalBalance }) => totalBalance));
-  const totalPercentChange = totalBalance === 0 ? 0 : (totalChange / totalBalance) * 100;
+  const totalCurrentFiat = +addNumbers(changeAssets.map(({ currentFiat }) => currentFiat));
+  const totalChangeFiat = +addNumbers(changeAssets.map(({ changeFiat }) => changeFiat));
+  const totalPercentChange = totalChangeFiat === 0 ? 0 : (totalChangeFiat / totalCurrentFiat) * 100;
 
   return {
     percent: totalPercentChange,
-    amount: totalChange,
+    amount: totalChangeFiat,
   };
 }
 

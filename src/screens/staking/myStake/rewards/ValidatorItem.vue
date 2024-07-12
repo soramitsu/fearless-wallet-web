@@ -1,15 +1,15 @@
 <template>
   <div class="validator">
     <div class="left-part">
-      <Identicon :address="validator.address" class="ident" />
+      <Identicon :address="validator.address" data-testid="address" class="ident" />
 
-      <div>{{ validator.name }}</div>
+      <div data-testid="validatorName">{{ validator.name }}</div>
     </div>
 
     <div class="right-part">
-      <div>{{ rewards }} {{ rewardedAsset }}</div>
+      <div data-testid="rewards">{{ rewards }} {{ rewardedAsset }}</div>
 
-      <div class="price">{{ fiatSymbol }}{{ price }}</div>
+      <div class="price" data-testid="fiatPrice">{{ fiatSymbol }}{{ price }}</div>
     </div>
   </div>
 </template>

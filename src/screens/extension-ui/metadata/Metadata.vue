@@ -77,7 +77,7 @@ export default class Metadata extends Vue {
   height: 100%;
 
   .alert {
-    margin-bottom: 10px;
+    margin: 10px 0;
   }
 }
 </style>

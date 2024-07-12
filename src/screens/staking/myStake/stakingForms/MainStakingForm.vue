@@ -39,15 +39,16 @@
         </div>
 
         <template v-else>
-          <div v-if="showWalletName" class="controller-description row">
+          <div v-if="showWalletName" class="controller-description row" data-testid="controllerDescription">
             {{ $t('staking.separateAccountController') }}
           </div>
 
           <FInput
             v-if="showWalletName"
-            v-model="accountName"
+            :value="accountName"
             placeholder="accounts.account"
             size="big"
+            data-testid="accountName"
             :readonly="true"
           />
 
@@ -55,13 +56,14 @@
             v-if="showAmountInput"
             class="amount-input"
             text="assets.amount"
+            data-testid="inputAmount"
             :totalAmount="totalAmount"
             :value="amountValue"
             :asset="stakingAssetName"
             :assetId="stakingAssetId"
             :amount="amount"
             :showIcon="false"
-            :readonly="isRebond"
+            :readonly="isRedeem"
             @update:amount="updateAmount"
             @setMax="setMax"
           />
@@ -82,15 +84,20 @@
             :stakingNetwork="stakingNetwork"
             :stakingCurrency="stakingCurrency"
             :controllerAddress="controllerAddress"
-            :isInvalidController="isInvalidController"
+            :isValidController="isValidController"
             @update:controllerAddress="updateControllerAddress"
           >
             <div class="activity-buttons">
-              <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+              <BadgeButton text="assets.history" data-testid="historyBtn" @click="toggleHistoryBookVisibility" />
 
-              <BadgeButton text="common.paste" @click="paste" />
+              <BadgeButton text="common.paste" data-testid="pasteBtn" @click="paste" />
 
-              <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
+              <BadgeButton
+                v-if="showMyWalletsButton"
+                text="assets.myWallets"
+                data-testid="myWalletsBtn"
+                @click="toggleMyWalletsVisibility"
+              />
             </div>
           </ControllerAccount>
 
@@ -105,11 +112,16 @@
             @update:payoutAddress="setPayoutAddress"
           >
             <div class="activity-buttons">
-              <BadgeButton text="assets.history" @click="toggleHistoryBookVisibility" />
+              <BadgeButton text="assets.history" data-testid="historyBtn" @click="toggleHistoryBookVisibility" />
 
-              <BadgeButton text="common.paste" @click="paste" />
+              <BadgeButton text="common.paste" data-testid="pasteBtn" @click="paste" />
 
-              <BadgeButton v-if="showMyWalletsButton" text="assets.myWallets" @click="toggleMyWalletsVisibility" />
+              <BadgeButton
+                v-if="showMyWalletsButton"
+                text="assets.myWallets"
+                data-testid="myWalletsBtn"
+                @click="toggleMyWalletsVisibility"
+              />
             </div>
           </Payee>
         </template>
@@ -120,6 +132,7 @@
         width="100%"
         size="big"
         fontSize="big"
+        data-testid="confirmBtn"
         :text="btnText"
         :disabled="confirmBtnDisabled"
         @click="confirm"
@@ -158,10 +171,10 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { calcTransferableSendMinusFee, isValidAmountAsset } from '@/helpers/currencies';
 import BaseApi from '@/util/BaseApi';
-import { checkController, fetchBalance, getSoraFees } from '@/extension/messaging';
+import { checkController, fetchBalance } from '@/extension/messaging';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
-import { type AsyncFn, type StakingOperation, type StakingOperationParams } from '@/interfaces';
+import { type SoraFees, type AsyncFn, type StakingOperation, type StakingOperationParams } from '@/interfaces';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
@@ -186,10 +199,9 @@ export default class MainStakingForm extends Vue {
   isSuggested = false;
   showHistoryBook = false;
   showMyWallets = false;
-  isInvalidController = false;
+  isValidController = true;
   amount = '';
   stashBalance = '0';
-  fee = '0';
   step = 1;
   controllerAddress = '';
   payoutAddress = '';
@@ -202,9 +214,32 @@ export default class MainStakingForm extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
+  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
+  @Getter(NetworksGettersTypes.soraFees) soraFees!: Nullable<SoraFees>;
   @Action(StakingActionTypes.GET_MY_STAKING_INFO) getMyStakingInfo!: AsyncFn<GetStakingNetworkProps>;
+
+  get fee() {
+    if (!this.soraFees) return '';
+
+    const {
+      StakingBondExtra,
+      StakingRebond,
+      StakingUnbond,
+      StakingSetController,
+      StakingWithdrawUnbonded,
+      StakingSetPayee,
+    } = this.soraFees;
+
+    if (this.isBondExtra) return StakingBondExtra;
+    else if (this.isUnbond) return StakingUnbond;
+    else if (this.isRebond) return StakingRebond;
+    else if (this.isRedeem) return StakingWithdrawUnbonded;
+    else if (this.isControllerAccount) return StakingSetController;
+    else if (this.isPayee) return StakingSetPayee;
+
+    return '';
+  }
 
   get showMyWalletsButton() {
     return this.filteredWallets.length !== 0;
@@ -247,6 +282,12 @@ export default class MainStakingForm extends Vue {
   }
 
   get header() {
+    if (this.showHistoryBook) return 'assets.chooseFromHistory';
+
+    if (this.showMyWallets) return 'assets.wallets';
+
+    if (this.showEditAddressBook) return 'assets.addContact';
+
     return `staking.${this.type}`;
   }
 
@@ -300,9 +341,9 @@ export default class MainStakingForm extends Vue {
 
   get confirmBtnDisabled() {
     if (this.isControllerAccount) {
-      if (this.step === 1) return this.isInvalidController;
+      if (this.step === 2) return !this.isValidController || !this.isValidControllerAddress;
 
-      return !this.isValidControllerAddress;
+      return false;
     }
 
     if (this.isPayee) {
@@ -317,19 +358,50 @@ export default class MainStakingForm extends Vue {
   }
 
   get isValidAmountAsset() {
-    // комиссия по всем операциям списывается с transferable баланса
-    // по этому amount важен только при операции bondExtra
-    // в остальных случаях amount-это значение не относящееся к transferable балансу
-    // а значение уже залоченных токенов(bond, unbond, rebond)
-    const amount = this.isBondExtra ? this.amount : '0';
+    // для isRebond подменяем на сумму unbond`ов
+    // для isUnbond подменяем на суммарный стейк(activeStake)
+    // для isRedeem можно не подменять данные, тк инпут всегда isDisabled и значение подставляется автоматически и оно всегда корректное
+    const currencyByTypeOperation: TokenGroup = this.isRebond
+      ? {
+          ...this.stakingCurrency,
+          balances: this.stakingCurrency.balances.map((item) => ({
+            ...item,
+            transferable: this.stakingNetwork.unbond.sum,
+          })),
+        }
+      : this.isUnbond
+      ? {
+          ...this.stakingCurrency,
+          balances: this.stakingCurrency.balances.map((item) => ({
+            ...item,
+            transferable: this.stakingNetwork.activeStake,
+          })),
+        }
+      : this.stakingCurrency;
 
-    // для controller аккаунта подставляем баланс stash аккаунта
+    // Проверяем корерктно ли значение amount, которое ввел юзер
+    const isValid = isValidAmountAsset(currencyByTypeOperation, this.network, '0', this.amount);
+
+    if (!isValid) return false;
+
+    // Далее проверка на то, хватает ли Utility на оплату комиссии
+    // Для controller аккаунта подставляем баланс stash аккаунта, потому что комиссия списывается со stash
     const stakingCurrency: TokenGroup = this.stakingNetwork.isController
       ? {
           ...this.stakingCurrency,
-          balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),
+          balances: this.stakingCurrency.balances.map((item) => ({
+            ...item,
+            transferable: this.stashBalance,
+          })),
         }
       : this.stakingCurrency;
+
+    // при этом для bondExtra проверяется то, что transferable баланса хватает на оплату и amount и fee
+    // комиссия по всем операциям списывается с transferable баланса
+    // по этому amount важен только при операции bondExtra
+    // в остальных случаях amount-это значение не относящееся к transferable балансу(мы проверили его выше)
+    // а значение уже залоченных токенов(unbond, rebond)
+    const amount = this.isBondExtra ? this.amount : '0';
 
     return isValidAmountAsset(stakingCurrency, this.network, this.fee ?? '0', amount);
   }
@@ -383,7 +455,7 @@ export default class MainStakingForm extends Vue {
 
   @Watch('controllerAddress')
   async checkController(value: string) {
-    this.isInvalidController = !(await checkController({ address: value }));
+    this.isValidController = await checkController({ address: value });
   }
 
   async mounted() {
@@ -394,31 +466,11 @@ export default class MainStakingForm extends Vue {
       this.amount = lastUnbond;
     } else if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
 
-    this.getSoraFees();
-
     if (this.stakingNetwork.isController)
       this.stashBalance = await fetchBalance({
         address: this.stakingNetwork.stashAddress,
         networkName: this.stakingNetwork.network,
       });
-  }
-
-  async getSoraFees() {
-    const {
-      StakingBondExtra,
-      StakingRebond,
-      StakingUnbond,
-      StakingSetController,
-      StakingWithdrawUnbonded,
-      StakingSetPayee,
-    } = await getSoraFees();
-
-    if (this.isBondExtra) this.fee = StakingBondExtra;
-    else if (this.isUnbond) this.fee = StakingUnbond;
-    else if (this.isRebond) this.fee = StakingRebond;
-    else if (this.isRedeem) this.fee = StakingWithdrawUnbonded;
-    else if (this.isControllerAccount) this.fee = StakingSetController;
-    else if (this.isPayee) this.fee = StakingSetPayee;
   }
 
   updateControllerAddress(value: string) {

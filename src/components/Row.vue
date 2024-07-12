@@ -6,26 +6,39 @@
       <Icon v-if="icon" :icon="icon" class="icon-info" :class="iconClasses" />
     </div>
 
-    <div v-if="value" :class="valueClasses">
+    <div v-if="isExistValue" :class="valueClasses">
       <div>
         <div class="value-container">
-          <Loading v-if="isLoading" />
+          <Loading v-if="isLoading" :width="28" />
 
-          <span v-else data-testid="value">{{ value }}</span>
+          <div v-else class="value-row">
+            <Icon
+              v-if="iconValue"
+              :icon="iconValue"
+              :hover="hoverIconValue"
+              :iconColor="iconValueColor"
+              class="icon-value"
+              @click="emit('click')"
+            />
+
+            <span data-testid="value">{{ value }}</span>
+          </div>
         </div>
 
-        <div v-if="price" class="price">
+        <div v-if="price && !isLoading" class="price">
           <span data-testid="price">{{ price }}</span>
         </div>
       </div>
+
       <slot name="details"></slot>
     </div>
+
     <div v-else>-</div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 type BorderType = 'default' | 'secondary';
 type Color = 'white' | 'pink-lavender';
 
@@ -33,10 +46,17 @@ type Props = {
   value?: string;
   price?: string;
   color?: Color;
+  isHoverRow?: boolean;
+
   icon?: string;
+  isIconPrepend?: boolean;
+
+  iconValue?: string;
+  hoverIconValue?: boolean;
+  isIconValuePrepend?: boolean;
+
   rowClasses?: string;
   isLoading?: boolean;
-  isIconPrepend?: boolean;
   iconClasses?: string[];
   showBorder?: boolean;
   borderType?: BorderType;
@@ -45,12 +65,17 @@ type Props = {
 
 const props = withDefaults(defineProps<Props>(), {
   isIconPrepend: false,
+  isIconValuePrepend: false,
+  isHoverRow: false,
+  hoverIconValue: false,
   showBorder: true,
   hideLastBorder: true,
   borderType: 'secondary',
   color: 'white',
   iconClasses: () => [],
 });
+
+const emit = defineEmits(['click']);
 
 const iconColor = computed(() => {
   if (props.icon === 'check') return '#00ee77';
@@ -60,6 +85,10 @@ const iconColor = computed(() => {
 
 const valueClasses = computed(() => ['value', `color-${props.color}`]);
 
+const iconValueColor = computed(() => (props.iconValue === 'polkaswap' ? 'pink' : undefined));
+
+const isExistValue = computed(() => props.value !== null && props.value !== undefined);
+
 const internalRowClasses = computed(() => {
   const classes = ['row'];
 
@@ -67,10 +96,13 @@ const internalRowClasses = computed(() => {
 
   if (props.hideLastBorder) classes.push('border-last');
 
+  if (props.isHoverRow) classes.push('row-hover');
+
   return classes;
 });
 
-const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
+const direction = computed(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
+const directionValue = computed(() => (props.isIconValuePrepend ? 'row' : 'row-reverse'));
 </script>
 
 <style lang="scss" scoped>
@@ -96,6 +128,10 @@ const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
   }
 }
 
+.row-hover {
+  cursor: pointer;
+}
+
 .value-container {
   display: flex;
   flex-direction: row;
@@ -103,6 +139,20 @@ const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
   line-height: 19px;
   gap: 4px;
   text-transform: uppercase;
+
+  .icon-value {
+    width: 18px;
+    height: 18px;
+  }
+
+  .value-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: fit-content;
+    max-width: 300px;
+    flex-direction: v-bind(directionValue);
+  }
 }
 
 .row {
@@ -117,21 +167,10 @@ const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
   .value {
     text-align: right;
     display: flex;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
-    .icon-info {
-      width: 18px;
-      height: 18px;
-      color: v-bind('iconColor');
-      cursor: pointer;
-
-      &--prepend {
-        margin-left: 13px;
-      }
-
-      &:hover {
-        color: $default-white;
-      }
-    }
     .price {
       color: $gray-color;
       margin-top: 3px;
@@ -152,7 +191,7 @@ const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
     .icon-info {
       width: 18px;
       height: 18px;
-      color: $grayish-white;
+      color: v-bind('iconColor');
       cursor: pointer;
 
       &--prepend {

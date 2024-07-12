@@ -13,9 +13,11 @@
       <div class="row" @click="openWalletDetails">
         <div class="label" data-testid="walletDetails">Wallet Details</div>
       </div>
+
       <div v-if="isExportPossible" class="row" @click="exportToGoogleDrive">
         <div class="label google" data-testid="exportToGoogle">Export to Google</div>
       </div>
+
       <div class="row" @click="deleteWallet">
         <div class="label delete" data-testid="deleteWallet">Delete Wallet</div>
       </div>
@@ -77,10 +79,11 @@ export default class WalletDetailsPopup extends Vue {
 
   openWalletDetails() {
     const [account] = this.accounts.filter(({ address }) => address === this.selectedWalletAddress);
+
     this.setSelectedWallet(account);
 
     this.$router.push({
-      name: Components.Accounts,
+      name: Components.AccountSetting,
       params: {
         address: this.selectedWallet.address,
         name: this.selectedWallet.name,

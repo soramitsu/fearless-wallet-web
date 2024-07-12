@@ -20,7 +20,7 @@
       <div>
         <div class="row direction-column">
           <FInput
-            v-model="selectedWallet.name"
+            :value="selectedWallet.name"
             placeholder="assets.from"
             size="big"
             :readonly="true"
@@ -30,7 +30,7 @@
           <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
 
           <FInput
-            v-model="formattedAddressTo"
+            :value="formattedAddressTo"
             placeholder="assets.to"
             size="big"
             :readonly="true"
@@ -43,7 +43,7 @@
             <div class="summary-label">{{ $t('assets.summary') }}</div>
 
             <InfoRow text="assets.assetsAmount" :value="amountString" :price="valueString" />
-            <InfoRow text="assets.fee" :value="partialFeeString" :price="fiatFeeString" />
+            <InfoRow text="assets.networkFee" :value="partialFeeString" :price="fiatFeeString" />
             <InfoRow v-if="isUtilityAsset" text="assets.total" :value="totalString" :price="fiatTotalString" />
           </div>
         </FCorners>
@@ -161,7 +161,6 @@ export default class SendForm extends Vue {
 
   created() {
     this.assetId = this.$route.params.assetId;
-
     this.selectedNetwork = this.$route.params.network;
   }
 

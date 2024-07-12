@@ -17,7 +17,7 @@
 
         <HistoryBook
           v-else-if="showHistoryBook"
-          :network="syncedNetwork"
+          :network="targetNetwork"
           :assetId="syncedAssetId"
           @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
           @setRecipient="setRecipient"
@@ -43,7 +43,7 @@
             <template v-if="step === 1">
               <InputWithIcon
                 v-if="isTransfer"
-                v-model="originNetwork"
+                :value="syncedNetwork"
                 class="row"
                 icon="rotate"
                 :placeholder="placeholderNetwork"
@@ -54,7 +54,7 @@
 
               <FInput
                 v-else
-                v-model="originNetwork"
+                :value="syncedNetwork"
                 class="row"
                 size="big"
                 :placeholder="placeholderNetwork"
@@ -78,7 +78,7 @@
 
               <InputWithIcon
                 v-if="isCrossChain"
-                v-model="syncedDestNet"
+                :value="syncedDestNet"
                 class="row"
                 icon="rotate"
                 placeholder="assets.destNet"
@@ -88,7 +88,7 @@
               />
 
               <InputWithIcon
-                v-model="recipientCut"
+                :value="recipientCut"
                 class="row"
                 icon="close"
                 placeholder="assets.sendTo"
@@ -108,6 +108,8 @@
                   @click="toggleMyWalletsVisibility"
                 />
               </div>
+
+              <Alert v-if="isScamAddress" :message="scamMessage" headerText="common.warning" />
 
               <slot name="step1Warning"></slot>
 
@@ -186,7 +188,7 @@
     />
 
     <WarningAddressPopup
-      v-if="showWarningAddressPopup"
+      v-if="!isValidAddressByNetwork"
       @handlerAccept="formatAddress"
       @handlerClose="handlerCloseWarningAddressPopup"
     />
@@ -207,6 +209,7 @@ import {
   type ResponseCheckCrossChain,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
+import { Reasons, type ScamInfo } from '@extension-base/services/scam-service/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
@@ -215,7 +218,6 @@ import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import BaseApi from '@/util/BaseApi';
-import FloatInput from '@/components/FloatInput.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import {
@@ -224,7 +226,7 @@ import {
   isValidAmountAsset,
   getUtilityAsset,
 } from '@/helpers/currencies';
-import { cut, firstCharToUp, getClipboard } from '@/helpers';
+import { cut, getClipboard } from '@/helpers';
 import {
   VALID_SUBSTRATE_ADDRESS,
   VALID_ETHEREUM_ADDRESS,
@@ -233,14 +235,13 @@ import {
   FAVORITE_NETWORKS,
 } from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
-import { checkTransfer, checkCrossChain } from '@/extension/messaging';
+import { checkTransfer, checkCrossChain, checkScamAddress } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import { isNetworkGroup } from '@/helpers/common';
 
 @Component({
   components: {
     WalletInfo,
-    FloatInput,
     HistoryBook,
     EditAddressBook,
     ExistentialPopup,
@@ -264,6 +265,8 @@ export default class TransferForm extends Vue {
   filterValue = '';
   isFetchingFees = false;
   estimateFeeError = false;
+  isScamAddress = false;
+  scamInfo: Nullable<ScamInfo> = null;
   step = 1;
 
   @Prop(String) header!: string;
@@ -286,16 +289,28 @@ export default class TransferForm extends Vue {
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
+  get scamMessage() {
+    const key =
+      this.scamInfo?.reason === Reasons.Donation
+        ? 'isDonationAddress'
+        : this.scamInfo?.reason === Reasons.Exchange
+        ? 'isExchangeAddress'
+        : this.scamInfo?.reason === Reasons.Sanctions
+        ? 'isSanctionsAddress'
+        : 'isScamAddress';
+
+    return {
+      text: `assets.${key}`,
+      localeProps: { asset: this.sendAssetName.toUpperCase() },
+    };
+  }
+
   get recipientCut() {
     return cut(this.syncedRecipient);
   }
 
   get showEditAddressBook() {
     return this.newAddress !== '';
-  }
-
-  get originNetwork() {
-    return firstCharToUp(this.syncedNetwork);
   }
 
   get filteredWallets() {
@@ -385,10 +400,10 @@ export default class TransferForm extends Vue {
     return this.isTransfer ? this.syncedNetwork : this.syncedDestNet;
   }
 
-  get showWarningAddressPopup() {
-    if (!this.isValidRecipientAddress || this.syncedNetwork === '') return false;
+  get isValidAddressByNetwork() {
+    if (!this.isValidRecipientAddress || this.syncedNetwork === '') return true;
 
-    return !BaseApi.validateAddressByNetwork(this.syncedRecipient, this.targetNetwork);
+    return BaseApi.validateAddressByNetwork(this.syncedRecipient, this.targetNetwork);
   }
 
   get top() {
@@ -509,6 +524,7 @@ export default class TransferForm extends Vue {
 
   get options() {
     const filter = this.filterValue.trim().toLowerCase();
+
     let options: { name: string; value: string; icon: string | undefined }[] = [];
 
     if (this.showSelectedAssetPopup) options = this.optionsCurrency;
@@ -576,7 +592,7 @@ export default class TransferForm extends Vue {
 
       return [
         {
-          name: firstCharToUp(name),
+          name: network.name,
           value: name.toLowerCase(),
           icon,
         },
@@ -600,7 +616,7 @@ export default class TransferForm extends Vue {
       const { name, icon } = this.getNetwork(chainId);
 
       return {
-        name: firstCharToUp(name),
+        name: name,
         value: name,
         icon,
       };
@@ -608,9 +624,7 @@ export default class TransferForm extends Vue {
   }
 
   get sendAssetName() {
-    if (this.currency === undefined) return '';
-
-    return this.currency.symbol;
+    return this.currency?.symbol ?? '';
   }
 
   get isValidSendAsset() {
@@ -670,6 +684,19 @@ export default class TransferForm extends Vue {
     } as RequestCheckCrossChain;
   }
 
+  @Watch('syncedRecipient')
+  async checkScam() {
+    if (this.isValidRecipientAddress && this.isValidAddressByNetwork) {
+      const { value, info } = await checkScamAddress({ address: this.syncedRecipient, network: this.targetNetwork });
+
+      this.isScamAddress = value;
+      this.scamInfo = info;
+    } else {
+      this.isScamAddress = false;
+      this.scamInfo = null;
+    }
+  }
+
   @Watch('showSelectedAssetPopup')
   resetAssetPopupVisible(newValue: string) {
     if (newValue) {
@@ -708,9 +735,7 @@ export default class TransferForm extends Vue {
     this.syncedDestNet = this.optionsDestNet?.[0]?.value ?? '';
     this.syncedValue = '';
 
-    if (this.isTransfer) {
-      this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
-    }
+    if (this.isTransfer) this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
   }
 
   @Watch('syncedDestNet')

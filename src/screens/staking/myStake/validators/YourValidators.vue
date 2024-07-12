@@ -12,10 +12,10 @@
       <Scroll>
         <div class="form-layout">
           <template v-if="showMyValidators">
-            <div class="label">{{ $t('staking.elected') }}</div>
+            <div class="label" data-testid="electedLabel">{{ $t('staking.elected') }}</div>
 
             <template v-if="showMyActiveValidators">
-              <div class="sub-label">{{ $t('staking.stakeAllocated') }}</div>
+              <div class="sub-label" data-testid="stakeAllocated">{{ $t('staking.stakeAllocated') }}</div>
 
               <ValidatorItem
                 v-for="validator in myActiveValidators"
@@ -27,7 +27,7 @@
             </template>
 
             <template v-if="showInactiveMyValidators">
-              <div class="sub-label">{{ $t('staking.withoutAllocation') }}</div>
+              <div class="sub-label" data-testid="withoutAllocation">{{ $t('staking.withoutAllocation') }}</div>
 
               <ValidatorItem
                 v-for="validator in inactiveValidators"
@@ -39,9 +39,9 @@
             </template>
 
             <template v-if="showWaitingMyValidators">
-              <div class="label">{{ $t('staking.notElected') }}</div>
+              <div class="label" data-testid="notElectedLabel">{{ $t('staking.notElected') }}</div>
 
-              <div class="sub-label">{{ $t('staking.waitingValidators') }}</div>
+              <div class="sub-label" data-testid="waitingValidators">{{ $t('staking.waitingValidators') }}</div>
 
               <ValidatorItem
                 v-for="validator in waitingValidators"
@@ -53,7 +53,7 @@
             </template>
           </template>
 
-          <div v-else class="no-validators">{{ $t('staking.noValidators') }}</div>
+          <div v-else class="no-validators" data-testid="noValidators">{{ $t('staking.noValidators') }}</div>
         </div>
       </Scroll>
     </ContentForm>

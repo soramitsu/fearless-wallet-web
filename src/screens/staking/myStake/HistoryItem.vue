@@ -1,23 +1,23 @@
 <template>
-  <div class="history-item" @click="openDetails">
+  <div class="history-item" data-testid="historyItem" @click="openDetails">
     <div class="column left">
-      <span class="name">
+      <span class="name" data-testid="operationName">
         {{ operationName }}
       </span>
 
-      <span class="date">
+      <span class="date" data-testid="operationDate">
         {{ date }}
       </span>
     </div>
 
     <div class="column right">
       <div>
-        <div class="amount">{{ amount }} {{ symbol }}</div>
+        <div class="amount" data-testid="operationAmount">{{ amount }} {{ symbol }}</div>
 
-        <div class="value">{{ value }}</div>
+        <div class="value" data-testid="operationValue">{{ value }}</div>
       </div>
 
-      <Icon icon="chevron-right" className="chevron" @click="openDetails" />
+      <Icon icon="chevron-right" className="chevron" data-testid="operationDetails" @click="openDetails" />
     </div>
   </div>
 </template>

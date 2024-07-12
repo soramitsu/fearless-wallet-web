@@ -2,11 +2,12 @@
   <AboveForm :header="getLocale('header')" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="management">
       <SearchInput
-        v-model="filterValue"
+        :value="filterValue"
         placeholder="common.searchNetwork"
         class="search-input"
         width="100%"
         data-testid="networkSearch"
+        @change="changeFilterValue"
       />
       <Tooltip text="common.copied" target=".search-input" placement="bottom" />
 
@@ -60,7 +61,6 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Action, Getter, Mutation } from 'vuex-class';
 import { type AccountJson } from '@extension-base/background/types/types';
-import { isEthereumNetwork } from '@extension-base/background/utils/utils';
 import NetworkItem from './NetworkItem.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { Tab } from '@/interfaces/ui';
@@ -174,6 +174,10 @@ export default class NetworkManagement extends Vue {
     return this.filteredOptionsNetworks.length !== 0;
   }
 
+  changeFilterValue(value: string) {
+    this.filterValue = value;
+  }
+
   getLocale(key: string): string {
     return `header.networkManagement.${key}`;
   }
@@ -199,7 +203,7 @@ export default class NetworkManagement extends Vue {
       return available;
     }
 
-    if (this.selectedWallet.ethereumAddress === '' && isEthereumNetwork(network)) return false;
+    if (this.selectedWallet.ethereumAddress === '' && BaseApi.isEthereumNetwork(network)) return false;
 
     return true;
   }

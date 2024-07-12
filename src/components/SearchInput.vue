@@ -1,28 +1,39 @@
 <template>
   <div class="search-input-wrapper" data-testid="searchInput">
-    <FInput v-model="vModel" :placeholder="placeholder" size="small" :style="inputStyle" />
+    <FInput :value="value" :placeholder="placeholder" size="small" :style="inputStyle" @change="changeInputValue" />
 
     <SIcon name="basic-search-24" />
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { withDefaults, computed } from 'vue';
 
-@Component
-export default class SearchInput extends Vue {
-  @VModel({ type: String }) vModel!: string;
-  @Prop(String) placeholder!: string;
-  @Prop(String) width!: string;
-
-  get inputStyle() {
-    const styles: Record<string, string> = {};
-
-    if (this.width) styles.width = `${this.width}`;
-
-    return styles;
-  }
+interface Props {
+  value: string;
+  placeholder: string;
+  width: string;
 }
+
+const props = withDefaults(defineProps<Props>(), {
+  value: '',
+  placeholder: '',
+  width: '',
+});
+
+const emit = defineEmits(['change']);
+
+const changeInputValue = (newValue: string) => {
+  emit('change', newValue);
+};
+
+const inputStyle = computed(() => {
+  const styles: Record<string, string> = {};
+
+  if (props.width) styles.width = `${props.width}`;
+
+  return styles;
+});
 </script>
 
 <style lang="scss">

@@ -37,17 +37,11 @@ function connect() {
       return;
     }
 
-    if (!handler.subscriber) {
-      delete handlers[data.id];
-    }
+    if (!handler.subscriber) delete handlers[data.id];
 
-    if (data.subscription && handler.subscriber) {
-      handler.subscriber(data.subscription);
-    } else if (data.error) {
-      handler.reject(new Error(data.error));
-    } else {
-      handler.resolve(data.response);
-    }
+    if (data.subscription && handler.subscriber) handler.subscriber(data.subscription);
+    else if (data.error) handler.reject(new Error(data.error));
+    else handler.resolve(data.response);
   });
 }
 
@@ -70,9 +64,10 @@ function sendMessage<TMessageType extends MessageTypes>(
   subscriber?: (data: unknown) => void
 ): Promise<ResponseTypes[TMessageType]> {
   return new Promise((resolve, reject): void => {
-    const id = getId();
+    const id = getId(message);
 
     handlers[id] = { reject, resolve, subscriber };
+
     port?.postMessage({ id, message, request: request || {} });
   });
 }
@@ -82,6 +77,7 @@ connect();
 export { sendMessage, connect };
 
 export * from '@/extension/messaging/staking';
+export * from '@/extension/messaging/pools';
 export * from '@/extension/messaging/accounts';
 export * from '@/extension/messaging/transfers';
 export * from '@/extension/messaging/substrate-requests';
@@ -91,3 +87,4 @@ export * from '@/extension/messaging/networks';
 export * from '@/extension/messaging/balance';
 export * from '@/extension/messaging/common';
 export * from '@/extension/messaging/wallet-connect-requests';
+export * from '@/extension/messaging/pools';

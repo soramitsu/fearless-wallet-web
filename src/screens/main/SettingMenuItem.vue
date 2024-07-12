@@ -45,8 +45,8 @@ defineProps<{ icon: string; title: string }>();
   }
 
   .icon--width {
-    width: 20px;
-    height: 20px;
+    width: 25px;
+    height: 25px;
   }
 
   .chevron-right {

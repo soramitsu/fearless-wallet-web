@@ -30,7 +30,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const circleSizes = {
-  mini: '40px',
+  mini: '38px',
   small: '48px',
   medium: '72px',
   big: '96px',

@@ -93,6 +93,6 @@ export default class SelectWalletPopup extends Vue {
 }
 
 .wallet {
-  margin-bottom: 10px !important;
+  margin-bottom: 12px !important;
 }
 </style>

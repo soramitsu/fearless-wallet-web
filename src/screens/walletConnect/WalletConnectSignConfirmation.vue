@@ -10,6 +10,7 @@
           </div>
         </Scroll>
       </div>
+
       <div>
         <div class="pass-form">
           <ValidatedInput
@@ -106,6 +107,7 @@ const address = computed<string>(() => {
 
   return params[0].from as string;
 });
+
 const isLocked = ref(false);
 const min15Label = computed(() => (isLocked.value ? 'assets.15min' : 'assets.15minExtend'));
 
@@ -164,14 +166,12 @@ const changePassword = (value: string) => {
 const onApprove = async () => {
   state.isPassValid = false;
   state.isSigning = true;
-  const res = await walletConnectRequestApprove(
+  await walletConnectRequestApprove(
     address.value.toLowerCase(),
     password.value,
     request.value.topic,
     state.isSavePass
   ).catch(onError);
-
-  if (res) router.back();
 };
 </script>
 

@@ -13,7 +13,7 @@ import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import WcAuths from '@/screens/extension-ui/WcAuths.vue';
-import SubstrateAuths from '@/screens/extension-ui/SubstrateAuths.vue';
+import DAppsAuths from '@/screens/extension-ui/DAppsAuths.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import NftCollectionList from '@/screens/wallet&asset/nft/NftCollectionList.vue';
 import NftCollection from '@/screens/wallet&asset/nft/NftCollection.vue';
@@ -101,7 +101,7 @@ export enum Components {
   WalletConnectSessionRequest = 'WalletConnectSessionRequest',
   WalletConnectSignConfirmation = 'WalletConnectSignConfirmation',
   WalletConnectNotSupportedRequest = 'WalletConnectNotSupportedRequest',
-  SubstrateAuths = 'SubstrateAuths',
+  DAppsAuths = 'DAppsAuths',
   WcAuths = 'WcAuths',
   Onboarding = 'Onboarding',
   Currencies = 'Currencies',
@@ -256,12 +256,12 @@ const routes: Array<RouteConfig> = [
         path: '/',
         name: Components.ManageAuths,
         component: ManageAuths,
-        redirect: { name: Components.SubstrateAuths },
+        redirect: { name: Components.DAppsAuths },
         children: [
           {
-            path: '/dotsama',
-            name: Components.SubstrateAuths,
-            component: SubstrateAuths,
+            path: '/dapps',
+            name: Components.DAppsAuths,
+            component: DAppsAuths,
           },
           {
             path: '/wc',

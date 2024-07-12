@@ -264,7 +264,6 @@ const onReject = () => {
 .auth-confirmation {
   display: flex;
   align-items: center;
-  justify-content: space-around;
   flex-direction: column;
   gap: 10px;
   height: 100%;

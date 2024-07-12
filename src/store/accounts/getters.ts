@@ -139,6 +139,7 @@ const getters: GetterTree<State, State> & Getters = {
     accounts.forEach((account) => {
       wallets.push({
         name: account.name,
+        ethereumAddress: account.ethereumAddress,
         address: account.address,
         isMobile: !!account.isMobile,
         active: !!account.active,

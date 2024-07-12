@@ -19,7 +19,7 @@
     @handlerClose="$emit('handlerClose')"
   >
     <div
-      v-for="{ name, value, icon, iconType, subName } in options"
+      v-for="{ name, value, icon, iconType, tokenName } in options"
       :key="value"
       :class="rowClasses(value)"
       @click="toggle(value)"
@@ -33,16 +33,12 @@
           <ExternalLogo v-else :name="icon" class="img" />
         </template>
 
-        <div v-if="subName" class="description-name">
+        <div class="description-name">
           {{ name }}
           <span class="description-name__token">
-            {{ subName }}
+            {{ tokenName }}
           </span>
         </div>
-
-        <span v-else>
-          {{ name }}
-        </span>
       </div>
 
       <SIcon name="basic-check-mark-24" v-show="getIconVisible(value)" />

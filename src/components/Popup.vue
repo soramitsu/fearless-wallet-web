@@ -36,7 +36,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineProps, ref, watch, withDefaults } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 type HorizontalPlacement = 'left' | 'center' | 'right';
 type VerticalPlacement = 'top' | 'center' | 'bottom';
@@ -164,21 +164,19 @@ const popupBackgroundStyles = computed(() => {
 
 const popupContainerStyle = computed(() => (props.showBackground ? topLeftStyles.value : {}));
 
-watch(filterValue, (value) => {
-  emit('handlerFilter', value);
-});
+watch(filterValue, (value) => emit('handlerFilter', value));
 
-function changeFilterValue(value: string) {
+const changeFilterValue = (value: string) => {
   filterValue.value = value;
-}
+};
 
 function close() {
   emit('handlerClose');
 }
 
-function backgroundClick(event: CustomEvent) {
+const backgroundClick = (event: CustomEvent) => {
   if (props.closeByBackground && (event.target as Element)?.classList.contains('popup-background')) close();
-}
+};
 </script>
 
 <style lang="scss" scoped>

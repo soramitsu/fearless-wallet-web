@@ -19,7 +19,7 @@ export class SubstrateRequestHandler {
   readonly logger: Logger;
 
   readonly substrateRequests: Record<string, SignRequest> = {};
-  public readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
+  public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
 
   constructor(
     private readonly requestService: RequestService,

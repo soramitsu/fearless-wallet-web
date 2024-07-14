@@ -4,33 +4,30 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, ref, watch } from 'vue';
 
-@Component
-export default class Rotate extends Vue {
-  notFirstOpening = false;
+type Props = {
+  isActive: boolean;
+};
 
-  @Prop(Boolean) isActive!: boolean;
+const props = withDefaults(defineProps<Props>(), {
+  isActive: false,
+});
 
-  get classes() {
-    return [
-      {
-        rotate: this.isActive,
-        'non-rotate': this.notFirstOpening && !this.isActive,
-      },
-    ];
-  }
+const notFirstOpening = ref(false);
 
-  @Watch('isActive')
-  isActiveWatcher() {
-    this.notFirstOpening = true;
-  }
+const classes = computed(() => [
+  {
+    rotate: props.isActive,
+    'non-rotate': !props.isActive && notFirstOpening.value,
+  },
+]);
 
-  activated() {
-    this.notFirstOpening = false;
-  }
-}
+watch(
+  () => props.isActive,
+  () => (notFirstOpening.value = true)
+);
 </script>
 
 <style lang="scss" scoped>

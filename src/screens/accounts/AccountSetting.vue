@@ -18,7 +18,6 @@
       :hideLastBorder="false"
       :hoverIconValue="true"
       :isHoverRow="true"
-      :isIconValuePrepend="false"
       :key="count"
       iconValue="chevron-right"
       @click="openChainAccounts(type)"

@@ -29,6 +29,7 @@
           <span data-testid="price">{{ price }}</span>
         </div>
       </div>
+
       <slot name="details"></slot>
     </div>
 
@@ -143,6 +144,15 @@ const directionValue = computed(() => (props.isIconValuePrepend ? 'row' : 'row-r
     width: 18px;
     height: 18px;
   }
+
+  .value-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: fit-content;
+    max-width: 300px;
+    flex-direction: v-bind(directionValue);
+  }
 }
 
 .row {
@@ -157,6 +167,9 @@ const directionValue = computed(() => (props.isIconValuePrepend ? 'row' : 'row-r
   .value {
     text-align: right;
     display: flex;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
     .price {
       color: $gray-color;
@@ -189,14 +202,6 @@ const directionValue = computed(() => (props.isIconValuePrepend ? 'row' : 'row-r
         color: $default-white;
       }
     }
-  }
-
-  .value-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 50px;
-    flex-direction: v-bind(directionValue);
   }
 }
 </style>

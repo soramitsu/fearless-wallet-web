@@ -33,7 +33,7 @@ export class SoraCardService {
     this.requestService.getAuthorize((authUrls) => {
       const { POLKASWAP } = URLS;
       const stripedUrl = stripUrl(POLKASWAP);
-      const origin = IS_PRODUCTION ? 'Polkaswap' : 'SubWallet Connect';
+      const origin = IS_PRODUCTION ? 'Polkaswap' : 'Fearless Wallet Connect';
 
       authUrls[stripedUrl] = {
         authorizedAccounts,
@@ -42,7 +42,7 @@ export class SoraCardService {
         origin,
         url: POLKASWAP,
         isAllowed: true,
-        isAllowedMap: {},
+        allowedAccountsMap: {},
       };
 
       this.requestService.setAuthorize(authUrls);

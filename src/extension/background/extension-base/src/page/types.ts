@@ -1,3 +1,4 @@
+import type { JsonRpcPayload, JsonRpcResponse } from '@json-rpc-tools/utils';
 import type {
   MessageTypesWithNoSubscriptions,
   MessageTypesWithNullRequest,
@@ -26,4 +27,42 @@ export interface SendRequest {
     request: RequestTypes[TMessageType],
     subscriber: (data: SubscriptionMessageTypes[TMessageType]) => void
   ): Promise<ResponseTypes[TMessageType]>;
+}
+
+export type FWEvmProvider = {
+  provider?: FWEvmProvider;
+  version: string;
+  isConnected(): boolean;
+};
+
+export type RequestEvmEvents = null;
+export type EvmEventType =
+  | 'connect'
+  | 'disconnect'
+  | 'accountsChanged'
+  | 'chainChanged'
+  | 'message'
+  | 'data'
+  | 'reconnect'
+  | 'error';
+export type EvmAccountsChangedPayload = string[];
+export type EvmChainChangedPayload = string;
+export type EvmConnectPayload = { chainId: EvmChainChangedPayload };
+export type EvmDisconnectPayload = unknown;
+
+export interface EvmEvent {
+  type: EvmEventType;
+  payload: EvmAccountsChangedPayload | EvmChainChangedPayload | EvmConnectPayload | EvmDisconnectPayload;
+}
+
+export interface EvmAppState {
+  networkKey?: string;
+  chainId?: string;
+  isConnected?: boolean;
+  listenEvents?: string[];
+}
+export type RequestEvmProviderSend = JsonRpcPayload;
+export interface ResponseEvmProviderSend {
+  error: Error | null;
+  result?: JsonRpcResponse;
 }

@@ -99,7 +99,7 @@ export default class SettingsPopup extends Vue {
   }
 
   openManageAuths() {
-    this.$router.push({ name: Components.SubstrateAuths });
+    this.$router.push({ name: Components.DAppsAuths });
   }
 
   open(name: SettingsItemType) {

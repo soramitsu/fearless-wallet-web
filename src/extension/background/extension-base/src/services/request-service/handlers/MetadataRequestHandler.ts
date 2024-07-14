@@ -11,7 +11,7 @@ export class MetadataRequestHandler {
   private readonly requestService: RequestService;
   private readonly metaStore: MetadataStore = new MetadataStore();
   readonly metaRequests: Record<string, MetaRequest> = {};
-  public readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
+  public readonly metaSubject = new BehaviorSubject<MetadataRequest[]>([]);
 
   constructor(requestService: RequestService) {
     this.requestService = requestService;

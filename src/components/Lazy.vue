@@ -1,5 +1,5 @@
 <template>
-  <div :ref="targetRef" data-testid="lazy">
+  <div ref="targetRef" data-testid="lazy">
     <slot v-if="shouldRender" />
 
     <Shimmer v-else-if="isTimeout" height="100%" width="100%" />
@@ -7,13 +7,13 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, withDefaults, ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 
 type Props = {
-  threshold: number;
-  root: Element | Document | null;
-  rootMargin: string;
-  timeoutCallback: (fn: () => void) => VoidFunction | undefined;
+  threshold?: number;
+  root?: Element | Document | null;
+  rootMargin?: string;
+  timeoutCallback?: (fn: () => void) => VoidFunction | undefined;
 };
 
 const props = withDefaults(defineProps<Props>(), {
@@ -36,9 +36,7 @@ const options = computed(
     } as IntersectionObserverInit)
 );
 
-const setShouldRender = () => {
-  shouldRender.value = true;
-};
+const setShouldRender = () => (shouldRender.value = true);
 
 onMounted(() => {
   const observer = new IntersectionObserver((entries, observer) => {
@@ -48,10 +46,10 @@ onMounted(() => {
       if (isTimeout.value && props.timeoutCallback) props.timeoutCallback(setShouldRender);
       else setShouldRender();
 
-      targetRef.value && observer.unobserve(targetRef.value);
+      observer.unobserve(targetRef.value!);
     });
   }, options.value);
 
-  targetRef.value && observer.observe(targetRef.value);
+  observer.observe(targetRef.value!);
 });
 </script>

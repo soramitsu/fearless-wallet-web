@@ -1,4 +1,12 @@
-import { type AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
+import type { EvmRequests } from '@extension-base/services/request-service/types';
+import type { AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
+import type { RequestArguments } from '@json-rpc-tools/utils';
+import type {
+  RequestEvmEvents,
+  EvmEvent,
+  ResponseEvmProviderSend,
+  RequestEvmProviderSend,
+} from '@extension-base/page/types';
 import type {
   PoolsParamsRequest,
   PoolsParamsResponse,
@@ -220,10 +228,15 @@ export interface RequestSignatures {
   'pri(fetch.evm.balance)': [FetchEvmBalancePayload, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
   'pri(fetch.balance)': [FetchBalanceRequest, string];
+  'pri(signing.evmrequests)': [null, boolean, EvmRequests];
 
   'pri(price.update.currency)': [string, void];
   'pri(price.subscription)': [null, PriceJson, PriceJson];
   'pri(soraCard.token)': [null, boolean, string];
+  // Evm
+  'evm(events.subscribe)': [RequestEvmEvents, boolean, EvmEvent];
+  'evm(request)': [RequestArguments, unknown];
+  'evm(provider.send)': [RequestEvmProviderSend, string | number, ResponseEvmProviderSend];
 
   //OnBoarding
   'pri(onboarding.isRequired)': [null, boolean];

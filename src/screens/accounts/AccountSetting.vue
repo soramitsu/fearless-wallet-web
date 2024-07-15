@@ -12,12 +12,12 @@
 
     <InfoRow
       v-for="{ name, count, type } in relayChains"
+      data-testid="chainAccounts"
       :text="`${name} ${$t('accounts.chainAccounts')}`"
       :value="count"
       :hideLastBorder="false"
       :hoverIconValue="true"
       :isHoverRow="true"
-      :isIconValuePrepend="false"
       :key="count"
       iconValue="chevron-right"
       @click="openChainAccounts(type)"

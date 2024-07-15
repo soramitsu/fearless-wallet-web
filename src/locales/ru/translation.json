@@ -168,7 +168,6 @@
   },
   "menu": {
     "wallet": "Кошелек",
-    "crowdloans": "Краудлоны",
     "staking": "Стэйкинг",
     "polkaswap": "Polkaswap",
     "history": "История"
@@ -212,7 +211,7 @@
     "chooseFromHistory": "Выбрать из истории",
     "myWallets": "Мои кошельки",
     "direction": "Направление",
-    "wallets": "Rошельки",
+    "wallets": "Кошельки",
     "transfer": "Переводы",
     "reward": "Награды",
     "extrinsic": "Экстринсики",
@@ -645,10 +644,12 @@
     "accounts": "Аккаунты",
     "nodes": "Ноды",
     "export": "Экспорт",
-    "crowdloans": "Краудлоны",
     "staking": "Стейкинг",
     "myStake": "Мой стейкинг",
-    "polkaswap": "Polkaswap"
+    "polkaswap": "Polkaswap",
+    "send": "Отправить",
+    "receive": "Получить",
+    "crossChain": "Скросс-чейн"
   },
   "nft": {
     "owned": "Принадлежит",

@@ -17,8 +17,8 @@ import router from '@/router';
 
 const tabs = {
   substrate: {
-    label: 'common.substrate',
-    name: Components.SubstrateAuths,
+    label: 'common.dapps',
+    name: Components.DAppsAuths,
   },
   wc: {
     label: 'common.wc',
@@ -30,7 +30,7 @@ const route = useRoute();
 
 const activeTab = ref(route.name);
 
-const onActiveTabUpdate = (value: Components.SubstrateAuths | Components.WcAuths) => {
+const onActiveTabUpdate = (value: Components.DAppsAuths | Components.WcAuths) => {
   if (route.name !== value) {
     router.push({ name: value });
     activeTab.value = value;

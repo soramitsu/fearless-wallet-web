@@ -36,8 +36,8 @@ interface Props {
   amount2: string;
   value1?: string;
   value2?: string;
-  priceId1: string;
-  priceId2: string;
+  priceId1?: string;
+  priceId2?: string;
   icon?: string;
 }
 

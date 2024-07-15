@@ -35,139 +35,148 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import type { CustomEvent } from '@/interfaces';
+<script lang="ts" setup>
+import { computed, ref, watch } from 'vue';
 
 type HorizontalPlacement = 'left' | 'center' | 'right';
 type VerticalPlacement = 'top' | 'center' | 'bottom';
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type HeaderType = 'default' | 'success' | 'failed' | 'pending';
 
-@Component
-export default class Popup extends Vue {
-  filterValue = '';
+const filterValue = ref('');
 
-  @Prop(Number) top!: number;
-  @Prop(Number) left!: number;
-  @Prop({ type: Number, required: false }) height?: number;
-  @Prop({ type: Number, required: false }) maxHeight?: number;
-  @Prop({ default: '' }) headerText!: string;
-  @Prop({ default: '' }) placeholder!: string;
-  @Prop({ default: false }) isIcon!: boolean;
-  @Prop({ default: true }) showHeader!: boolean;
-  @Prop({ default: true }) showBlur!: boolean;
-  @Prop({ default: true }) showAnimation!: boolean;
-  @Prop({ default: true }) showBackground!: boolean;
-  @Prop({ default: true }) closeByBackground!: boolean;
-  @Prop({ default: false }) showSearch!: boolean;
-  @Prop({ default: false }) showBorder!: boolean;
-  @Prop({ default: 'medium' }) sizeWidth!: Size;
-  @Prop({ type: Boolean, default: true }) showCloseButton!: boolean;
-  @Prop({ default: 'center' }) horizontalPlacement!: HorizontalPlacement;
-  @Prop({ default: 'center' }) verticalPlacement!: VerticalPlacement;
-  @Prop({ default: 'default' }) headerType!: HeaderType;
-  @Prop({ default: 199 }) zIndex!: number;
+type Props = {
+  top: number;
+  left: number;
+  height?: number;
+  maxHeight?: number;
+  headerText?: string;
+  placeholder?: string;
+  isIcon?: boolean;
+  showHeader?: boolean;
+  showBlur?: boolean;
+  showAnimation?: boolean;
+  showBackground?: boolean;
+  closeByBackground?: boolean;
+  showSearch?: boolean;
+  showBorder?: boolean;
+  sizeWidth?: Size;
+  showCloseButton?: boolean;
+  horizontalPlacement?: HorizontalPlacement;
+  verticalPlacement?: VerticalPlacement;
+  headerType?: HeaderType;
+  zIndex?: number;
+};
 
-  get popupBackgroundClasses() {
-    const classes = [
-      'popup-background',
-      this.showBackground ? 'popup-background-show' : 'popup-background-hide',
-      {
-        'popup-background-blur': this.showBlur && this.showBackground,
-        'popup-background-animation': this.showAnimation,
-      },
-    ];
+const props = withDefaults(defineProps<Props>(), {
+  headerText: '',
+  placeholder: '',
+  isIcon: false,
+  showHeader: true,
+  showBlur: true,
+  showAnimation: true,
+  showBackground: true,
+  closeByBackground: true,
+  showSearch: false,
+  showBorder: false,
+  sizeWidth: 'medium',
+  showCloseButton: true,
+  horizontalPlacement: 'center',
+  verticalPlacement: 'center',
+  headerType: 'default',
+  zIndex: 199,
+});
 
-    if (this.showBackground)
-      classes.push(
-        `popup-background-horizontal-placement-${this.horizontalPlacement}`,
-        `popup-background-vertical-placement-${this.verticalPlacement}`
-      );
+const emit = defineEmits(['handlerFilter', 'handlerClose']);
 
-    return classes;
-  }
+const popupBackgroundClasses = computed(() => {
+  const classes = [
+    'popup-background',
+    props.showBackground ? 'popup-background-show' : 'popup-background-hide',
+    {
+      'popup-background-blur': props.showBlur && props.showBackground,
+      'popup-background-animation': props.showAnimation,
+    },
+  ];
 
-  get popupContainerClasses() {
-    const classes = [
-      'popup-container',
-      {
-        border: this.showBorder,
-      },
-    ];
+  if (props.showBackground)
+    classes.push(
+      `popup-background-horizontal-placement-${props.horizontalPlacement}`,
+      `popup-background-vertical-placement-${props.verticalPlacement}`
+    );
 
-    if (this.sizeWidth) classes.push(`width-${this.sizeWidth}`);
+  return classes;
+});
 
-    return classes;
-  }
+const popupContainerClasses = computed(() => {
+  const classes = [
+    'popup-container',
+    {
+      border: props.showBorder,
+    },
+  ];
 
-  get popupContainerStyles() {
-    const styles: Record<string, string> = {};
+  if (props.sizeWidth) classes.push(`width-${props.sizeWidth}`);
 
-    if (this.height) styles.height = `${this.height}px`;
+  return classes;
+});
 
-    if (this.maxHeight) styles.maxHeight = `${this.maxHeight}px`;
+const popupContainerStyles = computed(() => {
+  const styles: Record<string, string> = {};
 
-    return styles;
-  }
+  if (props.height) styles.height = `${props.height}px`;
 
-  get headerCentered() {
-    return !this.showCloseButton ? 'header--centered' : '';
-  }
+  if (props.maxHeight) styles.maxHeight = `${props.maxHeight}px`;
 
-  get headerClasses() {
-    const classes = [
-      'header-text',
-      {
-        'header-text-success': this.headerType === 'success',
-        'header-text-pending': this.headerType === 'pending',
-        'header-text-failed': this.headerType === 'failed',
-      },
-    ];
+  return styles;
+});
 
-    return classes;
-  }
+const headerCentered = computed(() => (!props.showCloseButton ? 'header--centered' : ''));
 
-  get topLeftStyles() {
-    const styles: Record<string, string> = {};
+const headerClasses = computed(() => {
+  return [
+    'header-text',
+    {
+      'header-text-success': props.headerType === 'success',
+      'header-text-pending': props.headerType === 'pending',
+      'header-text-failed': props.headerType === 'failed',
+    },
+  ];
+});
 
-    if (this.top) styles.top = `${this.top}px`;
+const topLeftStyles = computed(() => {
+  const styles: Record<string, string> = {};
 
-    if (this.left) styles.left = `${this.left}px`;
+  if (props.top) styles.top = `${props.top}px`;
 
-    return styles;
-  }
+  if (props.left) styles.left = `${props.left}px`;
 
-  get popupBackgroundStyles() {
-    const styles: Record<string, string> = !this.showBackground ? this.topLeftStyles : {};
+  return styles;
+});
 
-    if (this.zIndex) styles.zIndex = this.zIndex.toString();
+const popupBackgroundStyles = computed(() => {
+  const styles: Record<string, string> = !props.showBackground ? topLeftStyles.value : {};
 
-    return styles;
-  }
+  if (props.zIndex) styles.zIndex = props.zIndex.toString();
 
-  get popupContainerStyle() {
-    return this.showBackground ? this.topLeftStyles : {};
-  }
+  return styles;
+});
 
-  @Watch('filterValue')
-  filter(value: string) {
-    this.$emit('handlerFilter', value);
-  }
+const popupContainerStyle = computed(() => (props.showBackground ? topLeftStyles.value : {}));
 
-  changeFilterValue(value: string) {
-    this.filterValue = value;
-  }
+watch(filterValue, (value) => emit('handlerFilter', value));
 
-  backgroundClick(event: CustomEvent) {
-    if (this.closeByBackground && event.target?.classList.contains('popup-background')) this.close();
-  }
+const changeFilterValue = (value: string) => {
+  filterValue.value = value;
+};
 
-  close() {
-    this.$emit('handlerFilter', '');
-    this.$emit('handlerClose');
-  }
+function close() {
+  emit('handlerClose');
 }
+
+const backgroundClick = (event: CustomEvent) => {
+  if (props.closeByBackground && (event.target as Element)?.classList.contains('popup-background')) close();
+};
 </script>
 
 <style lang="scss" scoped>
@@ -194,7 +203,7 @@ export default class Popup extends Vue {
     background-color: #111111;
     clip-path: $big-clip-path-left-top-and-right-bottom;
     border-radius: $default-border-radius;
-    padding: 15px 0;
+    padding: 15px 0 13px;
   }
 
   .header-with-icon {

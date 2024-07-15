@@ -5,7 +5,7 @@ import { APP_WIDTH, APP_HEIGHT, APP_NAME } from '@/consts/global';
 import buildMenu from '@/desktop/menu';
 import buildAboutPage from '@/desktop/about';
 
-const isDevelopment = process.env.NODE_ENV !== 'production';
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([

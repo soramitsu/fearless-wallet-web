@@ -17,7 +17,7 @@
 
         <HistoryBook
           v-else-if="showHistoryBook"
-          :network="syncedNetwork"
+          :network="targetNetwork"
           :assetId="syncedAssetId"
           @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
           @setRecipient="setRecipient"
@@ -43,7 +43,7 @@
             <template v-if="step === 1">
               <InputWithIcon
                 v-if="isTransfer"
-                :value="originNetwork"
+                :value="syncedNetwork"
                 class="row"
                 icon="rotate"
                 :placeholder="placeholderNetwork"
@@ -54,7 +54,7 @@
 
               <FInput
                 v-else
-                :value="originNetwork"
+                :value="syncedNetwork"
                 class="row"
                 size="big"
                 :placeholder="placeholderNetwork"
@@ -158,8 +158,8 @@
       verticalPlacement="top"
       class="transfer-select-popup"
       :value="selectPopupValue"
-      :showBlur="false"
-      :showBackground="false"
+      :showBlur="true"
+      :showBackground="true"
       :top="top"
       :left="left"
       :height="285"
@@ -226,7 +226,7 @@ import {
   isValidAmountAsset,
   getUtilityAsset,
 } from '@/helpers/currencies';
-import { cut, firstCharToUp, getClipboard } from '@/helpers';
+import { cut, getClipboard } from '@/helpers';
 import {
   VALID_SUBSTRATE_ADDRESS,
   VALID_ETHEREUM_ADDRESS,
@@ -311,10 +311,6 @@ export default class TransferForm extends Vue {
 
   get showEditAddressBook() {
     return this.newAddress !== '';
-  }
-
-  get originNetwork() {
-    return firstCharToUp(this.syncedNetwork);
   }
 
   get filteredWallets() {
@@ -528,6 +524,7 @@ export default class TransferForm extends Vue {
 
   get options() {
     const filter = this.filterValue.trim().toLowerCase();
+
     let options: { name: string; value: string; icon: string | undefined }[] = [];
 
     if (this.showSelectedAssetPopup) options = this.optionsCurrency;
@@ -595,7 +592,7 @@ export default class TransferForm extends Vue {
 
       return [
         {
-          name: firstCharToUp(name),
+          name: network.name,
           value: name.toLowerCase(),
           icon,
         },
@@ -738,9 +735,7 @@ export default class TransferForm extends Vue {
     this.syncedDestNet = this.optionsDestNet?.[0]?.value ?? '';
     this.syncedValue = '';
 
-    if (this.isTransfer) {
-      this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
-    }
+    if (this.isTransfer) this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
   }
 
   @Watch('syncedDestNet')

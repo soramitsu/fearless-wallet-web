@@ -11,6 +11,7 @@ import {
 } from '@extension-base/services/request-service/handlers';
 import { type KeyringService } from '@extension-base/services';
 import { assert } from '@polkadot/util';
+import { type NetworkJson } from '@extension-base/types';
 import type {
   WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
@@ -31,7 +32,7 @@ import type {
   AuthorizedAccountsDiff,
   RequestAuthorizeCancel,
 } from '@extension-base/background/types/types';
-import type { WCSignRequest } from '@extension-base/services/request-service/types';
+import type { DAppChainInfoPayload, EvmRequests, WCSignRequest } from '@extension-base/services/request-service/types';
 import type State from '@extension-base/background/handlers/State';
 
 export class RequestService {
@@ -48,7 +49,7 @@ export class RequestService {
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
-    this.authRequestHandler = new AuthRequestHandler(this);
+    this.authRequestHandler = new AuthRequestHandler(this, state.networkService);
     this.substrateRequestHandler = new SubstrateRequestHandler(this, keyringService, this.state);
     this.evmRequestHandler = new EvmRequestHandler(this);
   }
@@ -158,18 +159,27 @@ export class RequestService {
   }
 
   public getSignRequest(id: string) {
+    if (this.evmRequestHandler.getEvmSignRequest(id)) return this.evmRequestHandler.getEvmSignRequest(id);
+
     return this.substrateRequestHandler.getSignRequest(id);
   }
 
   //Evm
   public get signWcSubject(): BehaviorSubject<WalletConnectTransactionRequest[]> {
-    return this.evmRequestHandler.signSubject;
+    return this.evmRequestHandler.signWcSubject;
+  }
+
+  public get signEvmSubject(): BehaviorSubject<EvmRequests> {
+    return this.evmRequestHandler.signEvmSubject;
   }
 
   public signWcRequest(topic: string): WCSignRequest {
     return this.evmRequestHandler.getSignWCRequest(topic);
   }
 
+  public getDAppNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {
+    return this.authRequestHandler.getDAppNetworkInfo(options);
+  }
   // WalletConnect Connect requests
   public getConnectWCRequest(id: string) {
     return this.connectWCRequestHandler.getConnectWCRequest(id);

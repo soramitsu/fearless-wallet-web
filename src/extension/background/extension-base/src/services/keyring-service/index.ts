@@ -229,11 +229,16 @@ export class KeyringService {
   getSubstrateAddress(address: string) {
     if (!isEthereumAddress(address)) return address;
 
-    const accounts = this.getAllAccounts();
+    const accounts = this.getSubstrateAccounts();
+    const addresses = this.getAddresses();
 
-    const account = accounts.find(
-      ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
-    );
+    const account =
+      accounts.find(
+        ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
+      ) ||
+      addresses.find(
+        ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
+      );
 
     return account?.address ?? address;
   }
@@ -242,9 +247,23 @@ export class KeyringService {
     if (isEthereumAddress(address)) return address;
 
     const accounts = this.getAllAccounts();
-    const account = accounts.find(({ address: _address }) => _address === address);
+    const addresses = this.getAddresses();
+
+    const account =
+      accounts.find(({ address: _address }) => _address === address) ||
+      addresses.find(({ address: _address }) => _address === address);
 
     return (account?.meta.ethereumAddress as string) ?? '';
+  }
+
+  isMobileAccount(address: string): boolean {
+    const account =
+      this.getAllAccounts().find((el) => el.address === address) ||
+      this.getAddresses().find((el) => el.address === address || el.meta.ethereumAddress === address);
+
+    if (!account) throw new Error('Couldnt find account');
+
+    return !!account.meta.isMobile;
   }
 
   exportMnemonic({ address, password }: RequestExportMnemonic): ResponseExportMnemonic {

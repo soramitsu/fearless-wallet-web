@@ -1,47 +1,23 @@
 import { chrome } from '@extension-base/utils/crossenv';
 import { MESSAGE_ORIGIN_CONTENT, MESSAGE_ORIGIN_PAGE, PORT_CONTENT } from '@extension-base/defaults';
-import { type Port } from '@extension-base/background/types/types';
 import type { Message } from '@extension-base/types';
 
-let port: Port;
+const port = chrome.runtime.connect({ name: PORT_CONTENT });
 
-console.info('content.ts initialization');
+const onMessage = ({ data, source }: Message): void => {
+  if (source !== window || data.origin !== MESSAGE_ORIGIN_PAGE) return;
 
-class Content {
-  private setListeners() {
-    port = chrome.runtime.connect({ name: PORT_CONTENT });
+  port.postMessage(data);
+};
 
-    const onMessage = ({ data, source }: Message): void => {
-      if (source !== window || data.origin !== MESSAGE_ORIGIN_PAGE) return;
+port.onMessage.addListener((data): void => {
+  window.postMessage({ ...data, origin: MESSAGE_ORIGIN_CONTENT }, '*');
+});
 
-      port.postMessage(data);
-    };
+window.addEventListener('message', onMessage);
 
-    port.onMessage.addListener((data: any): void => {
-      window.postMessage({ ...data, origin: MESSAGE_ORIGIN_CONTENT }, '*');
-    });
+const script = document.createElement('script');
+const container = document.head || document.documentElement;
 
-    port.onDisconnect.addListener(this.setListeners);
-
-    window.addEventListener('message', onMessage);
-  }
-
-  private injectScript() {
-    const script = document.createElement('script');
-
-    script.src = chrome.runtime.getURL('page.js');
-
-    script.onload = (): void => {
-      if (script.parentNode) script.parentNode.removeChild(script);
-    };
-
-    (document.head || document.documentElement).appendChild(script);
-  }
-
-  public init() {
-    this.setListeners();
-    this.injectScript();
-  }
-}
-
-new Content().init();
+script.src = chrome.runtime.getURL('page.js');
+container.insertBefore(script, container.children[0]);

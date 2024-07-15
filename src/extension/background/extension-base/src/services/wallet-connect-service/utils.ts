@@ -55,23 +55,34 @@ export const parseRequestParams = <T = keyof WalletConnectSigningMethod>(params:
   return params as WalletConnectParamMap[T];
 };
 
-export const getEip155MessageAddress = (method: EIP155_SIGNING_METHODS, param: unknown): string => {
+export function parseAddressFromSendTxRequest(params: unknown) {
+  const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(params);
+
+  return tx.from;
+}
+
+export function parseAddressFromPersonalSign(params: unknown) {
+  const [p1, p2] = parseRequestParams<EIP155_SIGNING_METHODS.PERSONAL_SIGN>(params);
+
+  if (typeof p1 === 'string' && isEthereumAddress(p1)) {
+    return p1;
+  } else if (typeof p2 === 'string' && isEthereumAddress(p2)) return p2;
+
+  return '';
+}
+
+export const getEip155MessageAddress = (method: string, param: unknown): string => {
   switch (method) {
     case EIP155_SIGNING_METHODS.PERSONAL_SIGN:
     case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA:
     case EIP155_SIGNING_METHODS.ETH_SIGN:
     case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3:
     case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4:
-      // eslint-disable-next-line no-case-declarations
-      const [p1, p2] = parseRequestParams<EIP155_SIGNING_METHODS.PERSONAL_SIGN>(param);
+      return parseAddressFromPersonalSign(param);
 
-      if (typeof p1 === 'string' && isEthereumAddress(p1)) {
-        return p1;
-      } else if (typeof p2 === 'string' && isEthereumAddress(p2)) {
-        return p2;
-      }
+    case EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION:
+      return parseAddressFromSendTxRequest(param);
 
-      return '';
     default:
       return '';
   }

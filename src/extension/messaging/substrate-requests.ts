@@ -1,3 +1,4 @@
+import { type EvmRequests } from '@extension-base/services/request-service/types';
 import type {
   SigningRequest,
   ResponseSigningIsLocked,
@@ -58,6 +59,10 @@ export function approveSignSignature(id: string, signature: HexString): Promise<
 
 export function subscribeSigningRequests(cb: (accounts: SigningRequest[]) => void): Promise<boolean> {
   return sendMessage('pri(signing.requests)', null, cb);
+}
+
+export function subscribeEvmSigningRequests(cb: (requests: EvmRequests) => void): Promise<boolean> {
+  return sendMessage('pri(signing.evmrequests)', null, cb);
 }
 
 export function approveMetaRequest(id: string): Promise<boolean> {

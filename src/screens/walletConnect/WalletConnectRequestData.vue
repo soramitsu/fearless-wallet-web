@@ -69,7 +69,7 @@ const requestData = computed(() => {
   if (isEvmTxRequest.value) {
     const [, chainId] = props.request.params.chainId.split(':');
     const network: string = store.getters.getNetwork(chainId)?.name ?? `${baseKey}.networkError`;
-    const { value, gas } = params;
+    const { value, gas } = Array.isArray(params) ? params[0] : params;
 
     data[`${baseKey}.network`] = network;
     data[`${baseKey}.amount`] = value ? formatEther(BigInt(value).toString()).toString() : '';

@@ -31,6 +31,7 @@ import type { AccountJson } from '@extension-base/background/types/types';
 import { useStore } from '@/store';
 import { cut } from '@/helpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 const store = useStore();
 const props = defineProps<{ request: WalletConnectTransactionRequest }>();
@@ -81,7 +82,7 @@ const requestData = computed(() => {
 });
 
 const txWallet = computed(() => {
-  const accounts: AccountJson[] = store.getters.getAccounts;
+  const accounts: AccountJson[] = store.getters[AccountsGettersTypes.getAccounts];
 
   return accounts.find(({ ethereumAddress }) => ethereumAddress.toLowerCase() === address.value.toLowerCase());
 });

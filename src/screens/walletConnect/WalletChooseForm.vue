@@ -20,6 +20,7 @@
 import { ref } from 'vue';
 import type { AccountJson } from '@extension-base/background/types/types';
 import { useStore } from '@/store';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 const props = defineProps<{
   selectedAddress: string;
@@ -27,7 +28,7 @@ const props = defineProps<{
 const emit = defineEmits(['onSelect', 'onClose']);
 const store = useStore();
 const wallets = ref<AccountJson[]>(
-  (store.getters.getAccounts as AccountJson[]).filter((el) => el.ethereumAddress && !el.isMobile)
+  (store.getters[AccountsGettersTypes.getAccounts] as AccountJson[]).filter((el) => el.ethereumAddress && !el.isMobile)
 );
 const close = () => emit('onClose');
 const isSelected = (address: string) => address === props.selectedAddress;

@@ -88,6 +88,7 @@ import { type SignRequestList } from '@/store/extension/types';
 import { cut } from '@/helpers';
 import { isSignLocked, validatePassword, approveSignPassword } from '@/extension/messaging';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as ExtensionGetterTypes } from '@/store/extension/getters';
 
 const state = reactive({
   isLocked: true,
@@ -101,9 +102,9 @@ const state = reactive({
 const store = useStore();
 const { t } = useI18n();
 
-const payload = computed<SignerPayloadJSON>(() => store.getters.signRequestPayload);
-const requests = computed<SignRequestList>(() => store.getters.signList);
-const accounts = computed<AccountJson[]>(() => store.getters.getAccounts);
+const payload = computed<SignerPayloadJSON>(() => store.getters[ExtensionGetterTypes.signRequestPayload]);
+const requests = computed<SignRequestList>(() => store.getters[ExtensionGetterTypes.signList]);
+const accounts = computed<AccountJson[]>(() => store.getters[AccountsGettersTypes.getAccounts]);
 const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
 
 const onSignApprove = (data: ApprovePayload) => {

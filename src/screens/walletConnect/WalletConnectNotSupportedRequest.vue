@@ -24,11 +24,12 @@ import type { WalletConnectNotSupportRequest } from '@extension-base/services/wa
 import WalletConnectHeader from '@/screens/walletConnect/WalletConnectHeader.vue';
 import { useStore } from '@/store';
 import { rejectWalletConnectSession } from '@/extension/messaging';
+import { GettersTypes as ExtensionGetterTypes } from '@/store/extension/getters';
 
 const store = useStore();
 const router = useRouter();
 const { t } = useI18n();
-const [request]: WalletConnectNotSupportRequest[] = store.getters.wcNotSupportedRequests;
+const [request]: WalletConnectNotSupportRequest[] = store.getters[ExtensionGetterTypes.wcNotSupportedRequests];
 
 const id = computed(() => request.id);
 const url = computed(() => request.url);

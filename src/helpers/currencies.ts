@@ -195,7 +195,10 @@ function isValidAmountAsset(
 function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: string) {
   const store = useStore();
   const network: NetworkJson = store.getters[NetworksGettersTypes.getNetwork](balance.name);
-  const favoriteNetworks = store.getters.favoriteNetworksNames as { name: string; favorite: string[] }[];
+  const favoriteNetworks = store.getters[NetworksGettersTypes.favoriteNetworksNames] as {
+    name: string;
+    favorite: string[];
+  }[];
   const { address }: Wallet = store.getters[AccountsGettersTypes.selectedWallet];
 
   if (selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;

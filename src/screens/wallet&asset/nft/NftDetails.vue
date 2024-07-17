@@ -74,7 +74,8 @@ const collection = computed<NftCollection>(
 );
 
 const nft = computed<Partial<FearlessNft>>(() => {
-  const nftCollectionFromStore: FearlessNft[] = store.getters.availableNfts[contract.value]?.collection ?? [];
+  const nftCollectionFromStore: FearlessNft[] =
+    store.getters[AccountsGettersTypes.availableNfts][contract.value]?.collection ?? [];
   const ownedNfts: FearlessNft[] = [...collection.value.ownedNfts] ?? [];
 
   return (

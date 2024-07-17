@@ -104,7 +104,7 @@ function getProviderUrl(name: BuyProvider, asset: string, address: string) {
 }
 
 function getCurrencyOptions(tokenGroup: TokenGroup[]) {
-  return tokenGroup.map(({ groupId, symbol: _symbol, icon, relayChain }) => {
+  return tokenGroup.map(({ groupId, symbol: _symbol, icon, relayChain, tokenName }) => {
     const assetUpper = _symbol.toUpperCase();
     const filteredOptions = tokenGroup.filter(({ symbol }) => symbol === _symbol);
     const label = filteredOptions.length > 1 ? `${assetUpper} (${relayChain.toUpperCase()})` : assetUpper;
@@ -112,6 +112,7 @@ function getCurrencyOptions(tokenGroup: TokenGroup[]) {
     return {
       name: getNativeAssetName(label).toUpperCase(),
       value: groupId,
+      subName: tokenName,
       icon,
     };
   });

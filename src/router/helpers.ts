@@ -1,7 +1,8 @@
 import store, { type NetworkParams } from '@/store';
 import { type NetworkName } from '@/interfaces';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
-const haveSelectedWallet = () => store.getters.selectedWallet.address.length !== 0;
+const haveSelectedWallet = () => store.getters[AccountsGettersTypes.selectedWallet].address.length !== 0;
 const haveAuthRequests = (): number => store.getters.authList.length;
 const haveSignRequests = (): number => store.getters.signList.length;
 const haveMetaRequests = (): number => store.getters.metaRequests.length;

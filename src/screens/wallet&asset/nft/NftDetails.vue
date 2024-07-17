@@ -60,11 +60,12 @@ import type { FearlessNft, NftCollection } from '@extension-base/services/nft-se
 import { type SelectedWallet, useStore } from '@/store';
 import { cut } from '@/helpers';
 import { Components } from '@/router/routes';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 const router = useRouter();
 const route = useRoute();
 const store = useStore();
-const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
 const id = computed(() => route.params.id);
 const contract = computed(() => route.params.contract);
 const nfts = computed<NftCollection[]>(() => store.getters.nfts ?? {});
@@ -103,11 +104,10 @@ onMounted(() => {
 });
 
 const onShare = () => {
-  const selectedWallet: SelectedWallet = store.getters.selectedWallet;
   const dataToShare = {
-    'My public address to recieve NFTs:': selectedWallet.ethereumAddress,
+    'My public address to recieve NFTs:': selectedWallet.value.ethereumAddress,
     collection: contract.value,
-    owned: selectedWallet.ethereumAddress,
+    owned: selectedWallet.value.ethereumAddress,
     creator: nft.value.creator,
     network: nft.value.network,
     'token Id': id.value,

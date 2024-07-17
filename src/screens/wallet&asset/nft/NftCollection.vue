@@ -42,13 +42,14 @@ import { fetchAvailableNftsForContract } from '@/extension/messaging/nfts';
 import { type SelectedWallet, useStore } from '@/store';
 import NftItem from '@/screens/wallet&asset/nft/NftItem.vue';
 import Tooltip from '@/components/Tooltip.vue';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 const route = useRoute();
 const router = useRouter();
 const store = useStore();
 const { t } = useI18n();
 
-const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
 
 const contract = computed(() => route.params.contract);
 const availableNftsFromStore = computed<AvailableNftState>(() => store.getters.availableNfts);

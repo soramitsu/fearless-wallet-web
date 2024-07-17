@@ -296,7 +296,12 @@ export default class CurrencyItem extends Vue {
   }
 
   get redirectNetwork(): string {
-    return this.isCurrentNetwork ? this.selectedNetwork : '';
+    if (this.isCurrentNetwork) return this.selectedNetwork;
+
+    const netName = this.computeActiveNetworks[0].name;
+    const network = this.getNetwork(netName);
+
+    return network.name;
   }
 
   get computeActiveNetworks() {
@@ -334,7 +339,7 @@ export default class CurrencyItem extends Vue {
         name: Components.AssetHistory,
         params: {
           assetId: this.groupId,
-          selectedNetwork: this.redirectNetwork === '' ? this.computeActiveNetworks[0].name : this.redirectNetwork,
+          selectedNetwork: this.redirectNetwork,
         },
       });
     else

@@ -72,7 +72,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
 import { Components } from '@/router/routes';
-import { NetworksController } from '@/controllers';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { fetchEvmBalance } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
@@ -156,8 +155,8 @@ export default class AssetNetworks extends Vue {
       }
 
       if (this.filterValue === 'popularity') {
-        const value1 = NetworksController.getNetwork(a.name).rank ?? Infinity;
-        const value2 = NetworksController.getNetwork(a.name).rank ?? Infinity;
+        const value1 = this.getNetwork(a.name).rank ?? Infinity;
+        const value2 = this.getNetwork(b.name).rank ?? Infinity;
 
         return value1 - value2;
       }

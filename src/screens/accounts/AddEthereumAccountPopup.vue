@@ -4,6 +4,7 @@
     sizeWidth="big"
     :showBorder="true"
     :showAnimation="false"
+    :zIndex="399"
     @handlerClose="$emit('handlerClose')"
   >
     <div class="add-ethereum-account">

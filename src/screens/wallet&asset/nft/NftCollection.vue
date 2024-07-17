@@ -64,7 +64,8 @@ const state = reactive<{ pageKey?: string; canLoadMore: boolean }>({
 });
 
 const tooltip = ref<Tooltip>();
-const nfts = computed<NftCollection[]>(() => store.getters.nfts ?? []);
+
+const nfts = computed<NftCollection[]>(() => store.getters[AccountsGettersTypes.nfts] ?? []);
 const collection = computed(() => nfts.value.find((el) => el.address === contract.value));
 const name = computed(() => collection.value?.name);
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);

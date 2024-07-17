@@ -146,7 +146,7 @@ const formInfo = reactive({
 const showEditAddressBook = computed(() => formInfo.newAddress !== '');
 const id = computed(() => route.params.id);
 const contract = computed(() => route.params.contract);
-const nfts = computed<NftCollection[]>(() => store.getters.nfts ?? {});
+const nfts = computed<NftCollection[]>(() => store.getters[AccountsGettersTypes.nfts] ?? {});
 
 const collection = computed<NftCollection | undefined>(() => nfts.value.find((nft) => nft.address === contract.value));
 

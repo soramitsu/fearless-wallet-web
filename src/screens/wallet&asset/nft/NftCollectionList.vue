@@ -27,9 +27,9 @@ const emit = defineEmits(['toggleAssetsManagementForm']);
 const props = defineProps<{ showAssetsManagementForm: boolean; filterValue: string }>();
 const store = useStore();
 
-const selectedNetwork = computed<string>(() => store.getters.selectedNetwork);
+const selectedNetwork = computed<string>(() => store.getters[AccountsGettersTypes.selectedNetwork]);
 const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
-const nfts = computed<NftCollection[]>(() => store.getters.nfts);
+const nfts = computed<NftCollection[]>(() => store.getters[AccountsGettersTypes.nfts]);
 const activeNetworkForSelectedWallet = computed<NetworkJson[]>(() => store.getters.activeNetworkForSelectedWallet);
 
 const filteredNfts = computed(() => {

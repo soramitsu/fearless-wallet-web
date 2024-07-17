@@ -68,7 +68,7 @@ const store = useStore();
 const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
 const id = computed(() => route.params.id);
 const contract = computed(() => route.params.contract);
-const nfts = computed<NftCollection[]>(() => store.getters.nfts ?? {});
+const nfts = computed<NftCollection[]>(() => store.getters[AccountsGettersTypes.nfts] ?? {});
 const collection = computed<NftCollection>(
   () => nfts.value.find((nft) => nft.address === contract.value) ?? { ownedNfts: [], address: '', network: '' }
 );

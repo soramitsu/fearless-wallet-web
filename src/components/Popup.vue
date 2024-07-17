@@ -203,7 +203,7 @@ const backgroundClick = (event: CustomEvent) => {
     background-color: #111111;
     clip-path: $big-clip-path-left-top-and-right-bottom;
     border-radius: $default-border-radius;
-    padding: 15px 0;
+    padding: 15px 0 13px;
   }
 
   .header-with-icon {

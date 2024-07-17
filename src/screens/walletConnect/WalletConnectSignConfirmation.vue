@@ -66,6 +66,7 @@ import { walletConnectRequestReject, walletConnectRequestApprove, isSignLocked }
 import { useStore } from '@/store';
 import { useNotify } from '@/plugins/soramitsuUI';
 import ValidatedInput from '@/components/ValidatedInput.vue';
+import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
 type Error = { message: TransferErrorCode.UNSUPPORTED | BasicTxErrorCode.KEYRING_ERROR };
 
@@ -80,7 +81,7 @@ const state = reactive({
 });
 const password = ref('');
 
-const requests = computed<WalletConnectTransactionRequest[]>(() => store.getters.wcSignList);
+const requests = computed<WalletConnectTransactionRequest[]>(() => store.getters[ExtensionGettersTypes.wcSignList]);
 const request = computed<WalletConnectTransactionRequest>(() => requests.value[0]);
 
 watch(requests, () => {

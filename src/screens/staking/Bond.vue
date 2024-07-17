@@ -342,7 +342,12 @@ export default class Bond extends Vue {
   }
 
   get btnText() {
-    if (this.step === 1) return 'common.next';
+    if (this.step === 1) {
+      if (this.transferableAmount === 0)
+        return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
+
+      return 'common.next';
+    }
 
     if (this.step === 3) return 'common.iAgree';
 

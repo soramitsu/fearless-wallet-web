@@ -429,7 +429,7 @@ const routes: Array<RouteConfig> = [
         },
       },
       {
-        path: '/chain-accounts',
+        path: '/chain-accounts/:type',
         name: Components.ChainAccounts,
         component: ChainAccounts,
         meta: {

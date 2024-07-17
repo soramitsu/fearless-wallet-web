@@ -593,7 +593,7 @@ export default class TransferForm extends Vue {
       return [
         {
           name: network.name,
-          value: name.toLowerCase(),
+          value: network.name,
           icon,
         },
       ];

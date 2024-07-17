@@ -116,6 +116,8 @@ import { checkNft } from '@/extension/messaging/nfts';
 import ContentForm from '@/components/ContentForm.vue';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 const store = useStore();
 const route = useRoute();
@@ -144,14 +146,14 @@ const formInfo = reactive({
 const showEditAddressBook = computed(() => formInfo.newAddress !== '');
 const id = computed(() => route.params.id);
 const contract = computed(() => route.params.contract);
-const nfts = computed<NftCollection[]>(() => store.getters.nfts ?? {});
+const nfts = computed<NftCollection[]>(() => store.getters[AccountsGettersTypes.nfts] ?? {});
 
 const collection = computed<NftCollection | undefined>(() => nfts.value.find((nft) => nft.address === contract.value));
 
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value));
 const wallets = computed<AccountJson[]>(() => store.getters.getAccounts);
-const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
 const image = computed(() => nft.value?.image ?? require('@/assets/fearless-logo-animated.gif'));
 
 const filteredWallets = computed(() =>
@@ -165,7 +167,7 @@ const isSameAddress = computed(() => BaseApi.isSameAddress(selectedWallet.value,
 const isDisabled = computed(() => formInfo.to === '' || errors.incorrectRecipient || errors.insufficientFunds);
 
 const assetSymbol = computed(() => {
-  const net: NetworkJson = store.getters.getNetwork(network.value);
+  const net: NetworkJson = store.getters[NetworksGettersTypes.getNetwork](network.value);
 
   return net?.assets.find(({ isUtility }) => isUtility)?.symbol ?? '';
 });

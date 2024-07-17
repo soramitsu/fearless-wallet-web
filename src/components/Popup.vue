@@ -46,8 +46,8 @@ type HeaderType = 'default' | 'success' | 'failed' | 'pending';
 const filterValue = ref('');
 
 type Props = {
-  top: number;
-  left: number;
+  top?: number;
+  left?: number;
   height?: number;
   maxHeight?: number;
   headerText?: string;

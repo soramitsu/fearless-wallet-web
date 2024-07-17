@@ -87,6 +87,7 @@ import { IS_EXTENSION } from '@/consts/global';
 import { type SignRequestList } from '@/store/extension/types';
 import { cut } from '@/helpers';
 import { isSignLocked, validatePassword, approveSignPassword } from '@/extension/messaging';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 const state = reactive({
   isLocked: true,
@@ -103,7 +104,7 @@ const { t } = useI18n();
 const payload = computed<SignerPayloadJSON>(() => store.getters.signRequestPayload);
 const requests = computed<SignRequestList>(() => store.getters.signList);
 const accounts = computed<AccountJson[]>(() => store.getters.getAccounts);
-const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
 
 const onSignApprove = (data: ApprovePayload) => {
   store.dispatch('APPROVE_SIGN_PASSWORD', data);

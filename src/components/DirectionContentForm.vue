@@ -27,6 +27,7 @@ import { computed, withDefaults } from 'vue';
 import { useI18n } from 'vue-i18n-composable';
 import { type GetAssetPrice, useStore } from '@/store';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 interface Props {
   isExchangeB?: boolean;
@@ -67,7 +68,7 @@ const directionIcons = computed(() => [
 const amount1Cut = computed(() => `${n(+props.amount1, 'decimal')} ${props.asset1.toUpperCase()}`);
 const amount2Cut = computed(() => `${n(+props.amount2, 'decimal')} ${props.asset2.toUpperCase()}`);
 
-const fiatSymbol = computed<string>(() => store.getters.fiatSymbol);
+const fiatSymbol = computed<string>(() => store.getters[AccountsGettersTypes.fiatSymbol]);
 const getAssetPrice: GetAssetPrice = (priceId) => store.getters.getAssetPrice(priceId);
 
 const assetPrice1 = computed(() => getAssetPrice(props.priceId1).price);

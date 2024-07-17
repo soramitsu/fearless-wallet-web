@@ -30,6 +30,7 @@ import { isEthereumAddress } from '@polkadot/util-crypto';
 import type { AccountJson } from '@extension-base/background/types/types';
 import { useStore } from '@/store';
 import { cut } from '@/helpers';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 const store = useStore();
 const props = defineProps<{ request: WalletConnectTransactionRequest }>();
@@ -68,7 +69,7 @@ const requestData = computed(() => {
 
   if (isEvmTxRequest.value) {
     const [, chainId] = props.request.params.chainId.split(':');
-    const network: string = store.getters.getNetwork(chainId)?.name ?? `${baseKey}.networkError`;
+    const network: string = store.getters[NetworksGettersTypes.getNetwork](chainId)?.name ?? `${baseKey}.networkError`;
     const { value, gas } = Array.isArray(params) ? params[0] : params;
 
     data[`${baseKey}.network`] = network;

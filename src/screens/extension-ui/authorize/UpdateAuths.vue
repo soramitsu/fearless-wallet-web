@@ -19,6 +19,7 @@ import type { AuthUrls } from '@extension-base/background/types/types';
 import { updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import { type WalletInfo, useStore } from '@/store';
+import { GettersTypes as AccountsGetterType } from '@/store/accounts/getters';
 
 const router = useRouter();
 const route = useRoute();
@@ -50,7 +51,7 @@ const authType = computed(() => list.value[url.value].accountAuthType);
 onMounted(async () => {
   list.value = await store.dispatch('GET_AUTHLIST');
 
-  const wallets: WalletInfo[] = store.getters.getWallets;
+  const wallets: WalletInfo[] = store.getters[AccountsGetterType.getWallets];
 
   const { authorizedAccounts } = list.value[url.value] ?? {};
 

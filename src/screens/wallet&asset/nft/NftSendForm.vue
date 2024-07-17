@@ -152,7 +152,7 @@ const collection = computed<NftCollection | undefined>(() => nfts.value.find((nf
 
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value));
-const wallets = computed<AccountJson[]>(() => store.getters.getAccounts);
+const wallets = computed<AccountJson[]>(() => store.getters[AccountsGettersTypes.getAccounts]);
 const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
 const image = computed(() => nft.value?.image ?? require('@/assets/fearless-logo-animated.gif'));
 

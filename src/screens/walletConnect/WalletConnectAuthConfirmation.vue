@@ -99,6 +99,9 @@ import { transformNamespaces } from '@/util/walletConnect';
 import { cut } from '@/helpers';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
+import { GettersTypes as AccountsGetterType } from '@/store/accounts/getters';
+import { GettersTypes as ExtensionGetterType } from '@/store/extension/getters';
+
 const notificationPopupMessage = {
   subtext: 'walletConnect.unsupportedMethodsPopup',
   text: 'walletConnect.unsupportedMethod',
@@ -116,7 +119,7 @@ const permissionList = [
   { text: t('walletConnect.permissions.transferAssets'), iconColor: 'error' },
 ];
 const wallets = ref<AccountJson[]>(
-  (store.getters.getAccounts as AccountJson[]).filter((el) => el.ethereumAddress && !el.isMobile)
+  (store.getters[AccountsGetterType.getAccounts] as AccountJson[]).filter((el) => el.ethereumAddress && !el.isMobile)
 );
 
 const selectedAddress = ref<string>(wallets.value[0]?.ethereumAddress ?? '');
@@ -124,7 +127,7 @@ const cutAddress = computed(() => cut(selectedAddress.value));
 const selectedWalletName = computed(
   () => wallets.value.find(({ ethereumAddress }) => ethereumAddress === selectedAddress.value)?.name ?? ''
 );
-const request = computed<WalletConnectSessionRequest>(() => store.getters.wcConnectRequests[0]);
+const request = computed<WalletConnectSessionRequest>(() => store.getters[ExtensionGetterType.wcConnectRequests][0]);
 const id = computed(() => request.value.id);
 const url = computed(() => request.value.url);
 const title = computed(() => request.value.request.params.proposer.metadata.name);

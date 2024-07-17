@@ -52,7 +52,7 @@ const { t } = useI18n();
 const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
 
 const contract = computed(() => route.params.contract);
-const availableNftsFromStore = computed<AvailableNftState>(() => store.getters.availableNfts);
+const availableNftsFromStore = computed<AvailableNftState>(() => store.getters[AccountsGettersTypes.availableNfts]);
 const nftCollectionFromStore = computed<FearlessNft[]>(
   () => availableNftsFromStore.value[contract.value]?.collection ?? []
 );

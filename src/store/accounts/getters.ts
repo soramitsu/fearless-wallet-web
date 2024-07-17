@@ -71,7 +71,7 @@ const getters: GetterTree<State, State> & Getters = {
   },
 
   [GettersTypes.nfts](state): NftCollection[] {
-    const activeNetworks: NetworkJson[] = store.getters.activeNetworkForSelectedWallet;
+    const activeNetworks: NetworkJson[] = store.getters[NetworksGettersTypes.activeNetworkForSelectedWallet];
     const nfts: NftCollection[] = [];
 
     activeNetworks.forEach(({ chainId }) => {

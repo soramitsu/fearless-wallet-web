@@ -22,6 +22,7 @@ import NftSettings from '@/screens/wallet&asset/nft/NftSettings.vue';
 import { fetchNfts } from '@/extension/messaging/nfts';
 import { isSameString } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as NetworksGetterType } from '@/store/networks/getters';
 
 const emit = defineEmits(['toggleAssetsManagementForm']);
 const props = defineProps<{ showAssetsManagementForm: boolean; filterValue: string }>();
@@ -30,7 +31,9 @@ const store = useStore();
 const selectedNetwork = computed<string>(() => store.getters[AccountsGettersTypes.selectedNetwork]);
 const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
 const nfts = computed<NftCollection[]>(() => store.getters[AccountsGettersTypes.nfts]);
-const activeNetworkForSelectedWallet = computed<NetworkJson[]>(() => store.getters.activeNetworkForSelectedWallet);
+const activeNetworkForSelectedWallet = computed<NetworkJson[]>(
+  () => store.getters[NetworksGetterType.activeNetworkForSelectedWallet]
+);
 
 const filteredNfts = computed(() => {
   return nfts.value.filter(({ network, name }) => {

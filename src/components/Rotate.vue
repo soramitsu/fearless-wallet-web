@@ -5,7 +5,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onActivated } from 'vue';
 
 type Props = {
   isActive: boolean;
@@ -28,6 +28,10 @@ watch(
   () => props.isActive,
   () => (notFirstOpening.value = true)
 );
+
+onActivated(() => {
+  notFirstOpening.value = false;
+});
 </script>
 
 <style lang="scss" scoped>

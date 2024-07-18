@@ -82,7 +82,7 @@
     "vuex-class": "^0.3.2"
   },
   "devDependencies": {
-    "@open-web3/orml-types": "^2.0.1",
+    "@open-web3/orml-types": "^8.12.2",
     "@polkadot/types": "^10.9.1",
     "@types/chrome": "^0.0.200",
     "@types/crypto-js": "^4.2.2",
@@ -94,7 +94,7 @@
     "@types/node": "^16.11.6",
     "@types/qrcode": "^1.5.0",
     "@types/webextension-polyfill": "^0.10.0",
-    "@typescript-eslint/eslint-plugin": "^6.3.0",
+    "@typescript-eslint/eslint-plugin": "^7.28.0",
     "@typescript-eslint/parser": "^6.3.0",
     "@vue/cli-plugin-babel": "~5.0.8",
     "@vue/cli-plugin-e2e-cypress": "~5.0.8",
@@ -134,7 +134,7 @@
     "sass": "^1.57.1",
     "sass-loader": "^12.3.0",
     "ts-jest": "^27.0.5",
-    "typescript": "5.2.2",
+    "typescript": "5.5.3",
     "vue-cli-plugin-chrome-extension-cli": "^1.1.4",
     "vue-cli-plugin-electron-builder": "^3.0.0-alpha.4",
     "vue-template-compiler": "^2.6.14",

@@ -77,7 +77,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.15.0",
-    "@open-web3/orml-types": "^8.12.2",
+    "@open-web3/orml-types": "^2.0.1",
     "@polkadot/types": "^10.9.1",
     "@types/chrome": "^0.0.200",
     "@types/crypto-js": "^4.2.2",

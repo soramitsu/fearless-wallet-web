@@ -11,7 +11,7 @@
   "browserslist": "last 2 Chrome versions, last 2 Firefox versions",
   "scripts": {
     "serve": "env-cmd -f .env.desktop vue-cli-service serve",
-    "build": "env-cmd -f .env.desktop vue-cli-service build",
+    "build": "yarn build:extension:firefox:zip",
     "build:extension": "EXTENSION_TYPE=chrome OUTPUT_DIR=chrome env-cmd -f .env.extension vue-cli-service --env.NODE_ENV=production build",
     "build:extension-test": "EXTENSION_TYPE=chrome VUE_APP_TEST_ONLY=true OUTPUT_DIR=chrome-test env-cmd -f .env.extension vue-cli-service --env.NODE_ENV=development build --mode development",
     "build:extension:firefox": "EXTENSION_TYPE=firefox OUTPUT_DIR=firefox env-cmd -f .env.extension vue-cli-service --env.NODE_ENV=production build",
@@ -19,7 +19,7 @@
     "build:extension:zip": "yarn run build:extension && cd dist/extension/chrome && zip -r fearless-wallet-extension-chrome.zip . && cd ../../../",
     "build:extension-test:zip": "yarn run build:extension-test && cd dist/extension/chrome-test && zip -r fearless-wallet-extension-chrome-test.zip . && cd ../../../",
     "build:extension:firefox:zip": "yarn run build:extension:firefox && cd dist/extension/firefox && zip -r fearless-wallet-extension-firefox.zip . && cd ../../../",
-    "build:extension:all": "yarn build:extension:zip && yarn build:extension-test:zip && yarn build:extension:firefox:zip",
+    "build:extension:all": "yarn build:extension:zip && yarn build:extension:firefox:zip && yarn build:extension-test:zip",
     "build-watch:extension": "EXTENSION_TYPE=chrome OUTPUT_DIR=chrome env-cmd -f .env.extension  vue-cli-service  --env.NODE_ENV=development build-watch --mode development",
     "build-watch:extension:firefox": "EXTENSION_TYPE=firefox OUTPUT_DIR=firefox env-cmd -f .env.extension vue-cli-service  --env.NODE_ENV=development build-watch --mode development",
     "test:unit": "vue-cli-service test:unit --coverage",
@@ -154,7 +154,7 @@
     "@polkadot/x-fetch": "^12.6.2"
   },
   "license": "Apache-2.0",
-  "packageManager": "yarn@3.4.1",
+  "packageManager": "yarn@4.3.1",
   "lint-staged": {
     "*.{js,jsx,vue,ts,tsx}": [
       "yarn lint:precommit",

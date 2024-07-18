@@ -24,7 +24,8 @@
     "test:unit": "vue-cli-service test:unit --coverage",
     "test:e2e": "vue-cli-service test:e2e",
     "lint": "eslint --fix 'src/**/*.{js,jsx,vue,ts,tsx}'",
-    "lint:precommit": "NODE_ENV=production eslint --fix --quiet 'src/**/*.{js,jsx,vue,ts,tsx}'"
+    "lint:precommit": "NODE_ENV=production eslint --fix --quiet 'src/**/*.{js,jsx,vue,ts,tsx}'",
+    "test:all": "yarn test:unit --coverage"
   },
   "main": "index.js",
   "dependencies": {

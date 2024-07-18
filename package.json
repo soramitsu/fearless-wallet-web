@@ -88,7 +88,7 @@
     "@types/node": "^16.11.6",
     "@types/qrcode": "^1.5.0",
     "@types/webextension-polyfill": "^0.10.0",
-    "@typescript-eslint/eslint-plugin": "^4.2.0",
+    "@typescript-eslint/eslint-plugin": "^4.33.0",
     "@typescript-eslint/parser": "^6.3.0",
     "@vue/cli-plugin-babel": "~5.0.8",
     "@vue/cli-plugin-e2e-cypress": "~5.0.8",

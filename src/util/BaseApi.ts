@@ -13,10 +13,10 @@ import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { Wallet } from '@/store';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
+import type { NetworkName } from '@/interfaces';
 import { NetworksController } from '@/controllers';
 import store from '@/store';
 import { IS_EXTENSION, IS_PRODUCTION } from '@/consts/global';
-import { type NetworkName } from '@/interfaces';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
 type WalletTypes = 'mobile' | 'native';

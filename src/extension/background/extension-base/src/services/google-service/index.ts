@@ -97,10 +97,6 @@ ${json}
     });
   }
 
-  public authDesktop() {
-    window.open(this.authURL('desktop'));
-  }
-
   public async getFiles(token?: string): Promise<IGetFilesResponse> {
     const { data } = await axios.get<IGetFilesResponse>(
       `${this.baseURL}/files?fields=files(id,name,description)&spaces=appDataFolder`,

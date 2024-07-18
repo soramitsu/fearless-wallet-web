@@ -1,6 +1,6 @@
 {
   "name": "fearless-wallet",
-  "version": "2.5.1",
+  "version": "2.5.3",
   "private": true,
   "author": {
     "email": "fearless.web@soramitsu.co.jp",
@@ -10,8 +10,7 @@
   "description": "Non-Custodial and Decentralized wallet for the Polkadot and Kusama ecosystems with the best UX, performance and security.",
   "browserslist": "last 2 Chrome versions, last 2 Firefox versions",
   "scripts": {
-    "serve": "env-cmd -f .env.desktop vue-cli-service serve",
-    "build": "env-cmd -f .env.desktop vue-cli-service build",
+    "build": "yarn build:extension:firefox:zip",
     "build:extension": "EXTENSION_TYPE=chrome OUTPUT_DIR=chrome env-cmd -f .env.extension vue-cli-service --env.NODE_ENV=production build",
     "build:extension-test": "EXTENSION_TYPE=chrome VUE_APP_TEST_ONLY=true OUTPUT_DIR=chrome-test env-cmd -f .env.extension vue-cli-service --env.NODE_ENV=development build --mode development",
     "build:extension:firefox": "EXTENSION_TYPE=firefox OUTPUT_DIR=firefox env-cmd -f .env.extension vue-cli-service --env.NODE_ENV=production build",
@@ -19,18 +18,14 @@
     "build:extension:zip": "yarn run build:extension && cd dist/extension/chrome && zip -r fearless-wallet-extension-chrome.zip . && cd ../../../",
     "build:extension-test:zip": "yarn run build:extension-test && cd dist/extension/chrome-test && zip -r fearless-wallet-extension-chrome-test.zip . && cd ../../../",
     "build:extension:firefox:zip": "yarn run build:extension:firefox && cd dist/extension/firefox && zip -r fearless-wallet-extension-firefox.zip . && cd ../../../",
-    "build:extension:all": "yarn build:extension:zip && yarn build:extension-test:zip && yarn build:extension:firefox:zip",
+    "build:extension:all": "yarn build:extension:zip && yarn build:extension:firefox:zip && yarn build:extension-test:zip",
     "build-watch:extension": "EXTENSION_TYPE=chrome OUTPUT_DIR=chrome env-cmd -f .env.extension  vue-cli-service  --env.NODE_ENV=development build-watch --mode development",
     "build-watch:extension:firefox": "EXTENSION_TYPE=firefox OUTPUT_DIR=firefox env-cmd -f .env.extension vue-cli-service  --env.NODE_ENV=development build-watch --mode development",
     "test:unit": "vue-cli-service test:unit --coverage",
     "test:e2e": "vue-cli-service test:e2e",
     "lint": "eslint --fix 'src/**/*.{js,jsx,vue,ts,tsx}'",
     "lint:precommit": "NODE_ENV=production eslint --fix --quiet 'src/**/*.{js,jsx,vue,ts,tsx}'",
-    "electron:build": "env-cmd -f .env.desktop vue-cli-service electron:build",
-    "electron:build-all": "env-cmd -f .env.desktop vue-cli-service electron:build --publish=never --linux --mac zip --win portable --x64",
-    "electron:serve": "env-cmd -f .env.desktop vue-cli-service electron:serve",
-    "test:all": "yarn test:unit --coverage",
-    "audit:desktop": "npx electronegativity -i ./ -x LimitNavigationGlobalCheck,PermissionRequestHandlerGlobalCheck"
+    "test:all": "yarn test:unit --coverage"
   },
   "main": "index.js",
   "dependencies": {
@@ -82,19 +77,19 @@
     "vuex-class": "^0.3.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.15.0",
     "@open-web3/orml-types": "^2.0.1",
     "@polkadot/types": "^10.9.1",
     "@types/chrome": "^0.0.200",
     "@types/crypto-js": "^4.2.2",
-    "@types/electron-devtools-installer": "^2.2.2",
     "@types/file-saver": "^2.0.5",
     "@types/firefox-webext-browser": "^120.0.1",
-    "@types/jest": "^26.0.19",
+    "@types/jest": "^27.0.0",
     "@types/lodash": "^4.14.174",
     "@types/node": "^16.11.6",
     "@types/qrcode": "^1.5.0",
     "@types/webextension-polyfill": "^0.10.0",
-    "@typescript-eslint/eslint-plugin": "^6.3.0",
+    "@typescript-eslint/eslint-plugin": "^4.33.0",
     "@typescript-eslint/parser": "^6.3.0",
     "@vue/cli-plugin-babel": "~5.0.8",
     "@vue/cli-plugin-e2e-cypress": "~5.0.8",
@@ -111,12 +106,9 @@
     "@vue/vue2-jest": "^27.0.0-alpha.3",
     "@walletconnect/types": "^2.9.2",
     "autoprefixer": "^10.4.14",
+    "babel-jest": "^27.0.0",
     "css-unicode-loader": "^1.0.3",
     "cypress": "^9.7.0",
-    "electron": "^19.0.10",
-    "electron-builder": "23.0.2",
-    "electron-debug": "^3.2.0",
-    "electron-devtools-installer": "^3.2.0",
     "env-cmd": "^10.1.0",
     "eslint": "^8.46.0",
     "eslint-plugin-import": "^2.25.2",
@@ -136,8 +128,8 @@
     "ts-jest": "^27.0.5",
     "typescript": "5.2.2",
     "vue-cli-plugin-chrome-extension-cli": "^1.1.4",
-    "vue-cli-plugin-electron-builder": "^3.0.0-alpha.4",
     "vue-template-compiler": "^2.6.14",
+    "webpack": "^5.0.0",
     "webpack-extension-manifest-plugin": "^0.8.0"
   },
   "gitHooks": {
@@ -154,7 +146,7 @@
     "@polkadot/x-fetch": "^12.6.2"
   },
   "license": "Apache-2.0",
-  "packageManager": "yarn@3.4.1",
+  "packageManager": "yarn@4.3.1",
   "lint-staged": {
     "*.{js,jsx,vue,ts,tsx}": [
       "yarn lint:precommit",

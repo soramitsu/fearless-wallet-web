@@ -55,6 +55,7 @@ export type SetFavoriteNetwork = {
 export interface WalletInfo {
   name: string;
   address: string;
+  ethereumAddress: string;
   isMobile: boolean;
   active: boolean;
 }

@@ -5,12 +5,13 @@ import { setTitle } from '@/helpers/common';
 import { FEARLESS_TITLE } from '@/consts/global';
 import { useStore } from '@/store';
 import { i18n } from '@/locales';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 const updateTitle = (to: Route) => {
   const { name, meta, params } = to;
   const store = useStore();
-  const balances: TokenGroup[] = store.getters.getBalances;
-  const haveBalances = balances.length !== 0;
+  const tokenBalances: TokenGroup[] = store.getters[AccountsGettersTypes.getBalances];
+  const haveBalances = tokenBalances.length !== 0;
   const IsAssetsNetworkPage = name === Components.AssetNetworks;
   const IsAssetsHistoryPage = name === Components.AssetHistory;
 
@@ -18,7 +19,7 @@ const updateTitle = (to: Route) => {
     if (IsAssetsNetworkPage) {
       const assetId = params.assetId;
 
-      const symbol = balances.find(({ groupId }) => groupId === assetId)?.symbol;
+      const symbol = tokenBalances.find(({ groupId }) => groupId === assetId)?.symbol;
       const title = symbol ? `${FEARLESS_TITLE} | ${symbol.toUpperCase()}` : FEARLESS_TITLE;
 
       setTitle(title);
@@ -30,7 +31,7 @@ const updateTitle = (to: Route) => {
       const assetId = params.assetId;
       const network = params.selectedNetwork;
 
-      const symbol = balances.find(({ groupId }) => groupId === assetId)?.symbol;
+      const symbol = tokenBalances.find(({ groupId }) => groupId === assetId)?.symbol;
       const title = symbol ? `${FEARLESS_TITLE} | ${symbol.toUpperCase()} | ${network.toUpperCase()}` : FEARLESS_TITLE;
 
       setTitle(title);

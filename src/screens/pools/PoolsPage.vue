@@ -15,7 +15,6 @@
           <Loader v-if="showLoader" />
 
           <div v-else-if="noPoolsItems" class="no-pools">{{ $t('pools.noPools') }}</div>
-
           <template v-else>
             <Scroll>
               <template v-if="haveFilteredItems">
@@ -82,15 +81,19 @@ export default class PoolsPage extends Vue {
   get filteredPoolsItems() {
     if (this.filterValue === '') return this.poolsItems;
 
-    return this.poolsItems.filter(({ asset1: { name: name1 }, asset2: { name: name2 } }) =>
-      isSubstrString(`${name1}${name2}`, this.filterValue)
+    return this.poolsItems.filter(
+      ({ asset1: { name: name1 }, asset2: { name: name2 } }) =>
+        isSubstrString(`${name1}${name2}`, this.filterValue) || isSubstrString(`${name1}-${name2}`, this.filterValue)
     );
   }
 
   get filteredMyPoolsItems() {
     if (this.filterValue === '') return this.myPoolsItems;
 
-    return this.myPoolsItems.filter(({ network }) => isSubstrString(network, this.filterValue));
+    return this.myPoolsItems.filter(
+      ({ asset1: { name: name1 }, asset2: { name: name2 } }) =>
+        isSubstrString(`${name1}${name2}`, this.filterValue) || isSubstrString(`${name1}-${name2}`, this.filterValue)
+    );
   }
 
   get haveFilteredItems() {

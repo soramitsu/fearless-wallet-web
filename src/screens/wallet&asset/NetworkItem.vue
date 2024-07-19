@@ -27,6 +27,7 @@ import { computed } from 'vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet } from '@/store/accounts/types';
 import { useStore } from '@/store';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 type Props = {
   network: NetworkJson;
@@ -39,7 +40,7 @@ const props = withDefaults(defineProps<Props>(), { isNetworkGroup: false });
 const store = useStore();
 const emit = defineEmits(['onToggleFavorite', 'onChangeNetwork']);
 
-const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
 
 const iconColor = computed(() => (props.isSelected ? 'purple' : ''));
 const iconType = computed(() => (props.isNetworkGroup ? 'check' : 'star'));

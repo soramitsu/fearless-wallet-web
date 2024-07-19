@@ -1,54 +1,55 @@
 <template>
-  <div :ref="targetRef" data-testid="lazy">
+  <div ref="targetRef" data-testid="lazy">
     <slot v-if="shouldRender" />
 
     <Shimmer v-else-if="isTimeout" height="100%" width="100%" />
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { ref, onMounted, computed } from 'vue';
 
-@Component
-export default class Lazy extends Vue {
-  readonly targetRef = 'target';
-  shouldRender = false;
+type Props = {
+  threshold?: number;
+  root?: Element | Document | null;
+  rootMargin?: string;
+  timeoutCallback?: (fn: () => void) => VoidFunction | undefined;
+};
 
-  @Prop({ default: 0 }) threshold!: number;
-  @Prop({ default: null }) root!: Element | Document | null;
-  @Prop({ default: '0px' }) rootMargin!: string;
-  @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
+const props = withDefaults(defineProps<Props>(), {
+  threshold: 0,
+  root: null,
+  rootMargin: '0px',
+  timeoutCallback: undefined,
+});
 
-  get options() {
-    return {
-      root: this.root,
-      threshold: this.threshold,
-      rootMargin: this.rootMargin,
-    } as IntersectionObserverInit;
-  }
+const targetRef = ref<Element | null>(null);
+const shouldRender = ref(false);
+const isTimeout = computed(() => props.timeoutCallback !== undefined);
 
-  get isTimeout() {
-    return this.timeoutCallback !== undefined;
-  }
+const options = computed(
+  () =>
+    ({
+      root: props.root,
+      threshold: props.threshold,
+      rootMargin: props.rootMargin,
+    } as IntersectionObserverInit)
+);
 
-  mounted() {
-    const el = this.$refs[this.targetRef] as Element;
-    const observer = new IntersectionObserver((entries, observer) => {
-      entries.forEach(({ isIntersecting }) => {
-        if (!isIntersecting) return;
+const setShouldRender = () => (shouldRender.value = true);
 
-        if (this.isTimeout) this.timeoutCallback(this.setShouldRender);
-        else this.setShouldRender();
+onMounted(() => {
+  const observer = new IntersectionObserver((entries, observer) => {
+    entries.forEach(({ isIntersecting }) => {
+      if (!isIntersecting) return;
 
-        observer.unobserve(el);
-      });
-    }, this.options);
+      if (isTimeout.value && props.timeoutCallback) props.timeoutCallback(setShouldRender);
+      else setShouldRender();
 
-    observer.observe(el);
-  }
+      observer.unobserve(targetRef.value!);
+    });
+  }, options.value);
 
-  setShouldRender() {
-    this.shouldRender = true;
-  }
-}
+  observer.observe(targetRef.value!);
+});
 </script>

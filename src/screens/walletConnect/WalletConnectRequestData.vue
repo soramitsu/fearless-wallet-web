@@ -30,6 +30,8 @@ import { isEthereumAddress } from '@polkadot/util-crypto';
 import type { AccountJson } from '@extension-base/background/types/types';
 import { useStore } from '@/store';
 import { cut } from '@/helpers';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 const store = useStore();
 const props = defineProps<{ request: WalletConnectTransactionRequest }>();
@@ -68,8 +70,8 @@ const requestData = computed(() => {
 
   if (isEvmTxRequest.value) {
     const [, chainId] = props.request.params.chainId.split(':');
-    const network: string = store.getters.getNetwork(chainId)?.name ?? `${baseKey}.networkError`;
-    const { value, gas } = params;
+    const network: string = store.getters[NetworksGettersTypes.getNetwork](chainId)?.name ?? `${baseKey}.networkError`;
+    const { value, gas } = Array.isArray(params) ? params[0] : params;
 
     data[`${baseKey}.network`] = network;
     data[`${baseKey}.amount`] = value ? formatEther(BigInt(value).toString()).toString() : '';
@@ -80,7 +82,7 @@ const requestData = computed(() => {
 });
 
 const txWallet = computed(() => {
-  const accounts: AccountJson[] = store.getters.getAccounts;
+  const accounts: AccountJson[] = store.getters[AccountsGettersTypes.getAccounts];
 
   return accounts.find(({ ethereumAddress }) => ethereumAddress.toLowerCase() === address.value.toLowerCase());
 });

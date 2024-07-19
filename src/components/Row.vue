@@ -11,17 +11,25 @@
         <div class="value-container">
           <Loading v-if="isLoading" :width="28" />
 
-          <template v-else>
-            <Icon v-if="iconValue" :icon="iconValue" :hover="false" :iconColor="iconValueColor" class="icon-value" />
+          <div v-else class="value-row">
+            <Icon
+              v-if="iconValue"
+              :icon="iconValue"
+              :hover="hoverIconValue"
+              :iconColor="iconValueColor"
+              class="icon-value"
+              @click="emit('click')"
+            />
 
             <span data-testid="value">{{ value }}</span>
-          </template>
+          </div>
         </div>
 
         <div v-if="price && !isLoading" class="price">
           <span data-testid="price">{{ price }}</span>
         </div>
       </div>
+
       <slot name="details"></slot>
     </div>
 
@@ -30,7 +38,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 type BorderType = 'default' | 'secondary';
 type Color = 'white' | 'pink-lavender';
 
@@ -38,11 +46,17 @@ type Props = {
   value?: string;
   price?: string;
   color?: Color;
+  isHoverRow?: boolean;
+
   icon?: string;
+  isIconPrepend?: boolean;
+
   iconValue?: string;
+  hoverIconValue?: boolean;
+  isIconValuePrepend?: boolean;
+
   rowClasses?: string;
   isLoading?: boolean;
-  isIconPrepend?: boolean;
   iconClasses?: string[];
   showBorder?: boolean;
   borderType?: BorderType;
@@ -51,12 +65,17 @@ type Props = {
 
 const props = withDefaults(defineProps<Props>(), {
   isIconPrepend: false,
+  isIconValuePrepend: false,
+  isHoverRow: false,
+  hoverIconValue: false,
   showBorder: true,
   hideLastBorder: true,
   borderType: 'secondary',
   color: 'white',
   iconClasses: () => [],
 });
+
+const emit = defineEmits(['click']);
 
 const iconColor = computed(() => {
   if (props.icon === 'check') return '#00ee77';
@@ -77,10 +96,13 @@ const internalRowClasses = computed(() => {
 
   if (props.hideLastBorder) classes.push('border-last');
 
+  if (props.isHoverRow) classes.push('row-hover');
+
   return classes;
 });
 
-const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
+const direction = computed(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
+const directionValue = computed(() => (props.isIconValuePrepend ? 'row' : 'row-reverse'));
 </script>
 
 <style lang="scss" scoped>
@@ -106,6 +128,10 @@ const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
   }
 }
 
+.row-hover {
+  cursor: pointer;
+}
+
 .value-container {
   display: flex;
   flex-direction: row;
@@ -117,6 +143,15 @@ const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
   .icon-value {
     width: 18px;
     height: 18px;
+  }
+
+  .value-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: fit-content;
+    max-width: 300px;
+    flex-direction: v-bind(directionValue);
   }
 }
 
@@ -132,6 +167,9 @@ const direction = ref(() => (props.isIconPrepend ? 'row' : 'row-reverse'));
   .value {
     text-align: right;
     display: flex;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
     .price {
       color: $gray-color;

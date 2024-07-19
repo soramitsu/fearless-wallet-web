@@ -11,9 +11,7 @@ const containerRef = ref<HTMLElement | null>(null);
 const emit = defineEmits(['onScroll', 'canLoadMore']);
 const props = defineProps<{ canLoadMore: boolean }>();
 
-function onScroll() {
-  emit('onScroll');
-}
+const onScroll = () => emit('onScroll');
 
 useInfiniteScroll(containerRef, onScroll, { distance: 10, canLoadMore: () => props.canLoadMore });
 </script>

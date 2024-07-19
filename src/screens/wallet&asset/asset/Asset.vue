@@ -9,13 +9,6 @@
     >
     </router-view>
 
-    <CrossChainForm
-      v-if="showCrossChainForm"
-      :_originalNetwork="selectedLocalNetwork"
-      :_selectedAssetId="selectedAssetId"
-      @closeForm="toggleVisible('showCrossChainForm', false)"
-    />
-
     <HistoryDetailsForm
       v-if="showHistoryDetailsForm"
       :historyElement="historyElement"
@@ -29,7 +22,7 @@
       :asset="selectedAssetUpper"
       :address="displayAddressByNetwork"
       :providers="providers"
-      @closePopup="toggleVisible('showBuyPopup', false)"
+      @closePopup="toggleVisible(false)"
     />
   </div>
 </template>
@@ -55,8 +48,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NETWORKS_GROUPS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common/index';
 
-type ShowField = 'showCrossChainForm' | 'showBuyPopup';
-
 @Component({
   components: {
     AssetInfo,
@@ -71,7 +62,6 @@ type ShowField = 'showCrossChainForm' | 'showBuyPopup';
 })
 export default class Asset extends Vue {
   historyElement: HistoryElement | Record<string, string> | null = null;
-  showCrossChainForm = false;
   showBuyPopup = false;
   showTipPopup = false;
   filterValue = '';
@@ -156,8 +146,8 @@ export default class Asset extends Vue {
     return this.getAssetPrice(this.currentCurrency.priceId ?? '');
   }
 
-  toggleVisible(field: ShowField, value = true) {
-    this[field] = value;
+  toggleVisible(value = true) {
+    this.showBuyPopup = value;
   }
 
   handlerFilter(value: string) {

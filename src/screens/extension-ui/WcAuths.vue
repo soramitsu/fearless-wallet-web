@@ -19,12 +19,14 @@ import type { AccountJson } from '@extension-base/background/types/types';
 import WalletConnectAuthItem from '@/screens/walletConnect/WalletConnectAuthItem.vue';
 import { useStore } from '@/store';
 import { Components } from '@/router/routes';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
 const store = useStore();
 const router = useRouter();
-const accounts = computed<AccountJson[]>(() => store.getters.getAccounts);
+const accounts = computed<AccountJson[]>(() => store.getters[AccountsGettersTypes.getAccounts]);
 const wcFilteredList = computed<WalletConnectSessions>(() =>
-  (store.getters.wcSessions as WalletConnectSessions).filter(({ topic }) =>
+  (store.getters[ExtensionGettersTypes.wcSessions] as WalletConnectSessions).filter(({ topic }) =>
     accounts.value.every(({ wcTopic }) => wcTopic !== topic)
   )
 );

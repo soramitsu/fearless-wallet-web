@@ -114,7 +114,6 @@ import {
 } from '@/helpers/currencies';
 import { isNetworkGroup } from '@/helpers/common';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { isSameString } from '@/helpers';
 
 @Component
 export default class CurrencyItem extends Vue {
@@ -175,13 +174,21 @@ export default class CurrencyItem extends Vue {
 
   get mainNetwork() {
     if (this.assetData.relayChain === 'ethereum') {
-      if (!isNetworkGroup(this.selectedNetwork))
-        return this.assetData.balances.find(({ name }) => isSameString(name, this.selectedNetwork))?.name;
+      if (!isNetworkGroup(this.selectedNetwork)) {
+        const network = this.getNetwork(this.selectedNetwork);
 
-      return this.assetData.balances.find(({ name }) => this.getNetwork(name).active)?.name;
+        return network?.name;
+      }
+
+      const net = this.assetData.balances.find(({ name }) => this.getNetwork(name).active)!.name;
+      const network = this.getNetwork(net);
+
+      return network.name;
     }
 
-    return this.assetData.mainNetwork;
+    const network = this.getNetwork(this.assetData.mainNetwork);
+
+    return network.name;
   }
 
   get groupId() {

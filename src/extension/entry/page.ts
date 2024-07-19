@@ -12,7 +12,7 @@ import type { InjectedWindow } from '@/extension/entry/types';
 import { APP_VERSION } from '@/consts/global';
 
 const win = window as Window & InjectedWindow;
-const walletKey = 'fearlessWallet';
+const walletKey = 'fearless-wallet';
 
 win.injectedWeb3 = win.injectedWeb3 || {};
 

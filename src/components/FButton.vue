@@ -299,6 +299,16 @@ const buttonClasses = computed(() => {
   color: $default-white !important;
 }
 
+.thirdly {
+  background-color: $secondary-btn-color !important;
+  color: #fff !important;
+}
+
+.thirdly-hover:hover {
+  background-color: $secondary-background-color !important;
+  color: $default-white !important;
+}
+
 .secondary-border {
   border: 1px solid $default-background-color !important;
 }

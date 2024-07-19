@@ -1,3 +1,5 @@
+import { MIN1 } from '@/consts/time';
+
 // this _must_ be changed for each extension
 const EXTENSION_PREFIX = process.env.EXTENSION_PREFIX || '';
 
@@ -17,7 +19,7 @@ const MESSAGE_ORIGIN_CONTENT = `${PORT_PREFIX}-content`;
 const ALLOWED_PATH = ['/', '/account/import-ledger', '/account/restore-json', '/sora-card'] as const;
 const PHISHING_PAGE_REDIRECT = '/phishing-page-detected';
 const PASSWORD_EXPIRY_MIN = 15;
-const PASSWORD_EXPIRY_MS = PASSWORD_EXPIRY_MIN * 60 * 1000;
+const PASSWORD_EXPIRY_MS = PASSWORD_EXPIRY_MIN * MIN1;
 
 export {
   ALLOWED_PATH,

@@ -38,6 +38,7 @@ import { transformNamespaces } from '@/util/walletConnect';
 import { useStore } from '@/store';
 import { disconnectWalletConnectConnection } from '@/extension/messaging/wallet-connect-requests';
 import { type ChainData } from '@/interfaces/walletconnect';
+import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
 const route = useRoute();
 const router = useRouter();
@@ -45,7 +46,7 @@ const store = useStore();
 const { t } = useI18n();
 const topic = computed(() => route.params.topic);
 const request = computed(() => {
-  const list: SessionTypes.Struct[] | null = store.getters.wcSessions;
+  const list: SessionTypes.Struct[] | null = store.getters[ExtensionGettersTypes.wcSessions];
 
   return list?.find((request) => request.topic === topic.value);
 });

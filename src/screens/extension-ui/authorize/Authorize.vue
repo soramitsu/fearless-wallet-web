@@ -40,6 +40,8 @@ import { Components } from '@/router/routes';
 import { type WalletInfo, useStore } from '@/store';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import BaseApi from '@/util/BaseApi';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
 const state = ref<Record<string, WalletInfo>>({});
 const selectAll = ref(true);
@@ -47,8 +49,8 @@ const selectAll = ref(true);
 const store = useStore();
 const router = useRouter();
 const { t } = useI18n();
-const accounts = computed<AccountJson[]>(() => store.getters.getAccounts);
-const requests = computed<AuthorizeRequest[]>(() => store.getters.authRequests);
+const accounts = computed<AccountJson[]>(() => store.getters[AccountsGettersTypes.getAccounts]);
+const requests = computed<AuthorizeRequest[]>(() => store.getters[ExtensionGettersTypes.authRequests]);
 const request = computed<AuthorizeRequest>(() => requests.value[0]);
 
 watch(requests, (value: AuthorizeRequest[]) => {
@@ -64,14 +66,14 @@ const prepAccounts = computed(() =>
 );
 
 onMounted(() => {
-  accounts.value.forEach(({ name, address, isMobile }) =>
+  accounts.value.forEach(({ name, address, ethereumAddress, isMobile }) => {
     set(state.value, name, {
       name: name,
-      address: address,
+      address: request.value.accountAuthType === 'evm' ? ethereumAddress : address,
       isMobile: isMobile,
       active: true,
-    })
-  );
+    });
+  });
 });
 
 const onSelect = (value: boolean, name: string) => {

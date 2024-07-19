@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 import { type NftTx, type NftSettings } from '@extension-base/services/nft-service/types';
-import { type chrome } from '@extension-base/utils/crossenv';
+import { type SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { ScamInfo } from '@extension-base/services/scam-service/types';
 import type { ALLOWED_PATH } from '@extension-base/defaults';
 import type { Subscription } from 'rxjs';
@@ -73,6 +73,7 @@ export interface AuthorizeRequest {
   id: string;
   request: RequestAuthorizeTab;
   url: string;
+  accountAuthType: AccountAuthType;
 }
 
 export interface ServiceInfo {
@@ -95,6 +96,11 @@ export interface SigningRequest {
   id: string;
   request: RequestSign;
   url: string;
+}
+
+export interface MobileSigningRequest {
+  id: string;
+  request: SignerPayloadRaw;
 }
 
 export interface MobileSignRequest extends Resolver<ResponseSigning> {
@@ -570,11 +576,12 @@ export interface AuthRequest extends Resolver<AuthResponse> {
   request: RequestAuthorizeTab;
   url: string;
   accountAuthType?: AccountAuthType;
+  currentEvmNetworkKey?: string;
 }
 
 export interface ResponseSigning {
   id: string;
-  signature: HexString;
+  payload: HexString;
 }
 
 export interface AuthUrlInfo {
@@ -585,7 +592,7 @@ export interface AuthUrlInfo {
   url: string;
   accountAuthType?: AccountAuthType;
   authorizedAccounts: string[];
-  isAllowedMap: Record<string, boolean>;
+  allowedAccountsMap: Record<string, boolean>;
   currentEvmNetworkKey?: string;
 }
 
@@ -735,3 +742,31 @@ export type BalanceMap = Record<WalletAddress, TokenGroup[]>;
 
 export type NetworkMap = Record<string, NetworkJson>;
 export type NotificationResponse = { message: string; title: string; status: boolean };
+
+export type EvmAppState = {
+  networkKey?: string;
+  chainId: string;
+  isConnected?: boolean;
+  web3?: EvmProvider;
+};
+
+export type TransformAccountPayload = {
+  accounts: SubjectInfo;
+  anyType?: boolean;
+  authInfo?: AuthUrlInfo;
+  accountAuthType?: AccountAuthType;
+};
+
+export interface AddNetworkRequestExternal {
+  // currently only support adding pure Evm network
+  chainId: string;
+  rpcUrls: string[];
+  chainName: string;
+  blockExplorerUrls?: string[];
+  requestId?: string;
+  nativeCurrency: {
+    name: string;
+    symbol: string;
+    decimals: number;
+  };
+}

@@ -74,7 +74,6 @@ export default class NodeItem extends Vue {
   box-sizing: border-box;
 
   &:last-child {
-    margin-bottom: 16px;
     border-bottom: none;
   }
 

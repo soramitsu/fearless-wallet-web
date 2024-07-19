@@ -25,9 +25,8 @@ const router = useRouter();
 
 const substrateList = ref<Record<string, AuthUrlInfo>>({});
 const isAuthsExist = computed(() => Object.keys(substrateList.value).length);
-onMounted(async () => {
-  substrateList.value = await store.dispatch('GET_AUTHLIST');
-});
+
+onMounted(async () => (substrateList.value = await store.dispatch('GET_AUTHLIST')));
 
 const openDotSamaAuthDetails = (index: string) => {
   router.push({

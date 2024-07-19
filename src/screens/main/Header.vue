@@ -1,7 +1,7 @@
 <template>
   <header class="header">
     <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
-      <div :class="iconClassname">
+      <div class="logo-container">
         <CircleButton
           v-if="showBackIcon"
           backgroundColor="light-black"
@@ -231,10 +231,6 @@ export default class Header extends Vue {
     return this.selectedWallet.name;
   }
 
-  get iconClassname() {
-    return this.showBackIcon ? 'logo-container-back' : 'logo-container';
-  }
-
   get statusConnectedClasses() {
     return !this.tabStatus || !this.tabStatus.isAuthorize ? 'fail-connect' : 'success-connect';
   }
@@ -320,11 +316,6 @@ export default class Header extends Vue {
     margin: auto;
   }
 
-  .logo-container-back {
-    width: 40px;
-    margin: auto;
-  }
-
   i {
     color: $grayish-white;
   }
@@ -341,6 +332,7 @@ export default class Header extends Vue {
 
   .header-part-left {
     gap: 10px;
+
     &:hover {
       cursor: pointer;
     }

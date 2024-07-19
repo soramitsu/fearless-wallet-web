@@ -72,6 +72,7 @@ import { cut, isSora } from '@/helpers/';
 import { getType } from '@/helpers/history';
 import { type SoraHistoryElement, TransactionType } from '@/interfaces/history';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
+
 @Component
 export default class HistoryBook extends Vue {
   addressBook: AddressBook = {};

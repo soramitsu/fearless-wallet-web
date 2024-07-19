@@ -31,7 +31,7 @@ export default class Menu extends Vue {
   walletItems: string[] = [
     Components.Currencies,
     Components.Nfts,
-    Components.Accounts,
+    Components.AccountSetting,
     Components.Export,
     Components.Nodes,
   ];
@@ -81,20 +81,10 @@ export default class Menu extends Vue {
 
     const route = menuItem as keyof typeof Components;
 
-    const accountParams = {
-      address: this.selectedWallet.address,
-      name: this.selectedWallet.name,
-      ethereumAddress: this.selectedWallet.ethereumAddress,
-      isMobile: this.selectedWallet.isMobile ? 'mobile' : '',
-    };
-
     const name = menuItem === 'Polkaswap' ? Components.SoraSwap : Components[route];
 
     this.$router.push({
       name,
-      params: {
-        ...(route === Components.Accounts ? accountParams : {}),
-      },
     });
   }
 }

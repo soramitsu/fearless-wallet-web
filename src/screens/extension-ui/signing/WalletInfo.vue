@@ -4,7 +4,7 @@
       <Icon icon="wallet-logo-transaction" className="wallet__logo" />
 
       <div class="wallet-info__content">
-        <span class="wallet__name">{{ name }}</span>
+        <span class="wallet__name">{{ cutName }}</span>
 
         <span class="wallet__address" @click="saveToClipboard">
           {{ cutAddress }}
@@ -27,6 +27,7 @@ type Props = {
 const props = defineProps<Props>();
 
 const cutAddress = computed(() => cut(props.address, 14));
+const cutName = computed(() => cut(props.name, 16));
 
 function saveToClipboard() {
   navigator.clipboard.writeText(props.address);

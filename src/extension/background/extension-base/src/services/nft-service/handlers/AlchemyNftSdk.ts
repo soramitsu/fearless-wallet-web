@@ -46,6 +46,7 @@ export default class AlchemyNftController {
       creator: nft.mint?.mintAddress,
       network: this.readableNetwork,
       ownedBy: '',
+      contentType: nft.image.contentType,
     };
   }
 
@@ -109,6 +110,7 @@ export default class AlchemyNftController {
         creator: nft.mint?.mintAddress,
         network: network?.name ?? this.network,
         ownedBy: address,
+        contentType: nft.image.contentType,
       });
     }
 

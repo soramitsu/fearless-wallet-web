@@ -168,7 +168,6 @@
   },
   "menu": {
     "wallet": "Кошелек",
-    "crowdloans": "Краудлоны",
     "staking": "Стэйкинг",
     "polkaswap": "Polkaswap",
     "history": "История"
@@ -212,7 +211,7 @@
     "chooseFromHistory": "Выбрать из истории",
     "myWallets": "Мои кошельки",
     "direction": "Направление",
-    "wallets": "Rошельки",
+    "wallets": "Кошельки",
     "transfer": "Переводы",
     "reward": "Награды",
     "extrinsic": "Экстринсики",
@@ -256,7 +255,6 @@
     "reserved": "Зарезервировано",
     "frozen": "Заморожено",
     "transferable": "Доступно",
-    "fee": "Комиссия",
     "total": "Общий баланс",
     "signTransaction": "Подпишите транзакцию",
     "passwordTransaction": "Введите пароль для подтверждения транзакции",
@@ -300,7 +298,6 @@
     "dontNeedAccount": "Мне не нужен аккаунт",
     "exportWarning": "Передача или копирование вашего секрета — операция с высоким риском, никому не отправляйте его. Хотите продолжить процесс обмена/копирования?",
     "notEthereumAccount": "Вы не добавили учетную запись ethereum.",
-    "accountsDefaultSecrets": "Аккаунты с общим секретом",
     "export": "Экспорт аккаунта",
     "exportJson": "Экспорт JSON",
     "wantExportJson": "Я хочу экспортировать JSON",
@@ -321,10 +318,13 @@
     "autoNodes": "Автовыбор ноды",
     "defaultNodes": "Стандартные ноды",
     "customNodes": "Пользовательские ноды",
+    "addCustomNode": "Добавить пользовательскую ноду",
     "editNode": "Редактировать ноду",
     "deleteNode": "Удалить ноду",
     "newNode": "Новая нода",
     "account": "Аккаунт",
+    "chainAccounts": "чейн аккаунты",
+    "substrateChainAccounts": "Сабстрейт чейн аккаунты",
     "addEthereumAccounts": "Добавить аккаунты Moonbeam и Moonriver?"
   },
   "auth": {
@@ -640,13 +640,16 @@
     "soraSwap": "Sora swap",
     "polkaswapDisclaimer": "Polkaswap дисклеймер",
     "wallet": "кошелек",
+    "accountSetting": "Настройки аккаунта",
     "accounts": "Аккаунты",
     "nodes": "Ноды",
     "export": "Экспорт",
-    "crowdloans": "Краудлоны",
     "staking": "Стейкинг",
     "myStake": "Мой стейкинг",
-    "polkaswap": "Polkaswap"
+    "polkaswap": "Polkaswap",
+    "send": "Отправить",
+    "receive": "Получить",
+    "crossChain": "Скросс-чейн"
   },
   "nft": {
     "owned": "Принадлежит",

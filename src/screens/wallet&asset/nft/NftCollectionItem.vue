@@ -1,21 +1,21 @@
 <template>
   <FCorners size="big" :topLeftCorner="false" :bottomRightCorner="false">
-    <div class="nft" @click="onClick">
-      <div v-if="collection.total" class="nft-counter">{{ counter }}</div>
+    <div class="nft" data-testid="nft" @click="onClick">
+      <div v-if="collection.total" class="nft-counter" data-testid="nftCounter">{{ counter }}</div>
 
       <img :src="image" :alt="collection.name" loading="lazy" width="240" height="200" />
 
       <div class="nft-info">
-        <span class="title title--main">{{ collection.name }}</span>
+        <span class="title title--main" data-testid="titleMain">{{ collection.name }}</span>
       </div>
     </div>
   </FCorners>
 </template>
 
 <script lang="ts" setup>
-import { type NftCollection } from '@extension-base/services/nft-service/types';
 import { useRouter } from 'vue-router/composables';
 import { computed } from 'vue';
+import type { NftCollection } from '@extension-base/services/nft-service/types';
 import { Components } from '@/router/routes';
 
 type Props = {
@@ -27,9 +27,11 @@ const router = useRouter();
 const counter = computed(() => `${props.collection.ownedNfts.length}/${props.collection.total}`);
 const image = computed(() => props.collection.image ?? require('@/assets/fearless-logo-animated.gif'));
 
-const onClick = () => {
-  router.push({ name: Components.NftCollection, params: { contract: props.collection.address } });
-};
+const onClick = () =>
+  router.push({
+    name: Components.NftCollection,
+    params: { contract: props.collection.address },
+  });
 </script>
 
 <style lang="scss" scoped>
@@ -58,6 +60,7 @@ const onClick = () => {
   color: #ffffff;
   height: 70px;
 }
+
 .nft-counter {
   position: absolute;
   display: flex;
@@ -72,6 +75,7 @@ const onClick = () => {
   font-weight: 700;
   padding: 14px;
 }
+
 .titles {
   display: flex;
   flex-flow: column;

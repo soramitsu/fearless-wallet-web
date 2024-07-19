@@ -10,6 +10,7 @@
           </div>
         </Scroll>
       </div>
+
       <div>
         <div class="pass-form">
           <ValidatedInput
@@ -65,6 +66,7 @@ import { walletConnectRequestReject, walletConnectRequestApprove, isSignLocked }
 import { useStore } from '@/store';
 import { useNotify } from '@/plugins/soramitsuUI';
 import ValidatedInput from '@/components/ValidatedInput.vue';
+import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
 type Error = { message: TransferErrorCode.UNSUPPORTED | BasicTxErrorCode.KEYRING_ERROR };
 
@@ -79,7 +81,7 @@ const state = reactive({
 });
 const password = ref('');
 
-const requests = computed<WalletConnectTransactionRequest[]>(() => store.getters.wcSignList);
+const requests = computed<WalletConnectTransactionRequest[]>(() => store.getters[ExtensionGettersTypes.wcSignList]);
 const request = computed<WalletConnectTransactionRequest>(() => requests.value[0]);
 
 watch(requests, () => {
@@ -106,6 +108,7 @@ const address = computed<string>(() => {
 
   return params[0].from as string;
 });
+
 const isLocked = ref(false);
 const min15Label = computed(() => (isLocked.value ? 'assets.15min' : 'assets.15minExtend'));
 
@@ -164,14 +167,12 @@ const changePassword = (value: string) => {
 const onApprove = async () => {
   state.isPassValid = false;
   state.isSigning = true;
-  const res = await walletConnectRequestApprove(
+  await walletConnectRequestApprove(
     address.value.toLowerCase(),
     password.value,
     request.value.topic,
     state.isSavePass
   ).catch(onError);
-
-  if (res) router.back();
 };
 </script>
 

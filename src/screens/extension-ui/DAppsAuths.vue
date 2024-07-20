@@ -15,7 +15,7 @@
 <script lang="ts" setup>
 import { onMounted, ref, computed } from 'vue';
 import { useRouter } from 'vue-router/composables';
-import { type AuthUrlInfo } from '@extension-base/background/types';
+import type { AuthUrlInfo } from '@extension-base/background/types/types';
 import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { useStore } from '@/store';
 import { Components } from '@/router/routes';
@@ -25,9 +25,8 @@ const router = useRouter();
 
 const substrateList = ref<Record<string, AuthUrlInfo>>({});
 const isAuthsExist = computed(() => Object.keys(substrateList.value).length);
-onMounted(async () => {
-  substrateList.value = await store.dispatch('GET_AUTHLIST');
-});
+
+onMounted(async () => (substrateList.value = await store.dispatch('GET_AUTHLIST')));
 
 const openDotSamaAuthDetails = (index: string) => {
   router.push({

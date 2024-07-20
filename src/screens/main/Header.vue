@@ -10,7 +10,7 @@
           @click.stop="back"
         />
 
-        <Logo v-else size="small" />
+        <Logo v-else size="mini" />
       </div>
 
       <div class="wallet-name">
@@ -22,7 +22,7 @@
           </Rotate>
         </div>
 
-        <div v-if="isAddressExists" class="copy-address" @click.stop="copyAddress">
+        <div v-if="isAddressExists" class="copy-address" data-testid="copyAddress" @click.stop="copyAddress">
           <span>{{ cutAddress }}</span>
 
           <Icon icon="copy" className="copy" />
@@ -332,6 +332,7 @@ export default class Header extends Vue {
 
   .header-part-left {
     gap: 10px;
+
     &:hover {
       cursor: pointer;
     }

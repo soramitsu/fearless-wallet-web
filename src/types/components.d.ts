@@ -23,6 +23,8 @@ declare module 'vue' {
     ExternalWidget: typeof import('@/components/ExternalWidget.vue')['ExternalWidget'];
     Hint: typeof import('@/components/Hint.vue')['Hint'];
     Icon: typeof import('@/components/Icon.vue')['Icon'];
+    Identicon: typeof import('@/components/Identicon.vue')['Identicon'];
+    InfiniteScroll: typeof import('@/components/InfiniteScroll.vue')['InfiniteScroll'];
     InformationBlock: typeof import('@/components/InformationBlock.vue')['InformationBlock'];
     InfoRow: typeof import('@/components/InfoRow.vue')['InfoRow'];
     FInput: typeof import('@/components/FInput.vue')['Input'];

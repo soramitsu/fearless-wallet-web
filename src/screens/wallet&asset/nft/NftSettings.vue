@@ -3,6 +3,7 @@
     sizeWidth="mini"
     verticalPlacement="top"
     horizontalPlacement="right"
+    data-testid="hidNfts"
     :top="40"
     :left="-40"
     :showBorder="true"
@@ -11,12 +12,12 @@
   >
     <div class="nft-settings">
       <div class="form-item">
-        <span>{{ $t('nft.spam') }}</span>
-        <Switcher :value="nftSettings.spam" @change="toggleNftSettingsSpam" />
+        <span data-testid="spam">{{ $t('nft.spam') }}</span>
+        <Switcher data-testid="spamSwitcher" :value="nftSettings.spam" @change="toggleNftSettingsSpam" />
       </div>
       <div class="form-item">
-        <span>{{ $t('nft.airdrop') }}</span>
-        <Switcher :value="nftSettings.airdrop" @change="toggleNftSettingsAirdrop" />
+        <span data-testid="airdrop">{{ $t('nft.airdrop') }}</span>
+        <Switcher data-testid="airdropSwitcher" :value="nftSettings.airdrop" @change="toggleNftSettingsAirdrop" />
       </div>
     </div>
   </Popup>
@@ -27,10 +28,13 @@ import { ref, onBeforeUnmount, onMounted, computed } from 'vue';
 import { changeNftSettings } from '@/extension/messaging/nfts';
 import { accountController } from '@/controllers';
 import { type SelectedWallet, useStore } from '@/store';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+
 const store = useStore();
 const emit = defineEmits(['handleClose']);
 const nftSettings = ref({ spam: false, airdrop: false });
-const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
+
 onMounted(() => {
   const settings = accountController.getNftSettings();
 
@@ -50,8 +54,10 @@ onBeforeUnmount(() => {
     address: selectedWallet.value.ethereumAddress,
     settings: nftSettings.value,
   });
+
   accountController.setNftSettings(nftSettings.value);
 });
+
 const onClose = () => emit('handleClose');
 
 const toggleNftSettingsSpam = () => {

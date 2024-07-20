@@ -27,12 +27,13 @@ import {
 import { api as apiSora, type FPNumber } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
 import { isEthereumNetwork, isNativeEVMNetwork } from '@extension-base/background/utils/utils';
-import { withErrorLog } from '@extension-base/background/handlers/helpers';
+import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
 import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
 import BalanceService from '@extension-base/services/balance-service';
 import axios from 'axios';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
+import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   ServiceInfo,
@@ -47,6 +48,7 @@ import type {
   RequestAccountExportPrivateKey,
   ResponseAccountExportPrivateKey,
   FetchEvmBalancePayload,
+  AuthUrlInfo,
   AuthUrls,
 } from '@extension-base/background/types/types';
 import type { ChainRegistry, NetworkJson } from '@extension-base/types';
@@ -55,7 +57,6 @@ import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 type Wallet = {
@@ -225,6 +226,14 @@ export default class State {
 
   get networkMap() {
     return this.networkService.networkMap;
+  }
+
+  async getAuthInfo(url: string, fromList?: AuthUrls): Promise<AuthUrlInfo | undefined> {
+    const auths = await this.requestService.getAuthList();
+    const authList = fromList || auths;
+    const shortenUrl = stripUrl(url);
+
+    return authList[shortenUrl];
   }
 
   public upsertNetworkMap(data: NetworkJson): boolean {
@@ -646,5 +655,20 @@ export default class State {
 
   isSameAddress(wallet1: Wallet, wallet2: Wallet): boolean {
     return this.formatAddress(wallet1) === this.formatAddress(wallet2);
+  }
+
+  public async switchEvmNetworkByUrl(shortenUrl: string, networkKey: string): Promise<void> {
+    const authUrls = await this.requestService.getAuthList();
+    const network = this.networkService.getNetworkByKey(networkKey);
+
+    if (authUrls[shortenUrl]) {
+      if (!network.active) await this.setActiveNetworks(networkKey);
+
+      authUrls[shortenUrl].currentEvmNetworkKey = networkKey;
+
+      this.requestService.setAuthorize(authUrls);
+    } else {
+      throw new Error(`Not found ${shortenUrl} in auth list`);
+    }
   }
 }

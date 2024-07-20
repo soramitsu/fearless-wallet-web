@@ -8,7 +8,7 @@ import { ethers, formatUnits, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/swaps';
-import { withErrorLog } from '@extension-base/background/handlers/helpers';
+import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { createSubscription, unsubscribe } from '@extension-base/services';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
@@ -20,6 +20,7 @@ import {
   isSupportWalletConnectNamespace,
   isSupportWalletConnectChain,
   convertHexToUtf8,
+  getEip155MessageAddress,
 } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
 import { BasicTxErrorCode, TransferErrorCode } from '@extension-base/background/types/types';
@@ -42,6 +43,7 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
+import type { EvmRequestsSubjectPayload } from '@extension-base/services/request-service/types';
 import type {
   RequestUpdateMeta,
   PriceJson,
@@ -92,6 +94,7 @@ import type {
   RequestNftTransfer,
   FetchEvmBalancePayload,
   RequestCheckScam,
+  AuthUrls,
   RequestExportMnemonic,
 } from '@extension-base/background/types/types';
 import type {
@@ -134,6 +137,7 @@ import type {
 } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
+import { isSameString } from '@/helpers';
 
 function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
   return (value as SignerPayloadJSON).genesisHash !== undefined;
@@ -295,13 +299,11 @@ export default class Extension extends FWExtensionBase {
   }
 
   authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): boolean {
-    const queued = this.state.requestService.getAuthRequest(id);
+    const authRequest = this.state.requestService.getAuthRequest(id);
 
-    assert(queued, 'Unable to find request');
+    assert(authRequest, 'Unable to find request');
 
-    const { resolve } = queued;
-
-    resolve({ authorizedAccounts, result: true });
+    authRequest.resolve({ authorizedAccounts, result: true });
 
     return true;
   }
@@ -310,8 +312,36 @@ export default class Extension extends FWExtensionBase {
     return this.state.requestService.updateAuthorizedAccounts([[url, authorizedAccounts]]);
   }
 
+  authList() {
+    return new Promise<AuthUrls>((resolve) => {
+      this.state.requestService.getAuthorize((authUrls: AuthUrls) => {
+        const addressList = Object.keys(this.state.keyringService.getAllAccounts());
+        const urlList = Object.keys(authUrls);
+
+        if (Object.keys(authUrls[urlList[0]]?.allowedAccountsMap).toString() !== addressList.toString()) {
+          urlList.forEach((url) => {
+            const authUrl = authUrls[url];
+            const keys = Object.keys(authUrl?.allowedAccountsMap);
+
+            addressList.forEach((address) => {
+              if (!keys.includes(address)) authUrl.allowedAccountsMap[address] = false;
+            });
+
+            keys.forEach((address) => {
+              if (!addressList.includes(address)) delete authUrl?.allowedAccountsMap[address];
+            });
+          });
+
+          this.state.requestService.setAuthorize(authUrls);
+        }
+
+        resolve(authUrls);
+      });
+    });
+  }
+
   async getAuthList(): Promise<ResponseAuthorizeList> {
-    const list = await this.state.requestService.getAuthList();
+    const list = await this.authList();
 
     return { list };
   }
@@ -483,10 +513,122 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
+  async signEvmApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
+    const request = this.state.requestService.getSignRequest(id) as EvmRequestsSubjectPayload | undefined;
+    assert(request, 'Unable to find request');
+    const { data } = request;
+
+    const address = getEip155MessageAddress(request.method, data);
+
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
+    const ethereumAddress = this.state.keyringService.getEthereumAddress(substrateAddress);
+    const isMobile = this.state.keyringService.isMobileAccount(substrateAddress);
+
+    if (isMobile) {
+      try {
+        const account = this.state.keyringService.getAddress(substrateAddress);
+
+        if (!account || account.meta.wcTopic) throw new Error('Couldnt find account');
+
+        const res = await this.state.walletConnectDappService.onEvmRequest(
+          id,
+          request.url,
+          request.method,
+          request.data,
+          account.meta.wcTopic as string
+        );
+        if (res) request.resolve(res);
+      } catch {
+        request.reject(new Error('USER_REJECTED'));
+
+        return false;
+      }
+
+      return true;
+    }
+
+    if (!password) {
+      const eth = this.state.keyringService.getPair(ethereumAddress);
+
+      if (eth?.isLocked) throw new Error(BasicTxErrorCode.KEYRING_ERROR, { cause: 'Pair is locked' });
+    } else {
+      const isPassMatch = this.accountsValidatePassword({ address: ethereumAddress, password });
+
+      if (!isPassMatch) throw new Error(BasicTxErrorCode.KEYRING_ERROR, { cause: 'Password did not match' });
+    }
+
+    const method = request.method;
+    const { list: authList } = await this.getAuthList();
+    const auth = authList[stripUrl(request.url)];
+
+    const network = Object.values(this.state.networkMap).find(
+      (el) =>
+        isSameString(el.genesisHash, auth.currentEvmNetworkKey) || isSameString(el.name, auth.currentEvmNetworkKey)
+    );
+
+    if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
+
+    const { privateKey } = this.state.accountExportPrivateKey({ address: ethereumAddress, password });
+    const signer = new Wallet(privateKey, this.state.getEvmApi(network.name)?.api);
+
+    if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
+      const txData = request.data[0] as { to: string; value: string };
+
+      const { hash } = await signer.sendTransaction(txData);
+
+      request.resolve({ id: request.id, payload: hash as HexString });
+    } else {
+      const params = request.data;
+
+      if (
+        [
+          'eth_sign',
+          'personal_sign',
+          'eth_signTypedData',
+          'eth_signTypedData_v1',
+          'eth_signTypedData_v3',
+          'eth_signTypedData_v4',
+        ].indexOf(method) < 0
+      )
+        throw new Error('Not found sign method');
+
+      let payload;
+
+      if (typeof params[0] === 'string' && isEthereumAddress(params[0])) payload = params[1];
+      else if (typeof params[1] === 'string' && isEthereumAddress(params[1])) payload = params[0];
+
+      if (address === '' || !payload) throw new Error('Not found address or payload to sign');
+
+      const message =
+        ['eth_sign', 'personal_sign'].indexOf(method) > -1 ? convertHexToUtf8(payload) : JSON.parse(payload);
+
+      if (!(['eth_sign', 'personal_sign'].indexOf(method) > -1)) delete message.types['EIP712Domain'];
+
+      const signature = await (['eth_sign', 'personal_sign'].indexOf(method) > -1
+        ? signer.signMessage(message)
+        : signer.signTypedData(message.domain, message.types, message.message));
+
+      request.resolve({ id: request.id, payload: signature as HexString });
+    }
+
+    if (password) {
+      const subst = this.state.keyringService.getPair(substrateAddress);
+      subst?.unlock(password);
+
+      const eth = this.state.keyringService.getPair(ethereumAddress);
+      eth?.unlock(password);
+    }
+
+    this.savePass(substrateAddress, ethereumAddress, savePass, false);
+
+    return true;
+  }
+
   async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
     const queued = this.state.requestService.getSignRequest(id);
-
     assert(queued, 'Unable to find request');
+
+    if (queued && 'data' in queued) return this.signEvmApprovePassword({ id, password, savePass }); //sign evm requests
 
     const account = this.state.keyringService
       .getAllAccounts()
@@ -497,7 +639,7 @@ export default class Extension extends FWExtensionBase {
     if (account && account?.meta.isMobile) {
       const res = await this.state.walletConnectDappService.onRequest(queued.request.payload as SignerPayloadJSON);
 
-      resolve({ ...res, id });
+      resolve({ payload: res.signature, id });
 
       return true;
     }
@@ -544,7 +686,7 @@ export default class Extension extends FWExtensionBase {
     if (savePass) this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
     else pair.lock();
 
-    resolve({ id, ...result });
+    resolve({ id, payload: result.signature });
 
     return true;
   }
@@ -554,7 +696,7 @@ export default class Extension extends FWExtensionBase {
 
     assert(queued, 'Unable to find request');
 
-    queued.resolve({ id, signature });
+    queued.resolve({ id, payload: signature });
 
     return true;
   }
@@ -579,6 +721,20 @@ export default class Extension extends FWExtensionBase {
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
       subscription.unsubscribe();
+    });
+
+    return true;
+  }
+
+  signingEvmSubscribe(id: string, port: Port): boolean {
+    const cb = createSubscription<'pri(signing.evmrequests)'>(id, port);
+
+    const evmSubscription = this.state.requestService.signEvmSubject.subscribe((requests): void => cb(requests));
+
+    port.onDisconnect.addListener((): void => {
+      unsubscribe(id);
+
+      evmSubscription.unsubscribe();
     });
 
     return true;
@@ -1016,22 +1172,22 @@ export default class Extension extends FWExtensionBase {
     const savePass = () => this.savePass(substrateAddress, ethereumAddress, !!isSavePass, !!isMobile);
     const callback = this.makeExtrinsicCallback(cb, savePass);
 
+    const params = {
+      assetId,
+      originNet,
+      destinationNet,
+      amount,
+      from,
+      to,
+      password,
+      isSavePass,
+      tokenBalance,
+      callback,
+      isMobile: !!isMobile,
+    };
+
     try {
-      const transferProm: Promise<void> | undefined = makeCrossChain(
-        {
-          assetId,
-          originNet,
-          destinationNet,
-          amount,
-          from,
-          to,
-          password,
-          isSavePass,
-          tokenBalance,
-          callback,
-        },
-        this.state
-      );
+      const transferProm: Promise<void> | undefined = makeCrossChain(params, this.state);
 
       await transferProm;
 
@@ -1416,8 +1572,7 @@ export default class Extension extends FWExtensionBase {
       const txData = request.request.params.request.params[0] as { to: string; value: string };
 
       const { hash } = await signer.sendTransaction(txData);
-
-      request.resolve({ id: request.request.topic, signature: hash as HexString });
+      request.resolve({ id: request.request.topic, payload: hash as HexString });
     } else {
       const params = request.request.params.request.params;
 
@@ -1430,21 +1585,15 @@ export default class Extension extends FWExtensionBase {
           'eth_signTypedData_v3',
           'eth_signTypedData_v4',
         ].indexOf(method) < 0
-      ) {
+      )
         throw new Error('Not found sign method');
-      }
 
       let payload;
 
-      if (typeof params[0] === 'string' && isEthereumAddress(params[0])) {
-        payload = params[1];
-      } else if (typeof params[1] === 'string' && isEthereumAddress(params[1])) {
-        payload = params[0];
-      }
+      if (typeof params[0] === 'string' && isEthereumAddress(params[0])) payload = params[1];
+      else if (typeof params[1] === 'string' && isEthereumAddress(params[1])) payload = params[0];
 
-      if (address === '' || !payload) {
-        throw new Error('Not found address or payload to sign');
-      }
+      if (address === '' || !payload) throw new Error('Not found address or payload to sign');
 
       const message =
         ['eth_sign', 'personal_sign'].indexOf(method) > -1 ? convertHexToUtf8(payload) : JSON.parse(payload);
@@ -1457,14 +1606,14 @@ export default class Extension extends FWExtensionBase {
         ? signer.signMessage(message)
         : signer.signTypedData(message.domain, message.types, message.message));
 
-      request.resolve({ id: request.request.topic, signature: signature as HexString });
+      request.resolve({ id: request.request.topic, payload: signature as HexString });
     }
 
     if (password) {
       const subst = this.state.keyringService.getPair(substrateAddress);
-      subst?.unlock(password);
-
       const eth = this.state.keyringService.getPair(ethereumAddress);
+
+      subst?.unlock(password);
       eth?.unlock(password);
     }
 
@@ -1729,6 +1878,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(signing.requests)':
         return this.signingSubscribe(id, port);
+
+      case 'pri(signing.evmrequests)':
+        return this.signingEvmSubscribe(id, port);
 
       // google
       case 'pri(google.get.files)':

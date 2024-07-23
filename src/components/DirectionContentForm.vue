@@ -9,7 +9,7 @@
       <div class="partition">
         <div class="hr"></div>
 
-        <div class="direction-icon">
+        <div class="direction-icon" data-testid="directionIcon">
           <Icon :icon="icon" :class="directionIcons" />
         </div>
       </div>

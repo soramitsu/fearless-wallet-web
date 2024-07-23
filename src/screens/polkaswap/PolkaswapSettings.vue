@@ -14,6 +14,7 @@
     <ValidatedInput
       :value="slippagePercent"
       placeholder="assets.slippageTolerance"
+      data-testid="slippagePercent"
       class="row"
       :errorDescriptions="warningMessage"
       :isError="isErrorSlippageInput"

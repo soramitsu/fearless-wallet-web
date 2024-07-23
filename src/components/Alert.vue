@@ -1,6 +1,6 @@
 <template>
   <FCorners :isError="true" size="big">
-    <div class="alert-container">
+    <div class="alert-container" data-testid="alertContainer">
       <div class="alert__content">
         <Hint class="alert__header" size="big" iconName="warning" :text="headerText" />
 

@@ -11,7 +11,7 @@
     </div>
 
     <template>
-      <Icon v-if="showCloseIcon" icon="close" class="img close" @click="$emit('closeForm')" />
+      <Icon v-if="showCloseIcon" icon="close" class="img close" data-testid="closeForm" @click="$emit('closeForm')" />
 
       <div v-else :class="classesSettings" @click="$emit('toggleSettingsVisibility')">
         <template>

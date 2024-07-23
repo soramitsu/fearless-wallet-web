@@ -1,5 +1,5 @@
 <template>
-  <div :class="classes" @click="$emit('click')">{{ $t(props.text) }}</div>
+  <div data-testid="ellipseBtn" :class="classes" @click="$emit('click')">{{ $t(props.text) }}</div>
 </template>
 
 <script lang="ts" setup>

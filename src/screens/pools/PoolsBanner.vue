@@ -1,8 +1,8 @@
 <template>
   <div v-if="showPoolsBanner">
-    <Icon icon="banner-pools" :hover="false" class="banner-pools" />
+    <Icon icon="banner-pools" :hover="false" class="banner-pools" data-testid="bannerPools" />
 
-    <div class="details-button center" @click="openPoolsPage">
+    <div class="details-button center" data-testid="openPoolsBtn" @click="openPoolsPage">
       <Icon icon="pools-details-button" class="pools-details" />
     </div>
 

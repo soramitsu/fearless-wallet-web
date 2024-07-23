@@ -35,7 +35,7 @@
 
     <template v-if="isRemoveLiquidity">
       <div class="slider-info">
-        <div class="slider-value">{{ percent }}%</div>
+        <div class="slider-value" data-testid="sliderValue">{{ percent }}%</div>
 
         <EllipseButton text="common.max" :disabled="percentIsMax" @click="updatePercent" />
       </div>

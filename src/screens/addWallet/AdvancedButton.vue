@@ -3,7 +3,7 @@
     <div class="button" data-testid="advancedSettingsBtn" @click="$emit('click')">
       {{ $t('addWallet.advancedSettings') }}
 
-      <Icon icon="circle-plus" className="plus-icon" />
+      <Icon icon="circle-plus" className="plus-icon" data-testid="plusIcon" />
     </div>
   </div>
 </template>

@@ -1,6 +1,6 @@
 <template>
-  <div class="pool-item" @click="click">
-    <div class="icons">
+  <div class="pool-item" data-testid="poolItem" @click="click">
+    <div class="icons" data-testid="poolIcons">
       <ExternalLogo :name="icon1" class="network-icon-1" />
 
       <ExternalLogo :name="icon2" class="network-icon-2" />
@@ -8,17 +8,17 @@
 
     <div class="description-part">
       <diV class="descriptions">
-        <div class="pool-name">{{ poolName }}</div>
+        <div class="pool-name" data-testid="poolName">{{ poolName }}</div>
 
         <Shimmer v-if="isLoading" height="20px" width="155px" />
 
-        <div v-else class="tvl">{{ tvl }} TVL</div>
+        <div v-else class="tvl" data-testid="poolTvl">{{ tvl }} TVL</div>
       </diV>
 
-      <div class="values">
+      <div class="values" data-testid="values">
         <div class="earn">
           Earn
-          <p class="asset">{{ asset2 }}</p>
+          <p class="asset" data-testid="earnAsset">{{ asset2 }}</p>
         </div>
       </div>
     </div>

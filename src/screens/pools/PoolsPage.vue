@@ -37,7 +37,7 @@
                 </template>
               </template>
 
-              <div v-else class="nothing-found">{{ $t('common.nothingFound') }}</div>
+              <div v-else class="nothing-found" data-testid="nothingFound">{{ $t('common.nothingFound') }}</div>
             </Scroll>
           </template>
         </div>

@@ -9,13 +9,13 @@
     />
 
     <div v-if="step !== 3" class="pool-descriptions">
-      <div class="pool-name">
+      <div class="pool-name" data-testid="poolName">
         {{ poolName }}
 
         <Icon icon="pool" class="pool-icon" :hover="false" />
       </div>
 
-      <div class="tvl">{{ tvl }} TVL</div>
+      <div class="tvl" data-testid="tvl">{{ tvl }} TVL</div>
     </div>
   </div>
 </template>

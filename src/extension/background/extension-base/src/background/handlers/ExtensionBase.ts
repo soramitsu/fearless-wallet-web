@@ -1,5 +1,6 @@
 import assert from 'assert';
-import { isRequireEvmAPI } from '@extension-base/background/utils/utils';
+import { isNativeEVMNetwork } from '@extension-base/background/utils/utils';
+import { ethers } from 'ethers';
 import type {
   CachedUnlocks,
   RequestAccountExport,
@@ -10,6 +11,8 @@ import type {
   ResponseSigningIsLocked,
   ValidateJsonResult,
   RequestUpdateMeta,
+  RequestExportMnemonic,
+  ResponseExportMnemonic,
 } from '@extension-base/background/types/types';
 
 import type State from '@extension-base/background/handlers/State';
@@ -24,8 +27,19 @@ export default class FWExtensionBase {
     this.cachedUnlocks = {};
   }
 
-  accountsExport({ address, password }: RequestAccountExport): ResponseAccountExport {
-    return { exportedJson: this.state.keyringService.backupAccount(address, password)! };
+  exportMnemonic(request: RequestExportMnemonic): ResponseExportMnemonic {
+    return this.state.keyringService.exportMnemonic(request);
+  }
+
+  exportJSON({ address, password, network }: RequestAccountExport): ResponseAccountExport {
+    if (network && isNativeEVMNetwork(network)) {
+      const { privateKey } = this.state.accountExportPrivateKey({ address, password });
+      const json = ethers.encryptKeystoreJsonSync({ address, privateKey }, password);
+
+      return { json: JSON.parse(json) };
+    }
+
+    return { json: this.state.keyringService.backupAccount(address, password)! };
   }
 
   validateDerivationPath({ value, keypairType }: DerivationPath): boolean {
@@ -53,7 +67,7 @@ export default class FWExtensionBase {
     if (meta.ethereumAddress) {
       const cb = () =>
         Object.keys(this.state.networkMap).forEach((network) => {
-          if (isRequireEvmAPI(network)) this.state.networkService.evmApiHandler.refreshEvmApi(network);
+          if (isNativeEVMNetwork(network)) this.state.networkService.evmApiHandler.refreshEvmApi(network);
         });
 
       if (this.state.currentAccount) {
@@ -127,7 +141,7 @@ export default class FWExtensionBase {
 
   jsonValid({ file, password, isSubstrate }: RequestJsonValidate): ValidateJsonResult {
     try {
-      const pair = this.state.keyringService.restoreAccount(file, password);
+      const pair = this.state.keyringService.createFromJson(file);
 
       pair.decodePkcs8(password);
 
@@ -137,6 +151,18 @@ export default class FWExtensionBase {
     } catch (error: any) {
       const errorType =
         error.message === 'Unable to decode using the supplied passphrase' ? 'jsonPassword' : 'jsonInvalid';
+
+      if (errorType === 'jsonPassword') return { value: false, errorType };
+    }
+
+    try {
+      const stringFile = JSON.stringify(file);
+
+      ethers.decryptKeystoreJsonSync(stringFile, password);
+
+      return { value: true };
+    } catch (error: any) {
+      const errorType = error.message.includes('incorrect password') ? 'jsonPassword' : 'jsonInvalid';
 
       return { value: false, errorType };
     }

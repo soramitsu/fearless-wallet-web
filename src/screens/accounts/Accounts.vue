@@ -1,28 +1,15 @@
 <template>
   <div class="accounts">
-    <FInput
-      v-model="newName"
-      placeholder="accounts.walletName"
-      size="big"
-      data-testid="walletNameAccounts"
-      :maxlength="35"
-      @blur="blurInputName"
+    <AccountsItem
+      v-for="{ network, address, networkIcon } in chainAccounts"
+      :key="network"
+      :network="network"
+      :icon="networkIcon"
+      :isMobile="isMobile"
+      :address="address"
+      @openAddEthereumAccountPopup="$emit('openAddEthereumAccountPopup')"
+      @openAccountSettingsPopup="openAccountSettingsPopup"
     />
-
-    <template>
-      <div class="row label">{{ $t('accounts.accountsDefaultSecrets') }}</div>
-
-      <AccountsItem
-        v-for="{ network, address, networkIcon } in chainAccounts"
-        :key="network"
-        :network="network"
-        :icon="networkIcon"
-        :isMobile="isMobile"
-        :address="address"
-        @openAddEthereumAccountPopup="$emit('openAddEthereumAccountPopup')"
-        @openAccountSettingsPopup="openAccountSettingsPopup"
-      />
-    </template>
   </div>
 </template>
 
@@ -36,7 +23,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { getChainAccounts } from '@/helpers/accounts';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { accountUpdateName } from '@/extension/messaging';
+import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/utils/utils';
 
 @Component({
   components: { AccountsItem },
@@ -50,11 +37,29 @@ export default class Account extends Vue {
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   get chainAccounts() {
-    return getChainAccounts(this.networks, this.selectedWallet);
+    const networks = this.networks.filter(({ name }) => {
+      if (this.isEVM) return isNativeEVMNetwork(name);
+
+      return !isNativeEVMNetwork(name);
+    });
+
+    return getChainAccounts(networks, this.selectedWallet);
   }
 
   get isMobile() {
     return !!this.selectedWallet.isMobile;
+  }
+
+  get type() {
+    return this.$route.params.type;
+  }
+
+  get isEVM() {
+    return this.type === 'evm';
+  }
+
+  get isSubstrate() {
+    return this.type === 'substrate';
   }
 
   @Watch('selectedWallet')
@@ -74,16 +79,8 @@ export default class Account extends Vue {
     this.$emit('openAccountSettingsPopup', network, event);
   }
 
-  blurInputName() {
-    const { address, name } = this.selectedWallet;
-
-    if (this.newName === '') {
-      this.newName = name;
-
-      return;
-    }
-
-    accountUpdateName(address, this.newName);
+  changeNewName(value: string) {
+    this.newName = value;
   }
 }
 </script>
@@ -96,12 +93,6 @@ export default class Account extends Vue {
 
   .row {
     margin-top: 16px;
-  }
-
-  .label {
-    color: rgba(255, 255, 255, 1);
-    text-align: left;
-    font-weight: 600;
   }
 }
 </style>

@@ -51,7 +51,7 @@
             <span>{{ $t('disclaimers.importantText') }}</span>
           </div>
 
-          <Switcher v-model="agreeWithRules" data-testid="switcher" />
+          <Switcher v-model="agreeWithRules" data-testid="switcher" @change="switchAgreeWithRules" />
         </div>
       </Scroll>
 
@@ -91,6 +91,10 @@ const agree = () => {
   store.commit('HIDE_POLKASWAP_ALERT');
 
   closeForm();
+};
+
+const switchAgreeWithRules = () => {
+  agreeWithRules.value = !agreeWithRules.value;
 };
 </script>
 

@@ -41,4 +41,11 @@ See [Configuration Reference](https://cli.vuejs.org/config/).
 
 commit 1
 commit 2
-commit 3 
+commit 3
+
+commit sub-branch 1
+commit sub-branch 2
+commit sub-branch 3
+commit sub-branch 4
+test new user
+test new user 3

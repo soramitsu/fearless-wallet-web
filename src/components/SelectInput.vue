@@ -2,7 +2,7 @@
   <FCorners size="big" :isSelected="isSelected">
     <div :class="selectClasses">
       <div class="column left-column">
-        <div class="header">{{ header }}</div>
+        <div class="header" data-testid="headerSelectInput">{{ header }}</div>
 
         <input
           v-model="amountInternal"
@@ -19,7 +19,7 @@
 
       <div class="column right-column">
         <FCorners class="FCorners-button" @click.native="click">
-          <button :class="selectButtonClasses">
+          <button data-testid="selectBtn" :class="selectButtonClasses">
             <template v-if="asset !== ''">
               <ExternalLogo class="asset-icon" :name="assetIcon" :width="32" />
 
@@ -34,11 +34,11 @@
           </button>
         </FCorners>
 
-        <div v-if="showBalance" class="balance">
+        <div v-if="showBalance" class="balance" data-testid="balance">
           {{ $t('assets.balance') }}
 
           <div :class="balanceValueClasses" data-testid="balanceValue" @click="setMax">
-            &nbsp;{{ $n(totalAmount, 'decimal') }}
+            &nbsp;{{ $n(+totalAmount, 'decimal') }}
           </div>
         </div>
       </div>

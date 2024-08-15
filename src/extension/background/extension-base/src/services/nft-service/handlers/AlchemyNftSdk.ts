@@ -16,6 +16,13 @@ export default class AlchemyNftController {
     this.timespan = {};
   }
 
+  get readableNetwork() {
+    return (
+      Object.values(this.state.networkMap).find((net) => net.chainId.toLowerCase() === this.chainId.toString())?.name ??
+      this.network
+    );
+  }
+
   getNfts(address: string) {
     return this.sdk.nft.getNftsForOwner(address, {
       excludeFilters: this.nftService.excludeFilters(address),
@@ -24,13 +31,6 @@ export default class AlchemyNftController {
 
   getCollectionsForOwner(address: string) {
     return this.sdk.nft.getContractsForOwner(address, { excludeFilters: this.nftService.excludeFilters(address) });
-  }
-
-  get readableNetwork() {
-    return (
-      Object.values(this.state.networkMap).find((net) => net.chainId.toLowerCase() === this.chainId.toString())?.name ??
-      this.network
-    );
   }
 
   convertNft(nft: Nft): FearlessNft {
@@ -46,6 +46,7 @@ export default class AlchemyNftController {
       creator: nft.mint?.mintAddress,
       network: this.readableNetwork,
       ownedBy: '',
+      contentType: nft.image.contentType,
     };
   }
 
@@ -109,6 +110,7 @@ export default class AlchemyNftController {
         creator: nft.mint?.mintAddress,
         network: network?.name ?? this.network,
         ownedBy: address,
+        contentType: nft.image.contentType,
       });
     }
 

@@ -11,19 +11,17 @@ const containerRef = ref<HTMLElement | null>(null);
 const emit = defineEmits(['onScroll', 'canLoadMore']);
 const props = defineProps<{ canLoadMore: boolean }>();
 
-function onScroll() {
-  emit('onScroll');
-}
+const onScroll = () => emit('onScroll');
 
 useInfiniteScroll(containerRef, onScroll, { distance: 10, canLoadMore: () => props.canLoadMore });
 </script>
+
 <style lang="scss" scoped>
 .scroll {
   overflow-y: auto;
   overflow-x: hidden;
   height: 100%;
   width: 100%;
-  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
 
   &::-webkit-scrollbar {
     width: 6px;

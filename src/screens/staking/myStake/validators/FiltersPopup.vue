@@ -20,7 +20,11 @@
           </div>
         </div>
 
-        <Switcher v-model="syncedOnchainIdentity" data-testid="identitySwitcher" />
+        <Switcher
+          v-model="syncedOnchainIdentity"
+          data-testid="identitySwitcher"
+          @change="toggleSyncedOnchainIdentity"
+        />
       </div>
 
       <!-- <div class="row">
@@ -32,7 +36,11 @@
       <div class="row" data-testid="notOversubscribed">
         {{ $t('staking.notOversubscribed') }}
 
-        <Switcher v-model="syncedNotOversubscribed" data-testid="notOversubscribedSwitcher" />
+        <Switcher
+          :value="syncedNotOversubscribed"
+          data-testid="notOversubscribedSwitcher"
+          @change="toggleSyncedNotOversubscribed"
+        />
       </div>
 
       <!-- <div class="row">
@@ -66,6 +74,13 @@ export default class FiltersPopup extends Vue {
 
   toggleSortByApy() {
     this.syncedSortByApy = !this.syncedSortByApy;
+  }
+
+  toggleSyncedNotOversubscribed() {
+    this.syncedNotOversubscribed = !this.syncedNotOversubscribed;
+  }
+  toggleSyncedOnchainIdentity() {
+    this.syncedOnchainIdentity = !this.syncedOnchainIdentity;
   }
 }
 </script>

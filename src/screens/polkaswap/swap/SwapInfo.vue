@@ -22,6 +22,7 @@
       :value="fee ? `${fee} ${soraMainAsset}` : undefined"
       :price="`${fiatSymbol} ${feePrice}`"
       icon="info"
+      :isLoading="isLoadingFee"
       :iconClasses="['network-fee']"
     />
 
@@ -34,6 +35,7 @@ import { computed, ref } from 'vue';
 import { firstCharToUp } from '@/helpers';
 import { SORA_UTILITY_ASSET } from '@/consts/sora';
 import { useStore } from '@/store';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 type Props = {
   marketType?: string;
@@ -41,7 +43,7 @@ type Props = {
   sendAmount?: string;
   receiveAmount?: string;
   sendValue?: string;
-  receiveValue?: number;
+  receiveValue?: string;
   minMaxAmount?: string;
   minMaxAmountPrice?: string;
   fee?: string;
@@ -52,13 +54,14 @@ type Props = {
   showSwapInfo?: boolean;
   isExchangeB?: boolean;
 };
+
 const props = withDefaults(defineProps<Props>(), {
   marketType: '',
   slippage: 0,
   sendAmount: '',
   receiveAmount: '',
   sendValue: '',
-  receiveValue: 0,
+  receiveValue: '',
   minMaxAmount: '',
   minMaxAmountPrice: '',
   fee: '',
@@ -70,9 +73,10 @@ const props = withDefaults(defineProps<Props>(), {
 });
 const store = useStore();
 
-const fiatSymbol = ref<string>(store.getters.fiatSymbol);
+const fiatSymbol = ref<string>(store.getters[AccountsGettersTypes.fiatSymbol]);
 const soraMainAsset = SORA_UTILITY_ASSET.toUpperCase();
 
 const minMaxLabel = computed(() => (props.isExchangeB ? 'assets.maxSales' : 'assets.minReceived'));
 const marketTypeUP = computed(() => firstCharToUp(props.marketType));
+const isLoadingFee = computed(() => props.fee === '');
 </script>

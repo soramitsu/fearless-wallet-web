@@ -1,25 +1,27 @@
 <template>
   <FCorners class="nft" size="big" :topLeftCorner="false" :bottomRightCorner="false" @click.native="onNavigate">
-    <img :src="image" :alt="nft.meta?.name" width="240" height="240" />
+    <video v-if="isMp4" :src="imageUrl" width="240" height="240"></video>
+    <img v-else :src="imageUrl" :alt="nft.meta?.name" width="240" height="240" />
 
     <div class="nft-info">
       <div class="titles">
-        <span class="title">{{ upperTitle }}</span>
-        <span class="title title--main">{{ title }}</span>
-        <span class="title">{{ subTitle }}</span>
+        <span class="title" data-testid="title">{{ upperTitle }}</span>
+        <span class="title title--main" data-testid="titleMain">{{ title }}</span>
+        <span class="title" data-testid="subTitle">{{ subTitle }}</span>
       </div>
 
-      <div v-if="isOwned" class="icon-ownership">
+      <div v-if="isOwned" class="icon-ownership" data-testid="ownership">
         <Icon
           icon="check"
           className="icon-ownership-size"
+          data-testid="check"
           :hover="false"
           iconColor="success"
           width="20px"
           height="20px"
         />
       </div>
-      <Icon v-else icon="export-nft" className="share" @click.native.stop="$emit('share', nft)" />
+      <Icon v-else icon="export-nft" className="share" data-testid="export" @click.native.stop="$emit('share', nft)" />
     </div>
   </FCorners>
 </template>
@@ -44,7 +46,10 @@ const isOwned = computed(() => props.nft.isOwned);
 const title = computed(() => props.nft?.meta?.name ?? '');
 const subTitle = computed(() => props.nft.meta.description ?? '');
 const upperTitle = computed(() => props.collectionName ?? '');
-const image = computed(() => props.nft.image ?? require('@/assets/fearless-logo-animated.gif'));
+
+const contentType = computed(() => props.nft.contentType);
+const isMp4 = computed(() => contentType.value === 'video/mp4');
+const imageUrl = computed(() => props.nft.image ?? require('@/assets/fearless-logo-animated.gif'));
 
 const onNavigate = () => {
   const route: RawLocation = { name: Components.NftDetails, params: { id: props.nft.id, contract: contract.value } };

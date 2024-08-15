@@ -5,6 +5,7 @@ import { addresses as addressesObservable } from '@polkadot/ui-keyring/observabl
 import { BehaviorSubject } from 'rxjs';
 import CurrentAccountStore, { type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import { type EventService } from '@extension-base/services';
+import { type RequestExportMnemonic, type ResponseExportMnemonic } from '../../background/types/types';
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-keyring/types';
@@ -25,12 +26,24 @@ export class KeyringService {
       .catch(console.error);
   }
 
+  get currentAccount(): CurrentAccountState {
+    return this.currentAccountSubject.value;
+  }
+
+  get addressSubject() {
+    return addressesObservable.subject;
+  }
+
+  get accountSubject() {
+    return accountsObservable.subject;
+  }
+
   get addressesSubjectValue() {
     return keyring.addresses.subject.value;
   }
 
-  get currentAccount(): CurrentAccountState {
-    return this.currentAccountSubject.value;
+  get accountSubjectValue() {
+    return keyring.accounts.subject.value;
   }
 
   setCurrentAccount(currentAccountData: CurrentAccountState) {
@@ -65,14 +78,6 @@ export class KeyringService {
     return keyring.getAddresses();
   }
 
-  get addressSubject() {
-    return addressesObservable.subject;
-  }
-
-  get accountSubject() {
-    return accountsObservable.subject;
-  }
-
   triggerWalletsSubscription(): boolean {
     const accountsSubject = accountsObservable.subject;
     const addressSubject = addressesObservable.subject;
@@ -97,6 +102,8 @@ export class KeyringService {
 
   backupAccount(address: string, password: string) {
     const pair = this.getPair(address);
+
+    pair?.toJson;
 
     if (!pair) return;
 
@@ -144,6 +151,12 @@ export class KeyringService {
     delete file.meta.genesisHash;
 
     return keyring.restoreAccount(file, password);
+  }
+
+  createFromJson(file: KeyringPair$Json) {
+    delete file.meta.genesisHash;
+
+    return keyring.createFromJson(file);
   }
 
   unlockPair(addressOrPair: string | KeyringPair, password: string) {
@@ -198,11 +211,12 @@ export class KeyringService {
     if (pair) return keyring.saveAccountMeta(pair, { ...pair.meta, ...meta });
 
     const account = this.getAddress(address);
+
     if (account) this.saveAddress(address, { ...account.meta, ...meta }, 'address');
   }
 
   createFromUri(suri: string, keypairType: KeypairType, meta: FWKeyringMeta = {}) {
-    keyring.createFromUri(suri, meta, keypairType);
+    return keyring.createFromUri(suri, meta, keypairType);
   }
 
   getSubstrateAccounts() {
@@ -215,11 +229,16 @@ export class KeyringService {
   getSubstrateAddress(address: string) {
     if (!isEthereumAddress(address)) return address;
 
-    const accounts = this.getAllAccounts();
+    const accounts = this.getSubstrateAccounts();
+    const addresses = this.getAddresses();
 
-    const account = accounts.find(
-      ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
-    );
+    const account =
+      accounts.find(
+        ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
+      ) ||
+      addresses.find(
+        ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
+      );
 
     return account?.address ?? address;
   }
@@ -228,8 +247,33 @@ export class KeyringService {
     if (isEthereumAddress(address)) return address;
 
     const accounts = this.getAllAccounts();
-    const account = accounts.find(({ address: _address }) => _address === address);
+    const addresses = this.getAddresses();
+
+    const account =
+      accounts.find(({ address: _address }) => _address === address) ||
+      addresses.find(({ address: _address }) => _address === address);
 
     return (account?.meta.ethereumAddress as string) ?? '';
+  }
+
+  isMobileAccount(address: string): boolean {
+    const account =
+      this.getAllAccounts().find((el) => el.address === address) ||
+      this.getAddresses().find((el) => el.address === address || el.meta.ethereumAddress === address);
+
+    if (!account) throw new Error('Couldnt find account');
+
+    return !!account.meta.isMobile;
+  }
+
+  exportMnemonic({ address, password }: RequestExportMnemonic): ResponseExportMnemonic {
+    const pair = keyring.getPair(address);
+
+    password;
+    pair;
+
+    // const seed = pair.exportMnemonic(password);
+
+    return { seed: '' };
   }
 }

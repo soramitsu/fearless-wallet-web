@@ -2,7 +2,7 @@ import { Network } from 'alchemy-sdk';
 
 const testNets: Record<number, Network> = {
   80001: Network.MATIC_MUMBAI,
-  84532: Network.ETH_SEPOLIA,
+  11155111: Network.ETH_SEPOLIA,
 };
 
 export const PROD_NFT_NETWORKS: Record<number, Network> = {

@@ -1,24 +1,29 @@
 <template>
   <div class="staking-settings">
     <div class="settings-part">
-      <template v-for="{ label, tabName, tooltipText, target, classes, isShow } in tabsOptions">
+      <template v-for="{ label, tabName, target, classes, isShow } in tabsOptions">
         <TabButton
           v-if="isShow"
           class="tab"
           data-testid="tabButton"
           :key="tabName"
-          :tooltipText="tooltipText"
           :target="target"
           :class="classes"
           :label="label"
-          :isActive="activeTabName === tabName"
+          :isActive="syncedActiveTabName === tabName"
           @click="openTab(tabName)"
         />
       </template>
     </div>
 
     <div class="settings-part">
-      <SearchInput v-model="syncedFilterValue" placeholder="common.search" width="185px" class="search" />
+      <SearchInput
+        :value="syncedFilterValue"
+        placeholder="common.search"
+        width="185px"
+        class="search"
+        @change="changeSyncedFilterValue"
+      />
     </div>
   </div>
 </template>
@@ -60,8 +65,13 @@ export default class StakingSettings extends Vue {
       },
     ];
   }
+
   get isAllTab() {
     return this.syncedActiveTabName === 'all';
+  }
+
+  changeSyncedFilterValue(value: string) {
+    this.syncedFilterValue = value;
   }
 
   openTab(name: StakingTab) {

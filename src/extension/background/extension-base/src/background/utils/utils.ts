@@ -4,7 +4,12 @@ import type State from '@extension-base/background/handlers/State';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { AssetName, NetworkName, RelayChainName } from '@/interfaces';
-import { MAIN_NETWORKS, ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
+import {
+  MAIN_NETWORKS,
+  ETHEREUM_NETWORKS,
+  NATIVE_ETHEREUM_NETWORKS,
+  SUBSTRATE_ETHEREUM_NETWORKS,
+} from '@/consts/networks';
 import { ETHEREUM_UTILITY_ASSETS } from '@/consts/currencies';
 
 export function getMockCurrencies(networkMap: Record<string, NetworkJson>) {
@@ -95,7 +100,11 @@ export function isEthereumNetwork(network: string) {
   return ETHEREUM_NETWORKS.includes(network.toLowerCase());
 }
 
-export function isRequireEvmAPI(network: string) {
+export function isEthereumSubstrateNetwork(network: string) {
+  return SUBSTRATE_ETHEREUM_NETWORKS.includes(network.toLowerCase());
+}
+
+export function isNativeEVMNetwork(network: string) {
   return NATIVE_ETHEREUM_NETWORKS.includes(network.toLowerCase());
 }
 

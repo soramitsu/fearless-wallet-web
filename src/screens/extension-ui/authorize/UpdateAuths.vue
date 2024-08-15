@@ -1,18 +1,25 @@
 <template>
   <div class="update-accounts">
-    <SelectAuthAccount :selectAll="selectAll" :accounts="state" @onSelectAll="onSelectAll" @onSelect="onSelect" />
+    <SelectAuthAccount
+      :selectAll="selectAll"
+      :accounts="state"
+      :authType="authType"
+      @onSelectAll="onSelectAll"
+      @onSelect="onSelect"
+    />
 
     <FButton class="connect-button" width="100%" size="big" fontSize="big" :text="buttonText" @click="updateAuths" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, set, ref, watch } from 'vue';
+import { computed, onMounted, set, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
 import type { AuthUrls } from '@extension-base/background/types/types';
 import { updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import { type WalletInfo, useStore } from '@/store';
+import { GettersTypes as AccountsGetterType } from '@/store/accounts/getters';
 
 const router = useRouter();
 const route = useRoute();
@@ -40,21 +47,22 @@ const prepAccounts = computed<string[]>(() => {
 });
 
 const isAllSelected = () => Object.values(state.value).every((value) => value.active === true);
-
+const authType = computed(() => list.value[url.value].accountAuthType);
 onMounted(async () => {
   list.value = await store.dispatch('GET_AUTHLIST');
 
-  const wallets: WalletInfo[] = store.getters.getWallets;
+  const wallets: WalletInfo[] = store.getters[AccountsGetterType.getWallets];
 
   const { authorizedAccounts } = list.value[url.value] ?? {};
 
-  wallets.forEach(({ name, address, isMobile }) => {
-    const isAuthorized = authorizedAccounts.some((el: string) => el === address);
+  wallets.forEach(({ name, address, ethereumAddress, isMobile }) => {
+    const isAuthorized = authorizedAccounts.some((el: string) => el === address || el === ethereumAddress);
 
     set(state.value, name, {
-      name: name,
-      address: address,
-      isMobile: isMobile,
+      name,
+      isMobile,
+      address,
+      ethereumAddress,
       active: isAuthorized,
     });
   });
@@ -64,19 +72,20 @@ onMounted(async () => {
 
 const onSelect = (value: boolean, name: string) => {
   state.value[name].active = value;
+
   selectAll.value = isAllSelected();
 };
 
-const onSelectAll = (value: boolean) => (selectAll.value = value);
+const onSelectAll = (value: boolean) => {
+  selectAll.value = value;
 
-watch(selectAll, (value: boolean) => {
   Object.keys(state.value).forEach((key) => {
     set(state.value, key, {
       ...state.value[key],
       active: value,
     });
   });
-});
+};
 
 const updateAuths = async () => {
   await updateAuthorization(prepAccounts.value, url.value);

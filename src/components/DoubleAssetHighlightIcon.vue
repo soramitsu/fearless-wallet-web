@@ -1,5 +1,5 @@
 <template>
-  <div class="double-assets">
+  <div class="double-assets" data-testid="doubleAssets">
     <AssetHighlightIcon
       :icon="props.icon1"
       :shadowColor="props.shadowColor1"

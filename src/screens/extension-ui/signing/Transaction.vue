@@ -1,14 +1,13 @@
 <template>
   <AboveForm :fullScreen="true" header="assets.transaction" @closeHandler="onReject">
     <div v-if="isSignMobile" class="transaction-mobile">
-      <Loader v-if="isSupportedNetwork" />
+      <Loader />
 
-      <Alert
-        v-else
+      <!-- <Alert
         headerText="walletConnect.requiredNetworkAlert.header"
         message="walletConnect.requiredNetworkAlert.message"
         sizeText="small"
-      />
+      /> -->
 
       <FButton
         text="common.cancel"
@@ -34,7 +33,7 @@
         <ValidatedInput
           v-if="state.isLocked"
           ref="passInputComponent"
-          v-model="state.password"
+          :value="state.password"
           placeholder="common.password"
           size="big"
           :class="classesInput"
@@ -43,6 +42,7 @@
           :isError="state.isErrorPassword"
           :showPassword="true"
           @keypress.native="keypress"
+          @change="changePassword"
         />
 
         <Checkbox :value="state.isSavePass" size="medium" :label="min15Label" @change="onSavePassChange" />
@@ -69,6 +69,9 @@
 import registry from '@extension-base/api/substrate/typeRegistry';
 import { reactive, ref, watch, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n-composable';
+import { type GenericExtrinsicPayload } from '@polkadot/types/extrinsic/ExtrinsicPayload';
+import { formatUnits } from 'ethers';
+import { type EvmRequestPayload } from '@extension-base/services/request-service/types';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { AccountJson, SigningRequest } from '@extension-base/background/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
@@ -81,8 +84,11 @@ import InfoList from '@/screens/extension-ui/InfoList.vue';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import { useStore, type SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
-import { isSignLocked, validatePassword } from '@/extension/messaging';
-import { ExtensionController } from '@/controllers';
+import { type SignRequestList } from '@/store/extension/types';
+import { cut } from '@/helpers';
+import { isSignLocked, validatePassword, approveSignPassword } from '@/extension/messaging';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as ExtensionGetterTypes } from '@/store/extension/getters';
 
 const state = reactive({
   isLocked: true,
@@ -96,10 +102,10 @@ const state = reactive({
 const store = useStore();
 const { t } = useI18n();
 
-const payload = computed<SignerPayloadJSON>(() => store.getters.signRequestPayload);
-const requests = computed<SigningRequest[]>(() => store.getters.signList);
-const accounts = computed<AccountJson[]>(() => store.getters.getAccounts);
-const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+const payload = computed<SignerPayloadJSON>(() => store.getters[ExtensionGetterTypes.signRequestPayload]);
+const requests = computed<SignRequestList>(() => store.getters[ExtensionGetterTypes.signList]);
+const accounts = computed<AccountJson[]>(() => store.getters[AccountsGettersTypes.getAccounts]);
+const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
 
 const onSignApprove = (data: ApprovePayload) => {
   store.dispatch('APPROVE_SIGN_PASSWORD', data);
@@ -107,7 +113,9 @@ const onSignApprove = (data: ApprovePayload) => {
 
 const classesInput = ['row', 'password-input', { 'password-input-margin': !IS_EXTENSION }];
 const transactionAddress = computed(() => payload.value?.address ?? selectedWallet.value.address);
-const request = computed(() => requests.value[0]);
+const request = computed<SigningRequest | EvmRequestPayload>(
+  () => requests.value.substrate[0] ?? Object.values(requests.value.evm)[0]
+);
 const transactionId = computed(() => request.value.id);
 
 const isSignMobile = computed(() => {
@@ -116,32 +124,31 @@ const isSignMobile = computed(() => {
   return accounts.value.some((account) => account.address === encodedAddress && account.isMobile);
 });
 
-const isSupportedNetwork = computed(() => {
-  if (isSignMobile.value) {
-    const encodedAddress = BaseApi.encodeAddress(transactionAddress.value);
+const address = computed(() => {
+  if (request.value && 'data' in request.value) return request.value.data[0].from ?? request.value.data[1];
 
-    const account = accounts.value.find((account) => account.address === encodedAddress && account.isMobile);
-
-    return account?.chains?.some((el) => payload.value.genesisHash.includes(el));
-  }
-
-  return false;
+  return request.value?.account.address;
 });
 
-const typedPayload = computed(() => {
+const typedPayload = computed<GenericExtrinsicPayload | undefined>(() => {
+  if (request.value && 'data' in request.value) return;
+
   registry.setSignedExtensions(payload.value.signedExtensions);
 
   return registry.createType('ExtrinsicPayload', payload.value, { version: payload.value.version });
 });
-const address = computed(() => request.value.request.payload.address);
 
-const accountName = computed(() => request.value.account.name);
-const specVersion = computed(() => typedPayload.value.specVersion.toNumber());
-const genesisHash = computed(() => typedPayload.value.genesisHash.toString());
-const nonce = computed(() => typedPayload.value.nonce.toString());
-const method = computed(() => typedPayload.value.method.toString());
+const accountName = computed(() => {
+  if (!request.value) return '';
 
-const mortalityAsString = (era: ExtrinsicEra, hexBlockNumber: string): string => {
+  if ('account' in request.value) return request.value.account.name;
+
+  return request.value.data[0].from ?? request.value.data[0];
+});
+
+const mortalityAsString = (era: ExtrinsicEra | undefined, hexBlockNumber: string): string | undefined => {
+  if (!era) return;
+
   if (era.isImmortalEra) return 'immortal';
 
   const { birth, death } = BaseApi.mortalityDecode(era, hexBlockNumber);
@@ -149,23 +156,57 @@ const mortalityAsString = (era: ExtrinsicEra, hexBlockNumber: string): string =>
   return `mortal, valid from ${birth} to ${death}`;
 };
 
-const mortality = computed(() => mortalityAsString(typedPayload.value.era, payload.value.blockNumber));
+const mortality = computed(() => mortalityAsString(typedPayload.value?.era, payload.value.blockNumber));
 
-const txInfo = computed(() => ({
-  url: request.value.url,
-  nonce: nonce.value,
-  genesisHash: genesisHash.value,
-  specVersion: specVersion.value,
-  method: method.value,
-  mortality: mortality.value,
-}));
+const txInfo = computed(() => {
+  const info: Record<string, string | number> = {
+    url: request.value.url,
+  };
+
+  if (request.value && 'data' in request.value) {
+    if (typeof request.value.data === 'object') {
+      const [payload] = request.value.data;
+
+      if (typeof payload === 'object') {
+        if ('gas' in payload) info.gas = formatUnits(payload.gas, 'gwei');
+        if ('value' in payload) info.value = formatUnits(payload.value);
+        if ('to' in payload) info.to = cut(payload.to.toString(), 15);
+        if ('from' in payload) info.from = cut(payload.from.toString(), 15);
+        if ('data' in payload) info.data = cut(payload.data.toString(), 15);
+      } else {
+        info.data = request.value.data[0];
+      }
+    } else {
+      info.data = request.value.data[0];
+    }
+  } else {
+    const data: Record<string, string | number | undefined> = {
+      nonce: typedPayload.value?.nonce.toString(),
+      wallet: request.value.account.name,
+      address: request.value.account.address,
+      genesisHash: typedPayload.value?.genesisHash.toString(),
+      specVersion: typedPayload.value?.specVersion.toString(),
+      method: typedPayload.value?.method.toString(),
+      mortality: mortality.value,
+    };
+
+    for (const [key, value] of Object.entries(data)) {
+      if (value) {
+        info[key] = value;
+      }
+    }
+  }
+
+  return info;
+});
 
 const min15Label = computed((): string => t(state.isLocked ? 'assets.15min' : 'assets.15minExtend').toString());
-const passInputComponent = ref<ValidatedInput>();
+const passInputComponent = ref<typeof ValidatedInput>();
 
-const onSignMobile = () => ExtensionController.approveSignPassword(transactionId.value, false);
+const onSignMobile = () => approveSignPassword(transactionId.value, false);
+
 onMounted(async () => {
-  if (isSignMobile.value && isSupportedNetwork) onSignMobile();
+  if (isSignMobile.value) onSignMobile();
 
   if (!IS_EXTENSION || isSignMobile.value) return;
 
@@ -181,13 +222,13 @@ onMounted(async () => {
 
 watch(
   () => state.password,
-  () => {
-    state.isErrorPassword = false;
-  }
+  () => (state.isErrorPassword = false)
 );
 
 const onSavePassChange = (value: boolean) => (state.isSavePass = value);
-const onReject = async () => store.dispatch('SIGN_CANCEL', request.value.id);
+const onReject = () => store.dispatch('SIGN_CANCEL', transactionId.value);
+
+const changePassword = (value: string) => (state.password = value);
 
 const sendExtrinsic = async () => {
   state.isDisabled = true;

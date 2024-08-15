@@ -8,13 +8,14 @@
 
     <div>
       <ValidatedInput
-        v-model="password"
+        :value="password"
         errorDescriptions="common.invalidPassword"
         placeholder="accounts.passwordWallet"
         data-testid="passwordExport"
         :isError="isWrongPassword"
         :showPassword="true"
         :readonly="noEthereumAccount"
+        @change="changePassword"
       />
 
       <FButton
@@ -37,6 +38,7 @@ import { useRoute, useRouter } from 'vue-router/composables';
 import { useStore, type SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import { validatePassword } from '@/extension/messaging';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 const emit = defineEmits(['setPassword']);
 const store = useStore();
@@ -50,7 +52,7 @@ watch(password, () => {
   isWrongPassword.value = false;
 });
 
-const selectedWallet = computed<SelectedWallet>(() => store.getters.selectedWallet);
+const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
 const network = computed(() => route.params.network);
 
 onMounted(() => {
@@ -64,6 +66,10 @@ const noEthereumAccount = computed(
 const warningText = computed(() => {
   return noEthereumAccount.value ? 'accounts.notEthereumAccount' : 'accounts.exportWarning';
 });
+
+const changePassword = (value: string) => {
+  password.value = value;
+};
 
 const checkPassword = async () => {
   const addressByNetwork = BaseApi.formatAddress(selectedWallet.value, network.value);

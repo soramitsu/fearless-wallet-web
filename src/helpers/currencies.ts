@@ -13,6 +13,8 @@ import { BASE_URLS_PREFIX } from '@/consts/urls';
 import { isSameString, isSora } from '@/helpers';
 import { useStore } from '@/store';
 import { getSummaryTransferableBalance, isNetworkGroup } from '@/helpers/common';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 export function getTransferableBalanceInNetwork(token: TokenGroup, network: string) {
   return token.balances?.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
@@ -28,6 +30,7 @@ function defaultSortingCurrencies(currencies: TokenGroup[], { tokenPriceMap }: A
   const currenciesPending = currencies.filter(({ balances }) =>
     balances.every(({ state }) => state === APIItemState.PENDING)
   );
+
   const currenciesWithError = currencies.filter(({ balances }) =>
     balances.every(({ state }) => state === APIItemState.ERROR)
   );
@@ -101,7 +104,7 @@ function getProviderUrl(name: BuyProvider, asset: string, address: string) {
 }
 
 function getCurrencyOptions(tokenGroup: TokenGroup[]) {
-  return tokenGroup.map(({ groupId, symbol: _symbol, icon, relayChain }) => {
+  return tokenGroup.map(({ groupId, symbol: _symbol, icon, relayChain, tokenName }) => {
     const assetUpper = _symbol.toUpperCase();
     const filteredOptions = tokenGroup.filter(({ symbol }) => symbol === _symbol);
     const label = filteredOptions.length > 1 ? `${assetUpper} (${relayChain.toUpperCase()})` : assetUpper;
@@ -109,6 +112,7 @@ function getCurrencyOptions(tokenGroup: TokenGroup[]) {
     return {
       name: getNativeAssetName(label).toUpperCase(),
       value: groupId,
+      subName: tokenName,
       icon,
     };
   });
@@ -190,9 +194,12 @@ function isValidAmountAsset(
 
 function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: string) {
   const store = useStore();
-  const network: NetworkJson = store.getters.getNetwork(balance.name);
-  const favoriteNetworks = store.getters.favoriteNetworksNames as { name: string; favorite: string[] }[];
-  const { address }: Wallet = store.getters.selectedWallet;
+  const network: NetworkJson = store.getters[NetworksGettersTypes.getNetwork](balance.name);
+  const favoriteNetworks = store.getters[NetworksGettersTypes.favoriteNetworksNames] as {
+    name: string;
+    favorite: string[];
+  }[];
+  const { address }: Wallet = store.getters[AccountsGettersTypes.selectedWallet];
 
   if (selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
 
@@ -209,15 +216,13 @@ export function getSummaryTransferableBalanceFilteredByActiveNetworks(
   token: TokenGroup,
   network: string = ALL_NETWORKS
 ) {
-  if (!isNetworkGroup(network)) {
-    return getTransferableBalanceInNetwork(token, network);
-  }
+  if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
 
   const store = useStore();
 
   return (
     token.balances?.reduce((sum, { state, name, transferable }) => {
-      const network: NetworkJson = store.getters.getNetwork(name);
+      const network: NetworkJson = store.getters[NetworksGettersTypes.getNetwork](name);
 
       if (state === APIItemState.READY && network.active && transferable) sum += +transferable;
 

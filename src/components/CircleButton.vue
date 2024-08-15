@@ -13,7 +13,9 @@ import { computed } from 'vue';
 import type { Placement } from '@/interfaces';
 
 type BackgroundType = 'none' | 'black' | 'light-black';
+
 type Size = 'small' | 'medium';
+
 type Props = {
   iconName: string;
   backgroundColor: BackgroundType;

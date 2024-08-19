@@ -26,8 +26,8 @@ export class PricesService {
   constructor(private networkService: NetworkService) {
     this.priceStore = new PriceStore();
 
-    storage.get(['fiatSymbol']).then(({ fiatSymbol }) => {
-      if (fiatSymbol) this.fiatSymbol = fiatSymbol;
+    storage.get(['fiatSymbol']).then((response) => {
+      if (response?.fiatSymbol) this.fiatSymbol = response.fiatSymbol;
     });
   }
 

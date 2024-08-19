@@ -575,8 +575,7 @@ export default class Tabs {
     id: string,
     type: TMessageType,
     request: RequestTypes[TMessageType],
-    url: string,
-    port: Port
+    url: string
   ): Promise<ResponseTypes[keyof ResponseTypes]> {
     if (type === 'pub(phishing.redirectIfDenied)') return this.redirectIfPhishing(url);
 
@@ -592,8 +591,8 @@ export default class Tabs {
       case 'pub(accounts.list)':
         return this.accountsListAuthorized(url, request as RequestAccountList);
 
-      case 'pub(accounts.subscribe)':
-        return this.accountsSubscribeAuthorized(url, id, port);
+      // case 'pub(accounts.subscribe)':
+      //   return this.accountsSubscribeAuthorized(url, id, port);
 
       case 'pub(accounts.unsubscribe)':
         return this.accountsUnsubscribe(url, request as RequestAccountUnsubscribe);
@@ -613,27 +612,27 @@ export default class Tabs {
       case 'pub(rpc.listProviders)':
         return this.rpcListProviders();
 
-      case 'pub(rpc.send)':
-        return this.rpcSend(request as RequestRpcSend, port);
-
-      case 'pub(rpc.startProvider)':
-        return this.rpcStartProvider(request as string, port);
-
-      case 'pub(rpc.subscribe)':
-        return this.rpcSubscribe(request as RequestRpcSubscribe, id, port);
-
-      case 'pub(rpc.subscribeConnected)':
-        return this.rpcSubscribeConnected(request as null, id, port);
-
-      //EVM
-      case 'evm(events.subscribe)':
-        return this.evmSubscribeEvents(url, id, port);
+      // case 'pub(rpc.send)':
+      //   return this.rpcSend(request as RequestRpcSend, port);
+      //
+      // case 'pub(rpc.startProvider)':
+      //   return this.rpcStartProvider(request as string, port);
+      //
+      // case 'pub(rpc.subscribe)':
+      //   return this.rpcSubscribe(request as RequestRpcSubscribe, id, port);
+      //
+      // case 'pub(rpc.subscribeConnected)':
+      //   return this.rpcSubscribeConnected(request as null, id, port);
+      //
+      // //EVM
+      // case 'evm(events.subscribe)':
+      //   return this.evmSubscribeEvents(url, id, port);
 
       case 'evm(request)':
         return this.handleEvmRequest(id, url, request as RequestArguments);
 
-      case 'evm(provider.send)':
-        return this.handleEvmSend(id, url, port, request as RequestEvmProviderSend);
+      // case 'evm(provider.send)':
+      // return this.handleEvmSend(id, url, port, request as RequestEvmProviderSend);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

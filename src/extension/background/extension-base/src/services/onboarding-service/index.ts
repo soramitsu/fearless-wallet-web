@@ -18,7 +18,8 @@ export class OnboardingService {
   async init(): Promise<void> {
     if (!IS_PRODUCTION && !IS_TEST_ONLY) return;
 
-    const { onboarding } = await storage.get(['onboarding']);
+    const response = await storage.get(['onboarding']);
+    const onboarding = response?.onboarding;
 
     if (onboarding) this.changeUserType(onboarding.user);
 

@@ -359,6 +359,7 @@ const routes: Array<RouteConfig> = [
         component: Wallet,
         redirect: { name: Components.Currencies },
         beforeEnter: (to, from, next) => {
+          console.info('haveAuthRequests', { haveAuthRequests: haveAuthRequests(), to, from, next });
           if (haveAuthRequests()) next({ name: Components.Authorize });
           else if (haveSignRequests()) next({ name: Components.Transaction });
           else if (haveMetaRequests()) next({ name: Components.MetaRequest });
@@ -412,6 +413,7 @@ const routes: Array<RouteConfig> = [
       },
     ],
     beforeEnter: (to, from, next) => {
+      console.info('haveSelectedWallet', { haveSelectedWallet: haveSelectedWallet(), to, from, next });
       if (!haveSelectedWallet()) next({ name: Components.Welcome });
       else next();
     },

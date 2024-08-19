@@ -81,7 +81,9 @@ export class StakingService {
     const address = isController ? this.state.formatAddress(stashWallet) : _address;
 
     const stakingInfo = await apiSora.staking.getMyStakingInfo(address);
-    const { addressBook } = await storage.get(['addressBook']);
+    const storageData = await storage.get(['addressBook']);
+    console.info('[debug] storageData', storageData);
+    const addressBook = storageData?.addressBook;
     const isControllerAndPayeeStaked = isController && stakingInfo.payee.toLowerCase() === 'staked';
     const isControllerAndPayeeStash = isController && stakingInfo.payee.toLowerCase() === 'stash';
     const isControllerAndPayeeController = isController && stakingInfo.payee.toLowerCase() === 'controller';
@@ -89,7 +91,7 @@ export class StakingService {
     const validatorsStatuses = await this.getValidatorsStatuses(address, network, stakingInfo.myValidators);
 
     const stashAccountName = this.state.keyringService.getAccountName(stashAddress);
-    const stashBookName = addressBook[network]?.find(({ address: _address }) =>
+    const stashBookName = addressBook[network]?.find(({ address: _address }: any) =>
       isSameString(_address, stashAddress)
     )?.name;
     const stashName = stashAccountName ?? stashBookName ?? stashAddress;
@@ -101,14 +103,14 @@ export class StakingService {
       : stakingInfo.payee;
 
     const payeeAccountName = this.state.keyringService.getAccountName(payeeAddress);
-    const payeeBookName = addressBook[network]?.find(({ address: _address }) =>
+    const payeeBookName = addressBook[network]?.find(({ address: _address }: any) =>
       isSameString(_address, payeeAddress)
     )?.name;
     const payeeName = payeeAccountName ?? payeeBookName ?? payeeAddress;
 
     const controllerAddress = stakingInfo.controller;
     const controllerAccountName = this.state.keyringService.getAccountName(controllerAddress);
-    const controllerBookName = addressBook[network]?.find(({ address: _address }) =>
+    const controllerBookName = addressBook[network]?.find(({ address: _address }: any) =>
       isSameString(_address, controllerAddress)
     )?.name;
     const controllerName = controllerAccountName ?? controllerBookName ?? controllerAddress;

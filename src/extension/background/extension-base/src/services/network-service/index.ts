@@ -32,8 +32,8 @@ export class NetworkService {
     this.substrateApiHandler = new SubstrateApiHandler(this, state);
     this.evmApiHandler = new EvmApiHandler(this);
 
-    storage.get(['selectedNetworks']).then(({ selectedNetworks }) => {
-      if (selectedNetworks) this.selectedNetworks = selectedNetworks;
+    storage.get(['selectedNetworks']).then((response) => {
+      if (response?.selectedNetworks) this.selectedNetworks = response.selectedNetworks;
     });
   }
 

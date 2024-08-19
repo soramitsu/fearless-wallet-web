@@ -153,7 +153,9 @@ export default class Extension extends FWExtensionBase {
   }
 
   accountsCreate({ password, suri, type, meta }: RequestAccountCreateSuri): string {
+    console.info('[debug] accountsCreate');
     const address = this.state.keyringService.addAccount(suri, password, { ...meta, isMobile: false }, type);
+    console.info('[debug] accountsCreate address', address);
 
     if (!isEthereumAddress(address)) this.state.updateCurrentAccount(address);
 
@@ -264,36 +266,36 @@ export default class Extension extends FWExtensionBase {
     });
   }
 
-  async addressesSubscribe(id: string, port: Port): Promise<AccountJson[]> {
-    const cb = createSubscription<'pri(addresses.subscribe)'>(id, port);
+  async addressesSubscribe(id: string): Promise<AccountJson[]> {
+    const cb = createSubscription<'pri(addresses.subscribe)'>(id);
 
     const transformedAddresses = this.convertAccounts(this.state.keyringService.addressSubject.value);
 
-    const subscription = this.state.keyringService.addressSubject.subscribe((addresses: SubjectInfo): void => {
+    this.state.keyringService.addressSubject.subscribe((addresses: SubjectInfo): void => {
       cb(this.convertAccounts(addresses));
     });
 
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    // port.onDisconnect.addListener((): void => {
+    //   unsubscribe(id);
+    //   subscription.unsubscribe();
+    // });
 
     return transformedAddresses;
   }
 
-  async accountsSubscribe(id: string, port: Port): Promise<AccountJson[]> {
-    const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
+  async accountsSubscribe(id: string): Promise<AccountJson[]> {
+    const cb = createSubscription<'pri(accounts.subscribe)'>(id);
 
     const transformedAccounts = this.convertAccounts(this.state.keyringService.accountSubject.value);
 
-    const subscription = this.state.keyringService.accountSubject.subscribe((accounts: SubjectInfo): void => {
+    this.state.keyringService.accountSubject.subscribe((accounts: SubjectInfo): void => {
       cb(this.convertAccounts(accounts));
     });
 
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    // port.onDisconnect.addListener((): void => {
+    //   unsubscribe(id);
+    //   subscription.unsubscribe();
+    // });
 
     return transformedAccounts;
   }
@@ -373,15 +375,15 @@ export default class Extension extends FWExtensionBase {
     });
   }
 
-  authorizeSubscribe(id: string, port: Port): boolean {
-    const cb = createSubscription<'pri(authorize.requests)'>(id, port);
+  authorizeSubscribe(id: string): boolean {
+    const cb = createSubscription<'pri(authorize.requests)'>(id);
 
-    const subscription = this.state.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
+    this.state.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
 
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    // port.onDisconnect.addListener((): void => {
+    //   unsubscribe(id);
+    //   subscription.unsubscribe();
+    // });
 
     return true;
   }
@@ -412,17 +414,15 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  metadataSubscribe(id: string, port: Port): boolean {
-    const cb = createSubscription<'pri(metadata.requests)'>(id, port);
+  metadataSubscribe(id: string): boolean {
+    const cb = createSubscription<'pri(metadata.requests)'>(id);
 
-    const subscription = this.state.requestService.metaSubject.subscribe((requests: MetadataRequest[]): void =>
-      cb(requests)
-    );
+    this.state.requestService.metaSubject.subscribe((requests: MetadataRequest[]): void => cb(requests));
 
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    // port.onDisconnect.addListener((): void => {
+    //   unsubscribe(id);
+    //   subscription.unsubscribe();
+    // });
 
     return true;
   }
@@ -827,8 +827,8 @@ export default class Extension extends FWExtensionBase {
     this.state.fetchEvmBalance({ assetId, ethereumAddress });
   }
 
-  private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {
-    const cb = createSubscription<'pri(balance.subscription)'>(id, port);
+  private subscribeBalance(id: string): Promise<BalanceJson> {
+    const cb = createSubscription<'pri(balance.subscription)'>(id);
 
     const balanceSubscription = this.state.balanceService.balanceSubject.subscribe({
       next: (rs) => cb(rs),
@@ -836,9 +836,9 @@ export default class Extension extends FWExtensionBase {
 
     this.createUnsubscriptionHandle(id, balanceSubscription.unsubscribe);
 
-    port.onDisconnect.addListener((): void => {
-      this.cancelSubscription(id);
-    });
+    // port.onDisconnect.addListener((): void => {
+    //   this.cancelSubscription(id);
+    // });
 
     return this.getBalance();
   }
@@ -854,8 +854,8 @@ export default class Extension extends FWExtensionBase {
     });
   }
 
-  private subscribePrice(id: string, port: chrome.runtime.Port): Promise<PriceJson> {
-    const cb = createSubscription<'pri(price.subscription)'>(id, port);
+  private subscribePrice(id: string): Promise<PriceJson> {
+    const cb = createSubscription<'pri(price.subscription)'>(id);
 
     const priceSubscription = this.state.pricesService.subscribePrice().subscribe({
       next: (rs) => {
@@ -865,9 +865,9 @@ export default class Extension extends FWExtensionBase {
 
     this.createUnsubscriptionHandle(id, priceSubscription.unsubscribe);
 
-    port.onDisconnect.addListener((): void => {
-      this.cancelSubscription(id);
-    });
+    // port.onDisconnect.addListener((): void => {
+    //   this.cancelSubscription(id);
+    // });
 
     return this.getPrice();
   }
@@ -882,8 +882,8 @@ export default class Extension extends FWExtensionBase {
     };
   }
 
-  public async soraFeesSubscribe(id: string, port: Port) {
-    const cb = createSubscription<'pri(accounts.soraFees.subscribe)'>(id, port);
+  public async soraFeesSubscribe(id: string) {
+    const cb = createSubscription<'pri(accounts.soraFees.subscribe)'>(id);
 
     const soraFeesSubscription = this.state.soraFees.subscribe({
       next: (rs) => cb(rs!),
@@ -891,9 +891,9 @@ export default class Extension extends FWExtensionBase {
 
     this.createUnsubscriptionHandle(id, soraFeesSubscription.unsubscribe);
 
-    port.onDisconnect.addListener((): void => {
-      this.cancelSubscription(id);
-    });
+    // port.onDisconnect.addListener((): void => {
+    //   this.cancelSubscription(id);
+    // });
 
     return this.state.soraFees.value;
   }
@@ -1230,8 +1230,8 @@ export default class Extension extends FWExtensionBase {
     this.state.updateCurrentAccount(address);
   }
 
-  private subscribeNetworkMap(id: string, port: Port): Record<string, NetworkJson> {
-    const cb = createSubscription<'pri(networkMap.getSubscription)'>(id, port);
+  private subscribeNetworkMap(id: string): Record<string, NetworkJson> {
+    const cb = createSubscription<'pri(networkMap.getSubscription)'>(id);
     const networkMapSubscription = this.state.networkService.subscribeNetworkMap().subscribe({
       next: (rs) => {
         cb(rs);
@@ -1240,15 +1240,15 @@ export default class Extension extends FWExtensionBase {
 
     this.createUnsubscriptionHandle(id, networkMapSubscription.unsubscribe);
 
-    port.onDisconnect.addListener((): void => {
-      this.cancelSubscription(id);
-    });
+    // port.onDisconnect.addListener((): void => {
+    //   this.cancelSubscription(id);
+    // });
 
     return this.state.networkMap;
   }
 
-  private async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {
-    return this.state.soraCardService.soraCardTokenSubscribe(id, port);
+  private async soraCardTokenSubscribe(id: string): Promise<boolean> {
+    return this.state.soraCardService.soraCardTokenSubscribe(id);
   }
 
   authorizeApprovePolkaswap(authorizedAccounts: string[]): Promise<void> {
@@ -1675,8 +1675,7 @@ export default class Extension extends FWExtensionBase {
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
-    request: RequestTypes[TMessageType],
-    port: Port
+    request: RequestTypes[TMessageType]
   ): Promise<ResponseType<TMessageType>> {
     switch (type) {
       // App Management, networks
@@ -1684,7 +1683,7 @@ export default class Extension extends FWExtensionBase {
         return true;
 
       case 'pri(soraCard.token)':
-        return this.soraCardTokenSubscribe(id, port);
+        return this.soraCardTokenSubscribe(id);
 
       case 'pri(networkMap.upsert)':
         return this.upsertNetworkMap(request as NetworkJson);
@@ -1697,7 +1696,7 @@ export default class Extension extends FWExtensionBase {
 
       // authorize
       case 'pri(networkMap.getSubscription)':
-        return this.subscribeNetworkMap(id, port);
+        return this.subscribeNetworkMap(id);
 
       case 'pri(authorize.approve)':
         return this.authorizeApprove(request as RequestAuthorizeApprove);
@@ -1718,14 +1717,14 @@ export default class Extension extends FWExtensionBase {
         return this.cancelAuthRequest(request as string);
 
       case 'pri(authorize.requests)':
-        return this.authorizeSubscribe(id, port);
+        return this.authorizeSubscribe(id);
 
       case 'pri(authorize.update)':
         return this.authorizeUpdate(request as RequestUpdateAuthorizedAccounts);
 
       // addresses
       case 'pri(addresses.subscribe)':
-        return this.addressesSubscribe(id, port);
+        return this.addressesSubscribe(id);
 
       // accounts
       case 'pri(accounts.create.mobile)':
@@ -1756,7 +1755,7 @@ export default class Extension extends FWExtensionBase {
         return this.accountsForget(request as RequestAccountForget);
 
       case 'pri(accounts.subscribe)':
-        return this.accountsSubscribe(id, port);
+        return this.accountsSubscribe(id);
 
       case 'pri(accounts.name)':
         return this.accountUpdateName(request as RequestAccountName);
@@ -1777,14 +1776,14 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.checkTransfer)':
         return this.checkTransfer(request as RequestCheckTransfer);
 
-      case 'pri(accounts.makeTransfer)':
-        return this.makeTransfer(id, port, request as RequestTransfer);
+      // case 'pri(accounts.makeTransfer)':
+      //   return this.makeTransfer(id, port, request as RequestTransfer);
 
       case 'pri(accounts.checkCrossChain)':
         return this.checkCrossChain(request as RequestCheckCrossChain);
 
-      case 'pri(accounts.makeCrossChain)':
-        return this.makeCrossChain(id, port, request as RequestCrossChain);
+      // case 'pri(accounts.makeCrossChain)':
+      //   return this.makeCrossChain(id, port, request as RequestCrossChain);
 
       case 'pri(accounts.checkSwap)':
         return this.checkSwap(request as RequestCheckSwap);
@@ -1793,7 +1792,7 @@ export default class Extension extends FWExtensionBase {
         return this.makeSwap(request as RequestSwap);
 
       case 'pri(accounts.soraFees.subscribe)':
-        return this.soraFeesSubscribe(id, port);
+        return this.soraFeesSubscribe(id);
 
       case 'pri(accounts.checkScamAddress)':
         return this.checkScamAddress(request as RequestCheckScam);
@@ -1837,7 +1836,7 @@ export default class Extension extends FWExtensionBase {
         return this.state.poolsService.unsubscribePools();
 
       case 'pri(pools.accountLiquidity)':
-        return this.state.poolsService.accountLiquiditySubscribe(id, port);
+        return this.state.poolsService.accountLiquiditySubscribe(id);
 
       case 'pri(pools.getAmountValue)':
         return this.state.poolsService.getPoolAmountValue(request as DefaultPoolParams);
@@ -1847,7 +1846,7 @@ export default class Extension extends FWExtensionBase {
         return this.updateCurrencySymbol(request as string);
 
       case 'pri(price.subscription)':
-        return this.subscribePrice(id, port);
+        return this.subscribePrice(id);
 
       // metadata
       case 'pri(metadata.approve)':
@@ -1857,7 +1856,7 @@ export default class Extension extends FWExtensionBase {
         return this.metadataReject(request as RequestMetadataReject);
 
       case 'pri(metadata.requests)':
-        return port && this.metadataSubscribe(id, port);
+        return this.metadataSubscribe(id);
 
       // tabs
       case 'pri(tabs.update.activeTabsUrl)':
@@ -1876,11 +1875,11 @@ export default class Extension extends FWExtensionBase {
       case 'pri(signing.isLocked)':
         return this.signingIsLocked(request as RequestSigningIsLocked);
 
-      case 'pri(signing.requests)':
-        return this.signingSubscribe(id, port);
-
-      case 'pri(signing.evmrequests)':
-        return this.signingEvmSubscribe(id, port);
+      // case 'pri(signing.requests)':
+      //   return this.signingSubscribe(id, port);
+      //
+      // case 'pri(signing.evmrequests)':
+      //   return this.signingEvmSubscribe(id, port);
 
       // google
       case 'pri(google.get.files)':
@@ -1913,7 +1912,7 @@ export default class Extension extends FWExtensionBase {
         return this.fetchEvmBalance(request as FetchEvmBalancePayload);
 
       case 'pri(balance.subscription)':
-        return this.subscribeBalance(id, port);
+        return this.subscribeBalance(id);
 
       case 'pri(fetch.balance)':
         return this.fetchBalance(request as FetchBalanceRequest);
@@ -1922,8 +1921,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(walletConnect.connect)':
         return this.connectWalletConnect(request as RequestConnectWalletConnect);
 
-      case 'pri(walletConnect.requests.connect.subscribe)':
-        return this.connectWCSubscribe(id, port);
+      // case 'pri(walletConnect.requests.connect.subscribe)':
+      //   return this.connectWCSubscribe(id, port);
 
       case 'pri(walletConnect.session.approve)':
         return this.approveWalletConnectSession(request as RequestApproveConnectWalletSession);
@@ -1931,8 +1930,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(walletConnect.session.reject)':
         return this.rejectWalletConnectSession(request as RequestRejectConnectWalletSession);
 
-      case 'pri(walletConnect.session.subscribe)':
-        return this.subscribeWalletConnectSessions(id, port);
+      // case 'pri(walletConnect.session.subscribe)':
+      //   return this.subscribeWalletConnectSessions(id, port);
 
       case 'pri(walletConnect.session.disconnect)':
         return this.disconnectWalletConnectSession(request as RequestDisconnectWalletConnectSession);
@@ -1943,19 +1942,19 @@ export default class Extension extends FWExtensionBase {
       case 'pri(walletConnect.request.reject)':
         return this.wcRequestReject(request as RequestDisconnectWalletConnectSession);
 
-      case 'pri(walletConnect.signing.requests.subscribe)':
-        return this.wcSigningSubscribe(id, port);
+      // case 'pri(walletConnect.signing.requests.subscribe)':
+      //   return this.wcSigningSubscribe(id, port);
 
       // Not support
-      case 'pri(walletConnect.requests.notSupport.subscribe)':
-        return this.WCNotSupportSubscribe(id, port);
+      // case 'pri(walletConnect.requests.notSupport.subscribe)':
+      //   return this.WCNotSupportSubscribe(id, port);
 
       case 'pri(walletConnect.notSupport.reject)':
         return this.rejectWalletConnectNotSupport(request as RequestRejectWalletConnectNotSupport);
 
       // WalletConnect mobilewallet
-      case 'pri(walletConnect.app.subscribePairing)':
-        return this.walletConnectDappSubscribePairing(request as string, id, port);
+      // case 'pri(walletConnect.app.subscribePairing)':
+      //   return this.walletConnectDappSubscribePairing(request as string, id, port);
 
       case 'pri(walletConnect.app.pairing)':
         return this.walletConnectDappPairing();
@@ -1972,7 +1971,7 @@ export default class Extension extends FWExtensionBase {
 
       //Nfts
       case 'pri(nft.subscribe)':
-        return this.state.nftService.nftSubscribe(id, port);
+        return this.state.nftService.nftSubscribe(id);
 
       case 'pri(nft.fetch)':
         return this.state.nftService.fetchNfts(request as string);

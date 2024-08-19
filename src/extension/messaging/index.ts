@@ -11,7 +11,7 @@ import type {
   SubscriptionMessageTypes,
   Port,
 } from '@extension-base/background/types/types';
-import type { Message } from '@extension-base/types';
+// import type { Message } from '@extension-base/types';
 
 interface Handler {
   resolve: (data: any) => void;
@@ -21,14 +21,18 @@ interface Handler {
 
 type Handlers = Record<string, Handler>;
 
-let port: Port | undefined;
+let port: Port | null;
 const handlers: Handlers = {};
 
 function connect() {
-  port = chrome.runtime?.connect({ name: PORT_EXTENSION });
+  console.info('Connecting to background script', PORT_EXTENSION);
+  port = chrome.extension ? chrome.runtime?.connect({ name: PORT_EXTENSION }) : null;
   port?.onDisconnect.addListener(connect);
 
-  port?.onMessage.addListener((data: Message['data']): void => {
+  //TODO: Stefan: вот тут нужно сообщение обработать
+  const channel = new BroadcastChannel('sw-messages');
+  channel.addEventListener('message', ({ data }) => {
+    // console.info('Received', { handlers, data });
     const handler = handlers[data.id];
 
     if (!handler) {
@@ -43,6 +47,22 @@ function connect() {
     else if (data.error) handler.reject(new Error(data.error));
     else handler.resolve(data.response);
   });
+
+  // port?.onMessage.addListener((data: Message['data']): void => {
+  //   const handler = handlers[data.id];
+  //
+  //   if (!handler) {
+  //     console.error(`Unknown response: ${JSON.stringify(data)}`);
+  //
+  //     return;
+  //   }
+  //
+  //   if (!handler.subscriber) delete handlers[data.id];
+  //
+  //   if (data.subscription && handler.subscriber) handler.subscriber(data.subscription);
+  //   else if (data.error) handler.reject(new Error(data.error));
+  //   else handler.resolve(data.response);
+  // });
 }
 
 // setup a listener for messages, any incoming resolves the promise
@@ -65,10 +85,16 @@ function sendMessage<TMessageType extends MessageTypes>(
 ): Promise<ResponseTypes[TMessageType]> {
   return new Promise((resolve, reject): void => {
     const id = getId(message);
-
+    console.info('handlers', { handlers, message, id, exact: handlers[id], port });
     handlers[id] = { reject, resolve, subscriber };
 
-    port?.postMessage({ id, message, request: request || {} });
+    // navigator.serviceWorker.controller?.postMessage({ id, message, request: request || {} });
+
+    // port?.postMessage({ id, message, request: request || {} });
+
+    navigator.serviceWorker.ready.then((registration) => {
+      registration?.active?.postMessage({ id, message, request: request || {} });
+    });
   });
 }
 

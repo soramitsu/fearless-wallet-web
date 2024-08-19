@@ -234,14 +234,17 @@ export function unsubscribe(id: string): void {
 
 export function createSubscription<TMessageType extends MessageTypesWithSubscriptions>(
   id: string,
-  port: Port
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  port?: Port
 ): (data: SubscriptionMessageTypes[TMessageType] | null) => void {
-  SubscriptionService.subscriptions[id] = port;
+  SubscriptionService.subscriptions[id] = 'sw-messages';
 
   return (subscription: unknown): void => {
     if (SubscriptionService.subscriptions[id]) {
       try {
-        port.postMessage({ id, subscription });
+        // port.postMessage({ id, subscription });
+        const channel = new BroadcastChannel('sw-messages');
+        channel.postMessage({ id, subscription });
       } catch (error) {
         console.info('Error occurred while trying to post message', error);
 

@@ -252,7 +252,7 @@ export default class CurrencyItem extends Vue {
     const allNetworksDisconnected = this.assetData.balances.every(({ name }) => {
       const network = this.getNetwork(name);
 
-      return network.networkStatus === NETWORK_STATUS.DISCONNECTED;
+      return network?.networkStatus === NETWORK_STATUS.DISCONNECTED;
     });
 
     if (allNetworksDisconnected) return true;

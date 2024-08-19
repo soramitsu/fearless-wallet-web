@@ -141,6 +141,7 @@ export default class App extends Vue {
   }
 
   onAccountUpdate(accounts: AccountJson[], isMobileUpdate = false) {
+    console.info('onAccountUpdate');
     const selectedAccount = accounts.find((account) => account.active);
 
     this.setAccounts({ accounts, isMobileUpdate });
@@ -153,6 +154,7 @@ export default class App extends Vue {
 
   async setupWallet() {
     const accounts = await subscribeAccounts((accounts) => this.onAccountUpdate(accounts));
+    console.info('[debug], accounts', accounts);
 
     this.onAccountUpdate(accounts);
 

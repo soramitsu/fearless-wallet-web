@@ -1,9 +1,8 @@
-import { createSubscription, unsubscribe } from '@extension-base/services';
+import { createSubscription } from '@extension-base/services';
 import { BehaviorSubject } from 'rxjs';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
 import { getId } from '@extension-base/utils/utils';
 import type { RequestService } from '@extension-base/services/request-service';
-import type { Port } from '@extension-base/background/types/types';
 import { IS_PRODUCTION } from '@/consts/global';
 import { URLS } from '@/consts/urls';
 
@@ -16,15 +15,15 @@ export class SoraCardService {
     return this.soraCardTokenSubject;
   }
 
-  public async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {
-    const cb = createSubscription<'pri(soraCard.token)'>(id, port);
+  public async soraCardTokenSubscribe(id: string): Promise<boolean> {
+    const cb = createSubscription<'pri(soraCard.token)'>(id);
 
-    const subscription = this.tokenSubject.subscribe((token) => cb(token));
+    this.tokenSubject.subscribe((token) => cb(token));
 
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    // port.onDisconnect.addListener((): void => {
+    //   unsubscribe(id);
+    //   subscription.unsubscribe();
+    // });
 
     return true;
   }

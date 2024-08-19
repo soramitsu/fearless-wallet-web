@@ -104,7 +104,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
           ? query.system.account(address)
           : type === 'assets'
           ? (query.assets as any).account(options, address)
-          : query.tokens.accounts(address, options);
+          : query.tokens?.accounts(address, options);
 
       const onBalanceFetch = (balances: any) => {
         const balance =
@@ -137,7 +137,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
         );
       };
 
-      const sub: Subscription = pallet.subscribe(onBalanceFetch);
+      const sub: Subscription = pallet?.subscribe(onBalanceFetch);
 
       return () => sub.unsubscribe();
     } catch (err: any) {

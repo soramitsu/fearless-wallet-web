@@ -1,5 +1,5 @@
-import { assert } from '@polkadot/util';
-import { PORT_EXTENSION } from '@extension-base/defaults';
+// import { assert } from '@polkadot/util';
+// import { PORT_EXTENSION } from '@extension-base/defaults';
 import Extension from '@extension-base/background/handlers/Extension';
 import Tabs from '@extension-base/background/handlers/Tabs';
 import State from '@extension-base/background/handlers/State';
@@ -11,22 +11,21 @@ export const tabs = new Tabs(state);
 
 export function handlers<TMessageType extends MessageTypes>(
   { id, message, request }: TransportRequestMessage<TMessageType>,
-  port?: Port,
-  extensionPortName = PORT_EXTENSION
+  port?: Port
 ): void {
-  const isExtension = !port || port?.name === extensionPortName;
+  // const isExtension = !port || port?.name === extensionPortName;
+  // const isExtension = false;
+  // if (!port) return;
 
-  if (!port) return;
-
-  const sender = port.sender as chrome.runtime.MessageSender;
-  const from = isExtension ? 'extension' : (sender.tab && sender.tab.url) || sender.url || '<unknown>';
+  // const sender = port?.sender as chrome.runtime.MessageSender;
+  // const from = isExtension ? 'extension' : (sender.tab && sender.tab.url) || sender.url || '<unknown>';
+  const from = 'extension';
   const source = `${from}: ${id}: ${message}`;
 
   console.info(`[in] ${source}`);
 
-  const promise = isExtension
-    ? extension.handle(id, message, request, port)
-    : tabs.handle(id, message, request, from, port);
+  // port service worker id/name
+  const promise = extension.handle(id, message, request);
 
   promise
     .then((response): void => {
@@ -34,9 +33,13 @@ export function handlers<TMessageType extends MessageTypes>(
 
       // between the start and the end of the promise, the user may have closed
       // the tab, in which case port will be undefined
-      assert(port, 'Port has been disconnected');
+      // assert(port, 'Port has been disconnected');
 
-      port.postMessage({ id, response });
+      // port.postMessage({ id, response });
+
+      //TODO: Stefan: тут посылаем сообщение обратно на клиент
+      const channel = new BroadcastChannel('sw-messages');
+      channel.postMessage({ id, response });
     })
     .catch((error: Error): void => {
       console.info(`[err] ${source}:: ${error.message}`);

@@ -84,7 +84,10 @@ export class WalletConnectDAppService {
   }
 
   async initPairing() {
+    console.info('[test] initPairing ', this.app);
     if (!this.app) await this.initApp();
+
+    console.info('[test] this.app exists');
 
     const optionalChains = this.state.networkService.networksGithub.flatMap((network) => {
       if (isNativeEVMNetwork(network.name) || !network.chainId) return [];
@@ -94,6 +97,8 @@ export class WalletConnectDAppService {
       return [`polkadot:${halfChainId}`];
     });
 
+    console.info('[test] optionalChains ', optionalChains);
+
     const optionalEvmChains = this.state.networkService.networksGithub.flatMap((network) => {
       if (!isNativeEVMNetwork(network.name) || !network.chainId) return [];
 
@@ -101,6 +106,8 @@ export class WalletConnectDAppService {
 
       return [`eip155:${halfChainId}`];
     });
+
+    console.info('[test] optionalEvmChains ', optionalEvmChains);
 
     const pairing = await this.app?.client.connect({
       requiredNamespaces: {

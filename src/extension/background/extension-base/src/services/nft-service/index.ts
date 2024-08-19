@@ -1,6 +1,6 @@
 import { NftFilters, type Network } from 'alchemy-sdk';
 import { Subject } from 'rxjs';
-import { createSubscription, unsubscribe } from '@extension-base/services';
+import { createSubscription } from '@extension-base/services';
 import AlchemyNftController from '@extension-base/services/nft-service/handlers/AlchemyNftSdk';
 import { PROD_NFT_NETWORKS } from '@extension-base/services/nft-service/consts';
 import { storage } from '@extension-base/stores/Storage';
@@ -8,7 +8,6 @@ import { getContract } from '@extension-base/api/evm/utils/eth';
 import { parseEther, formatUnits, Wallet, type Contract } from 'ethers';
 import {
   BasicTxErrorCode,
-  type Port,
   type RequestNftTransfer,
   type ResponseNftTransfer,
 } from '@extension-base/background/types/types';
@@ -44,9 +43,9 @@ export class NftService {
   }
 
   async init() {
-    const { nftSettings } = await storage.get(['nftSettings']);
+    const response = await storage.get(['nftSettings']);
 
-    if (nftSettings) this.hideSettings = nftSettings;
+    if (response?.nftSettings) this.hideSettings = response.nftSettings;
   }
 
   isNeedUpdate(address: string) {
@@ -282,17 +281,17 @@ export class NftService {
     }
   }
 
-  nftSubscribe(id: string, port: Port): ChainNftState {
-    const cb = createSubscription<'pri(nft.subscribe)'>(id, port);
+  nftSubscribe(id: string): ChainNftState {
+    const cb = createSubscription<'pri(nft.subscribe)'>(id);
 
-    const subscription = this.nftSubject.subscribe({
+    this.nftSubject.subscribe({
       next: (rs) => cb(rs),
     });
 
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    // port.onDisconnect.addListener((): void => {
+    //   unsubscribe(id);
+    //   subscription.unsubscribe();
+    // });
 
     const account = this.state.currentAccount;
 

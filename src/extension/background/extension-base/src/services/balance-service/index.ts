@@ -41,7 +41,8 @@ export default class BalanceService {
   private async updateBalanceStorage(chain: string, address: string, item: Partial<BalanceItem>) {
     if (item.state !== APIItemState.READY) return;
 
-    const { balances } = await storage.get(['balances']);
+    const response = await storage.get(['balances']); //
+    const balances = response?.balances;
     const copyBalance = { ...(balances ?? {}) };
     const { symbol } = item;
 

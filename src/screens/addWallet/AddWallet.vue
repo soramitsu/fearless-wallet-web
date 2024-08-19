@@ -417,9 +417,12 @@ export default class AddWallet extends Vue {
     }
 
     if (step === 5) {
+      console.info('[debug] step 5');
       this.isLoading = true;
 
       await this.saveKeypair();
+
+      console.info('[debug] step 5.1');
 
       this.isLoading = false;
 
@@ -678,6 +681,7 @@ export default class AddWallet extends Vue {
   }
 
   async saveKeypairFromSeed() {
+    console.info('[debug] saveKeypairFromSeed');
     const meta: Record<string, unknown> = { name: this.nickname.trim(), ethereumAddress: '' };
     const {
       substrate: { keypairType: substrateKeypairType },
@@ -699,6 +703,8 @@ export default class AddWallet extends Vue {
     }
 
     const address = await addAccount(this.walletPassword, this.suriSubstrate, substrateKeypairType, meta);
+
+    console.info('[debug] address gotten ', address);
 
     return address;
   }

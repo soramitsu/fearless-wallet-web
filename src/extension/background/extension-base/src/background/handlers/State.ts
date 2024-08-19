@@ -156,10 +156,10 @@ export default class State {
   }
 
   async injectFromStorage() {
-    const { injectedProviders, providers } = await this.getFromStorage(['injectedProviders', 'providers']);
+    const response = await this.getFromStorage(['injectedProviders', 'providers']);
 
-    if (injectedProviders) this.injectedProviders = new Map(injectedProviders);
-    if (providers) this.providers = providers;
+    if (response?.injectedProviders) this.injectedProviders = new Map(response.injectedProviders);
+    if (response?.providers) this.providers = response.providers;
   }
 
   async approvePolkaswap(authorizedAccounts: string[]): Promise<void> {

@@ -59,6 +59,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     dojoProductType:            'fearless-web',
     sonarSrcPath:               'src',
     sonarTestsPath:             'tests',
+    checkSquashCommits:         true,
     triggerAutotest:            true,
     downstreamJob:              '/qa/soramitsu-test-framework/fearless-wallet-web',
     downstreamJobParams:        [

@@ -7,9 +7,12 @@ import { storage } from '@extension-base/stores/Storage';
 import { EvmApiHandler } from '@extension-base/services/network-service/handlers/EvmApiHandler';
 import { SubstrateApiHandler } from '@extension-base/services/network-service/handlers/SubstrateApiHandler';
 import { type KeyringService } from '@extension-base/services';
-import { isEthereumNetwork, isNativeEVMNetwork } from '@extension-base/background/utils/utils';
 import { type ApiMap } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
+import {
+  isEthereumNetwork,
+  isNativeEVMNetwork,
+} from '@/extension/background/extension-base/src/background/handlers/utils';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { URLS } from '@/consts/urls';
 import { isSameString } from '@/helpers';

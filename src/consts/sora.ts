@@ -17,13 +17,41 @@ const SORA_REWARD_ASSET = 'val';
 const SORA_ICON =
   'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg';
 
-const BRIDGE_MIN_VALUES_TO_SORA: Record<string, number> = {
-  kusama: 0.05,
-  polkadot: 1.1,
+const BRIDGE_MIN_VALUES_TO_SORA: Record<string, Record<string, number>> = {
+  kusama: {
+    ksm: 0.05,
+  },
+  polkadot: {
+    dot: 1.1, // original 1
+  },
+  liberland: {
+    lld: 1.1, // original 1
+    llm: 0,
+    xor: 0,
+  },
+  acala: {
+    aca: 56,
+  },
+  astar: {
+    astr: 73,
+  },
 };
 
-const BRIDGE_MIN_VALUES_FROM_SORA: Record<string, number> = {
-  polkadot: 1.1,
+const BRIDGE_MIN_VALUES_FROM_SORA: Record<string, Record<string, number>> = {
+  polkadot: {
+    dot: 1.1, // original 1
+  },
+  liberland: {
+    lld: 1.1, // original 1
+    llm: 0,
+    xor: 0,
+  },
+  acala: {
+    aca: 1.1, // original 1
+  },
+  astar: {
+    astr: 0,
+  },
 };
 
 export {

@@ -53,7 +53,7 @@
       width="100%"
       text="assets.createContact"
       data-testid="createContactBtn"
-      @click="setAddress(' ')"
+      @click="openEditBook"
     />
   </div>
 </template>
@@ -179,8 +179,8 @@ export default class HistoryBook extends Vue {
     this.$emit('toggleHistoryBookVisibility');
   }
 
-  setAddress(address: string) {
-    this.$emit('setAddress', address);
+  openEditBook() {
+    this.$emit('openEditBook');
   }
 }
 </script>

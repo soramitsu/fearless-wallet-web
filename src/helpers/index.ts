@@ -1,6 +1,8 @@
 import EmailValidator from 'email-validator';
 import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 import { SORA_MAINNET, SORA_NETWORK_NAME, SORA_TEST } from '@/consts/sora';
+import { type NetworkName } from '@/interfaces';
+import { LIBERLAND } from '@/consts/networks';
 
 const MIN_PHONE_LENGTH_WITH_CODE = 8;
 
@@ -22,13 +24,17 @@ function isSubstrString(string1: string, string2: string) {
   return string1.toLowerCase().includes(string2.toLowerCase());
 }
 
-function isSora(network: string, allSora = false) {
+function isSora(network: NetworkName, allSora = false) {
   // проверяем, что переданная сеть является СОРА сетью
   if (allSora) return isSameString(network, SORA_MAINNET) || isSameString(network, SORA_TEST);
 
   // проверяем, что переданная сеть является актуальной сора сетью для текущего энвайромента
   // для PROD - Sora Mainnet, для DEV - Sora Testnet
   return isSameString(network, SORA_NETWORK_NAME);
+}
+
+function isLiberland(network: NetworkName) {
+  return isSameString(network, LIBERLAND);
 }
 
 function isSoraTest(network: string) {
@@ -98,4 +104,5 @@ export {
   getFormattedDate,
   isSoraTest,
   isSubstrString,
+  isLiberland,
 };

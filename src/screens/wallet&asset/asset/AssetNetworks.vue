@@ -63,9 +63,9 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { type TokenGroup } from '@extension-base/background/types/types';
 import { APIItemState } from '@extension-base/api/types/networks';
 import HistoryItem from './HistoryItem.vue';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';

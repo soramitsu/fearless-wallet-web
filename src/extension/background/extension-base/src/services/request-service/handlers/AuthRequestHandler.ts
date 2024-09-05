@@ -6,7 +6,7 @@ import { isEthereumAddress } from '@polkadot/util-crypto';
 import { getId } from '@extension-base/utils';
 import { type DAppChainInfoPayload } from '@extension-base/services/request-service/types';
 import { type NetworkJson } from '@extension-base/types';
-import { isNativeEVMNetwork } from '../../../background/utils/utils';
+import { isNativeEVMNetwork } from '../../../background/handlers/utils';
 import type {
   Resolver,
   AuthorizeRequest,

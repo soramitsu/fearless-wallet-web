@@ -12,7 +12,6 @@ import {
   type RequestNftTransfer,
   type ResponseNftTransfer,
 } from '@extension-base/background/types/types';
-import { getBalanceItem } from '@extension-base/background/utils/utils';
 import { FPNumber } from '@sora-substrate/util';
 import { calcEvmFees } from '@extension-base/api/evm/transfer';
 import type {
@@ -25,6 +24,7 @@ import type {
   RequestSettingsChangePayload,
 } from '@extension-base/services/nft-service/types';
 import type State from '@extension-base/background/handlers/State';
+import { getBalanceItem } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
 
 export class NftService {

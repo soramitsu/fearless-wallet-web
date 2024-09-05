@@ -1,6 +1,5 @@
-import { api as apiSora, FPNumber } from '@sora-substrate/util';
+import { api as apiSora, FPNumber, connection as soraConnection } from '@sora-substrate/util';
 import { ApiPromise } from '@polkadot/api';
-import { connection as soraConnection } from '@sora-substrate/connection';
 import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { WsProvider } from '@polkadot/rpc-provider';

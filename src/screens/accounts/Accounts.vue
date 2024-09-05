@@ -23,7 +23,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { getChainAccounts } from '@/helpers/accounts';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/utils/utils';
+import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 
 @Component({
   components: { AccountsItem },

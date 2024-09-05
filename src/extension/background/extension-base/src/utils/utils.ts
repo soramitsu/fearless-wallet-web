@@ -18,7 +18,7 @@ export function sumBN(inputArr: BN[]) {
 let counter = 0;
 
 export function getId(message = ''): string {
-  return `${EXTENSION_PREFIX}.${Date.now()}.${++counter}${message}`;
+  return `${EXTENSION_PREFIX}.${Date.now()}.${++counter}.${message}`;
 }
 
 export function canDerive(type?: KeypairType): boolean {

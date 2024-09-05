@@ -2,7 +2,7 @@ import { APIItemState } from '@extension-base/api/types/networks';
 import { storage } from '@extension-base/stores/Storage';
 import { Subject } from 'rxjs';
 import { type FPNumber } from '@sora-substrate/util';
-import { getMockCurrencies } from '@extension-base/background/utils/utils';
+import { getMockCurrencies } from '@extension-base/background/handlers/helpers';
 import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
 import { fetchBalance } from '@extension-base/api/substrate/balance';
 import type State from '@extension-base/background/handlers/State';

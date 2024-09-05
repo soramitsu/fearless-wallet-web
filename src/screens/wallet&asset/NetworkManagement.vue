@@ -11,10 +11,10 @@
       />
       <Tooltip text="common.copied" target=".search-input" placement="bottom" />
 
-      <Tabs v-show="showTabs" :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
+      <Tabs :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
 
       <div v-show="!isNetworksExists" class="network__list-no-found" data-testid="networkNoFound">
-        {{ $t('header.networkManagement.nofound') }}
+        {{ $t('header.networkManagement.notFound') }}
       </div>
 
       <NetworkItem
@@ -158,16 +158,6 @@ export default class NetworkManagement extends Vue {
     const filter = this.filterValue.trim().toLowerCase();
 
     return this.sortAvailableNetworks.filter(({ name }) => name.toLowerCase().includes(filter));
-  }
-
-  get showTabs() {
-    if (!this.isNetworksExists) {
-      if (this.filterValue.trim() !== '') return false;
-
-      return true;
-    }
-
-    return true;
   }
 
   get isNetworksExists() {

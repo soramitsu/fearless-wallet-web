@@ -1,11 +1,11 @@
 import { FPNumber } from '@sora-substrate/util';
 import { type Wallet } from 'ethers';
-import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import { APIItemState } from '@extension-base/api/types/networks';
 import type { NetworkName, AssetsPrice, BuyProvider } from '@/interfaces';
 import type { NetworkJson } from '@extension-base/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { TokenGroup } from '@extension-base/background/types/types';
+import { getNativeAssetName } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS, ALL_NETWORKS } from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';

@@ -26,7 +26,6 @@ import {
 } from '@extension-base/services';
 import { api as apiSora, type FPNumber } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
-import { isEthereumNetwork, isNativeEVMNetwork } from '@extension-base/background/utils/utils';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
 import { REFRESH_TIME } from '@extension-base/api/evm/utils/eth';
@@ -55,6 +54,10 @@ import type { ChainRegistry, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
+import {
+  isEthereumNetwork,
+  isNativeEVMNetwork,
+} from '@/extension/background/extension-base/src/background/handlers/utils';
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 

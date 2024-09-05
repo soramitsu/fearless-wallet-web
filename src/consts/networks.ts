@@ -1,6 +1,7 @@
 import { type NetworkName } from '@/interfaces';
 
 const SUBSTRATE_ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
+
 const NATIVE_ETHEREUM_NETWORKS = [
   'ethereum',
   'ethereum goerli',
@@ -21,14 +22,17 @@ const NATIVE_ETHEREUM_NETWORKS = [
   'greenfield mainnet',
   'polygon zkevm',
 ];
+
 const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, ...NATIVE_ETHEREUM_NETWORKS];
 
 const POLKADOT = 'polkadot';
 const KUSAMA = 'kusama';
 const WESTEND = 'westend';
 const ROCOCO = 'rococo';
+const LIBERLAND = 'liberland';
 
 const RELAY_CHAINS = [POLKADOT, KUSAMA, WESTEND, ROCOCO];
+
 const NATIVE_PARACHAINS = [
   'statemint',
   'polkadot assethub',
@@ -38,6 +42,7 @@ const NATIVE_PARACHAINS = [
   'westmint',
   'rockmine',
 ];
+
 const NATIVE_NETWORKS = [...RELAY_CHAINS, ...NATIVE_PARACHAINS];
 
 const ALL_NETWORKS = 'all';
@@ -126,4 +131,5 @@ export {
   KUSAMA,
   WESTEND,
   ROCOCO,
+  LIBERLAND,
 };

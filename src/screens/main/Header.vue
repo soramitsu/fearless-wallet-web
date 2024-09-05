@@ -173,19 +173,14 @@ export default class Header extends Vue {
   get computeActiveNetworks() {
     if (!this.currentCurrency) return [];
 
-    return this.currentCurrency.balances.filter((network) => {
-      return this.getNetwork(network.name).active;
-    });
+    return this.currentCurrency.balances.filter((network) => this.getNetwork(network.name).active);
   }
 
   get networkManagementButtonText() {
-    if (this.$route.name === Components.AssetHistory) {
-      if (this.computeActiveNetworks.length === 1) return this.computeActiveNetworks[0]?.name;
-
-      return this.getNetwork(this.$route.params.selectedNetwork)?.name;
-    }
-
     if (this.isGroup) {
+      if (this.$route.name === Components.AssetHistory)
+        return this.getNetwork(this.$route.params.selectedNetwork)?.name;
+
       return this.$t(`header.networkManagement.${this.selectedNetwork}`);
     }
 

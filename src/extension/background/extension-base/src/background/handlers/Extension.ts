@@ -7,13 +7,12 @@ import { createPair } from '@polkadot/keyring';
 import { ethers, formatUnits, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
-import { createSwap } from '@extension-base/api/substrate/swaps';
+import { createSwap } from '@extension-base/api/substrate/sora';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { createSubscription, unsubscribe } from '@extension-base/services';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
-import { isNativeEVMNetwork, uniqueStringArray, getBalanceItem } from '@extension-base/background/utils/utils';
 import { type MetadataDef } from '@polkadot/extension-inject/types';
 import {
   isProposalExpired,
@@ -135,6 +134,11 @@ import type {
   IGetFilesResponse,
   VerifyTokenResponse,
 } from '@/interfaces';
+import {
+  isNativeEVMNetwork,
+  uniqueStringArray,
+  getBalanceItem,
+} from '@/extension/background/extension-base/src/background/handlers/utils';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';

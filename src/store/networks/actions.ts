@@ -1,10 +1,10 @@
 import axios from 'axios';
-import { isNativeEVMNetwork } from '@extension-base/background/utils/utils';
 import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
 import type { FetchHistory, AugmentedNetworksContext, ToggleFavorite } from '@/store';
 import type { FiatJson, Network } from '@/interfaces';
 import type { TokenGroup } from '@extension-base/background/types/types';
+import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import { fetchHistory } from '@/subquery/fetchingHistory';

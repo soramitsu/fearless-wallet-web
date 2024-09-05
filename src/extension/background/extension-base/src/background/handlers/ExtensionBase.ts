@@ -1,5 +1,4 @@
 import assert from 'assert';
-import { isNativeEVMNetwork } from '@extension-base/background/utils/utils';
 import { ethers } from 'ethers';
 import type {
   CachedUnlocks,
@@ -17,6 +16,7 @@ import type {
 
 import type State from '@extension-base/background/handlers/State';
 import type { KeyringPair } from '@polkadot/keyring/types';
+import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { type DerivationPath } from '@/interfaces';
 

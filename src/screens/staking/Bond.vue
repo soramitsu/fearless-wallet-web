@@ -21,7 +21,7 @@
           :assetId="stakingAssetId"
           @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
           @setRecipient="setPayoutAddress"
-          @setAddress="setAddress"
+          @openEditBook="openEditBook"
         />
 
         <div v-else-if="showMyWallets">
@@ -267,6 +267,7 @@ export default class Bond extends Vue {
   showConfirmationPasswordPopup = false;
   showHistoryBook = false;
   showMyWallets = false;
+  showEditAddressBook = false;
   fee = '';
   feeMax = '';
   amount = '';
@@ -278,10 +279,6 @@ export default class Bond extends Vue {
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
-
-  get showEditAddressBook() {
-    return this.newAddress !== '';
-  }
 
   get isValidPayoutAddress() {
     if (this.payoutAddress === '') return true;
@@ -525,6 +522,10 @@ export default class Bond extends Vue {
 
   updateAmount(amount: string) {
     this.amount = amount;
+  }
+
+  openEditBook() {
+    this.showEditAddressBook = !this.showEditAddressBook;
   }
 
   openValidatorInfo(validator: FWValidatorInfoFull) {

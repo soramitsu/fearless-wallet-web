@@ -1,7 +1,7 @@
 import { type Api, FPNumber } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
-import { getAssetOptions } from '@extension-base/api/substrate/utils';
-import { getSoraAsset } from './sora';
+import { getAssetOptions } from '@extension-base/api/substrate';
+import { getSoraAsset } from '.';
 import type State from '@extension-base/background/handlers/State';
 import type { CreateSwapResult, BaseExchangeProps } from '@extension-base/api/types/swaps';
 import type { SwapOptions } from '@/interfaces';
@@ -72,8 +72,8 @@ export async function createSwap(
   const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
   const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
 
-  const assetA = getSoraAsset({ assetId: assetAId!, tokenBalance: tokenBalanceA!, network: SORA_NETWORK_NAME }, state);
-  const assetB = getSoraAsset({ assetId: assetBId!, tokenBalance: tokenBalanceB!, network: SORA_NETWORK_NAME }, state);
+  const assetA = getSoraAsset({ assetId: assetAId!, tokenBalance: tokenBalanceA!, network: SORA_NETWORK_NAME });
+  const assetB = getSoraAsset({ assetId: assetBId!, tokenBalance: tokenBalanceB!, network: SORA_NETWORK_NAME });
 
   const { amount: amountDexIdXOR, route: routeDexIdXOR } = await api.swap.getResultFromDexRpc(
     assetAAddress,

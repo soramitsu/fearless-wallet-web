@@ -1,7 +1,6 @@
 import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
 import { BasicTxErrorCode, type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
-import { getUtilityProps } from '@extension-base/background/utils/utils';
 import type State from '@extension-base/background/handlers/State';
 import type {
   RequestBond,
@@ -25,6 +24,7 @@ import type {
   GetNominateNetworkFeeRequest,
   getRewardsRequest,
 } from '@extension-base/services/staking-service/types';
+import { getUtilityProps } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { type NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
 import { cut, isSameString } from '@/helpers';

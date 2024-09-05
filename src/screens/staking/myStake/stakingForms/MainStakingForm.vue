@@ -21,7 +21,7 @@
           :assetId="stakingAssetId"
           @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
           @setRecipient="setRecipient"
-          @setAddress="setAddress"
+          @openEditBook="openEditBook"
         />
 
         <div v-else-if="showMyWallets">
@@ -200,6 +200,7 @@ export default class MainStakingForm extends Vue {
   showHistoryBook = false;
   showMyWallets = false;
   isValidController = true;
+  showEditAddressBook = false;
   amount = '';
   stashBalance = '0';
   step = 1;
@@ -251,10 +252,6 @@ export default class MainStakingForm extends Vue {
 
   get showBackIcon() {
     return this.showMyWallets || this.showHistoryBook || this.showEditAddressBook;
-  }
-
-  get showEditAddressBook() {
-    return this.newAddress !== '';
   }
 
   get network() {
@@ -471,6 +468,10 @@ export default class MainStakingForm extends Vue {
         address: this.stakingNetwork.stashAddress,
         networkName: this.stakingNetwork.network,
       });
+  }
+
+  openEditBook() {
+    this.showEditAddressBook = !this.showEditAddressBook;
   }
 
   updateControllerAddress(value: string) {

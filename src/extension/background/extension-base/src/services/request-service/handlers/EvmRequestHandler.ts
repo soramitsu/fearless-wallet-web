@@ -40,6 +40,7 @@ export default class EvmRequestHandler {
     delete this[type][id];
 
     this.requestService.updateIcon(true);
+
     if (type === 'wcRequests') this.signWcSubject.next([...this.allWcSignRequests]);
     else if (type === 'evmRequests') this.signEvmSubject.next(this[type]);
   }
@@ -59,6 +60,7 @@ export default class EvmRequestHandler {
   public onWCSign(request: WalletConnectTransactionRequest): Promise<ResponseSigning> {
     return new Promise((resolve, reject): void => {
       const complete = () => this.onComplete(request.topic, 'wcRequests');
+
       this.wcRequests[request.topic] = {
         ...this.signComplete(request.topic, complete, resolve, reject),
         request,

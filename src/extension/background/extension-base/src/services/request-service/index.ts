@@ -49,7 +49,7 @@ export class RequestService {
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
-    this.authRequestHandler = new AuthRequestHandler(this, state.networkService);
+    this.authRequestHandler = new AuthRequestHandler(this, state);
     this.substrateRequestHandler = new SubstrateRequestHandler(this, keyringService, this.state);
     this.evmRequestHandler = new EvmRequestHandler(this);
   }
@@ -236,19 +236,6 @@ export class RequestService {
       this.numNotSupportWCRequests +
       this.numSignWCRequests
     );
-  }
-
-  async removeAuthorization(url: string): Promise<AuthUrls> {
-    const entries = await this.getAuthList();
-    const entry = entries[url];
-
-    assert(entry, `The source ${url} is not known`);
-
-    delete entries[url];
-
-    this.setAuthorize(entries);
-
-    return entries;
   }
 
   async updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {

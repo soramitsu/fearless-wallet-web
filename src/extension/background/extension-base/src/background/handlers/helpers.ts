@@ -2,7 +2,7 @@ import { assert } from '@polkadot/util';
 import { type TransformAccountPayload, type TokenGroup } from '@extension-base/background/types/types';
 import { APIItemState } from '@extension-base/api/types/networks';
 import type { InjectedAccount } from '@polkadot/extension-inject/types';
-import type { SingleAddress, SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { SingleAddress } from '@polkadot/ui-keyring/observable/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { NetworkJson } from '@extension-base/types';
 import type { RelayChainName } from '@/interfaces';
@@ -118,6 +118,7 @@ export function stripUrl(url: string): string {
 export function transformAccounts({ accounts, accountAuthType }: TransformAccountPayload): InjectedAccount[] {
   const authTypeFilter = ({ type }: SingleAddress): boolean => {
     if (accountAuthType === 'substrate') return type !== 'ethereum';
+
     if (accountAuthType === 'evm') return type === 'ethereum';
 
     return true;
@@ -137,23 +138,23 @@ export function transformAccounts({ accounts, accountAuthType }: TransformAccoun
     );
 }
 
-export function transformAddresses(addresses: SubjectInfo, authType?: string): InjectedAccount[] {
-  return Object.values(addresses)
+export function transformAddresses({ accounts, accountAuthType }: TransformAccountPayload): InjectedAccount[] {
+  return Object.values(accounts)
     .sort((a, b) => (a.json.meta.whenCreated || 0) - (b.json.meta.whenCreated || 0))
-    .map(
-      ({
+    .map((item): InjectedAccount => {
+      const {
         json: {
           address,
           meta: { name, ethereumAddress },
         },
         type,
-      }): InjectedAccount => {
-        return {
-          address: authType === 'evm' ? (ethereumAddress as string) : address,
-          name,
-          type,
-          genesisHash: '',
-        };
-      }
-    );
+      } = item;
+
+      return {
+        address: accountAuthType === 'evm' ? (ethereumAddress as string) : address,
+        name,
+        type,
+        genesisHash: '',
+      };
+    });
 }

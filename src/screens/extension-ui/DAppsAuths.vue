@@ -5,8 +5,8 @@
       :key="request.id"
       :authorized-accounts="request.authorizedAccounts"
       :url="request.url"
-      @openUpdateAuths="openDotSamaAuthDetails"
-      @remove="onDotSamaRemoveAuth"
+      @openUpdateAuths="openAuthDetails"
+      @remove="removeAuth"
     />
   </Fragment>
   <div v-else class="no-auths">{{ $t('authorize.noconnections') }}</div>
@@ -28,7 +28,7 @@ const isAuthsExist = computed(() => Object.keys(substrateList.value).length);
 
 onMounted(async () => (substrateList.value = await store.dispatch('GET_AUTHLIST')));
 
-const openDotSamaAuthDetails = (index: string) => {
+const openAuthDetails = (index: string) => {
   router.push({
     name: Components.UpdateAuths,
     params: {
@@ -37,7 +37,7 @@ const openDotSamaAuthDetails = (index: string) => {
   });
 };
 
-const onDotSamaRemoveAuth = async (id: string) => {
+const removeAuth = async (id: string) => {
   store.dispatch('DELETE_AUTH_CONNECTION', id);
 
   substrateList.value = await store.dispatch('GET_AUTHLIST');

@@ -307,7 +307,7 @@ export default class Extension extends FWExtensionBase {
 
     assert(authRequest, 'Unable to find request');
 
-    authRequest.resolve({ authorizedAccounts, result: true });
+    authRequest.resolve({ authorizedAccounts });
 
     return true;
   }
@@ -731,7 +731,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   signingEvmSubscribe(id: string, port: Port): boolean {
-    const cb = createSubscription<'pri(signing.evmrequests)'>(id, port);
+    const cb = createSubscription<'pri(signing.evmRequests)'>(id, port);
 
     const evmSubscription = this.state.requestService.signEvmSubject.subscribe((requests): void => cb(requests));
 
@@ -768,13 +768,12 @@ export default class Extension extends FWExtensionBase {
 
   async removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
     const auths = await this.state.requestService.getAuthList();
+
     delete auths[url];
 
     this.state.requestService.setAuthorize(auths);
 
-    const newList = await this.state.requestService.getAuthList();
-
-    return { list: newList };
+    return { list: auths };
   }
 
   deleteAuthRequest(requestId: string): void {
@@ -1883,7 +1882,7 @@ export default class Extension extends FWExtensionBase {
       case 'pri(signing.requests)':
         return this.signingSubscribe(id, port);
 
-      case 'pri(signing.evmrequests)':
+      case 'pri(signing.evmRequests)':
         return this.signingEvmSubscribe(id, port);
 
       // google

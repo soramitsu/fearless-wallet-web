@@ -451,10 +451,6 @@ export interface ApiMap {
   evm: EvmApiMap;
 }
 
-export interface RequestAccountList {
-  anyType?: boolean;
-}
-
 export interface RequestActiveTabsUrlUpdate {
   tabs: chrome.tabs.Tab[];
 }
@@ -592,6 +588,7 @@ export interface AuthUrlInfo {
   url: string;
   accountAuthType?: AccountAuthType;
   authorizedAccounts: string[];
+  evmAuthorizedAccount: string;
   allowedAccountsMap: Record<string, boolean>;
   currentEvmNetworkKey?: string;
 }
@@ -607,9 +604,9 @@ export interface MetaRequest extends Resolver<boolean> {
 }
 
 export interface AuthResponse {
-  result: boolean;
   authorizedAccounts: string[];
 }
+
 export type ActiveTabAuthorizeStatus = {
   isAuthorize: boolean;
   authorizeAccountsCount: number;
@@ -752,7 +749,6 @@ export type EvmAppState = {
 
 export type TransformAccountPayload = {
   accounts: SubjectInfo;
-  anyType?: boolean;
   authInfo?: AuthUrlInfo;
   accountAuthType?: AccountAuthType;
 };

@@ -66,7 +66,6 @@ import type {
   RequestAccountExport,
   ResponseAccountExport,
   RequestAccountForget,
-  RequestAccountList,
   RequestAccountName,
   AccountJson,
   RequestAccountValidate,
@@ -146,7 +145,7 @@ export interface RequestSignatures {
   'pri(accounts.export.json)': [RequestAccountExport, ResponseAccountExport];
   'pri(accounts.export.mnemonic)': [RequestExportMnemonic, ResponseExportMnemonic];
   'pri(accounts.forget)': [RequestAccountForget, boolean];
-  'pri(accounts.list)': [RequestAccountList, InjectedAccount[]];
+  'pri(accounts.list)': [null, InjectedAccount[]];
   'pri(accounts.name)': [RequestAccountName, boolean];
   'pri(accounts.subscribe)': [null, AccountJson[], AccountJson[]];
   'pri(addresses.subscribe)': [null, AccountJson[], AccountJson[]];
@@ -228,11 +227,12 @@ export interface RequestSignatures {
   'pri(fetch.evm.balance)': [FetchEvmBalancePayload, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
   'pri(fetch.balance)': [FetchBalanceRequest, string];
-  'pri(signing.evmrequests)': [null, boolean, EvmRequests];
+  'pri(signing.evmRequests)': [null, boolean, EvmRequests];
 
   'pri(price.update.currency)': [string, void];
   'pri(price.subscription)': [null, PriceJson, PriceJson];
   'pri(soraCard.token)': [null, boolean, string];
+
   // Evm
   'evm(events.subscribe)': [RequestEvmEvents, boolean, EvmEvent];
   'evm(request)': [RequestArguments, unknown];
@@ -245,7 +245,7 @@ export interface RequestSignatures {
 
   // public/external requests, i.e. from a page
   'pub(soraCard.token)': [string, null];
-  'pub(accounts.list)': [RequestAccountList, InjectedAccount[]];
+  'pub(accounts.list)': [null, InjectedAccount[]];
   'pub(accounts.subscribe)': [null, string, InjectedAccount[]];
   'pub(accounts.unsubscribe)': [RequestAccountUnsubscribe, boolean];
   'pub(authorize.tab)': [RequestAuthorizeTab, Promise<AuthResponse>];

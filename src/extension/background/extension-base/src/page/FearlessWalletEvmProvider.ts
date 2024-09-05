@@ -2,6 +2,7 @@ import { type FWEvmProvider, type SendRequest } from '@extension-base/page/types
 import SafeEventEmitter from '@metamask/safe-event-emitter';
 import { type JsonRpcRequest, type JsonRpcResponse, type JsonRpcSuccess } from 'json-rpc-engine';
 import type { RequestArguments } from '@json-rpc-tools/utils';
+
 export interface SendSyncJsonRpcRequest extends JsonRpcRequest<unknown> {
   method: 'net_version';
 }
@@ -11,7 +12,7 @@ let subscribeFlag = false;
 export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvmProvider {
   protected _connected = false;
   public readonly isMetaMask = false;
-  private isEnable = false;
+  private isEnabled = false;
 
   constructor(protected sendMessage: SendRequest, public readonly version: string) {
     super();
@@ -76,20 +77,29 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
   }
 
   request<T>({ method, params }: RequestArguments): Promise<T> {
-    if (!this.isEnable && method === 'eth_accounts') {
-      return this.request<T>({ method: 'eth_requestAccounts' });
-    }
+    if (!this.isEnabled && method === 'eth_accounts') return this.request({ method: 'eth_requestAccounts' });
 
     // Subscribe events
     switch (method) {
+      // Add origin to params
+      case 'wallet_requestPermissions':
+        return new Promise((resolve, reject) => {
+          const origin = document.title !== '' ? document.title : window.location.hostname;
+
+          this.sendMessage('evm(request)', { params: { ...params, origin }, method })
+            .then((result) => resolve(result as T))
+            .catch((e) => reject(e));
+        });
+
+      // Called once when first connecting to DAPP
       case 'eth_requestAccounts':
         return new Promise((resolve, reject) => {
           const origin = document.title !== '' ? document.title : window.location.hostname;
 
           this.sendMessage('pub(authorize.tab)', { origin, accountAuthType: 'evm' })
             .then(() => {
-              this.isEnable = true;
-              // Return account list
+              this.isEnabled = true;
+
               this.request<T>({ method: 'eth_accounts' })
                 .then((accounts) => resolve(accounts))
                 .catch((e) => reject(e));

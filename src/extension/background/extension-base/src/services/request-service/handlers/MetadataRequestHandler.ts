@@ -85,9 +85,7 @@ export class MetadataRequestHandler {
   }
 
   public resetWallet() {
-    for (const request of Object.values(this.metaRequests)) {
-      request.reject(new Error('Reset wallet'));
-    }
+    for (const request of Object.values(this.metaRequests)) request.reject(new Error('Reset wallet'));
 
     this.metaSubject.next([]);
   }

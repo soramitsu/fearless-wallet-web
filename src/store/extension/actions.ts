@@ -156,9 +156,9 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.DELETE_AUTH_CONNECTION]({ commit }, id) {
-    await removeAuthorization(id);
+    const response = await removeAuthorization(id);
 
-    commit(MutationTypes.DELETE_AUTHLIST_ITEM, id);
+    commit(MutationTypes.SET_AUTHLIST, response);
   },
 
   async [ActionTypes.SUBSCRIBE_META_REQUESTS]({ commit }) {
@@ -213,6 +213,7 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.SUBSCRIBE_EVM_SIGN_REQUESTS]({ commit }) {
     const callback = (requests: EvmRequests) => {
       commit(MutationTypes.SET_REQUEST, { type: 'signEvmRequests', requests });
+
       const isRequestsExists = Object.keys(requests).length === 0;
 
       if (router.currentRoute.name === 'Transaction' && isRequestsExists) router.push({ name: Components.Wallet });

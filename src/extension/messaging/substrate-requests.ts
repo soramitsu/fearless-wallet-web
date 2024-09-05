@@ -62,7 +62,7 @@ export function subscribeSigningRequests(cb: (accounts: SigningRequest[]) => voi
 }
 
 export function subscribeEvmSigningRequests(cb: (requests: EvmRequests) => void): Promise<boolean> {
-  return sendMessage('pri(signing.evmrequests)', null, cb);
+  return sendMessage('pri(signing.evmRequests)', null, cb);
 }
 
 export function approveMetaRequest(id: string): Promise<boolean> {

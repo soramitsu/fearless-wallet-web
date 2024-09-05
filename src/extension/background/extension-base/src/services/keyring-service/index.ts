@@ -233,12 +233,8 @@ export class KeyringService {
     const addresses = this.getAddresses();
 
     const account =
-      accounts.find(
-        ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
-      ) ||
-      addresses.find(
-        ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
-      );
+      accounts.find(({ meta: { ethereumAddress } }) => isSameString(ethereumAddress as string, address)) ||
+      addresses.find(({ meta: { ethereumAddress } }) => isSameString(ethereumAddress as string, address));
 
     return account?.address ?? address;
   }

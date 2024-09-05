@@ -151,8 +151,6 @@ const actions: ActionTree<State, State> & Actions = {
     const list = await getAuthList();
 
     commit(MutationTypes.SET_AUTHLIST, list);
-
-    return list.list;
   },
 
   async [ActionTypes.DELETE_AUTH_CONNECTION]({ commit }, id) {

@@ -181,12 +181,14 @@ export class AuthRequestHandler {
     const existedAccountAuthType = existedAuth?.accountAuthType;
     const isNewType = existedAccountAuthType !== 'both' && existedAccountAuthType !== request.accountAuthType;
 
+    if (request.accountAuthType === 'evm') {
+      if (existedAuth?.evmAuthorizedAccount !== '' && !request.reConfirm) return false;
+    }
     // Reconfirm if check auth for empty list
-    // For EVM always open popup
-    if (existedAuth && accountAuthType !== 'evm') {
+    else if (existedAuth) {
       if (request.reConfirm) request.origin = existedAuth.origin;
 
-      const inBlackList = !existedAuth.isAllowed;
+      const inBlackList = !(existedAuth?.isAllowed ?? true);
 
       if (inBlackList) throw new Error(`The source ${url} is not allowed to interact with this extension`);
 

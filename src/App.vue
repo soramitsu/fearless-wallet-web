@@ -74,9 +74,9 @@ export default class App extends Vue {
 
     this.setupWallet();
     this.setupNetworks();
-    this.setupBalance();
+    await this.setupBalance();
     this.setupNfts();
-    this.fetchFiats();
+    await this.fetchFiats();
     this.setupPrice();
     this.setupSWPing();
 
@@ -182,7 +182,7 @@ body {
   width: $extension-width;
   color: white;
   text-align: center;
-  margin: 0 auto;
+  //margin: 0 auto;
   padding: $default-padding;
   background-image: url('@/assets/background.png');
   background-position: center;

@@ -83,7 +83,7 @@ export class StakingService {
     const stakingInfo = await apiSora.staking.getMyStakingInfo(address);
     const storageData = await storage.get(['addressBook']);
     console.info('[debug] storageData', storageData);
-    const addressBook = storageData?.addressBook;
+    const addressBook = storageData?.addressBook || {};
     const isControllerAndPayeeStaked = isController && stakingInfo.payee.toLowerCase() === 'staked';
     const isControllerAndPayeeStash = isController && stakingInfo.payee.toLowerCase() === 'stash';
     const isControllerAndPayeeController = isController && stakingInfo.payee.toLowerCase() === 'controller';

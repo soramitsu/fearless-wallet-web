@@ -711,31 +711,29 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  signingSubscribe(id: string, port: Port): boolean {
-    const cb = createSubscription<'pri(signing.requests)'>(id, port);
+  signingSubscribe(id: string): boolean {
+    const cb = createSubscription<'pri(signing.requests)'>(id);
 
-    const subscription = this.state.requestService.signSubject.subscribe((requests: SigningRequest[]): void =>
-      cb(requests)
-    );
+    this.state.requestService.signSubject.subscribe((requests: SigningRequest[]): void => cb(requests));
 
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    // port.onDisconnect.addListener((): void => {
+    //   unsubscribe(id);
+    //   subscription.unsubscribe();
+    // });
 
     return true;
   }
 
-  signingEvmSubscribe(id: string, port: Port): boolean {
-    const cb = createSubscription<'pri(signing.evmrequests)'>(id, port);
+  signingEvmSubscribe(id: string): boolean {
+    const cb = createSubscription<'pri(signing.evmrequests)'>(id);
 
-    const evmSubscription = this.state.requestService.signEvmSubject.subscribe((requests): void => cb(requests));
+    this.state.requestService.signEvmSubject.subscribe((requests): void => cb(requests));
 
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-
-      evmSubscription.unsubscribe();
-    });
+    // port.onDisconnect.addListener((): void => {
+    //   unsubscribe(id);
+    //
+    //   evmSubscription.unsubscribe();
+    // });
 
     return true;
   }
@@ -1346,16 +1344,16 @@ export default class Extension extends FWExtensionBase {
       });
   }
 
-  private connectWCSubscribe(id: string, port: chrome.runtime.Port): WalletConnectSessionRequest[] {
-    const cb = createSubscription<'pri(walletConnect.requests.connect.subscribe)'>(id, port);
-    const subscription = this.state.requestService.connectWCSubject.subscribe(
-      (requests: WalletConnectSessionRequest[]): void => cb(requests)
+  private connectWCSubscribe(id: string): WalletConnectSessionRequest[] {
+    const cb = createSubscription<'pri(walletConnect.requests.connect.subscribe)'>(id);
+    this.state.requestService.connectWCSubject.subscribe((requests: WalletConnectSessionRequest[]): void =>
+      cb(requests)
     );
 
-    port.onDisconnect.addListener((): void => {
-      this.cancelSubscription(id);
-      subscription.unsubscribe();
-    });
+    // port.onDisconnect.addListener((): void => {
+    //   this.cancelSubscription(id);
+    //   subscription.unsubscribe();
+    // });
 
     return this.state.requestService.allConnectWCRequests;
   }
@@ -1875,11 +1873,11 @@ export default class Extension extends FWExtensionBase {
       case 'pri(signing.isLocked)':
         return this.signingIsLocked(request as RequestSigningIsLocked);
 
-      // case 'pri(signing.requests)':
-      //   return this.signingSubscribe(id, port);
+      case 'pri(signing.requests)':
+        return this.signingSubscribe(id);
       //
-      // case 'pri(signing.evmrequests)':
-      //   return this.signingEvmSubscribe(id, port);
+      case 'pri(signing.evmrequests)':
+        return this.signingEvmSubscribe(id);
 
       // google
       case 'pri(google.get.files)':
@@ -1921,8 +1919,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(walletConnect.connect)':
         return this.connectWalletConnect(request as RequestConnectWalletConnect);
 
-      // case 'pri(walletConnect.requests.connect.subscribe)':
-      //   return this.connectWCSubscribe(id, port);
+      case 'pri(walletConnect.requests.connect.subscribe)':
+        return this.connectWCSubscribe(id);
 
       case 'pri(walletConnect.session.approve)':
         return this.approveWalletConnectSession(request as RequestApproveConnectWalletSession);

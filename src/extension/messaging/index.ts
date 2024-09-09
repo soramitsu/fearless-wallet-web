@@ -26,7 +26,7 @@ const handlers: Handlers = {};
 
 function connect() {
   console.info('Connecting to background script', PORT_EXTENSION);
-  port = chrome.extension ? chrome.runtime?.connect({ name: PORT_EXTENSION }) : null;
+  port = chrome?.extension ? chrome.runtime?.connect({ name: PORT_EXTENSION }) : null;
   port?.onDisconnect.addListener(connect);
 
   //TODO: Stefan: вот тут нужно сообщение обработать
@@ -40,6 +40,8 @@ function connect() {
 
       return;
     }
+
+    console.info(`[handler] ${data.id}`, { handler, data });
 
     if (!handler.subscriber) delete handlers[data.id];
 

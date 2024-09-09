@@ -32,31 +32,17 @@ class Storage {
       this.openDatabase().then((db) => {
         const transaction = db.transaction(db_name, 'readonly');
         const store = transaction.objectStore(db_name);
-        const request = store.get(filterKeys);
+        const request = store.get(storageItem);
 
-        const promises = filterKeys.map((key) => {
-          return new Promise<{ key: IDBValidKey; value: any }>((resolvePromise, rejectPromise) => {
-            const getRequest = store.get(key);
+        request.onsuccess = (event) => {
+          const filtered = filterKeys.reduce((acc, key) => {
+            acc[key] = (event.target as IDBRequest).result[key];
 
-            getRequest.onerror = () => {
-              rejectPromise(getRequest.error);
-            };
+            return acc;
+          }, {} as Pick<IState, (typeof filterKeys)[number]>);
+          resolve(filtered);
+        };
 
-            getRequest.onsuccess = () => {
-              resolvePromise({ key, value: getRequest.result });
-            };
-          });
-        });
-
-        Promise.all(promises)
-          .then((results) => {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            resolve(results);
-          })
-          .catch((error) => reject(error));
-
-        request.onsuccess = (event) => resolve((event.target as IDBRequest).result);
         request.onerror = (event) => reject((event.target as IDBRequest).error);
       });
     });

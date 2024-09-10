@@ -1,8 +1,8 @@
 import { ethers } from 'ethers';
 import { APIItemState } from '@extension-base/api/types/networks';
-import { type BalanceItem } from '@extension-base/api/evm/types/ether';
 import { getContract } from '@extension-base/api/evm/utils/eth';
 import { setBalance } from '@extension-base/api/helpers';
+import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type State from '@extension-base/background/handlers/State';
 
 async function getUtilityBalance(networkKey: string, address: string, state: State): Promise<string> {
@@ -94,11 +94,6 @@ async function fetchUtilityBalance(networkKey: string, ethereumAddress: string, 
       balanceItem.total = balance;
       balanceItem.transferable = balance;
       balanceItem.state = APIItemState.READY;
-      const substrateAddress = state.keyringService.getSubstrateAddress(ethereumAddress);
-
-      const api = state.getEvmApi(networkKey);
-
-      if (api) api.timeout[substrateAddress] = Date.now();
 
       setBalance(networkKey, balanceItem, address, state);
     })

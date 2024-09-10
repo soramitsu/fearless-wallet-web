@@ -616,22 +616,20 @@ export default class State {
 
     if (!activeEvmNetworks.length) return;
 
-    const substrateAddress = this.keyringService.getSubstrateAddress(ethereumAddress);
-
     activeEvmNetworks.forEach(({ assets, name, networkStatus }) => {
       const api = this.getEvmApi(name);
 
-      const timeout = api.timeout[substrateAddress] ?? Number.MIN_VALUE;
+      const timeout = api.timeout[ethereumAddress] ?? Number.MIN_VALUE;
       const timeDiff = Date.now() - timeout;
       const shouldSkipUpdate = timeDiff < REFRESH_TIME && !force;
 
       if (shouldSkipUpdate || networkStatus === NETWORK_STATUS.DISCONNECTED) return;
 
-      assets.forEach(({ id }) => {
-        if (assetId && assetId !== id) return;
+      // Save timeout [network api][ethereum address]
+      if (api) api.timeout[ethereumAddress] = Date.now();
 
-        fetchEvmAssetBalance(ethereumAddress, name, id, this);
-      });
+      if (assetId) fetchEvmAssetBalance(ethereumAddress, name, assetId, this);
+      else assets.forEach(({ id }) => fetchEvmAssetBalance(ethereumAddress, name, id, this));
     });
   }
 

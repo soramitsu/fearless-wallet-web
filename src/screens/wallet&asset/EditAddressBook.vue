@@ -96,7 +96,7 @@ export default class EditAddressBook extends Vue {
       },
     });
 
-    this.$emit('setAddress', '', true);
+    this.$emit('toggleEditBook');
   }
 
   onSave(value: boolean) {

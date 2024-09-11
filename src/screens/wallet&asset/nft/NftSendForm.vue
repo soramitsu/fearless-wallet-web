@@ -51,7 +51,7 @@
           v-if="popupControls.showEditAddressBook"
           :network="network"
           :_address="formInfo.newAddress"
-          @setAddress="setAddress"
+          @toggleEditBook="toggleEditBook"
         />
 
         <HistoryBook
@@ -60,7 +60,7 @@
           :assetId="formInfo.assetId"
           @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
           @setRecipient="setRecipient"
-          @openEditBook="toggleEditAddressBookVisibility"
+          @toggleEditBook="toggleEditBook"
         />
 
         <div v-else-if="popupControls.showMyWallets">
@@ -175,11 +175,11 @@ const assetSymbol = computed(() => {
 const formatFeeString = computed(() => `${n(+formInfo.fee, 'decimalPrecise')} ${assetSymbol.value?.toUpperCase()}`);
 
 const header = computed(() => {
+  if (popupControls.showEditAddressBook) return 'assets.addContact';
+
   if (popupControls.showHistoryBook) return 'assets.chooseFromHistory';
 
   if (popupControls.showMyWallets) return 'assets.wallets';
-
-  if (popupControls.showEditAddressBook) return 'assets.addContact';
 
   return 'common.send';
 });
@@ -243,19 +243,19 @@ const onClose = () => router.back();
 
 const toggleMyWalletsVisibility = () => (popupControls.showMyWallets = !popupControls.showMyWallets);
 const toggleHistoryBookVisibility = () => (popupControls.showHistoryBook = !popupControls.showHistoryBook);
-const toggleEditAddressBookVisibility = () => (popupControls.showEditAddressBook = !popupControls.showEditAddressBook);
 
-const setAddress = (address: string, showHistoryBook = false) => {
+const toggleEditBook = (address: string = '') => {
+  popupControls.showEditAddressBook = !popupControls.showEditAddressBook;
+  popupControls.showHistoryBook = !popupControls.showHistoryBook;
   formInfo.newAddress = address;
-  popupControls.showHistoryBook = showHistoryBook;
 };
 
 const onBack = () => {
   popupControls.showConfirmScreen = false;
-  popupControls.showMyWallets = false;
 
-  if (popupControls.showEditAddressBook) setAddress('', true);
-  else popupControls.showHistoryBook = false;
+  if (popupControls.showEditAddressBook) toggleEditBook();
+  else if (popupControls.showHistoryBook) toggleHistoryBookVisibility();
+  else if (popupControls.showMyWallets) toggleMyWalletsVisibility();
 };
 
 const setWallet = (ethereumAddress: string) => {

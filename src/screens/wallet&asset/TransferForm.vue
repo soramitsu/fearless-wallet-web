@@ -12,7 +12,7 @@
           v-if="showEditAddressBook"
           :network="targetNetwork"
           :_address="newAddress"
-          @setAddress="setAddress"
+          @toggleEditBook="toggleEditBook"
         />
 
         <HistoryBook
@@ -21,7 +21,7 @@
           :assetId="syncedAssetId"
           @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
           @setRecipient="setRecipient"
-          @openEditBook="toggleValue('showEditAddressBook')"
+          @toggleEditBook="toggleEditBook"
         />
 
         <div v-else-if="showMyWallets">
@@ -317,11 +317,11 @@ export default class TransferForm extends Vue {
   }
 
   get formHeader() {
+    if (this.showEditAddressBook) return 'assets.addContact';
+
     if (this.showHistoryBook) return 'assets.chooseFromHistory';
 
     if (this.showMyWallets) return 'assets.wallets';
-
-    if (this.showEditAddressBook) return 'assets.addContact';
 
     return this.header;
   }
@@ -782,6 +782,12 @@ export default class TransferForm extends Vue {
     }
   }
 
+  toggleEditBook(address: string = '') {
+    this.showEditAddressBook = !this.showEditAddressBook;
+    this.showHistoryBook = !this.showHistoryBook;
+    this.newAddress = address;
+  }
+
   toggleValue(value: 'showSelectedAssetPopup' | 'showSelectNetworkPopup' | 'showDestNetPopup' | 'showEditAddressBook') {
     this[value] = !this[value];
   }
@@ -819,7 +825,7 @@ export default class TransferForm extends Vue {
 
   handlerBack() {
     if (this.showHistoryBook) this.toggleHistoryBookVisibility();
-    else if (this.showEditAddressBook) this.setAddress('', true);
+    else if (this.showEditAddressBook) this.toggleEditBook();
     else if (this.showMyWallets) this.toggleMyWalletsVisibility();
     else this.step -= 1;
   }
@@ -981,11 +987,6 @@ export default class TransferForm extends Vue {
 
   toggleHistoryBookVisibility() {
     this.showHistoryBook = !this.showHistoryBook;
-  }
-
-  setAddress(address: string, showHistoryBook = false) {
-    this.newAddress = address;
-    this.showHistoryBook = showHistoryBook;
   }
 }
 </script>

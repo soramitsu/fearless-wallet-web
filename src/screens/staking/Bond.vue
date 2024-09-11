@@ -12,7 +12,7 @@
           v-if="showEditAddressBook"
           :network="network"
           :_address="newAddress"
-          @setAddress="setAddress"
+          @toggleEditBook="toggleEditBook"
         />
 
         <HistoryBook
@@ -21,7 +21,7 @@
           :assetId="stakingAssetId"
           @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
           @setRecipient="setPayoutAddress"
-          @openEditBook="openEditBook"
+          @toggleEditBook="toggleEditBook"
         />
 
         <div v-else-if="showMyWallets">
@@ -369,11 +369,11 @@ export default class Bond extends Vue {
   }
 
   get header() {
+    if (this.showEditAddressBook) return 'assets.addContact';
+
     if (this.showHistoryBook) return 'assets.chooseFromHistory';
 
     if (this.showMyWallets) return 'assets.wallets';
-
-    if (this.showEditAddressBook) return 'assets.addContact';
 
     if (this.step === 1) return 'staking.bond';
 
@@ -524,8 +524,10 @@ export default class Bond extends Vue {
     this.amount = amount;
   }
 
-  openEditBook() {
+  toggleEditBook(address: string = '') {
     this.showEditAddressBook = !this.showEditAddressBook;
+    this.showHistoryBook = !this.showHistoryBook;
+    this.newAddress = address;
   }
 
   openValidatorInfo(validator: FWValidatorInfoFull) {
@@ -548,9 +550,9 @@ export default class Bond extends Vue {
     }
 
     if (this.step === 1) {
-      this.showMyWallets = false;
-      this.showHistoryBook = false;
-      this.newAddress = '';
+      if (this.showHistoryBook) this.toggleHistoryBookVisibility();
+      else if (this.showEditAddressBook) this.toggleEditBook();
+      else if (this.showMyWallets) this.toggleMyWalletsVisibility();
 
       return;
     }
@@ -594,11 +596,6 @@ export default class Bond extends Vue {
     if (!this.stakingCurrency) return;
 
     this.amount = this.calcTransferableSendMinusFee();
-  }
-
-  setAddress(address: string, showHistoryBook = false) {
-    this.newAddress = address;
-    this.showHistoryBook = showHistoryBook;
   }
 
   toggleMyWalletsVisibility() {

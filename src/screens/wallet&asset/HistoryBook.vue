@@ -17,7 +17,7 @@
                 </div>
               </div>
 
-              <Icon icon="plus-pink" class="plus" data-testid="setAddress" @click="setAddress(address)" />
+              <Icon icon="plus-pink" class="plus" data-testid="setAddress" @click="openEditBook(address)" />
             </div>
           </template>
 
@@ -179,8 +179,8 @@ export default class HistoryBook extends Vue {
     this.$emit('toggleHistoryBookVisibility');
   }
 
-  openEditBook() {
-    this.$emit('openEditBook');
+  openEditBook(address: string = '') {
+    this.$emit('toggleEditBook', address);
   }
 }
 </script>

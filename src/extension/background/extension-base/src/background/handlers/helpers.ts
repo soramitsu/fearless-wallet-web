@@ -44,7 +44,7 @@ export function getMockCurrencies(networkMap: Record<string, NetworkJson>) {
         });
 
         if (currencyIndex === -1) {
-          const newCurrency = {
+          const newCurrency: TokenGroup = {
             mainNetwork,
             groupId: assetId,
             priceId,
@@ -55,7 +55,6 @@ export function getMockCurrencies(networkMap: Record<string, NetworkJson>) {
             providers: purchaseProviders ?? [],
             balances: [],
             color,
-            currencyId,
           };
 
           result.push(newCurrency);
@@ -79,6 +78,7 @@ export function getMockCurrencies(networkMap: Record<string, NetworkJson>) {
             isUtility: isUtility ?? false,
             id: assetId,
             symbol,
+            currencyId,
           },
         ];
 

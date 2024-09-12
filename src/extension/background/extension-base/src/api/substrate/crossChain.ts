@@ -63,7 +63,8 @@ function getConcreteAsset(
   isToRelayChain: boolean,
   xcmAssetId: AssetId,
   isNative: boolean,
-  state: State
+  state: State,
+  destNet?: NetworkName
 ) {
   const networkKey = state.networkService.getNetworkByKey(originNet)?.name;
   const { parentId } = state.networkMap[networkKey];
@@ -94,9 +95,12 @@ function getConcreteAsset(
   const parents1 = isToRelayChain ? 1 : 0;
   const parents2 = interiorXcmLength === 0 || haveParachainParameter ? 1 : 0;
 
+  // Hack for ASTR to SORA Network
+  const isASTRtoSORA = xcmAssetId === '5ab1e8d-81ed-4130-9d29-55b549cc6bab' && isSora(destNet, true);
+
   return {
     interior: interior,
-    parents: isNative ? parents1 : parents2,
+    parents: isASTRtoSORA ? 0 : isNative ? parents1 : parents2,
   };
 }
 
@@ -113,14 +117,16 @@ function getNativeTeleportParams(
   const isFromRelayChain = isRelayChain(originNet);
   const isToRelayChain = isRelayChain(destNet);
   const { xcm, parentId, name } = state.networkMap[originNetworkKey];
+  const relayChain = CHAIN_IDS[parentId!] ?? firstCharToUp(name);
+
   const paraId = isSora(destNet, true)
-    ? getSoraParaId(originNet, state)
+    ? getSoraParaId(relayChain, state)
     : state.networkMap[destNetworkKey]?.paraId ?? '0';
+
   const xcmVersion = xcm!.xcmVersion.toUpperCase();
   const publicKey = decodeAddress(toAddress);
   const value = new BN(amount);
 
-  const relayChain = CHAIN_IDS[parentId!] ?? firstCharToUp(name);
   const network = xcmVersion === XcmVersions.V1 ? { network: { Any: '' } } : { network: { [relayChain]: '' } };
 
   const receiverLocation = isEthereumNetwork(destNet)
@@ -177,12 +183,15 @@ function getOrmlTeleportParams(
   const destNetworkKey = state.networkService.getNetworkByKey(destNet)?.name;
   const isToRelayChain = isRelayChain(destNet);
   const { xcm, parentId, name } = state.networkMap[originNetworkKey];
-  const paraId = state.networkMap[destNetworkKey]?.paraId ?? 0;
+  const relayChain = CHAIN_IDS[parentId!] ?? firstCharToUp(name);
+
+  const paraId = isSora(destNet, true)
+    ? getSoraParaId(relayChain, state)
+    : state.networkMap[destNetworkKey]?.paraId ?? 0;
+
   const xcmVersion = xcm!.xcmVersion.toUpperCase();
   const publicKey = decodeAddress(toAddress);
   const value = new BN(amount);
-
-  const relayChain = CHAIN_IDS[parentId!] ?? firstCharToUp(name);
 
   const network = xcmVersion === XcmVersions.V1 ? { network: { Any: '' } } : { network: { [relayChain]: '' } };
 
@@ -203,7 +212,7 @@ function getOrmlTeleportParams(
   const asset = {
     [xcmVersion]: {
       fun: { Fungible: value },
-      id: { Concrete: getConcreteAsset(originNet, isToRelayChain, xcmAssetId, false, state) },
+      id: { Concrete: getConcreteAsset(originNet, isToRelayChain, xcmAssetId, false, state, destNet) },
     },
   };
 

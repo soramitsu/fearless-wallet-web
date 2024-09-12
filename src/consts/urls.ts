@@ -12,9 +12,7 @@ const FEATURES = IS_PRODUCTION
   ? `${BASE_URL}/master/appConfigs/web_config.json`
   : `${BASE_URL}/develop-free/appConfigs/web_config.json`;
 
-const XCM_LOCATIONS = IS_PRODUCTION
-  ? `${BASE_URL}/master/xcm/v2/xcm_token_locations.json`
-  : `${BASE_URL}/develop-free/xcm/v2/xcm_token_locations.json`;
+const XCM_LOCATIONS = `${BASE_URL}/master/xcm/v2/xcm_token_locations.json`;
 
 const XCM_FEES = IS_PRODUCTION
   ? `${BASE_URL}/master/xcm/v2/xcm_fees.json`

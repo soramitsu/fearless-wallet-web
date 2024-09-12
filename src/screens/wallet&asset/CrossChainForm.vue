@@ -107,7 +107,6 @@ export default class CrossChainForm extends Vue {
   amount = '';
   recipient = '';
   value = '';
-  step = 1;
 
   @Prop(String) _originalNetwork!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;

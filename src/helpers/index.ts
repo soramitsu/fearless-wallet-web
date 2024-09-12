@@ -24,7 +24,7 @@ function isSubstrString(string1: string, string2: string) {
   return string1.toLowerCase().includes(string2.toLowerCase());
 }
 
-function isSora(network: NetworkName, allSora = false) {
+function isSora(network?: NetworkName, allSora = false) {
   // проверяем, что переданная сеть является СОРА сетью
   if (allSora) return isSameString(network, SORA_MAINNET) || isSameString(network, SORA_TEST);
 

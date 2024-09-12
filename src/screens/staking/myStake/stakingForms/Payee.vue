@@ -5,7 +5,7 @@
         text="accounts.account"
         borderType="default"
         data-testid="accountName"
-        :value="accountName"
+        :value="accountNameCut"
         :price="addressCut"
         :hideLastBorder="false"
       />
@@ -88,8 +88,8 @@ export default class Payee extends Vue {
     return cut(this.syncedPayoutAddress);
   }
 
-  get accountName() {
-    return this.selectedWallet.name;
+  get accountNameCut() {
+    return cut(this.selectedWallet.name);
   }
 
   get filteredWallets() {

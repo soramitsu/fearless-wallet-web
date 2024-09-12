@@ -3,7 +3,7 @@ import { type TransformAccountPayload, type TokenGroup } from '@extension-base/b
 import { APIItemState } from '@extension-base/api/types/networks';
 import type { InjectedAccount } from '@polkadot/extension-inject/types';
 import type { SingleAddress } from '@polkadot/ui-keyring/observable/types';
-import type { BalanceItem } from '@extension-base/api/evm/types/ether';
+import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RelayChainName } from '@/interfaces';
 import { MAIN_NETWORKS } from '@/consts/networks';

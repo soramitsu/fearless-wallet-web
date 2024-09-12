@@ -14,8 +14,10 @@ function firstCharToUp(string: string, onlyFirstChat = true) {
   return `${string.charAt(0).toUpperCase()}${end}`;
 }
 
-function isSameString(string1: string | undefined, string2: string | undefined) {
+function isSameString(string1: string | undefined | null, string2: string | undefined | null) {
   if (string1 === undefined || string2 === undefined) return false;
+
+  if (string1 === null || string2 === null) return false;
 
   return string1.toLowerCase() === string2.toLowerCase();
 }

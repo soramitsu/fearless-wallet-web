@@ -1,4 +1,4 @@
-import type { BalanceItem } from '@extension-base/api/evm/types/ether';
+import type { BalanceItem } from '@extension-base/api/evm/types';
 import type State from '@extension-base/background/handlers/State';
 import type { AssetName, NetworkName } from '@/interfaces';
 import { ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';

@@ -336,12 +336,10 @@ export class WalletConnectDAppService {
 
     const authInfo = await this.state.getAuthInfo(url);
 
-    if (!authInfo || !authInfo?.currentEvmNetworkKey) {
-      throw new Error(getSdkError('UNSUPPORTED_CHAINS').message);
-    }
+    if (!authInfo || !authInfo?.currentEvmNetworkKey) throw new Error(getSdkError('UNSUPPORTED_CHAINS').message);
 
     const networkKey = authInfo.currentEvmNetworkKey;
-    const chainState = this.state.networkMap[networkKey];
+    const chainState = this.state.networkService.networkMap[networkKey];
 
     const requestEvent: EngineTypes.RequestParams = {
       chainId: `${WALLET_CONNECT_EIP155_NAMESPACE}:${chainState.chainId}`,

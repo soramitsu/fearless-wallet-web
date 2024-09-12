@@ -456,9 +456,9 @@ export default class Tabs {
 
     if (evmState.chainId === chainId) return null;
 
-    const [networkKey] = this.state.networkService.findNetworkKeyByChainId(chainIdDec.toString());
+    const networkJson = this.state.networkService.findNetworkJsonByChainId(chainIdDec.toString());
 
-    if (networkKey) await this.state.switchEvmNetworkByUrl(stripUrl(url), networkKey);
+    if (networkJson) await this.state.switchEvmNetworkByUrl(stripUrl(url), networkJson.name);
     else throw new Error('Unknown network');
 
     return null;

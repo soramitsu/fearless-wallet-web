@@ -565,7 +565,7 @@ export default class Extension extends FWExtensionBase {
     const { list: authList } = await this.getAuthList();
     const auth = authList[stripUrl(request.url)];
 
-    const network = Object.values(this.state.networkMap).find(
+    const network = Object.values(this.state.networkService.networkMap).find(
       (el) =>
         isSameString(el.genesisHash, auth.currentEvmNetworkKey) || isSameString(el.name, auth.currentEvmNetworkKey)
     );
@@ -1235,7 +1235,8 @@ export default class Extension extends FWExtensionBase {
 
   private subscribeNetworkMap(id: string, port: Port): Record<string, NetworkJson> {
     const cb = createSubscription<'pri(networkMap.getSubscription)'>(id, port);
-    const networkMapSubscription = this.state.networkService.subscribeNetworkMap().subscribe({
+
+    const networkMapSubscription = this.state.networkService.networkMapStore.subject.subscribe({
       next: (rs) => {
         cb(rs);
       },
@@ -1247,7 +1248,7 @@ export default class Extension extends FWExtensionBase {
       this.cancelSubscription(id);
     });
 
-    return this.state.networkMap;
+    return this.state.networkService.networkMap;
   }
 
   private async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {
@@ -1385,7 +1386,7 @@ export default class Extension extends FWExtensionBase {
     const availableNamespaces: ProposalTypes.RequiredNamespaces = {};
 
     const namespaces: SessionTypes.Namespaces = {};
-    const chainInfoMap = this.state.networkMap;
+    const chainInfoMap = this.state.networkService.networkMap;
     const requiredEntries = Object.entries(requiredNamespaces);
     const optionalEntries = Object.entries(optionalNamespaces);
 
@@ -1564,7 +1565,7 @@ export default class Extension extends FWExtensionBase {
 
     const method = request.request.params.request.method;
     const [, chainId] = request.request.params.chainId.split(':');
-    const network = Object.values(this.state.networkMap).find((el) => el.chainId === chainId);
+    const network = Object.values(this.state.networkService.networkMap).find((el) => el.chainId === chainId);
 
     if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
 

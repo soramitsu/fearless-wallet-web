@@ -157,7 +157,7 @@ export class PoolsService {
       const currencyId1 = toKey(key1);
       const currencyId2 = toKey(key2);
 
-      const networkJson = this.state.networkService.getNetworkByKey(network);
+      const networkJson = this.state.networkService.getNetworkJson(network);
 
       const asset1 = networkJson?.assets.find(({ currencyId }) => isSameString(currencyId, currencyId1));
       const asset2 = networkJson?.assets.find(({ currencyId }) => isSameString(currencyId, currencyId2));

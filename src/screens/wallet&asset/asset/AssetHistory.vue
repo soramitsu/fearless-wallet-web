@@ -54,7 +54,7 @@ export default class AssetHistory extends Vue {
   @Getter(ExtensionGettersTypes.features) features!: Nullable<Features>;
 
   get selectedAssetId() {
-    return this.$route.params.assetId ?? '0';
+    return this.$route.params.assetId;
   }
 
   get providers() {
@@ -80,8 +80,7 @@ export default class AssetHistory extends Vue {
   }
 
   mounted() {
-    if (BaseApi.isEthereumNetwork(this.currency.mainNetwork))
-      fetchEvmBalance(this.selectedAssetId !== '0' ? this.selectedAssetId : undefined);
+    if (BaseApi.isEthereumNativeNetwork(this.selectedNetwork)) fetchEvmBalance(this.selectedAssetId);
   }
 
   togglePopupButton() {

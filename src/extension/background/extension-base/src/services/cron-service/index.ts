@@ -1,5 +1,4 @@
 import { logger as createLogger } from '@polkadot/util';
-import { type Logger } from '@polkadot/util/types';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import {
   CRON_AUTO_RECOVER_DOTSAMA_INTERVAL,
@@ -11,13 +10,11 @@ import type State from '@extension-base/background/handlers/State';
 import type { ServiceInfo } from '@extension-base/background/types/types';
 
 export class CronService {
-  public status: 'pending' | 'running' | 'stopped' = 'pending';
-  private logger: Logger;
+  private readonly logger = createLogger('Cron');
+  private isRunning = false;
   private cronMap: Record<string, unknown> = {};
 
-  constructor(private state: State) {
-    this.logger = createLogger('Cron');
-  }
+  constructor(private state: State) {}
 
   getCron(name: string) {
     return this.cronMap[name];
@@ -48,6 +45,7 @@ export class CronService {
   removeAllCrons() {
     Object.entries(this.cronMap).forEach(([key, interval]) => {
       clearInterval(interval as number);
+
       delete this.cronMap[key];
     });
   }
@@ -64,7 +62,7 @@ export class CronService {
   }
 
   start() {
-    if (this.status === 'running') return;
+    if (this.isRunning) return;
 
     this.logger.log('Starting cron jobs');
 
@@ -78,10 +76,12 @@ export class CronService {
       this.addCron('recoverApiMap', () => this.recoverApiMap(), CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
     }
 
-    this.status = 'running';
+    this.isRunning = true;
   }
 
   updateCron(serviceInfo: ServiceInfo) {
+    this.logger.log('Update Crones');
+
     // Если не подключены ни к одной сети или нет выбранного аккаунта
     if (!serviceInfo.currentAccountInfo || !this.checkNetworkAvailable(serviceInfo)) {
       this.removeCron('refreshPrice');
@@ -102,13 +102,9 @@ export class CronService {
   }
 
   stop() {
-    if (this.status === 'stopped') return;
-
     this.logger.log('Stopping cron jobs');
 
     this.removeAllCrons();
-
-    this.status = 'stopped';
   }
 
   recoverApiMap() {
@@ -128,6 +124,8 @@ export class CronService {
   }
 
   updateApiMapStatus() {
+    this.logger.log('Check API statuses');
+
     const { evm, substrate } = this.state.networkService.getApiMap;
 
     Object.entries(substrate).forEach(([key, { apiStatus }]) => {
@@ -139,12 +137,8 @@ export class CronService {
       else {
         api.api?.provider
           ._waitUntilReady()
-          .then(() => {
-            this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
-          })
-          .catch(() => {
-            this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
-          });
+          .then(() => this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED))
+          .catch(() => this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING));
       }
     });
   }

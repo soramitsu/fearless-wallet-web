@@ -2,6 +2,7 @@ import { type Network, Alchemy, type Nft } from 'alchemy-sdk';
 import { type NftService } from '@extension-base/services/nft-service';
 import type { AvailableNftResponse, FearlessNft, NftState } from '@extension-base/services/nft-service/types';
 import type State from '@extension-base/background/handlers/State';
+import { isSameString } from '@/helpers';
 
 export default class AlchemyNftController {
   sdk: Alchemy;
@@ -18,8 +19,9 @@ export default class AlchemyNftController {
 
   get readableNetwork() {
     return (
-      Object.values(this.state.networkMap).find((net) => net.chainId.toLowerCase() === this.chainId.toString())?.name ??
-      this.network
+      Object.values(this.state.networkService.networkMap).find(
+        (net) => net.chainId.toLowerCase() === this.chainId.toString()
+      )?.name ?? this.network
     );
   }
 
@@ -74,7 +76,10 @@ export default class AlchemyNftController {
     const ownedNfts = await this.getNfts(address);
     const collections = await this.getCollectionsForOwner(address);
 
-    const network = Object.values(this.state.networkMap).find((net) => net.chainId === this.chainId.toString());
+    const network = Object.values(this.state.networkService.networkMap).find(({ chainId }) =>
+      isSameString(chainId, this.chainId)
+    );
+
     const ownedCollections: NftState = {};
 
     for (const nft of ownedNfts.ownedNfts) {

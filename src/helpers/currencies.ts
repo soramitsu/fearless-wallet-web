@@ -3,7 +3,7 @@ import { type Wallet } from 'ethers';
 import { APIItemState } from '@extension-base/api/types/networks';
 import type { NetworkName, AssetsPrice, BuyProvider } from '@/interfaces';
 import type { NetworkJson } from '@extension-base/types';
-import type { BalanceItem } from '@extension-base/api/evm/types/ether';
+import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import { getNativeAssetName } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';

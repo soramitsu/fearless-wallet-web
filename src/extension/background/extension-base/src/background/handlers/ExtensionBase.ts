@@ -66,7 +66,7 @@ export default class FWExtensionBase {
     // если передали ethereumAddress, нужно сохранить ethereumAddress для аккаунта
     if (meta.ethereumAddress) {
       const cb = () =>
-        Object.keys(this.state.networkMap).forEach((network) => {
+        Object.keys(this.state.networkService.networkMap).forEach((network) => {
           if (isNativeEVMNetwork(network)) this.state.networkService.evmApiHandler.refreshEvmApi(network);
         });
 

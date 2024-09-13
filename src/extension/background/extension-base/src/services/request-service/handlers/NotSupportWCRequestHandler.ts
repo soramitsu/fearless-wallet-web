@@ -67,9 +67,7 @@ export class NotSupportWCRequestHandler {
   }
 
   public resetWallet() {
-    for (const request of Object.values(this.notSupportWCRequests)) {
-      request.reject(new Error('Reset wallet'));
-    }
+    for (const request of Object.values(this.notSupportWCRequests)) request.reject(new Error('Reset wallet'));
 
     this.notSupportWCSubject.next([]);
   }

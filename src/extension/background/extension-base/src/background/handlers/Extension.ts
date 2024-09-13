@@ -7,13 +7,12 @@ import { createPair } from '@polkadot/keyring';
 import { ethers, formatUnits, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
-import { createSwap } from '@extension-base/api/substrate/swaps';
+import { createSwap } from '@extension-base/api/substrate/sora';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { createSubscription, unsubscribe } from '@extension-base/services';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
-import { isNativeEVMNetwork, uniqueStringArray, getBalanceItem } from '@extension-base/background/utils/utils';
 import { type MetadataDef } from '@polkadot/extension-inject/types';
 import {
   isProposalExpired,
@@ -135,6 +134,11 @@ import type {
   IGetFilesResponse,
   VerifyTokenResponse,
 } from '@/interfaces';
+import {
+  isNativeEVMNetwork,
+  uniqueStringArray,
+  getBalanceItem,
+} from '@/extension/background/extension-base/src/background/handlers/utils';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
@@ -303,7 +307,7 @@ export default class Extension extends FWExtensionBase {
 
     assert(authRequest, 'Unable to find request');
 
-    authRequest.resolve({ authorizedAccounts, result: true });
+    authRequest.resolve({ authorizedAccounts });
 
     return true;
   }
@@ -561,7 +565,7 @@ export default class Extension extends FWExtensionBase {
     const { list: authList } = await this.getAuthList();
     const auth = authList[stripUrl(request.url)];
 
-    const network = Object.values(this.state.networkMap).find(
+    const network = Object.values(this.state.networkService.networkMap).find(
       (el) =>
         isSameString(el.genesisHash, auth.currentEvmNetworkKey) || isSameString(el.name, auth.currentEvmNetworkKey)
     );
@@ -727,7 +731,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   signingEvmSubscribe(id: string, port: Port): boolean {
-    const cb = createSubscription<'pri(signing.evmrequests)'>(id, port);
+    const cb = createSubscription<'pri(signing.evmRequests)'>(id, port);
 
     const evmSubscription = this.state.requestService.signEvmSubject.subscribe((requests): void => cb(requests));
 
@@ -764,13 +768,12 @@ export default class Extension extends FWExtensionBase {
 
   async removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
     const auths = await this.state.requestService.getAuthList();
+
     delete auths[url];
 
     this.state.requestService.setAuthorize(auths);
 
-    const newList = await this.state.requestService.getAuthList();
-
-    return { list: newList };
+    return { list: auths };
   }
 
   deleteAuthRequest(requestId: string): void {
@@ -1232,7 +1235,8 @@ export default class Extension extends FWExtensionBase {
 
   private subscribeNetworkMap(id: string, port: Port): Record<string, NetworkJson> {
     const cb = createSubscription<'pri(networkMap.getSubscription)'>(id, port);
-    const networkMapSubscription = this.state.networkService.subscribeNetworkMap().subscribe({
+
+    const networkMapSubscription = this.state.networkService.networkMapStore.subject.subscribe({
       next: (rs) => {
         cb(rs);
       },
@@ -1244,7 +1248,7 @@ export default class Extension extends FWExtensionBase {
       this.cancelSubscription(id);
     });
 
-    return this.state.networkMap;
+    return this.state.networkService.networkMap;
   }
 
   private async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {
@@ -1382,7 +1386,7 @@ export default class Extension extends FWExtensionBase {
     const availableNamespaces: ProposalTypes.RequiredNamespaces = {};
 
     const namespaces: SessionTypes.Namespaces = {};
-    const chainInfoMap = this.state.networkMap;
+    const chainInfoMap = this.state.networkService.networkMap;
     const requiredEntries = Object.entries(requiredNamespaces);
     const optionalEntries = Object.entries(optionalNamespaces);
 
@@ -1561,7 +1565,7 @@ export default class Extension extends FWExtensionBase {
 
     const method = request.request.params.request.method;
     const [, chainId] = request.request.params.chainId.split(':');
-    const network = Object.values(this.state.networkMap).find((el) => el.chainId === chainId);
+    const network = Object.values(this.state.networkService.networkMap).find((el) => el.chainId === chainId);
 
     if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
 
@@ -1879,7 +1883,7 @@ export default class Extension extends FWExtensionBase {
       case 'pri(signing.requests)':
         return this.signingSubscribe(id, port);
 
-      case 'pri(signing.evmrequests)':
+      case 'pri(signing.evmRequests)':
         return this.signingEvmSubscribe(id, port);
 
       // google

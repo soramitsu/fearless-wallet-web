@@ -12,7 +12,7 @@
           v-if="showEditAddressBook"
           :network="network"
           :_address="newAddress"
-          @setAddress="setAddress"
+          @toggleEditBook="toggleEditBook"
         />
 
         <HistoryBook
@@ -21,7 +21,7 @@
           :assetId="stakingAssetId"
           @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
           @setRecipient="setRecipient"
-          @setAddress="setAddress"
+          @toggleEditBook="toggleEditBook"
         />
 
         <div v-else-if="showMyWallets">
@@ -200,6 +200,7 @@ export default class MainStakingForm extends Vue {
   showHistoryBook = false;
   showMyWallets = false;
   isValidController = true;
+  showEditAddressBook = false;
   amount = '';
   stashBalance = '0';
   step = 1;
@@ -253,10 +254,6 @@ export default class MainStakingForm extends Vue {
     return this.showMyWallets || this.showHistoryBook || this.showEditAddressBook;
   }
 
-  get showEditAddressBook() {
-    return this.newAddress !== '';
-  }
-
   get network() {
     return this.stakingNetwork.network;
   }
@@ -282,11 +279,11 @@ export default class MainStakingForm extends Vue {
   }
 
   get header() {
+    if (this.showEditAddressBook) return 'assets.addContact';
+
     if (this.showHistoryBook) return 'assets.chooseFromHistory';
 
     if (this.showMyWallets) return 'assets.wallets';
-
-    if (this.showEditAddressBook) return 'assets.addContact';
 
     return `staking.${this.type}`;
   }
@@ -473,14 +470,20 @@ export default class MainStakingForm extends Vue {
       });
   }
 
+  toggleEditBook(address: string = '') {
+    this.showEditAddressBook = !this.showEditAddressBook;
+    this.showHistoryBook = !this.showHistoryBook;
+    this.newAddress = address;
+  }
+
   updateControllerAddress(value: string) {
     this.controllerAddress = value;
   }
 
   handlerBack() {
-    this.showMyWallets = false;
-    this.showHistoryBook = false;
-    this.newAddress = '';
+    if (this.showHistoryBook) this.toggleHistoryBookVisibility();
+    else if (this.showEditAddressBook) this.toggleEditBook();
+    else if (this.showMyWallets) this.toggleMyWalletsVisibility();
   }
 
   closeForm() {
@@ -528,11 +531,6 @@ export default class MainStakingForm extends Vue {
 
   paste() {
     this.setRecipient(getClipboard());
-  }
-
-  setAddress(address: string, showHistoryBook = false) {
-    this.newAddress = address;
-    this.showHistoryBook = showHistoryBook;
   }
 
   toggleMyWalletsVisibility() {

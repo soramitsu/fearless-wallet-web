@@ -1,20 +1,13 @@
 import { FPNumber } from '@sora-substrate/util';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
-import { getAssetOptions, getPrecisionValue } from '@extension-base/api/substrate/utils';
-import { getUtilityProps } from '@extension-base/background/utils/utils';
-import { type BasicTxResponse, type TokenGroup, SignerType } from '@extension-base/background/types/types';
-import { type Extrinsic } from '@extension-base/api/substrate/utils/types';
+import { getAssetOptions, getPrecisionValue } from '@extension-base/api/substrate';
+import { SignerType } from '@extension-base/background/types/types';
+import type { BasicTxResponse, TokenGroup } from '@extension-base/background/types/types';
+import type { Extrinsic, ExtrinsicTransferProps } from '@extension-base/api/substrate/types';
 import type State from '@extension-base/background/handlers/State';
-
-import { type NetworkName } from '@/interfaces';
+import type { NetworkName } from '@/interfaces';
+import { getUtilityProps } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { isSameString } from '@/helpers';
-
-type ExtrinsicTransferProps = {
-  to: string;
-  amount: string | undefined;
-  networkKey: NetworkName;
-  tokenBalance: TokenGroup;
-};
 
 export function createExtrinsicTransfer(props: ExtrinsicTransferProps, state: State): Extrinsic {
   const { amount, tokenBalance, to, networkKey } = props;

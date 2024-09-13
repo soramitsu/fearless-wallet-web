@@ -5,7 +5,6 @@ import {
   type BasicTxResponse,
   type Port,
 } from '@extension-base/background/types/types';
-import { getSoraAsset } from '@extension-base/api/substrate/sora';
 import { type u128 } from '@polkadot/types';
 import { type AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
 import { BehaviorSubject } from 'rxjs';
@@ -27,6 +26,7 @@ import type { Subscription } from 'rxjs';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkName } from '@/interfaces';
 import type { Asset } from '@sora-substrate/util/src/assets/types';
+import { getSoraAsset } from '@/extension/background/extension-base/src/api/substrate/sora';
 import { isSameString } from '@/helpers';
 
 const toReserve = (value: u128): string => new FPNumber(value).toString();
@@ -157,7 +157,7 @@ export class PoolsService {
       const currencyId1 = toKey(key1);
       const currencyId2 = toKey(key2);
 
-      const networkJson = this.state.networkService.getNetworkByKey(network);
+      const networkJson = this.state.networkService.getNetworkJson(network);
 
       const asset1 = networkJson?.assets.find(({ currencyId }) => isSameString(currencyId, currencyId1));
       const asset2 = networkJson?.assets.find(({ currencyId }) => isSameString(currencyId, currencyId2));
@@ -221,8 +221,8 @@ export class PoolsService {
     const tokenBalance1 = this.state.balanceService.getTokenBalance(address, assetId1);
     const tokenBalance2 = this.state.balanceService.getTokenBalance(address, assetId2);
 
-    const asset1 = getSoraAsset({ assetId: assetId1, tokenBalance: tokenBalance1, network: networkName }, this.state);
-    const asset2 = getSoraAsset({ assetId: assetId2, tokenBalance: tokenBalance2, network: networkName }, this.state);
+    const asset1 = getSoraAsset({ assetId: assetId1, tokenBalance: tokenBalance1, network: networkName });
+    const asset2 = getSoraAsset({ assetId: assetId2, tokenBalance: tokenBalance2, network: networkName });
 
     const accountLiquidityPool = this.getAccountLiquidityPool(asset1.address, asset2.address);
 

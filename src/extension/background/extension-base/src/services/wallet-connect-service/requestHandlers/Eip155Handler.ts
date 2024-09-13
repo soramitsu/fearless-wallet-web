@@ -77,13 +77,11 @@ export default class Eip155RequestHandler {
 
       const chainId = _chainId.split(':')[1];
 
-      const [networkKey, chainInfo] = this.state.networkService.findNetworkKeyByChainId(chainId);
+      const networkJson = this.state.networkService.findNetworkJsonByChainId(chainId);
 
-      if (!networkKey || !chainInfo) {
-        throw new Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + address);
-      }
+      if (!networkJson) throw new Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + address);
 
-      const chainState = this.state.networkMap[networkKey];
+      const chainState = this.state.networkService.networkMap[networkJson.name];
 
       const createRequest = () => {
         this.requestService.evmRequestHandler
@@ -99,18 +97,14 @@ export default class Eip155RequestHandler {
           });
       };
 
-      if (!chainState.active) {
+      if (!chainState.active)
         this.state
-          .setActiveNetworks(networkKey)
+          .setActiveNetworks(networkJson.name)
           .then(createRequest)
           .catch(() => {
-            throw new Error(getSdkError('USER_REJECTED').message + ' Can not active chain: ' + chainInfo.name);
+            throw new Error(getSdkError('USER_REJECTED').message + ' Can not active chain: ' + networkJson.name);
           });
-      } else {
-        createRequest();
-      }
-    } else {
-      throw Error(getSdkError('INVALID_METHOD').message + ' ' + method);
-    }
+      else createRequest();
+    } else throw Error(getSdkError('INVALID_METHOD').message + ' ' + method);
   }
 }

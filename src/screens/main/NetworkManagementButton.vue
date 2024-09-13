@@ -19,10 +19,6 @@ export default class NetworkManagementButton extends Vue {
   @Prop(String) icon!: string;
   @Prop(String) selectedNetwork!: string;
 
-  onToggle() {
-    this.$emit('onToggle');
-  }
-
   get isAssetPage() {
     const route = this.$route.name;
 
@@ -39,6 +35,10 @@ export default class NetworkManagementButton extends Vue {
     if (this.isAssetPage) return 'network-management--disabled';
 
     return '';
+  }
+
+  onToggle() {
+    this.$emit('onToggle');
   }
 }
 </script>

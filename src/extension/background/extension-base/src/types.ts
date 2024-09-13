@@ -1,4 +1,4 @@
-import { type CustomTokenType } from '@extension-base/api/evm/types/ether';
+import { type CustomTokenType } from '@extension-base/api/evm/types';
 import { type NETWORK_STATUS } from './api/types/networks';
 import type { KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { AssetType, BuyProvider, XcmVersion, ExternalApi } from '@/interfaces';
@@ -103,8 +103,6 @@ export interface NetworkJson {
   disabled: boolean;
   // Ethereum related information for predefined network only
   isEthereum?: boolean; // Only show network with isEthereum=true when select one EVM account // user input
-  // Native token information
-  decimals?: number;
   // Other information
   networkStatus?: NETWORK_STATUS;
   requestId?: string;
@@ -115,7 +113,6 @@ export interface NetworkJson {
   name: string;
   externalApi?: ExternalApi;
   assets: Asset[];
-  isEthereumNetwork?: boolean;
   customNodes: Node[];
   nodes: Node[];
   addressPrefix: number;

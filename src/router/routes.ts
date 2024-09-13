@@ -91,7 +91,6 @@ export enum Components {
   MyStake = 'MyStake',
   Pools = 'Pools',
   PoolDetails = 'PoolDetails',
-  NoFound = 'NoFound',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
   WalletConnectInitAuth = 'WalletConnectInitAuth',

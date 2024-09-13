@@ -48,10 +48,10 @@
         </template>
 
         <EditAddressBook
-          v-if="showEditAddressBook"
+          v-if="popupControls.showEditAddressBook"
           :network="network"
           :_address="formInfo.newAddress"
-          @setAddress="setAddress"
+          @toggleEditBook="toggleEditBook"
         />
 
         <HistoryBook
@@ -60,7 +60,7 @@
           :assetId="formInfo.assetId"
           @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
           @setRecipient="setRecipient"
-          @setAddress="setAddress"
+          @toggleEditBook="toggleEditBook"
         />
 
         <div v-else-if="popupControls.showMyWallets">
@@ -129,6 +129,7 @@ const popupControls = reactive({
   showConfirmationPasswordPopup: false,
   showHistoryBook: false,
   showMyWallets: false,
+  showEditAddressBook: false,
 });
 
 const errors = reactive({
@@ -143,7 +144,6 @@ const formInfo = reactive({
   assetId: '',
 });
 
-const showEditAddressBook = computed(() => formInfo.newAddress !== '');
 const id = computed(() => route.params.id);
 const contract = computed(() => route.params.contract);
 const nfts = computed<NftCollection[]>(() => store.getters[AccountsGettersTypes.nfts] ?? {});
@@ -175,11 +175,11 @@ const assetSymbol = computed(() => {
 const formatFeeString = computed(() => `${n(+formInfo.fee, 'decimalPrecise')} ${assetSymbol.value?.toUpperCase()}`);
 
 const header = computed(() => {
+  if (popupControls.showEditAddressBook) return 'assets.addContact';
+
   if (popupControls.showHistoryBook) return 'assets.chooseFromHistory';
 
   if (popupControls.showMyWallets) return 'assets.wallets';
-
-  if (showEditAddressBook.value) return 'assets.addContact';
 
   return 'common.send';
 });
@@ -195,7 +195,7 @@ const actionBtnName = computed(() => {
 const showBackIcon = computed(
   () =>
     popupControls.showHistoryBook ||
-    showEditAddressBook.value ||
+    popupControls.showEditAddressBook ||
     popupControls.showMyWallets ||
     popupControls.showConfirmScreen
 );
@@ -221,13 +221,13 @@ const tx = computed<NftTx>(() => ({
 const showSendForm = computed(
   () =>
     !popupControls.showHistoryBook &&
-    !showEditAddressBook.value &&
+    !popupControls.showEditAddressBook &&
     !popupControls.showMyWallets &&
     !popupControls.showConfirmScreen
 );
 
 const showSubmitBtn = computed(
-  () => !popupControls.showHistoryBook && !showEditAddressBook.value && !popupControls.showMyWallets
+  () => !popupControls.showHistoryBook && !popupControls.showEditAddressBook && !popupControls.showMyWallets
 );
 
 watch(formInfo, validateAddress);
@@ -236,23 +236,26 @@ onMounted(validateTx);
 
 const onConfirmClose = () => router.push({ name: Components.Nfts });
 const paste = () => (formInfo.to = getClipboard());
-const toggleMyWalletsVisibility = () => (popupControls.showMyWallets = !popupControls.showMyWallets);
-const toggleHistoryBookVisibility = () => (popupControls.showHistoryBook = !popupControls.showHistoryBook);
+
 const setRecipient = (address = '') => (formInfo.to = address);
 const getStatusWallet = (ethereumAddress: string) => ethereumAddress === formInfo.to;
 const onClose = () => router.back();
 
-const setAddress = (address: string, showHistoryBook = false) => {
+const toggleMyWalletsVisibility = () => (popupControls.showMyWallets = !popupControls.showMyWallets);
+const toggleHistoryBookVisibility = () => (popupControls.showHistoryBook = !popupControls.showHistoryBook);
+
+const toggleEditBook = (address: string = '') => {
+  popupControls.showEditAddressBook = !popupControls.showEditAddressBook;
+  popupControls.showHistoryBook = !popupControls.showHistoryBook;
   formInfo.newAddress = address;
-  popupControls.showHistoryBook = showHistoryBook;
 };
 
 const onBack = () => {
   popupControls.showConfirmScreen = false;
-  popupControls.showMyWallets = false;
 
-  if (showEditAddressBook.value) setAddress('', true);
-  else popupControls.showHistoryBook = false;
+  if (popupControls.showEditAddressBook) toggleEditBook();
+  else if (popupControls.showHistoryBook) toggleHistoryBookVisibility();
+  else if (popupControls.showMyWallets) toggleMyWalletsVisibility();
 };
 
 const setWallet = (ethereumAddress: string) => {

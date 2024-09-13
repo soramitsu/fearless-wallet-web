@@ -11,7 +11,7 @@
         <div class="value-container">
           <Loading v-if="isLoading" :width="28" />
 
-          <div v-else class="value-row">
+          <div v-else class="value-line">
             <Icon
               v-if="iconValue"
               :icon="iconValue"
@@ -145,7 +145,7 @@ const directionValue = computed(() => (props.isIconValuePrepend ? 'row' : 'row-r
     height: 18px;
   }
 
-  .value-row {
+  .value-line {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -169,7 +169,6 @@ const directionValue = computed(() => (props.isIconValuePrepend ? 'row' : 'row-r
     display: flex;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
 
     .price {
       color: $gray-color;

@@ -1,4 +1,3 @@
-import { Subject } from 'rxjs';
 import axios from 'axios';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import { type NetworkJson } from '@extension-base/types';
@@ -7,30 +6,31 @@ import { storage } from '@extension-base/stores/Storage';
 import { EvmApiHandler } from '@extension-base/services/network-service/handlers/EvmApiHandler';
 import { SubstrateApiHandler } from '@extension-base/services/network-service/handlers/SubstrateApiHandler';
 import { type KeyringService } from '@extension-base/services';
-import { isEthereumNetwork, isNativeEVMNetwork } from '@extension-base/background/utils/utils';
 import { type ApiMap } from '@extension-base/background/types/types';
+import { logger as createLogger } from '@polkadot/util';
 import type State from '@extension-base/background/handlers/State';
+import {
+  isEthereumNetwork,
+  isNativeEVMNetwork,
+} from '@/extension/background/extension-base/src/background/handlers/utils';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { URLS } from '@/consts/urls';
 import { isSameString } from '@/helpers';
+import { type NetworkName } from '@/interfaces';
+
+export type NetworkMap = Record<string, NetworkJson>;
 
 export class NetworkService {
-  readonly keyringService: KeyringService;
-  private networkMapSubject: Subject<Record<string, NetworkJson>>;
-  readonly networkMapStore: NetworkMapStore; // persist custom networkMap by user
+  private readonly logger = createLogger('Network_Service');
+  readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networksGithub: NetworkJson[] = []; // networks from github
-  public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
-  public selectedNetworks: Record<string, string>;
+  public networkMap: NetworkMap = {}; // mapping to networkMapStore, for uses in background
+  public selectedNetworks: Record<string, string> = {};
+  evmApiHandler = new EvmApiHandler(this.networkMap);
   substrateApiHandler: SubstrateApiHandler;
-  evmApiHandler: EvmApiHandler;
 
-  constructor(state: State, keyringService: KeyringService) {
-    this.keyringService = keyringService;
-    this.networkMapSubject = new Subject<Record<string, NetworkJson>>();
-    this.networkMapStore = new NetworkMapStore();
-    this.selectedNetworks = {};
+  constructor(readonly keyringService: KeyringService, state: State) {
     this.substrateApiHandler = new SubstrateApiHandler(this, state);
-    this.evmApiHandler = new EvmApiHandler(this);
 
     storage.get(['selectedNetworks']).then(({ selectedNetworks }) => {
       if (selectedNetworks) this.selectedNetworks = selectedNetworks;
@@ -41,11 +41,24 @@ export class NetworkService {
     return Object.values(this.networkMap);
   }
 
+  get evmNativeNetworkValues() {
+    return this.networkValues.filter(({ name }) => isNativeEVMNetwork(name));
+  }
+
   get assetsMap() {
     return this.networkValues.map(({ assets }) => assets).flat();
   }
 
+  get getApiMap(): ApiMap {
+    return {
+      substrate: this.substrateApiHandler.api,
+      evm: this.evmApiHandler.api,
+    };
+  }
+
   public async initNetworkMap() {
+    this.logger.log('Init Network Map');
+
     const { data: networks } = await axios.get<NetworkJson[]>(URLS.CHAINS);
 
     const networksFromStorage = await this.getStoredNetworks();
@@ -56,7 +69,7 @@ export class NetworkService {
       .filter((el) => {
         if (el.disabled) return false;
 
-        const isTestnet = !!el.options?.some((option) => option === 'testnet');
+        const isTestnet = !!el.options?.some((option) => isSameString(option, 'testnet'));
 
         if (process.env.VUE_APP_TEST_ONLY !== undefined) return isTestnet;
 
@@ -71,9 +84,7 @@ export class NetworkService {
         network.nodes.forEach(({ name, url }) => (providers[name] = url));
 
         const isEthereum = isEthereumNetwork(network.name);
-        const networkFromStorage = networksFromStorage ? networksFromStorage[network.name] : undefined;
-
-        const favorite = networkFromStorage && networkFromStorage.favorite ? networkFromStorage.favorite : [];
+        const favorite = networksFromStorage?.[network.name]?.favorite ?? [];
 
         this.networkMap[network.name] = {
           ...network,
@@ -91,10 +102,10 @@ export class NetworkService {
 
     const activeNetworks = this.getActiveNetworks();
 
-    Object.keys(this.networkMap).forEach((key) => {
-      const isExists = activeNetworks.some(({ name }) => name.toLowerCase() === key.toLowerCase());
+    Object.keys(this.networkMap).forEach((networkName) => {
+      const isActiveNetwork = activeNetworks.some(({ name }) => isSameString(name, networkName));
 
-      this.networkMap[key].active = isExists;
+      this.networkMap[networkName].active = isActiveNetwork;
     });
 
     this.keyringService.getSubstrateAccounts().forEach((el) => {
@@ -105,98 +116,66 @@ export class NetworkService {
     this.updateNetworkStore();
   }
 
-  updateNetworks() {
-    this.networkMapSubject.next(this.networkMap);
-    this.updateNetworkStore();
-  }
-
   getStoredNetworks(): Promise<Record<string, NetworkJson> | undefined> {
-    return new Promise<Record<string, NetworkJson>>((res) => {
-      this.networkMapStore.get('NetworkMap', (accountsFromStorage) => {
-        res(accountsFromStorage);
-      });
-    });
+    return new Promise((resolve) =>
+      this.networkMapStore.get('NetworkMap', (accountsFromStorage) => resolve(accountsFromStorage))
+    );
   }
 
   updateNetworkStore() {
     this.networkMapStore.set('NetworkMap', this.networkMap);
   }
 
-  get getApiMap(): ApiMap {
-    return {
-      substrate: this.substrateApiHandler.api,
-      evm: this.evmApiHandler.api,
-    };
-  }
-
-  subscribeNetworkMap() {
-    return this.networkMapStore.subject;
-  }
-
-  getNetworkGenesisHashByKey(key: string): string {
-    const network = this.networkMap[key];
-
-    return network && network.genesisHash;
-  }
-
-  getNetworkByKey(key: string): NetworkJson {
-    return this.networkValues.find((network) => isSameString(network.name, key))!;
-  }
-
-  findNetworkKeyByChainId(_chainId?: string | null): [string | undefined, NetworkJson | undefined] {
-    if (!_chainId) return [undefined, undefined];
-
-    const rs = Object.entries(this.networkMap).find(([, chainInfo]) => chainInfo.chainId === _chainId);
-
-    if (rs) return rs;
-    else return [undefined, undefined];
-  }
-
   saveSelectedNetworks() {
     storage.set({ selectedNetworks: this.selectedNetworks });
   }
 
-  updateNetworkStatus(key: string, status: NETWORK_STATUS) {
-    const networkKey = this.getNetworkByKey(key)?.name ?? '';
+  getNetworkJson(networkNameOrChainId: NetworkName): NetworkJson {
+    return this.networkValues.find(({ name }) => isSameString(name, networkNameOrChainId))!;
+  }
+
+  findNetworkJsonByChainId(_chainId?: string | null): NetworkJson | undefined {
+    return this.networkValues.find(({ chainId }) => isSameString(chainId, _chainId));
+  }
+
+  updateNetworkStatus(networkName: string, status: NETWORK_STATUS) {
+    const networkKey = this.getNetworkJson(networkName)?.name ?? '';
 
     if (this.networkMap[networkKey].networkStatus === status) return;
 
     this.networkMap[networkKey].networkStatus = status;
 
-    this.updateNetworks();
+    this.updateNetworkStore();
   }
 
   public getActiveNetworks() {
-    const networks = this.networkValues;
+    const entries = Object.entries(this.selectedNetworks);
+    const isAll = entries.some(([, value]) => value === ALL_NETWORKS);
+
+    if (isAll) return this.networkValues;
+
     const uniqNetworks = new Set<NetworkJson>();
-    const selectedNetworks = Object.keys(this.selectedNetworks);
-    const isAllNetworkPicked = selectedNetworks.some((address) => this.selectedNetworks[address] === ALL_NETWORKS);
 
-    if (isAllNetworkPicked) return networks;
-
-    selectedNetworks.forEach((address) => {
-      const value = this.selectedNetworks[address];
-
+    entries.forEach(([address, value]) => {
       if (value === POPULAR_NETWORKS) {
-        const popular = networks.filter((el) => el.rank !== undefined);
+        const popular = this.networkValues.filter((el) => el.rank !== undefined);
+
         popular.forEach((el) => uniqNetworks.add(el));
-
-        return;
-      }
-
-      if (value === FAVORITE_NETWORKS) {
-        const favorite = networks.filter((el) => el.favorite.length && el.favorite.includes(address));
+      } else if (value === FAVORITE_NETWORKS) {
+        const favorite = this.networkValues.filter((el) => el.favorite.length && el.favorite.includes(address));
 
         favorite.forEach((el) => uniqNetworks.add(el));
+      } else {
+        const singleNetwork = this.networkValues.find((network) => network.name === value);
 
-        return;
+        if (singleNetwork) uniqNetworks.add(singleNetwork);
       }
-
-      const singleNetwork = networks.find((network) => network.name === value);
-
-      if (singleNetwork) uniqNetworks.add(singleNetwork);
     });
-    console.info(Array.from(uniqNetworks), 'set this to Active');
+
+    this.logger.log(
+      'Set active networks',
+      Array.from(uniqNetworks).map(({ name }) => name)
+    );
 
     return Array.from(uniqNetworks);
   }
@@ -205,21 +184,21 @@ export class NetworkService {
     const activeNetworks = this.networkValues.filter(({ active }) => active);
 
     for (const network of activeNetworks) {
-      const { name, isEthereum } = network;
+      const { name } = network;
 
-      if (isEthereum && isNativeEVMNetwork(name)) {
+      if (isNativeEVMNetwork(name)) {
         if (!this.evmApiHandler.api[name] || !this.evmApiHandler.api[name].api?.ready)
           this.evmApiHandler.initEvmApi(network);
       } else {
-        const initSubstrateApies = () => {
+        const initSubstrateApis = () => {
           this.resetApiRetries();
 
           this.substrateApiHandler.initApi(network);
         };
 
-        if (this.substrateApiHandler.api[name]) {
-          this.substrateApiHandler.api[name].api?.isReadyOrError.catch(initSubstrateApies);
-        } else initSubstrateApies();
+        if (this.substrateApiHandler.api[name])
+          this.substrateApiHandler.api[name].api?.isReadyOrError.catch(initSubstrateApis);
+        else initSubstrateApis();
       }
     }
   }
@@ -232,7 +211,7 @@ export class NetworkService {
   }
 
   public upsertNetworkMap(data: NetworkJson, callback?: () => void): boolean {
-    const { name, currentProvider, chain, paraId, decimals, customNodes, isEthereum } = data;
+    const { name, currentProvider, chain, paraId, customNodes, isEthereum } = data;
 
     if (name in this.networkMap) {
       const network = this.networkMap[name];
@@ -244,9 +223,6 @@ export class NetworkService {
       if (currentProvider !== network.currentProvider && currentProvider) network.currentProvider = currentProvider;
 
       network.chain = chain;
-
-      if (decimals) network.decimals = decimals;
-
       network.paraId = paraId;
     } else {
       // insert
@@ -267,9 +243,9 @@ export class NetworkService {
       else this.substrateApiHandler.initApi(data);
     }
 
-    this.updateNetworks();
+    this.updateNetworkStore();
 
-    callback && callback();
+    callback?.();
 
     return true;
   }
@@ -279,18 +255,23 @@ export class NetworkService {
     if (this.networkMap[networkKey].networkStatus === NETWORK_STATUS.DISCONNECTED) return true;
 
     const lowerKey = networkKey.toLowerCase();
-    if (this.networkMap[networkKey]?.isEthereum) {
+
+    if (this.evmApiHandler.api[lowerKey]) {
       this.evmApiHandler.api[lowerKey].api?.destroy();
 
       delete this.evmApiHandler.api[lowerKey].api;
-    } else delete this.substrateApiHandler.api[lowerKey].api;
+    } else {
+      this.substrateApiHandler.api[networkKey].provider?.disconnect();
+
+      delete this.substrateApiHandler.api[lowerKey].api;
+    }
 
     this.networkMap[networkKey].active = false;
     this.updateNetworkStatus(networkKey, NETWORK_STATUS.DISCONNECTED);
 
-    this.updateNetworks();
+    this.updateNetworkStore();
 
-    callback && callback();
+    callback?.();
 
     return true;
   }

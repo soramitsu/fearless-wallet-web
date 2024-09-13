@@ -4,7 +4,7 @@ import { createSubscription, unsubscribe } from '@extension-base/services';
 import AlchemyNftController from '@extension-base/services/nft-service/handlers/AlchemyNftSdk';
 import { PROD_NFT_NETWORKS } from '@extension-base/services/nft-service/consts';
 import { storage } from '@extension-base/stores/Storage';
-import { getContract } from '@extension-base/api/evm/utils/eth';
+import { getContract } from '@extension-base/api/evm/contracts';
 import { parseEther, formatUnits, Wallet, type Contract } from 'ethers';
 import {
   BasicTxErrorCode,
@@ -12,7 +12,6 @@ import {
   type RequestNftTransfer,
   type ResponseNftTransfer,
 } from '@extension-base/background/types/types';
-import { getBalanceItem } from '@extension-base/background/utils/utils';
 import { FPNumber } from '@sora-substrate/util';
 import { calcEvmFees } from '@extension-base/api/evm/transfer';
 import type {
@@ -25,6 +24,7 @@ import type {
   RequestSettingsChangePayload,
 } from '@extension-base/services/nft-service/types';
 import type State from '@extension-base/background/handlers/State';
+import { getBalanceItem } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
 
 export class NftService {
@@ -93,7 +93,7 @@ export class NftService {
   }
 
   availableNftsForContract({ network, contract, address, pageKey }: AvailableNftPayload) {
-    const net = this.state.networkService.getNetworkByKey(network);
+    const net = this.state.networkService.getNetworkJson(network);
     const key = PROD_NFT_NETWORKS[+net.chainId];
 
     if (!this.sdks[key])
@@ -217,7 +217,7 @@ export class NftService {
   async checkSend({ from, tokenId, network, contract: contractAddress, type }: NftTx): Promise<CheckNftResponse> {
     const api = this.state.getEvmApi(network)?.api;
     if (!api) throw new Error('API not found');
-    const networkJson = this.state.networkService.getNetworkByKey(network);
+    const networkJson = this.state.networkService.getNetworkJson(network);
     const utilityAsset = networkJson.assets.find((el) => el.isUtility)!;
     const contract = await getContract(contractAddress, api, type === 'ERC721' ? 'ERC721' : 'ERC1155');
     const feeData = await api.getFeeData();

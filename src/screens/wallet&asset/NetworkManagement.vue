@@ -11,10 +11,10 @@
       />
       <Tooltip text="common.copied" target=".search-input" placement="bottom" />
 
-      <Tabs v-show="showTabs" :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
+      <Tabs :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
 
       <div v-show="!isNetworksExists" class="network__list-no-found" data-testid="networkNoFound">
-        {{ $t('header.networkManagement.nofound') }}
+        {{ $t('header.networkManagement.notFound') }}
       </div>
 
       <NetworkItem
@@ -110,10 +110,9 @@ export default class NetworkManagement extends Vue {
   @Getter(AccountGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountGettersTypes.selectedWallet) selectedWallet!: Wallet;
   @Getter(AccountGettersTypes.getAccounts) accounts!: AccountJson[];
-
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
   @Action(NetworksActionsTypes.TOGGLE_FAVORITE_NETWORK) setFavorite!: (props: SetFavoriteNetwork) => Promise<boolean>;
   @Mutation(AccountMutationsTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
 
   get isGroupSelected() {
     return this.selectedNetwork === this.activeTab;
@@ -158,16 +157,6 @@ export default class NetworkManagement extends Vue {
     const filter = this.filterValue.trim().toLowerCase();
 
     return this.sortAvailableNetworks.filter(({ name }) => name.toLowerCase().includes(filter));
-  }
-
-  get showTabs() {
-    if (!this.isNetworksExists) {
-      if (this.filterValue.trim() !== '') return false;
-
-      return true;
-    }
-
-    return true;
   }
 
   get isNetworksExists() {

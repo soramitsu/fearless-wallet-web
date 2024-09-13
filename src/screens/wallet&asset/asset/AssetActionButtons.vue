@@ -56,7 +56,7 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { getNativeAssetName } from '@extension-base/background/utils/utils';
+import { getNativeAssetName } from '@extension-base/background/handlers/utils';
 import type { NetworkJson } from '@extension-base/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';

@@ -1,12 +1,12 @@
 import axios from 'axios';
 import { loadScript, unloadScript } from 'vue-plugin-load-script';
 import { v4 as uuidv4 } from 'uuid';
-import { getBalanceItem } from '@extension-base/background/utils/utils';
 import jwtDecode from 'jwt-decode';
 import { FPNumber } from '@sora-substrate/util';
-import { type TokenGroup } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import type { JwtPayload } from 'jwt-decode';
 import type { Status } from '@/consts/soraCard';
+import { getBalanceItem } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { IS_PRODUCTION } from '@/consts/global';
 import { soraCardController } from '@/controllers';
 import { VerificationStatus, KycStatus } from '@/consts/soraCard';

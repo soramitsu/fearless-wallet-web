@@ -2,11 +2,10 @@ import { BehaviorSubject } from 'rxjs';
 import { assert } from '@polkadot/util';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
 import AuthorizeStore from '@extension-base/stores/Authorize';
-import { isEthereumAddress } from '@polkadot/util-crypto';
 import { getId } from '@extension-base/utils';
 import { type DAppChainInfoPayload } from '@extension-base/services/request-service/types';
 import { type NetworkJson } from '@extension-base/types';
-import { isNativeEVMNetwork } from '../../../background/utils/utils';
+import type State from '@extension-base/background/handlers/State';
 import type {
   Resolver,
   AuthorizeRequest,
@@ -14,14 +13,17 @@ import type {
   AuthResponse,
   AuthUrls,
   RequestAuthorizeTab,
+  AuthUrlInfo,
 } from '@extension-base/background/types/types';
-import type { NetworkService, RequestService } from '@extension-base/services';
+import type { KeyringService, NetworkService, RequestService } from '@extension-base/services';
+import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 
 const AUTH_URLS_KEY = 'authUrls';
 
 export class AuthRequestHandler {
   private readonly requestService: RequestService;
   private readonly networkService: NetworkService;
+  private readonly keyringService: KeyringService;
 
   readonly authRequests: Record<string, AuthRequest> = {};
   private authorizeCached: AuthUrls = {};
@@ -30,11 +32,12 @@ export class AuthRequestHandler {
   private readonly authorizeUrlSubject = new BehaviorSubject<AuthUrls>({});
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
 
-  constructor(requestService: RequestService, networkService: NetworkService) {
+  constructor(requestService: RequestService, state: State) {
     this.getAuthorize((auths) => (this.authorizeCached = auths ?? {}));
 
     this.requestService = requestService;
-    this.networkService = networkService;
+    this.networkService = state.networkService;
+    this.keyringService = state.keyringService;
   }
 
   public get numAuthRequests(): number {
@@ -47,6 +50,10 @@ export class AuthRequestHandler {
 
   public get subscribeEvmChainChange() {
     return this.evmChainSubject;
+  }
+
+  public get subscribeAuthorizeUrlSubject() {
+    return this.authorizeUrlSubject;
   }
 
   private get allAuthRequests(): AuthorizeRequest[] {
@@ -77,7 +84,6 @@ export class AuthRequestHandler {
 
   public getAuthorize(update: (value: AuthUrls) => void): void {
     // This action can be use many by DApp interaction => caching it in memory
-
     if (Object.keys(this.authorizeCached).length) update(this.authorizeCached);
     else
       this.authorizeStore.get('authUrls', (data) => {
@@ -94,10 +100,11 @@ export class AuthRequestHandler {
 
   public authComplete = (
     id: string,
+    existedAuth: AuthUrlInfo,
     resolve: (resValue: boolean) => void,
     reject: (error: Error) => void
   ): Resolver<AuthResponse> => {
-    const complete = async (authorizedAccounts: string[] = [], isAllowed = true) => {
+    const complete = async (_authorizedAccounts: string[] = [], isAllowed = true) => {
       const {
         id: idStr,
         request: { origin },
@@ -108,6 +115,7 @@ export class AuthRequestHandler {
 
       if (!isAllowed) {
         delete this.authRequests[id];
+
         this.updateIconAuth(true);
 
         return;
@@ -115,8 +123,18 @@ export class AuthRequestHandler {
 
       const stripedUrl = stripUrl(url);
 
+      const substrateAccount = this.keyringService.getAccount(_authorizedAccounts[0]);
+      const ethereumAddress = substrateAccount?.meta.ethereumAddress as string;
+
+      const evmAuthorizedAccount =
+        accountAuthType !== 'substrate' ? ethereumAddress : existedAuth?.evmAuthorizedAccount ?? '';
+
+      const authorizedAccounts =
+        accountAuthType !== 'evm' ? _authorizedAccounts : existedAuth?.authorizedAccounts ?? [];
+
       this.authorizeCached[stripedUrl] = {
         authorizedAccounts,
+        evmAuthorizedAccount,
         count: 0,
         isAllowed: true,
         accountAuthType,
@@ -135,13 +153,13 @@ export class AuthRequestHandler {
     };
 
     return {
-      reject: (error: Error): void => {
-        complete([], false);
-        reject(error);
-      },
       resolve: ({ authorizedAccounts }: AuthResponse): void => {
         complete(authorizedAccounts);
         resolve(true);
+      },
+      reject: (error: Error): void => {
+        complete([], false);
+        reject(error);
       },
     };
   };
@@ -161,34 +179,30 @@ export class AuthRequestHandler {
 
     const existedAuth = authList[idStr];
     const existedAccountAuthType = existedAuth?.accountAuthType;
-    const confirmAnotherType = existedAccountAuthType !== 'both' && existedAccountAuthType !== request.accountAuthType;
+    const isNewType = existedAccountAuthType !== 'both' && existedAccountAuthType !== request.accountAuthType;
 
+    if (request.accountAuthType === 'evm') {
+      if (existedAuth?.evmAuthorizedAccount !== '' && !request.reConfirm) return false;
+    }
     // Reconfirm if check auth for empty list
-    if (existedAuth) {
+    else if (existedAuth) {
       if (request.reConfirm) request.origin = existedAuth.origin;
 
-      const inBlackList = !existedAuth.isAllowed;
+      const inBlackList = !(existedAuth?.isAllowed ?? true);
 
       if (inBlackList) throw new Error(`The source ${url} is not allowed to interact with this extension`);
 
-      let allowedListByRequestType = [...existedAuth.authorizedAccounts];
-
-      allowedListByRequestType = allowedListByRequestType.filter((a) => {
-        if (accountAuthType === 'evm') return isEthereumAddress(a);
-        if (accountAuthType === 'substrate') return !isEthereumAddress(a);
-
-        return true;
-      });
+      const allowedListByRequestType = existedAuth.authorizedAccounts;
 
       // Prevent appear confirmation popup
-      if (!confirmAnotherType && !request.reConfirm && allowedListByRequestType.length !== 0) return false;
+      if (!isNewType && !request.reConfirm && allowedListByRequestType.length !== 0) return false;
     }
 
     return new Promise((resolve, reject): void => {
       const id = getId();
 
       this.authRequests[id] = {
-        ...this.authComplete(id, resolve, reject),
+        ...this.authComplete(id, existedAuth, resolve, reject),
         id,
         idStr,
         request,
@@ -207,10 +221,6 @@ export class AuthRequestHandler {
     return this.authRequests[id];
   }
 
-  public get subscribeAuthorizeUrlSubject() {
-    return this.authorizeUrlSubject;
-  }
-
   public ensureUrlAuthorized(url: string): Promise<boolean> {
     const idStr = stripUrl(url);
 
@@ -218,9 +228,7 @@ export class AuthRequestHandler {
       this.getAuthorize((authUrls) => {
         const entry = Object.keys(authUrls).includes(idStr);
 
-        if (!entry) {
-          reject(new Error(`The source ${url} has not been enabled yet`));
-        }
+        if (!entry) reject(new Error(`The source ${url} has not been enabled yet`));
 
         resolve(true);
       });
@@ -244,10 +252,9 @@ export class AuthRequestHandler {
 
     return chainInfo;
   }
+
   public resetWallet() {
-    for (const request of this.authValues) {
-      request.reject(new Error('Reset wallet'));
-    }
+    for (const request of this.authValues) request.reject(new Error('Reset wallet'));
 
     this.authSubject.next([]);
     this.setAuthorize({});

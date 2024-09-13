@@ -1,6 +1,6 @@
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { EngineTypes, SignClientTypes, SessionTypes } from '@walletconnect/types';
-import type { EvmSendTransactionParams } from '@extension-base/api/evm/types/ether';
+import type { EvmSendTransactionParams } from '@extension-base/api/evm/types';
 import type { Resolver } from '@extension-base/background/types/types';
 
 //TODO refactoring types

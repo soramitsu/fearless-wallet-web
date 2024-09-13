@@ -3,6 +3,7 @@
     <ExternalLogo v-if="icon" :name="icon" :width="24" class="icon-info" :class="classes" />
 
     {{ text }}
+
     <template v-slot:details>
       <CircleButton
         iconName="chevron-right"

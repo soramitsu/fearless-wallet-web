@@ -63,9 +63,9 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { type TokenGroup } from '@extension-base/background/types/types';
 import { APIItemState } from '@extension-base/api/types/networks';
 import HistoryItem from './HistoryItem.vue';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -118,12 +118,13 @@ export default class AssetNetworks extends Vue {
 
   @Prop(Object) currency!: TokenGroup;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
 
   get filteredNetworks() {
     const baseFilter = this.currency.balances?.filter(({ name, state }) => {
@@ -165,10 +166,6 @@ export default class AssetNetworks extends Vue {
     });
   }
 
-  get selectedNetwork() {
-    return this.$route.params.network;
-  }
-
   get priceString() {
     return `${this.fiatSymbol} ${this.$n(this.price, 'price')}`;
   }
@@ -179,8 +176,12 @@ export default class AssetNetworks extends Vue {
     return +(price ?? 0);
   }
 
+  get selectedAssetId() {
+    return this.$route.params.assetId;
+  }
+
   mounted() {
-    if (BaseApi.isEthereumNetwork(this.currency.mainNetwork)) fetchEvmBalance();
+    if (BaseApi.isEthereumNetwork(this.currency.mainNetwork)) fetchEvmBalance(this.selectedAssetId);
   }
 
   openAsset(name: string) {

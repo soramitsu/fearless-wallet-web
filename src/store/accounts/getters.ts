@@ -17,7 +17,6 @@ export enum GettersTypes {
   fiatSymbol = 'fiatSymbol',
   getFiatId = 'getFiatId',
   getAccounts = 'getAccounts',
-  getEthAccounts = 'getEthAccounts',
   hiddenAssets = 'hiddenAssets',
   getBalances = 'getBalances',
   nfts = 'nfts',
@@ -42,7 +41,6 @@ export type Getters = {
   [GettersTypes.getFiatId](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.hiddenAssets](state: State, getters?: GetterTree<State, State> & Getters): string[];
   [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): AccountJson[];
-  [GettersTypes.getEthAccounts](state: State, getters?: GetterTree<State, State> & Getters): string[];
   [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): WalletInfo[];
   [GettersTypes.showPolkaswapAlert](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.showSoraCardBanner](state: State, getters?: GetterTree<State, State> & Getters): boolean;
@@ -121,10 +119,6 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.getAccounts](state): AccountJson[] {
     return state.accounts;
-  },
-
-  [GettersTypes.getEthAccounts](state): string[] {
-    return state.accounts.filter((el) => el.ethereumAddress !== '').map((el) => el.ethereumAddress);
   },
 
   [GettersTypes.getAutoSelectNodesValueByNetwork]:

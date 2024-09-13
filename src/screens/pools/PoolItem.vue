@@ -29,7 +29,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { APIItemState } from '@extension-base/api/types/networks';
-import { type TokenGroup } from '@extension-base/background/types/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import type { PoolParams } from '@/store';
 import { isSameString } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';

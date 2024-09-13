@@ -5,7 +5,6 @@ import type { Features, SetRequestsPayload } from '@/store/extension/types';
 
 export enum MutationTypes {
   SET_AUTHLIST = 'SET_AUTHLIST',
-  DELETE_AUTHLIST_ITEM = 'DELETE_AUTHLIST_ITEM',
   DELETE_REQUEST = 'DELETE_REQUEST',
   SET_REQUEST = 'SET_REQUEST',
   SET_TAB_STATUS = 'SET_TAB_STATUS',
@@ -15,7 +14,6 @@ export enum MutationTypes {
 
 export type Mutations = {
   [MutationTypes.SET_AUTHLIST](state: State, payload: ResponseAuthorizeList): void;
-  [MutationTypes.DELETE_AUTHLIST_ITEM](state: State, payload: string): void;
   [MutationTypes.DELETE_REQUEST](
     state: State,
     payload: 'authRequests' | 'metaRequests' | 'signRequests' | 'wcConnectRequests' | 'wcNotSupportedRequests'
@@ -51,10 +49,6 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_AUTHLIST](state, { list }) {
     state.authList = { ...list };
-  },
-
-  [MutationTypes.DELETE_AUTHLIST_ITEM](state, id) {
-    delete state.authList[id];
   },
 
   [MutationTypes.SET_TAB_STATUS](state, payload) {

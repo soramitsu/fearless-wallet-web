@@ -46,8 +46,8 @@ const prepAccounts = computed<string[]>(() => {
     .map(({ address }) => address);
 });
 
-const isAllSelected = () => Object.values(state.value).every((value) => value.active === true);
 const authType = computed(() => list.value[url.value].accountAuthType);
+
 onMounted(async () => {
   list.value = await store.dispatch('GET_AUTHLIST');
 
@@ -70,6 +70,8 @@ onMounted(async () => {
   selectAll.value = isAllSelected();
 });
 
+const isAllSelected = () => Object.values(state.value).every((value) => value.active === true);
+
 const onSelect = (value: boolean, name: string) => {
   state.value[name].active = value;
 
@@ -89,6 +91,7 @@ const onSelectAll = (value: boolean) => {
 
 const updateAuths = async () => {
   await updateAuthorization(prepAccounts.value, url.value);
+
   list.value = await store.dispatch('GET_AUTHLIST');
 
   router.back();

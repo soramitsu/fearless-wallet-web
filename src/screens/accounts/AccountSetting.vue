@@ -35,7 +35,7 @@ import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { accountUpdateName } from '@/extension/messaging';
 import { getChainAccounts } from '@/helpers/accounts';
-import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/utils/utils';
+import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 
 @Component({})
 export default class AccountSetting extends Vue {

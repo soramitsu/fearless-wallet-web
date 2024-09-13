@@ -12,7 +12,7 @@
           v-if="showEditAddressBook"
           :network="targetNetwork"
           :_address="newAddress"
-          @setAddress="setAddress"
+          @toggleEditBook="toggleEditBook"
         />
 
         <HistoryBook
@@ -21,7 +21,7 @@
           :assetId="syncedAssetId"
           @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
           @setRecipient="setRecipient"
-          @setAddress="setAddress"
+          @toggleEditBook="toggleEditBook"
         />
 
         <div v-else-if="showMyWallets">
@@ -158,8 +158,8 @@
       verticalPlacement="top"
       class="transfer-select-popup"
       :value="selectPopupValue"
-      :showBlur="true"
-      :showBackground="true"
+      :showBlur="false"
+      :showBackground="false"
       :top="top"
       :left="left"
       :height="285"
@@ -199,20 +199,20 @@
 import { Component, Vue, Prop, Watch, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
-import { getMoonbeamMoonriverAssetName, getNativeAssetName } from '@extension-base/background/utils/utils';
-import {
-  type RequestCheckTransfer,
-  type RequestCheckCrossChain,
-  type TokenGroup,
-  type AccountJson,
-  type ResponseCheckTransfer,
-  type ResponseCheckCrossChain,
-  TransferErrorCode,
-} from '@extension-base/background/types/types';
+import { getSubstrateEvmAssetName, getNativeAssetName } from '@extension-base/background/handlers/utils';
+import { TransferErrorCode } from '@extension-base/background/types/types';
 import { Reasons, type ScamInfo } from '@extension-base/services/scam-service/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
+import type {
+  RequestCheckTransfer,
+  RequestCheckCrossChain,
+  TokenGroup,
+  AccountJson,
+  ResponseCheckTransfer,
+  ResponseCheckCrossChain,
+} from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
@@ -226,7 +226,7 @@ import {
   isValidAmountAsset,
   getUtilityAsset,
 } from '@/helpers/currencies';
-import { cut, getClipboard } from '@/helpers';
+import { cut, getClipboard, isSameString } from '@/helpers';
 import {
   VALID_SUBSTRATE_ADDRESS,
   VALID_ETHEREUM_ADDRESS,
@@ -261,6 +261,7 @@ export default class TransferForm extends Vue {
   showConfirmationPasswordPopup = false;
   showMyWallets = false;
   showHistoryBook = false;
+  showEditAddressBook = false;
   newAddress = '';
   filterValue = '';
   isFetchingFees = false;
@@ -309,10 +310,6 @@ export default class TransferForm extends Vue {
     return cut(this.syncedRecipient);
   }
 
-  get showEditAddressBook() {
-    return this.newAddress !== '';
-  }
-
   get filteredWallets() {
     if (this.isCrossChain) return this.wallets;
 
@@ -320,11 +317,11 @@ export default class TransferForm extends Vue {
   }
 
   get formHeader() {
+    if (this.showEditAddressBook) return 'assets.addContact';
+
     if (this.showHistoryBook) return 'assets.chooseFromHistory';
 
     if (this.showMyWallets) return 'assets.wallets';
-
-    if (this.showEditAddressBook) return 'assets.addContact';
 
     return this.header;
   }
@@ -527,7 +524,7 @@ export default class TransferForm extends Vue {
 
     let options: { name: string; value: string; icon: string | undefined }[] = [];
 
-    if (this.showSelectedAssetPopup) options = this.optionsCurrency;
+    if (this.showSelectedAssetPopup) options = this.optionsAssets;
     else if (this.showSelectNetworkPopup) options = this.optionsNetworks;
     else if (this.showDestNetPopup) options = this.optionsDestNet;
 
@@ -562,21 +559,23 @@ export default class TransferForm extends Vue {
     return result;
   }
 
-  get optionsCurrency() {
+  get optionsAssets() {
     const { xcm, parentId } = this.networks.find(
       ({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase()
     )!;
     const relay = (CHAIN_IDS[parentId!] ?? this.syncedNetwork).toLowerCase();
-    const balances = this.isTransfer
-      ? this.balances
-      : this.balances.filter(
-          ({ symbol, relayChain }) =>
-            xcm?.availableAssets.some(({ symbol: _symbol }) => {
-              const assetName = getMoonbeamMoonriverAssetName(_symbol, this.syncedNetwork);
 
-              return assetName === symbol.toLowerCase();
-            }) && relayChain.toLowerCase() === relay
-        );
+    if (this.isTransfer) return getCurrencyOptions(this.balances);
+
+    const balances = this.balances.filter(({ symbol, relayChain }) => {
+      if (relayChain.toLowerCase() !== relay) return false;
+
+      return xcm?.availableAssets.some(({ symbol: _symbol }) => {
+        const assetName = getSubstrateEvmAssetName(_symbol, this.syncedNetwork);
+
+        return isSameString(assetName, symbol);
+      });
+    });
 
     return getCurrencyOptions(balances);
   }
@@ -624,7 +623,7 @@ export default class TransferForm extends Vue {
   }
 
   get sendAssetName() {
-    return this.currency?.symbol ?? '';
+    return getNativeAssetName(this.currency?.symbol);
   }
 
   get isValidSendAsset() {
@@ -783,7 +782,13 @@ export default class TransferForm extends Vue {
     }
   }
 
-  toggleValue(value: 'showSelectedAssetPopup' | 'showSelectNetworkPopup' | 'showDestNetPopup') {
+  toggleEditBook(address: string = '') {
+    this.showEditAddressBook = !this.showEditAddressBook;
+    this.showHistoryBook = !this.showHistoryBook;
+    this.newAddress = address;
+  }
+
+  toggleValue(value: 'showSelectedAssetPopup' | 'showSelectNetworkPopup' | 'showDestNetPopup' | 'showEditAddressBook') {
     this[value] = !this[value];
   }
 
@@ -820,7 +825,7 @@ export default class TransferForm extends Vue {
 
   handlerBack() {
     if (this.showHistoryBook) this.toggleHistoryBookVisibility();
-    else if (this.showEditAddressBook) this.setAddress('', true);
+    else if (this.showEditAddressBook) this.toggleEditBook();
     else if (this.showMyWallets) this.toggleMyWalletsVisibility();
     else this.step -= 1;
   }
@@ -982,11 +987,6 @@ export default class TransferForm extends Vue {
 
   toggleHistoryBookVisibility() {
     this.showHistoryBook = !this.showHistoryBook;
-  }
-
-  setAddress(address: string, showHistoryBook = false) {
-    this.newAddress = address;
-    this.showHistoryBook = showHistoryBook;
   }
 }
 </script>

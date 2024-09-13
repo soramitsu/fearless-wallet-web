@@ -37,6 +37,7 @@ export class SoraCardService {
 
       authUrls[stripedUrl] = {
         authorizedAccounts,
+        evmAuthorizedAccount: '',
         count: 0,
         id: getId(),
         origin,

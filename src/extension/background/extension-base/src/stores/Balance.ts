@@ -1,4 +1,4 @@
-import { type BalanceItem } from '@extension-base/api/evm/types/ether';
+import { type BalanceItem } from '@extension-base/api/evm/types';
 import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import SubscribableStore from '@extension-base/stores/SubscribableStore';
 

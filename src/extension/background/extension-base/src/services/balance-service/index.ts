@@ -2,11 +2,11 @@ import { APIItemState } from '@extension-base/api/types/networks';
 import { storage } from '@extension-base/stores/Storage';
 import { Subject } from 'rxjs';
 import { type FPNumber } from '@sora-substrate/util';
-import { getMockCurrencies } from '@extension-base/background/utils/utils';
+import { getMockCurrencies } from '@extension-base/background/handlers/helpers';
 import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
 import { fetchBalance } from '@extension-base/api/substrate/balance';
 import type State from '@extension-base/background/handlers/State';
-import type { BalanceItem } from '@extension-base/api/evm/types/ether';
+import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { BalanceMap, BalanceJson, ResponseTotalBalances } from '@extension-base/background/types/types';
 import { SORA_XOR_ASSET_ID, SORA_NETWORK_NAME } from '@/consts/sora';
 import { isSameString } from '@/helpers';
@@ -183,7 +183,8 @@ export default class BalanceService {
   public generateDefaultBalance(address: string) {
     if (address === '') return;
 
-    if (this.balanceMap?.[address] === undefined) this.balanceMap[address] = getMockCurrencies(this.state.networkMap);
+    if (this.balanceMap?.[address] === undefined)
+      this.balanceMap[address] = getMockCurrencies(this.state.networkService.networkMap);
   }
 
   getTokenBalance(address: string, assetId: string, relayChain?: string) {

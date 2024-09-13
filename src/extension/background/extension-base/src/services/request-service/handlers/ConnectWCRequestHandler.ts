@@ -65,9 +65,7 @@ export class ConnectWCRequestHandler {
   }
 
   public resetWallet() {
-    for (const request of Object.values(this.connectWCRequests)) {
-      request.reject(new Error('Reset wallet'));
-    }
+    for (const request of Object.values(this.connectWCRequests)) request.reject(new Error('Reset wallet'));
 
     this.connectWCSubject.next([]);
   }

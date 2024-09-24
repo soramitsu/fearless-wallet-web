@@ -53,8 +53,8 @@
 <script lang="ts">
 import { Component, Vue, Ref } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
-import { type AuthUrlInfo } from '@extension-base/background/types/types';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
+import type { AuthUrls } from '@extension-base/background/types/types';
 import type { AsyncFn, Fn } from '@/interfaces';
 import type { SelectedWallet, WalletInfo } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -108,7 +108,7 @@ export default class SoraCardPage extends Vue {
   step: StepsKyc | -1 = -1;
 
   @Ref('termsAndConditions') readonly termsAndConditions!: TermsAndConditions;
-  @Getter(ExtensionGettersTypes.authList) authlist!: Record<string, AuthUrlInfo>;
+  @Getter(ExtensionGettersTypes.authList) authlist!: AuthUrls;
   @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;
@@ -343,7 +343,7 @@ export default class SoraCardPage extends Vue {
           ...this.wallets.filter(({ address }) => authorizedAccounts.includes(address)).map(({ address }) => address),
         ];
 
-        await updateAuthorization(activeAccounts, stripPolkaswap);
+        await updateAuthorization(activeAccounts, stripPolkaswap, 'substrate');
       }
     } else approvePolkaswapAuthRequest([selectedAddress]);
 

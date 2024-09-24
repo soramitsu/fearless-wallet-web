@@ -166,25 +166,26 @@ export default class Extension extends FWExtensionBase {
 
   async accountsForget({ address, type }: RequestAccountForget): Promise<boolean> {
     const authorizedAccountsDiff: AuthorizedAccountsDiff = [];
+    const pair = this.state.keyringService.getPair(address);
+    const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
 
     // cycle through authUrls and prepare the array of diff
     this.state.requestService.getAuthorize((authUrls) => {
       Object.entries(authUrls).forEach(([url, urlInfo]) => {
-        if (!urlInfo.authorizedAccounts.includes(address)) return;
+        if (urlInfo.authorizedAccounts.includes(address))
+          authorizedAccountsDiff.push([
+            url,
+            urlInfo.authorizedAccounts.filter((previousAddress) => previousAddress !== address),
+            'substrate',
+          ]);
 
-        authorizedAccountsDiff.push([
-          url,
-          urlInfo.authorizedAccounts.filter((previousAddress) => previousAddress !== address),
-        ]);
+        if (urlInfo.evmAuthorizedAccount === ethereumAddress) authorizedAccountsDiff.push([url, [''], 'evm']);
       });
     });
 
     this.state.requestService.updateAuthorizedAccounts(authorizedAccountsDiff);
 
     if (type === 'native') {
-      const pair = this.state.keyringService.getPair(address);
-      const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
-
       if (ethereumAddress) this.state.keyringService.forgetAccount(ethereumAddress);
 
       this.state.walletConnectService.sessions.forEach((session) => {
@@ -200,9 +201,9 @@ export default class Extension extends FWExtensionBase {
         const polkadot = session.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE];
 
         if (polkadot && polkadot.accounts && polkadot.accounts.length) {
-          const [, , substaddress] = polkadot.accounts[0].split(':');
+          const [, , substrateAddress] = polkadot.accounts[0].split(':');
 
-          if (substaddress.toLowerCase() === address.toLowerCase())
+          if (substrateAddress.toLowerCase() === address.toLowerCase())
             this.state.walletConnectService.disconnect(session.topic);
         }
       });
@@ -312,8 +313,8 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async authorizeUpdate({ authorizedAccounts, url }: RequestUpdateAuthorizedAccounts): Promise<void> {
-    return this.state.requestService.updateAuthorizedAccounts([[url, authorizedAccounts]]);
+  async authorizeUpdate({ authorizedAccounts, url, authType }: RequestUpdateAuthorizedAccounts): Promise<void> {
+    return this.state.requestService.updateAuthorizedAccounts([[url, authorizedAccounts, authType]]);
   }
 
   authList() {

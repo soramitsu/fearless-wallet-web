@@ -699,7 +699,7 @@
     "approve": "Approve",
     "sign": "Sign",
     "wc": "Wallet Connect",
-    "dapps": "DApps",
+    "substrateDApps": "Substrate DApps",
     "connect": "Connect",
     "enterAccountPass": "Password for this account",
     "reject": "Reject",
@@ -792,6 +792,7 @@
     "featureOff": "Temparary unavailable, we're working to bring it back.",
     "estimateFeeError": "Couldn't estimate fee",
     "networkFees": "Network fee",
-    "copyHash": "Copy hash"
+    "copyHash": "Copy hash",
+    "evmDApps":"EVM DApps"
   }
 }

@@ -665,6 +665,7 @@
   },
   "common": {
     "wc": "Wallet Connect",
+    "substrateDApps": "Substrate DApps",
     "connect": "Подключить",
     "approve": "Подтвердить",
     "reject": "Отменить",
@@ -755,6 +756,7 @@
     "days": "дней",
     "featureOff": "Временно недоступно",
     "estimateFeeError": "Не удалось посчитать фии",
-    "copyHash": "Скопировать hash"
+    "copyHash": "Скопировать hash",
+    "evmDApps":"EVM DApps"
   }
 }

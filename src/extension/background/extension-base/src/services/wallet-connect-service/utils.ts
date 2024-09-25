@@ -116,11 +116,8 @@ export const isSupportWalletConnectNamespace = (namespace: string): boolean => {
 export const isSupportWalletConnectChain = (chain: string, chainInfoMap: Record<string, NetworkJson>): boolean => {
   const [namespace, info] = chain.split(':');
 
-  if (namespace === WALLET_CONNECT_EIP155_NAMESPACE) {
-    return !!findChainInfoByChainId(chainInfoMap, parseInt(info));
-  } else if (namespace === WALLET_CONNECT_POLKADOT_NAMESPACE) {
-    return !!findChainInfoByHalfGenesisHash(chainInfoMap, info);
-  }
+  if (namespace === WALLET_CONNECT_EIP155_NAMESPACE) return !!findChainInfoByChainId(chainInfoMap, parseInt(info));
+  else if (namespace === WALLET_CONNECT_POLKADOT_NAMESPACE) return !!findChainInfoByHalfGenesisHash(chainInfoMap, info);
 
   return false;
 };

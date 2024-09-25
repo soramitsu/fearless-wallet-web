@@ -22,7 +22,6 @@ import type {
   EvmProvider,
   MessageTypes,
   Port,
-  RequestAccountList,
   RequestAccountUnsubscribe,
   RequestAuthorizeTab,
   RequestRpcSend,
@@ -45,6 +44,7 @@ import type {
 } from '@polkadot/extension-inject/types';
 
 type EvmEmitterCallback = (eventName: EvmEventType, payload: unknown) => void;
+
 export default class Tabs {
   accountSubs: Record<string, AccountSub>;
   state: State;
@@ -74,9 +74,9 @@ export default class Tabs {
     return this.state.requestService.authorizeUrl(url, request);
   }
 
-  async accountsListAuthorized(url: string, { anyType }: RequestAccountList): Promise<InjectedAccount[]> {
-    const transformedAccounts = transformAccounts({ accounts: this.state.keyringService.accountSubjectValue, anyType });
-    const transformedAddresses = transformAddresses(this.state.keyringService.addressesSubjectValue);
+  async accountsListAuthorized(url: string): Promise<InjectedAccount[]> {
+    const transformedAccounts = transformAccounts({ accounts: this.state.keyringService.accountSubjectValue });
+    const transformedAddresses = transformAddresses({ accounts: this.state.keyringService.addressesSubjectValue });
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
     const filteredAuths = await this.filterForAuthorizedAccounts(totalAccounts, url);
 
@@ -89,7 +89,9 @@ export default class Tabs {
     this.accountSubs[id] = {
       subscription: this.state.keyringService.accountSubject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
         const transformedAccounts = transformAccounts({ accounts });
-        const transformedMobileAccount = transformAddresses(this.state.keyringService.addressesSubjectValue);
+        const transformedMobileAccount = transformAddresses({
+          accounts: this.state.keyringService.addressesSubjectValue,
+        });
         const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
 
         chrome.storage.local.set({ transformAccounts: allAccounts });
@@ -298,6 +300,7 @@ export default class Tabs {
       // Compare to void looping reload
       if (JSON.stringify(currentAccountList) !== JSON.stringify(newAccountList)) {
         emitEvent('accountsChanged', newAccountList);
+
         currentAccountList = newAccountList;
       }
     };
@@ -316,17 +319,11 @@ export default class Tabs {
 
       if (chainId !== currentChainId) {
         emitEvent('chainChanged', chainId);
+
         currentChainId = chainId;
       }
 
-      // Detect account
-      const newAccountList = await this.getEvmCurrentAccount(url);
-
-      // Compare to void looping reload
-      if (JSON.stringify(currentAccountList) !== JSON.stringify(newAccountList)) {
-        emitEvent('accountsChanged', newAccountList);
-        currentAccountList = newAccountList;
-      }
+      onCurrentAccountChanged();
     };
 
     const authUrlSubscription = this.state.requestService.subscribeAuthorizeUrlSubject.subscribe(() => {
@@ -339,9 +336,7 @@ export default class Tabs {
         .then((evmState) => {
           evmState.web3
             ?.getBlock('latest')
-            .then(() => {
-              emitEvent('connect', { chainId: evmState?.chainId });
-            })
+            .then(() => emitEvent('connect', { chainId: evmState?.chainId }))
             .catch(() => emitEvent('disconnect', 'Chain disconnectied'));
         })
         .catch(console.error);
@@ -371,6 +366,7 @@ export default class Tabs {
     }
 
     this.evmEventEmitterMap[url][id] = emitEvent;
+
     this.state.createUnsubscriptionHandle(id, () => {
       if (this.evmEventEmitterMap[url][id]) delete this.evmEventEmitterMap[url][id];
 
@@ -390,39 +386,32 @@ export default class Tabs {
     return true;
   }
 
+  // Method may be needed in near future
+  // private async getEvmAccountList(url: string): Promise<string[]> {
+  //   return new Promise((resolve) => {
+  //     const allAccounts = this.state.keyringService.accountSubject.value;
+  //     const allMobileAccounts = this.state.keyringService.addressSubject.value;
+
+  //     const mobileWallets = transformAddresses({ accounts: allMobileAccounts, accountAuthType: 'evm' }).map(
+  //       ({ address }) => address
+  //     );
+
+  //     const transformedAccounts = transformAccounts({
+  //       accounts: allAccounts,
+  //       accountAuthType: 'evm',
+  //     }).map(({ address }) => address);
+
+  //     resolve([...transformedAccounts, ...mobileWallets]);
+  //   });
+  // }
+
   private async getEvmCurrentAccount(url: string): Promise<string[]> {
     return new Promise((resolve) => {
-      this.state
-        .getAuthInfo(url)
-        .then((authInfo) => {
-          const allAccounts = this.state.keyringService.accountSubject.value;
-          const allMobileAccounts = this.state.keyringService.addressSubject.value;
-          const mobileWallets = transformAddresses(allMobileAccounts, 'evm').map(({ address }) => address);
-          const transformedAccounts = transformAccounts({
-            accounts: allAccounts,
-            anyType: false,
-            authInfo,
-            accountAuthType: 'evm',
-          }).map(({ address }) => address);
+      this.state.getAuthInfo(url).then((authInfo) => {
+        const result = authInfo?.evmAuthorizedAccount ? [authInfo.evmAuthorizedAccount] : [];
 
-          const accountList = [...transformedAccounts, ...mobileWallets];
-          let accounts: string[] = [];
-
-          const address = this.state.currentAccount?.ethereumAddress;
-          const isAuthorizedAddress = authInfo?.authorizedAccounts.some(
-            (el) => el.toLowerCase() === address?.toLowerCase()
-          );
-
-          if (address && accountList.includes(address) && isAuthorizedAddress) {
-            const result = accountList.filter((adr) => adr !== address);
-
-            result.unshift(address);
-            accounts = result;
-          } else accounts = accountList;
-
-          resolve(accounts);
-        })
-        .catch(console.error);
+        resolve(result);
+      });
     });
   }
 
@@ -452,7 +441,7 @@ export default class Tabs {
 
         const rs = 'result' in result[0] ? result[0].result : undefined;
 
-        callback && callback(rs);
+        callback?.(rs);
 
         resolve(rs);
       });
@@ -467,26 +456,50 @@ export default class Tabs {
 
     if (evmState.chainId === chainId) return null;
 
-    const [networkKey] = this.state.networkService.findNetworkKeyByChainId(chainIdDec.toString());
+    const networkJson = this.state.networkService.findNetworkJsonByChainId(chainIdDec.toString());
 
-    if (networkKey) await this.state.switchEvmNetworkByUrl(stripUrl(url), networkKey);
+    if (networkJson) await this.state.switchEvmNetworkByUrl(stripUrl(url), networkJson.name);
     else throw new Error('Unknown network');
 
     return null;
   }
 
+  private async requestEvmPermission(url: string, id: string, request: RequestArguments) {
+    await this.authorize(url, {
+      origin: request.params.origin,
+      accountAuthType: 'evm',
+      reConfirm: true,
+    });
+
+    return this.getEvmPermission(url, id);
+  }
+
   private async getEvmPermission(url: string, id: string) {
-    const accounts = await this.getEvmCurrentAccount(url);
+    const account = await this.getEvmCurrentAccount(url);
 
     return [
       {
         id: id,
         invoker: url,
         parentCapability: 'eth_accounts',
-        caveats: [{ type: 'restrictReturnedAccounts', value: accounts }],
+        caveats: [{ type: 'restrictReturnedAccounts', value: account }],
         date: new Date().getTime(),
       },
     ];
+  }
+
+  private async revokeEvmPermission(url: string) {
+    const authList = await this.state.requestService.getAuthList();
+
+    const idStr = stripUrl(url);
+
+    this.state.requestService.setAuthorize({
+      ...authList,
+      [idStr]: {
+        ...authList[idStr],
+        evmAuthorizedAccount: '',
+      },
+    });
   }
 
   private async evmSign(id: string, url: string, { method, params }: RequestArguments): Promise<string> {
@@ -521,12 +534,13 @@ export default class Tabs {
           return this.getEvmCurrentAccount(url);
 
         case 'wallet_requestPermissions':
-          await this.authorize(url, { origin: '', accountAuthType: 'evm', reConfirm: true });
-
-          return this.getEvmPermission(url, id);
+          return this.requestEvmPermission(url, id, request);
 
         case 'wallet_getPermissions':
           return this.getEvmPermission(url, id);
+
+        case 'wallet_revokePermissions':
+          return this.revokeEvmPermission(url);
 
         case 'wallet_switchEthereumChain':
           return this.switchEvmNetwork(url, request);
@@ -579,7 +593,8 @@ export default class Tabs {
   ): Promise<ResponseTypes[keyof ResponseTypes]> {
     if (type === 'pub(phishing.redirectIfDenied)') return this.redirectIfPhishing(url);
 
-    if (type !== 'pub(authorize.tab)') await this.state.requestService.ensureUrlAuthorized(url);
+    if (type !== 'pub(authorize.tab)' && type !== 'evm(request)')
+      await this.state.requestService.ensureUrlAuthorized(url);
 
     switch (type) {
       case 'pub(authorize.tab)':
@@ -589,7 +604,7 @@ export default class Tabs {
         return this.saveSoraCardRefreshToken(request as string);
 
       case 'pub(accounts.list)':
-        return this.accountsListAuthorized(url, request as RequestAccountList);
+        return this.accountsListAuthorized(url);
 
       // case 'pub(accounts.subscribe)':
       //   return this.accountsSubscribeAuthorized(url, id, port);

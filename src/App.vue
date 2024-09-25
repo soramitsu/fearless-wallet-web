@@ -9,9 +9,9 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import { type ChainNftState } from '@extension-base/services/nft-service/types';
 import { ALL_NETWORKS } from './consts/networks';
 import { setTitle } from './helpers/common';
+import type { ChainNftState } from '@extension-base/services/nft-service/types';
 import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps, SetSoraFee } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';

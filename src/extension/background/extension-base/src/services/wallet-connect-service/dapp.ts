@@ -14,7 +14,6 @@ import {
   parseRequestParams,
 } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
-import { isNativeEVMNetwork } from '@extension-base/background/utils/utils';
 import Provider from '@walletconnect/universal-provider';
 import { createSubscription } from '@extension-base/services';
 import {
@@ -28,6 +27,7 @@ import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
 import type { EngineTypes, SessionTypes } from '@walletconnect/types';
 import type { Port, ResponseSigning } from '@extension-base/background/types/types';
+import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 
 export class WalletConnectDAppService {
   private app?: Provider;
@@ -343,12 +343,10 @@ export class WalletConnectDAppService {
 
     const authInfo = await this.state.getAuthInfo(url);
 
-    if (!authInfo || !authInfo?.currentEvmNetworkKey) {
-      throw new Error(getSdkError('UNSUPPORTED_CHAINS').message);
-    }
+    if (!authInfo || !authInfo?.currentEvmNetworkKey) throw new Error(getSdkError('UNSUPPORTED_CHAINS').message);
 
     const networkKey = authInfo.currentEvmNetworkKey;
-    const chainState = this.state.networkMap[networkKey];
+    const chainState = this.state.networkService.networkMap[networkKey];
 
     const requestEvent: EngineTypes.RequestParams = {
       chainId: `${WALLET_CONNECT_EIP155_NAMESPACE}:${chainState.chainId}`,

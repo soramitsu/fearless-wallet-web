@@ -9,7 +9,7 @@
     />
 
     <Scroll>
-      <ul v-if="showCheckboxes" class="account__list">
+      <ul class="account__list">
         <li v-for="(account, index) in props.accounts" class="auth-account" :key="index">
           <div class="checkbox">
             <Checkbox
@@ -23,9 +23,9 @@
             <div v-if="account.isMobile" class="account__checkbox--mobile-icon">{{ $t('mobile') }}</div>
           </div>
 
-          <span :ref="index" class="account__address">{{
-            cutAddress(authType === 'evm' ? account.ethereumAddress : account.address)
-          }}</span>
+          <span :ref="index" class="account__address">
+            {{ cutAddress(account) }}
+          </span>
         </li>
       </ul>
     </Scroll>
@@ -35,12 +35,13 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import type { WalletInfo } from '@/store';
+import type { AccountAuthType } from '@extension-base/background/types/types';
 import { cut } from '@/helpers';
 
 type Props = {
   selectAll?: boolean;
   accounts: Record<string, WalletInfo>;
-  authType?: 'evm' | 'substrate' | 'both';
+  authType?: AccountAuthType;
   showSelectAll?: boolean;
   height?: string;
 };
@@ -49,9 +50,12 @@ const props = withDefaults(defineProps<Props>(), { showSelectAll: true });
 const emit = defineEmits(['onSelectAll', 'onSelect']);
 
 const showAllCheckbox = computed(() => Object.keys(props.accounts).length && props.showSelectAll);
-const showCheckboxes = computed(() => Object.keys(props.accounts).length);
 
-const cutAddress = (address: string) => cut(address);
+const cutAddress = (account: WalletInfo) => {
+  const address = props.authType === 'evm' ? account.ethereumAddress : account.address;
+
+  return cut(address);
+};
 </script>
 
 <style lang="scss" scoped>

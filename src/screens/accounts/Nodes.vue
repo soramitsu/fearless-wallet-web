@@ -79,7 +79,7 @@
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import { isNativeEVMNetwork } from '@extension-base/background/utils/utils';
+import { isNativeEVMNetwork } from '@extension-base/background/handlers/utils';
 import NodeItem from './NodeItem.vue';
 import type {
   SelectedWallet,

@@ -20,7 +20,7 @@ import type { RequestSignatures } from '@extension-base/background/types/message
 import type { TypeRegistry } from '@polkadot/types';
 import type { SignerResult } from '@polkadot/types/types/extrinsic';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { BalanceItem } from '@extension-base/api/evm/types/ether';
+import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type {
   NetworkName,
@@ -173,9 +173,11 @@ export interface RequestAuthorizeApprove {
   authorizedAccounts: string[];
 }
 
+export type AuthType = 'substrate' | 'evm';
 export interface RequestUpdateAuthorizedAccounts {
   url: string;
   authorizedAccounts: string[];
+  authType: AuthType;
 }
 
 export interface RequestMetadataApprove {
@@ -451,10 +453,6 @@ export interface ApiMap {
   evm: EvmApiMap;
 }
 
-export interface RequestAccountList {
-  anyType?: boolean;
-}
-
 export interface RequestActiveTabsUrlUpdate {
   tabs: chrome.tabs.Tab[];
 }
@@ -592,13 +590,18 @@ export interface AuthUrlInfo {
   url: string;
   accountAuthType?: AccountAuthType;
   authorizedAccounts: string[];
+  evmAuthorizedAccount: string;
   allowedAccountsMap: Record<string, boolean>;
   currentEvmNetworkKey?: string;
 }
 
 export type AuthUrls = Record<string, AuthUrlInfo>;
 
-export type AuthorizedAccountsDiff = [url: string, authorizedAccounts: AuthUrlInfo['authorizedAccounts']][];
+export type AuthorizedAccountsDiff = [
+  url: string,
+  authorizedAccounts: AuthUrlInfo['authorizedAccounts'],
+  authType: AuthType
+][];
 
 export interface MetaRequest extends Resolver<boolean> {
   id: string;
@@ -607,9 +610,9 @@ export interface MetaRequest extends Resolver<boolean> {
 }
 
 export interface AuthResponse {
-  result: boolean;
   authorizedAccounts: string[];
 }
+
 export type ActiveTabAuthorizeStatus = {
   isAuthorize: boolean;
   authorizeAccountsCount: number;
@@ -752,7 +755,6 @@ export type EvmAppState = {
 
 export type TransformAccountPayload = {
   accounts: SubjectInfo;
-  anyType?: boolean;
   authInfo?: AuthUrlInfo;
   accountAuthType?: AccountAuthType;
 };

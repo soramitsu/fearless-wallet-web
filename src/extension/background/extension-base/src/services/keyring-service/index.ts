@@ -4,8 +4,8 @@ import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 import { BehaviorSubject } from 'rxjs';
 import CurrentAccountStore, { type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
-import { type EventService } from '@extension-base/services';
-import { type RequestExportMnemonic, type ResponseExportMnemonic } from '../../background/types/types';
+import type { EventService } from '@extension-base/services';
+import type { RequestExportMnemonic, ResponseExportMnemonic } from '../../background/types/types';
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-keyring/types';
@@ -233,12 +233,8 @@ export class KeyringService {
     const addresses = this.getAddresses();
 
     const account =
-      accounts.find(
-        ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
-      ) ||
-      addresses.find(
-        ({ meta: { ethereumAddress } }) => (ethereumAddress as string)?.toLowerCase() === address.toLowerCase()
-      );
+      accounts.find(({ meta: { ethereumAddress } }) => isSameString(ethereumAddress as string, address)) ||
+      addresses.find(({ meta: { ethereumAddress } }) => isSameString(ethereumAddress as string, address));
 
     return account?.address ?? address;
   }

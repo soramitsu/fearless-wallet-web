@@ -10,6 +10,7 @@ import type {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
   AuthUrlInfo,
+  AuthUrls,
   MetadataRequest,
 } from '@extension-base/background/types/types';
 import type { GetterTree } from 'vuex';
@@ -34,7 +35,7 @@ export enum GettersTypes {
 
 export type Getters = {
   [GettersTypes.authRequests](state: State, getters?: GetterTree<State, State> & Getters): AuthorizeRequest[];
-  [GettersTypes.authList](state: State, getters?: GetterTree<State, State> & Getters): Record<string, AuthUrlInfo>;
+  [GettersTypes.authList](state: State, getters?: GetterTree<State, State> & Getters): AuthUrls;
   [GettersTypes.getAuthItem](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -72,7 +73,7 @@ const getters: GetterTree<State, State> & Getters = {
     return authRequests;
   },
 
-  [GettersTypes.authList]({ authList }): Record<string, AuthUrlInfo> {
+  [GettersTypes.authList]({ authList }): AuthUrls {
     return authList;
   },
 

@@ -27,7 +27,7 @@ const MobileWalletAuth = () => import('@/screens/mobile-wallet/MobileWalletAuth.
 const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue');
 const AuthManagement = () => import('@/screens/extension-ui/AuthManagement.vue');
 const ManageAuths = () => import('@/screens/extension-ui/ManageAuths.vue');
-const UpdateAuths = () => import('@/screens/extension-ui/authorize/UpdateAuths.vue');
+const DAppDetails = () => import('@/screens/extension-ui/DAppDetails.vue');
 
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
@@ -75,7 +75,7 @@ export enum Components {
   Export = 'Export',
   Authorize = 'Authorize',
   ManageAuths = 'ManageAuths',
-  UpdateAuths = 'UpdateAuths',
+  DAppDetails = 'DAppDetails',
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
   CreateGoogle = 'CreateGoogle',
@@ -91,7 +91,6 @@ export enum Components {
   MyStake = 'MyStake',
   Pools = 'Pools',
   PoolDetails = 'PoolDetails',
-  NoFound = 'NoFound',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
   WalletConnectInitAuth = 'WalletConnectInitAuth',
@@ -259,7 +258,7 @@ const routes: Array<RouteConfig> = [
         redirect: { name: Components.DAppsAuths },
         children: [
           {
-            path: '/dapps',
+            path: '/dapps/:type',
             name: Components.DAppsAuths,
             component: DAppsAuths,
           },
@@ -271,9 +270,9 @@ const routes: Array<RouteConfig> = [
         ],
       },
       {
-        path: '/dotsama-details/:id',
-        name: Components.UpdateAuths,
-        component: UpdateAuths,
+        path: '/dapp-details/:type/:id',
+        name: Components.DAppDetails,
+        component: DAppDetails,
       },
       {
         path: 'wc-details/:topic',

@@ -59,7 +59,7 @@ export default class EditAddressBook extends Vue {
   @Prop(Boolean) isActive!: boolean;
 
   get buttonDisabled() {
-    return this.name === '' || this.address === '' || this.isErrorAddress;
+    return this.name === '' || this.address.trim() === '' || this.isErrorAddress;
   }
 
   get isErrorAddress() {
@@ -96,7 +96,7 @@ export default class EditAddressBook extends Vue {
       },
     });
 
-    this.$emit('setAddress', '', true);
+    this.$emit('toggleEditBook');
   }
 
   onSave(value: boolean) {

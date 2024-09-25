@@ -4,6 +4,7 @@
       :selectAll="selectAll"
       :accounts="state"
       :authType="authType"
+      :showSelectAll="showSelectAll"
       @onSelectAll="onSelectAll"
       @onSelect="onSelect"
     />
@@ -15,21 +16,25 @@
 <script lang="ts" setup>
 import { computed, onMounted, set, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
-import type { AuthUrls } from '@extension-base/background/types/types';
+import type { AuthType } from '@extension-base/background/types/types';
 import { updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import { type WalletInfo, useStore } from '@/store';
 import { GettersTypes as AccountsGetterType } from '@/store/accounts/getters';
+import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
 const router = useRouter();
 const route = useRoute();
 const store = useStore();
 
-const list = ref<AuthUrls>({});
 const selectAll = ref(false);
 const state = ref<Record<string, WalletInfo>>({});
 
+const authType = computed(() => (route.params.type ?? 'substrate') as AuthType);
+const isEVM = computed(() => authType.value === 'evm');
+const showSelectAll = computed(() => authType.value !== 'evm');
 const url = computed(() => route.params.id);
+
 const buttonText = computed(() => {
   const count = Object.values(state.value).filter((el) => el.active).length;
   const tc = count === 1 ? 1 : 2;
@@ -43,20 +48,24 @@ const buttonText = computed(() => {
 const prepAccounts = computed<string[]>(() => {
   return Object.values(state.value)
     .filter(({ active }) => active)
-    .map(({ address }) => address);
+    .map(({ address, ethereumAddress }) => (isEVM.value ? ethereumAddress : address));
 });
 
-const isAllSelected = () => Object.values(state.value).every((value) => value.active === true);
-const authType = computed(() => list.value[url.value].accountAuthType);
+const list = computed(() => store.getters[ExtensionGettersTypes.authList]);
+
+const isAllSelected = () => Object.values(state.value).every(({ active }) => active);
+
 onMounted(async () => {
-  list.value = await store.dispatch('GET_AUTHLIST');
+  await store.dispatch('GET_AUTHLIST');
 
   const wallets: WalletInfo[] = store.getters[AccountsGetterType.getWallets];
 
-  const { authorizedAccounts } = list.value[url.value] ?? {};
+  const { authorizedAccounts, evmAuthorizedAccount } = list.value[url.value] ?? {};
 
   wallets.forEach(({ name, address, ethereumAddress, isMobile }) => {
-    const isAuthorized = authorizedAccounts.some((el: string) => el === address || el === ethereumAddress);
+    const isAuthorized = isEVM.value
+      ? ethereumAddress === evmAuthorizedAccount
+      : authorizedAccounts.some((el: string) => el === address);
 
     set(state.value, name, {
       name,
@@ -71,25 +80,26 @@ onMounted(async () => {
 });
 
 const onSelect = (value: boolean, name: string) => {
-  state.value[name].active = value;
+  if (showSelectAll.value) selectAll.value = selectAll.value = isAllSelected();
+  else Object.keys(state.value).forEach((key) => (state.value[key].active = false));
 
-  selectAll.value = isAllSelected();
+  state.value[name].active = value;
 };
 
 const onSelectAll = (value: boolean) => {
-  selectAll.value = value;
-
   Object.keys(state.value).forEach((key) => {
     set(state.value, key, {
       ...state.value[key],
       active: value,
     });
   });
+
+  selectAll.value = value;
 };
 
 const updateAuths = async () => {
-  await updateAuthorization(prepAccounts.value, url.value);
-  list.value = await store.dispatch('GET_AUTHLIST');
+  await updateAuthorization(prepAccounts.value, url.value, authType.value);
+  await store.dispatch('GET_AUTHLIST');
 
   router.back();
 };

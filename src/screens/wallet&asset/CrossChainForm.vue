@@ -84,7 +84,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { getNativeAssetName } from '@extension-base/background/utils/utils';
+import { getNativeAssetName } from '@extension-base/background/handlers/utils';
 import TransferForm from './TransferForm.vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet, GetNetwork } from '@/store';
@@ -107,10 +107,8 @@ export default class CrossChainForm extends Vue {
   amount = '';
   recipient = '';
   value = '';
-  step = 1;
 
   @Prop(String) _originalNetwork!: string;
-  @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
@@ -118,11 +116,11 @@ export default class CrossChainForm extends Vue {
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get minValueBridgeToSora() {
-    return BRIDGE_MIN_VALUES_TO_SORA[this.originalNetwork.toLowerCase()];
+    return BRIDGE_MIN_VALUES_TO_SORA[this.originalNetwork.toLowerCase()][this.assetName.toLowerCase()] ?? 0;
   }
 
   get minValueBridgeFromSora() {
-    return BRIDGE_MIN_VALUES_FROM_SORA[this.destinationNetwork.toLowerCase()];
+    return BRIDGE_MIN_VALUES_FROM_SORA[this.destinationNetwork.toLowerCase()][this.assetName.toLowerCase()] ?? 0;
   }
 
   get showSoraAlert() {

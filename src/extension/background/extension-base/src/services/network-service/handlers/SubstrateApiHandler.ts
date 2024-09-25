@@ -1,28 +1,22 @@
-import { api as apiSora, FPNumber } from '@sora-substrate/util';
+import { api as apiSora, FPNumber, connection as soraConnection } from '@sora-substrate/util';
 import { ApiPromise } from '@polkadot/api';
-import { connection as soraConnection } from '@sora-substrate/connection';
 import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { WsProvider } from '@polkadot/rpc-provider';
-import { type ApiInterfaceEvents } from '@polkadot/api/types';
-import { type ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
-import { type NetworkService } from '@extension-base/services/network-service';
-import { type NetworkJson } from '@extension-base/types';
-import { type ApiProps } from '@extension-base/background/types/types';
+import type { ApiInterfaceEvents } from '@polkadot/api/types';
+import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
+import type { NetworkService } from '@extension-base/services/network-service';
+import type { NetworkJson } from '@extension-base/types';
+import type { ApiProps } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkName, SoraFees } from '@/interfaces';
 import { isSora } from '@/helpers';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 
 export class SubstrateApiHandler {
-  readonly networkService: NetworkService;
-  state: State;
   api: Record<NetworkName, ApiProps> = {};
 
-  constructor(networkService: NetworkService, state: State) {
-    this.networkService = networkService;
-    this.state = state;
-  }
+  constructor(readonly networkService: NetworkService, public state: State) {}
 
   async initApi(network: NetworkJson): Promise<void> {
     const { name, nodes } = network;
@@ -76,7 +70,7 @@ export class SubstrateApiHandler {
 
   async onDisconnect(networkName: string) {
     const api = this.api[networkName.toLowerCase()];
-    const netName = this.networkService.getNetworkByKey(networkName).name;
+    const netName = this.networkService.getNetworkJson(networkName).name;
     const network = this.networkService.networkMap[netName];
 
     if (api === undefined) {
@@ -141,7 +135,7 @@ export class SubstrateApiHandler {
       this.api[key].apiRetry = 0;
     }
 
-    const network = this.networkService.getNetworkByKey(key);
+    const network = this.networkService.getNetworkJson(key);
 
     this.initApi(network);
   }

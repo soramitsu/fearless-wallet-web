@@ -12,8 +12,10 @@ export default class Accounts implements InjectedAccounts {
     sendRequest = _sendRequest;
   }
 
+  // eslint-disable-next-line
   public get(anyType?: boolean): Promise<InjectedAccount[]> {
-    return sendRequest('pub(accounts.list)', { anyType });
+    // anyType is not used, but dApp can use it
+    return sendRequest('pub(accounts.list)');
   }
 
   public subscribe(cb: (accounts: InjectedAccount[]) => unknown): Unsubcall {

@@ -45,11 +45,11 @@ export default class LockedDetailsPopup extends Vue {
   get detailsBalance() {
     if (this.currency.balances === undefined)
       return [
-        { name: 'reserved', value: 0 },
-        { name: 'frozen', value: 0 },
-        { name: 'transferable', value: 0 },
-        { name: 'totalLocked', value: 0 },
-        { name: 'total', value: 0 },
+        { name: 'reserved', value: 0, fiat: 0 },
+        { name: 'frozen', value: 0, fiat: 0 },
+        { name: 'transferable', value: 0, fiat: 0 },
+        { name: 'totalLocked', value: 0, fiat: 0 },
+        { name: 'total', value: 0, fiat: 0 },
       ];
 
     const balances =

@@ -2,7 +2,7 @@ import type { EvmRequests } from '@extension-base/services/request-service/types
 import type {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
-  AuthUrlInfo,
+  AuthUrls,
   MetadataRequest,
   SigningRequest,
 } from '@extension-base/background/types/types';
@@ -23,7 +23,7 @@ export type State = {
   wcRequests: WalletConnectTransactionRequest[];
   wcSessions: WalletConnectSessions;
   signEvmRequests: EvmRequests;
-  authList: Record<string, AuthUrlInfo>;
+  authList: AuthUrls;
   tabStatus: ActiveTabAuthorizeStatus | null;
   features: Nullable<Features>;
   onboarding: boolean;

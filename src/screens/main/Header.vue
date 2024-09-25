@@ -90,22 +90,21 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
-import { Getter, Action, Mutation } from 'vuex-class';
-import { type ActiveTabAuthorizeStatus, type TokenGroup } from '@extension-base/background/types/types';
+import { Getter, Action } from 'vuex-class';
+import type { ActiveTabAuthorizeStatus, TokenGroup } from '@extension-base/background/types/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import type { NetworkJson } from '@extension-base/types';
+import type { AsyncFn } from '@/interfaces';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import { windowOpen } from '@/extension/messaging';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
-import { type AsyncFn, type Fn } from '@/interfaces';
 import { isNetworkGroup } from '@/helpers/common';
 import { cut } from '@/helpers';
 
@@ -130,7 +129,6 @@ export default class Header extends Vue {
   @Getter(ExtensionGettersTypes.tabStatus) tabStatus!: ActiveTabAuthorizeStatus;
   @Action(ExtensionActionTypes.FETCH_TAB_STATUS) fetchTabStatus!: AsyncFn<ActiveTabAuthorizeStatus>;
   @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
@@ -173,19 +171,14 @@ export default class Header extends Vue {
   get computeActiveNetworks() {
     if (!this.currentCurrency) return [];
 
-    return this.currentCurrency.balances.filter((network) => {
-      return this.getNetwork(network.name).active;
-    });
+    return this.currentCurrency.balances.filter((network) => this.getNetwork(network.name).active);
   }
 
   get networkManagementButtonText() {
-    if (this.$route.name === Components.AssetHistory) {
-      if (this.computeActiveNetworks.length === 1) return this.computeActiveNetworks[0]?.name;
-
-      return this.getNetwork(this.$route.params.selectedNetwork)?.name;
-    }
-
     if (this.isGroup) {
+      if (this.$route.name === Components.AssetHistory)
+        return this.getNetwork(this.$route.params.selectedNetwork)?.name;
+
       return this.$t(`header.networkManagement.${this.selectedNetwork}`);
     }
 
@@ -245,13 +238,6 @@ export default class Header extends Vue {
 
   copyAddress() {
     navigator.clipboard.writeText(this.address);
-  }
-
-  toggleSelectedNetwork(network: string) {
-    if (this.selectedNetwork === network) return;
-
-    this.setSelectedNetwork(network);
-    this.toggleSelectNetworkPopupVisible();
   }
 
   toggleSelectNetworkPopupVisible() {

@@ -305,23 +305,25 @@ export default class CurrencyItem extends Vue {
   get redirectNetwork(): string {
     if (this.isCurrentNetwork) return this.selectedNetwork;
 
-    const netName = this.computeActiveNetworks[0].name;
+    const netName = this.activeNetworks[0].name;
     const network = this.getNetwork(netName);
 
     return network.name;
   }
 
-  get computeActiveNetworks() {
-    return this.assetData.balances.filter(({ name }) => {
-      const network = this.getNetwork(name);
+  get activeNetworks() {
+    return this.assetData.balances
+      .filter(({ name }) => {
+        const { rank, favorite, active } = this.getNetwork(name);
 
-      if (this.selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
+        if (this.selectedNetwork === POPULAR_NETWORKS) return rank !== undefined;
 
-      if (this.selectedNetwork === FAVORITE_NETWORKS)
-        return network.favorite.some((address) => address === this.selectedWallet.address);
+        if (this.selectedNetwork === FAVORITE_NETWORKS)
+          return favorite.some((address) => address === this.selectedWallet.address);
 
-      return this.getNetwork(name).active;
-    });
+        return active;
+      })
+      .filter(({ state }) => state === APIItemState.READY);
   }
 
   toggleCurrencyVisible(value: boolean) {
@@ -341,7 +343,7 @@ export default class CurrencyItem extends Vue {
     )
       return;
 
-    if (this.isCurrentNetwork || this.computeActiveNetworks.length === 1)
+    if (this.isCurrentNetwork || this.activeNetworks.length === 1)
       this.$router.push({
         name: Components.AssetHistory,
         params: {

@@ -2,7 +2,7 @@
   <AboveForm
     :header="header"
     :fullScreen="true"
-    :showBackIcon="!showAuthDetails"
+    :showBackIcon="showAuthDetails"
     @closeHandler="onClose"
     @handlerBack="onBack"
   >
@@ -18,7 +18,7 @@ import { Components } from '@/router/routes';
 const router = useRouter();
 const route = useRoute();
 
-const showAuthDetails = computed(() => route.params.index !== undefined);
+const showAuthDetails = computed(() => route.name !== Components.DAppsAuths && route.name !== Components.WcAuths);
 
 const header = computed(() => {
   const authDetailHeader = { text: 'authorize.accountsConnected', localeProps: { url: route.params.index } };

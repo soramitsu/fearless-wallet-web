@@ -112,7 +112,7 @@ export default class Onboarding extends Vue {
 
   &__header {
     font-family: Unbounded, sans-serif;
-    font-size: 46px;
+    font-size: 2.875em;
     font-weight: 700;
     letter-spacing: 0.54px;
     margin: 0;

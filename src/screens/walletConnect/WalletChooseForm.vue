@@ -53,7 +53,7 @@ const isSelected = (address: string) => address === props.selectedAddress;
 
   &__name {
     grid-area: name;
-    font-size: 16px;
+    font-size: 1em;
     color: $default-white;
     line-height: 22px;
     place-self: flex-start;
@@ -62,7 +62,7 @@ const isSelected = (address: string) => address === props.selectedAddress;
   &__address {
     grid-area: address;
     color: $gray-color;
-    font-size: 12px;
+    font-size: 0.75em;
     line-height: 16px;
     place-self: flex-start;
   }

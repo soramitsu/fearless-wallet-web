@@ -84,7 +84,7 @@ const cutAddress = (address: string) => cut(address);
 }
 
 .account__checkbox--mobile-icon {
-  font-size: 12px;
+  font-size: 0.75em;
   color: $gray-color;
   background: $secondary-background-color;
   letter-spacing: 0.03em;
@@ -120,6 +120,6 @@ const cutAddress = (address: string) => cut(address);
 }
 
 .account__checkbox .el-checkbox__label {
-  font-size: 16px;
+  font-size: 1em;
 }
 </style>

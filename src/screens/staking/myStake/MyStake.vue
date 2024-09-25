@@ -67,7 +67,7 @@
         </div>
       </div>
 
-      <ContentForm :height="450">
+      <ContentForm :height="0">
         <Scroll>
           <div class="content">
             <MyStakeSettings
@@ -449,7 +449,7 @@ export default class MyStake extends Vue {
       }
 
       .label {
-        font-size: 12px;
+        font-size: 0.75em;
         font-weight: 600;
         text-align: left;
         color: $grayish-white;
@@ -457,13 +457,13 @@ export default class MyStake extends Vue {
       }
 
       .amount {
-        font-size: 20px;
+        font-size: 1.25em;
         font-weight: 600;
         margin-bottom: 5px;
       }
 
       .value {
-        font-size: 14px;
+        font-size: 0.875em;
         color: $grayish-white;
       }
 
@@ -513,6 +513,13 @@ export default class MyStake extends Vue {
       justify-content: center;
       margin-left: 10px;
     }
+  }
+}
+
+.fw-web {
+  .action-buttons {
+    flex-wrap: wrap;
+    gap: 10px;
   }
 }
 </style>

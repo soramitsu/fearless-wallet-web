@@ -94,7 +94,7 @@ function sendMessage<TMessageType extends MessageTypes>(
 
     // port?.postMessage({ id, message, request: request || {} });
 
-    navigator.serviceWorker.ready.then((registration) => {
+    navigator.serviceWorker?.ready.then((registration) => {
       registration?.active?.postMessage({ id, message, request: request || {} });
     });
   });

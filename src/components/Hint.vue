@@ -51,7 +51,7 @@ const getSize = computed(() => (props.size === 'big' ? 'info-text--big' : 'info-
 .hint {
   color: $grayish-white;
   display: flex;
-  font-size: 12px;
+  font-size: 0.75em;
   align-items: center;
   text-align: left;
 
@@ -73,14 +73,22 @@ const getSize = computed(() => (props.size === 'big' ? 'info-text--big' : 'info-
 
   .info-text {
     width: 491px;
-    font-size: 14px;
+    font-size: 0.875em;
     margin: auto 0;
     line-height: 19px;
   }
   .info-text--big {
-    font-size: 16px;
+    font-size: 1em;
     font-weight: 600;
     line-height: 150%;
+  }
+}
+
+.fw-web {
+  .hint {
+    .info-text {
+      width: 100%;
+    }
   }
 }
 </style>

@@ -151,7 +151,7 @@ export default class Status extends Vue {
   .status {
     margin-top: 25px;
     font-weight: 700;
-    font-size: 24px;
+    font-size: 1.5em;
     width: 440px;
   }
 

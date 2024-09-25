@@ -65,7 +65,7 @@
       :showBlur="false"
       :showBackground="false"
       :top="148"
-      :left="-160"
+      :left="popupLeft"
       :height="360"
       :options="assetNetworks"
       @handlerFilter="handlerFilter"
@@ -83,7 +83,7 @@ import type { TokenGroup } from '@extension-base/background/types/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { cut } from '@/helpers';
+import { cut, isExtension } from '@/helpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
@@ -104,6 +104,10 @@ export default class ReceiveForm extends Vue {
 
   get selectedAssetId() {
     return this.$route.params.assetId ?? '';
+  }
+
+  get popupLeft() {
+    return isExtension() ? -160 : 0;
   }
 
   get assetNetworks() {
@@ -136,7 +140,7 @@ export default class ReceiveForm extends Vue {
   }
 
   get widthSaveBtn() {
-    return this.showCopyBtn ? '260px' : '530px';
+    return isExtension() ? (this.showCopyBtn ? '260px' : '530px') : '100%';
   }
 
   get showCopyBtn() {

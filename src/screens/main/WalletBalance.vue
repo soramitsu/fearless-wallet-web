@@ -72,7 +72,7 @@ export default class WalletBalance extends Vue {
   }
 
   .percent {
-    font-size: 12px;
+    font-size: 0.75em;
     line-height: 18px;
     white-space: nowrap;
     overflow: hidden;

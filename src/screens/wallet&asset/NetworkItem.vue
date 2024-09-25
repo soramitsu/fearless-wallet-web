@@ -87,7 +87,7 @@ const prepOpacity = computed(() => (props.isAvailable ? '1' : '0.5'));
   display: flex;
   flex-flow: row nowrap;
   color: v-bind(prepColor);
-  font-size: 16px;
+  font-size: 1em;
   border: solid 1px transparent;
   border-bottom-color: $default-background-color;
   padding-top: 16px;

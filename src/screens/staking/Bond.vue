@@ -650,7 +650,7 @@ export default class Bond extends Vue {
     text-align: left;
     line-height: 20px;
     margin: 20px 16px 16px;
-    font-size: 14px;
+    font-size: 0.875em;
 
     .icon {
       margin-right: 10px;

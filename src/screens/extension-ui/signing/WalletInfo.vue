@@ -88,13 +88,13 @@ function saveToClipboard() {
 }
 
 .wallet__name {
-  font-size: 18px;
+  font-size: 1.125em;
   font-weight: 700;
   line-height: 30px;
 }
 
 .wallet__address {
-  font-size: 14px;
+  font-size: 0.875em;
   max-width: 400px;
   overflow: hidden;
   cursor: pointer;

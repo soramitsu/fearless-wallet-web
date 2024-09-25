@@ -398,7 +398,7 @@ export default class Phone extends Vue {
       background: $pink-purple-color;
       height: 30px;
       font-weight: 700;
-      font-size: 12px;
+      font-size: 0.75em;
       padding: 0 12px;
       border: none;
       color: $gray-color;

@@ -294,7 +294,7 @@ export default class InputsForm extends Vue {
   padding: 0 5px;
 
   .slider-value {
-    font-size: 24px;
+    font-size: 1.5em;
     font-weight: 700;
     text-align: left;
     color: $pink-color;

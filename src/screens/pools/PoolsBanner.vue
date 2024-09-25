@@ -86,4 +86,17 @@ export default class PoolsBanner extends Vue {
     }
   }
 }
+
+.fw-web {
+  .banner-pools {
+    width: calc(100dvw - 2.5rem);
+  }
+
+  .details-button {
+    top: -66px;
+    left: 16px;
+    width: 112px;
+    min-height: 37px;
+  }
+}
 </style>

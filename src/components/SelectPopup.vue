@@ -211,7 +211,7 @@ export default class SelectPopup extends Vue {
     font-weight: 400;
 
     &__token {
-      font-size: 12px;
+      font-size: 0.75em;
       color: $gray-color;
     }
   }

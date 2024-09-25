@@ -87,6 +87,10 @@ function getFormattedDate(timestamp: string | number, type: 's' | 'ms' = 's') {
   return format(date, 'dd MMMM yyyy HH:mm');
 }
 
+function isExtension() {
+  return !!process.env.IS_EXTENSION;
+}
+
 export {
   firstCharToUp,
   isSora,
@@ -98,4 +102,5 @@ export {
   getFormattedDate,
   isSoraTest,
   isSubstrString,
+  isExtension,
 };

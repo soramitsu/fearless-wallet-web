@@ -39,7 +39,7 @@ const toWalletScreen = () => router.push({ name: Components.Wallet });
 .message {
   color: $gray-color;
   font-weight: 400;
-  font-size: 16px;
+  font-size: 1em;
   line-height: 147.5%;
 }
 
@@ -73,11 +73,11 @@ const toWalletScreen = () => router.push({ name: Components.Wallet });
   gap: 16px;
 
   .connection__status-message {
-    font-size: 18px;
+    font-size: 1.125em;
   }
 
   .connection__status-name {
-    font-size: 18px;
+    font-size: 1.125em;
     font-weight: 700;
   }
 

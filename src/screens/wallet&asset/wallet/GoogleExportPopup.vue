@@ -205,7 +205,7 @@ export default class GoogleExportPopup extends Vue {
 
   .text {
     font-weight: 700;
-    font-size: 18px;
+    font-size: 1.125em;
     width: 250px;
   }
 
@@ -215,7 +215,7 @@ export default class GoogleExportPopup extends Vue {
 
   .saved {
     font-weight: 600;
-    font-size: 18px;
+    font-size: 1.125em;
     margin-bottom: 5px;
   }
 
@@ -230,19 +230,19 @@ export default class GoogleExportPopup extends Vue {
 
     .s-icon-arrows-arrow-right-24 {
       color: $gray-2-color;
-      font-size: 30px !important;
+      font-size: 1.875em !important;
       margin: 0 10px;
     }
   }
 
   .transfer-amount {
     font-weight: 800;
-    font-size: 20px;
+    font-size: 1.25em;
     margin-bottom: 10px;
   }
 
   .transfer-value {
-    font-size: 16px;
+    font-size: 1em;
     color: $gray-color;
   }
 

@@ -97,7 +97,7 @@ export default class SoraCardBanner extends Vue {
     min-width: 130px;
     max-width: 280px;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 0.75em;
     padding: 0 10px;
     white-space: nowrap;
     color: $plain-white;

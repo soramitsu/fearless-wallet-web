@@ -387,7 +387,7 @@ export default class Wallet extends Vue {
   }
 
   .wallet-balance {
-    font-size: 22px;
+    font-size: 1.375em;
     line-height: 28px;
   }
 

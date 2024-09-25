@@ -55,7 +55,7 @@ const dAppUrl = computed(() => request.peer.metadata.url);
   }
 }
 .auth-item-name {
-  font-size: 16px;
+  font-size: 1em;
 }
 
 .auth-content {

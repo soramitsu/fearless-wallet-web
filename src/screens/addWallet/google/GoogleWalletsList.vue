@@ -182,7 +182,7 @@ export default class GoogleWalletsList extends Vue {
     flex-shrink: 1;
 
     .account__checkbox .el-checkbox__label {
-      font-size: 16px;
+      font-size: 1em;
     }
 
     .checkbox {

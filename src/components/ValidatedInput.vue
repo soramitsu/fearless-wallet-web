@@ -88,7 +88,7 @@ defineExpose({ input });
     flex-direction: row;
     align-items: center;
     gap: 5px;
-    font-size: 14px;
+    font-size: 0.875em;
     color: #ee7700;
     text-align: left;
     margin-top: 15px;

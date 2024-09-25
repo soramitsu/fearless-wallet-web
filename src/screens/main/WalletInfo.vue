@@ -120,7 +120,7 @@ export default class WalletInfo extends Vue {
   }
 
   .name {
-    font-size: 12px;
+    font-size: 0.75em;
     font-weight: 700;
     text-transform: uppercase;
     color: $gray-color;
@@ -158,7 +158,7 @@ export default class WalletInfo extends Vue {
   }
 
   .balance {
-    font-size: 18px;
+    font-size: 1.125em;
     line-height: 22px;
   }
 }

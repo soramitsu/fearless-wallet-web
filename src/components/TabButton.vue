@@ -44,7 +44,7 @@ const tabButtonClasses = computed(() => [
   background-color: $secondary-background-color;
   padding: 0 15px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 0.8125em;
   line-height: 36px;
   clip-path: $medium-clip-path-left-top-and-right-bottom;
   border: $default-border;

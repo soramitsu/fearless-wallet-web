@@ -321,7 +321,7 @@ export default class Header extends Vue {
   }
 
   .s-icon-arrows-arrows-diagonals-bltr-24 {
-    font-size: 18px !important;
+    font-size: 1.125em !important;
   }
 
   .header-part-right {
@@ -355,7 +355,7 @@ export default class Header extends Vue {
         display: flex;
         max-width: 190px;
         font-weight: 700;
-        font-size: 24px;
+        font-size: 1.5em;
         align-items: center;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -372,7 +372,7 @@ export default class Header extends Vue {
         flex-flow: row nowrap;
         align-items: center;
         gap: 8px;
-        font-size: 12px;
+        font-size: 0.75em;
         font-weight: 400;
         color: $default-white;
       }
@@ -387,7 +387,7 @@ export default class Header extends Vue {
       align-items: center;
       height: 32px;
       padding: 8px;
-      font-size: 12px;
+      font-size: 0.75em;
       line-height: 18px;
       border-radius: 20px;
       background-color: $default-background-color;

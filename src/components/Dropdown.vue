@@ -64,7 +64,7 @@ const isButton = computed(() => props.type === 'button');
   .el-button span {
     font-feature-settings: var(--s-font-feature-settings-heading);
     font-weight: 400;
-    font-size: 14px;
+    font-size: 0.875em;
   }
 
   .el-dropdown-selfdefine {

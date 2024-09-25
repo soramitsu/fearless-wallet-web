@@ -322,7 +322,7 @@ export default class PendingRewardForm extends Vue {
   height: 100%;
 
   .descriptions {
-    font-size: 14px;
+    font-size: 0.875em;
     color: $default-white;
     text-align: left;
     margin-bottom: 5px;

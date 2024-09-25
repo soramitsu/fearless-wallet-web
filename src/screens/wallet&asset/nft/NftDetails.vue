@@ -139,7 +139,7 @@ const onShare = () => {
 
   &__desc {
     font-weight: 400;
-    font-size: 14px;
+    font-size: 0.875em;
     padding: 15px 0;
     color: $default-white;
     overflow-wrap: anywhere;

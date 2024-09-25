@@ -120,7 +120,7 @@ const onReject = () => store.dispatch('REJECT_AUTH_REQUEST', request.value.id);
   height: 100%;
 
   .authorize__content {
-    font-size: 14px;
+    font-size: 0.875em;
     line-height: 21px;
     font-weight: 400;
   }

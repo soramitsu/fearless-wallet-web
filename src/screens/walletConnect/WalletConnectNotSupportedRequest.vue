@@ -71,7 +71,7 @@ const onReject = () => {
   justify-content: space-between;
   padding: 16px;
   width: 100%;
-  font-size: 16px;
+  font-size: 1em;
   font-weight: 400;
   color: $default-white;
 }

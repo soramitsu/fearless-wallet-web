@@ -165,7 +165,7 @@ export default class HistoryItem extends Vue {
       display: flex;
       justify-content: space-between;
       color: rgba(255, 255, 255, 0.64);
-      font-size: 14px;
+      font-size: 0.875em;
       margin-top: 2px;
     }
   }

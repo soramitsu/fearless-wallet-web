@@ -226,7 +226,7 @@ import {
   isValidAmountAsset,
   getUtilityAsset,
 } from '@/helpers/currencies';
-import { cut, getClipboard } from '@/helpers';
+import { cut, getClipboard, isExtension } from '@/helpers';
 import {
   VALID_SUBSTRATE_ADDRESS,
   VALID_ETHEREUM_ADDRESS,
@@ -407,6 +407,8 @@ export default class TransferForm extends Vue {
   }
 
   get top() {
+    if (!isExtension()) return 120;
+
     if (this.showSelectedAssetPopup) return 220;
 
     if (this.showSelectNetworkPopup) return 150;
@@ -415,6 +417,7 @@ export default class TransferForm extends Vue {
   }
 
   get left() {
+    if (!isExtension()) return 0;
     if (this.showSelectedAssetPopup || (this.showDestNetPopup && this.isPopup)) return 160;
 
     return -160;
@@ -1021,11 +1024,11 @@ export default class TransferForm extends Vue {
 
   .s-icon-arrows-arrow-right-24 {
     color: $default-white;
-    font-size: 30px !important;
+    font-size: 1.875em !important;
   }
 
   .balance {
-    font-size: 22px;
+    font-size: 1.375em;
     line-height: 28px;
     max-width: 245px;
   }

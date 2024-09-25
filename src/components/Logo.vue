@@ -110,14 +110,24 @@ const sizeIconLogo = computed(() => iconSizes[props.size] ?? iconSizes.medium);
   .text {
     margin-top: 17px;
     font-weight: 700;
-    font-size: 48px;
+    font-size: 3em;
     line-height: 120%;
   }
 
   .subtext {
-    font-size: 18px;
+    font-size: 1.125em;
     line-height: 150%;
     margin-top: 6px;
+  }
+}
+
+.fw-web {
+  .text {
+    font-size: 2rem;
+  }
+
+  .subtext {
+    font-size: 1rem;
   }
 }
 </style>

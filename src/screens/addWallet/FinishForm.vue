@@ -68,4 +68,15 @@ const openPage = (url: string) => window.open(url);
     margin: 37px 0 60px;
   }
 }
+
+.fw-web {
+  .row {
+    flex-direction: column;
+    align-items: center;
+    margin-top: 10px;
+  }
+  .description {
+    margin: 27px 0 30px;
+  }
+}
 </style>

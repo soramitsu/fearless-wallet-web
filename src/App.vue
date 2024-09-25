@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div id="app" :class="appMainClass">
     <keep-alive :include="includeKeepAlive">
       <router-view />
     </keep-alive>
@@ -65,6 +65,10 @@ export default class App extends Vue {
     if (this.showPolkaswapAlert) components.push('SwapForm');
 
     return components;
+  }
+
+  get appMainClass() {
+    return IS_EXTENSION ? 'fw-extension' : 'fw-web';
   }
 
   async created() {
@@ -141,7 +145,6 @@ export default class App extends Vue {
   }
 
   onAccountUpdate(accounts: AccountJson[], isMobileUpdate = false) {
-    console.info('onAccountUpdate');
     const selectedAccount = accounts.find((account) => account.active);
 
     this.setAccounts({ accounts, isMobileUpdate });
@@ -176,16 +179,27 @@ body {
   font-family: 'Sora', sans-serif;
   font-style: normal;
   font-feature-settings: 'tnum' on, 'lnum' on;
-  min-height: $extension-height;
-  min-width: $extension-width;
   height: 100vh;
-  width: $extension-width;
   color: white;
   text-align: center;
-  //margin: 0 auto;
   padding: $default-padding;
   background-image: url('@/assets/background.png');
   background-position: center;
   background-size: cover;
+}
+
+.fw-web {
+  font-size: 12px;
+  margin: auto;
+  min-height: 100dvh;
+  min-width: 100dvw;
+}
+
+.fw-extension {
+  font-size: 16px;
+  margin: 0 auto;
+  min-height: $extension-height;
+  min-width: $extension-width;
+  width: $extension-width;
 }
 </style>

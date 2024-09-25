@@ -37,6 +37,7 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue';
+import { IS_EXTENSION } from '@/consts/global';
 
 type HorizontalPlacement = 'left' | 'center' | 'right';
 type VerticalPlacement = 'top' | 'center' | 'bottom';
@@ -149,7 +150,7 @@ const topLeftStyles = computed(() => {
 
   if (props.top) styles.top = `${props.top}px`;
 
-  if (props.left) styles.left = `${props.left}px`;
+  if (props.left) styles.left = IS_EXTENSION ? `${props.left}px` : '0';
 
   return styles;
 });
@@ -253,7 +254,7 @@ const backgroundClick = (event: CustomEvent) => {
 
     .header-text {
       font-weight: 700;
-      font-size: 18px;
+      font-size: 1.125em;
       color: $plain-white;
     }
 
@@ -332,5 +333,11 @@ const backgroundClick = (event: CustomEvent) => {
 
 .popup-background-vertical-placement-bottom {
   align-items: flex-end;
+}
+
+.fw-web {
+  .popup-background-show {
+    width: auto;
+  }
 }
 </style>

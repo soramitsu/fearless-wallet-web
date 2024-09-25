@@ -68,7 +68,7 @@ export default class KycPrepare extends Vue {}
   flex-direction: column;
   justify-content: space-between;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 1em;
   line-height: 20px;
   color: $default-white;
   text-align: left;
@@ -98,7 +98,7 @@ export default class KycPrepare extends Vue {}
     .description {
       color: $grayish-white;
       margin-top: 6px;
-      font-size: 14px;
+      font-size: 0.875em;
     }
   }
 }

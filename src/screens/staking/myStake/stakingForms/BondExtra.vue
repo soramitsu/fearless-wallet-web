@@ -56,7 +56,7 @@ export default class BondExtra extends Vue {
   .disclaimer {
     display: flex;
     align-items: center;
-    font-size: 14px;
+    font-size: 0.875em;
     color: $default-white;
     margin-bottom: 10px;
 

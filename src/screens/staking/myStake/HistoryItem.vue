@@ -127,12 +127,12 @@ export default class HistoryItem extends Vue {
     display: flex;
 
     .name {
-      font-size: 16px;
+      font-size: 1em;
       color: $default-white;
     }
 
     .date {
-      font-size: 12px;
+      font-size: 0.75em;
       color: $grayish-white-2;
       text-align: left;
       margin-top: 5px;
@@ -163,7 +163,7 @@ export default class HistoryItem extends Vue {
     }
 
     .value {
-      font-size: 12px;
+      font-size: 0.75em;
       color: $grayish-white-2;
       text-align: right;
       margin-top: 5px;

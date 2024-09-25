@@ -64,7 +64,7 @@ const onRemoveAuth = () => emits('remove', stripedUrl.value);
   }
 }
 .auth-item-name {
-  font-size: 16px;
+  font-size: 1em;
 }
 
 .auth-content {

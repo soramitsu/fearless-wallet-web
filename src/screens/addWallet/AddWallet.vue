@@ -814,7 +814,7 @@ export default class AddWallet extends Vue {
 
     .content-header {
       font-weight: 600;
-      font-size: 20px;
+      font-size: 1.25em;
       line-height: 25px;
       margin: 13.5px 0 21.5px;
     }

@@ -92,7 +92,7 @@ export default class NetworkManagement extends Vue {
 
           .unavailable {
             color: $gray-color;
-            font-size: 12px;
+            font-size: 0.75em;
             line-height: 18px;
           }
         }

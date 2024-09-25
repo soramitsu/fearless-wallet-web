@@ -130,7 +130,7 @@ export default class X1Form extends Vue {
   padding: $default-padding;
   margin-bottom: 10px;
   text-align: left;
-  font-size: 14px;
+  font-size: 0.875em;
 
   .triangle {
     width: 50px;

@@ -1,6 +1,7 @@
 <template>
   <Fragment>
     <Tabs :activeTab="activeTab" :tabs="tabs" @update:activeTab="onActiveTabUpdate" />
+
     <div class="scroll-container">
       <Scroll>
         <router-view></router-view>
@@ -10,31 +11,37 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { computed } from 'vue';
 import { useRoute } from 'vue-router/composables';
 import { Components } from '@/router/routes';
 import router from '@/router';
 
 const tabs = {
   substrate: {
-    label: 'common.dapps',
-    name: Components.DAppsAuths,
+    label: 'common.substrateDApps',
+    name: '/dapps/substrate',
+    type: 'substrate',
+    component: Components.DAppsAuths,
+  },
+  evm: {
+    label: 'common.evmDApps',
+    name: '/dapps/evm',
+    type: 'evm',
+    component: Components.DAppsAuths,
   },
   wc: {
     label: 'common.wc',
-    name: Components.WcAuths,
+    name: '/wc',
+    component: Components.WcAuths,
   },
 };
 
 const route = useRoute();
 
-const activeTab = ref(route.name);
+const activeTab = computed(() => route.path);
 
-const onActiveTabUpdate = (value: Components.DAppsAuths | Components.WcAuths) => {
-  if (route.name !== value) {
-    router.push({ name: value });
-    activeTab.value = value;
-  }
+const onActiveTabUpdate = (tab: { label: string; name: Components; type: string; component: Components }) => {
+  if (route.name !== tab.name) router.push({ name: tab.component, params: { type: tab.type } });
 };
 </script>
 

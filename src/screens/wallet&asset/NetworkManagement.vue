@@ -201,8 +201,8 @@ export default class NetworkManagement extends Vue {
     return this.selectedNetwork === name;
   }
 
-  updateActiveTab(value: keyof Tabs) {
-    this.activeTab = value;
+  updateActiveTab(tab: Tab) {
+    this.activeTab = tab.name as keyof Tabs;
   }
 
   toggleNetworkType() {

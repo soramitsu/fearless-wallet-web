@@ -128,19 +128,13 @@ const getters: GetterTree<State, State> & Getters = {
     },
 
   [GettersTypes.getWallets]({ accounts }): WalletInfo[] {
-    const wallets: WalletInfo[] = [];
-
-    accounts.forEach((account) => {
-      wallets.push({
-        name: account.name,
-        ethereumAddress: account.ethereumAddress,
-        address: account.address,
-        isMobile: !!account.isMobile,
-        active: !!account.active,
-      });
-    });
-
-    return wallets;
+    return accounts.map((account) => ({
+      name: account.name,
+      ethereumAddress: account.ethereumAddress,
+      address: account.address,
+      isMobile: !!account.isMobile,
+      active: !!account.active,
+    }));
   },
 
   [GettersTypes.GET_QR]({ qr }): Nullable<string> {

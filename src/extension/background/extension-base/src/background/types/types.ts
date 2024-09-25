@@ -173,9 +173,11 @@ export interface RequestAuthorizeApprove {
   authorizedAccounts: string[];
 }
 
+export type AuthType = 'substrate' | 'evm';
 export interface RequestUpdateAuthorizedAccounts {
   url: string;
   authorizedAccounts: string[];
+  authType: AuthType;
 }
 
 export interface RequestMetadataApprove {
@@ -595,7 +597,11 @@ export interface AuthUrlInfo {
 
 export type AuthUrls = Record<string, AuthUrlInfo>;
 
-export type AuthorizedAccountsDiff = [url: string, authorizedAccounts: AuthUrlInfo['authorizedAccounts']][];
+export type AuthorizedAccountsDiff = [
+  url: string,
+  authorizedAccounts: AuthUrlInfo['authorizedAccounts'],
+  authType: AuthType
+][];
 
 export interface MetaRequest extends Resolver<boolean> {
   id: string;

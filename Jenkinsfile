@@ -1,5 +1,9 @@
 @Library('jenkins-library')
 
+def jobParams = [
+  booleanParam(defaultValue: false, description: 'build as a web version', name: 'isWeb'),
+]
+
 def buildWithCred  = [
     [$class: 'UsernamePasswordMultiBinding', credentialsId: 'OAUTH_CLIENT_UPLOAD', usernameVariable: 'OAUTH_CLIENT_ID_UPLOAD', passwordVariable: 'OAUTH_CLIENT_SECRET_UPLOAD'],
     [$class: 'UsernamePasswordMultiBinding', credentialsId: 'OAUTH_CLIENT_WEB', usernameVariable: 'OAUTH_CLIENT_ID', passwordVariable: 'OAUTH_CLIENT_SECRET'],
@@ -33,39 +37,44 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'FL_OKLINK_API_KEY', variable: 'VUE_APP_FL_WEB_X1_TESTNET_API_KEY']
 ]
 
+if (jobParams.isWeb == false) {
+    def pipeline = new org.js.AppArtifactsPipeline(
+        steps:                      this,
+        secretScannerExclusion:     '/src/extension/background/extension-base/src/api/evm/history.ts',
+        buildCmds:                  ['yarn build:extension:all'],
+        nexusCredential:            'bot-fearless-rw',
+        nexusProjectPath:           'fearless/extension',
+        nexusNotification:           true,
+        nexusChatID:                "-1001934877683",
+        sonarProjectKey:            'fearless:fearless-wallet-web',
+        sonarProjectName:           'fearless-wallet-web',
+        sonarCredential:            'sonar_fearless_token',
+        extSlug:                    'fearless-wallet',
+        mozillaChannel:             'listed',
+        distFolders:                ['./dist/extension/firefox','./dist/extension/chrome'],
+        distFoldersTestNets:        ['./dist/extension/chrome-test'],
+        preBuildCmds:               ['apt-get update && apt-get install zip jq -y && corepack enable &&yarn set version 3.4.1 && yarn install'],
+        nexusFiles:                 [ '.zip'],
+        chromeExtFile:              'fearless-wallet-extension-chrome.zip',
+        mozillaExtFile:             'fearless-wallet-extension-firefox.zip',
+        uploadToNexusFor:           ['master','develop','stage'],
+        uploadToGoogleFor:          ['master'],
+        uploadToFirefoxFor:         ['master'],
+        buildWithCred:              buildWithCred,
+        dojoProductType:            'fearless-web',
+        sonarSrcPath:               'src',
+        sonarTestsPath:             'tests',
+        checkSquashCommits:         true,
+        triggerAutotest:            true,
+        downstreamJob:              '/qa/soramitsu-test-framework/fearless-wallet-web',
+        downstreamJobParams:        [
+            [$class: 'StringParameterValue', name: 'targetBranch', value: env.BRANCH_NAME],
+            [$class: 'StringParameterValue', name: 'typeTest', value: 'tests:fearless-smoke']
+        ],
+        dockerImageName: 'fearless/wallet-web',
+        dockerRegistryCred: 'bot-fearless-rw',
+    )
+}
 
-def pipeline = new org.js.AppArtifactsPipeline(
-    steps:                      this,
-    secretScannerExclusion:     '/src/extension/background/extension-base/src/api/evm/history.ts',
-    buildCmds:                  ['yarn build:extension:all'],
-    nexusCredential:            'bot-fearless-rw',
-    nexusProjectPath:           'fearless/extension',
-    nexusNotification:           true,
-    nexusChatID:                "-1001934877683",
-    sonarProjectKey:            'fearless:fearless-wallet-web',
-    sonarProjectName:           'fearless-wallet-web',
-    sonarCredential:            'sonar_fearless_token',
-    extSlug:                    'fearless-wallet',
-    mozillaChannel:             'listed',
-    distFolders:                ['./dist/extension/firefox','./dist/extension/chrome'],
-    distFoldersTestNets:        ['./dist/extension/chrome-test'],
-    preBuildCmds:               ['apt-get update && apt-get install zip jq -y && corepack enable &&yarn set version 3.4.1 && yarn install'],
-    nexusFiles:                 [ '.zip'],
-    chromeExtFile:              'fearless-wallet-extension-chrome.zip',
-    mozillaExtFile:             'fearless-wallet-extension-firefox.zip',
-    uploadToNexusFor:           ['master','develop','stage'],
-    uploadToGoogleFor:          ['master'],
-    uploadToFirefoxFor:         ['master'],
-    buildWithCred:              buildWithCred,
-    dojoProductType:            'fearless-web',
-    sonarSrcPath:               'src',
-    sonarTestsPath:             'tests',
-    checkSquashCommits:         true,
-    triggerAutotest:            true,
-    downstreamJob:              '/qa/soramitsu-test-framework/fearless-wallet-web',
-    downstreamJobParams:        [
-        [$class: 'StringParameterValue', name: 'targetBranch', value: env.BRANCH_NAME],
-        [$class: 'StringParameterValue', name: 'typeTest', value: 'tests:fearless-smoke']
-    ]
-)
+
 pipeline.runPipeline()

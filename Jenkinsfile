@@ -70,6 +70,17 @@ def pipeline = new org.js.AppArtifactsPipeline(
     dockerImageName:            'fearless/wallet-web',
     dockerRegistryCred:         'bot-fearless-rw',
     buildDockerImage:           'build-tools/node:20-alpine',
-    k8sPrDeploy: false
+    webPreBuildCmds:            ['corepack enable && yarn set version 3.4.1 && yarn install'],
+    k8sPrDeploy:                true,
+    vaultPrPath:                "argocd-cc/src/charts/fearless/wallet-web/environments/wakizashi/",
+    vaultUser:                  "fearless-rw",
+    vaultCredId:                "fearlessVaultCreds",
+    valuesDestPath:             "argocd-cc/src/charts/fearless/wallet-web/",
+    devValuesPath:              "dev/dev/",
+    initialSecretName:          "fearless-dev-wallet-web-wallet-web-web-eso-base",
+    initialNameSpace:           "fearless-dev-web",
+    targetNameSpace:            "fearless-${env.CHANGE_ID}-web",
+    targetSecretName:           "fearless-${env.CHANGE_ID}-wallet-web-pr-wallet-web-eso-base",
+    dockerImageTags:            ['feature/web-build_pipeline': 'dev']
 )
 pipeline.runPipeline()

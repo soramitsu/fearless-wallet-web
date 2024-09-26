@@ -1,9 +1,5 @@
 @Library('jenkins-library@feature/web-build_pipeline')
 
-def jobParams = [
-  booleanParam(defaultValue: false, description: 'build as web', name: 'isWeb'),
-]
-
 def buildWithCred  = [
     [$class: 'UsernamePasswordMultiBinding', credentialsId: 'OAUTH_CLIENT_UPLOAD', usernameVariable: 'OAUTH_CLIENT_ID_UPLOAD', passwordVariable: 'OAUTH_CLIENT_SECRET_UPLOAD'],
     [$class: 'UsernamePasswordMultiBinding', credentialsId: 'OAUTH_CLIENT_WEB', usernameVariable: 'OAUTH_CLIENT_ID', passwordVariable: 'OAUTH_CLIENT_SECRET'],
@@ -71,10 +67,8 @@ def pipeline = new org.js.AppArtifactsPipeline(
         [$class: 'StringParameterValue', name: 'targetBranch', value: env.BRANCH_NAME],
         [$class: 'StringParameterValue', name: 'typeTest', value: 'tests:fearless-smoke']
     ],
-    jobParams:                  jobParams,
     dockerImageName:            'fearless/wallet-web',
     dockerRegistryCred:         'bot-fearless-rw',
-    webBuildCmds:               ['yarn build:web'],
     k8sPrDeploy: false
 )
 pipeline.runPipeline()

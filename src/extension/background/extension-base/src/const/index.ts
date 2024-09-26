@@ -2,8 +2,6 @@ import { IS_PRODUCTION } from '@/consts/global';
 import { URLS } from '@/consts/urls';
 import { type EIP6963ProviderInfo } from '@/extension/entry/types';
 
-export const ALL_ACCOUNT_KEY = 'ALL';
-export const ALL_NETWORK_KEY = 'all';
 export const EXTENSION_REQUEST_URL = 'extension';
 
 const { BASE_URL } = URLS;

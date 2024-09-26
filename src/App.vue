@@ -31,6 +31,7 @@ import {
   subscribeBalance,
   subscribeNetworkMap,
   subscribePrice,
+  subscribeSelectedNetworks,
 } from '@/extension/messaging';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { IS_EXTENSION, IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
@@ -125,6 +126,8 @@ export default class App extends Vue {
     );
 
     this.setNetworks({ networks: Object.values(nets) });
+
+    await subscribeSelectedNetworks((network) => this.setSelectedNetwork(network));
   }
 
   async setupPrice() {

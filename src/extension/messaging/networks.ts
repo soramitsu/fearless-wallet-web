@@ -14,3 +14,7 @@ export function subscribeNetworkMap(
 ): Promise<Record<string, NetworkJson>> {
   return sendMessage('pri(networkMap.getSubscription)', null, callback);
 }
+
+export function subscribeSelectedNetworks(callback: (data: string) => void): Promise<string> {
+  return sendMessage('pri(selectedNetworks.getSubscription)', null, callback);
+}

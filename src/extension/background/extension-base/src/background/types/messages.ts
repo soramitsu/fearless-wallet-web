@@ -159,6 +159,7 @@ export interface RequestSignatures {
   'pri(app.port.ping)': [null, boolean];
   'pri(networkMap.upsert)': [NetworkJson, boolean];
   'pri(networkMap.getSubscription)': [null, Record<string, NetworkJson>, Record<string, NetworkJson>];
+  'pri(selectedNetworks.getSubscription)': [null, string, string];
   'pri(networkMap.toggle.favorite)': [string, void];
 
   //Authorize

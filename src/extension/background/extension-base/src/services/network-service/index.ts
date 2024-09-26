@@ -1,8 +1,8 @@
 import axios from 'axios';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
+import SelectedNetworkStore from '@extension-base/stores/SelectedNetworkStore';
 import { type NetworkJson } from '@extension-base/types';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
-import { storage } from '@extension-base/stores/Storage';
 import { EvmApiHandler } from '@extension-base/services/network-service/handlers/EvmApiHandler';
 import { SubstrateApiHandler } from '@extension-base/services/network-service/handlers/SubstrateApiHandler';
 import { type KeyringService } from '@extension-base/services';
@@ -23,6 +23,7 @@ export type NetworkMap = Record<string, NetworkJson>;
 export class NetworkService {
   private readonly logger = createLogger('Network_Service');
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
+  readonly selectedNetworksStore = new SelectedNetworkStore();
   public networksGithub: NetworkJson[] = []; // networks from github
   public networkMap: NetworkMap = {}; // mapping to networkMapStore, for uses in background
   public selectedNetworks: Record<string, string> = {};
@@ -32,9 +33,10 @@ export class NetworkService {
   constructor(readonly keyringService: KeyringService, state: State) {
     this.substrateApiHandler = new SubstrateApiHandler(this, state);
 
-    storage.get(['selectedNetworks']).then(({ selectedNetworks }) => {
-      if (selectedNetworks) this.selectedNetworks = selectedNetworks;
-    });
+    this.selectedNetworksStore.get(
+      'selectedNetworks',
+      (selectedNetworks) => (this.selectedNetworks = selectedNetworks ?? {})
+    );
   }
 
   get networkValues() {
@@ -127,7 +129,7 @@ export class NetworkService {
   }
 
   saveSelectedNetworks() {
-    storage.set({ selectedNetworks: this.selectedNetworks });
+    this.selectedNetworksStore.set('selectedNetworks', this.selectedNetworks);
   }
 
   getNetworkJson(networkNameOrChainId: NetworkName): NetworkJson {

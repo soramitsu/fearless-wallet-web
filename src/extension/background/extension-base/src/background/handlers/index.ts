@@ -20,7 +20,9 @@ export function handlers<TMessageType extends MessageTypes>(
 
   const sender = port.sender as chrome.runtime.MessageSender;
   const from = isExtension ? 'extension' : (sender.tab && sender.tab.url) || sender.url || '<unknown>';
-  const source = `${from}: ${id}: ${message}`;
+  const source = `${from}: ${id}: ${message}: ${
+    message === 'evm(request)' && request && 'method' in request ? request?.method : ''
+  }`;
 
   console.info(`[in] ${source}`);
 

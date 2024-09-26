@@ -241,23 +241,16 @@ export default class Tabs {
   }
 
   async getEvmState(url: string): Promise<EvmAppState> {
-    let currentChain: string | undefined;
-    let autoActive = false;
+    let defaultChain: string | undefined;
 
     if (url) {
       const authInfo = await this.state.getAuthInfo(url);
 
-      if (authInfo?.currentEvmNetworkKey) {
-        currentChain = authInfo?.currentEvmNetworkKey;
-      }
-
-      if (authInfo?.isAllowed) autoActive = true;
+      if (authInfo?.currentEvmNetworkKey) defaultChain = authInfo?.currentEvmNetworkKey;
     }
 
-    const currentEvmNetwork = this.state.requestService.getDAppNetworkInfo({
-      autoActive,
-      accessType: 'evm',
-      defaultChain: currentChain,
+    const currentEvmNetwork = this.state.requestService.getEvmNetworkInfo({
+      defaultChain,
       url,
     });
 
@@ -272,15 +265,8 @@ export default class Tabs {
 
   private async getEvmProvider(url: string): Promise<EvmProvider | undefined> {
     const evmState = await this.getEvmState(url);
-    let provider = evmState.web3;
 
-    if (!provider) {
-      await this.getEvmCurrentChainId(url);
-
-      provider = evmState.web3;
-    }
-
-    return provider;
+    return evmState.web3;
   }
 
   private async evmSubscribeEvents(url: string, id: string, port: chrome.runtime.Port) {
@@ -459,7 +445,7 @@ export default class Tabs {
     const networkJson = this.state.networkService.findNetworkJsonByChainId(chainIdDec.toString());
 
     if (networkJson) await this.state.switchEvmNetworkByUrl(stripUrl(url), networkJson.name);
-    else throw new Error('Unknown network');
+    else throw new Error(`Unknown network: ${chainId}`);
 
     return null;
   }

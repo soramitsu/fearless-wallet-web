@@ -69,6 +69,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     ],
     dockerImageName:            'fearless/wallet-web',
     dockerRegistryCred:         'bot-fearless-rw',
+    buildDockerImage:           'build-tools/node:20-alpine',
     k8sPrDeploy: false
 )
 pipeline.runPipeline()

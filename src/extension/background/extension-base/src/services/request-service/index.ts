@@ -177,9 +177,10 @@ export class RequestService {
     return this.evmRequestHandler.getSignWCRequest(topic);
   }
 
-  public getDAppNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {
-    return this.authRequestHandler.getDAppNetworkInfo(options);
+  public getEvmNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {
+    return this.authRequestHandler.getEvmNetworkInfo(options);
   }
+
   // WalletConnect Connect requests
   public getConnectWCRequest(id: string) {
     return this.connectWCRequestHandler.getConnectWCRequest(id);

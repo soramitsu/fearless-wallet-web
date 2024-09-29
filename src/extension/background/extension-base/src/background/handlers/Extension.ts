@@ -1238,9 +1238,7 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(networkMap.getSubscription)'>(id, port);
 
     const networkMapSubscription = this.state.networkService.networkMapStore.subject.subscribe({
-      next: (rs) => {
-        cb(rs);
-      },
+      next: (rs) => cb(rs),
     });
 
     this.createUnsubscriptionHandle(id, networkMapSubscription.unsubscribe);
@@ -1250,6 +1248,24 @@ export default class Extension extends FWExtensionBase {
     });
 
     return this.state.networkService.networkMap;
+  }
+
+  private subscribeSelectedNetworks(id: string, port: Port) {
+    const cb = createSubscription<'pri(selectedNetworks.getSubscription)'>(id, port);
+
+    const selectedNetworksSubscription = this.state.networkService.selectedNetworksStore.subject.subscribe({
+      next: (rs) => {
+        const network = rs[this.state.currentAccount?.address ?? ''];
+
+        if (network) cb(network);
+      },
+    });
+
+    this.createUnsubscriptionHandle(id, selectedNetworksSubscription.unsubscribe);
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+    });
   }
 
   private async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {
@@ -1700,10 +1716,13 @@ export default class Extension extends FWExtensionBase {
       case 'pri(window.open)':
         return this.windowOpen(request as AllowedPath);
 
-      // authorize
       case 'pri(networkMap.getSubscription)':
         return this.subscribeNetworkMap(id, port);
 
+      case 'pri(selectedNetworks.getSubscription)':
+        return this.subscribeSelectedNetworks(id, port);
+
+      // authorize
       case 'pri(authorize.approve)':
         return this.authorizeApprove(request as RequestAuthorizeApprove);
 

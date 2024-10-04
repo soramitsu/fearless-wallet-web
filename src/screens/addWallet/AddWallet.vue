@@ -325,8 +325,7 @@ export default class AddWallet extends Vue {
         if (
           !this.mnemonic &&
           !this.substrateRawSeed &&
-          !this.passwordSubstrateJson &&
-          this.isLengthZero(this.substrateJson)
+          (this.isLengthZero(this.substrateJson) || !this.passwordSubstrateJson)
         )
           return true;
 
@@ -336,16 +335,12 @@ export default class AddWallet extends Vue {
       if (this.step === 2) {
         if (this.isDifferentPasswords) return true;
 
-        if (!this.ethereumRawSeed) return true;
-
-        if (!this.passwordEthereumJson) return true;
-
-        if (this.isLengthZero(this.ethereumJson)) return true;
+        if (!this.ethereumRawSeed) return this.isLengthZero(this.ethereumJson) || !this.passwordEthereumJson;
 
         return false;
       }
 
-      if (this.step === 3) return !this.nickname;
+      if (this.step === 3 && this.typeImport !== 'json') return !this.nickname;
     }
 
     // isCreateWallet

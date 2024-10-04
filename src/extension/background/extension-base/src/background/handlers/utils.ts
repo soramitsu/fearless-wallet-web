@@ -33,7 +33,7 @@ export function getBalanceItem(balances: BalanceItem[], network: string) {
 export function getSubstrateEvmAssetName(asset: AssetName, network: NetworkName) {
   const assetLower = asset.toLowerCase();
 
-  if (!isEthereumNetwork(network)) return assetLower;
+  if (!isEthereumSubstrateNetwork(network)) return assetLower;
 
   if (Object.values(SUBSTRATE_EVM_UTILITY_ASSETS).includes(assetLower)) return assetLower;
 
@@ -43,9 +43,7 @@ export function getSubstrateEvmAssetName(asset: AssetName, network: NetworkName)
 export const uniqueStringArray = (array: string[]): string[] => {
   const map: Record<string, string> = {};
 
-  array.forEach((v) => {
-    map[v] = v;
-  });
+  array.forEach((v) => (map[v] = v));
 
   return Object.keys(map);
 };

@@ -5,8 +5,8 @@
       data-testid="enterPasswordInput"
       class="row"
       :value="pass1"
-      :errorDescriptions="t('shortPassword')"
-      :placeholder="t('enterPassword')"
+      :errorDescriptions="$t('addWallet.shortPassword')"
+      :placeholder="$t('welcome.newPassword')"
       :isError="isShortPassword"
       :showPassword="true"
       @change="changePass1"
@@ -17,8 +17,8 @@
       data-testid="reEnterPasswordInput"
       class="row"
       :value="pass2"
-      :errorDescriptions="t('notMatchPassword')"
-      :placeholder="t('reEnterPassword')"
+      :errorDescriptions="$t('addWallet.notMatchPassword')"
+      :placeholder="$t('welcome.reenterNewPassword')"
       :isError="isWrongPassword"
       :showPassword="true"
       @change="changePass2"
@@ -39,10 +39,10 @@ export default class PasswordForm extends Vue {
   pass1 = '';
   pass2 = '';
 
-  @Ref('pass1Input') readonly pass1InputComponent!: typeof ValidatedInput;
-  @Prop(Boolean) showMockPassword!: boolean;
+  @Ref('pass1Input') readonly pass1InputComponent!: ValidatedInput;
   @Prop({ type: Boolean, default: false }) isGoogleFlow!: boolean;
   @Prop(Boolean) showSamePasswordText!: boolean;
+  @Prop({ type: Boolean, default: true }) focus!: boolean;
 
   get isShortPassword() {
     return this.pass1.length !== 0 && this.pass1.length < 6;
@@ -57,42 +57,36 @@ export default class PasswordForm extends Vue {
   }
 
   get hintGoogleDriveText() {
-    return this.t('google.dataWillStoreOnGDrive');
+    return this.$t('addWallet.google.dataWillStoreOnGDrive');
   }
 
   get hintText() {
-    if (this.showSamePasswordText) return this.t('samePassword');
+    if (this.showSamePasswordText) return this.$t('addWallet.samePassword');
 
-    return this.t('passwordInfo');
+    return this.$t('addWallet.passwordInfo');
   }
 
   mounted() {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    this.pass1InputComponent.input.focus();
-
-    if (this.showMockPassword) this.pass1 = '000000';
+    if (this.focus)
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      this.pass1InputComponent.input.focus();
   }
 
   @Watch('pass1')
   changePassword(pass1: string) {
     if (pass1.length < 6) this.pass2 = '';
-    else if (pass1 === this.pass2) this.setPassword(pass1);
+
+    this.setPassword(pass1 === this.pass2 ? pass1 : '');
   }
 
   @Watch('pass2')
   confirmPassword(pass2: string) {
-    if (this.pass1 === pass2) {
-      this.setPassword(pass2);
-
-      return;
-    }
-
-    this.setPassword('');
+    this.setPassword(this.pass1 === pass2 ? pass2 : '');
   }
 
   setPassword(password: string) {
-    this.$emit('updateWalletPassword', password);
+    this.$emit('setPassword', password);
   }
 
   changePass1(value: string) {
@@ -101,10 +95,6 @@ export default class PasswordForm extends Vue {
 
   changePass2(value: string) {
     this.pass2 = value;
-  }
-
-  t(value: string, obj: Record<string, string> = {}) {
-    return this.$t(`addWallet.${value}`, obj);
   }
 }
 </script>

@@ -1,4 +1,11 @@
-import type { AllowedPath, ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
+import { type KeyringAddress } from '@subwallet/ui-keyring/types';
+import type {
+  AllowedPath,
+  ActiveTabAuthorizeStatus,
+  RequestChangePassword,
+  RequestUnlockExtension,
+  RequestMigratePassword,
+} from '@extension-base/background/types/types';
 import { sendMessage } from '@/extension/messaging/index';
 
 export async function subscribeSoraCardToken(cb: (token: string) => void): Promise<boolean> {
@@ -15,4 +22,48 @@ export function isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
 
 export function pingServiceWorker(): Promise<boolean> {
   return sendMessage('pri(app.port.ping)');
+}
+
+export function hasMasterPassword(): Promise<boolean> {
+  return sendMessage('pri(keyring.hasMasterPassword)');
+}
+
+export function hasAccounts(): Promise<boolean> {
+  return sendMessage('pri(keyring.hasAccounts)');
+}
+
+export function keyringIsLocked(): Promise<boolean> {
+  return sendMessage('pri(keyring.keyringIsLocked)');
+}
+
+export function extensionChangePassword(request: RequestChangePassword): Promise<boolean> {
+  return sendMessage('pri(keyring.changePassword)', request);
+}
+
+export function unlockExtension(request: RequestUnlockExtension): Promise<boolean> {
+  return sendMessage('pri(keyring.unlock)', request);
+}
+
+export function lockExtension(): Promise<boolean> {
+  return sendMessage('pri(keyring.lock)');
+}
+
+export function getExtensionPassword(): Promise<string> {
+  return sendMessage('pri(keyring.getPassword)');
+}
+
+export function resetWallet(): Promise<boolean> {
+  return sendMessage('pri(keyring.reset)');
+}
+
+export function getMigrationAccounts(): Promise<KeyringAddress[]> {
+  return sendMessage('pri(keyring.getMigrationAccounts)');
+}
+
+export function isNeedMigration(): Promise<boolean> {
+  return sendMessage('pri(keyring.isNeedMigration)');
+}
+
+export function migrateMasterPassword(request: RequestMigratePassword): Promise<boolean> {
+  return sendMessage('pri(keyring.migrateMasterPassword)', request);
 }

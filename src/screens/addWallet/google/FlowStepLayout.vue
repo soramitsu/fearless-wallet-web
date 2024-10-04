@@ -184,7 +184,6 @@ export default class FlowStepLayout extends Vue {
 
   .controls {
     width: 100%;
-    margin-bottom: 15px;
   }
 }
 </style>

@@ -1,6 +1,6 @@
 <template>
   <div class="logo">
-    <div :class="circleClasses" :style="styleCircle">
+    <div v-if="showLogo" :class="circleClasses" :style="styleCircle">
       <div :class="circleBlurClasses">
         <Icon icon="fw-logo" className="img" :style="sizeIconLogo" />
       </div>
@@ -12,7 +12,7 @@
 </template>
 
 <script lang="ts" setup>
-import { withDefaults, computed } from 'vue';
+import { computed } from 'vue';
 
 type SizeLogo = 'mini' | 'small' | 'medium' | 'big';
 type TypeLogo = 'primary' | 'secondary';
@@ -22,11 +22,13 @@ interface Props {
   subtext?: string;
   size?: SizeLogo;
   typeLogo?: TypeLogo;
+  showLogo?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   size: 'medium',
   typeLogo: 'primary',
+  showLogo: true,
 });
 
 const circleSizes = {

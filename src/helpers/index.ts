@@ -81,6 +81,10 @@ function getClipboard() {
   return paste;
 }
 
+function setClipboard(str: string) {
+  if ('clipboard' in navigator) navigator.clipboard.writeText(str);
+}
+
 function getFormattedDate(timestamp: string | number, type: 's' | 'ms' = 's') {
   const date = type === 's' ? secondsToMilliseconds(+timestamp) : +timestamp;
 
@@ -103,6 +107,7 @@ export {
   validateEmail,
   cut,
   getClipboard,
+  setClipboard,
   getFormattedDate,
   isSoraTest,
   isSubstrString,

@@ -17,13 +17,12 @@ type Props = {
   text: ComponentText;
 };
 
-const baseClass = 'notifications-icon';
 const props = withDefaults(defineProps<Props>(), { size: 'medium' });
 const { t, tc } = useI18n();
 
 const getClasses = computed(() => {
   return [
-    baseClass,
+    'notifications-icon',
     {
       'warning--orange': props.iconName === 'warning',
     },
@@ -66,6 +65,8 @@ const getSize = computed(() => (props.size === 'big' ? 'info-text--big' : 'info-
   .notifications-icon {
     display: flex;
     align-items: center;
+    min-width: 20px;
+    min-height: 20px;
     width: 20px;
     height: 20px;
     margin-right: 15px;
@@ -77,6 +78,7 @@ const getSize = computed(() => (props.size === 'big' ? 'info-text--big' : 'info-
     margin: auto 0;
     line-height: 19px;
   }
+
   .info-text--big {
     font-size: 16px;
     font-weight: 600;

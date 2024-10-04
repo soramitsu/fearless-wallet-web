@@ -199,7 +199,7 @@
 import { Component, Vue, Prop, Watch, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
-import { getSubstrateEvmAssetName, getNativeAssetName } from '@extension-base/background/handlers/utils';
+import { getNativeAssetName, getSubstrateEvmAssetName } from '@extension-base/background/handlers/utils';
 import { TransferErrorCode } from '@extension-base/background/types/types';
 import { Reasons, type ScamInfo } from '@extension-base/services/scam-service/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
@@ -238,6 +238,7 @@ import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHe
 import { checkTransfer, checkCrossChain, checkScamAddress } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import { isNetworkGroup } from '@/helpers/common';
+import { IS_POPUP } from '@/consts/globalClient';
 
 @Component({
   components: {
@@ -250,8 +251,6 @@ import { isNetworkGroup } from '@/helpers/common';
   },
 })
 export default class TransferForm extends Vue {
-  readonly isPopup = BaseApi.useIsPopup();
-
   timeoutSubscription: NodeJS.Timeout | undefined;
   timeoutSetMax: NodeJS.Timeout | undefined;
   showSelectedAssetPopup = false;
@@ -408,11 +407,11 @@ export default class TransferForm extends Vue {
 
     if (this.showSelectNetworkPopup) return 150;
 
-    return this.isPopup ? 42 : 332;
+    return IS_POPUP ? 42 : 332;
   }
 
   get left() {
-    if (this.showSelectedAssetPopup || (this.showDestNetPopup && this.isPopup)) return 160;
+    if (this.showSelectedAssetPopup || (this.showDestNetPopup && IS_POPUP)) return 160;
 
     return -160;
   }

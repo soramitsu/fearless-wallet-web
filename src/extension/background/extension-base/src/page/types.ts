@@ -31,7 +31,6 @@ export interface SendRequest {
 
 export type FWEvmProvider = {
   provider?: FWEvmProvider;
-  version: string;
   isConnected(): boolean;
 };
 

@@ -2,42 +2,23 @@ import { sendExtrinsic } from '@extension-base/api/substrate/shared/sendExtrinsi
 import { signExtrinsic } from '@extension-base/api/substrate/shared/signExtrinsic';
 import { BasicTxErrorCode } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
-import type {
-  ApiProps,
-  BasicTxResponse,
-  PrepareExternalRequest,
-  SignerType,
-} from '@extension-base/background/types/types';
+import type { ApiProps, BasicTxResponse, PrepareExternalRequest } from '@extension-base/background/types/types';
 
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
-import type { EventRecord } from '@polkadot/types/interfaces';
 import type { HandleBasicTx } from '@extension-base/api/evm/transfer';
 
-interface AbstractSignAndSendExtrinsicProps extends Partial<PrepareExternalRequest> {
+interface SignAndSendExtrinsicProps extends Partial<PrepareExternalRequest> {
   extrinsic: Nullable<SubmittableExtrinsic<'promise'>>;
   callback: HandleBasicTx;
   txState?: BasicTxResponse;
   address: string;
-  type: SignerType;
   errorMessage: string;
   apiProps: ApiProps;
-  isSavePass?: boolean;
-  password?: string;
-  updateResponseTxResult?: (response: BasicTxResponse, records: EventRecord[]) => void;
+  isMobile: boolean;
 }
-
-interface PasswordSignAndSendExtrinsicProps extends AbstractSignAndSendExtrinsicProps {
-  type: SignerType.PASSWORD;
-}
-
-interface ExternalSignAndSendExtrinsicProps extends AbstractSignAndSendExtrinsicProps {
-  type: SignerType.MOBILE;
-}
-
-type SignAndSendExtrinsicProps = ExternalSignAndSendExtrinsicProps | PasswordSignAndSendExtrinsicProps;
 
 export const signAndSendExtrinsic = async (
-  { address, apiProps, callback, errorMessage, extrinsic, password, txState = {}, type }: SignAndSendExtrinsicProps,
+  { address, apiProps, callback, errorMessage, extrinsic, txState = {}, isMobile }: SignAndSendExtrinsicProps,
   state: State
 ) => {
   if (!extrinsic) {
@@ -52,10 +33,8 @@ export const signAndSendExtrinsic = async (
     {
       address,
       apiProps,
-      callback,
       extrinsic,
-      password,
-      type,
+      isMobile,
     },
     state
   );

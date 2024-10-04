@@ -3,10 +3,10 @@
     :showHeader="false"
     :showBorder="true"
     :top="50"
-    @handlerClose="$emit('handlerClose')"
     sizeWidth="big"
     verticalPlacement="top"
     horizontalPlacement="right"
+    @handlerClose="$emit('handlerClose')"
   >
     <div class="settings">
       <SettingMenuItem
@@ -60,6 +60,15 @@
         data-testid="aboutApp"
         @onOpen="openPopup('openAboutPopup')"
       />
+
+      <SettingMenuItem
+        title="common.changePassword"
+        icon="key"
+        data-testid="changePassword"
+        @onOpen="open('ChangePassword')"
+      />
+
+      <SettingMenuItem title="common.lockApp" icon="lock" data-testid="lockApp" @onOpen="lock" />
     </div>
   </Popup>
 </template>
@@ -68,14 +77,13 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Features } from '@/store/extension/types';
+import type { SelectedWallet } from '@/store';
 import { Components } from '@/router/routes';
 import SettingMenuItem from '@/screens/main/SettingMenuItem.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { type SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
-
-type SettingsItemType = 'AccountSetting' | 'SoraCard' | 'PolkaswapDisclaimer' | 'WalletConnectInitAuth';
+import { lockExtension } from '@/extension/messaging';
 
 @Component({
   components: { SettingMenuItem },
@@ -102,10 +110,16 @@ export default class SettingsPopup extends Vue {
     this.$router.push({ name: Components.DAppsAuths, params: { type: 'substrate' } });
   }
 
-  open(name: SettingsItemType) {
+  open(name: keyof typeof Components) {
     if (this.routeName !== name) this.$router.push({ name: Components[name] });
 
     this.$emit('handlerClose');
+  }
+
+  lock() {
+    lockExtension();
+
+    this.$router.push({ name: Components.Unlock });
   }
 }
 </script>

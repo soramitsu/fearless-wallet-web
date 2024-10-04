@@ -2,7 +2,7 @@ import { assert } from '@polkadot/util';
 import { type TransformAccountPayload, type TokenGroup } from '@extension-base/background/types/types';
 import { APIItemState } from '@extension-base/api/types/networks';
 import type { InjectedAccount } from '@polkadot/extension-inject/types';
-import type { SingleAddress } from '@polkadot/ui-keyring/observable/types';
+import type { SingleAddress } from '@subwallet/ui-keyring/observable/types';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RelayChainName } from '@/interfaces';
@@ -157,4 +157,14 @@ export function transformAddresses({ accounts, accountAuthType }: TransformAccou
         genesisHash: '',
       };
     });
+}
+
+export async function isOpenClient() {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  //@ts-ignore
+  const contexts: any[] = await chrome.runtime.getContexts({});
+
+  const index = contexts.findIndex(({ contextType }) => contextType === 'TAB' || contextType === 'POPUP');
+
+  return index !== -1;
 }

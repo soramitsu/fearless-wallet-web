@@ -1,3 +1,4 @@
+import { type KeyringAddress } from '@subwallet/ui-keyring/types';
 import type { EvmRequests } from '@extension-base/services/request-service/types';
 import type { AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
 import type { RequestArguments } from '@json-rpc-tools/utils';
@@ -80,7 +81,7 @@ import type {
   RequestMetadataApprove,
   RequestMetadataReject,
   MetadataRequest,
-  RequestSigningApprovePassword,
+  RequestSigningApprove,
   RequestSigningApproveSignature,
   RequestSigningCancel,
   RequestSigningIsLocked,
@@ -111,8 +112,11 @@ import type {
   FetchEvmBalancePayload,
   RequestCheckScam,
   ResponseCheckScam,
-  RequestExportMnemonic,
-  ResponseExportMnemonic,
+  RequestExportSeed,
+  ResponseExportSeed,
+  RequestChangePassword,
+  RequestUnlockExtension,
+  RequestMigratePassword,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -122,7 +126,7 @@ import type {
   ProviderMeta,
 } from '@polkadot/extension-inject/types';
 import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
+import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type {
   DerivationPath,
   GoogleAuthTypes,
@@ -135,15 +139,28 @@ import type {
 } from '@/interfaces';
 
 export interface RequestSignatures {
-  // private/internal requests, i.e. from a popup
-  //Account Managment
+  // Keyring state
+  'pri(keyring.hasMasterPassword)': [null, boolean];
+  'pri(keyring.hasAccounts)': [null, boolean];
+  'pri(keyring.keyringIsLocked)': [null, boolean];
+  'pri(keyring.changePassword)': [RequestChangePassword, boolean];
+  'pri(keyring.unlock)': [RequestUnlockExtension, boolean];
+  'pri(keyring.lock)': [null, boolean];
+  'pri(keyring.getPassword)': [null, string];
+  'pri(keyring.reset)': [null, boolean];
+  'pri(keyring.getMigrationAccounts)': [null, KeyringAddress[]];
+  'pri(keyring.isNeedMigration)': [null, boolean];
+  'pri(keyring.migrateMasterPassword)': [RequestMigratePassword, boolean];
+
+  // Account Management
   'pri(accounts.validate.path)': [DerivationPath, boolean];
   'pri(accounts.create)': [RequestAccountCreateSuri, string];
   'pri(accounts.create.mobile)': [RequestAddressCreate, boolean];
   'pri(addresses.create)': [RequestAddressCreate, boolean];
   'pri(accounts.update.meta)': [RequestUpdateMeta, boolean];
   'pri(accounts.export.json)': [RequestAccountExport, ResponseAccountExport];
-  'pri(accounts.export.mnemonic)': [RequestExportMnemonic, ResponseExportMnemonic];
+  'pri(accounts.export.mnemonic)': [RequestExportSeed, ResponseExportSeed];
+  'pri(accounts.export.rowSeed)': [RequestExportSeed, ResponseExportSeed];
   'pri(accounts.forget)': [RequestAccountForget, boolean];
   'pri(accounts.list)': [null, InjectedAccount[]];
   'pri(accounts.name)': [RequestAccountName, boolean];
@@ -154,7 +171,7 @@ export interface RequestSignatures {
   'pri(accounts.update.currentNetwork)': [string, boolean];
   'pri(accounts.totalBalances)': [null, ResponseTotalBalances[]];
 
-  //App Managment - networks
+  // App Management - networks
   // Network, APIs, Custom tokens functions
   'pri(app.port.ping)': [null, boolean];
   'pri(networkMap.upsert)': [NetworkJson, boolean];
@@ -162,7 +179,7 @@ export interface RequestSignatures {
   'pri(selectedNetworks.getSubscription)': [null, string, string];
   'pri(networkMap.toggle.favorite)': [string, void];
 
-  //Authorize
+  // Authorize
   'pri(authorize.approve.polkaswap)': [string[], null];
   'pri(authorize.approve)': [RequestAuthorizeApprove, boolean];
   'pri(authorize.list)': [null, ResponseAuthorizeList];
@@ -177,7 +194,7 @@ export interface RequestSignatures {
   'pri(metadata.approve)': [RequestMetadataApprove, boolean];
   'pri(metadata.reject)': [RequestMetadataReject, boolean];
   'pri(metadata.requests)': [null, boolean, MetadataRequest[]];
-  'pri(signing.approve.password)': [RequestSigningApprovePassword, boolean];
+  'pri(signing.approve)': [RequestSigningApprove, boolean];
   'pri(signing.approve.signature)': [RequestSigningApproveSignature, boolean];
   'pri(signing.cancel)': [RequestSigningCancel, boolean];
   'pri(signing.isLocked)': [RequestSigningIsLocked, ResponseSigningIsLocked];
@@ -192,7 +209,7 @@ export interface RequestSignatures {
   'pri(google.delete.file)': [GoogleFileId, void];
   'pri(tab.status)': [null, ActiveTabAuthorizeStatus];
 
-  //Transfer, CrossChain, Sora Swap
+  // Transfer, CrossChain, Sora Swap
   'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
   'pri(accounts.makeTransfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
 
@@ -205,7 +222,7 @@ export interface RequestSignatures {
   'pri(accounts.soraFees.subscribe)': [null, SoraFees, SoraFees];
   'pri(accounts.checkScamAddress)': [RequestCheckScam, ResponseCheckScam];
 
-  // staking
+  // Staking
   'pri(staking.stakingParams)': [StakingParamsRequest, StakingParamsResponse];
   'pri(staking.checkController)': [CheckControllerRequest, boolean];
   'pri(staking.rewards)': [getRewardsRequest, RewardsResponse];
@@ -215,7 +232,7 @@ export interface RequestSignatures {
   'pri(staking.getNominateNetworkFee)': [GetNominateNetworkFeeRequest, string];
   'pri(staking.getBondAndNominateNetworkFee)': [RequestBond, string];
 
-  // pools
+  // Pools
   'pri(pools.poolsParams)': [PoolsParamsRequest, PoolsParamsResponse];
   'pri(pools.makePool)': [MakePoolsRequest, BasicTxResponse];
   'pri(pools.shareOfPool)': [GetShareOfPoolRequest, GetShareOfPoolResponse];
@@ -223,7 +240,7 @@ export interface RequestSignatures {
   'pri(pools.accountLiquidity)': [null, boolean, AccountLiquidity[]];
   'pri(pools.getAmountValue)': [DefaultPoolParams, string];
 
-  //ether
+  // Ether
   'pri(balance)': [null, BalanceJson];
   'pri(fetch.evm.balance)': [FetchEvmBalancePayload, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
@@ -239,12 +256,12 @@ export interface RequestSignatures {
   'evm(request)': [RequestArguments, unknown];
   'evm(provider.send)': [RequestEvmProviderSend, string | number, ResponseEvmProviderSend];
 
-  //OnBoarding
+  // OnBoarding
   'pri(onboarding.isRequired)': [null, boolean];
   'pri(onboarding.get.stories)': [string, OnboardingStories];
   'pri(onboarding.seen)': [null, void];
 
-  // public/external requests, i.e. from a page
+  // Public/external requests, i.e. from a page
   'pub(soraCard.token)': [string, null];
   'pub(accounts.list)': [null, InjectedAccount[]];
   'pub(accounts.subscribe)': [null, string, InjectedAccount[]];
@@ -261,7 +278,7 @@ export interface RequestSignatures {
   'pub(rpc.subscribe)': [RequestRpcSubscribe, number, JsonRpcResponse<unknown>];
   'pub(rpc.subscribeConnected)': [null, boolean, boolean];
 
-  //Wallet Connect
+  // Wallet Connect
   'pri(walletConnect.connect)': [RequestConnectWalletConnect, boolean];
   'pri(walletConnect.requests.connect.subscribe)': [null, WalletConnectSessionRequest[], WalletConnectSessionRequest[]];
   'pri(walletConnect.session.approve)': [RequestApproveConnectWalletSession, NotificationResponse];
@@ -284,13 +301,14 @@ export interface RequestSignatures {
   ];
   'pri(walletConnect.request.approve)': [RequestApproveWalletConnect, boolean];
   'pri(walletConnect.request.reject)': [{ topic: string }, boolean];
-  //Wallet Connect dApp
+
+  // Wallet Connect dApp
   'pri(walletConnect.app.connect)': [null, string];
   'pri(walletConnect.app.disconnect)': [null, string];
   'pri(walletConnect.app.subscribePairing)': [string, PairingSubjectType, PairingSubjectType];
   'pri(walletConnect.app.pairing)': [null, string];
 
-  //Nfts
+  // Nfts
   'pri(nft.get.all)': [string, OwnedNftsResponse];
   'pri(nft.subscribe)': [null, ChainNftState, ChainNftState];
   'pri(nft.fetch)': [string, void];

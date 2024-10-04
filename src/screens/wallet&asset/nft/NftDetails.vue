@@ -58,7 +58,7 @@ import { useRouter, useRoute } from 'vue-router/composables';
 import { computed, onMounted } from 'vue';
 import type { FearlessNft, NftCollection } from '@extension-base/services/nft-service/types';
 import { type SelectedWallet, useStore } from '@/store';
-import { cut } from '@/helpers';
+import { cut, setClipboard } from '@/helpers';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
@@ -115,7 +115,7 @@ const onShare = () => {
     type: nft.value.type,
   };
 
-  navigator.clipboard.writeText(JSON.stringify(dataToShare));
+  setClipboard(JSON.stringify(dataToShare));
 };
 </script>
 

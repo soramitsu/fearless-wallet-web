@@ -33,7 +33,7 @@ import type {
   ResponseTypes,
   SubscriptionMessageTypes,
 } from '@extension-base/background/types/types';
-import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
 import type {

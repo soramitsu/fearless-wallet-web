@@ -74,7 +74,7 @@ function sendMessage<TMessageType extends MessageTypes>(
 
 connect();
 
-export { sendMessage, connect };
+export { sendMessage };
 
 export * from '@/extension/messaging/staking';
 export * from '@/extension/messaging/pools';

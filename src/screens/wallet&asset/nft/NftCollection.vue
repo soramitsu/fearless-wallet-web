@@ -43,6 +43,7 @@ import { type SelectedWallet, useStore } from '@/store';
 import NftItem from '@/screens/wallet&asset/nft/NftItem.vue';
 import Tooltip from '@/components/Tooltip.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { setClipboard } from '@/helpers';
 
 const route = useRoute();
 const router = useRouter();
@@ -89,7 +90,7 @@ function onShare(nft: FearlessNft) {
     type: nft.type,
   };
 
-  navigator.clipboard.writeText(JSON.stringify(dataToShare));
+  setClipboard(JSON.stringify(dataToShare));
 }
 
 const onScroll = async () => {

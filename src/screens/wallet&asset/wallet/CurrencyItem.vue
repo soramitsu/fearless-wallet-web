@@ -114,6 +114,7 @@ import {
 } from '@/helpers/currencies';
 import { isNetworkGroup } from '@/helpers/common';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
+import BaseApi from '@/util/BaseApi';
 
 @Component
 export default class CurrencyItem extends Vue {
@@ -173,15 +174,23 @@ export default class CurrencyItem extends Vue {
   }
 
   get mainNetwork() {
+    if (this.isCurrentNetwork) {
+      const network = this.getNetwork(this.selectedNetwork);
+
+      return network?.name;
+    }
+
+    const activeNetworks = this.assetData.balances.filter(({ name }) => this.getNetwork(name).active);
+
     if (this.assetData.relayChain === 'ethereum') {
-      if (!isNetworkGroup(this.selectedNetwork)) {
-        const network = this.getNetwork(this.selectedNetwork);
+      const network = this.getNetwork(activeNetworks[0].name);
 
-        return network?.name;
-      }
+      return network.name;
+    }
 
-      const net = this.assetData.balances.find(({ name }) => this.getNetwork(name).active)!.name;
-      const network = this.getNetwork(net);
+    if (BaseApi.isEthereumNetwork(this.assetData.mainNetwork) && this.selectedWallet.ethereumAddress === '') {
+      const networkWithTokens = activeNetworks.find(({ transferable }) => transferable && transferable !== '0')?.name;
+      const network = this.getNetwork(networkWithTokens ?? this.assetData.balances[0].name);
 
       return network.name;
     }

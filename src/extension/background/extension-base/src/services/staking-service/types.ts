@@ -4,7 +4,7 @@ import type {
   MyStakingInfo as SoraMyStakingInfo,
   Unlocking,
 } from '@sora-substrate/util/build/staking/types';
-import type { PasswordRequestSign } from '@extension-base/background/types/types';
+import type { ActivityRequestSign } from '@extension-base/background/types/types';
 import type { NetworkName, StakingOperation } from '@/interfaces';
 
 export interface Bond {
@@ -15,7 +15,7 @@ export interface Bond {
   validators: string[];
 }
 
-export type RequestBond = PasswordRequestSign<Bond>;
+export type RequestBond = ActivityRequestSign<Bond>;
 
 ///////////////////////////////////////////////////////
 
@@ -25,7 +25,7 @@ export interface BondExtra {
   amount: string;
 }
 
-export type RequestBondExtra = PasswordRequestSign<BondExtra>;
+export type RequestBondExtra = ActivityRequestSign<BondExtra>;
 
 ///////////////////////////////////////////////////////
 
@@ -35,7 +35,7 @@ export interface Unbond {
   amount: string;
 }
 
-export type RequestUnbond = PasswordRequestSign<Unbond>;
+export type RequestUnbond = ActivityRequestSign<Unbond>;
 
 ///////////////////////////////////////////////////////
 
@@ -45,7 +45,7 @@ export interface Rebond {
   amount: string;
 }
 
-export type RequestRebond = PasswordRequestSign<Rebond>;
+export type RequestRebond = ActivityRequestSign<Rebond>;
 
 ///////////////////////////////////////////////////////
 
@@ -55,7 +55,7 @@ export interface WithdrawUnbonded {
   amount: string;
 }
 
-export type RequestWithdrawUnbonded = PasswordRequestSign<WithdrawUnbonded>;
+export type RequestWithdrawUnbonded = ActivityRequestSign<WithdrawUnbonded>;
 
 //////////////////////////////////////////////////////////
 
@@ -65,7 +65,7 @@ export interface SetControllerAccount {
   controllerAddress: string;
 }
 
-export type RequestSetControllerAccount = PasswordRequestSign<SetControllerAccount>;
+export type RequestSetControllerAccount = ActivityRequestSign<SetControllerAccount>;
 
 //////////////////////////////////////////////////////////
 
@@ -75,7 +75,7 @@ export interface Nominate {
   validators: string[];
 }
 
-export type RequestNominate = PasswordRequestSign<Nominate>;
+export type RequestNominate = ActivityRequestSign<Nominate>;
 
 //////////////////////////////////////////////////////////
 
@@ -85,7 +85,7 @@ export interface SetPayee {
   payee: string;
 }
 
-export type RequestSetPayee = PasswordRequestSign<SetPayee>;
+export type RequestSetPayee = ActivityRequestSign<SetPayee>;
 
 //////////////////////////////////////////////////////////
 
@@ -95,7 +95,7 @@ export interface PayoutRewards {
   payouts: Payouts;
 }
 
-export type RequestPayoutRewards = PasswordRequestSign<PayoutRewards>;
+export type RequestPayoutRewards = ActivityRequestSign<PayoutRewards>;
 
 //////////////////////////////////////////////////////////
 

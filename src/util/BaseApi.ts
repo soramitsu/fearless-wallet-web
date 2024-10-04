@@ -8,14 +8,14 @@ import {
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import type { AccountJson } from '@extension-base/background/types/types';
-import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
+import type { KeyringPairs$Json } from '@subwallet/ui-keyring/types';
+import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type { Wallet } from '@/store';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import type { NetworkName } from '@/interfaces';
 import { ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import store from '@/store';
-import { IS_EXTENSION, IS_PRODUCTION } from '@/consts/global';
+import { IS_PRODUCTION } from '@/consts/global';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
@@ -161,9 +161,5 @@ export default class BaseApi {
       // for ETH addresses
       return publicKey as string;
     }
-  }
-
-  public static useIsPopup(): boolean {
-    return window.innerWidth <= 561 && IS_EXTENSION;
   }
 }

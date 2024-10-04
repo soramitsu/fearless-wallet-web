@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
-import { type NftTx, type NftSettings } from '@extension-base/services/nft-service/types';
-import { type SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { NftTx, NftSettings } from '@extension-base/services/nft-service/types';
+import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { ScamInfo } from '@extension-base/services/scam-service/types';
 import type { ALLOWED_PATH } from '@extension-base/defaults';
 import type { Subscription } from 'rxjs';
@@ -13,12 +13,11 @@ import type { ProviderInterface } from '@polkadot/rpc-provider/types';
 import type { WsProvider } from '@polkadot/rpc-provider';
 import type { ApiPromise } from '@polkadot/api';
 import type { HexString } from '@polkadot/util/types';
-import type { KeyringPair$Json, KeyringPair } from '@polkadot/keyring/types';
+import type { KeyringPair$Json, KeyringPair } from '@subwallet/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { TypeRegistry } from '@polkadot/types';
-import type { SignerResult } from '@polkadot/types/types/extrinsic';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
@@ -51,7 +50,7 @@ export type Port = chrome.runtime.Port;
 export interface AccountJson extends FWKeyringMeta {
   address: string;
   ethereumAddress: string;
-  genesisHash?: HexString | null;
+  genesisHash?: string | null;
   network?: string;
   active?: boolean;
   name: string;
@@ -189,7 +188,6 @@ export interface RequestMetadataReject {
 }
 
 export interface RequestAccountCreateSuri {
-  password: string;
   suri: string;
   type?: KeypairType;
   meta: FWKeyringMeta;
@@ -243,15 +241,8 @@ export interface BasicTxResponse {
   errors?: BasicTxError[];
 }
 
-export enum SignerType {
-  PASSWORD = 'PASSWORD',
-  MOBILE = 'MOBILE',
-}
-
 export interface PrepareExternalRequest {
   id: string;
-  setState: (promise: ExternalRequestPromise) => void;
-  updateState: (promise: Partial<ExternalRequestPromise>) => void;
 }
 
 export type TxErrorCode = TransferErrorCode | BasicTxErrorCode;
@@ -354,9 +345,7 @@ export interface ResponseCheckSwap {
   route: string;
 }
 
-export type PasswordRequestSign<T extends BaseRequestSign> = T & {
-  password: string;
-  isSavePass: boolean;
+export type ActivityRequestSign<T extends BaseRequestSign> = T & {
   isMobile: boolean;
 };
 
@@ -367,31 +356,19 @@ export interface ResponseMakeSwap {
 
 export type ExternalRequestSign<T extends BaseRequestSign> = Omit<T, 'password'>;
 
-export interface RequestSwap extends PasswordRequestSign<RequestCheckSwap> {
+export interface RequestSwap extends ActivityRequestSign<RequestCheckSwap> {
   feeSymbol?: string;
 }
 
-export type RequestTransfer = PasswordRequestSign<RequestCheckTransfer>;
+export type RequestTransfer = ActivityRequestSign<RequestCheckTransfer>;
 
-export type RequestCrossChain = PasswordRequestSign<RequestCheckCrossChain>;
-export type RequestNftTransfer = PasswordRequestSign<NftTx>;
+export type RequestCrossChain = ActivityRequestSign<RequestCheckCrossChain>;
+export type RequestNftTransfer = ActivityRequestSign<NftTx>;
 export type ResponseNftTransfer = {
   errors: Array<BasicTxError>;
   hash?: string;
   status: boolean;
 };
-export interface RequestAccountExportPrivateKey {
-  address: string;
-  password?: string;
-}
-
-export interface ExternalRequestPromise {
-  resolve?: (result: SignerResult | PromiseLike<SignerResult>) => void;
-  reject?: (error?: Error) => void;
-  status: ExternalRequestPromiseStatus;
-  message?: string;
-  createdAt: number;
-}
 
 export enum ExternalRequestPromiseStatus {
   PENDING,
@@ -400,7 +377,7 @@ export enum ExternalRequestPromiseStatus {
   COMPLETED,
 }
 
-export interface ResponseAccountExportPrivateKey {
+export interface ResponseExportPrivateKey {
   privateKey: string;
   publicKey: string;
 }
@@ -435,12 +412,26 @@ export interface ResponseAccountExport {
   json: KeyringPair$Json;
 }
 
-export interface RequestExportMnemonic {
+export interface RequestChangePassword {
+  newPassword: string;
+  oldPassword?: string;
+}
+
+export interface RequestUnlockExtension {
+  password: string;
+}
+
+export interface RequestMigratePassword {
   address: string;
   password: string;
 }
 
-export interface ResponseExportMnemonic {
+export interface RequestExportSeed {
+  address: string;
+  password?: string;
+}
+
+export interface ResponseExportSeed {
   seed: string;
 }
 
@@ -476,10 +467,8 @@ export interface RequestRpcUnsubscribe {
   type: string;
 }
 
-export interface RequestSigningApprovePassword {
+export interface RequestSigningApprove {
   id: string;
-  password?: string;
-  savePass: boolean;
 }
 
 export interface RequestSigningApproveSignature {

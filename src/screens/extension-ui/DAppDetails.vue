@@ -51,9 +51,8 @@ const prepAccounts = computed<string[]>(() => {
     .map(({ address, ethereumAddress }) => (isEVM.value ? ethereumAddress : address));
 });
 
-const list = computed(() => store.getters[ExtensionGettersTypes.authList]);
-
 const isAllSelected = () => Object.values(state.value).every(({ active }) => active);
+const list = computed(() => store.getters[ExtensionGettersTypes.authList]);
 
 onMounted(async () => {
   await store.dispatch('GET_AUTHLIST');

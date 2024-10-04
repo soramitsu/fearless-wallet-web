@@ -1,7 +1,7 @@
 <template>
   <div class="export">
     <div class="description">
-      <div class="header" data-testid="headerExport">{{ $t('accounts.exportJson') }}</div>
+      <div class="header" data-testid="headerExport">{{ $t('accounts.exportAccount') }}</div>
 
       <InformationBlock class="information" :text="warningText" />
     </div>
@@ -10,7 +10,7 @@
       <ValidatedInput
         :value="password"
         errorDescriptions="common.invalidPassword"
-        placeholder="accounts.passwordWallet"
+        placeholder="accounts.passwordApp"
         data-testid="passwordExport"
         :isError="isWrongPassword"
         :showPassword="true"
@@ -23,7 +23,7 @@
         size="big"
         fontSize="big"
         width="100%"
-        text="accounts.wantExportJson"
+        text="accounts.wantExport"
         data-testid="wantExportJsonBtn"
         :disabled="noEthereumAccount"
         @click="checkPassword"
@@ -77,9 +77,9 @@ const checkPassword = async () => {
 
   isWrongPassword.value = !validatePass;
 
-  if (isWrongPassword.value) return;
+  const pass = isWrongPassword.value ? '' : password.value;
 
-  emit('setPassword', password.value);
+  emit('setPassword', pass);
 };
 </script>
 
@@ -88,7 +88,6 @@ const checkPassword = async () => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  margin-right: 16px;
   height: 100%;
 
   .information {
@@ -96,7 +95,7 @@ const checkPassword = async () => {
   }
 
   .want-export {
-    margin: 16px 0;
+    margin-top: 16px;
   }
 
   .description {

@@ -46,8 +46,8 @@ export function cancelSignRequest(id: string): Promise<boolean> {
   return sendMessage('pri(signing.cancel)', { id });
 }
 
-export function approveSignPassword(id: string, savePass: boolean, password?: string): Promise<boolean> {
-  return sendMessage('pri(signing.approve.password)', { id, password, savePass });
+export function approveSign(id: string): Promise<boolean> {
+  return sendMessage('pri(signing.approve)', { id });
 }
 
 export function isSignLocked(address: string): Promise<ResponseSigningIsLocked> {

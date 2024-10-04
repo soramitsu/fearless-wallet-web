@@ -10,12 +10,10 @@ import type {
   ResponseSigningIsLocked,
   ValidateJsonResult,
   RequestUpdateMeta,
-  RequestExportMnemonic,
-  ResponseExportMnemonic,
 } from '@extension-base/background/types/types';
 
 import type State from '@extension-base/background/handlers/State';
-import type { KeyringPair } from '@polkadot/keyring/types';
+import type { KeyringPair } from '@subwallet/keyring/types';
 import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { type DerivationPath } from '@/interfaces';
@@ -27,13 +25,9 @@ export default class FWExtensionBase {
     this.cachedUnlocks = {};
   }
 
-  exportMnemonic(request: RequestExportMnemonic): ResponseExportMnemonic {
-    return this.state.keyringService.exportMnemonic(request);
-  }
-
   exportJSON({ address, password, network }: RequestAccountExport): ResponseAccountExport {
     if (network && isNativeEVMNetwork(network)) {
-      const { privateKey } = this.state.accountExportPrivateKey({ address, password });
+      const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address, password });
       const json = ethers.encryptKeystoreJsonSync({ address, privateKey }, password);
 
       return { json: JSON.parse(json) };

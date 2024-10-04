@@ -2,6 +2,7 @@
   <AboveForm
     header="addWallet.advanced"
     :showAcceptIcon="showAcceptIcon"
+    :fullScreen="true"
     @closeHandler="closeAdvancedForm"
     @saveChanges="saveChanges"
   >

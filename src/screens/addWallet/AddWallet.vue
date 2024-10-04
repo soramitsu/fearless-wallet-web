@@ -341,6 +341,8 @@ export default class AddWallet extends Vue {
       }
 
       if (this.step === 3 && this.typeImport !== 'json') return !this.nickname;
+
+      return false;
     }
 
     // isCreateWallet

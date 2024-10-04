@@ -106,7 +106,8 @@ import BaseApi from '@/util/BaseApi';
 import { windowOpen } from '@/extension/messaging';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 import { isNetworkGroup } from '@/helpers/common';
-import { cut } from '@/helpers';
+import { cut, setClipboard } from '@/helpers';
+import { IS_POPUP } from '@/consts/globalClient';
 
 @Component({
   components: {
@@ -118,7 +119,7 @@ import { cut } from '@/helpers';
 export default class Header extends Vue {
   readonly walletNameRef = 'walletName';
   readonly settingsNameRef = 'settingsName';
-  readonly isPopup = BaseApi.useIsPopup();
+  readonly isPopup = IS_POPUP;
   readonly allNetworksIcon = 'all-networks';
   showConnectionPopup = false;
   showSelectNetworkPopup = false;
@@ -237,7 +238,7 @@ export default class Header extends Vue {
   }
 
   copyAddress() {
-    navigator.clipboard.writeText(this.address);
+    setClipboard(this.address);
   }
 
   toggleSelectNetworkPopupVisible() {

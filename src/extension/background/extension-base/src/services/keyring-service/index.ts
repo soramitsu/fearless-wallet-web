@@ -1,20 +1,30 @@
-import { keyring } from '@polkadot/ui-keyring';
-import { isEthereumAddress } from '@polkadot/util-crypto';
-import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
-import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
+import { isEthereumAddress, base64Decode, mnemonicToMiniSecret } from '@polkadot/util-crypto';
+import { accounts as accountsObservable } from '@subwallet/ui-keyring/observable/accounts';
+import { addresses as addressesObservable } from '@subwallet/ui-keyring/observable/addresses';
 import { BehaviorSubject } from 'rxjs';
 import CurrentAccountStore, { type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import { decodePair } from '@polkadot/keyring/pair/decode';
+import { u8aToHex } from '@polkadot/util';
+import { keyring } from '@subwallet/ui-keyring';
 import type { EventService } from '@extension-base/services';
-import type { RequestExportMnemonic, ResponseExportMnemonic } from '../../background/types/types';
+import type {
+  RequestChangePassword,
+  RequestExportSeed,
+  RequestMigratePassword,
+  RequestUnlockExtension,
+  ResponseExportPrivateKey,
+  ResponseExportSeed,
+} from '../../background/types/types';
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { KeyringAddressType, KeyringItemType, KeyringStore } from '@polkadot/ui-keyring/types';
-import type { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
+import type { KeyringAddressType, KeyringItemType, KeyringStore } from '@subwallet/ui-keyring/types';
+import type { KeyringPair, KeyringPair$Json } from '@subwallet/keyring/types';
 import { isSameString } from '@/helpers';
 
 export class KeyringService {
-  private readonly currentAccountStore = new CurrentAccountStore();
   readonly currentAccountSubject = new BehaviorSubject<CurrentAccountState>(null);
+  private readonly currentAccountStore = new CurrentAccountStore();
+  private password = '';
 
   constructor(eventService: EventService) {
     eventService.waitCryptoReady
@@ -44,6 +54,23 @@ export class KeyringService {
 
   get accountSubjectValue() {
     return keyring.accounts.subject.value;
+  }
+
+  get hasAccounts() {
+    return this.getAllAccounts().length !== 0;
+  }
+
+  get hasMasterPassword() {
+    return keyring.keyring.hasMasterPassword;
+  }
+
+  get keyringIsLocked() {
+    // isLocked - we check only for the state when the password is set
+    return this.hasMasterPassword && keyring.keyring.isLocked;
+  }
+
+  getPassword(): string {
+    return this.password;
   }
 
   setCurrentAccount(currentAccountData: CurrentAccountState) {
@@ -88,10 +115,10 @@ export class KeyringService {
     return true;
   }
 
-  addAccount(suri: string, password: string, meta: FWKeyringMeta, type?: KeypairType) {
+  addAccount(suri: string, meta: FWKeyringMeta, type?: KeypairType) {
     const {
       pair: { address },
-    } = keyring.addUri(suri, password, { ...meta, isMobile: false }, type);
+    } = keyring.addUri(suri, { ...meta, isMobile: false }, type);
 
     return address;
   }
@@ -102,8 +129,6 @@ export class KeyringService {
 
   backupAccount(address: string, password: string) {
     const pair = this.getPair(address);
-
-    pair?.toJson;
 
     if (!pair) return;
 
@@ -147,19 +172,23 @@ export class KeyringService {
     return keyring.forgetAddress(address);
   }
 
-  restoreAccount(file: KeyringPair$Json, password: string) {
+  restoreAccount(file: KeyringPair$Json, password: string, withMasterPassword: boolean = true) {
     delete file.meta.genesisHash;
+    delete file.meta.isMasterAccount;
+    delete file.meta.isMasterPassword;
 
-    return keyring.restoreAccount(file, password);
+    return keyring.restoreAccount(file, password, withMasterPassword);
   }
 
   createFromJson(file: KeyringPair$Json) {
     delete file.meta.genesisHash;
+    delete file.meta.isMasterAccount;
+    delete file.meta.isMasterPassword;
 
     return keyring.createFromJson(file);
   }
 
-  unlockPair(addressOrPair: string | KeyringPair, password: string) {
+  unlockPair(addressOrPair: string | KeyringPair) {
     const pair = this.getPair(addressOrPair);
 
     if (!pair) return false;
@@ -175,8 +204,9 @@ export class KeyringService {
     if (!substratePair) return false;
 
     try {
-      substratePair.unlock(password);
-      ethereumPair?.unlock(password);
+      keyring.unlockPair(substrateAddress);
+
+      if (ethereumAddress) keyring.unlockPair(ethereumAddress);
 
       return true;
     } catch {
@@ -220,7 +250,7 @@ export class KeyringService {
   }
 
   getSubstrateAccounts() {
-    const accounts = this.getAccounts().filter((el) => !isEthereumAddress(el.address));
+    const accounts = this.getAccounts().filter(({ address }) => !isEthereumAddress(address));
     const addresses = this.getAddresses();
 
     return [...accounts, ...addresses];
@@ -262,14 +292,115 @@ export class KeyringService {
     return !!account.meta.isMobile;
   }
 
-  exportMnemonic({ address, password }: RequestExportMnemonic): ResponseExportMnemonic {
+  changeMasterPassword({ newPassword, oldPassword }: RequestChangePassword): boolean {
+    try {
+      this.password = newPassword;
+
+      keyring.changeMasterPassword(newPassword, oldPassword);
+
+      return true;
+    } catch (e) {
+      console.error(e);
+
+      return false;
+    }
+  }
+
+  exportMnemonic({ address, password }: RequestExportSeed): ResponseExportSeed {
     const pair = keyring.getPair(address);
+    const seed = pair.exportMnemonic(password!);
 
-    password;
-    pair;
+    return { seed };
+  }
 
-    // const seed = pair.exportMnemonic(password);
+  public accountExportPrivateKey({ address }: RequestExportSeed): ResponseExportPrivateKey {
+    const json = this.backupAccount(address, this.password);
 
-    return { seed: '' };
+    if (!json) throw new Error('Json was not exported');
+
+    const decoded = decodePair(this.password, base64Decode(json.encoded), json.encoding.type);
+
+    const privateKey = u8aToHex(decoded.secretKey);
+    const publicKey = u8aToHex(decoded.publicKey);
+
+    return {
+      privateKey,
+      publicKey,
+    };
+  }
+
+  public accountExportRawSeed(request: RequestExportSeed): ResponseExportSeed {
+    const { seed } = this.exportMnemonic(request);
+
+    // Convert mnemonic to raw seed (32 bytes for sr25519)
+    const seedU8 = mnemonicToMiniSecret(seed);
+
+    // Convert the raw seed in hex format
+    const rawSeed = u8aToHex(seedU8);
+
+    return { seed: rawSeed };
+  }
+
+  unlockKeyring({ password }: RequestUnlockExtension): boolean {
+    try {
+      this.password = password;
+
+      keyring.unlockKeyring(password);
+
+      return true;
+    } catch (e) {
+      console.error(e);
+
+      return false;
+    }
+  }
+
+  lockKeyring(): boolean {
+    try {
+      keyring.lockAll();
+
+      this.password = '';
+
+      return true;
+    } catch (e) {
+      console.error(e);
+
+      return false;
+    }
+  }
+
+  resetWallet(): boolean {
+    try {
+      keyring.resetWallet(true);
+
+      return true;
+    } catch (e) {
+      console.error(e);
+
+      return false;
+    }
+  }
+
+  getMigrationAccounts() {
+    return this.getAccounts()
+      .map(({ address }) => this.getPair(address)!)
+      .filter(({ type }) => type !== 'ethereum')
+      .filter(({ meta: { isMasterPassword } }) => !isMasterPassword);
+  }
+
+  isNeedMigration(): boolean {
+    return this.getMigrationAccounts().length !== 0;
+  }
+
+  keyringMigrateMasterPassword({ address, password }: RequestMigratePassword): boolean {
+    try {
+      keyring.migrateWithMasterPassword(address, password);
+
+      return true;
+    } catch (e) {
+      console.error(e);
+
+      return false;
+    }
   }
 }

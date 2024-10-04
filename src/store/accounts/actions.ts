@@ -26,6 +26,7 @@ const actions: ActionTree<State, State> & Actions = {
       ethereumAddress: account?.ethereumAddress ?? '',
       name: account?.name ?? '',
       isMobile: account?.isMobile ?? false,
+      isMasterAccount: account?.isMasterAccount ?? false,
     });
 
     accountController.setSelectedWalletAddress(account?.address);

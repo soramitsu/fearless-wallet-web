@@ -1,11 +1,12 @@
 import type { AccountJson } from '@extension-base/background/types/types';
-import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { WalletAddress, NetworkName } from '@/interfaces';
 
 export interface Wallet {
   address: string;
   ethereumAddress: string;
   isMobile?: boolean;
+  isMasterAccount?: boolean;
 }
 
 export interface SelectedWallet extends Wallet {

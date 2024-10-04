@@ -16,7 +16,7 @@
 
         <div class="label" data-testid="editNode">{{ $t('accounts.editNode') }}</div>
       </div>
-      <div class="row" @click="$emit('openNotificationPopup', 'delete')">
+      <div class="row" @click="$emit('openNotificationPopup')">
         <Icon icon="basket" className="basket-icon" />
 
         <div class="label delete" data-testid="deleteNode">{{ $t('accounts.deleteNode') }}</div>

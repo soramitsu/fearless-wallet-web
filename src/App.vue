@@ -31,6 +31,7 @@ import {
   subscribeBalance,
   subscribeNetworkMap,
   subscribePrice,
+  lockExtension,
   subscribeSelectedNetworks,
 } from '@/extension/messaging';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
@@ -70,6 +71,8 @@ export default class App extends Vue {
 
   async created() {
     if (IS_EXTENSION) this.extensionSubscribe();
+
+    lockExtension();
 
     setTitle();
 

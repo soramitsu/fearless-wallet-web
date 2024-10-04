@@ -1,7 +1,7 @@
 import BaseStore from '@extension-base/stores/Base';
 import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import type { FWKeyringMeta } from '../types';
-import type { KeyringStore } from '@polkadot/ui-keyring/types';
+import type { KeyringStore } from '@subwallet/ui-keyring/types';
 
 type FWKeyringJson = {
   address: string;

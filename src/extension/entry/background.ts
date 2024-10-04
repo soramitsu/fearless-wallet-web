@@ -72,8 +72,6 @@ cryptoWaitReady()
     state.keyringService.loadAll(new AccountsStore());
     state.eventService.emit('crypto.ready', true);
 
-    const migrationService = new MigrationService();
-
-    migrationService.start();
+    MigrationService.start();
   })
   .catch((error) => console.error('initialization failed', error));

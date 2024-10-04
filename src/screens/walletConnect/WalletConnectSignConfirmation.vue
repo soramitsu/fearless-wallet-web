@@ -16,7 +16,7 @@
           <ValidatedInput
             v-if="isLocked"
             :value="password"
-            placeholder="common.enterAccountPass"
+            placeholder="accounts.passwordApp"
             errorDescriptions="common.invalidPassword"
             :showPassword="true"
             class="wc-request__input"
@@ -196,18 +196,23 @@ const onApprove = async () => {
   gap: 10px;
   flex-shrink: 0;
 }
+
 .wc-request__input {
   width: 100%;
 }
+
 .wc-request__details {
   width: 100%;
 }
+
 .scroll__container {
   overflow-y: hidden;
 }
+
 .hint {
   width: 470px;
 }
+
 .wc-request-content {
   display: flex;
   flex-flow: column;

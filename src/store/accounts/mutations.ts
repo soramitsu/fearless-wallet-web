@@ -43,12 +43,13 @@ export type Mutations = {
 };
 
 const mutations: MutationTree<State> & Mutations = {
-  [MutationTypes.SET_SELECTED_WALLET](state, { address, ethereumAddress, name, isMobile }) {
+  [MutationTypes.SET_SELECTED_WALLET](state, { address, ethereumAddress, name, isMobile, isMasterAccount }) {
     state.selectedWallet = {
-      address: address,
-      ethereumAddress: ethereumAddress,
+      address,
+      ethereumAddress,
+      isMobile,
+      isMasterAccount,
       name: name ?? '',
-      isMobile: isMobile,
     };
   },
 
@@ -72,6 +73,7 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_ACCOUNTS](state, { accounts, isMobileUpdate }) {
     if (isMobileUpdate) {
       const nativeWallets = state.accounts.filter((account) => !account.isMobile);
+
       state.accounts = [...nativeWallets, ...accounts];
     } else {
       const mobileWallets = state.accounts.filter((account) => account.isMobile);

@@ -1,6 +1,6 @@
 import { type CustomTokenType } from '@extension-base/api/evm/types';
 import { type NETWORK_STATUS } from './api/types/networks';
-import type { KeyringPair$Meta } from '@polkadot/keyring/types';
+import type { KeyringPair$Meta } from '@subwallet/keyring/types';
 import type { AssetType, BuyProvider, XcmVersion, ExternalApi } from '@/interfaces';
 
 export interface Message extends MessageEvent {
@@ -139,5 +139,8 @@ export interface ChainRegistry {
 
 export interface FWKeyringMeta extends KeyringPair$Meta {
   isMobile?: boolean;
+  isMasterAccount?: boolean;
   wcTopic?: string;
+  ethereumAddress?: string;
+  name?: string;
 }

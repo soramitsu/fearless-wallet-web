@@ -53,6 +53,7 @@ const onReject = () => {
   gap: 10px;
   word-break: break-word;
 }
+
 .controls {
   display: flex;
   flex-direction: row;

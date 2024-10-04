@@ -1,5 +1,5 @@
 import type { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
+import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import { sendMessage } from '@/extension/messaging/index';
 
 export function verifyToken(token: string): Promise<VerifyTokenResponse | null> {

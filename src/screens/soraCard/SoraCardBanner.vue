@@ -18,9 +18,9 @@ import { VerificationStatus } from '@/consts/soraCard';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
-import BaseApi from '@/util/BaseApi';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { windowOpen } from '@/extension/messaging';
+import { IS_POPUP } from '@/consts/globalClient';
 
 @Component({})
 export default class SoraCardBanner extends Vue {
@@ -41,7 +41,7 @@ export default class SoraCardBanner extends Vue {
   }
 
   openSoraCardForm() {
-    if (BaseApi.useIsPopup()) windowOpen('/sora-card');
+    if (IS_POPUP) windowOpen('/sora-card');
 
     this.$router.push({ name: Components.SoraCard });
   }

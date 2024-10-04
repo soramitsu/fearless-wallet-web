@@ -10,6 +10,7 @@
 
 <script lang="ts" setup>
 import MnemonicColumns from './MnemonicColumns.vue';
+
 type Props = {
   mnemonicArray: string[];
 };

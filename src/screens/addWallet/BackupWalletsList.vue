@@ -59,18 +59,40 @@ import type { FilesState } from '@/interfaces';
 import { cut } from '@/helpers';
 import { type SelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { isJsonValid, jsonRestore, updateCurrentAccount } from '@/extension/messaging';
+import { isJsonValid, jsonRestore, updateCurrentAccount, migrateMasterPassword } from '@/extension/messaging';
 
 @Component
-export default class GoogleWalletsList extends Vue {
+export default class BackupWalletsList extends Vue {
   @Prop(Array) items!: FilesState[];
+  @Prop({ default: false }) isGoogle!: boolean;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   setItemValue(index: number, data: Record<string, string | boolean>) {
     this.$emit('setItemValue', index, data);
   }
 
-  async onConfirm(index: number) {
+  onConfirm(index: number) {
+    if (this.isGoogle) this.importFromGoogle(index);
+    else this.migrateAccounts(index);
+  }
+
+  async migrateAccounts(index: number) {
+    this.setItemValue(index, { isLoading: true });
+
+    const { address, password } = this.items[index];
+
+    const isSuccess = await migrateMasterPassword({ address: address!, password: password! });
+
+    const fields = {
+      isError: !isSuccess,
+      isComplete: isSuccess,
+      isLoading: false,
+    };
+
+    this.setItemValue(index, fields);
+  }
+
+  async importFromGoogle(index: number) {
     this.setItemValue(index, { isLoading: true });
 
     const { json, ethJson, password } = this.items[index];
@@ -79,23 +101,23 @@ export default class GoogleWalletsList extends Vue {
 
     const { value: isValid } = await isJsonValid(json, password);
 
-    if (!isValid) {
-      this.setItemValue(index, { isError: true, isLoading: false });
+    const fields = {
+      isError: !isValid,
+      isComplete: isValid,
+      isLoading: false,
+    };
 
-      return false;
+    this.setItemValue(index, fields);
+
+    if (isValid) {
+      if (ethJson) await jsonRestore(ethJson, password);
+
+      const address = await jsonRestore(json, password);
+
+      await updateCurrentAccount(address || this.selectedWallet.address);
+
+      this.setItemValue(index, { isComplete: true, isLoading: false });
     }
-
-    if (this.items[index].isError) this.setItemValue(index, { isError: false });
-
-    if (ethJson) await jsonRestore(ethJson, password);
-
-    const address = await jsonRestore(json, password);
-
-    await updateCurrentAccount(address || this.selectedWallet.address);
-
-    this.setItemValue(index, { isComplete: true, isLoading: false });
-
-    return true;
   }
 
   buttonText(file: FilesState) {
@@ -116,11 +138,13 @@ export default class GoogleWalletsList extends Vue {
     if (file.isComplete) return;
     else if (file.isComplete === undefined) this.setItemValue(index, { isLoading: false, isComplete: false });
 
-    if (file.json === undefined) this.$emit('getFile', file.id, index);
-
-    if (file.ethJson === undefined && file.ethWalletID) this.$emit('getFile', file.ethWalletID, index);
-
     this.setItemValue(index, { active: value });
+
+    if (this.isGoogle) {
+      if (file.json === undefined) this.$emit('getFile', file.id, index);
+
+      if (file.ethJson === undefined && file.ethWalletID) this.$emit('getFile', file.ethWalletID, index);
+    }
   }
 
   cutAddress(address?: string) {

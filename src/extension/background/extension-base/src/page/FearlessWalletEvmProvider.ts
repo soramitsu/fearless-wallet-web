@@ -2,6 +2,7 @@ import { type FWEvmProvider, type SendRequest } from '@extension-base/page/types
 import SafeEventEmitter from '@metamask/safe-event-emitter';
 import { type JsonRpcRequest, type JsonRpcResponse, type JsonRpcSuccess } from 'json-rpc-engine';
 import type { RequestArguments } from '@json-rpc-tools/utils';
+import { APP_VERSION } from '@/consts/global';
 
 export interface SendSyncJsonRpcRequest extends JsonRpcRequest<unknown> {
   method: 'net_version';
@@ -14,7 +15,7 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
   public readonly isMetaMask = false;
   private isEnabled = false;
 
-  constructor(protected sendMessage: SendRequest, public readonly version: string) {
+  constructor(protected sendMessage: SendRequest) {
     super();
 
     this._connected = true;
@@ -121,7 +122,8 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
 
     switch (payload.method) {
       case 'net_version':
-        result = this.version ? `Fearless Wallet v${this.version}` : null;
+        result = `Fearless Wallet v${APP_VERSION}`;
+
         break;
 
       default:

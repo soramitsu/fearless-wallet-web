@@ -31,14 +31,12 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter, Mutation } from 'vuex-class';
+import { Getter } from 'vuex-class';
 import WalletInfo from './WalletInfo.vue';
 import type { SelectedWallet } from '@/store';
-import type { Fn, CustomEvent } from '@/interfaces';
+import type { CustomEvent } from '@/interfaces';
 import type { AccountJson } from '@extension-base/background/types/types';
-import type { CurrentAccountInfo } from '@extension-base//stores/CurrentAccountStore';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { Components } from '@/router/routes';
 import { updateCurrentAccount } from '@/extension/messaging';
 
@@ -48,7 +46,6 @@ import { updateCurrentAccount } from '@/extension/messaging';
 export default class SelectWalletPopup extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: Fn<CurrentAccountInfo>;
 
   addWallet() {
     this.$router.push({ name: Components.Welcome });

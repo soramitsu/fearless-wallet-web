@@ -409,13 +409,13 @@ export class PoolsService {
   }
 
   public async makePool({ params, type }: MakePoolsRequest): Promise<BasicTxResponse> {
-    const { networkName, isSavePass } = params;
+    const { networkName } = params;
     const apiProps = this.state.getSubstrateApiMap[networkName.toLowerCase()];
     const isReady = await apiProps.api?.isReady;
 
     if (!isReady) return { status: false };
 
-    apiSora.shouldPairBeLocked = !isSavePass;
+    apiSora.shouldPairBeLocked = false;
 
     if (type === 'addLiquidity') return this.addLiquidity(params as RequestAddLiquidity);
 

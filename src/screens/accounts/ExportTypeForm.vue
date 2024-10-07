@@ -1,14 +1,10 @@
 <template>
   <div>
-    <InfoRow
-      v-if="showMnemonic"
-      text="accounts.mnemonic"
-      iconValue="chevron-right"
-      :isHoverRow="true"
-      @click="openExport('mnemonic')"
-    />
+    <template v-if="showMnemonic">
+      <InfoRow text="accounts.mnemonic" iconValue="chevron-right" :isHoverRow="true" @click="openExport('mnemonic')" />
 
-    <InfoRow text="accounts.rawSeed" iconValue="chevron-right" :isHoverRow="true" @click="openExport('rawSeed')" />
+      <InfoRow text="accounts.rawSeed" iconValue="chevron-right" :isHoverRow="true" @click="openExport('rawSeed')" />
+    </template>
 
     <InfoRow text="accounts.json" iconValue="chevron-right" :isHoverRow="true" @click="openExport('json')" />
   </div>

@@ -258,8 +258,8 @@ export interface RequestSignatures {
 
   // OnBoarding
   'pri(onboarding.isRequired)': [null, boolean];
-  'pri(onboarding.get.stories)': [string, OnboardingStories];
-  'pri(onboarding.seen)': [null, void];
+  'pri(onboarding.getStories)': [string, OnboardingStories];
+  'pri(onboarding.setComplete)': [null, void];
 
   // Public/external requests, i.e. from a page
   'pub(soraCard.token)': [string, null];

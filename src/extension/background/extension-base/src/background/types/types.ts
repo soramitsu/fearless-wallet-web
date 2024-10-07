@@ -56,7 +56,9 @@ export interface AccountJson extends FWKeyringMeta {
   name: string;
   suri?: string;
   type?: KeypairType;
+  haveEntropy?: boolean;
   whenCreated?: number;
+
   //mobile properties
   isMobile?: boolean;
   wcTopic?: string;
@@ -429,6 +431,7 @@ export interface RequestMigratePassword {
 export interface RequestExportSeed {
   address: string;
   password?: string;
+  isEVM?: boolean;
 }
 
 export interface ResponseExportSeed {

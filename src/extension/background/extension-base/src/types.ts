@@ -140,6 +140,7 @@ export interface ChainRegistry {
 export interface FWKeyringMeta extends KeyringPair$Meta {
   isMobile?: boolean;
   isMasterAccount?: boolean;
+  isMasterPassword?: boolean;
   wcTopic?: string;
   ethereumAddress?: string;
   name?: string;

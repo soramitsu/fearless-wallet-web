@@ -128,7 +128,8 @@ const close = (isClose = true) => {
 
       initGoogleAuth().finally(() => (isAuthFlowInit.value = false));
     }
-  } else router.push({ name: componentName, params: { type } });
+  } else if (componentName) router.push({ name: componentName, params: { type } });
+  else router.push({ name: 'AddWallet', params: { type: 'create' } });
 };
 
 const changePassword = async () => {

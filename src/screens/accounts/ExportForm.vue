@@ -94,8 +94,12 @@ export default class ExportForm extends Vue {
     return this.isJson ? 'accounts.downloadFile' : 'common.copyToClipboard';
   }
 
+  get isEthereumNetwork() {
+    return BaseApi.isEthereumNetwork(this.network);
+  }
+
   get placeholder() {
-    return BaseApi.isEthereumNetwork(this.network) ? 'Ethereum' : 'Substrate';
+    return this.isEthereumNetwork ? 'Ethereum' : 'Substrate';
   }
 
   get substrateAddress() {
@@ -118,7 +122,7 @@ export default class ExportForm extends Vue {
 
       this.seed = seed;
     } else if (this.isRowSeed) {
-      const { seed } = await exportRowSeed(this.addressByNetwork, this.password);
+      const { seed } = await exportRowSeed(this.addressByNetwork, this.password, this.isEthereumNetwork);
 
       this.seed = seed;
     } else {
@@ -140,6 +144,9 @@ export default class ExportForm extends Vue {
     const meta = { ...this.json.meta, genesisHash: `0x${chainId}` } as unknown as Record<string, string>;
 
     delete meta['ethereumAddress'];
+    delete meta['isMasterAccount'];
+    delete meta['isMasterPassword'];
+    delete meta['isMobile'];
 
     const jsonSubstrate = JSON.stringify({ ...this.json, meta });
 

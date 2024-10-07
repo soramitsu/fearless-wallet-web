@@ -251,8 +251,11 @@ export default class Extension extends FWExtensionBase {
   }
 
   convertAccounts(accounts: SubjectInfo): AccountJson[] {
-    return Object.values(accounts).flatMap(({ json: { address, meta }, type }) => {
+    return Object.values(accounts).flatMap<AccountJson>(({ json: { address, meta }, type }) => {
       if (isEthereumAddress(address)) return [];
+
+      const pair = this.state.keyringService.getPair(address);
+      const haveEntropy = pair?.haveEntropy;
 
       return {
         address,
@@ -260,6 +263,7 @@ export default class Extension extends FWExtensionBase {
         active: address === this.state.currentAccount?.address,
         name: meta.name ?? '',
         type,
+        haveEntropy,
         network: this.state.networkService.selectedNetworks[address] ?? ALL_NETWORKS,
         ...meta,
       };

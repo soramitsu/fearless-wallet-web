@@ -7,6 +7,8 @@ export interface Wallet {
   ethereumAddress: string;
   isMobile?: boolean;
   isMasterAccount?: boolean;
+  isMasterPassword?: boolean;
+  haveEntropy?: boolean;
 }
 
 export interface SelectedWallet extends Wallet {

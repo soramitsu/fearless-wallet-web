@@ -43,12 +43,17 @@ export type Mutations = {
 };
 
 const mutations: MutationTree<State> & Mutations = {
-  [MutationTypes.SET_SELECTED_WALLET](state, { address, ethereumAddress, name, isMobile, isMasterAccount }) {
+  [MutationTypes.SET_SELECTED_WALLET](
+    state,
+    { address, ethereumAddress, name, isMobile, isMasterAccount, isMasterPassword, haveEntropy }
+  ) {
     state.selectedWallet = {
       address,
       ethereumAddress,
       isMobile,
       isMasterAccount,
+      isMasterPassword,
+      haveEntropy,
       name: name ?? '',
     };
   },

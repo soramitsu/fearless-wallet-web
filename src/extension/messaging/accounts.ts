@@ -35,8 +35,8 @@ export function exportMnemonic(address: string, password: string): Promise<Respo
   return sendMessage('pri(accounts.export.mnemonic)', { address, password });
 }
 
-export function exportRowSeed(address: string, password: string): Promise<ResponseExportSeed> {
-  return sendMessage('pri(accounts.export.rowSeed)', { address, password });
+export function exportRowSeed(address: string, password: string, isEVM: boolean): Promise<ResponseExportSeed> {
+  return sendMessage('pri(accounts.export.rowSeed)', { address, password, isEVM });
 }
 
 export function accountUpdateName(address: string, name: string): Promise<boolean> {

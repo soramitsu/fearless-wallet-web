@@ -176,6 +176,7 @@ export class KeyringService {
     delete file.meta.genesisHash;
     delete file.meta.isMasterAccount;
     delete file.meta.isMasterPassword;
+    delete file.meta.isMobile;
 
     return keyring.restoreAccount(file, password, withMasterPassword);
   }
@@ -184,6 +185,7 @@ export class KeyringService {
     delete file.meta.genesisHash;
     delete file.meta.isMasterAccount;
     delete file.meta.isMasterPassword;
+    delete file.meta.isMobile;
 
     return keyring.createFromJson(file);
   }
@@ -307,10 +309,14 @@ export class KeyringService {
   }
 
   exportMnemonic({ address, password }: RequestExportSeed): ResponseExportSeed {
-    const pair = keyring.getPair(address);
-    const seed = pair.exportMnemonic(password!);
+    try {
+      const pair = keyring.getPair(address);
+      const seed = pair.exportMnemonic(password!);
 
-    return { seed };
+      return { seed };
+    } catch {
+      return { seed: '' };
+    }
   }
 
   public accountExportPrivateKey({ address }: RequestExportSeed): ResponseExportPrivateKey {
@@ -330,7 +336,15 @@ export class KeyringService {
   }
 
   public accountExportRawSeed(request: RequestExportSeed): ResponseExportSeed {
+    if (request.isEVM) {
+      const { privateKey } = this.accountExportPrivateKey(request);
+
+      return { seed: privateKey };
+    }
+
     const { seed } = this.exportMnemonic(request);
+
+    if (!seed) return { seed: '' };
 
     // Convert mnemonic to raw seed (32 bytes for sr25519)
     const seedU8 = mnemonicToMiniSecret(seed);

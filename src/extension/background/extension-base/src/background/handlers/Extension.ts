@@ -1858,11 +1858,11 @@ export default class Extension extends FWExtensionBase {
         return this.walletConnectDappPairing();
 
       // OnBoarding
-      case 'pri(onboarding.get.stories)':
+      case 'pri(onboarding.getStories)':
         return this.state.onboardingService.getStories(request as string);
 
-      case 'pri(onboarding.seen)':
-        return this.state.onboardingService.setSeen();
+      case 'pri(onboarding.setComplete)':
+        return this.state.onboardingService.setComplete();
 
       case 'pri(onboarding.isRequired)':
         return this.state.onboardingService.isRequired;

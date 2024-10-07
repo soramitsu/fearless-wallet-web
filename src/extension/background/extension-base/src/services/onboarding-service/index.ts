@@ -7,13 +7,9 @@ import { URLS } from '@/consts/urls';
 
 export class OnboardingService {
   private userType: UserType = 'new';
-  public isRequired = false;
   private defaultLocale = 'en-EN';
   private stories: OnBoardingStoriesLocales = {};
-
-  get user() {
-    return this.userType;
-  }
+  public isRequired = false;
 
   async init(): Promise<void> {
     if (!IS_PRODUCTION && !IS_TEST_ONLY) return;
@@ -26,7 +22,9 @@ export class OnboardingService {
       .get<OnBoardingStoriesLocales>(URLS.ONBOARDING_URL)
       .catch(() => console.info('onboarding fetch error'));
 
-    if (res?.status === 200) this.stories = res.data;
+    if (res?.status !== 200) return;
+
+    this.stories = res.data;
 
     const userStories = this.stories[this.defaultLocale]?.[this.userType];
 
@@ -45,6 +43,13 @@ export class OnboardingService {
     this.userType = type;
   }
 
+  setComplete() {
+    this.isRequired = false;
+
+    this.changeUserType('regular');
+    this.updateStorage();
+  }
+
   updateStorage() {
     storage.set({
       onboarding: {
@@ -52,12 +57,5 @@ export class OnboardingService {
         isRequired: this.isRequired,
       },
     });
-  }
-
-  setSeen() {
-    this.isRequired = false;
-
-    this.changeUserType('regular');
-    this.updateStorage();
   }
 }

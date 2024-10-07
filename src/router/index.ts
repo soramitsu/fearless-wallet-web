@@ -2,7 +2,14 @@ import Vue from 'vue';
 import VueRouter from 'vue-router';
 import routes, { Components } from '@/router/routes';
 import { updateTitle } from '@/util/routing';
-import { keyringIsLocked, hasMasterPassword, hasAccounts, isNeedMigration } from '@/extension/messaging';
+import {
+  keyringIsLocked,
+  hasMasterPassword,
+  hasAccounts,
+  isNeedMigration,
+  isOnboardingRequired,
+} from '@/extension/messaging';
+import { IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
 
 Vue.use(VueRouter);
 
@@ -18,6 +25,16 @@ router.beforeEach(async (to, from, next) => {
   setTimeout(() => updateTitle(to), 150);
 
   const needMigration = await isNeedMigration();
+  const hasAccount = await hasAccounts();
+  const isRequiredOnboarding = await isOnboardingRequired();
+
+  if (IS_PRODUCTION || IS_TEST_ONLY) {
+    if (to.name !== Components.Onboarding && isRequiredOnboarding) {
+      next({ name: Components.Onboarding });
+
+      return;
+    }
+  }
 
   if (to.name !== Components.MigrationDescription && to.name !== Components.MigrationAccounts) {
     const isFromMigrationDescriptionToChangePass =
@@ -41,19 +58,11 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  if (to.name === Components.ChangePassword) {
-    const hasAccount = await hasAccounts();
-
-    if (from.name === Components.Welcome || hasAccount) next();
-    else next({ name: Components.Welcome });
-
-    return;
-  }
-
   const hasPass = await hasMasterPassword();
 
-  if (!hasPass && !needMigration) next({ name: Components.ChangePassword });
-  else if (to.name === Components.Unlock || to.name === Components.ResetWallet) next();
+  if (!hasPass && !needMigration && hasAccount) next({ name: Components.ChangePassword });
+  else if (to.name === Components.Unlock || to.name === Components.ResetWallet || to.name === Components.ChangePassword)
+    next();
   else {
     const isLock = await keyringIsLocked();
 

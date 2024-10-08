@@ -697,6 +697,7 @@
   "common": {
     "lockApp": "Заблокировать расширение",
     "changePassword": "Сменить пароль",
+    "createPassword": "Создать пароль",
     "wc": "Wallet Connect",
     "substrateDApps": "Substrate DApps",
     "connect": "Подключить",

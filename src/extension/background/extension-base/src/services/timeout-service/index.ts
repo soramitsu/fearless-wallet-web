@@ -35,7 +35,7 @@ export class TimeoutService {
     }
   }
 
-  lockTimerIsNull() {
-    return this.extensionAutoLockTimer === null;
+  lockTimerIsExist() {
+    return this.extensionAutoLockTimer !== null;
   }
 }

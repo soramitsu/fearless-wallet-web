@@ -1522,8 +1522,8 @@ export default class Extension extends FWExtensionBase {
     return this.state.keyringService.unlockKeyring(request as RequestUnlockExtension);
   }
 
-  lockKeyring(): boolean {
-    if (!this.state.timeoutService.lockTimerIsNull()) return false;
+  lockKeyring(skipCheck: boolean): boolean {
+    if (!skipCheck && this.state.timeoutService.lockTimerIsExist()) return false;
 
     this.state.timeoutService.clearLockTimer();
 
@@ -1570,7 +1570,7 @@ export default class Extension extends FWExtensionBase {
         return this.unlockKeyring(request as RequestUnlockExtension);
 
       case 'pri(keyring.lock)':
-        return this.lockKeyring();
+        return this.lockKeyring(request as boolean);
 
       case 'pri(keyring.getPassword)':
         return this.state.keyringService.getPassword();

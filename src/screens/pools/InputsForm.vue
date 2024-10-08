@@ -302,7 +302,7 @@ export default class InputsForm extends Vue {
 }
 
 .percent-slider {
-  width: 510px;
+  width: 503px;
   margin: auto;
 }
 </style>

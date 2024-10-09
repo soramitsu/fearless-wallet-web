@@ -729,6 +729,7 @@
   "common": {
     "lockApp": "Lock extension",
     "changePassword": "Change password",
+    "createPassword": "Create password",
     "approve": "Approve",
     "reject": "Reject",
     "sign": "Sign",

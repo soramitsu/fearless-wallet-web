@@ -68,7 +68,7 @@ function sendMessage<TMessageType extends MessageTypes>(
 
     handlers[id] = { reject, resolve, subscriber };
 
-    port?.postMessage({ id, message, request: request || {} });
+    port?.postMessage({ id, message, request: request ?? {} });
   });
 }
 

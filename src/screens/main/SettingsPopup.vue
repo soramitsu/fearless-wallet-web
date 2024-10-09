@@ -117,7 +117,7 @@ export default class SettingsPopup extends Vue {
   }
 
   lock() {
-    lockExtension();
+    lockExtension(true);
 
     this.$router.push({ name: Components.Unlock });
   }

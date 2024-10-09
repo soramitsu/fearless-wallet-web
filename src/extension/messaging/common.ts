@@ -44,8 +44,8 @@ export function unlockExtension(request: RequestUnlockExtension): Promise<boolea
   return sendMessage('pri(keyring.unlock)', request);
 }
 
-export function lockExtension(): Promise<boolean> {
-  return sendMessage('pri(keyring.lock)');
+export function lockExtension(skipCheck = false): Promise<boolean> {
+  return sendMessage('pri(keyring.lock)', skipCheck);
 }
 
 export function getExtensionPassword(): Promise<string> {

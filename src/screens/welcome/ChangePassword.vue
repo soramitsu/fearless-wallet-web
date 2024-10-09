@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :fullScreen="true" header="common.changePassword" @closeHandler="close">
+  <AboveForm :fullScreen="true" :header="header" @closeHandler="close">
     <Scroll>
       <div class="password-content">
         <div>
@@ -81,6 +81,8 @@ const isDisabled = computed(
   hasAccount.value = await hasAccounts();
   needMigration.value = await isNeedMigration();
 })();
+
+const header = computed(() => (alreadyHasMasterPassword.value ? 'common.changePassword' : 'common.createPassword'));
 
 watch(alreadyHasMasterPassword, async () => {
   await nextTick();

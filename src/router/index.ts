@@ -58,16 +58,18 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  const hasPass = await hasMasterPassword();
-
-  if (!hasPass && !needMigration && hasAccount) next({ name: Components.ChangePassword });
-  else if (to.name === Components.Unlock || to.name === Components.ResetWallet || to.name === Components.ChangePassword)
-    next();
+  if (to.name === Components.ChangePassword) next();
   else {
-    const isLock = await keyringIsLocked();
+    const hasPass = await hasMasterPassword();
 
-    if (isLock) next({ name: Components.Unlock });
-    else next();
+    if (!hasPass && !needMigration && hasAccount) next({ name: Components.ChangePassword });
+    else if (to.name === Components.Unlock || to.name === Components.ResetWallet) next();
+    else {
+      const isLock = await keyringIsLocked();
+
+      if (isLock) next({ name: Components.Unlock });
+      else next();
+    }
   }
 });
 

@@ -36,7 +36,11 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  if (to.name !== Components.MigrationDescription && to.name !== Components.MigrationAccounts) {
+  if (
+    to.name !== Components.MigrationDescription &&
+    to.name !== Components.MigrationAccounts &&
+    to.name !== Components.Onboarding
+  ) {
     const isFromMigrationDescriptionToChangePass =
       from.name === Components.MigrationDescription && to.name === Components.ChangePassword;
 

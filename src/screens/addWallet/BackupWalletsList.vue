@@ -56,8 +56,8 @@
 import { Getter } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { FilesState } from '@/interfaces';
+import type { SelectedWallet } from '@/store/accounts/types';
 import { cut } from '@/helpers';
-import { type SelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { isJsonValid, jsonRestore, updateCurrentAccount, migrateMasterPassword } from '@/extension/messaging';
 

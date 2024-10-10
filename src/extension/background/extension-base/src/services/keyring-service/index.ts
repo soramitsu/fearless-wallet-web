@@ -178,6 +178,10 @@ export class KeyringService {
     delete file.meta.isMasterPassword;
     delete file.meta.isMobile;
 
+    const ethereumAddress = (file.meta as FWKeyringMeta).ethereumAddress ?? '';
+
+    if (!this.getAccount(ethereumAddress)) delete file.meta.ethereumAddress;
+
     return keyring.restoreAccount(file, password, withMasterPassword);
   }
 

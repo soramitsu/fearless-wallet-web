@@ -79,7 +79,6 @@ const transactionAddress = computed(() => payload.value?.address ?? selectedWall
 const request = computed<SigningRequest | EvmRequestPayload>(
   () => requests.value.substrate[0] ?? Object.values(requests.value.evm)[0]
 );
-const transactionId = computed(() => request.value.id);
 
 const isSignMobile = computed(() => {
   const encodedAddress = BaseApi.encodeAddress(transactionAddress.value);
@@ -168,7 +167,7 @@ const onReject = async () => store.dispatch('SIGN_CANCEL', request.value.id);
 const sendExtrinsic = async () => {
   state.isDisabled = true;
 
-  onSignApprove({ id: transactionId.value });
+  onSignApprove({ id: request.value.id });
 };
 </script>
 

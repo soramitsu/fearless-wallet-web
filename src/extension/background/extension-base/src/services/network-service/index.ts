@@ -17,6 +17,7 @@ import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/netw
 import { URLS } from '@/consts/urls';
 import { isSameString } from '@/helpers';
 import { type NetworkName } from '@/interfaces';
+import { IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
 
 export type NetworkMap = Record<string, NetworkJson>;
 
@@ -73,9 +74,9 @@ export class NetworkService {
 
         const isTestnet = !!el.options?.some((option) => isSameString(option, 'testnet'));
 
-        if (process.env.VUE_APP_TEST_ONLY !== undefined) return isTestnet;
+        if (IS_TEST_ONLY) return isTestnet;
 
-        if (process.env.NODE_ENV === 'production') return !isTestnet;
+        if (IS_PRODUCTION) return !isTestnet;
 
         return true;
       })

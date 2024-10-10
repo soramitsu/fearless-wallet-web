@@ -22,7 +22,7 @@
             @click="skipStep"
           />
 
-          <FButton text="common.continue" width="100%" size="big" :disabled="isAllowedContinue" @click="proceed" />
+          <FButton text="common.continue" width="100%" size="big" :disabled="isDisabledContinue" @click="proceed" />
         </div>
       </div>
 
@@ -57,13 +57,12 @@ const headers = {
 
 const router = useRouter();
 const files = ref<FilesState[]>([]);
+const showSkipPopup = ref(false);
 
-const isActiveNotComplete = computed(() => files.value.some(({ active, isComplete }) => active && !isComplete));
-const isImportInProgress = computed(() => files.value.some(({ isLoading }) => isLoading));
-const isAllowedContinue = computed(() => isImportInProgress.value || isActiveNotComplete.value);
+const isAllAccountComplete = computed(() => files.value.every(({ isComplete }) => isComplete));
+const isDisabledContinue = computed(() => !isAllAccountComplete.value);
 const notCompleteAccounts = computed(() => files.value.filter(({ isComplete }) => !isComplete));
 const showSkipBtn = computed(() => notCompleteAccounts.value.length !== 0);
-const showSkipPopup = ref(false);
 
 onMounted(async () => {
   const accounts = await getMigrationAccounts();

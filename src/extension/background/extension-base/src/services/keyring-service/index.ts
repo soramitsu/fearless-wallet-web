@@ -408,7 +408,13 @@ export class KeyringService {
 
   keyringMigrateMasterPassword({ address, password }: RequestMigratePassword): boolean {
     try {
+      const account = this.getAccount(address);
+      const meta = account?.meta as FWKeyringMeta;
+      const ethereumAddress = meta.ethereumAddress;
+
       keyring.migrateWithMasterPassword(address, password);
+
+      if (ethereumAddress) keyring.migrateWithMasterPassword(ethereumAddress, password);
 
       return true;
     } catch (e) {

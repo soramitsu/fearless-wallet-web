@@ -781,9 +781,7 @@ export default class Extension extends FWExtensionBase {
 
     this.createUnsubscriptionHandle(id, balanceSubscription.unsubscribe);
 
-    port.onDisconnect.addListener((): void => {
-      this.cancelSubscription(id);
-    });
+    port.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return this.state.balanceService.getBalance();
   }
@@ -1511,21 +1509,21 @@ export default class Extension extends FWExtensionBase {
   }
 
   changeMasterPassword(request: RequestChangePassword): boolean {
-    this.state.timeoutService.setExtensionAutoLockTimeout();
+    this.state.keyringLockService.setExtensionAutoLockTimeout();
 
     return this.state.keyringService.changeMasterPassword(request as RequestChangePassword);
   }
 
   unlockKeyring(request: RequestUnlockExtension): boolean {
-    this.state.timeoutService.setExtensionAutoLockTimeout();
+    this.state.keyringLockService.setExtensionAutoLockTimeout();
 
     return this.state.keyringService.unlockKeyring(request as RequestUnlockExtension);
   }
 
   lockKeyring(skipCheck: boolean): boolean {
-    if (!skipCheck && this.state.timeoutService.lockTimerIsExist()) return false;
+    if (!skipCheck && this.state.keyringLockService.lockTimerIsExist()) return false;
 
-    this.state.timeoutService.clearLockTimer();
+    this.state.keyringLockService.clearLockTimer();
 
     return this.state.keyringService.lockKeyring();
   }

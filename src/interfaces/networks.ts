@@ -139,7 +139,6 @@ export {
   AssetType,
   NetworkName,
   ExternalApi,
-  NetworkStatus,
   HistoryServiceType,
   SoraFees,
   RelayChainName,

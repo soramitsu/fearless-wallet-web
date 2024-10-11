@@ -1,41 +1,31 @@
-import { isOpenClient } from '@extension-base/background/handlers/helpers';
 import type State from '@extension-base/background/handlers/State';
-import { MIN30 } from '@/consts/time';
+
+type Timeouts = {
+  [key in string]: NodeJS.Timeout | null;
+};
 
 export class TimeoutService {
-  private extensionAutoLockTimer: NodeJS.Timeout | null = null;
+  protected timeouts: Timeouts = {};
 
-  constructor(private state: State) {}
+  constructor(protected state: State) {}
 
-  setTimeoutOperation(callback: () => any, delay = 1000) {
-    return setTimeout(callback, delay);
-  }
+  lazyNext = (key: string, callback: () => void, delay = 1000) => {
+    this.clearTimeout(key);
 
-  setExtensionAutoLockTimeout() {
-    const callback = async () => {
-      const isOpen = await isOpenClient();
+    const lazy = setTimeout(() => {
+      callback();
 
-      if (isOpen) return this.clearLockTimer();
+      this.clearTimeout(key);
+    }, delay);
 
-      this.state.keyringService.lockKeyring();
-    };
+    this.timeouts[key] = lazy;
+  };
 
-    this.clearLockTimer();
+  clearTimeout(key: string) {
+    if (this.timeouts[key]) {
+      clearTimeout(this.timeouts[key] as NodeJS.Timeout);
 
-    this.extensionAutoLockTimer = this.setTimeoutOperation(callback, MIN30);
-
-    return true;
-  }
-
-  clearLockTimer() {
-    if (this.extensionAutoLockTimer) {
-      clearTimeout(this.extensionAutoLockTimer);
-
-      this.extensionAutoLockTimer = null;
+      this.timeouts[key] = null;
     }
-  }
-
-  lockTimerIsExist() {
-    return this.extensionAutoLockTimer !== null;
   }
 }

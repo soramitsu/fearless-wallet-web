@@ -3,7 +3,6 @@ import { type ApiPromise } from '@polkadot/api';
 import { APIItemState, NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate';
 import { FPNumber } from '@sora-substrate/util';
-import { setBalance } from '@extension-base/api/helpers';
 import type State from '@extension-base/background/handlers/State';
 import type { RelayChainName, NetworkName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
@@ -41,7 +40,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
 
         const transferable = FPNumber.fromCodecValue(balanceValue, precision);
 
-        setBalance(
+        state.balanceService.setBalanceItem(
           networkKey,
           {
             state: APIItemState.READY,
@@ -54,8 +53,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
             locked: locked.toString(),
             transferable: transferable.toString(),
           },
-          address,
-          state
+          address
         );
 
         return id;
@@ -68,7 +66,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
 
       assets.forEach(({ id, symbol }) => {
         if (!notZeroBalances.includes(id))
-          setBalance(
+          state.balanceService.setBalanceItem(
             networkKey,
             {
               state: APIItemState.READY,
@@ -81,8 +79,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
               locked: '0',
               transferable: '0',
             },
-            substrateAddress,
-            state
+            substrateAddress
           );
       });
     });
@@ -122,7 +119,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
         const { frozen, locked, reserved, total, transferable } = formatBalance(balance, precision);
         const substrateAddress = state.keyringService.getSubstrateAddress(address);
 
-        setBalance(
+        state.balanceService.setBalanceItem(
           networkKey,
           {
             state: APIItemState.READY,
@@ -135,8 +132,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
             transferable,
             total,
           },
-          substrateAddress,
-          state
+          substrateAddress
         );
       };
 
@@ -144,7 +140,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
 
       return () => sub.unsubscribe();
     } catch (err: any) {
-      setBalance(
+      state.balanceService.setBalanceItem(
         networkKey,
         {
           state: APIItemState.ERROR,
@@ -152,8 +148,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
           symbol,
           id,
         },
-        address,
-        state
+        address
       );
 
       console.warn(err.message, networkKey);
@@ -176,7 +171,7 @@ export function subscribeBalance(
       // если список  === null, значит коннектимся ко всем включенным сетям
       if (newNetworks === null) return true;
 
-      return newNetworks.some((net) => net.toLowerCase() === networkName.toLowerCase());
+      return newNetworks.some((net) => isSameString(net, networkName));
     })
     .map(([networkName, apiProps]) => {
       return new Promise<{

@@ -33,6 +33,7 @@ import BalanceService from '@extension-base/services/balance-service';
 import axios from 'axios';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
+import { KeyringLockService } from '@extension-base/services/keyring-service/KeyringLock';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   ServiceInfo,
@@ -71,7 +72,6 @@ export default class State {
   public serviceInfoSubject = new Subject<ServiceInfo>();
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
-  public lazyMap: Record<string, unknown> = {};
   public soraFees: BehaviorSubject<SoraFees> = new BehaviorSubject<SoraFees>(apiSora.NetworkFee);
   public ready = false;
   public currentTabStatus: ActiveTabAuthorizeStatus = {
@@ -97,6 +97,7 @@ export default class State {
   public scamService = new ScamService(this);
   public subscriptionService = new SubscriptionService(this);
   public timeoutService = new TimeoutService(this);
+  public keyringLockService = new KeyringLockService(this);
 
   constructor() {
     this.injectFromStorage();
@@ -542,17 +543,6 @@ export default class State {
       console.error('failed subscribe or unsubscribe to XOR balance');
     }
   }
-
-  public lazyNext = (key: string, callback: () => void) => {
-    if (this.lazyMap[key]) clearTimeout(this.lazyMap[key] as number);
-
-    const lazy = setTimeout(() => {
-      callback();
-      clearTimeout(lazy);
-    }, 300);
-
-    this.lazyMap[key] = lazy;
-  };
 
   public getAddressList(value = false): Record<string, boolean> {
     const addressList = Object.keys(accounts.subject.value);

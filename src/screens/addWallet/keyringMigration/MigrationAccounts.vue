@@ -18,6 +18,7 @@
             class="skip-btn"
             type="secondary"
             text="common.skip"
+            :disabled="isDisabledSkip"
             :border="false"
             @click="skipStep"
           />
@@ -58,6 +59,9 @@ const headers = {
 const router = useRouter();
 const files = ref<FilesState[]>([]);
 const showSkipPopup = ref(false);
+
+const isImportInProgress = computed(() => files.value.some(({ isLoading }) => isLoading));
+const isDisabledSkip = computed(() => isImportInProgress.value);
 
 const isAllAccountComplete = computed(() => files.value.every(({ isComplete }) => isComplete));
 const isDisabledContinue = computed(() => !isAllAccountComplete.value);

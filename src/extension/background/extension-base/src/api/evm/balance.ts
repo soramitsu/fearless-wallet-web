@@ -1,7 +1,6 @@
 import { ethers } from 'ethers';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getContract } from '@extension-base/api/evm/contracts';
-import { setBalance } from '@extension-base/api/helpers';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type State from '@extension-base/background/handlers/State';
 
@@ -51,7 +50,7 @@ async function fetchTokenBalance(ethereumAddress: string, networkKey: string, co
       balanceItem.total = free;
       balanceItem.state = APIItemState.READY;
 
-      setBalance(networkKey, balanceItem, ethereumAddress, state);
+      state.balanceService.setBalanceItem(networkKey, balanceItem, ethereumAddress);
     })
     .catch((ex) => {
       console.info(ex);
@@ -67,7 +66,7 @@ async function fetchTokenBalance(ethereumAddress: string, networkKey: string, co
       state.disableNetworkMap(networkKey);
       state.subscriptionService.getSubscription(networkKey)?.();
 
-      setBalance(networkKey, balanceItem, ethereumAddress, state);
+      state.balanceService.setBalanceItem(networkKey, balanceItem, ethereumAddress);
 
       console.info(`There is problem when fetching ${symbol} token balance on ${networkKey}`, ex);
     });
@@ -98,7 +97,7 @@ function fetchUtilityBalance(networkKey: string, ethereumAddress: string, state:
       balanceItem.transferable = balance;
       balanceItem.state = APIItemState.READY;
 
-      setBalance(networkKey, balanceItem, address, state);
+      state.balanceService.setBalanceItem(networkKey, balanceItem, address);
     })
     .catch((ex) => {
       console.info(ex);
@@ -113,7 +112,7 @@ function fetchUtilityBalance(networkKey: string, ethereumAddress: string, state:
       state.disableNetworkMap(networkKey);
       state.subscriptionService.getSubscription(networkKey)?.();
 
-      setBalance(networkKey, balanceItem, address, state);
+      state.balanceService.setBalanceItem(networkKey, balanceItem, address);
     });
 }
 

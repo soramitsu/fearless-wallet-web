@@ -42,6 +42,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n-composable';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
 import { resetWallet } from '@/extension/messaging';
+import { Components } from '@/router/routes';
 
 const phrase = 'Reset wallet';
 const router = useRouter();
@@ -60,7 +61,7 @@ const close = () => router.back();
 const reset = () => {
   resetWallet();
 
-  close();
+  router.push({ name: Components.Welcome });
 };
 </script>
 

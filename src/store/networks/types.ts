@@ -7,7 +7,6 @@ import type {
   Networks,
   AssetPrice,
   FiatJson,
-  NetworkStatus,
   Node,
   NetworkName,
   HistoryServiceType,
@@ -86,11 +85,6 @@ export type SetNetworkApiProps = {
   network: NetworkName;
   provider?: WsProvider;
   api?: ApiPromise;
-};
-
-export type SetNetworkStatusProps = {
-  network: NetworkName;
-  status: NetworkStatus;
 };
 
 export type SetSoraFee = {

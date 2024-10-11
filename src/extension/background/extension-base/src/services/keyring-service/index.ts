@@ -155,9 +155,12 @@ export class KeyringService {
     }
   }
 
-  // в общем и целом можно использоваь getPair вместо getAccount
   getAccount(address: string) {
-    return keyring.getAccount(address);
+    try {
+      return keyring.getAccount(address);
+    } catch {
+      return null;
+    }
   }
 
   getAddress(address: string, type: KeyringItemType | null = null) {
@@ -180,7 +183,7 @@ export class KeyringService {
 
     const ethereumAddress = (file.meta as FWKeyringMeta).ethereumAddress ?? '';
 
-    if (!this.getAccount(ethereumAddress)) delete file.meta.ethereumAddress;
+    if (this.getAccount(ethereumAddress) === null) delete file.meta.ethereumAddress;
 
     return keyring.restoreAccount(file, password, withMasterPassword);
   }

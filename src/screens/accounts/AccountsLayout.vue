@@ -194,6 +194,8 @@ export default class AccountsLayout extends Vue {
 
   handlerAccept() {
     this.deleteNode();
+
+    this.showNotificationPopup = false;
   }
 
   openExportAccountPage() {

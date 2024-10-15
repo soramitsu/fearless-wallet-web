@@ -62,6 +62,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { addNumbers } from '@/helpers/numbers';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { isSameString } from '@/helpers';
 
 @Component({
   components: { TransferForm },
@@ -87,7 +88,7 @@ export default class SendForm extends Vue {
   }
 
   get isUtilityAsset() {
-    return !!this.currency?.balances.find((el) => el.isUtility || el.isNative);
+    return this.currency?.balances.some(({ isUtility, name }) => isUtility && isSameString(name, this.selectedNetwork));
   }
 
   get partialFeeString() {

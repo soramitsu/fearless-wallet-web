@@ -194,8 +194,7 @@ export default class AccountsLayout extends Vue {
 
   handlerAccept() {
     this.deleteNode();
-
-    this.showNotificationPopup = false;
+    this.closeNotificationPopup();
   }
 
   openExportAccountPage() {
@@ -280,6 +279,8 @@ export default class AccountsLayout extends Vue {
   closeNotificationPopup() {
     this.selectedNodeName = '';
     this.selectedNodeUrl = '';
+
+    this.showNotificationPopup = false;
   }
 
   closeNodeSettings() {

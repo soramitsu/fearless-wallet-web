@@ -7,6 +7,8 @@ import {
   haveSignRequests,
   showSoraCard,
 } from './helpers';
+import { keyringIsLocked } from '@/extension/messaging';
+
 import ResetWallet from '@/screens/welcome/ResetWallet.vue';
 import Unlock from '@/screens/welcome/Unlock.vue';
 import ChangePassword from '@/screens/welcome/ChangePassword.vue';
@@ -511,8 +513,11 @@ const routes: Array<RouteConfig> = [
   {
     path: '*',
     component: Welcome,
-    beforeEnter: (to, from, next) => {
-      if (hasSelectedWallet()) next({ name: Components.Currencies });
+    beforeEnter: async (to, from, next) => {
+      const isLock = await keyringIsLocked();
+
+      if (isLock) next({ name: Components.Unlock });
+      else if (hasSelectedWallet()) next({ name: Components.Currencies });
       else next();
     },
   },

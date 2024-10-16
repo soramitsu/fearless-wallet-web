@@ -6,6 +6,8 @@ import CurrentAccountStore, { type CurrentAccountState } from '@extension-base/s
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { u8aToHex } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
+import AccountsStore from '@extension-base/stores/Accounts';
+import KeyringStore from '@extension-base/stores/KeyringStore';
 import type { EventService } from '@extension-base/services';
 import type {
   RequestChangePassword,
@@ -17,7 +19,7 @@ import type {
 } from '../../background/types/types';
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { KeyringAddressType, KeyringItemType, KeyringStore } from '@subwallet/ui-keyring/types';
+import type { KeyringAddressType, KeyringItemType } from '@subwallet/ui-keyring/types';
 import type { KeyringPair, KeyringPair$Json } from '@subwallet/keyring/types';
 import { isSameString } from '@/helpers';
 
@@ -78,10 +80,11 @@ export class KeyringService {
     this.currentAccountStore.set('CurrentAccountInfo', currentAccountData);
   }
 
-  loadAll(store: KeyringStore, type: KeypairType = 'sr25519') {
+  loadAll() {
     return keyring.loadAll({
-      store,
-      type,
+      store: new AccountsStore(),
+      type: 'sr25519',
+      password_store: new KeyringStore(),
     });
   }
 

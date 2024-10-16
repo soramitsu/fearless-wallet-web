@@ -1,5 +1,5 @@
+import type { NetworkName } from '@/interfaces';
 import store, { type NetworkParams } from '@/store';
-import { type NetworkName } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';

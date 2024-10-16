@@ -4051,7 +4051,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@subwallet/keyring@npm:^0.1.2":
+"@subwallet/keyring@npm:^0.1.7":
   version: 0.1.7
   resolution: "@subwallet/keyring@npm:0.1.7"
   dependencies:
@@ -4068,19 +4068,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@subwallet/ui-keyring@npm:0.1.5":
-  version: 0.1.5
-  resolution: "@subwallet/ui-keyring@npm:0.1.5"
+"@subwallet/ui-keyring@npm:0.1.7":
+  version: 0.1.7
+  resolution: "@subwallet/ui-keyring@npm:0.1.7"
   dependencies:
     "@babel/runtime": ^7.20.1
     "@polkadot/ui-settings": 2.9.14
     "@polkadot/util": ^12.2.1
     "@polkadot/util-crypto": ^12.2.1
-    "@subwallet/keyring": ^0.1.2
+    "@subwallet/keyring": ^0.1.7
     mkdirp: ^1.0.4
     rxjs: ^7.5.7
     store: ^2.0.12
-  checksum: db100686fae694ed7298a2cc99b371f35003559f0c7b77cd5a9cd22fa453f5c1397e3882c92168777417b66045bccc371012641c810ebc735d781c39083fc38f
+  checksum: a9fe5a4e01848f5aadc3c4db9e288e54dd095db7021a887a411e2134f98b31d4d91670ae6289e68e3d979287afa8e83c6c4a40d0d782a163e9bf0fbd8020523a
   languageName: node
   linkType: hard
 
@@ -10350,7 +10350,7 @@ __metadata:
     "@polkadot/vue-identicon": ^2.9.8
     "@sora-substrate/util": 1.40.0
     "@soramitsu-ui/ui-vue2": ^1.1.0
-    "@subwallet/ui-keyring": 0.1.5
+    "@subwallet/ui-keyring": 0.1.7
     "@types/chrome": ^0.0.200
     "@types/crypto-js": ^4.2.2
     "@types/file-saver": ^2.0.5

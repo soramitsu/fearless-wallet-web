@@ -24,8 +24,6 @@ router.beforeEach(async (to, from, next) => {
   // так же, 150ms минимальное время для того, чтобы balances успели подтянуться из SW
   setTimeout(() => updateTitle(to), 150);
 
-  const needMigration = await isNeedMigration();
-  const hasAccount = await hasAccounts();
   const isRequiredOnboarding = await isOnboardingRequired();
 
   if (IS_PRODUCTION || IS_TEST_ONLY) {
@@ -35,6 +33,8 @@ router.beforeEach(async (to, from, next) => {
       return;
     }
   }
+
+  const needMigration = await isNeedMigration();
 
   if (
     to.name !== Components.MigrationDescription &&
@@ -52,21 +52,19 @@ router.beforeEach(async (to, from, next) => {
     else next();
   }
 
-  if (to.name === Components.Welcome) {
-    const isLock = await keyringIsLocked();
-    const hasPass = await hasMasterPassword();
+  const isLock = await keyringIsLocked();
+  const hasPass = await hasMasterPassword();
 
+  if (to.name === Components.Welcome) {
     if (hasPass && isLock) next({ name: Components.Unlock });
     else next();
 
     return;
   }
 
-  const isLock = await keyringIsLocked();
-
   if (to.name === Components.ChangePassword) next();
   else {
-    const hasPass = await hasMasterPassword();
+    const hasAccount = await hasAccounts();
 
     if (!hasPass && !needMigration && hasAccount) next({ name: Components.ChangePassword });
     else if (to.name === Components.Unlock) {

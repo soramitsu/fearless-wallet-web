@@ -1,5 +1,5 @@
-import { IS_EXTENSION } from './global';
+import { APP_WIDTH, IS_EXTENSION } from './global';
 
-const IS_POPUP = window.innerWidth <= 561 && IS_EXTENSION;
+const IS_POPUP = window.innerWidth <= APP_WIDTH && IS_EXTENSION;
 
 export { IS_POPUP };

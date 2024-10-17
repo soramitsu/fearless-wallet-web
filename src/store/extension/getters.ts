@@ -15,7 +15,7 @@ import type {
 } from '@extension-base/background/types/types';
 import type { GetterTree } from 'vuex';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { Features, SignRequestList } from '@/store/extension/types';
+import type { Features, SignRequests } from '@/store/extension/types';
 
 export enum GettersTypes {
   authRequests = 'authRequests',
@@ -23,7 +23,7 @@ export enum GettersTypes {
   getAuthItem = 'getAuthItem',
   metaRequests = 'metaRequests',
   signRequestPayload = 'signRequestPayload',
-  signList = 'signList',
+  signRequests = 'signRequests',
   tabStatus = 'tabStatus',
   features = 'features',
   onboarding = 'onboarding',
@@ -51,7 +51,7 @@ export type Getters = {
     getters?: GetterTree<State, State> & Getters
   ): SignerPayloadJSON | SignerPayloadRaw | EvmRequestPayload;
 
-  [GettersTypes.signList](state: State, getters?: GetterTree<State, State> & Getters): SignRequestList;
+  [GettersTypes.signRequests](state: State, getters?: GetterTree<State, State> & Getters): SignRequests;
   [GettersTypes.onboarding](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.wcConnectRequests](
     state: State,
@@ -103,7 +103,7 @@ const getters: GetterTree<State, State> & Getters = {
     return Object.values(signEvmRequests)[0];
   },
 
-  [GettersTypes.signList]({ signRequests, signEvmRequests }): SignRequestList {
+  [GettersTypes.signRequests]({ signRequests, signEvmRequests }): SignRequests {
     return { substrate: signRequests, evm: signEvmRequests };
   },
 

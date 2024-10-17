@@ -43,6 +43,7 @@ import {
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
 import { type MakeCrossChainProps } from '../../api/substrate/types';
+import { EXTENSION_URL } from '../../const';
 import type { EvmRequestsSubjectPayload } from '@extension-base/services/request-service/types';
 import type {
   RequestUpdateMeta,
@@ -715,7 +716,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async windowOpen(path: AllowedPath): Promise<boolean> {
-    const [tab] = await chrome.tabs.query({ title: 'fearless-wallet' });
+    const [tab] = await chrome.tabs.query({ url: EXTENSION_URL });
 
     if (tab && tab.id) {
       chrome.tabs.update(tab.id, { active: true });

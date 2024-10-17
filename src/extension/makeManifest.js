@@ -73,7 +73,6 @@ module.exports = (browser) => {
       {
         resources: ['page.js'],
         matches: ['https://*/*', 'http://*/*', 'http://localhost/*'],
-        use_dynamic_url: true,
       },
     ],
     ...(browser === 'chrome' ? chromiumBase : firefoxBase),

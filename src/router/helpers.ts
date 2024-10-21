@@ -5,8 +5,8 @@ import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters
 import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 
 const hasSelectedWallet = () => store.getters[AccountsGettersTypes.selectedWallet].address.length !== 0;
-const haveAuthRequests = (): number => store.getters[ExtensionGettersTypes.authList].length;
-const haveSignRequests = (): number => store.getters[ExtensionGettersTypes.signList].length;
+const haveAuthRequests = (): number => store.getters[ExtensionGettersTypes.authRequests].length;
+const haveSignRequests = (): number => store.getters[ExtensionGettersTypes.signRequests].length;
 const haveMetaRequests = (): number => store.getters[ExtensionGettersTypes.metaRequests].length;
 const showSoraCard = (): boolean => store.getters[ExtensionGettersTypes.features]?.fiat?.soraCard;
 const getStakingNetwork = async (network: NetworkName): Promise<NetworkParams> =>

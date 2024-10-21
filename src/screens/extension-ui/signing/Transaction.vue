@@ -50,12 +50,12 @@ import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { AccountJson, SigningRequest } from '@extension-base/background/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import type { ApprovePayload } from '@/store/extension/actions';
+import type { SignRequests } from '@/store/extension/types';
 import BaseApi from '@/util/BaseApi';
 import WalletInfo from '@/screens/extension-ui/signing/WalletInfo.vue';
 import InfoList from '@/screens/extension-ui/InfoList.vue';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import { useStore, type SelectedWallet } from '@/store';
-import { type SignRequestList } from '@/store/extension/types';
 import { cut } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as ExtensionGetterTypes } from '@/store/extension/getters';
@@ -67,7 +67,7 @@ const state = reactive({
 const store = useStore();
 
 const payload = computed<SignerPayloadJSON>(() => store.getters[ExtensionGetterTypes.signRequestPayload]);
-const requests = computed<SignRequestList>(() => store.getters[ExtensionGetterTypes.signList]);
+const requests = computed<SignRequests>(() => store.getters[ExtensionGetterTypes.signRequests]);
 const accounts = computed<AccountJson[]>(() => store.getters[AccountsGettersTypes.getAccounts]);
 const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
 

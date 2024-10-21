@@ -1643,6 +1643,9 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.export.json)':
         return this.exportJSON(request as RequestAccountExport);
 
+      case 'pri(migrate.export.json)':
+        return this.migrateExportJSON(request as string);
+
       case 'pri(accounts.export.mnemonic)':
         return this.state.keyringService.exportMnemonic(request as RequestExportSeed);
 

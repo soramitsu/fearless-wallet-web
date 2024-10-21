@@ -35,24 +35,28 @@ router.beforeEach(async (to, from, next) => {
   }
 
   const needMigration = await isNeedMigration();
+  const isLock = await keyringIsLocked();
 
-  if (
-    to.name !== Components.MigrationDescription &&
-    to.name !== Components.MigrationAccounts &&
-    to.name !== Components.Onboarding
-  ) {
-    const isFromMigrationDescriptionToChangePass =
-      from.name === Components.MigrationDescription && to.name === Components.ChangePassword;
+  // If the extension is locked, skip the migration step.
+  // This can happen if the user set a password during migration and then locked the extension.
+  if (!isLock) {
+    if (
+      to.name !== Components.MigrationDescription &&
+      to.name !== Components.MigrationAccounts &&
+      to.name !== Components.Onboarding
+    ) {
+      const isFromMigrationDescriptionToChangePass =
+        from.name === Components.MigrationDescription && to.name === Components.ChangePassword;
 
-    if (isFromMigrationDescriptionToChangePass) next();
-    else if (needMigration) next({ name: Components.MigrationDescription });
-    else next();
-  } else if (to.name === Components.MigrationDescription || to.name === Components.MigrationAccounts) {
-    if (!needMigration) next({ name: Components.Welcome });
-    else next();
+      if (isFromMigrationDescriptionToChangePass) next();
+      else if (needMigration) next({ name: Components.MigrationDescription });
+      else next();
+    } else if (to.name === Components.MigrationDescription || to.name === Components.MigrationAccounts) {
+      if (!needMigration) next({ name: Components.Welcome });
+      else next();
+    }
   }
 
-  const isLock = await keyringIsLocked();
   const hasPass = await hasMasterPassword();
 
   if (to.name === Components.Welcome) {

@@ -31,6 +31,10 @@ export function exportJSON(address: string, password: string, network?: string):
   return sendMessage('pri(accounts.export.json)', { address, password, network });
 }
 
+export function migrateExportJSON(address: string): Promise<ResponseAccountExport> {
+  return sendMessage('pri(migrate.export.json)', address);
+}
+
 export function exportMnemonic(address: string, password: string): Promise<ResponseExportSeed> {
   return sendMessage('pri(accounts.export.mnemonic)', { address, password });
 }

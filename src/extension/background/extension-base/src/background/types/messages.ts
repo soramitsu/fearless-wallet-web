@@ -159,6 +159,7 @@ export interface RequestSignatures {
   'pri(addresses.create)': [RequestAddressCreate, boolean];
   'pri(accounts.update.meta)': [RequestUpdateMeta, boolean];
   'pri(accounts.export.json)': [RequestAccountExport, ResponseAccountExport];
+  'pri(migrate.export.json)': [string, ResponseAccountExport];
   'pri(accounts.export.mnemonic)': [RequestExportSeed, ResponseExportSeed];
   'pri(accounts.export.rowSeed)': [RequestExportSeed, ResponseExportSeed];
   'pri(accounts.forget)': [RequestAccountForget, boolean];

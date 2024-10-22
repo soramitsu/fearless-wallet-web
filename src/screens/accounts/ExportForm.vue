@@ -36,7 +36,6 @@
 
 <script lang="ts">
 import { Getter } from 'vuex-class';
-import { saveAs } from 'file-saver';
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import type { SelectedWallet } from '@/store';
 import type { Networks } from '@/interfaces/networks';
@@ -46,7 +45,8 @@ import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { exportJSON, exportMnemonic, exportRowSeed } from '@/extension/messaging';
-import { setClipboard } from '@/helpers';
+import { isSameString, setClipboard } from '@/helpers';
+import { downloadJsonAccount } from '@/helpers/files';
 import MnemonicBackupForm from '@/screens/addWallet/MnemonicBackupForm.vue';
 
 enum ExportTypeText {
@@ -140,19 +140,10 @@ export default class ExportForm extends Vue {
   }
 
   async downloadJsonFile() {
-    const chainId = this.networks.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!.chainId;
+    const chainId = this.networks.find(({ name }) => isSameString(name, this.network))!.chainId;
     const meta = { ...this.json.meta, genesisHash: `0x${chainId}` } as unknown as Record<string, string>;
 
-    delete meta['ethereumAddress'];
-    delete meta['isMasterAccount'];
-    delete meta['isMasterPassword'];
-    delete meta['isMobile'];
-
-    const jsonSubstrate = JSON.stringify({ ...this.json, meta });
-
-    const blobSubstrate = new Blob([jsonSubstrate], { type: 'application/json; charset=utf-8' });
-
-    saveAs(blobSubstrate, `${this.addressByNetwork}.json`);
+    downloadJsonAccount(this.addressByNetwork, this.json, meta);
   }
 }
 </script>

@@ -3,7 +3,6 @@ import type { KeyringPair$Json } from '@subwallet/keyring/types';
 
 interface FileData {
   id: string;
-  address: string;
   name: string;
   active: boolean;
   password: string;
@@ -16,7 +15,7 @@ interface FileData {
   ethJson: KeyringPair$Json;
 }
 
-type FilesState = Partial<FileData>;
+type FilesState = { address: string } & Partial<FileData>;
 
 interface RequestGoogleToken {
   token: string;

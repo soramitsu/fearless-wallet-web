@@ -49,7 +49,9 @@ import { ref, computed, onMounted } from 'vue';
 import type { FilesState } from '@/interfaces';
 import { Components } from '@/router/routes';
 import BackupWalletsList from '@/screens/addWallet/BackupWalletsList.vue';
-import { forgetAccount, getMigrationAccounts } from '@/extension/messaging';
+import { forgetAccount, getMigrationAccounts, migrateExportJSON } from '@/extension/messaging';
+import { downloadJsonAccount } from '@/helpers/files';
+import { type FWKeyringMeta } from '@/extension/background/extension-base/src/types';
 
 const headers = {
   text: 'common.areYouSure',
@@ -100,11 +102,20 @@ const handlerClose = () => (showSkipPopup.value = false);
 const handlerAccept = async () => {
   // sequentially delete unnecessary accounts
   for (const { address } of notCompleteAccounts!.value) {
+    const { json } = await migrateExportJSON(address);
+
+    downloadJsonAccount(address!, json, json.meta);
+
+    if ((json.meta as FWKeyringMeta).ethereumAddress) {
+      const { json: jsonEthereum } = await migrateExportJSON((json.meta as FWKeyringMeta).ethereumAddress!);
+
+      downloadJsonAccount(jsonEthereum.address!, jsonEthereum, json.meta);
+    }
+
     await forgetAccount(address!, 'native');
   }
 
-  if (notCompleteAccounts.value.length !== files.value.length) proceed();
-  else router.push({ name: Components.Wallet });
+  proceed();
 };
 </script>
 

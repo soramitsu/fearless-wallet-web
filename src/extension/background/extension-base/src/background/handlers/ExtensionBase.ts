@@ -1,4 +1,5 @@
 import assert from 'assert';
+import { isEthereumAddress } from '@polkadot/util-crypto';
 import { ethers } from 'ethers';
 import type {
   CachedUnlocks,
@@ -17,12 +18,32 @@ import type { KeyringPair } from '@subwallet/keyring/types';
 import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { type DerivationPath } from '@/interfaces';
+import { isSameString } from '@/helpers';
 
 export default class FWExtensionBase {
   public cachedUnlocks: CachedUnlocks;
 
   constructor(protected state: State) {
     this.cachedUnlocks = {};
+  }
+
+  migrateExportJSON(address: string): Promise<ResponseAccountExport> {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(null).then((values) => {
+        const accounts = Object.entries(values).filter(([key]) => key.includes('fw:account'));
+
+        const [, json] = accounts.find(([key, value]) => {
+          if (!isEthereumAddress(address)) return isSameString(value.address, address);
+
+          const keySplit = key.split(':');
+          const addressKey = keySplit[keySplit.length - 1];
+
+          return isSameString(addressKey, address);
+        })!;
+
+        resolve({ json });
+      });
+    });
   }
 
   exportJSON({ address, password, network }: RequestAccountExport): ResponseAccountExport {

@@ -48,9 +48,9 @@ import { useI18n } from 'vue-i18n-composable';
 import { Components } from '@/router/routes';
 import { type WalletInfo, useStore } from '@/store';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
-import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
+import { IS_POPUP } from '@/consts/globalClient';
 
 const state = ref<Record<string, WalletInfo>>({});
 const selectAll = ref(true);
@@ -121,7 +121,7 @@ const message = computed(() =>
 );
 
 const redirect = () => {
-  if (BaseApi.useIsPopup()) setTimeout(() => router.push({ name: Components.Wallet }), 100); // don`t removed setTimeout
+  if (IS_POPUP) setTimeout(() => router.push({ name: Components.Wallet }), 100); // don`t removed setTimeout
 };
 
 const onApprove = () => {

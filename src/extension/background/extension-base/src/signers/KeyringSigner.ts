@@ -7,7 +7,7 @@ import { type HexString } from '@polkadot/util/types';
 import { state } from '@extension-base/background/handlers';
 import type { Registry, SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { Signer, SignerResult } from '@polkadot/api/types';
-import type { KeyringPair } from '@polkadot/keyring/types';
+import type { KeyringPair } from '@subwallet/keyring/types';
 
 interface KeyringSignerProps {
   registry: Registry;

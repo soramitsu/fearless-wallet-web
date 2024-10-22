@@ -47,6 +47,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NETWORKS_GROUPS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common/index';
+import { IS_POPUP } from '@/consts/globalClient';
 
 @Component({
   components: {
@@ -133,9 +134,7 @@ export default class Asset extends Vue {
   }
 
   get iconPosition() {
-    const isPopup = BaseApi.useIsPopup();
-
-    return `top: 24px; right:${isPopup ? '67px' : '131px'};`;
+    return `top: 24px; right:${IS_POPUP ? '67px' : '131px'};`;
   }
 
   get selectedAssetUpper() {

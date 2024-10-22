@@ -35,7 +35,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, withDefaults } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n-composable';
 import type { ComponentText } from '@/interfaces';
 
@@ -57,6 +57,7 @@ const props = withDefaults(defineProps<Props>(), {
   blur: false,
   showAcceptIcon: false,
   fullScreen: false,
+  isDisabledClose: false,
   showBackIcon: false,
   showCloseIcon: true,
   showAnimation: true,

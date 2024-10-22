@@ -98,9 +98,9 @@ import { useNotify } from '@/plugins/soramitsuUI';
 import { transformNamespaces } from '@/util/walletConnect';
 import { cut } from '@/helpers';
 import { Components } from '@/router/routes';
-import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGetterType } from '@/store/accounts/getters';
 import { GettersTypes as ExtensionGetterType } from '@/store/extension/getters';
+import { IS_POPUP } from '@/consts/globalClient';
 
 const notificationPopupMessage = {
   subtext: 'walletConnect.unsupportedMethodsPopup',
@@ -199,7 +199,7 @@ const onApprove = async () => {
   router.push(Components.Wallet);
 };
 
-const heightClass = computed(() => (BaseApi.useIsPopup() ? '' : 'scroll__container--popup'));
+const heightClass = computed(() => (IS_POPUP ? '' : 'scroll__container--popup'));
 
 const onReject = () => {
   rejectWalletConnectSession({ id: id.value });
@@ -257,13 +257,16 @@ const onReject = () => {
   gap: 10px;
   width: 100%;
 }
+
 .scroll__container {
   height: 460px;
   overflow-y: hidden;
 }
+
 .scroll__container--popup {
   height: 100%;
 }
+
 .auth-confirmation {
   display: flex;
   align-items: center;
@@ -271,9 +274,11 @@ const onReject = () => {
   gap: 10px;
   height: 100%;
 }
+
 .namespaces-form {
   width: 100%;
 }
+
 .namespaces {
   display: flex;
   align-items: center;
@@ -290,6 +295,7 @@ const onReject = () => {
     gap: 7px;
   }
 }
+
 .warning-container {
   display: flex;
   align-items: center;
@@ -301,20 +307,25 @@ const onReject = () => {
 .warning--orange {
   color: $simple-orange-color;
 }
+
 .warning-text {
   max-width: 400px;
   color: $gray-color;
 }
+
 .icon {
   width: 64px;
   height: 64px;
 }
+
 .width-100 {
   width: 100%;
 }
+
 .alert {
   width: 500px;
 }
+
 .auth-content {
   display: flex;
   flex-direction: column;

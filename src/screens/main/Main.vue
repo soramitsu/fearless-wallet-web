@@ -91,6 +91,7 @@ export default class Main extends Vue {
   deactivated() {
     this.showSelectWalletPopup = false;
     this.showWalletDetailsPopup = false;
+    this.showSettings = false;
   }
 
   toggleManageAuthsVisible() {

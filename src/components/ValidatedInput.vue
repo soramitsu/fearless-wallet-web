@@ -25,7 +25,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, withDefaults } from 'vue';
+import { ref, computed } from 'vue';
 import FInput from '@/components/FInput.vue';
 
 type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
@@ -35,7 +35,7 @@ type Size = 'small' | 'medium' | 'big';
 type FInputProps = {
   errorDescriptions: string;
   placeholder: string;
-  isError: boolean;
+  isError?: boolean;
   maxlength?: number;
   showPassword?: boolean;
   readonly?: boolean;

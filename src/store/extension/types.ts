@@ -49,7 +49,7 @@ export type SetRequestsPayload =
       requests: EvmRequests;
     };
 
-export type SignRequestList = {
+export type SignRequests = {
   substrate: SigningRequest[];
   evm: EvmRequests;
 };

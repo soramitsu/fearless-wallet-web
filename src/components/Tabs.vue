@@ -3,14 +3,14 @@
     <input :value="activeTab" class="display-none" />
 
     <TabButton
-      v-for="{ name, label } in tabs"
+      v-for="tab in tabs"
       class="button"
-      :label="$t(label)"
-      :name="name"
-      :key="name"
-      :isActive="activeTab === name"
+      :label="$t(tab.label)"
+      :name="tab.name"
+      :key="tab.name"
+      :isActive="activeTab === tab.name"
       data-testid="tabButton"
-      @click="$emit('update:activeTab', name)"
+      @click="$emit('update:activeTab', tab)"
     />
   </div>
 </template>

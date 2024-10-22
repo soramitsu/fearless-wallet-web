@@ -34,7 +34,7 @@ const isAuthExists = computed(() => wcFilteredList.value?.length);
 
 const openWCAuthDetails = (index: string) => {
   router.push({
-    name: Components.UpdateAuths,
+    name: Components.DAppDetails,
     params: {
       index,
     },

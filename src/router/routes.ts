@@ -3,10 +3,15 @@ import {
   getStakingNetwork,
   haveAuthRequests,
   haveMetaRequests,
-  haveSelectedWallet,
+  hasSelectedWallet,
   haveSignRequests,
   showSoraCard,
 } from './helpers';
+import { keyringIsLocked } from '@/extension/messaging';
+
+import ResetWallet from '@/screens/welcome/ResetWallet.vue';
+import Unlock from '@/screens/welcome/Unlock.vue';
+import ChangePassword from '@/screens/welcome/ChangePassword.vue';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
@@ -22,16 +27,16 @@ import NftDetails from '@/screens/wallet&asset/nft/NftDetails.vue';
 const NftSendForm = () => import('@/screens/wallet&asset/nft/NftSendForm.vue');
 const AccountSetting = () => import('@/screens/accounts/AccountSetting.vue');
 const ChainAccounts = () => import('@/screens/accounts/Accounts.vue');
+const Export = () => import('@/screens/accounts/Export.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
 const MobileWalletAuth = () => import('@/screens/mobile-wallet/MobileWalletAuth.vue');
 const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue');
 const AuthManagement = () => import('@/screens/extension-ui/AuthManagement.vue');
 const ManageAuths = () => import('@/screens/extension-ui/ManageAuths.vue');
-const UpdateAuths = () => import('@/screens/extension-ui/authorize/UpdateAuths.vue');
+const DAppDetails = () => import('@/screens/extension-ui/DAppDetails.vue');
 
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
-const Export = () => import('@/screens/accounts/Export.vue');
 const WalletConnectAuthDetails = () => import('@/screens/walletConnect/WalletConnectAuthDetails.vue');
 const WalletConnectInitAuth = () => import('@/screens/walletConnect/WalletConnectInitAuth.vue');
 const WalletConnectAuthConfirmation = () => import('@/screens/walletConnect/WalletConnectAuthConfirmation.vue');
@@ -61,7 +66,18 @@ const Staking = () => import(/* webpackChunkName: "staking */ '@/screens/staking
 const Pools = () => import(/* webpackChunkName: "pools */ '@/screens/pools/PoolsPage.vue');
 const PoolDetails = () => import(/* webpackChunkName: "pools */ '@/screens/pools/PoolDetails.vue');
 
+const MigrationDescription = (/* webpackChunkName: "migration */) =>
+  import('@/screens/addWallet/keyringMigration/MigrationDescription.vue');
+
+const MigrationAccounts = (/* webpackChunkName: "migration */) =>
+  import('@/screens/addWallet/keyringMigration/MigrationAccounts.vue');
+
 export enum Components {
+  MigrationDescription = 'MigrationDescription',
+  MigrationAccounts = 'MigrationAccounts',
+  Unlock = 'Unlock',
+  ResetWallet = 'ResetWallet',
+  ChangePassword = 'ChangePassword',
   Welcome = 'Welcome',
   AddWallet = 'AddWallet',
   MobileWalletAuth = 'MobileWalletAuth',
@@ -75,7 +91,7 @@ export enum Components {
   Export = 'Export',
   Authorize = 'Authorize',
   ManageAuths = 'ManageAuths',
-  UpdateAuths = 'UpdateAuths',
+  DAppDetails = 'DAppDetails',
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
   CreateGoogle = 'CreateGoogle',
@@ -111,6 +127,47 @@ export enum Components {
 }
 
 const routes: Array<RouteConfig> = [
+  {
+    path: '/migration-description',
+    name: Components.MigrationDescription,
+    component: MigrationDescription,
+    meta: {
+      title: 'migration',
+    },
+  },
+  {
+    path: '/migration-accounts',
+    name: Components.MigrationAccounts,
+    component: MigrationAccounts,
+    meta: {
+      title: 'migration',
+    },
+  },
+
+  {
+    path: '/change-password',
+    name: Components.ChangePassword,
+    component: ChangePassword,
+    meta: {
+      title: 'changePassword',
+    },
+  },
+  {
+    path: '/unlock',
+    name: Components.Unlock,
+    component: Unlock,
+    meta: {
+      title: 'unlock',
+    },
+  },
+  {
+    path: '/reset',
+    name: Components.ResetWallet,
+    component: ResetWallet,
+    meta: {
+      title: 'reset',
+    },
+  },
   {
     path: '/welcome',
     name: Components.Welcome,
@@ -258,7 +315,7 @@ const routes: Array<RouteConfig> = [
         redirect: { name: Components.DAppsAuths },
         children: [
           {
-            path: '/dapps',
+            path: '/dapps/:type',
             name: Components.DAppsAuths,
             component: DAppsAuths,
           },
@@ -270,9 +327,9 @@ const routes: Array<RouteConfig> = [
         ],
       },
       {
-        path: '/dotsama-details/:id',
-        name: Components.UpdateAuths,
-        component: UpdateAuths,
+        path: '/dapp-details/:type/:id',
+        name: Components.DAppDetails,
+        component: DAppDetails,
       },
       {
         path: 'wc-details/:topic',
@@ -411,7 +468,7 @@ const routes: Array<RouteConfig> = [
       },
     ],
     beforeEnter: (to, from, next) => {
-      if (!haveSelectedWallet()) next({ name: Components.Welcome });
+      if (!hasSelectedWallet()) next({ name: Components.Welcome });
       else next();
     },
   },
@@ -456,8 +513,11 @@ const routes: Array<RouteConfig> = [
   {
     path: '*',
     component: Welcome,
-    beforeEnter: (to, from, next) => {
-      if (haveSelectedWallet()) next({ name: Components.Currencies });
+    beforeEnter: async (to, from, next) => {
+      const isLock = await keyringIsLocked();
+
+      if (isLock) next({ name: Components.Unlock });
+      else if (hasSelectedWallet()) next({ name: Components.Currencies });
       else next();
     },
   },

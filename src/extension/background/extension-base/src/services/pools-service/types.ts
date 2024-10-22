@@ -1,4 +1,4 @@
-import { type PasswordRequestSign } from '../../background/types/types';
+import { type ActivityRequestSign } from '../../background/types/types';
 import { type PoolsOperation } from '@/interfaces/pools';
 import { type NetworkName } from '@/interfaces';
 
@@ -45,7 +45,7 @@ export interface AddLiquidity extends DefaultParams {
   slippage: number;
 }
 
-export type RequestAddLiquidity = PasswordRequestSign<AddLiquidity>;
+export type RequestAddLiquidity = ActivityRequestSign<AddLiquidity>;
 
 ///////////////////////////////////////////////////////
 
@@ -53,7 +53,7 @@ export interface RemoveLiquidity extends DefaultParams {
   slippage: number;
 }
 
-export type RequestRemoveLiquidity = PasswordRequestSign<RemoveLiquidity>;
+export type RequestRemoveLiquidity = ActivityRequestSign<RemoveLiquidity>;
 
 ///////////////////////////////////////////////////////
 

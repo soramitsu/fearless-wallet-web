@@ -1,14 +1,15 @@
 import axios from 'axios';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
+import SelectedNetworkStore from '@extension-base/stores/SelectedNetworkStore';
 import { type NetworkJson } from '@extension-base/types';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
-import { storage } from '@extension-base/stores/Storage';
 import { EvmApiHandler } from '@extension-base/services/network-service/handlers/EvmApiHandler';
 import { SubstrateApiHandler } from '@extension-base/services/network-service/handlers/SubstrateApiHandler';
 import { type KeyringService } from '@extension-base/services';
 import { type ApiMap } from '@extension-base/background/types/types';
 import { logger as createLogger } from '@polkadot/util';
 import type State from '@extension-base/background/handlers/State';
+import type { NetworkName } from '@/interfaces';
 import {
   isEthereumNetwork,
   isNativeEVMNetwork,
@@ -16,13 +17,14 @@ import {
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { URLS } from '@/consts/urls';
 import { isSameString } from '@/helpers';
-import { type NetworkName } from '@/interfaces';
+import { IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
 
 export type NetworkMap = Record<string, NetworkJson>;
 
 export class NetworkService {
   private readonly logger = createLogger('Network_Service');
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
+  readonly selectedNetworksStore = new SelectedNetworkStore(null);
   public networksGithub: NetworkJson[] = []; // networks from github
   public networkMap: NetworkMap = {}; // mapping to networkMapStore, for uses in background
   public selectedNetworks: Record<string, string> = {};
@@ -32,8 +34,8 @@ export class NetworkService {
   constructor(readonly keyringService: KeyringService, state: State) {
     this.substrateApiHandler = new SubstrateApiHandler(this, state);
 
-    storage.get(['selectedNetworks']).then(({ selectedNetworks }) => {
-      if (selectedNetworks) this.selectedNetworks = selectedNetworks;
+    this.selectedNetworksStore.get('selectedNetworks', (selectedNetworks) => {
+      this.selectedNetworks = selectedNetworks ?? {};
     });
   }
 
@@ -71,9 +73,9 @@ export class NetworkService {
 
         const isTestnet = !!el.options?.some((option) => isSameString(option, 'testnet'));
 
-        if (process.env.VUE_APP_TEST_ONLY !== undefined) return isTestnet;
+        if (IS_TEST_ONLY) return isTestnet;
 
-        if (process.env.NODE_ENV === 'production') return !isTestnet;
+        if (IS_PRODUCTION) return !isTestnet;
 
         return true;
       })
@@ -127,7 +129,7 @@ export class NetworkService {
   }
 
   saveSelectedNetworks() {
-    storage.set({ selectedNetworks: this.selectedNetworks });
+    this.selectedNetworksStore.set('selectedNetworks', this.selectedNetworks);
   }
 
   getNetworkJson(networkNameOrChainId: NetworkName): NetworkJson {
@@ -150,7 +152,8 @@ export class NetworkService {
 
   public getActiveNetworks() {
     const entries = Object.entries(this.selectedNetworks);
-    const isAll = entries.some(([, value]) => value === ALL_NETWORKS);
+
+    const isAll = entries.length === 0 || entries.some(([, value]) => value === ALL_NETWORKS);
 
     if (isAll) return this.networkValues;
 

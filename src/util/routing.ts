@@ -6,8 +6,11 @@ import { FEARLESS_TITLE } from '@/consts/global';
 import { useStore } from '@/store';
 import { i18n } from '@/locales';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { IS_POPUP } from '@/consts/globalClient';
 
 const updateTitle = (to: Route) => {
+  if (IS_POPUP) return;
+
   const { name, meta, params } = to;
   const store = useStore();
   const tokenBalances: TokenGroup[] = store.getters[AccountsGettersTypes.getBalances];

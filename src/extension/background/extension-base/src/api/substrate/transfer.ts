@@ -1,7 +1,6 @@
 import { FPNumber } from '@sora-substrate/util';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { getAssetOptions, getPrecisionValue } from '@extension-base/api/substrate';
-import { SignerType } from '@extension-base/background/types/types';
 import type { BasicTxResponse, TokenGroup } from '@extension-base/background/types/types';
 import type { Extrinsic, ExtrinsicTransferProps } from '@extension-base/api/substrate/types';
 import type State from '@extension-base/background/handlers/State';
@@ -95,9 +94,7 @@ export interface MakeTransferParams {
   to: string;
   from: string;
   amount: string;
-  password: string;
   assetId: string;
-  isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;
   isMobile: boolean;
   state: State;
@@ -108,8 +105,6 @@ export async function makeTransfer({
   networkKey,
   to,
   assetId,
-  isSavePass,
-  password,
   amount,
   callback,
   isMobile,
@@ -138,13 +133,11 @@ export async function makeTransfer({
 
   await signAndSendExtrinsic(
     {
-      type: isMobile ? SignerType.MOBILE : SignerType.PASSWORD,
+      isMobile,
       apiProps,
       callback,
       extrinsic,
       txState,
-      password,
-      isSavePass,
       address: from,
       errorMessage: 'error transfer',
     },

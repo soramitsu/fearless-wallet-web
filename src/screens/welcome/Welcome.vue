@@ -7,7 +7,7 @@
           backgroundColor="light-black"
           iconName="chevron-left"
           data-testid="backBtn"
-          @click="backWallet"
+          @click="backToWallet"
         />
       </div>
 
@@ -98,13 +98,15 @@ import { Getter } from 'vuex-class';
 import type { AccountJson } from '@extension-base/background/types/types';
 import { Components } from '@/router/routes';
 import { URLS } from '@/consts/urls';
-import { initGoogleAuth } from '@/extension/messaging';
+import { hasMasterPassword, initGoogleAuth } from '@/extension/messaging';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component
 export default class Welcome extends Vue {
   showGoogleAuthPopup = false;
   isAuthFlowInit = false;
+  hasMasterPassword = false;
+
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get showBackWalletIcon() {
@@ -115,18 +117,10 @@ export default class Welcome extends Vue {
     return this.$route.params.access_token;
   }
 
-  created() {
+  async created() {
+    this.hasMasterPassword = await hasMasterPassword();
+
     if (this.accessToken) this.showGoogleAuthPopup = true;
-  }
-
-  manageGoogle() {
-    if (!this.isAuthFlowInit) {
-      this.isAuthFlowInit = true;
-
-      initGoogleAuth().finally(() => {
-        this.isAuthFlowInit = false;
-      });
-    }
   }
 
   closeGooglePopup() {
@@ -141,16 +135,35 @@ export default class Welcome extends Vue {
     window.open(URLS.FEARLESS_PRIVACY);
   }
 
-  backWallet() {
+  backToWallet() {
     this.$router.push({ name: Components.Wallet });
   }
 
-  openAddWalletComponent(type: string) {
-    this.$router.push({ name: Components.AddWallet, params: { type } });
+  async manageGoogle() {
+    if (!this.hasMasterPassword) {
+      this.$router.push({ name: Components.ChangePassword, params: { name: 'GoogleAuth' } });
+
+      return;
+    }
+
+    if (!this.isAuthFlowInit) {
+      this.isAuthFlowInit = true;
+
+      initGoogleAuth().finally(() => (this.isAuthFlowInit = false));
+    }
   }
 
-  openAddWalletMobile() {
-    this.$router.push({ name: Components.MobileWalletAuth });
+  async openAddWalletComponent(type: string) {
+    if (this.hasMasterPassword) this.$router.push({ name: Components.AddWallet, params: { type } });
+    else this.$router.push({ name: Components.ChangePassword, params: { name: 'AddWallet', type } });
+  }
+
+  async openAddWalletMobile() {
+    const path = this.hasMasterPassword
+      ? { name: Components.MobileWalletAuth }
+      : { name: Components.ChangePassword, params: { name: 'MobileWalletAuth' } };
+
+    this.$router.push(path);
   }
 }
 </script>

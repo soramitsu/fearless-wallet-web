@@ -37,7 +37,7 @@ import {
   subscribeWalletConnectRequest,
   subscribeEvmSigningRequests,
   subscribeWalletNotSupportedConnectRequest,
-  approveSignPassword,
+  approveSign,
   approveSignSignature,
 } from '@/extension/messaging';
 import router from '@/router';
@@ -53,7 +53,7 @@ export enum ActionTypes {
 
   SUBSCRIBE_SIGN_REQUESTS = 'SUBSCRIBE_SIGN_REQUESTS',
   SIGN_CANCEL = 'SIGN_CANCEL',
-  APPROVE_SIGN_PASSWORD = 'APPROVE_SIGN_PASSWORD',
+  APPROVE_SIGN = 'APPROVE_SIGN',
   SIGN_SIGNATURE = 'SIGN_SIGNATURE',
 
   SUBSCRIBE_META_REQUESTS = 'SUBSCRIBE_META_REQUESTS',
@@ -77,8 +77,6 @@ export enum ActionTypes {
 
 export type ApprovePayload = {
   id: string;
-  isSavePass: boolean;
-  password?: string;
 };
 
 type AugmentedExtensionContext = {
@@ -112,7 +110,7 @@ export type Actions = {
   [ActionTypes.SUBSCRIBE_SIGN_REQUESTS](context: AugmentedExtensionContext): Promise<boolean>;
   [ActionTypes.SUBSCRIBE_EVM_SIGN_REQUESTS](context: AugmentedExtensionContext): Promise<boolean>;
   [ActionTypes.SIGN_CANCEL](context: AugmentedExtensionContext, id: string): Promise<void>;
-  [ActionTypes.APPROVE_SIGN_PASSWORD](context: AugmentedExtensionContext, payload: ApprovePayload): Promise<void>;
+  [ActionTypes.APPROVE_SIGN](context: AugmentedExtensionContext, payload: ApprovePayload): Promise<void>;
   [ActionTypes.SUBSCRIBE_EXTENSION_REQUESTS](context: AugmentedExtensionContext): Promise<void[]>;
   [ActionTypes.FETCH_TAB_STATUS](context: AugmentedExtensionContext): Promise<void>;
 };
@@ -221,8 +219,8 @@ const actions: ActionTree<State, State> & Actions = {
     return subscribeEvmSigningRequests(callback);
   },
 
-  async [ActionTypes.APPROVE_SIGN_PASSWORD]({ commit, dispatch }, { id, isSavePass, password }) {
-    approveSignPassword(id, isSavePass, password).then(() => {
+  async [ActionTypes.APPROVE_SIGN]({ commit, dispatch }, { id }) {
+    approveSign(id).then(() => {
       commit(MutationTypes.DELETE_REQUEST, 'signRequests');
 
       router.push({ name: Components.Wallet });

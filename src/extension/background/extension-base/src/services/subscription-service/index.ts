@@ -23,19 +23,26 @@ type SubscriptionMap = {
   [key in string]: (() => void) | undefined;
 };
 
+interface ServiceInfo {
+  address: string;
+  ethereumAddress: string;
+  networks: {
+    substrate: NetworkName[];
+    evm: NetworkName[];
+  };
+}
+
 export class SubscriptionService {
   static subscriptions: Subscriptions = {};
-  private serviceSubscription: Subscription | undefined;
   public readonly unsubscriptionMap: Record<string, () => void> = {};
-  private serviceInfo: {
-    networks: { substrate: NetworkName[]; evm: NetworkName[] };
-    address: string;
-    ethereumAddress: string;
-  } = {
+  private serviceSubscription: Subscription | undefined;
+
+  private serviceInfo: ServiceInfo = {
     address: '',
     ethereumAddress: '',
     networks: { evm: [], substrate: [] },
   };
+
   private subscriptionMap: SubscriptionMap = {};
   private logger: Logger;
 

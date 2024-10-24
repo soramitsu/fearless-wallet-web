@@ -1,6 +1,6 @@
-import { type TypeRegistry } from '@polkadot/types';
 import { state } from '@extension-base/background/handlers';
-import type { KeyringPair } from '@polkadot/keyring/types';
+import type { TypeRegistry } from '@polkadot/types';
+import type { KeyringPair } from '@subwallet/keyring/types';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type { RequestSign } from '@extension-base/background/types/types';

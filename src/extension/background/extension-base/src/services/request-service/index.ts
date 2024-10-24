@@ -50,7 +50,7 @@ export class RequestService {
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
     this.authRequestHandler = new AuthRequestHandler(this, state);
-    this.substrateRequestHandler = new SubstrateRequestHandler(this, keyringService, this.state);
+    this.substrateRequestHandler = new SubstrateRequestHandler(this, this.state);
     this.evmRequestHandler = new EvmRequestHandler(this);
   }
 
@@ -177,9 +177,10 @@ export class RequestService {
     return this.evmRequestHandler.getSignWCRequest(topic);
   }
 
-  public getDAppNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {
-    return this.authRequestHandler.getDAppNetworkInfo(options);
+  public getEvmNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {
+    return this.authRequestHandler.getEvmNetworkInfo(options);
   }
+
   // WalletConnect Connect requests
   public getConnectWCRequest(id: string) {
     return this.connectWCRequestHandler.getConnectWCRequest(id);
@@ -241,8 +242,9 @@ export class RequestService {
   async updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
     const entries = await this.getAuthList();
 
-    authorizedAccountDiff.forEach(([url, authorizedAccountDiff]) => {
-      entries[url].authorizedAccounts = authorizedAccountDiff;
+    authorizedAccountDiff.forEach(([url, authorizedAccounts, authType]) => {
+      if (authType === 'substrate') entries[url].authorizedAccounts = authorizedAccounts;
+      else if (authType === 'evm') entries[url].evmAuthorizedAccount = authorizedAccounts[0] ?? '';
     });
 
     return this.setAuthorize(entries);

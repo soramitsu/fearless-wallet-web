@@ -1,23 +1,18 @@
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
+import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type {
   ValidateJsonResult,
   AccountJson,
   ResponseTotalBalances,
   ResponseAccountExport,
-  ResponseExportMnemonic,
+  ResponseExportSeed,
 } from '@extension-base/background/types/types';
 import type { DerivationPath } from '@/interfaces';
 import { sendMessage } from '@/extension/messaging/index';
 
-export function addAccount(
-  password: string,
-  suri: string,
-  type: KeypairType,
-  meta: Record<string, unknown>
-): Promise<string> {
-  return sendMessage('pri(accounts.create)', { password, suri, type, meta });
+export function addAccount(suri: string, type: KeypairType, meta: FWKeyringMeta): Promise<string> {
+  return sendMessage('pri(accounts.create)', { suri, type, meta });
 }
 
 export function createMobileWallet(address: string, meta: FWKeyringMeta): Promise<boolean> {
@@ -32,12 +27,20 @@ export function subscribeAddresses(cb: (accounts: AccountJson[]) => void): Promi
   return sendMessage('pri(addresses.subscribe)', null, cb);
 }
 
-export function exportAccountJSON(address: string, password: string, network?: string): Promise<ResponseAccountExport> {
+export function exportJSON(address: string, password: string, network?: string): Promise<ResponseAccountExport> {
   return sendMessage('pri(accounts.export.json)', { address, password, network });
 }
 
-export function exportAccountMnemonic(address: string, password: string): Promise<ResponseExportMnemonic> {
+export function migrateExportJSON(address: string): Promise<ResponseAccountExport> {
+  return sendMessage('pri(migrate.export.json)', address);
+}
+
+export function exportMnemonic(address: string, password: string): Promise<ResponseExportSeed> {
   return sendMessage('pri(accounts.export.mnemonic)', { address, password });
+}
+
+export function exportRowSeed(address: string, password: string, isEVM: boolean): Promise<ResponseExportSeed> {
+  return sendMessage('pri(accounts.export.rowSeed)', { address, password, isEVM });
 }
 
 export function accountUpdateName(address: string, name: string): Promise<boolean> {

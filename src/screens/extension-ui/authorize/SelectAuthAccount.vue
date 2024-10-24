@@ -49,7 +49,7 @@ type Props = {
 const props = withDefaults(defineProps<Props>(), { showSelectAll: true });
 const emit = defineEmits(['onSelectAll', 'onSelect']);
 
-const showAllCheckbox = computed(() => Object.keys(props.accounts).length && props.showSelectAll);
+const showAllCheckbox = computed(() => Object.keys(props.accounts).length > 1 && props.showSelectAll);
 
 const cutAddress = (account: WalletInfo) => {
   const address = props.authType === 'evm' ? account.ethereumAddress : account.address;

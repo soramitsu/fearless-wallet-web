@@ -24,6 +24,7 @@ type TabWallet = Components.Currencies | Components.Nfts;
 type StakingTab = 'all' | 'my';
 type MyStakingTab = 'about' | 'alerts' | 'history';
 type PoolsTab = 'all' | 'my';
+type ExportType = 'mnemonic' | 'rawSeed' | 'json';
 type ImportType = 'mnemonic' | 'rawSeed' | 'json';
 type FilterHistory = 'all' | 'transfer' | 'reward' | 'extrinsic';
 
@@ -107,6 +108,7 @@ export {
   FiatJson,
   Placement,
   FilterHistory,
+  ExportType,
   ImportType,
   MenuItem,
   ToggleFnProp,

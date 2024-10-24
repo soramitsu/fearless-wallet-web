@@ -1,33 +1,30 @@
 <template>
-  <router-link :to="{ name: Components.UpdateAuths, params: { id: stripedUrl } }" v-slot="{ navigate }">
-    <div class="auth-content" width="100%">
-      <div class="row">
-        <div class="row-content" @click="navigate">
-          <div class="col">
-            <ExternalLogo :name="faviconURl" alt="favicon" />
+  <div class="auth-content" width="100%">
+    <div class="row">
+      <div class="row-content" @click="emits('openAuthDetails', stripedUrl)">
+        <div class="col">
+          <ExternalLogo :name="faviconURl" alt="favicon" />
 
-            <span class="auth-item-name">{{ stripedUrl }}</span>
-          </div>
-
-          <span class="authorized-account__count">{{ authAccounts }}</span>
+          <span class="auth-item-name">{{ stripedUrl }}</span>
         </div>
 
-        <Icon className="trash row-controls" icon="trash" @click="onRemoveAuth" />
+        <span class="authorized-account__count">{{ authAccounts }}</span>
       </div>
+
+      <Icon className="trash row-controls" icon="trash" @click="onRemoveAuth" />
     </div>
-  </router-link>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
-import { Components } from '@/router/routes';
 
 const { authorizedAccounts, url } = defineProps<{
   url: string;
   authorizedAccounts: string[];
 }>();
-const emits = defineEmits(['openUpdateAuths', 'remove']);
+const emits = defineEmits(['openAuthDetails', 'remove']);
 
 const stripedUrl = computed(() => stripUrl(url));
 
@@ -51,6 +48,7 @@ const onRemoveAuth = () => emits('remove', stripedUrl.value);
   background-color: $default-background-color;
   margin: 17px 0;
 }
+
 .row {
   display: flex;
   align-items: center;
@@ -63,6 +61,7 @@ const onRemoveAuth = () => emits('remove', stripedUrl.value);
     justify-content: space-between;
   }
 }
+
 .auth-item-name {
   font-size: 16px;
 }

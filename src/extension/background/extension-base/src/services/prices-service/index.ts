@@ -73,8 +73,8 @@ export class PricesService {
     });
   }
 
-  public subscribePrice() {
-    return this.priceStore.subject;
+  public getSubject() {
+    return this.priceStore.getSubject();
   }
 
   public getTokenPrice(assetName: string) {

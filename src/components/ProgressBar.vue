@@ -6,7 +6,7 @@
 </template>
 
 <script lang="ts" setup>
-import { withDefaults, computed } from 'vue';
+import { computed } from 'vue';
 
 interface Props {
   width?: string;

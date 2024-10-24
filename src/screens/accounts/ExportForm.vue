@@ -1,12 +1,16 @@
 <template>
-  <AboveForm header="accounts.exportJson" :fullScreen="true" @closeHandler="closeForm">
-    <div class="export-form">
-      <Loader v-if="isLoading" />
+  <div class="export-form">
+    <Loader v-if="isLoading" />
 
-      <template v-else>
-        <div class="export-content">
+    <template v-else>
+      <div class="export-content">
+        <div v-if="isMnemonic">
+          <MnemonicBackupForm :mnemonicArray="mnemonicArray"></MnemonicBackupForm>
+        </div>
+
+        <template v-else>
           <FInput
-            :value="exportType"
+            :value="exportTypeText"
             placeholder="common.sourceType"
             size="big"
             class="export-type-input"
@@ -15,49 +19,87 @@
           />
 
           <FInput
-            :value="substrateAddress"
+            :value="isRowSeed ? seed : substrateAddress"
             class="row"
             size="big"
             data-testid="addressInput"
-            :placeholder="placeholderJson"
+            :placeholder="placeholder"
             :readonly="true"
           />
-        </div>
+        </template>
+      </div>
 
-        <FButton size="big" fontSize="big" width="100%" text="Export" data-testid="exportBtn" @click="proceed" />
-      </template>
-    </div>
-  </AboveForm>
+      <FButton size="big" fontSize="big" width="100%" :text="text" data-testid="exportBtn" @click="proceed" />
+    </template>
+  </div>
 </template>
 
 <script lang="ts">
 import { Getter } from 'vuex-class';
-import { saveAs } from 'file-saver';
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import type { SelectedWallet } from '@/store';
 import type { Networks } from '@/interfaces/networks';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
+import type { KeyringPair$Json } from '@subwallet/keyring/types';
+import type { ExportType } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { exportAccountJSON } from '@/extension/messaging';
+import { exportJSON, exportMnemonic, exportRowSeed } from '@/extension/messaging';
+import { isSameString, setClipboard } from '@/helpers';
+import { downloadJsonAccount } from '@/helpers/files';
+import MnemonicBackupForm from '@/screens/addWallet/MnemonicBackupForm.vue';
 
-@Component
+enum ExportTypeText {
+  mnemonic = 'Mnemonic',
+  rawSeed = 'Raw seed',
+  json = 'JSON',
+}
+
+@Component({ components: { MnemonicBackupForm } })
 export default class ExportForm extends Vue {
-  exportType = 'Restore JSON';
   json: KeyringPair$Json = {} as KeyringPair$Json;
   isLoading = false;
+  seed = '';
 
   @Prop(String) password!: string;
+  @Prop(String) exportType!: ExportType;
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) networks!: Networks;
+
+  get exportTypeText() {
+    return ExportTypeText[this.exportType];
+  }
+
+  get mnemonicArray() {
+    return this.seed.split(' ');
+  }
+
+  get isMnemonic() {
+    return this.exportType === 'mnemonic';
+  }
+
+  get isRowSeed() {
+    return this.exportType === 'rawSeed';
+  }
+
+  get isJson() {
+    return this.exportType === 'json';
+  }
 
   get network() {
     return this.$route.params.network ?? this.$route.params.selectedNetwork;
   }
 
-  get placeholderJson() {
-    return BaseApi.isEthereumNetwork(this.network) ? 'Ethereum' : 'Substrate';
+  get text() {
+    return this.isJson ? 'accounts.downloadFile' : 'common.copyToClipboard';
+  }
+
+  get isEthereumNetwork() {
+    return BaseApi.isEthereumNetwork(this.network);
+  }
+
+  get placeholder() {
+    return this.isEthereumNetwork ? 'Ethereum' : 'Substrate';
   }
 
   get substrateAddress() {
@@ -75,36 +117,33 @@ export default class ExportForm extends Vue {
   async mounted() {
     this.isLoading = true;
 
-    const { json } = await this.keyringPairJson();
-    this.json = json;
+    if (this.isMnemonic) {
+      const { seed } = await exportMnemonic(this.selectedWallet.address, this.password);
+
+      this.seed = seed;
+    } else if (this.isRowSeed) {
+      const { seed } = await exportRowSeed(this.addressByNetwork, this.password, this.isEthereumNetwork);
+
+      this.seed = seed;
+    } else {
+      const { json } = await exportJSON(this.addressByNetwork, this.password, this.network);
+
+      this.json = json;
+    }
 
     this.isLoading = false;
   }
 
-  async keyringPairJson() {
-    return exportAccountJSON(this.addressByNetwork, this.password, this.network);
-  }
-
-  closeForm() {
-    this.$emit('closeHandler', '');
-  }
-
   proceed() {
-    this.export();
-    this.closeForm();
+    if (this.isMnemonic || this.isRowSeed) setClipboard(this.seed);
+    else this.downloadJsonFile();
   }
 
-  async export() {
-    const chainId = this.networks.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!.chainId;
+  async downloadJsonFile() {
+    const chainId = this.networks.find(({ name }) => isSameString(name, this.network))!.chainId;
     const meta = { ...this.json.meta, genesisHash: `0x${chainId}` } as unknown as Record<string, string>;
 
-    delete meta['ethereumAddress'];
-
-    const jsonSubstrate = JSON.stringify({ ...this.json, meta });
-
-    const blobSubstrate = new Blob([jsonSubstrate], { type: 'application/json; charset=utf-8' });
-
-    saveAs(blobSubstrate, `${this.addressByNetwork}.json`);
+    downloadJsonAccount(this.addressByNetwork, this.json, meta);
   }
 }
 </script>

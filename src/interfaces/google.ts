@@ -1,13 +1,9 @@
 import { type AxiosResponse } from 'axios';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
+import type { KeyringPair$Json } from '@subwallet/keyring/types';
 
-interface IGDriveFile {
+interface FileData {
   id: string;
-  address: string;
   name: string;
-}
-
-interface FileData extends IGDriveFile {
   active: boolean;
   password: string;
   isError: boolean;
@@ -19,7 +15,11 @@ interface FileData extends IGDriveFile {
   ethJson: KeyringPair$Json;
 }
 
-type FilesState = Partial<FileData>;
+type FilesState = { address: string } & Partial<FileData>;
+
+interface RequestGoogleToken {
+  token: string;
+}
 
 interface FilesResponse {
   id: string;
@@ -76,9 +76,9 @@ export {
   GoogleAuthTypes,
   ICreateFile,
   FilesState,
-  IGDriveFile,
   GoogleResponse,
   FilesResponse,
   CreateFileProp,
   GoogleAuthRequest,
+  RequestGoogleToken,
 };

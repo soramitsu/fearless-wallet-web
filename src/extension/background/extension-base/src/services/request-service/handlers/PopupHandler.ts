@@ -20,6 +20,10 @@ export class PopupHandler {
     this.requestService = requestService;
   }
 
+  public get popup() {
+    return this.windows;
+  }
+
   public updateIcon(shouldClose?: boolean): void {
     const numRequests = this.requestService.numRequests;
     const text = numRequests > 0 ? numRequests.toString() : '';
@@ -27,10 +31,6 @@ export class PopupHandler {
     withErrorLog(() => chrome.action.setBadgeText({ text }));
 
     if (shouldClose && text === '') this.popupClose();
-  }
-
-  public get popup() {
-    return this.windows;
   }
 
   public popupClose(): void {

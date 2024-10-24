@@ -3,7 +3,6 @@ import '@polkadot/extension-inject/crossenv';
 import { MESSAGE_ORIGIN_CONTENT } from '@extension-base/defaults';
 import { enable, handleResponse, initEvmProvider, redirectIfPhishing, saveSoraCardToken } from '@extension-base/page';
 import { eip6963ProviderInfo } from '@extension-base/const';
-import packages from '../../../package.json';
 import type { FWEvmProvider } from '@extension-base/page/types';
 import type Injected from '@extension-base/page/Injected';
 import type { Message } from '@extension-base/types';
@@ -20,7 +19,6 @@ class FearlessWalletPlaceholder {
   provider: FWEvmProvider | undefined = undefined;
   connected = false;
   isConnected = () => false;
-  version = packages.version;
 
   __waitProvider = (async () => {
     if (this.provider) return Promise.resolve(this.provider);
@@ -128,7 +126,7 @@ class FearlessWalletPlaceholder {
 if (!win.injectedWeb3[walletKey]) {
   win.injectedWeb3[walletKey] = {
     isPlaceholder: true,
-    version: packages.version,
+    version: APP_VERSION,
     enable: async (origin) => {
       await new Promise((resolve, reject) => {
         let retry = 0;
@@ -186,9 +184,7 @@ win.addEventListener('eip6963:requestProvider', announceProvider);
 announceProvider();
 
 class Page {
-  version: string = packages.version;
-
-  private inject() {
+  private static inject() {
     // small helper with the typescript types, just cast window
     const windowInject: any = window as Window & InjectedWindow; // don't clobber the existing object, we will add it (or create as needed)
 
@@ -202,18 +198,16 @@ class Page {
   }
 
   // Inject EVM Provider
-  injectEvmExtension(evmProvider: FWEvmProvider): void {
+  static injectEvmExtension(evmProvider: FWEvmProvider): void {
     // small helper with the typescript types, just cast window
     const windowInject = window as Window & InjectedWindow;
 
     // add our enable function
-    if (windowInject.fearlessWallet) {
+    if (windowInject.fearlessWallet)
       // Provider has been initialized in proxy mode
       windowInject.fearlessWallet.provider = evmProvider;
-    } else {
-      // Provider has been initialized in direct mode
-      windowInject.fearlessWallet = evmProvider;
-    }
+    // Provider has been initialized in direct mode
+    else windowInject.fearlessWallet = evmProvider;
 
     windowInject.dispatchEvent(new Event('fearlesswallet#initialized'));
 
@@ -226,7 +220,7 @@ class Page {
     });
   }
 
-  init() {
+  static init() {
     this.setMaxListeners();
 
     redirectIfPhishing()
@@ -239,10 +233,10 @@ class Page {
         this.inject();
       });
 
-    this.injectEvmExtension(initEvmProvider(this.version));
+    this.injectEvmExtension(initEvmProvider());
   }
 
-  private setMaxListeners() {
+  private static setMaxListeners() {
     win.addEventListener('message', ({ data, source }: Message): void => {
       // only allow messages from our window, by the loader
       if (source !== window || data.origin !== MESSAGE_ORIGIN_CONTENT) return;
@@ -253,4 +247,4 @@ class Page {
   }
 }
 
-new Page().init();
+Page.init();

@@ -15,7 +15,6 @@ import type { ChainNftState } from '@extension-base/services/nft-service/types';
 import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps, SetSoraFee } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
-import { Components } from '@/router/routes';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as ExtensionMutationTypes } from '@/store/extension/mutations';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
@@ -24,16 +23,17 @@ import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import {
   soraFeesSubscribe,
-  isOnboardingRequired,
   pingServiceWorker,
   subscribeAccounts,
   subscribeAddresses,
   subscribeBalance,
   subscribeNetworkMap,
   subscribePrice,
+  lockExtension,
+  subscribeSelectedNetworks,
 } from '@/extension/messaging';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
-import { IS_EXTENSION, IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
+import { IS_EXTENSION } from '@/consts/global';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { getNftSubscribe } from '@/extension/messaging/nfts';
 
@@ -70,6 +70,8 @@ export default class App extends Vue {
   async created() {
     if (IS_EXTENSION) this.extensionSubscribe();
 
+    lockExtension();
+
     setTitle();
 
     this.setupWallet();
@@ -83,14 +85,6 @@ export default class App extends Vue {
     await this.fetchFeatures();
 
     this.getUserStatus(); // SORA Card
-  }
-
-  async mounted() {
-    if (IS_PRODUCTION || IS_TEST_ONLY) {
-      const isRequired = await isOnboardingRequired();
-
-      if (isRequired) this.$router.push({ name: Components.Onboarding });
-    }
   }
 
   setupSWPing() {
@@ -125,6 +119,8 @@ export default class App extends Vue {
     );
 
     this.setNetworks({ networks: Object.values(nets) });
+
+    await subscribeSelectedNetworks((network) => this.setSelectedNetwork(network));
   }
 
   async setupPrice() {

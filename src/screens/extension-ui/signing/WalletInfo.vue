@@ -18,7 +18,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { cut } from '@/helpers';
+import { cut, setClipboard } from '@/helpers';
 
 type Props = {
   address: string;
@@ -30,7 +30,7 @@ const cutAddress = computed(() => cut(props.address, 14));
 const cutName = computed(() => cut(props.name, 16));
 
 function saveToClipboard() {
-  navigator.clipboard.writeText(props.address);
+  setClipboard(props.address);
 }
 </script>
 

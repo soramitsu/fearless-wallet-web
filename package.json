@@ -1,6 +1,6 @@
 {
   "name": "fearless-wallet",
-  "version": "2.6.4",
+  "version": "2.7.1",
   "private": true,
   "author": {
     "email": "fearless.web@soramitsu.co.jp",
@@ -36,11 +36,11 @@
     "@polkadot/extension-inject": "^0.46.5",
     "@polkadot/phishing": "0.18.9",
     "@polkadot/rpc-provider": "10.9.1",
-    "@polkadot/ui-keyring": "^3.5.1",
     "@polkadot/util": "^12.3.2",
     "@polkadot/vue-identicon": "^2.9.8",
     "@sora-substrate/util": "1.40.0",
     "@soramitsu-ui/ui-vue2": "^1.1.0",
+    "@subwallet/ui-keyring": "0.1.7",
     "@vespaiach/axios-fetch-adapter": "^0.3.1",
     "@vueuse/core": "^10.7.2",
     "@walletconnect/encoding": "^1.0.2",
@@ -136,7 +136,6 @@
   "resolutions": {
     "axios": "^0.27.2",
     "@polkadot/api": "^11.2.1",
-    "@polkadot/keyring": "^12.6.2",
     "@polkadot/networks": "^12.6.2",
     "@polkadot/types": "^11.2.1",
     "@polkadot/util": "^12.6.2",

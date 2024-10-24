@@ -293,6 +293,7 @@ export class WalletConnectDAppService {
         },
       },
     };
+
     const result = await this.app?.client
       .request<{ signature: HexString }>(request)
 

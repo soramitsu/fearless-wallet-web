@@ -1,4 +1,5 @@
 import assert from 'assert';
+import { isEthereumAddress } from '@polkadot/util-crypto';
 import { ethers } from 'ethers';
 import type {
   CachedUnlocks,
@@ -10,15 +11,14 @@ import type {
   ResponseSigningIsLocked,
   ValidateJsonResult,
   RequestUpdateMeta,
-  RequestExportMnemonic,
-  ResponseExportMnemonic,
 } from '@extension-base/background/types/types';
 
 import type State from '@extension-base/background/handlers/State';
-import type { KeyringPair } from '@polkadot/keyring/types';
+import type { KeyringPair } from '@subwallet/keyring/types';
 import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { type DerivationPath } from '@/interfaces';
+import { isSameString } from '@/helpers';
 
 export default class FWExtensionBase {
   public cachedUnlocks: CachedUnlocks;
@@ -27,13 +27,28 @@ export default class FWExtensionBase {
     this.cachedUnlocks = {};
   }
 
-  exportMnemonic(request: RequestExportMnemonic): ResponseExportMnemonic {
-    return this.state.keyringService.exportMnemonic(request);
+  migrateExportJSON(address: string): Promise<ResponseAccountExport> {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(null).then((values) => {
+        const accounts = Object.entries(values).filter(([key]) => key.includes('fw:account'));
+
+        const [, json] = accounts.find(([key, value]) => {
+          if (!isEthereumAddress(address)) return isSameString(value.address, address);
+
+          const keySplit = key.split(':');
+          const addressKey = keySplit[keySplit.length - 1];
+
+          return isSameString(addressKey, address);
+        })!;
+
+        resolve({ json });
+      });
+    });
   }
 
   exportJSON({ address, password, network }: RequestAccountExport): ResponseAccountExport {
     if (network && isNativeEVMNetwork(network)) {
-      const { privateKey } = this.state.accountExportPrivateKey({ address, password });
+      const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address, password });
       const json = ethers.encryptKeystoreJsonSync({ address, privateKey }, password);
 
       return { json: JSON.parse(json) };

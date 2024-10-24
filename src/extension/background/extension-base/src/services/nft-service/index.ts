@@ -150,17 +150,14 @@ export class NftService {
     storage.set({ nftSettings: this.hideSettings });
   }
 
-  async sendNft(
-    tx: RequestNftTransfer,
-    savePass: (address: string, ethereumAddress: string | undefined, isSavePass: boolean, isMobile: boolean) => void
-  ): Promise<ResponseNftTransfer> {
+  async sendNft(tx: RequestNftTransfer): Promise<ResponseNftTransfer> {
     const { from, contract: contractAddress } = tx;
     const api = this.state.getEvmApi(tx.network)?.api;
     const contract = await getContract(contractAddress, api, tx.type === 'ERC721' ? 'ERC721' : 'ERC1155');
     const pair = this.state.keyringService.getPair(from);
 
     if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(pair, tx.password);
+      const isUnlock = this.state.keyringService.unlockPair(pair);
 
       if (!isUnlock)
         return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
@@ -171,7 +168,7 @@ export class NftService {
     if (res.error)
       return { status: false, errors: [{ message: 'Balance to low', code: BasicTxErrorCode.BALANCE_TO_LOW }] };
 
-    const { privateKey } = this.state.accountExportPrivateKey({ address: from, password: tx.password });
+    const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address: from });
     const signer = new Wallet(privateKey, api);
     const isApproved: boolean = await contract.isApprovedForAll(contract, tx.to);
     const contractMaster = contract.connect(signer) as Contract;
@@ -193,10 +190,6 @@ export class NftService {
         );
 
       txResponse.wait().then(() => this.getNftForActiveNetworks(from, true));
-
-      const substrateAddress = this.state.keyringService.getSubstrateAddress(tx.from);
-
-      savePass(substrateAddress, tx.from, tx.isSavePass, false);
 
       return {
         errors: [],

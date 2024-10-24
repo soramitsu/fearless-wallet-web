@@ -7,7 +7,6 @@ import type {
   Networks,
   AssetPrice,
   FiatJson,
-  NetworkStatus,
   Node,
   NetworkName,
   HistoryServiceType,
@@ -16,8 +15,8 @@ import type {
   SoraHistoryElement,
   SoraFees,
 } from '@/interfaces';
-import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import type { KeyringJson } from '@polkadot/ui-keyring/types';
+import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
+import type { KeyringJson } from '@subwallet/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ActionContext } from 'vuex';
 import type { State } from '@/store/networks/state';
@@ -86,11 +85,6 @@ export type SetNetworkApiProps = {
   network: NetworkName;
   provider?: WsProvider;
   api?: ApiPromise;
-};
-
-export type SetNetworkStatusProps = {
-  network: NetworkName;
-  status: NetworkStatus;
 };
 
 export type SetSoraFee = {

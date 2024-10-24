@@ -58,10 +58,6 @@ export default class BalanceService {
     await storage.set({ balances: copyBalance });
   }
 
-  updateBalance(balance: BalanceJson) {
-    return this.balanceSubject.next(balance);
-  }
-
   public async updateXorTotalBalance(muchTotal: FPNumber): Promise<void> {
     const address = this.state.getAccountAddress();
 
@@ -99,6 +95,10 @@ export default class BalanceService {
   }
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
+    const isAccountExists = this.state.keyringService.getAllAccounts().some((el) => el.address === address);
+
+    if (!isAccountExists) return;
+
     const { reserved, free, locked, frozen, total, transferable, state, id, relayChain, symbol } = item;
     const accountAddress = this.state.keyringService.getSubstrateAddress(address);
     const balancesByAddress = this.balanceMap[accountAddress];
@@ -137,13 +137,13 @@ export default class BalanceService {
 
     this.updateBalanceStore(networkKey, item);
 
-    this.state.lazyNext('setBalanceItem', () => this.publishBalance());
+    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 300);
   }
 
   public async publishBalance() {
     const balance = await this.getBalance();
 
-    return this.updateBalance(balance);
+    return this.balanceSubject.next(balance);
   }
 
   async getTotalBalances(): Promise<ResponseTotalBalances[]> {

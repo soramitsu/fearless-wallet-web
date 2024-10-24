@@ -95,7 +95,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { upsertNetworkMap } from '@/extension/messaging';
-import { cut } from '@/helpers';
+import { cut, setClipboard } from '@/helpers';
 
 @Component({
   components: { NodeItem },
@@ -212,7 +212,7 @@ export default class Nodes extends Vue {
   }
 
   copyAddress() {
-    navigator.clipboard.writeText(this.formattedAddress);
+    setClipboard(this.formattedAddress);
   }
 
   getActiveStatus(nodeName: string, url: string) {

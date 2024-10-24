@@ -37,7 +37,7 @@ import OnboardingStory from './OnboardingStory.vue';
 import StoryCounter from './StoryCounter.vue';
 import type { OnboardingStories } from '@/interfaces';
 import { Components } from '@/router/routes';
-import { getOnboardingStories, setOnboardingSeen } from '@/extension/messaging';
+import { getOnboardingStories, setOnboardingComplete } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -91,7 +91,7 @@ export default class Onboarding extends Vue {
   }
 
   completeOnboarding() {
-    setOnboardingSeen();
+    setOnboardingComplete();
 
     this.$router.push({ name: Components.Wallet });
   }

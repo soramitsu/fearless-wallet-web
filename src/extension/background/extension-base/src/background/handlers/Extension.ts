@@ -22,7 +22,7 @@ import {
   getEip155MessageAddress,
 } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
-import { BasicTxErrorCode, TransferErrorCode } from '@extension-base/background/types/types';
+import { TransferErrorCode } from '@extension-base/background/types/types';
 import {
   type RequestConnectWalletConnect,
   type WalletConnectSessionRequest,
@@ -42,6 +42,8 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
+import { type MakeCrossChainProps } from '../../api/substrate/types';
+import { EXTENSION_URL } from '../../const';
 import type { EvmRequestsSubjectPayload } from '@extension-base/services/request-service/types';
 import type {
   RequestUpdateMeta,
@@ -81,7 +83,7 @@ import type {
   RequestJsonRestore,
   RequestMetadataApprove,
   RequestMetadataReject,
-  RequestSigningApprovePassword,
+  RequestSigningApprove,
   RequestSigningApproveSignature,
   RequestSigningCancel,
   RequestTypes,
@@ -94,7 +96,10 @@ import type {
   FetchEvmBalancePayload,
   RequestCheckScam,
   AuthUrls,
-  RequestExportMnemonic,
+  RequestExportSeed,
+  RequestChangePassword,
+  RequestUnlockExtension,
+  RequestMigratePassword,
 } from '@extension-base/background/types/types';
 import type {
   PoolsParamsRequest,
@@ -123,17 +128,10 @@ import type { NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
 import type { ProposalTypes, SessionTypes } from '@walletconnect/types';
 import type { HexString } from '@polkadot/util/types';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
+import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import type {
-  DerivationPath,
-  FilesResponse,
-  GoogleAuthTypes,
-  ICreateFile,
-  IGetFilesResponse,
-  VerifyTokenResponse,
-} from '@/interfaces';
+import type { DerivationPath, GoogleAuthTypes, ICreateFile, RequestGoogleToken } from '@/interfaces';
 import {
   isNativeEVMNetwork,
   uniqueStringArray,
@@ -156,8 +154,8 @@ export default class Extension extends FWExtensionBase {
     return this.state.cancelSubscription(id);
   }
 
-  accountsCreate({ password, suri, type, meta }: RequestAccountCreateSuri): string {
-    const address = this.state.keyringService.addAccount(suri, password, { ...meta, isMobile: false }, type);
+  accountsCreate({ suri, type, meta }: RequestAccountCreateSuri): string {
+    const address = this.state.keyringService.addAccount(suri, { ...meta, isMobile: false }, type);
 
     if (!isEthereumAddress(address)) this.state.updateCurrentAccount(address);
 
@@ -166,25 +164,26 @@ export default class Extension extends FWExtensionBase {
 
   async accountsForget({ address, type }: RequestAccountForget): Promise<boolean> {
     const authorizedAccountsDiff: AuthorizedAccountsDiff = [];
+    const pair = this.state.keyringService.getPair(address);
+    const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
 
     // cycle through authUrls and prepare the array of diff
     this.state.requestService.getAuthorize((authUrls) => {
       Object.entries(authUrls).forEach(([url, urlInfo]) => {
-        if (!urlInfo.authorizedAccounts.includes(address)) return;
+        if (urlInfo.authorizedAccounts.includes(address))
+          authorizedAccountsDiff.push([
+            url,
+            urlInfo.authorizedAccounts.filter((previousAddress) => previousAddress !== address),
+            'substrate',
+          ]);
 
-        authorizedAccountsDiff.push([
-          url,
-          urlInfo.authorizedAccounts.filter((previousAddress) => previousAddress !== address),
-        ]);
+        if (urlInfo.evmAuthorizedAccount === ethereumAddress) authorizedAccountsDiff.push([url, [''], 'evm']);
       });
     });
 
     this.state.requestService.updateAuthorizedAccounts(authorizedAccountsDiff);
 
     if (type === 'native') {
-      const pair = this.state.keyringService.getPair(address);
-      const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
-
       if (ethereumAddress) this.state.keyringService.forgetAccount(ethereumAddress);
 
       this.state.walletConnectService.sessions.forEach((session) => {
@@ -200,9 +199,9 @@ export default class Extension extends FWExtensionBase {
         const polkadot = session.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE];
 
         if (polkadot && polkadot.accounts && polkadot.accounts.length) {
-          const [, , substaddress] = polkadot.accounts[0].split(':');
+          const [, , substrateAddress] = polkadot.accounts[0].split(':');
 
-          if (substaddress.toLowerCase() === address.toLowerCase())
+          if (substrateAddress.toLowerCase() === address.toLowerCase())
             this.state.walletConnectService.disconnect(session.topic);
         }
       });
@@ -253,8 +252,11 @@ export default class Extension extends FWExtensionBase {
   }
 
   convertAccounts(accounts: SubjectInfo): AccountJson[] {
-    return Object.values(accounts).flatMap(({ json: { address, meta }, type }) => {
+    return Object.values(accounts).flatMap<AccountJson>(({ json: { address, meta }, type }) => {
       if (isEthereumAddress(address)) return [];
+
+      const pair = this.state.keyringService.getPair(address);
+      const haveEntropy = pair?.haveEntropy;
 
       return {
         address,
@@ -262,6 +264,7 @@ export default class Extension extends FWExtensionBase {
         active: address === this.state.currentAccount?.address,
         name: meta.name ?? '',
         type,
+        haveEntropy,
         network: this.state.networkService.selectedNetworks[address] ?? ALL_NETWORKS,
         ...meta,
       };
@@ -312,8 +315,8 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async authorizeUpdate({ authorizedAccounts, url }: RequestUpdateAuthorizedAccounts): Promise<void> {
-    return this.state.requestService.updateAuthorizedAccounts([[url, authorizedAccounts]]);
+  async authorizeUpdate({ authorizedAccounts, url, authType }: RequestUpdateAuthorizedAccounts): Promise<void> {
+    return this.state.requestService.updateAuthorizedAccounts([[url, authorizedAccounts, authType]]);
   }
 
   authList() {
@@ -434,6 +437,7 @@ export default class Extension extends FWExtensionBase {
   private validatePassword(json: KeyringPair$Json, password: string): boolean {
     const cryptoType = Array.isArray(json.encoding.content) ? json.encoding.content[1] : 'ed25519';
     const encType = Array.isArray(json.encoding.type) ? json.encoding.type : [json.encoding.type];
+
     const pair = createPair(
       { toSS58: this.encodeAddress, type: cryptoType as KeypairType },
       { publicKey: this.decodeAddress(json.address, true) },
@@ -467,8 +471,7 @@ export default class Extension extends FWExtensionBase {
 
           const address = this.state.keyringService.addAccount(
             privateKey,
-            password,
-            { name: file.meta.name ?? '', isMobile: false },
+            { name: (file.meta.name ?? '') as string, isMobile: false },
             'ethereum'
           );
 
@@ -517,9 +520,11 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  async signEvmApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
+  async signEvmApprove({ id }: RequestSigningApprove): Promise<boolean> {
     const request = this.state.requestService.getSignRequest(id) as EvmRequestsSubjectPayload | undefined;
+
     assert(request, 'Unable to find request');
+
     const { data } = request;
 
     const address = getEip155MessageAddress(request.method, data);
@@ -551,16 +556,6 @@ export default class Extension extends FWExtensionBase {
       return true;
     }
 
-    if (!password) {
-      const eth = this.state.keyringService.getPair(ethereumAddress);
-
-      if (eth?.isLocked) throw new Error(BasicTxErrorCode.KEYRING_ERROR, { cause: 'Pair is locked' });
-    } else {
-      const isPassMatch = this.accountsValidatePassword({ address: ethereumAddress, password });
-
-      if (!isPassMatch) throw new Error(BasicTxErrorCode.KEYRING_ERROR, { cause: 'Password did not match' });
-    }
-
     const method = request.method;
     const { list: authList } = await this.getAuthList();
     const auth = authList[stripUrl(request.url)];
@@ -572,7 +567,8 @@ export default class Extension extends FWExtensionBase {
 
     if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
 
-    const { privateKey } = this.state.accountExportPrivateKey({ address: ethereumAddress, password });
+    const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address: ethereumAddress });
+
     const signer = new Wallet(privateKey, this.state.getEvmApi(network.name)?.api);
 
     if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
@@ -615,28 +611,19 @@ export default class Extension extends FWExtensionBase {
       request.resolve({ id: request.id, payload: signature as HexString });
     }
 
-    if (password) {
-      const subst = this.state.keyringService.getPair(substrateAddress);
-      subst?.unlock(password);
-
-      const eth = this.state.keyringService.getPair(ethereumAddress);
-      eth?.unlock(password);
-    }
-
-    this.savePass(substrateAddress, ethereumAddress, savePass, false);
-
     return true;
   }
 
-  async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
+  async signingApprove({ id }: RequestSigningApprove): Promise<boolean> {
     const queued = this.state.requestService.getSignRequest(id);
+
     assert(queued, 'Unable to find request');
 
-    if (queued && 'data' in queued) return this.signEvmApprovePassword({ id, password, savePass }); //sign evm requests
+    if (queued && 'data' in queued) return this.signEvmApprove({ id }); // sign evm requests
 
     const account = this.state.keyringService
       .getAllAccounts()
-      .find(({ address }) => address === queued.account.address);
+      .find(({ address }) => isSameString(address, queued.account.address));
 
     const { reject, request, resolve } = queued;
 
@@ -656,20 +643,10 @@ export default class Extension extends FWExtensionBase {
       return false;
     }
 
-    const { address } = pair;
-
     this.refreshAccountPasswordCache(pair);
 
     // if the keyring pair is locked, the password is needed
-    if (pair.isLocked) {
-      if (!password) {
-        reject(new Error('Password needed to unlock the account'));
-
-        return false;
-      }
-
-      pair.decodePkcs8(password);
-    }
+    if (pair.isLocked) this.state.keyringService.unlockPair(pair);
 
     const { payload } = request;
 
@@ -686,9 +663,6 @@ export default class Extension extends FWExtensionBase {
     }
 
     const result = await request.sign(registry, pair);
-
-    if (savePass) this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
-    else pair.lock();
 
     resolve({ id, payload: result.signature });
 
@@ -745,7 +719,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async windowOpen(path: AllowedPath): Promise<boolean> {
-    const [tab] = await chrome.tabs.query({ title: 'fearless-wallet' });
+    const [tab] = await chrome.tabs.query({ url: EXTENSION_URL });
 
     if (tab && tab.id) {
       chrome.tabs.update(tab.id, { active: true });
@@ -784,30 +758,6 @@ export default class Extension extends FWExtensionBase {
     this.state.updateCurrentTabsUrl(tabs);
   }
 
-  initAuth({ type, wallet }: GoogleAuthTypes): Promise<void> {
-    return this.state.googleService.authExtension(type, wallet);
-  }
-
-  async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse | null> {
-    return this.state.googleService.verifyToken(token);
-  }
-
-  async getFiles({ token }: { token: string }): Promise<IGetFilesResponse> {
-    return this.state.googleService.getFiles(token);
-  }
-
-  async getFile({ id, token }: GoogleFileId): Promise<KeyringPair$Json> {
-    return this.state.googleService.getFile(id, token);
-  }
-
-  async createFile({ json, options, token }: ICreateFile): Promise<FilesResponse> {
-    return this.state.googleService.createFile({ json, options, token });
-  }
-
-  deleteFile({ id, token }: GoogleFileId): void {
-    this.state.googleService.deleteFile(id, token);
-  }
-
   cancelAuthRequest(id: string) {
     this.state.requestService.authorizeCancel({ id });
   }
@@ -818,10 +768,6 @@ export default class Extension extends FWExtensionBase {
 
   private getTotalBalances() {
     return this.state.balanceService.getTotalBalances();
-  }
-
-  private getBalance(): Promise<BalanceJson> {
-    return this.state.balanceService.getBalance();
   }
 
   private async fetchEvmBalance({ assetId, ethereumAddress }: FetchEvmBalancePayload) {
@@ -839,11 +785,9 @@ export default class Extension extends FWExtensionBase {
 
     this.createUnsubscriptionHandle(id, balanceSubscription.unsubscribe);
 
-    port.onDisconnect.addListener((): void => {
-      this.cancelSubscription(id);
-    });
+    port.onDisconnect.addListener(() => this.cancelSubscription(id));
 
-    return this.getBalance();
+    return this.state.balanceService.getBalance();
   }
 
   private updateCurrencySymbol(symbol: string) {
@@ -860,7 +804,7 @@ export default class Extension extends FWExtensionBase {
   private subscribePrice(id: string, port: chrome.runtime.Port): Promise<PriceJson> {
     const cb = createSubscription<'pri(price.subscription)'>(id, port);
 
-    const priceSubscription = this.state.pricesService.subscribePrice().subscribe({
+    const priceSubscription = this.state.pricesService.getSubject().subscribe({
       next: (rs) => {
         cb(rs);
       },
@@ -873,16 +817,6 @@ export default class Extension extends FWExtensionBase {
     });
 
     return this.getPrice();
-  }
-
-  private makeExtrinsicCallback(
-    portCallback: (res: BasicTxResponse) => void,
-    savePass: () => void
-  ): (res: BasicTxResponse) => void {
-    return (res: BasicTxResponse) => {
-      savePass();
-      portCallback(res);
-    };
   }
 
   public async soraFeesSubscribe(id: string, port: Port) {
@@ -921,22 +855,14 @@ export default class Extension extends FWExtensionBase {
 
   private async makeSwap(options: RequestSwap): Promise<ResponseMakeSwap> {
     const { swapOptions } = await createSwap(options, apiSora, this.state);
-    const { password, isSavePass } = options;
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = swapOptions!;
     const errors: Array<BasicTxError> = [];
     const address = this.state.getAccountAddress();
     const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
 
-    const pair = this.state.keyringService.getPair(address)!;
+    this.state.keyringService.unlockPair(address);
 
-    if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(pair, password);
-
-      if (!isUnlock)
-        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
-    }
-
-    apiSora.shouldPairBeLocked = !isSavePass;
+    apiSora.shouldPairBeLocked = false;
 
     try {
       await apiSora.swap.execute(assetA, assetB, amountA, amountB, slippage, isExchangeB, liquiditySource, swapDexId);
@@ -949,28 +875,10 @@ export default class Extension extends FWExtensionBase {
       console.info(`Swap transaction failed ${ex}`);
     }
 
-    const ethereumAddress = this.state.keyringService.getPair(address)?.meta.ethereumAddress as string | undefined;
-
-    this.savePass(address, ethereumAddress, !!isSavePass, false);
-
     return {
       status: true,
       errors,
     };
-  }
-
-  validatePairPassword(password: string) {
-    const address = this.state.getAccountAddress();
-    const substratePair = this.state.keyringService.getPair(address)!;
-
-    if (substratePair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(substratePair, password);
-
-      if (!isUnlock)
-        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
-    }
-
-    return { status: true };
   }
 
   private async checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
@@ -1016,27 +924,15 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async makeTransfer(id: string, port: Port, request: RequestTransfer): Promise<BasicTxResponse | undefined> {
-    const { networkKey, from, to, password, assetId, isSavePass, isMobile, relayChain, amount = '0' } = request;
-    const pair = this.state.keyringService.getPair(from);
+    const { networkKey, from, to, assetId, isMobile, relayChain, amount = '0' } = request;
 
-    if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(pair, password);
-
-      if (!isUnlock) {
-        setTimeout(() => this.cancelSubscription(id), 500);
-
-        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
-      }
-    }
+    this.state.keyringService.unlockPair(from);
 
     const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
-    const ethereumAddress = this.state.keyringService.getEthereumAddress(from);
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
     const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
 
-    const cb = createSubscription<'pri(accounts.makeTransfer)'>(id, port);
-    const savePass = () => this.savePass(substrateAddress, ethereumAddress, !!isSavePass, !!isMobile);
-    const callback = this.makeExtrinsicCallback(cb, savePass);
+    const callback = createSubscription<'pri(accounts.makeTransfer)'>(id, port);
 
     let transferProm: Promise<void> | undefined;
 
@@ -1047,15 +943,13 @@ export default class Extension extends FWExtensionBase {
       amount,
       callback,
       state: this.state,
-      isSavePass,
       isMobile: !!isMobile,
-      password,
       assetId,
       balance,
     };
 
     if (isNativeEVMNetwork(networkKey)) {
-      const { privateKey } = this.state.accountExportPrivateKey({ address: from, password });
+      const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address: from });
 
       transferProm = makeEVMTransfer({
         ...params,
@@ -1081,7 +975,7 @@ export default class Extension extends FWExtensionBase {
       `
       );
 
-      cb({
+      callback({
         status: false,
         errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (ex as Error).message }],
       });
@@ -1103,13 +997,11 @@ export default class Extension extends FWExtensionBase {
       if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
     } else {
       this.state.keyringService.lockPair(address);
-      this.state.passwords[address] = undefined;
 
       if (ethereumAddress) {
         this.cachedUnlocks[ethereumAddress] = 0;
 
         this.state.keyringService.lockPair(ethereumAddress);
-        this.state.passwords[ethereumAddress] = undefined;
       }
     }
   }
@@ -1142,48 +1034,22 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async makeCrossChain(id: string, port: Port, request: RequestCrossChain): Promise<BasicTxResponse> {
-    const {
-      from,
-      originNet,
-      destinationNet,
-      password,
-      to,
-      assetId,
-      isSavePass,
-      isMobile,
-      relayChain,
-      amount = '0',
-    } = request;
+    const { from, originNet, destinationNet, to, assetId, relayChain, isMobile, amount = '0' } = request;
 
-    const pair = this.state.keyringService.getPair(from);
-
-    if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(pair, password);
-
-      if (!isUnlock) {
-        setTimeout(() => this.cancelSubscription(id), 500);
-
-        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
-      }
-    }
+    this.state.keyringService.unlockPair(from);
 
     const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
-    const ethereumAddress = this.state.keyringService.getEthereumAddress(from);
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
 
-    const cb = createSubscription<'pri(accounts.makeCrossChain)'>(id, port);
-    const savePass = () => this.savePass(substrateAddress, ethereumAddress, !!isSavePass, !!isMobile);
-    const callback = this.makeExtrinsicCallback(cb, savePass);
+    const callback = createSubscription<'pri(accounts.makeCrossChain)'>(id, port);
 
-    const params = {
+    const params: MakeCrossChainProps = {
       assetId,
       originNet,
       destinationNet,
       amount,
       from,
       to,
-      password,
-      isSavePass,
       tokenBalance,
       callback,
       isMobile: !!isMobile,
@@ -1210,7 +1076,7 @@ export default class Extension extends FWExtensionBase {
       `
       );
 
-      cb({
+      callback({
         status: false,
         errors: [{ code: TransferErrorCode.CROSSCHAIN_ERROR, message: (ex as Error).message }],
       });
@@ -1236,10 +1102,8 @@ export default class Extension extends FWExtensionBase {
   private subscribeNetworkMap(id: string, port: Port): Record<string, NetworkJson> {
     const cb = createSubscription<'pri(networkMap.getSubscription)'>(id, port);
 
-    const networkMapSubscription = this.state.networkService.networkMapStore.subject.subscribe({
-      next: (rs) => {
-        cb(rs);
-      },
+    const networkMapSubscription = this.state.networkService.networkMapStore.getSubject().subscribe({
+      next: (rs) => cb(rs),
     });
 
     this.createUnsubscriptionHandle(id, networkMapSubscription.unsubscribe);
@@ -1249,6 +1113,24 @@ export default class Extension extends FWExtensionBase {
     });
 
     return this.state.networkService.networkMap;
+  }
+
+  private subscribeSelectedNetworks(id: string, port: Port) {
+    const cb = createSubscription<'pri(selectedNetworks.getSubscription)'>(id, port);
+
+    const selectedNetworksSubscription = this.state.networkService.selectedNetworksStore.getSubject().subscribe({
+      next: (rs) => {
+        const network = rs[this.state.currentAccount?.address ?? ''];
+
+        if (network) cb(network);
+      },
+    });
+
+    this.createUnsubscriptionHandle(id, selectedNetworksSubscription.unsubscribe);
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+    });
   }
 
   private async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {
@@ -1281,47 +1163,20 @@ export default class Extension extends FWExtensionBase {
   }
 
   async makeStaking(request: MakeStakingRequest): Promise<BasicTxResponse> {
-    const { from, password, isSavePass } = request.params;
+    const { from } = request.params;
 
-    const pair = this.state.keyringService.getPair(from);
+    this.state.keyringService.unlockPair(from);
 
-    if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(pair, password);
-
-      if (!isUnlock) {
-        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
-      }
-    }
-
-    const address = this.state.keyringService.getSubstrateAddress(from);
-    const ethereumAddress = this.state.keyringService.getPair(address)?.meta.ethereumAddress as string | undefined;
-
-    const result = await this.state.stakingService.makeStaking(request);
-
-    this.savePass(address, ethereumAddress, isSavePass, false);
-
-    return result;
+    return await this.state.stakingService.makeStaking(request);
   }
 
   async makePool(request: MakePoolsRequest): Promise<BasicTxResponse> {
     const address = this.state.getAccountAddress();
     const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
-    const { password, isSavePass } = request.params;
 
-    const pair = this.state.keyringService.getPair(substrateAddress);
+    this.state.keyringService.unlockPair(substrateAddress);
 
-    if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(pair, password);
-
-      if (!isUnlock) {
-        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
-      }
-    }
-
-    const ethereumAddress = this.state.keyringService.getAccount(address)?.meta.ethereumAddress as string | undefined;
     const result = await this.state.poolsService.makePool(request);
-
-    this.savePass(address, ethereumAddress, isSavePass, false);
 
     return result;
   }
@@ -1456,11 +1311,8 @@ export default class Extension extends FWExtensionBase {
       const substrateAddress = this.state.keyringService.getSubstrateAddress(selectedAccounts[0]);
 
       chains.forEach((chain) => {
-        if (key === WALLET_CONNECT_EIP155_NAMESPACE) {
-          accounts.push(`${chain}:${selectedAccounts[0]}`);
-        } else if (key === WALLET_CONNECT_POLKADOT_NAMESPACE) {
-          accounts.push(`${chain}:${substrateAddress}`);
-        }
+        if (key === WALLET_CONNECT_EIP155_NAMESPACE) accounts.push(`${chain}:${selectedAccounts[0]}`);
+        else if (key === WALLET_CONNECT_POLKADOT_NAMESPACE) accounts.push(`${chain}:${substrateAddress}`);
       });
 
       namespaces[key] = {
@@ -1547,19 +1399,9 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async wcRequestApprove({ address, password, topic, isSavePass }: RequestApproveWalletConnect) {
+  async wcRequestApprove({ address, topic }: RequestApproveWalletConnect) {
     const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
     const ethereumAddress = this.state.keyringService.getEthereumAddress(substrateAddress);
-
-    if (password === '') {
-      const eth = this.state.keyringService.getPair(ethereumAddress);
-
-      if (eth?.isLocked) throw new Error(BasicTxErrorCode.KEYRING_ERROR, { cause: 'Pair is locked' });
-    } else {
-      const isPassMatch = this.accountsValidatePassword({ address: ethereumAddress, password });
-
-      if (!isPassMatch) throw new Error(BasicTxErrorCode.KEYRING_ERROR, { cause: 'Password did not match' });
-    }
 
     const request = this.state.requestService.signWcRequest(topic);
 
@@ -1569,7 +1411,8 @@ export default class Extension extends FWExtensionBase {
 
     if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
 
-    const { privateKey } = this.state.accountExportPrivateKey({ address: ethereumAddress, password });
+    const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address: ethereumAddress });
+
     const signer = new Wallet(privateKey, this.state.getEvmApi(network.name)?.api);
 
     if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
@@ -1613,15 +1456,8 @@ export default class Extension extends FWExtensionBase {
       request.resolve({ id: request.request.topic, payload: signature as HexString });
     }
 
-    if (password) {
-      const subst = this.state.keyringService.getPair(substrateAddress);
-      const eth = this.state.keyringService.getPair(ethereumAddress);
-
-      subst?.unlock(password);
-      eth?.unlock(password);
-    }
-
-    this.savePass(substrateAddress, ethereumAddress, isSavePass, false);
+    this.state.keyringService.unlockPair(substrateAddress);
+    this.state.keyringService.unlockPair(ethereumAddress);
 
     return true;
   }
@@ -1676,6 +1512,26 @@ export default class Extension extends FWExtensionBase {
     return await this.state.balanceService.fetchBalance(address, networkName);
   }
 
+  changeMasterPassword(request: RequestChangePassword): boolean {
+    this.state.keyringLockService.setExtensionAutoLockTimeout();
+
+    return this.state.keyringService.changeMasterPassword(request as RequestChangePassword);
+  }
+
+  unlockKeyring(request: RequestUnlockExtension): boolean {
+    this.state.keyringLockService.setExtensionAutoLockTimeout();
+
+    return this.state.keyringService.unlockKeyring(request as RequestUnlockExtension);
+  }
+
+  lockKeyring(skipCheck: boolean): boolean {
+    if (!skipCheck && this.state.keyringLockService.lockTimerIsExist()) return false;
+
+    this.state.keyringLockService.clearLockTimer();
+
+    return this.state.keyringService.lockKeyring();
+  }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -1699,10 +1555,47 @@ export default class Extension extends FWExtensionBase {
       case 'pri(window.open)':
         return this.windowOpen(request as AllowedPath);
 
-      // authorize
+      // keyring
+      case 'pri(keyring.hasMasterPassword)':
+        return this.state.keyringService.hasMasterPassword;
+
+      case 'pri(keyring.hasAccounts)':
+        return this.state.keyringService.hasAccounts;
+
+      case 'pri(keyring.keyringIsLocked)':
+        return this.state.keyringService.keyringIsLocked;
+
+      case 'pri(keyring.changePassword)':
+        return this.changeMasterPassword(request as RequestChangePassword);
+
+      case 'pri(keyring.unlock)':
+        return this.unlockKeyring(request as RequestUnlockExtension);
+
+      case 'pri(keyring.lock)':
+        return this.lockKeyring(request as boolean);
+
+      case 'pri(keyring.getPassword)':
+        return this.state.keyringService.getPassword();
+
+      case 'pri(keyring.reset)':
+        return this.state.keyringService.resetWallet();
+
+      case 'pri(keyring.getMigrationAccounts)':
+        return this.state.keyringService.getMigrationAccounts();
+
+      case 'pri(keyring.isNeedMigration)':
+        return this.state.keyringService.isNeedMigration();
+
+      case 'pri(keyring.migrateMasterPassword)':
+        return this.state.keyringService.keyringMigrateMasterPassword(request as RequestMigratePassword);
+
       case 'pri(networkMap.getSubscription)':
         return this.subscribeNetworkMap(id, port);
 
+      case 'pri(selectedNetworks.getSubscription)':
+        return this.subscribeSelectedNetworks(id, port);
+
+      // authorize
       case 'pri(authorize.approve)':
         return this.authorizeApprove(request as RequestAuthorizeApprove);
 
@@ -1753,8 +1646,14 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.export.json)':
         return this.exportJSON(request as RequestAccountExport);
 
+      case 'pri(migrate.export.json)':
+        return this.migrateExportJSON(request as string);
+
       case 'pri(accounts.export.mnemonic)':
-        return this.exportMnemonic(request as RequestExportMnemonic);
+        return this.state.keyringService.exportMnemonic(request as RequestExportSeed);
+
+      case 'pri(accounts.export.rowSeed)':
+        return this.state.keyringService.accountExportRawSeed(request as RequestExportSeed);
 
       case 'pri(accounts.forget)':
         return this.accountsForget(request as RequestAccountForget);
@@ -1863,13 +1762,16 @@ export default class Extension extends FWExtensionBase {
       case 'pri(metadata.requests)':
         return port && this.metadataSubscribe(id, port);
 
-      // tabs
+      // tabs, tab
       case 'pri(tabs.update.activeTabsUrl)':
         return this.updateCurrentTabs(request as RequestActiveTabsUrlUpdate);
 
+      case 'pri(tab.status)':
+        return this.isTabAuthorize();
+
       // signing
-      case 'pri(signing.approve.password)':
-        return this.signingApprovePassword(request as RequestSigningApprovePassword);
+      case 'pri(signing.approve)':
+        return this.signingApprove(request as RequestSigningApprove);
 
       case 'pri(signing.approve.signature)':
         return this.signingApproveSignature(request as RequestSigningApproveSignature);
@@ -1888,30 +1790,26 @@ export default class Extension extends FWExtensionBase {
 
       // google
       case 'pri(google.get.files)':
-        return this.getFiles(request as { token: string });
-
-      case 'pri(google.auth)':
-        return this.initAuth(request as GoogleAuthTypes);
+        return this.state.googleService.getFiles(request as RequestGoogleToken);
 
       case 'pri(google.verify.token)':
-        return this.verifyToken(request as { token: string });
+        return this.state.googleService.verifyToken(request as RequestGoogleToken);
+
+      case 'pri(google.auth)':
+        return this.state.googleService.authExtension(request as GoogleAuthTypes);
 
       case 'pri(google.get.file)':
-        return this.getFile(request as GoogleFileId);
+        return this.state.googleService.getFile(request as GoogleFileId);
 
       case 'pri(google.create.file)':
-        return this.createFile(request as ICreateFile);
+        return this.state.googleService.createFile(request as ICreateFile);
 
       case 'pri(google.delete.file)':
-        return this.deleteFile(request as GoogleFileId);
-
-      // tab
-      case 'pri(tab.status)':
-        return this.isTabAuthorize();
+        return this.state.googleService.deleteFile(request as GoogleFileId);
 
       // balance
       case 'pri(balance)':
-        return this.getBalance();
+        return this.state.balanceService.getBalance();
 
       case 'pri(fetch.evm.balance)':
         return this.fetchEvmBalance(request as FetchEvmBalancePayload);
@@ -1964,17 +1862,17 @@ export default class Extension extends FWExtensionBase {
       case 'pri(walletConnect.app.pairing)':
         return this.walletConnectDappPairing();
 
-      //OnBoarding
-      case 'pri(onboarding.get.stories)':
+      // OnBoarding
+      case 'pri(onboarding.getStories)':
         return this.state.onboardingService.getStories(request as string);
 
-      case 'pri(onboarding.seen)':
-        return this.state.onboardingService.setSeen();
+      case 'pri(onboarding.setComplete)':
+        return this.state.onboardingService.setComplete();
 
       case 'pri(onboarding.isRequired)':
         return this.state.onboardingService.isRequired;
 
-      //Nfts
+      // Nfts
       case 'pri(nft.subscribe)':
         return this.state.nftService.nftSubscribe(id, port);
 
@@ -1982,12 +1880,7 @@ export default class Extension extends FWExtensionBase {
         return this.state.nftService.fetchNfts(request as string);
 
       case 'pri(nft.send)':
-        return this.state.nftService.sendNft(
-          request as RequestNftTransfer,
-          (address: string, ethereumAddress: string | undefined, isSave: boolean, isMobile: boolean) => {
-            this.savePass(address, ethereumAddress, isSave, isMobile);
-          }
-        );
+        return this.state.nftService.sendNft(request as RequestNftTransfer);
 
       case 'pri(nft.checkSend)':
         return this.state.nftService.checkSend(request as NftTx);

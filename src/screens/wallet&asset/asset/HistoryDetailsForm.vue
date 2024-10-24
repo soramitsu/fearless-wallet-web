@@ -123,7 +123,7 @@ import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import { getType, getSignTransfer, getHistoryValue, getHumanTransferFee } from '@/helpers/history';
-import { cut, getFormattedDate } from '@/helpers';
+import { cut, getFormattedDate, setClipboard } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -309,7 +309,7 @@ export default class HistoryDetailsForm extends Vue {
   copy(value?: string) {
     if (!value) return;
 
-    navigator.clipboard.writeText(value);
+    setClipboard(value);
   }
 
   openExplorer() {

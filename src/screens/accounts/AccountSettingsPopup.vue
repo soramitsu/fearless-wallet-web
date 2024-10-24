@@ -11,10 +11,10 @@
     @handlerClose="$emit('handlerClose')"
   >
     <div class="account-settings">
-      <div v-if="showExport" class="row" @click="openNotificationPopup">
+      <div v-if="showExport" class="row" @click="$emit('openExportAccountPage')">
         <Icon icon="export" className="icon" />
 
-        <div class="label" data-testid="exportAccount">{{ $t('accounts.export') }}</div>
+        <div class="label" data-testid="exportAccount">{{ $t('accounts.exportAccount') }}</div>
       </div>
 
       <div v-if="showNodeSwitch" class="row" @click="openNetwork">
@@ -47,6 +47,7 @@ import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { EXPLORERS_BASE_URLS } from '@/consts/networks';
+import { setClipboard } from '@/helpers';
 
 @Component
 export default class AccountSettingsPopup extends Vue {
@@ -101,7 +102,7 @@ export default class AccountSettingsPopup extends Vue {
   }
 
   copyAddress() {
-    navigator.clipboard.writeText(this.addressByNetwork);
+    setClipboard(this.addressByNetwork);
 
     this.close();
   }
@@ -132,10 +133,6 @@ export default class AccountSettingsPopup extends Vue {
     });
 
     this.close();
-  }
-
-  openNotificationPopup() {
-    this.$emit('openNotificationPopup', 'export');
   }
 
   close() {

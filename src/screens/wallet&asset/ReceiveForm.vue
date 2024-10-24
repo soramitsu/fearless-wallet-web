@@ -83,7 +83,7 @@ import type { TokenGroup } from '@extension-base/background/types/types';
 import type { GetNetwork, SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { cut } from '@/helpers';
+import { cut, setClipboard } from '@/helpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
@@ -166,7 +166,7 @@ export default class ReceiveForm extends Vue {
   }
 
   copyAddress() {
-    navigator.clipboard.writeText(this.address);
+    setClipboard(this.address);
   }
 
   createBlob() {

@@ -90,6 +90,6 @@ export function handleResponse<TMessageType extends MessageTypes>(
   else handler.resolve(data.response);
 }
 
-export function initEvmProvider(version: string): FWEvmProvider {
-  return new FearlessWalletEvmProvider(sendMessage, version);
+export function initEvmProvider(): FWEvmProvider {
+  return new FearlessWalletEvmProvider(sendMessage);
 }

@@ -67,12 +67,13 @@ import type { Tab } from '@/interfaces/ui';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as NetworksActionsTypes } from '@/store/networks/actions';
-import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { isNetworkGroup } from '@/helpers/common';
 import { type SetFavoriteNetwork, type Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { updateCurrentNetwork } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
+import { IS_POPUP } from '@/consts/globalClient';
 
 type Tabs = {
   [ALL_NETWORKS]: Tab;
@@ -107,19 +108,19 @@ export default class NetworkManagement extends Vue {
 
   @Prop(String) type!: keyof Tabs | string;
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
   @Getter(AccountGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountGettersTypes.selectedWallet) selectedWallet!: Wallet;
   @Getter(AccountGettersTypes.getAccounts) accounts!: AccountJson[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
   @Action(NetworksActionsTypes.TOGGLE_FAVORITE_NETWORK) setFavorite!: (props: SetFavoriteNetwork) => Promise<boolean>;
-  @Mutation(AccountMutationsTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
 
   get isGroupSelected() {
     return this.selectedNetwork === this.activeTab;
   }
 
   get networkListClasses() {
-    return BaseApi.useIsPopup() ? '' : 'container--fullscreen';
+    return IS_POPUP ? '' : 'container--fullscreen';
   }
 
   get networkGroup() {
@@ -201,8 +202,8 @@ export default class NetworkManagement extends Vue {
     return this.selectedNetwork === name;
   }
 
-  updateActiveTab(value: keyof Tabs) {
-    this.activeTab = value;
+  updateActiveTab(tab: Tab) {
+    this.activeTab = tab.name as keyof Tabs;
   }
 
   toggleNetworkType() {

@@ -6,12 +6,6 @@ import { type BalanceItem } from '@extension-base/api/evm/types';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
 export type HandleTxResponse<T extends BasicTxResponse> = (data: T) => void;
-export type HandleTransferProps = {
-  tx: TransactionRequest;
-  networkKey: string;
-  privateKey: string;
-  callback: (data: BasicTxResponse) => void;
-};
 
 interface TransferParams {
   balance: BalanceItem;
@@ -29,6 +23,10 @@ interface TransactionObject {
 interface MakeTransferParams extends TransferParams {
   privateKey: string;
   callback: (data: BasicTxResponse) => void;
+}
+
+export interface HandleTransferProps extends MakeTransferParams {
+  tx: TransactionRequest;
 }
 
 export async function handleTransfer({ callback, networkKey, privateKey, tx }: HandleTransferProps): Promise<void> {
@@ -108,6 +106,7 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
     from,
     data,
   };
+
   let gasLimit = BigInt(0);
 
   try {
@@ -115,8 +114,11 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
   } catch (e) {
     //BNB on ethereum is working that way, remove if something better is comes up
     console.info(e);
+
     const tx = { ...transactionObject };
+
     delete tx.data;
+
     gasLimit = await web3Api.estimateGas(tx);
   }
 
@@ -129,31 +131,15 @@ async function getERC20TransactionObject(params: TransferParams): Promise<Transa
 }
 
 async function makeUtilityTransfer(params: MakeTransferParams): Promise<void> {
-  const { callback, networkKey, privateKey } = params;
   const { tx } = await getUtilityTransactionObject(params);
 
-  const props: HandleTransferProps = {
-    callback,
-    networkKey,
-    privateKey,
-    tx,
-  };
-
-  return handleTransfer(props);
+  return handleTransfer({ ...params, tx });
 }
 
 async function makeERC20Transfer(params: MakeTransferParams) {
-  const { callback, networkKey, privateKey } = params;
   const { tx } = await getERC20TransactionObject(params);
 
-  const props: HandleTransferProps = {
-    callback,
-    networkKey,
-    privateKey,
-    tx,
-  };
-
-  return handleTransfer(props);
+  return handleTransfer({ ...params, tx });
 }
 
 export function getEVMTransactionObject(params: TransferParams): Promise<TransactionObject> {

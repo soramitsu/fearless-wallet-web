@@ -2,16 +2,8 @@ import type { TokenGroup } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types';
 import type { Asset } from '@extension-base/types';
-import { type NetworkName } from '@/interfaces';
+import type { NetworkName } from '@/interfaces';
 import { isSameString } from '@/helpers';
-
-export const setBalance = (networkKey: string, rs: Partial<BalanceItem>, address: string, state: State) => {
-  const isAccountExists = state.keyringService.getAllAccounts().some((el) => el.address === address);
-
-  if (!isAccountExists) return;
-
-  state.balanceService.setBalanceItem(networkKey, rs, address);
-};
 
 export function getAssetInfo(assetId: string, state: State): Asset {
   return state.networkService.assetsMap.find(({ id }) => id === assetId)!;

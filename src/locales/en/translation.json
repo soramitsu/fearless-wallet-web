@@ -4,7 +4,21 @@
     "connectMobile": "Connect mobile",
     "manageGoogle": "Connect Google Drive",
     "deFiWallet": "The DeFi Wallet From The Future",
-    "agreeWith": "By continuing you agree with"
+    "agreeWith": "By continuing you agree with",
+    "oldPassword": "Old password",
+    "newPassword": "New password",
+    "reenterNewPassword": "Reenter new password",
+    "masterPasswordSetUp": "Successful master password set up",
+    "successfulChangePassword": "Password changed successfully",
+    "unlock": "Unlock",
+    "forgotYourPassword": "Forgot your password?",
+    "needHelp": "Do you need help? Сontact",
+    "resetWallet": "Reset wallet",
+    "wantReset": "Are you sure you want to reset your wallet?",
+    "walletWillBeDeleted": "Your current wallet, accounts, and assets will be deleted from Fearless Wallet. You will need to re-import your original account using the recovery phrase or private key.",
+    "enterReset": "To proceed, enter 'Reset wallet'",
+    "resetWarning": "Resetting the wallet will delete your current data and assets. We cannot recover your password as it is stored only on your device. Try other passwords. If you want to reset the wallet, import your original recovery phrase. Proceed only if you have the recovery phrase.",
+    "passwordWarning": "Your password is used to unlock the wallet and is securely stored on your device. We recommend using 12 characters, including uppercase and lowercase letters, symbols, and numbers."
   },
   "addWallet": {
     "createWallet": "Create a new wallet",
@@ -303,18 +317,17 @@
     "dontNeedAccount": "I don’t need an account",
     "exportWarning": "Sharing or copying your secret is a high risk operation, don’t send it to anyone. Would you like to proceed with sharing/copying process?",
     "notEthereumAccount": "You didn’t add an ethereum account.",
-    "export": "Export account",
-    "exportJson": "Export JSON",
-    "wantExportJson": "I want to export JSON",
+    "downloadFile": "Download file",
+    "exportAccount": "Export account",
+    "wantExport": "I want to export",
     "validatePass": "Validate password",
-    "passwordWallet": "Password for this wallet",
+    "passwordApp": "Password for this App",
     "switchNode": "Switch node",
     "copyAddress": "Copy address",
     "subscan": "View in Subscan",
     "etherscan": "View in Etherscan",
     "deleteCustomNode": "Delete custom node?",
     "careful": "Be careful",
-    "sharingSecret": "Sharing or copying your secret is a high risk operation, don’t send it to anyone. Would you like to proceed with sharing/copying process?",
     "invalidNodeAddress": "Invalid node address format",
     "customNodeDuplicate": "You already have that node ",
     "addNode": "Add node",
@@ -330,6 +343,10 @@
     "account": "Account",
     "chainAccounts": "chain accounts",
     "substrateChainAccounts": "Substrate chain accounts",
+    "mnemonic": "Mnemonic",
+    "rawSeed": "Raw Seed",
+    "json": "JSON",
+    "backupKeyPair": "Backup Key Pair",
     "addEthereumAccounts": "Add Moonbeam and Moonriver accounts?"
   },
   "auth": {
@@ -681,7 +698,11 @@
     "poolDetails": "Pool Details",
     "send": "Send",
     "receive": "Receive",
-    "crossChain": "Cross-Chain"
+    "crossChain": "Cross-Chain",
+    "changePassword": "Change password",
+    "unlock": "Unlock",
+    "reset": "Reset",
+    "migration": "Migration"
   },
   "nft": {
     "owned": "Owned",
@@ -695,14 +716,27 @@
     "noNft": "There aren't any NFTs yet. Buy or mint NFTs to see them here.",
     "txSuccessMessage": "Your NFT transfer has been successfully completed"
   },
+  "migration": {
+    "upgradeKeyStorage": "Upgrade Key Storage",
+    "selectWallets": "Select wallets",
+    "actionRequired": "Upgrade Key Storage: Action Required",
+    "upgradingSecure": "We are upgrading to a more secure key storage method. Please follow these steps:",
+    "createMasterPass": "Create a master password. This master password will be used for all your wallets.",
+    "enterPass": "Enter the passwords for your current wallets. If you don’t remember a wallet password, it will be reset. You can re-import the wallet later.",
+    "accessLost": "Access to this wallet will be lost. You can re-import the wallet later. You will need a mnemonic phrase or a JSON backup.",
+    "skipWarning": "If you skip a wallet password step, wallet will be reset. You can re-import the wallet later with Mnemonic passphrase"
+  },
   "common": {
+    "lockApp": "Lock extension",
+    "changePassword": "Change password",
+    "createPassword": "Create password",
     "approve": "Approve",
+    "reject": "Reject",
     "sign": "Sign",
     "wc": "Wallet Connect",
-    "dapps": "DApps",
+    "substrateDApps": "Substrate DApps",
     "connect": "Connect",
-    "enterAccountPass": "Password for this account",
-    "reject": "Reject",
+    "dapps": "DApps",
     "privacyPolicy": "Privacy Policy",
     "termsConditions": "Terms and Conditions",
     "disclaimer": "Disclaimer",
@@ -723,6 +757,7 @@
     "close": "Close",
     "save": "Save",
     "yes": "Yes",
+    "yesSure": "Yes, I`m sure",
     "no": "No",
     "search": "Search",
     "searchNetwork": "Search in networks",
@@ -792,6 +827,8 @@
     "featureOff": "Temparary unavailable, we're working to bring it back.",
     "estimateFeeError": "Couldn't estimate fee",
     "networkFees": "Network fee",
-    "copyHash": "Copy hash"
+    "copyHash": "Copy hash",
+    "fearlessSupport": "Fearless support",
+    "evmDApps":"EVM DApps"
   }
 }

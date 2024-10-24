@@ -1,7 +1,6 @@
 import { BN, isFunction } from '@polkadot/util';
 import { FPNumber } from '@sora-substrate/util';
 import { decodeAddress } from '@polkadot/util-crypto';
-import { SignerType } from '@extension-base/background/types/types';
 import { getAssetBalance, getAssetInfo } from '@extension-base/api/helpers';
 import { estimateSoraCrossChainFee, makeSoraCrossChain, getSoraParaId } from '@extension-base/api/substrate/sora';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
@@ -375,7 +374,7 @@ async function estimateCrossChainFee(props: CrossChainProps, state: State): Prom
 }
 
 async function makeCrossChain(props: MakeCrossChainProps, state: State): Promise<void> {
-  const { originNet, from, isSavePass, password, amount, tokenBalance, callback, isMobile } = props;
+  const { originNet, from, amount, tokenBalance, isMobile, callback } = props;
 
   if (isSora(originNet, true)) return await makeSoraCrossChain(props, state);
 
@@ -393,13 +392,11 @@ async function makeCrossChain(props: MakeCrossChainProps, state: State): Promise
 
   await signAndSendExtrinsic(
     {
-      type: isMobile ? SignerType.MOBILE : SignerType.PASSWORD,
+      isMobile,
       apiProps,
       callback,
       extrinsic,
       txState,
-      password,
-      isSavePass,
       address: from,
       errorMessage: 'CrossChain error',
     },

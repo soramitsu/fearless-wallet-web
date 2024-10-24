@@ -1,9 +1,8 @@
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
-import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
-import { assert, u8aToHex } from '@polkadot/util';
-import { accounts } from '@polkadot/ui-keyring/observable/accounts';
-import { decodePair } from '@polkadot/keyring/pair/decode';
+import { isEthereumAddress } from '@polkadot/util-crypto';
+import { assert } from '@polkadot/util';
+import { accounts } from '@subwallet/ui-keyring/observable/accounts';
 import {
   EventService,
   SoraCardService,
@@ -21,6 +20,7 @@ import {
   CronService,
   ScamService,
   PricesService,
+  TimeoutService,
   isSubscriptionRunning,
   unsubscribe,
 } from '@extension-base/services';
@@ -33,6 +33,7 @@ import BalanceService from '@extension-base/services/balance-service';
 import axios from 'axios';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
+import { KeyringLockService } from '@extension-base/services/keyring-service/KeyringLock';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   ServiceInfo,
@@ -44,8 +45,6 @@ import type {
   IState,
   ActiveTabAuthorizeStatus,
   Providers,
-  RequestAccountExportPrivateKey,
-  ResponseAccountExportPrivateKey,
   FetchEvmBalancePayload,
   AuthUrlInfo,
   AuthUrls,
@@ -60,23 +59,19 @@ import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/netw
 import { isSameString } from '@/helpers';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
+
 type Wallet = {
   address: string;
   ethereumAddress: string;
 };
-export type Passwords = {
-  [address in string]: string | undefined;
-};
 
 export default class State {
-  public passwords: Passwords = {};
   public injectedProviders: Map<Port, ProviderInterface> = new Map();
   public providers: Providers = {};
   public readonly unsubscriptionMap: Record<string, () => void> = {};
   public serviceInfoSubject = new Subject<ServiceInfo>();
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
-  public lazyMap: Record<string, unknown> = {};
   public soraFees: BehaviorSubject<SoraFees> = new BehaviorSubject<SoraFees>(apiSora.NetworkFee);
   public ready = false;
   public currentTabStatus: ActiveTabAuthorizeStatus = {
@@ -101,6 +96,8 @@ export default class State {
   public cronService = new CronService(this);
   public scamService = new ScamService(this);
   public subscriptionService = new SubscriptionService(this);
+  public timeoutService = new TimeoutService(this);
+  public keyringLockService = new KeyringLockService(this);
 
   constructor() {
     this.injectFromStorage();
@@ -451,7 +448,7 @@ export default class State {
       .getSubstrateAccounts()
       .forEach(({ address }) => this.balanceService.generateDefaultBalance(address));
 
-    this.ready = true; //Set true if chain json is parsed and data is preped for init apis
+    this.ready = true; // Set true if chain json is parsed and data is preped for init apis
     this.fetchXcmInfo();
     this.scamService.refreshScamAddressList();
 
@@ -489,7 +486,12 @@ export default class State {
 
       const pair = this.keyringService.getPair(data?.address)!;
 
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
       apiSora.account = { json: null as any, pair };
+
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
       apiSora.bridgeProxy.sub.account = { json: null as any, pair };
 
       // TODO добавить фича тогл
@@ -541,39 +543,6 @@ export default class State {
       console.error('failed subscribe or unsubscribe to XOR balance');
     }
   }
-
-  public accountExportPrivateKey({
-    address,
-    password,
-  }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    const pass = this.passwords[address] ?? password;
-    const json = this.keyringService.backupAccount(address, pass!);
-
-    if (!json) throw new Error('Json was not exported');
-
-    const decoded = decodePair(pass, base64Decode(json.encoded), json.encoding.type);
-
-    const privateKey = u8aToHex(decoded.secretKey);
-    const publicKey = u8aToHex(decoded.publicKey);
-
-    if (password) this.passwords[address] = password;
-
-    return {
-      privateKey,
-      publicKey,
-    };
-  }
-
-  public lazyNext = (key: string, callback: () => void) => {
-    if (this.lazyMap[key]) clearTimeout(this.lazyMap[key] as number);
-
-    const lazy = setTimeout(() => {
-      callback();
-      clearTimeout(lazy);
-    }, 300);
-
-    this.lazyMap[key] = lazy;
-  };
 
   public getAddressList(value = false): Record<string, boolean> {
     const addressList = Object.keys(accounts.subject.value);

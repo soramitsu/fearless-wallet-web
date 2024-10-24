@@ -42,7 +42,7 @@
 
 <script lang="ts" setup>
 import registry from '@extension-base/api/substrate/typeRegistry';
-import { reactive, computed } from 'vue';
+import { reactive, computed, onMounted } from 'vue';
 import { type GenericExtrinsicPayload } from '@polkadot/types/extrinsic/ExtrinsicPayload';
 import { formatUnits } from 'ethers';
 import { type EvmRequestPayload } from '@extension-base/services/request-service/types';
@@ -70,10 +70,6 @@ const payload = computed<SignerPayloadJSON>(() => store.getters[ExtensionGetterT
 const requests = computed<SignRequests>(() => store.getters[ExtensionGetterTypes.signRequests]);
 const accounts = computed<AccountJson[]>(() => store.getters[AccountsGettersTypes.getAccounts]);
 const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
-
-const onSignApprove = (data: ApprovePayload) => {
-  store.dispatch('APPROVE_SIGN', data);
-};
 
 const transactionAddress = computed(() => payload.value?.address ?? selectedWallet.value.address);
 const request = computed<SigningRequest | EvmRequestPayload>(
@@ -106,6 +102,12 @@ const accountName = computed(() => {
   if ('account' in request.value) return request.value.account.name;
 
   return request.value.data[0].from ?? request.value.data[0];
+});
+
+const onSignApprove = (data: ApprovePayload) => store.dispatch('APPROVE_SIGN', data);
+
+onMounted(async () => {
+  if (isSignMobile.value) onSignApprove({ id: request.value.id });
 });
 
 const mortalityAsString = (era: ExtrinsicEra | undefined, hexBlockNumber: string): string | undefined => {

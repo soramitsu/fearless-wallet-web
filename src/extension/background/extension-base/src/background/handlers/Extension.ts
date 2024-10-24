@@ -520,9 +520,11 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  async signEvmApprovePassword({ id }: RequestSigningApprove): Promise<boolean> {
+  async signEvmApprove({ id }: RequestSigningApprove): Promise<boolean> {
     const request = this.state.requestService.getSignRequest(id) as EvmRequestsSubjectPayload | undefined;
+
     assert(request, 'Unable to find request');
+
     const { data } = request;
 
     const address = getEip155MessageAddress(request.method, data);
@@ -614,13 +616,14 @@ export default class Extension extends FWExtensionBase {
 
   async signingApprove({ id }: RequestSigningApprove): Promise<boolean> {
     const queued = this.state.requestService.getSignRequest(id);
+
     assert(queued, 'Unable to find request');
 
-    if (queued && 'data' in queued) return this.signEvmApprovePassword({ id }); //sign evm requests
+    if (queued && 'data' in queued) return this.signEvmApprove({ id }); // sign evm requests
 
     const account = this.state.keyringService
       .getAllAccounts()
-      .find(({ address }) => address === queued.account.address);
+      .find(({ address }) => isSameString(address, queued.account.address));
 
     const { reject, request, resolve } = queued;
 

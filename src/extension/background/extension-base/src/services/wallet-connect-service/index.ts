@@ -81,6 +81,7 @@ export class WalletConnectService {
 
   async initClient(force?: boolean) {
     this.removeListener();
+
     const isHaveData = await this.haveData();
 
     if (force || isHaveData) {
@@ -148,6 +149,7 @@ export class WalletConnectService {
 
   private onSessionRequest(requestEvent: SignClientTypes.EventArguments['session_request']) {
     this.checkClient();
+
     const { id, params, topic } = requestEvent;
     const { chainId, request } = params;
     const method = request.method as WalletConnectSigningMethod;

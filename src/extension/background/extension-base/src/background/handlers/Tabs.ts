@@ -147,7 +147,7 @@ export default class Tabs {
     if (pair) meta = pair.meta;
     else if (isMobile) meta = this.state.keyringService.getAddress(address, 'address')?.meta;
 
-    const signer = new RequestExtrinsicSign(request);
+    const signer = new RequestExtrinsicSign(request, isMobile);
 
     return this.state.requestService.substrateRequestHandler.sign(url, signer, {
       address: address,

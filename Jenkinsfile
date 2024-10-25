@@ -1,4 +1,4 @@
-@Library('jenkins-library')
+@Library('jenkins-library@feature/DOPS-3456/improve-merge-ci')
 
 def buildWithCred  = [
     [$class: 'UsernamePasswordMultiBinding', credentialsId: 'OAUTH_CLIENT_UPLOAD', usernameVariable: 'OAUTH_CLIENT_ID_UPLOAD', passwordVariable: 'OAUTH_CLIENT_SECRET_UPLOAD'],
@@ -32,7 +32,6 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY', variable: 'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_OKLINK_API_KEY', variable: 'VUE_APP_FL_WEB_X1_TESTNET_API_KEY']
 ]
-
 
 def pipeline = new org.js.AppArtifactsPipeline(
     steps:                      this,

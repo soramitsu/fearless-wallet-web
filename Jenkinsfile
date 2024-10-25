@@ -33,7 +33,6 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'FL_OKLINK_API_KEY', variable: 'VUE_APP_FL_WEB_X1_TESTNET_API_KEY']
 ]
 
-
 def pipeline = new org.js.AppArtifactsPipeline(
     steps:                      this,
     secretScannerExclusion:     '/src/extension/background/extension-base/src/api/evm/history.ts',

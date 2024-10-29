@@ -10,6 +10,7 @@
   "description": "Non-Custodial and Decentralized wallet for the Polkadot and Kusama ecosystems with the best UX, performance and security.",
   "browserslist": "last 2 Chrome versions, last 2 Firefox versions",
   "scripts": {
+    "preinstall": "corepack enable",
     "build:extension": "EXTENSION_TYPE=chrome OUTPUT_DIR=chrome env-cmd -f .env.extension vue-cli-service --env.NODE_ENV=production build",
     "build:extension-test": "EXTENSION_TYPE=chrome VUE_APP_TEST_ONLY=true OUTPUT_DIR=chrome-test env-cmd -f .env.extension vue-cli-service --env.NODE_ENV=development build --mode development",
     "build:extension:firefox": "EXTENSION_TYPE=firefox OUTPUT_DIR=firefox env-cmd -f .env.extension vue-cli-service --env.NODE_ENV=production build",

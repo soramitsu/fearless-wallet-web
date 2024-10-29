@@ -101,7 +101,6 @@ export default class State {
 
   constructor() {
     this.injectFromStorage();
-    this.onboardingService.init();
     this.init();
   }
 

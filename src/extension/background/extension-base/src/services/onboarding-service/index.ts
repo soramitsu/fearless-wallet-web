@@ -6,9 +6,9 @@ import { IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
 import { URLS } from '@/consts/urls';
 
 export class OnboardingService {
-  private userType: UserType = 'new';
-  private defaultLocale = 'en-EN';
   private stories: OnBoardingStoriesLocales = {};
+  private defaultLocale = 'en-EN';
+  public userType: UserType = 'new';
   public isRequired = false;
 
   async init(): Promise<void> {
@@ -28,7 +28,7 @@ export class OnboardingService {
 
     const userStories = this.stories[this.defaultLocale]?.[this.userType];
 
-    this.isRequired = onboarding ? onboarding.isRequired : userStories.length !== 0;
+    this.isRequired = onboarding?.isRequired ?? userStories.length !== 0;
 
     this.updateStorage();
   }
@@ -50,12 +50,7 @@ export class OnboardingService {
     this.updateStorage();
   }
 
-  updateStorage() {
-    storage.set({
-      onboarding: {
-        user: this.userType,
-        isRequired: this.isRequired,
-      },
-    });
+  async updateStorage(user: UserType = this.userType, isRequired: boolean = this.isRequired) {
+    await storage.set({ onboarding: { user, isRequired } });
   }
 }

@@ -29,13 +29,14 @@ async function getActiveTabs() {
   });
 }
 
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'update') {
-    state.onboardingService.isRequired = true;
-    state.onboardingService.updateStorage();
+    await state.onboardingService.updateStorage('regular', true);
 
     if (details.previousVersion !== APP_VERSION) chrome.runtime.reload();
   }
+
+  state.onboardingService.init();
 
   initStorage().then(() => state.onInstall());
 

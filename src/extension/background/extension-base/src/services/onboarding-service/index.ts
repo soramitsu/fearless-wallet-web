@@ -28,7 +28,7 @@ export class OnboardingService {
 
     const userStories = this.stories[this.defaultLocale]?.[this.userType];
 
-    this.isRequired = onboarding?.isRequired ?? userStories.length !== 1;
+    this.isRequired = onboarding?.isRequired ?? userStories.length !== 0;
 
     this.updateStorage();
   }

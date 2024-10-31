@@ -39,7 +39,7 @@ router.beforeEach(async (to, from, next) => {
 
   // If the extension is locked, skip the migration step.
   // This can happen if the user set a password during migration and then locked the extension.
-  if (!isLock) {
+  if (!isLock && !isRequiredOnboarding) {
     if (
       to.name !== Components.MigrationDescription &&
       to.name !== Components.MigrationAccounts &&
@@ -76,7 +76,7 @@ router.beforeEach(async (to, from, next) => {
       else next();
     } else if (to.name === Components.ResetWallet) next();
     else {
-      if (isLock) next({ name: Components.Unlock });
+      if (isLock && to.name !== Components.Onboarding) next({ name: Components.Unlock });
       else next();
     }
   }

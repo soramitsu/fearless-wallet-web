@@ -167,6 +167,7 @@ const changePassword = (value: string) => {
 const onApprove = async () => {
   state.isPassValid = false;
   state.isSigning = true;
+
   await walletConnectRequestApprove(
     address.value.toLowerCase(),
     password.value,

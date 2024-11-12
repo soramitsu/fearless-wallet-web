@@ -154,14 +154,8 @@ export class NftService {
     const { from, contract: contractAddress } = tx;
     const api = this.state.getEvmApi(tx.network)?.api;
     const contract = await getContract(contractAddress, api, tx.type === 'ERC721' ? 'ERC721' : 'ERC1155');
-    const pair = this.state.keyringService.getPair(from);
 
-    if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(pair);
-
-      if (!isUnlock)
-        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
-    }
+    this.state.keyringService.unlockPair(from);
 
     const res = await this.checkSend(tx);
 

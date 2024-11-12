@@ -1056,9 +1056,7 @@ export default class Extension extends FWExtensionBase {
     };
 
     try {
-      const transferProm: Promise<void> | undefined = makeCrossChain(params, this.state);
-
-      await transferProm;
+      await makeCrossChain(params, this.state);
 
       console.info(
         `

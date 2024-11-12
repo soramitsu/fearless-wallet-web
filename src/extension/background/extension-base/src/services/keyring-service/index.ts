@@ -162,7 +162,7 @@ export class KeyringService {
     try {
       return keyring.getAccount(address);
     } catch {
-      return null;
+      return undefined;
     }
   }
 
@@ -186,7 +186,7 @@ export class KeyringService {
 
     const ethereumAddress = (file.meta as FWKeyringMeta).ethereumAddress ?? '';
 
-    if (this.getAccount(ethereumAddress) === null) delete file.meta.ethereumAddress;
+    if (!this.getAccount(ethereumAddress)) delete file.meta.ethereumAddress;
 
     return keyring.restoreAccount(file, password, withMasterPassword);
   }
@@ -207,9 +207,10 @@ export class KeyringService {
 
     const { address } = pair;
     const isEthereum = isEthereumAddress(address);
-    const substrateAddress = this.getSubstrateAddress(address);
 
+    const substrateAddress = this.getSubstrateAddress(address);
     const substratePair = isEthereum ? this.getPair(substrateAddress) : pair;
+
     const ethereumAddress = isEthereum ? address : (substratePair?.meta.ethereumAddress as string | undefined);
     const ethereumPair = isEthereum ? pair : ethereumAddress ? this.getPair(ethereumAddress) : undefined;
 

@@ -10,14 +10,14 @@
 
     <Scroll>
       <ul class="account__list">
-        <li v-for="(account, index) in props.accounts" class="auth-account" :key="index">
+        <li v-for="(account, index) in props.accounts" class="auth-account" :key="account.address">
           <div class="checkbox">
             <Checkbox
               class="account__checkbox"
               size="big"
               :label="$t(account.name)"
               :value="account.active"
-              @change="emit('onSelect', $event, account.name)"
+              @change="emit('onSelect', $event, account.address)"
             />
 
             <div v-if="account.isMobile" class="account__checkbox--mobile-icon">{{ $t('mobile') }}</div>

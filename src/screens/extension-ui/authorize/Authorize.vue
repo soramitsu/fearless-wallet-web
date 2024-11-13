@@ -81,11 +81,11 @@ onMounted(() => {
   const active = showSelectAll.value;
 
   accounts.value.forEach(({ name, address, ethereumAddress, isMobile }) => {
-    set(state.value, name, {
-      name: name,
-      address: address,
-      ethereumAddress: ethereumAddress,
-      isMobile: isMobile,
+    set(state.value, address, {
+      name,
+      address,
+      ethereumAddress,
+      isMobile,
       active,
     });
   });
@@ -95,11 +95,11 @@ watch(requests, (value: AuthorizeRequest[]) => {
   if (value.length === 0) router.push({ name: Components.Wallet });
 });
 
-const onSelect = (value: boolean, name: string) => {
+const onSelect = (value: boolean, address: string) => {
   if (showSelectAll.value) selectAll.value = Object.values(state.value).every(({ active }) => active);
   else Object.keys(state.value).forEach((key) => (state.value[key].active = false));
 
-  state.value[name].active = value;
+  state.value[address].active = value;
 };
 
 const onSelectAll = (value: boolean) => {

@@ -176,6 +176,8 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   get fullMatchValidators() {
+    if (this.stakingNetwork.myValidators.length === 0) return false;
+
     return this.stakingNetwork.myValidators.every(({ address }) =>
       this.selectedValidators.some((_address) => address === _address)
     );

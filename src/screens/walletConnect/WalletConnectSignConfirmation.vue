@@ -63,14 +63,14 @@ import { isEthereumAddress } from '@polkadot/util-crypto';
 import WalletConnectRequestData from './WalletConnectRequestData.vue';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import { walletConnectRequestReject, walletConnectRequestApprove, isSignLocked } from '@/extension/messaging';
-import { useStore } from '@/store';
 import { useNotify } from '@/plugins/soramitsuUI';
 import ValidatedInput from '@/components/ValidatedInput.vue';
-import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
+import { useExtensionStore } from '@/stores/extension';
 
 type Error = { message: TransferErrorCode.UNSUPPORTED | BasicTxErrorCode.KEYRING_ERROR };
 
-const store = useStore();
+const extensionStore = useExtensionStore();
+
 const router = useRouter();
 const notify = useNotify();
 const { t } = useI18n();
@@ -81,7 +81,7 @@ const state = reactive({
 });
 const password = ref('');
 
-const requests = computed<WalletConnectTransactionRequest[]>(() => store.getters[ExtensionGettersTypes.wcSignList]);
+const requests = computed<WalletConnectTransactionRequest[]>(() => extensionStore.wcRequests);
 const request = computed<WalletConnectTransactionRequest>(() => requests.value[0]);
 
 watch(requests, () => {
@@ -91,7 +91,7 @@ watch(requests, () => {
 const method = computed(() => request.value.params.request.method as EIP155_SIGNING_METHODS);
 const isSignatureRequest = computed(() => SIGNATURE_METHODS.includes(method.value));
 const origin = request.value.verifyContext.verified.origin;
-const title = computed<string>(() => {
+const title = computed(() => {
   if (!isSignatureRequest.value) return t('walletConnect.txRequestTitle', { url: origin }).toString();
 
   return t('walletConnect.signRequestTitle').toString();

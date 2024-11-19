@@ -60,28 +60,22 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
 import { storage } from '@extension-base/stores/Storage';
 import { toSvg } from 'jdenticon';
 import { type AddressBook } from '@extension-base/background/types/types';
-import type { AsyncFn, GetHistory } from '@/interfaces';
-import type { FetchHistory, GetNetwork } from '@/store';
 import BaseApi from '@/util/BaseApi';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { cut, isSora } from '@/helpers/';
 import { getType } from '@/helpers/history';
 import { type SoraHistoryElement, TransactionType } from '@/interfaces/history';
-import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
+import { useNetworksStore } from '@/stores/networks';
 
 @Component
 export default class HistoryBook extends Vue {
+  networksStore = useNetworksStore();
   addressBook: AddressBook = {};
 
   @Prop(String) network!: string;
   @Prop(String) assetId!: string;
-  @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
-  @Action(NetworksActionTypes.FETCH_HISTORY) fetchHistory!: AsyncFn<FetchHistory>;
 
   get showHistoryAndBook() {
     return this.showHistory || this.book.length !== 0;
@@ -92,7 +86,7 @@ export default class HistoryBook extends Vue {
   }
 
   get addressPrefix() {
-    return this.getNetwork(this.network)?.addressPrefix;
+    return this.networksStore.getNetwork(this.network)?.addressPrefix;
   }
 
   get book() {
@@ -104,7 +98,7 @@ export default class HistoryBook extends Vue {
   get historyAddresses() {
     if (!this.network) return [];
 
-    const history = this.getHistory(this.assetId, this.network.toLowerCase());
+    const history = this.networksStore.getHistory(this.assetId, this.network.toLowerCase());
 
     if (!history) return [];
 
@@ -163,7 +157,7 @@ export default class HistoryBook extends Vue {
   loadHistory() {
     if (this.historyAddresses.length !== 0) return;
 
-    this.fetchHistory({ networkName: this.network, assetId: this.assetId });
+    this.networksStore.fetchHistory({ networkName: this.network, assetId: this.assetId });
   }
 
   getJdenticon(address: string) {

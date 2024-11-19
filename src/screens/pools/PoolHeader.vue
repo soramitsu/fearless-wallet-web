@@ -22,17 +22,18 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { PoolParams } from '@/store';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+
+import type { PoolParams } from '@/stores';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: {},
 })
 export default class PoolHeader extends Vue {
+  accountsStore = useAccountsStore();
+
   @Prop({ type: Object }) poolParams!: PoolParams;
   @Prop({ type: Number }) step!: number;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
   get size() {
     return this.step === 3 ? 'big' : 'small';
@@ -41,7 +42,7 @@ export default class PoolHeader extends Vue {
   get tvl() {
     const tvl = +(this.poolParams?.tvl ?? 0);
 
-    return `${this.fiatSymbol}${this.$n(tvl, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(tvl, 'price')}`;
   }
 
   get icon1() {

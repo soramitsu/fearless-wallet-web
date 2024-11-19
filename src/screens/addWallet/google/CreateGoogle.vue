@@ -75,11 +75,9 @@
 </template>
 
 <script lang="ts">
-import { Getter } from 'vuex-class';
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import type { TranslateResult } from 'vue-i18n';
 import type { FWKeyringMeta } from '@extension-base/types';
-import type { SelectedWallet } from '@/store/accounts/types';
 import type { WarningValueName } from '@/consts/messages';
 import type { DerivationPaths, MnemonicConfirmation } from '@/interfaces';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
@@ -97,7 +95,6 @@ import {
   updateCurrentAccount,
   getExtensionPassword,
 } from '@/extension/messaging';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
   components: {
@@ -127,8 +124,6 @@ export default class CreateGoogle extends Vue {
   showNotificationPopup = false;
   warningValueName: WarningValueName = '';
   isLoading = false;
-
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   get invalidMessages() {
     if (!this.warningValueName) return {};

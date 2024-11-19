@@ -65,13 +65,12 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { validateEmail } from '@/helpers';
 import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
-import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { RESEND_INTERVAL } from '@/consts/soraCard';
 import { soraCardController } from '@/controllers';
 import VerifyEmailForm from '@/screens/soraCard/stepsKYC/VerifyEmailForm.vue';
+import { useSoraCardStore } from '@/stores/soraCard';
 
 @Component({
   components: {
@@ -80,6 +79,7 @@ import VerifyEmailForm from '@/screens/soraCard/stepsKYC/VerifyEmailForm.vue';
   },
 })
 export default class Email extends Vue {
+  soraCardStore = useSoraCardStore();
   email = '';
   firstName = '';
   lastName = '';
@@ -89,8 +89,6 @@ export default class Email extends Vue {
   emailSent = false;
   emailSentFirstTime = false;
   showVerifyEmailForm = false;
-
-  @Getter(SoraCardGettersTypes.authLogin) authLogin!: any;
 
   get textBtnSend() {
     if (this.emailSent) {
@@ -145,9 +143,9 @@ export default class Email extends Vue {
 
     if (this.prefilledEmail !== 'undefined') this.email = this.prefilledEmail;
 
-    if (!this.authLogin) return;
+    if (!this.soraCardStore.authLogin) return;
 
-    this.authLogin.on('Email-verified', () => {
+    this.soraCardStore.authLogin.on('Email-verified', () => {
       this.unconfirmedEmail = '';
       this.$emit('confirmEmail');
     });
@@ -166,7 +164,7 @@ export default class Email extends Vue {
 
     // user wants to change unconfirmed email
     if ((this.isPrefilledEmailValid && this.prefilledEmail !== this.email) || this.isEmailMismatch) {
-      this.authLogin.ChangeUnconfirmedEmail({ Email: this.email }).catch((error: string) => {
+      this.soraCardStore.authLogin.ChangeUnconfirmedEmail({ Email: this.email }).catch((error: string) => {
         console.error('[SoraCard]: Error while changing email', error);
       });
 
@@ -179,7 +177,7 @@ export default class Email extends Vue {
 
     // user signs on for the first time
     if (!this.emailSentFirstTime && !this.isPrefilledEmailValid) {
-      this.authLogin
+      this.soraCardStore.authLogin
         .UserMinimalRegistration({
           Email: this.email,
           FirstName: this.firstName,
@@ -198,7 +196,7 @@ export default class Email extends Vue {
     }
 
     // user tries to resend email several times
-    this.authLogin.SendVerificationEmail().catch((error: string) => {
+    this.soraCardStore.authLogin.SendVerificationEmail().catch((error: string) => {
       console.error('[SoraCard]: Error while resending email', error);
     });
 

@@ -34,8 +34,7 @@
 import { computed, ref } from 'vue';
 import { firstCharToUp } from '@/helpers';
 import { SORA_UTILITY_ASSET } from '@/consts/sora';
-import { useStore } from '@/store';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useAccountsStore } from '@/stores/accounts';
 
 type Props = {
   marketType?: string;
@@ -71,9 +70,10 @@ const props = withDefaults(defineProps<Props>(), {
   route: '',
   showSwapInfo: true,
 });
-const store = useStore();
 
-const fiatSymbol = ref<string>(store.getters[AccountsGettersTypes.fiatSymbol]);
+const accountsStore = useAccountsStore();
+
+const fiatSymbol = ref(accountsStore.fiatSymbol);
 const soraMainAsset = SORA_UTILITY_ASSET.toUpperCase();
 
 const minMaxLabel = computed(() => (props.isExchangeB ? 'assets.maxSales' : 'assets.minReceived'));

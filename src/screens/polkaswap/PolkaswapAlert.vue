@@ -1,5 +1,9 @@
 <template>
-  <Alert v-if="showPolkaswapAlert" message="common.readPolkaswapDisclaimer" headerMessage="common.disclaimer">
+  <Alert
+    v-if="accountsStore.showPolkaswapAlert"
+    message="common.readPolkaswapDisclaimer"
+    headerMessage="common.disclaimer"
+  >
     <div class="alert-content" data-testid="alertContent">
       {{ $t('common.readPolkaswapDisclaimer') }}
 
@@ -19,13 +23,12 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class PolkaswapAlert extends Vue {
-  @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
+  accountsStore = useAccountsStore();
 
   openPolkaswapDisclaimer() {
     this.$router.push({

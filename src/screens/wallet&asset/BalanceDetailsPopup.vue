@@ -20,23 +20,23 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+
 import type { TokenGroup } from '@extension-base/background/types/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { type GetAssetPrice, type SelectedWallet, type GetNetwork } from '@/store';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { type AssetPrice } from '@/interfaces';
+
+import type { AssetPrice } from '@/interfaces';
+
 import { ALL_NETWORKS } from '@/consts/networks';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class LockedDetailsPopup extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
+
   @Prop(String) network!: string;
   @Prop(Object) currency!: TokenGroup;
   @Prop(Object) assetPrice!: AssetPrice;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get assetNameUpper() {
     return this.currency.symbol.toUpperCase();
@@ -59,7 +59,7 @@ export default class LockedDetailsPopup extends Vue {
 
     const { frozen, locked, reserved, total, transferable } = balances.reduce(
       (prev, curr) => {
-        const network = this.getNetwork(curr.name);
+        const network = this.networksStore.getNetwork(curr.name);
 
         if (!network.active) return prev;
 
@@ -94,11 +94,11 @@ export default class LockedDetailsPopup extends Vue {
   }
 
   get fiatPrice() {
-    return this.getTokenPrice(this.currency.priceId ?? '').price ?? 0;
+    return this.networksStore.getAssetPrice(this.currency.priceId ?? '').price ?? 0;
   }
 
   prepFiatValue(fiat: number) {
-    return `${this.fiatSymbol}${this.$n(fiat, 'price')} `;
+    return `${this.accountsStore.fiatSymbol}${this.$n(fiat, 'price')} `;
   }
 
   getFiatValueVisible(value: number) {

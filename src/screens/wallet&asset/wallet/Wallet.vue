@@ -61,22 +61,14 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Getter, Mutation, Action } from 'vuex-class';
-import { type AccountJson, type BalanceJson, type TokenGroup } from '@extension-base/background/types/types';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
-import type { NetworkJson } from '@extension-base/types';
-import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset, GetNetwork } from '@/store';
-import type { AsyncFn, Fn, TabWallet, AssetsPrice } from '@/interfaces';
 import type { BalanceItem } from '@extension-base/api/evm/types';
+import type { TabWallet } from '@/interfaces';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import { accountController } from '@/controllers/accountController';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
@@ -91,6 +83,8 @@ import { networksIsPending } from '@/helpers/shimmers';
 import BaseApi from '@/util/BaseApi';
 import { fetchEvmBalance } from '@/extension/messaging';
 import { isSameString } from '@/helpers';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: {
@@ -106,6 +100,7 @@ import { isSameString } from '@/helpers';
   },
 })
 export default class Wallet extends Vue {
+  networksStore = useNetworksStore();
   showNetworkManagement = false;
   showAssetsManagementForm = false;
   networkUnavailable = '';
@@ -115,28 +110,14 @@ export default class Wallet extends Vue {
     assetId?: string;
   };
 
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
-  @Getter(AccountsGettersTypes.getShowWarningNetwork) getShowWarningNetwork!: GetShowWarningNetworks;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
-  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
-  @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.prices) prices!: AssetsPrice;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
-  @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
-  @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
-  @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: Fn<SetHiddenAsset>;
-  @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
+  accountsStore = useAccountsStore();
 
   get activeTabName() {
     return this.$route.name;
   }
 
   get contentFormHeight() {
-    const subtractionNumber = this.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
+    const subtractionNumber = this.accountsStore.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
 
     return CONTENT_FORM_HEIGHT - subtractionNumber;
   }
@@ -146,13 +127,13 @@ export default class Wallet extends Vue {
   }
 
   get isEmptyBalances() {
-    return this.balances.length === 0;
+    return this.accountsStore.balances.length === 0;
   }
 
   get showWarningIcon() {
-    if (this.selectedNetwork !== ALL_NETWORKS) {
-      const networkStatus = this.networks.find(
-        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
+    if (this.accountsStore.selectedNetwork !== ALL_NETWORKS) {
+      const networkStatus = this.networksStore.networks.find(
+        ({ name }) => name.toLowerCase() === this.accountsStore.selectedNetwork.toLowerCase()
       )?.networkStatus;
 
       return networkStatus === NETWORK_STATUS.DISCONNECTED;
@@ -162,40 +143,49 @@ export default class Wallet extends Vue {
   }
 
   get disconnectedNetworks() {
-    return this.networks.filter(({ networkStatus }) => networkStatus === NETWORK_STATUS.DISCONNECTED);
+    return this.networksStore.networks.filter(({ networkStatus }) => networkStatus === NETWORK_STATUS.DISCONNECTED);
   }
 
   get networksWithWarning() {
-    return this.disconnectedNetworks.filter(({ name }) => !this.getShowWarningNetwork(name));
+    return this.disconnectedNetworks.filter(({ name }) => !this.accountsStore.getShowWarningNetwork(name));
   }
 
   get summaryTransferableBalance() {
     return getSummaryTransferableWalletBalance(
-      this.selectedWallet.address,
-      this.balances,
-      this.prices,
-      this.selectedNetwork,
-      this.networks
+      this.accountsStore.selectedWallet.address,
+      this.accountsStore.balances,
+      this.networksStore.assetsPrice,
+      this.accountsStore.selectedNetwork,
+      this.networksStore.networks
     );
   }
 
   get changeWalletBalance() {
-    if (this.balances.length === 0) return { percent: 0, amount: 0 };
+    if (this.accountsStore.balances.length === 0) return { percent: 0, amount: 0 };
 
-    return getChangeWalletBalance(this.balances, this.prices, this.selectedNetwork);
+    return getChangeWalletBalance(
+      this.accountsStore.balances,
+      this.networksStore.assetsPrice,
+      this.accountsStore.selectedNetwork
+    );
   }
 
   get sortedCurrencies() {
     const balances =
-      this.selectedWallet.ethereumAddress === ''
-        ? this.balances.filter((el) => !BaseApi.isEthereumNetwork(el.mainNetwork))
-        : this.balances;
+      this.accountsStore.selectedWallet.ethereumAddress === ''
+        ? this.accountsStore.balances.filter((el) => !BaseApi.isEthereumNetwork(el.mainNetwork))
+        : this.accountsStore.balances;
 
-    const { address } = this.selectedWallet;
+    const { address } = this.accountsStore.selectedWallet;
 
     if (address === '') return [];
 
-    if (!this.isCustomSort(address)) return defaultSortingCurrencies(this.balances, this.prices, this.selectedNetwork);
+    if (!this.accountsStore.isCustomSort(address))
+      return defaultSortingCurrencies(
+        this.accountsStore.balances,
+        this.networksStore.assetsPrice,
+        this.accountsStore.selectedNetwork
+      );
 
     const sequence = accountController.getSequenceAssetsByAddress(address);
 
@@ -208,32 +198,36 @@ export default class Wallet extends Vue {
   }
 
   get showShimmers() {
-    return networksIsPending(this.networks, this.selectedNetwork);
+    return networksIsPending(this.networksStore.networks, this.accountsStore.selectedNetwork);
   }
 
   get showLoadingBalance() {
-    if (!isNetworkGroup(this.selectedNetwork)) {
-      const networkStatus = this.networks.find(
-        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
+    if (!isNetworkGroup(this.accountsStore.selectedNetwork)) {
+      const networkStatus = this.networksStore.networks.find(
+        ({ name }) => name.toLowerCase() === this.accountsStore.selectedNetwork.toLowerCase()
       )?.networkStatus;
 
       return networkStatus === NETWORK_STATUS.CONNECTING;
     }
 
     //TODO добавить проверку по группам
-    const isPendingExists = this.networks.some(({ networkStatus }) => networkStatus === NETWORK_STATUS.CONNECTING);
+    const isPendingExists = this.networksStore.networks.some(
+      ({ networkStatus }) => networkStatus === NETWORK_STATUS.CONNECTING
+    );
 
     return !navigator.onLine || isPendingExists;
   }
 
   get filteredCurrencies() {
-    const isAllNetworks = isSameString(this.selectedNetwork, ALL_NETWORKS);
+    const isAllNetworks = isSameString(this.accountsStore.selectedNetwork, ALL_NETWORKS);
 
-    const currencies = this.selectedWallet.isMobile
+    const currencies = this.accountsStore.selectedWallet.isMobile
       ? this.sortedCurrencies.filter(({ balances }) => {
           return balances.some((balance) => {
-            const account = this.accounts.find(({ address }) => address === this.selectedWallet.address);
-            const network = this.getNetwork(balance.name);
+            const account = this.accountsStore.accounts.find(
+              ({ address }) => address === this.accountsStore.selectedWallet.address
+            );
+            const network = this.networksStore.getNetwork(balance.name);
 
             if (account && account.chains) {
               if (!account.chains.some((el) => network.chainId.includes(el))) return false;
@@ -249,7 +243,7 @@ export default class Wallet extends Vue {
     const filteredByNetwork = isAllNetworks
       ? currencies
       : currencies.filter(({ balances }) => {
-          return balances.some((balance) => filterBalanceItemsByNetwork(balance, this.selectedNetwork));
+          return balances.some((balance) => filterBalanceItemsByNetwork(balance, this.accountsStore.selectedNetwork));
         });
 
     if (this.showAssetsManagementForm) return filteredByNetwork;
@@ -274,11 +268,11 @@ export default class Wallet extends Vue {
 
   @Watch('selectedWallet')
   updateEvmBalance() {
-    fetchEvmBalance(undefined, this.selectedWallet.ethereumAddress);
+    fetchEvmBalance(undefined, this.accountsStore.selectedWallet.ethereumAddress);
   }
 
   activated() {
-    fetchEvmBalance(undefined, this.selectedWallet.ethereumAddress);
+    fetchEvmBalance(undefined, this.accountsStore.selectedWallet.ethereumAddress);
   }
 
   deactivated() {
@@ -309,42 +303,44 @@ export default class Wallet extends Vue {
 
   toggleCurrenciesVisible(allCurrenciesHidden: boolean) {
     if (allCurrenciesHidden) {
-      this.balances.forEach(({ groupId }) => this.setHiddenAssets({ groupId, value: true }));
+      this.accountsStore.balances.forEach(({ groupId }) =>
+        this.accountsStore.setHiddenAssets({ groupId, value: true })
+      );
 
       return;
     }
 
     const nonZeroBalanceCb = ({ transferable }: BalanceItem) => transferable && +transferable > 0;
 
-    this.balances.forEach(({ groupId, balances }) => {
+    this.accountsStore.balances.forEach(({ groupId, balances }) => {
       const index = balances.findIndex(nonZeroBalanceCb);
       const isZeroBalance = index === -1;
 
-      if (isZeroBalance) this.setHiddenAssets({ groupId, value: false });
+      if (isZeroBalance) this.accountsStore.setHiddenAssets({ groupId, value: false });
     });
 
-    const assetsVisibleWithBalance = this.balances.filter(({ balances, groupId }) => {
+    const assetsVisibleWithBalance = this.accountsStore.balances.filter(({ balances, groupId }) => {
       const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
-      const isVisibleAsset = !this.hiddenAssets.includes(groupId);
+      const isVisibleAsset = !this.accountsStore.hiddenAssets.includes(groupId);
 
       return isVisibleAsset && haveAssets;
     });
 
-    const assetsInvisibleWithBalance = this.balances.filter(({ balances, groupId }) => {
+    const assetsInvisibleWithBalance = this.accountsStore.balances.filter(({ balances, groupId }) => {
       const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
-      const isHiddenAsset = this.hiddenAssets.includes(groupId);
+      const isHiddenAsset = this.accountsStore.hiddenAssets.includes(groupId);
 
       return isHiddenAsset && haveAssets;
     });
 
-    const assetsInvisibleWithoutBalance = this.balances.filter(({ balances, groupId }) => {
+    const assetsInvisibleWithoutBalance = this.accountsStore.balances.filter(({ balances, groupId }) => {
       const notHaveAssets = balances.findIndex(nonZeroBalanceCb) === -1;
-      const isHiddenAsset = this.hiddenAssets.includes(groupId);
+      const isHiddenAsset = this.accountsStore.hiddenAssets.includes(groupId);
 
       return isHiddenAsset && notHaveAssets;
     });
 
-    this.setBalance({
+    this.accountsStore.setBalance({
       details: [...assetsVisibleWithBalance, ...assetsInvisibleWithBalance, ...assetsInvisibleWithoutBalance],
       reset: false,
       saveSequence: true,

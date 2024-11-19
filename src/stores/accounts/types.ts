@@ -1,0 +1,63 @@
+import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
+import type { WalletAddress, NetworkName } from '@/interfaces';
+import { type AccountJson } from '@/extension/background/extension-base/src/background/types/types';
+
+export interface Wallet {
+  address: string;
+  ethereumAddress: string;
+  isMobile?: boolean;
+  isMasterAccount?: boolean;
+  isMasterPassword?: boolean;
+  haveEntropy?: boolean;
+}
+
+export interface SelectedWallet extends Wallet {
+  name: string;
+}
+
+export type HiddenAssets = {
+  [x: WalletAddress]: string[];
+};
+
+export type SetHiddenAsset = {
+  groupId: string;
+  value: boolean;
+};
+
+export type SetAccountsProps = {
+  accounts: AccountJson[];
+  isMobileUpdate: boolean;
+};
+
+export type SetAutoSelectNode = {
+  network: string;
+  value: boolean;
+};
+
+export type SelectedNetworks = Record<WalletAddress, string>;
+export type FavoriteNetworks = Record<WalletAddress, string[]>;
+
+export type Accounts = SubjectInfo;
+export type AutoSelectNode = Record<NetworkName, boolean>;
+export type GetAutoSelectNodesValueByNetwork = (networkName: string) => boolean;
+export type GetFavoriteNetworkStatus = (networkName: string) => boolean;
+export type GetShowWarningNetworks = (assetId: string) => boolean;
+export type GetAccountMeta = (assetId: string) => Record<string, unknown>;
+
+export interface WalletInfo {
+  name: string;
+  address: string;
+  ethereumAddress: string;
+  isMobile: boolean;
+  active: boolean;
+}
+
+export interface IWallet {
+  type: string;
+  json: {
+    address: string;
+    meta: {
+      name: string;
+    };
+  };
+}

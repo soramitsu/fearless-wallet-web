@@ -9,26 +9,25 @@
     <div class="right-part">
       <div data-testid="rewards">{{ rewards }} {{ rewardedAsset }}</div>
 
-      <div class="price" data-testid="fiatPrice">{{ fiatSymbol }}{{ price }}</div>
+      <div class="price" data-testid="fiatPrice">{{ accountsStore.fiatSymbol }}{{ price }}</div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { type ValidatorReward } from '@extension-base/services/staking-service/types';
-import type { GetAssetPrice } from '@/store';
+import type { ValidatorReward } from '@extension-base/services/staking-service/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class ValidatorItem extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
+
   @Prop({ type: Object }) validator!: ValidatorReward;
   @Prop({ type: Object }) rewardedCurrency!: TokenGroup;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get rewards() {
     return this.$n(+this.validator.rewards, 'decimal');
@@ -37,7 +36,7 @@ export default class ValidatorItem extends Vue {
   get rewardedAssetPrice() {
     const priceId = this.rewardedCurrency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get rewardedAsset() {

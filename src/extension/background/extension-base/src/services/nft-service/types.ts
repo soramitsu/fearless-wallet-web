@@ -35,6 +35,7 @@ export type AvailableNftResponse = {
   nfts: FearlessNft[];
   pageKey?: string;
 };
+
 export type NftState = Record<string, NftCollection>;
 export type ChainNftState = Record<string, NftState>;
 

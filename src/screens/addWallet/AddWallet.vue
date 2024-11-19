@@ -137,17 +137,17 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+
 import type { DerivationPaths, ImportType, ValidateJsonResult, MnemonicConfirmation } from '@/interfaces';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
-import type { SelectedWallet } from '@/store';
+
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
 import ImportWallet from '@/screens/addWallet/ImportWallet.vue';
 import NicknameForm from '@/screens/addWallet/NicknameForm.vue';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import AddEthereumAccountPopup from '@/screens/addWallet/AddEthereumAccountPopup.vue';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { type WarningValueName } from '@/consts/messages';
@@ -162,6 +162,7 @@ import {
   updatePairMeta,
 } from '@/extension/messaging';
 import { IS_POPUP } from '@/consts/globalClient';
+import { useAccountsStore } from '@/stores/accounts';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
 
@@ -178,7 +179,7 @@ type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'sub
 export default class AddWallet extends Vue {
   readonly isPopup = IS_POPUP;
   readonly countSteps = 4;
-
+  accountsStore = useAccountsStore();
   step = 1;
   nickname = '';
   mnemonic = '';
@@ -196,8 +197,6 @@ export default class AddWallet extends Vue {
   derivationPaths = INITIAL_DERIVATION_PATHS;
   address: string | null = null;
   isLoading = false;
-
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   get confirmMnemonicStep() {
     return this.step === 3 && this.isCreateWallet;
@@ -641,13 +640,13 @@ export default class AddWallet extends Vue {
       ethereum: { keypairType: ethereumKeypairType },
     } = this.derivationPaths;
 
-    if (this.isOnlyEthereumAccount) meta.name = this.selectedWallet.name;
+    if (this.isOnlyEthereumAccount) meta.name = this.accountsStore.selectedWallet.name;
 
     if (this.suriEthereum !== '') {
       const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta);
 
       if (this.isOnlyEthereumAccount) {
-        updatePairMeta(this.selectedWallet.address, { ethereumAddress });
+        updatePairMeta(this.accountsStore.selectedWallet.address, { ethereumAddress });
 
         return '';
       }
@@ -667,7 +666,7 @@ export default class AddWallet extends Vue {
       const ethereumAddress = await jsonRestore(this.ethereumJSON, this.passwordEthereumJson);
 
       if (this.isOnlyEthereumAccount) {
-        updatePairMeta(this.selectedWallet.address, { ethereumAddress });
+        updatePairMeta(this.accountsStore.selectedWallet.address, { ethereumAddress });
 
         return '';
       }

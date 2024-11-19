@@ -14,7 +14,7 @@
           @keypress="IsNumber"
         />
 
-        <div class="price" data-testid="fiatAmount">{{ fiatSymbol }}{{ valueCut }}</div>
+        <div class="price" data-testid="fiatAmount">{{ accountsStore.fiatSymbol }}{{ valueCut }}</div>
       </div>
 
       <div class="column right-column">
@@ -48,13 +48,12 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
-import type { TokenGroup } from '@extension-base/background/types/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class SelectInput extends Vue {
+  accountsStore = useAccountsStore();
   inputIsFocused = false;
 
   @Prop({ default: '' }) text!: string;
@@ -68,8 +67,6 @@ export default class SelectInput extends Vue {
   @Prop({ default: false }) showOriginValue!: boolean;
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
   get showIconRotate() {
     return this.showIcon && !this.readonly;
@@ -131,7 +128,7 @@ export default class SelectInput extends Vue {
   }
 
   get tokenGroup() {
-    return this.balances.find(({ groupId }) => groupId === this.assetId);
+    return this.accountsStore.balances.find(({ groupId }) => groupId === this.assetId);
   }
 
   get assetIcon() {

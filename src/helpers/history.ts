@@ -1,5 +1,5 @@
 import { FPNumber } from '@sora-substrate/util';
-import { type NetworkJson } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 import type {
   HistoryElement,
   GiantsquidHistoryItem,
@@ -8,12 +8,11 @@ import type {
   NetworkName,
   SoraHistoryElement,
 } from '@/interfaces';
-import type { TokenGroup } from '@extension-base/background/types/types';
+import type { History } from '@/stores/networks/types';
 import { TransactionType } from '@/interfaces';
 import { firstCharToUp, isSora } from '@/helpers';
-import { useStore } from '@/store';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 function getType(historyElement: HistoryElement, networkName?: NetworkName): TransactionType {
   if (isSora(networkName ?? '')) return TransactionType.sora;
@@ -64,9 +63,10 @@ function getTypeFormatted(historyElement: HistoryElement, address: string, netwo
 }
 
 function getHumanFeeValue(value: string, networkName: NetworkName) {
-  const store = useStore();
-  const tokenBalances: TokenGroup[] = store.getters[AccountsGettersTypes.getBalances];
-  const network: NetworkJson = store.getters[NetworksGettersTypes.getNetwork](networkName);
+  const accountsStore = useAccountsStore();
+  const networksStore = useNetworksStore();
+  const tokenBalances = accountsStore.balances;
+  const network: NetworkJson = networksStore.getNetwork(networkName);
   const asset = network.assets.find((asset) => asset.isUtility);
   const token = tokenBalances.find(({ symbol }) => symbol === asset?.symbol);
   const balance = token?.balances.find(({ id }) => id === asset?.id);
@@ -76,8 +76,8 @@ function getHumanFeeValue(value: string, networkName: NetworkName) {
 }
 
 function getHumanValue(value: string | number, assetId: string, networkName: NetworkName) {
-  const store = useStore();
-  const tokenBalances: TokenGroup[] = store.getters[AccountsGettersTypes.getBalances];
+  const accountsStore = useAccountsStore();
+  const tokenBalances = accountsStore.balances;
   const { balances } = tokenBalances.find(({ groupId }) => groupId === assetId)!;
   const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
 
@@ -85,8 +85,8 @@ function getHumanValue(value: string | number, assetId: string, networkName: Net
 }
 
 function getHumanTransferFee(historyElement: HistoryElement, networkName: NetworkName) {
-  const store = useStore();
-  const network: NetworkJson = store.getters[NetworksGettersTypes.getNetwork](networkName);
+  const networksStore = useNetworksStore();
+  const network: NetworkJson = networksStore.getNetwork(networkName);
   const historyType = network.externalApi?.history?.type;
   const type = getType(historyElement, networkName);
 
@@ -119,8 +119,8 @@ function getHistoryValue(
   address: string,
   _withFee = false
 ) {
-  const store = useStore();
-  const network: NetworkJson = store.getters[NetworksGettersTypes.getNetwork](networkName);
+  const networksStore = useNetworksStore();
+  const network: NetworkJson = networksStore.getNetwork(networkName);
   const historyType = network.externalApi?.history?.type;
   const signTransfer = getSignTransfer(historyElement, address, networkName);
   const type = getType(historyElement, networkName);
@@ -171,10 +171,7 @@ function getHistoryValue(
 }
 
 // temporary function, remove after complete transition to subsquid
-function getFormattedHistory(
-  history: GiantsquidHistoryItem[] | SubqueryHistory | HistoryElement[] | SoraHistoryElement[],
-  serviceType: HistoryServiceType
-): SubqueryHistory {
+function getFormattedHistory(history: History, serviceType: HistoryServiceType): SubqueryHistory {
   if (serviceType === 'giantsquid') {
     const nodes: HistoryElement[] = (history as GiantsquidHistoryItem[]).map(({ id, transfer }) => {
       const { amount, from, success, timestamp, to } = transfer;

@@ -31,21 +31,18 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import WalletInfo from './WalletInfo.vue';
-import type { SelectedWallet } from '@/store';
 import type { CustomEvent } from '@/interfaces';
-import type { AccountJson } from '@extension-base/background/types/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+
 import { Components } from '@/router/routes';
 import { updateCurrentAccount } from '@/extension/messaging';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: { WalletInfo },
 })
 export default class SelectWalletPopup extends Vue {
-  @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+  accountsStore = useAccountsStore();
 
   addWallet() {
     this.$router.push({ name: Components.Welcome });
@@ -78,7 +75,7 @@ export default class SelectWalletPopup extends Vue {
   }
 
   get sortedWallets() {
-    return this.wallets.sort((a, b) => a.name.localeCompare(b.name));
+    return this.accountsStore.accounts.sort((a, b) => a.name.localeCompare(b.name));
   }
 }
 </script>

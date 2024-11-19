@@ -55,15 +55,12 @@
 </template>
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { getNativeAssetName } from '@extension-base/background/handlers/utils';
-import type { NetworkJson } from '@extension-base/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { isSora } from '@/helpers';
-import { type SelectedWallet } from '@/store';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
@@ -87,11 +84,12 @@ export default class AssetActionButtons extends Vue {
     },
   ];
 
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
+
   @Prop(Object) currency!: TokenGroup;
   @Prop(Boolean) showBuyButton!: boolean;
   @Prop(String) assetId!: string;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
 
   onRoute(form: 'send' | 'receive' | 'crossChain') {
     const name =
@@ -115,7 +113,7 @@ export default class AssetActionButtons extends Vue {
   }
 
   get showSwapButton() {
-    return isSora(this.selectedNetwork) && !this.selectedWallet.isMobile;
+    return isSora(this.selectedNetwork) && !this.accountsStore.selectedWallet.isMobile;
   }
 
   get isNeedPopupButton() {
@@ -125,7 +123,7 @@ export default class AssetActionButtons extends Vue {
   get showCrossChainButton() {
     if (this.selectedNetwork === '') return false;
 
-    const network = this.getNetwork(this.selectedNetwork);
+    const network = this.networksStore.getNetwork(this.selectedNetwork);
 
     const asset = getNativeAssetName(this.selectedAsset);
 

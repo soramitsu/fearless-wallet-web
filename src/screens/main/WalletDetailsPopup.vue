@@ -27,27 +27,25 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
-import type { AccountJson } from '@extension-base/background/types/types';
-import type { AsyncFn } from '@/interfaces/common';
 import { Components } from '@/router/routes';
-import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { forgetAccount, initGoogleAuth, updateCurrentAccount } from '@/extension/messaging';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class WalletDetailsPopup extends Vue {
+  accountsStore = useAccountsStore();
+
   @Prop(Number) buttonTopClick!: number;
   @Prop(String) selectedWalletAddress!: string;
-  @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<AccountJson>;
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get selectedWallet() {
-    return this.accounts.find((account) => account.active)!;
+    return this.accountsStore.accounts.find((account) => account.active)!;
   }
 
   get isMobileWallet() {
-    return this.accounts.find(({ address, isMobile }) => address === this.selectedWalletAddress && isMobile);
+    return this.accountsStore.accounts.find(
+      ({ address, isMobile }) => address === this.selectedWalletAddress && isMobile
+    );
   }
 
   get isExportPossible() {
@@ -65,11 +63,7 @@ export default class WalletDetailsPopup extends Vue {
   async deleteWallet() {
     await forgetAccount(this.selectedWalletAddress, this.isMobileWallet ? 'mobile' : 'native');
 
-    if (this.isMobileWallet) {
-      //TODO
-    }
-
-    if (this.accounts.length === 0) this.$router.push({ name: Components.Welcome });
+    if (this.accountsStore.accounts.length === 0) this.$router.push({ name: Components.Welcome });
     else this.close();
   }
 

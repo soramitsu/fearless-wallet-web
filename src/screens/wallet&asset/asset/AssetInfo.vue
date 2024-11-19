@@ -66,15 +66,16 @@
 </template>
 <script lang="ts">
 import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+
 import { APIItemState } from '@extension-base/api/types/networks';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { AssetPrice } from '@/interfaces';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+
 import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers/currencies';
 import { getSummaryLockedBalance } from '@/helpers/common';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import AccountSettingsPopup from '@/screens/accounts/AccountSettingsPopup.vue';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: {
@@ -83,21 +84,20 @@ import AccountSettingsPopup from '@/screens/accounts/AccountSettingsPopup.vue';
   },
 })
 export default class AssetInfo extends Vue {
+  accountsStore = useAccountsStore();
   showBalanceDetailsPopup = false;
   showDetailsPopup = false;
   transferableAssetBalance = 0;
 
   @Prop(Object) price!: AssetPrice;
   @Prop(Object) currency!: TokenGroup;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
 
   get selectedAssetNetwork() {
     return this.$route.params.selectedNetwork;
   }
 
   get pickedNetwork() {
-    return this.selectedAssetNetwork ?? this.selectedNetwork;
+    return this.selectedAssetNetwork ?? this.accountsStore.selectedNetwork;
   }
 
   get showShimmers() {
@@ -117,7 +117,10 @@ export default class AssetInfo extends Vue {
   }
 
   get fiatPriceChangeString() {
-    return `(${this.fiatSymbol}${this.$n(this.transferableFiatBalance * this.price.priceChange, 'price')})`;
+    return `(${this.accountsStore.fiatSymbol}${this.$n(
+      this.transferableFiatBalance * this.price.priceChange,
+      'price'
+    )})`;
   }
 
   get changePriceClasses() {
@@ -130,7 +133,7 @@ export default class AssetInfo extends Vue {
   }
 
   get assetPriceString() {
-    return `1 ${this.selectedAssetUpper} = ${this.fiatSymbol}${this.$n(this.price.price, 'price')}`;
+    return `1 ${this.selectedAssetUpper} = ${this.accountsStore.fiatSymbol}${this.$n(this.price.price, 'price')}`;
   }
 
   get lockedBalanceString() {
@@ -144,9 +147,9 @@ export default class AssetInfo extends Vue {
   }
 
   get transferableFiatBalanceInNetworkString() {
-    if (!this.currency) return `${this.fiatSymbol} 0`;
+    if (!this.currency) return `${this.accountsStore.fiatSymbol} 0`;
 
-    return `${this.fiatSymbol} ${this.$n(this.transferableFiatBalance, 'price')}`;
+    return `${this.accountsStore.fiatSymbol} ${this.$n(this.transferableFiatBalance, 'price')}`;
   }
 
   get countAssetsString() {

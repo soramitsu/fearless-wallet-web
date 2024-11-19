@@ -65,7 +65,7 @@
       <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" @handlerClose="toggleConnectionPopup" />
 
       <Tooltip text="header.connectionStatus" target=".connection" placement="top" />
-      <Tooltip :text="selectedNetwork" target=".network-management" placement="top" />
+      <Tooltip :text="accountsStore.selectedNetwork" target=".network-management" placement="top" />
 
       <CircleButton
         :ref="settingsNameRef"
@@ -81,7 +81,7 @@
 
       <NetworkManagement
         v-if="showSelectNetworkPopup"
-        :type="selectedNetwork"
+        :type="accountsStore.selectedNetwork"
         @handlerClose="toggleSelectNetworkPopupVisible"
       />
     </div>
@@ -90,17 +90,12 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
-import type { ActiveTabAuthorizeStatus, TokenGroup } from '@extension-base/background/types/types';
-import type { GetNetwork, SelectedWallet } from '@/store';
-import type { NetworkJson } from '@extension-base/types';
-import type { AsyncFn } from '@/interfaces';
+
+import type { TokenGroup } from '@extension-base/background/types/types';
+
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
+
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import { windowOpen } from '@/extension/messaging';
@@ -108,6 +103,9 @@ import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 import { isNetworkGroup } from '@/helpers/common';
 import { cut, setClipboard } from '@/helpers';
 import { IS_POPUP } from '@/consts/globalClient';
+import { useExtensionStore } from '@/stores/extension';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: {
@@ -121,18 +119,15 @@ export default class Header extends Vue {
   readonly settingsNameRef = 'settingsName';
   readonly isPopup = IS_POPUP;
   readonly allNetworksIcon = 'all-networks';
+
+  networksStore = useNetworksStore();
+  extensionStore = useExtensionStore();
+  accountsStore = useAccountsStore();
   showConnectionPopup = false;
   showSelectNetworkPopup = false;
 
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(ExtensionGettersTypes.tabStatus) tabStatus!: ActiveTabAuthorizeStatus;
-  @Action(ExtensionActionTypes.FETCH_TAB_STATUS) fetchTabStatus!: AsyncFn<ActiveTabAuthorizeStatus>;
-  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get showBackIcon() {
     const route = this.$route.name;
@@ -155,7 +150,7 @@ export default class Header extends Vue {
   }
 
   get isGroup() {
-    return isNetworkGroup(this.selectedNetwork);
+    return isNetworkGroup(this.accountsStore.selectedNetwork);
   }
 
   get selectedAssetId() {
@@ -163,7 +158,7 @@ export default class Header extends Vue {
   }
 
   get currentCurrency(): TokenGroup | undefined {
-    return this.balances.find(
+    return this.accountsStore.balances.find(
       ({ groupId, balances }) =>
         groupId === this.selectedAssetId || balances.some((el) => el.id === this.selectedAssetId)
     );
@@ -172,18 +167,18 @@ export default class Header extends Vue {
   get computeActiveNetworks() {
     if (!this.currentCurrency) return [];
 
-    return this.currentCurrency.balances.filter((network) => this.getNetwork(network.name).active);
+    return this.currentCurrency.balances.filter((network) => this.networksStore.getNetwork(network.name).active);
   }
 
   get networkManagementButtonText() {
     if (this.isGroup) {
       if (this.$route.name === Components.AssetHistory)
-        return this.getNetwork(this.$route.params.selectedNetwork)?.name;
+        return this.networksStore.getNetwork(this.$route.params.selectedNetwork)?.name;
 
-      return this.$t(`header.networkManagement.${this.selectedNetwork}`);
+      return this.$t(`header.networkManagement.${this.accountsStore.selectedNetwork}`);
     }
 
-    return this.selectedNetwork;
+    return this.accountsStore.selectedNetwork;
   }
 
   get selectedNetworkIcon() {
@@ -193,10 +188,10 @@ export default class Header extends Vue {
       const asset = this.currentCurrency?.balances.find((el) => el.id === this.selectedAssetId);
       if (!asset) return '';
 
-      return this.getNetwork(asset?.name).icon;
+      return this.networksStore.getNetwork(asset?.name).icon;
     }
 
-    const network = this.getNetwork(this.selectedNetwork);
+    const network = this.networksStore.getNetwork(this.accountsStore.selectedNetwork);
 
     if (network) return network.icon;
 
@@ -208,33 +203,37 @@ export default class Header extends Vue {
   }
 
   get decimals() {
-    return this.getNetwork(this.selectedNetwork)?.addressPrefix;
+    return this.networksStore.getNetwork(this.accountsStore.selectedNetwork)?.addressPrefix;
   }
 
   get address() {
     if (!this.isAddressExists) return '';
 
-    if (this.selectedWallet.address === '') return '';
+    if (this.accountsStore.selectedWallet.address === '') return '';
 
-    const selectedNetwork = this.isGroup ? this.routeParams.selectedNetwork : this.selectedNetwork;
+    const selectedNetwork = this.isGroup ? this.routeParams.selectedNetwork : this.accountsStore.selectedNetwork;
 
-    return BaseApi.formatAddress(this.selectedWallet, selectedNetwork);
+    return BaseApi.formatAddress(this.accountsStore.selectedWallet, selectedNetwork);
   }
 
   get name() {
-    return this.selectedWallet.name;
+    return this.accountsStore.selectedWallet.name;
   }
 
   get statusConnectedClasses() {
-    return !this.tabStatus || !this.tabStatus.isAuthorize ? 'fail-connect' : 'success-connect';
+    return !this.extensionStore.tabStatus || !this.extensionStore.tabStatus.isAuthorize
+      ? 'fail-connect'
+      : 'success-connect';
   }
 
   get statusConnectedText() {
-    return !this.tabStatus || !this.tabStatus.isAuthorize ? 'header.notConnected' : 'header.connected';
+    return !this.extensionStore.tabStatus || !this.extensionStore.tabStatus.isAuthorize
+      ? 'header.notConnected'
+      : 'header.connected';
   }
 
   get isMobile() {
-    return !!this.selectedWallet.isMobile;
+    return !!this.accountsStore.selectedWallet.isMobile;
   }
 
   copyAddress() {
@@ -260,11 +259,11 @@ export default class Header extends Vue {
   }
 
   async mounted() {
-    this.fetchTabStatus();
+    this.extensionStore.fetchTabStatus();
   }
 
   toggleConnectionPopup() {
-    if (!this.tabStatus) return;
+    if (!this.extensionStore.tabStatus) return;
 
     this.showConnectionPopup = !this.showConnectionPopup;
   }

@@ -62,20 +62,18 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+
 import { APIItemState } from '@extension-base/api/types/networks';
 import HistoryItem from './HistoryItem.vue';
 import type { TokenGroup } from '@extension-base/background/types/types';
-import type { NetworkJson } from '@extension-base/types';
-import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+
 import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
 import { Components } from '@/router/routes';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { fetchEvmBalance } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
-import { type GetHistory } from '@/interfaces';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 interface TabsOptions {
   label: string;
@@ -112,32 +110,26 @@ export default class AssetNetworks extends Vue {
     { name: this.$t('assets.filters.name'), value: 'name' },
   ];
 
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   filterValue = 'fiat';
   activeTabName = 'Assets';
   showSelectFilterPopup = false;
 
   @Prop(Object) currency!: TokenGroup;
-  @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
-  @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
-  @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
 
   get filteredNetworks() {
     const baseFilter = this.currency.balances?.filter(({ name, state }) => {
-      const network = this.getNetwork(name);
+      const network = this.networksStore.getNetwork(name);
 
       if (state !== APIItemState.READY) return false;
 
-      if (this.selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
+      if (this.accountsStore.selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
 
-      if (this.selectedNetwork === FAVORITE_NETWORKS)
-        return network.favorite.some((address) => address === this.selectedWallet.address);
+      if (this.accountsStore.selectedNetwork === FAVORITE_NETWORKS)
+        return network.favorite.some((address) => address === this.accountsStore.selectedWallet.address);
 
-      return this.getNetwork(name).active;
+      return this.networksStore.getNetwork(name).active;
     });
 
     if (this.activeTabName === 'MyAssets')
@@ -156,8 +148,8 @@ export default class AssetNetworks extends Vue {
       }
 
       if (this.filterValue === 'popularity') {
-        const value1 = this.getNetwork(a.name).rank ?? Infinity;
-        const value2 = this.getNetwork(b.name).rank ?? Infinity;
+        const value1 = this.networksStore.getNetwork(a.name).rank ?? Infinity;
+        const value2 = this.networksStore.getNetwork(b.name).rank ?? Infinity;
 
         return value1 - value2;
       }
@@ -167,11 +159,11 @@ export default class AssetNetworks extends Vue {
   }
 
   get priceString() {
-    return `${this.fiatSymbol} ${this.$n(this.price, 'price')}`;
+    return `${this.accountsStore.fiatSymbol} ${this.$n(this.price, 'price')}`;
   }
 
   get price() {
-    const price = this.getTokenPrice(this.currency.priceId ?? '').price;
+    const price = this.networksStore.getAssetPrice(this.currency.priceId ?? '').price;
 
     return +(price ?? 0);
   }
@@ -185,7 +177,7 @@ export default class AssetNetworks extends Vue {
   }
 
   openAsset(name: string) {
-    const network = this.getNetwork(name);
+    const network = this.networksStore.getNetwork(name);
 
     this.$router.push({
       name: Components.AssetHistory,
@@ -223,7 +215,7 @@ export default class AssetNetworks extends Vue {
   }
 
   getFiatInNetworkString(network: string) {
-    return `${this.fiatSymbol} ${this.$n(this.getFiatBalanceInNetwork(network), 'price')}`;
+    return `${this.accountsStore.fiatSymbol} ${this.$n(this.getFiatBalanceInNetwork(network), 'price')}`;
   }
 
   filterValueUpdate(name: string) {

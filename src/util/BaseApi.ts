@@ -7,25 +7,24 @@ import {
   isEthereumAddress,
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
-import type { AccountJson } from '@extension-base/background/types/types';
 import type { KeyringPairs$Json } from '@subwallet/ui-keyring/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
-import type { Wallet } from '@/store';
+import type { Wallet } from '@/stores';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import type { NetworkName } from '@/interfaces';
 import { ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
-import store from '@/store';
 import { IS_PRODUCTION } from '@/consts/global';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
 type WalletTypes = 'mobile' | 'native';
 
 export default class BaseApi {
   public static getWalletType(address: string): WalletTypes | null {
+    const accountsStore = useAccountsStore();
     const substrateAddress = BaseApi.encodeAddress(address);
-    const accounts = store.getters[AccountsGettersTypes.getAccounts] as AccountJson[];
+    const accounts = accountsStore.accounts;
     const account = accounts.find(({ address }) => address === substrateAddress);
 
     if (account === undefined) return null;
@@ -70,7 +69,8 @@ export default class BaseApi {
   }
 
   public static isMobileWallet(address: string) {
-    const accounts = store.getters[AccountsGettersTypes.getAccounts] as AccountJson[];
+    const accountsStore = useAccountsStore();
+    const accounts = accountsStore.accounts;
 
     return accounts.some((account) => account.address === address && account.isMobile);
   }
@@ -142,7 +142,8 @@ export default class BaseApi {
 
     if (isEthereumNetwork) return ethereumAddress;
 
-    const network = store.getters[NetworksGettersTypes.getNetwork](networkName);
+    const networksStore = useNetworksStore();
+    const network = networksStore.getNetwork(networkName);
     const prefix = network?.addressPrefix;
 
     // the only case for try/catch

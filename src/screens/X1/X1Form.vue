@@ -39,26 +39,22 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { loadScript, unloadScript } from 'vue-plugin-load-script';
-import { Getter } from 'vuex-class';
 import { type FPNumber } from '@sora-substrate/util';
-import type { SelectedWallet } from '@/store';
-import type { TokenGroup } from '@extension-base/background/types/types';
 import { X1Api } from '@/util/x1';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { calculateXOREuroBalance } from '@/util/soraCard';
-import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { getXORCurrency } from '@/helpers/currencies';
 import { SORA_NETWORK_NAME, SORA_TEST } from '@/consts/sora';
+import { useAccountsStore } from '@/stores/accounts';
+import { useSoraCardStore } from '@/stores/soraCard';
+import { isSoraTest } from '@/helpers';
 
 @Component({})
 export default class X1Form extends Vue {
+  accountsStore = useAccountsStore();
+  soraCardStore = useSoraCardStore();
   X1Widget = X1Api.getWidget();
   loadingX1 = true;
-
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;
 
   get scrollClasses() {
     return [
@@ -70,15 +66,15 @@ export default class X1Form extends Vue {
   }
 
   get accountAddress() {
-    return BaseApi.formatAddress(this.selectedWallet, SORA_NETWORK_NAME);
+    return BaseApi.formatAddress(this.accountsStore.selectedWallet, SORA_NETWORK_NAME);
   }
 
   get currencyXOR() {
-    return getXORCurrency(this.balances);
+    return getXORCurrency(this.accountsStore.balances);
   }
 
   get euroBalanceXOR() {
-    return calculateXOREuroBalance(this.currencyXOR, this.xorPerEuroRatio) ?? 0;
+    return calculateXOREuroBalance(this.currencyXOR, this.soraCardStore.xorPerEuroRatio as FPNumber) ?? 0;
   }
 
   get restEuroToDeposit() {
@@ -90,7 +86,7 @@ export default class X1Form extends Vue {
   }
 
   get isTestnet() {
-    return SORA_NETWORK_NAME === SORA_TEST;
+    return isSoraTest(SORA_TEST);
   }
 
   async mounted() {

@@ -80,8 +80,6 @@ type Network = {
   fees?: SoraFees; // only Sora network
 };
 
-type Networks = Network[];
-
 type EthereumHistoryData = {
   blockHash: string;
   blockNumber: string;
@@ -133,7 +131,6 @@ type EthereumHistoryResponse<T> = {
 };
 
 export {
-  Networks,
   Network,
   BuyProvider,
   AssetType,

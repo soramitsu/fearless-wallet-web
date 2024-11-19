@@ -39,21 +39,22 @@ import { useRoute, useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
 import type { NftCollection, AvailableNftState, FearlessNft } from '@extension-base/services/nft-service/types';
 import { fetchAvailableNftsForContract } from '@/extension/messaging/nfts';
-import { type SelectedWallet, useStore } from '@/store';
 import NftItem from '@/screens/wallet&asset/nft/NftItem.vue';
 import Tooltip from '@/components/Tooltip.vue';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+
 import { setClipboard } from '@/helpers';
+import { useAccountsStore } from '@/stores/accounts';
 
 const route = useRoute();
 const router = useRouter();
-const store = useStore();
+const accountsStore = useAccountsStore();
+
 const { t } = useI18n();
 
-const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
+const selectedWallet = computed(() => accountsStore.selectedWallet);
 
 const contract = computed(() => route.params.contract);
-const availableNftsFromStore = computed<AvailableNftState>(() => store.getters[AccountsGettersTypes.availableNfts]);
+const availableNftsFromStore = computed<AvailableNftState>(() => accountsStore.availableNfts);
 const nftCollectionFromStore = computed<FearlessNft[]>(
   () => availableNftsFromStore.value[contract.value]?.collection ?? []
 );
@@ -66,7 +67,7 @@ const state = reactive<{ pageKey?: string; canLoadMore: boolean }>({
 
 const tooltip = ref<Tooltip>();
 
-const nfts = computed<NftCollection[]>(() => store.getters[AccountsGettersTypes.nfts] ?? []);
+const nfts = computed<NftCollection[]>(() => accountsStore.nftsByActiveNetworks ?? []);
 const collection = computed(() => nfts.value.find((el) => el.address === contract.value));
 const name = computed(() => collection.value?.name);
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);

@@ -118,26 +118,24 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
-import { Getter } from 'vuex-class';
-import type { NetworkJson } from '@extension-base/types';
 import type { HistoryElement } from '@/interfaces/history';
-import type { GetNetwork, SelectedWallet } from '@/store';
+
+import type { SoraHistoryElement } from '@/interfaces';
 import { getType, getSignTransfer, getHistoryValue, getHumanTransferFee } from '@/helpers/history';
 import { cut, getFormattedDate, setClipboard } from '@/helpers';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+
 import BaseApi from '@/util/BaseApi';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { type SoraHistoryElement } from '@/interfaces';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({})
 export default class HistoryDetailsForm extends Vue {
-  @Prop(String) assetId!: string;
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
 
+  @Prop(String) assetId!: string;
   @Prop(String) historyType!: string;
   @Prop(Object) historyElement!: HistoryElement;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get showTargetAmount() {
     return this.isSora && (this.historyElement as unknown as SoraHistoryElement).method === 'swap';
@@ -148,17 +146,19 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get networkProps() {
-    return this.getNetwork(this.selectedNetwork);
+    return this.networksStore.getNetwork(this.selectedNetwork);
   }
 
   get address() {
-    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
+    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.accountsStore.selectedWallet.ethereumAddress;
 
-    return BaseApi.encodeAddress(this.selectedWallet.address, this.networkProps.addressPrefix);
+    return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, this.networkProps.addressPrefix);
   }
 
   get selectedNetworkJson() {
-    return this.networks.find((network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase());
+    return this.networksStore.networks.find(
+      (network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase()
+    );
   }
 
   get explorerType() {

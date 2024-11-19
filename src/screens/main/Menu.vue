@@ -12,15 +12,13 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+
 import { Components } from '@/router/routes';
 import MenuItem from '@/screens/main/MenuItem.vue';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { type SelectedWallet } from '@/store';
 import { IS_PRODUCTION } from '@/consts/global';
-import { type NetworkName } from '@/interfaces';
 import { SORA_MAINNET } from '@/consts/sora';
 import { isSameString } from '@/helpers';
+import { useAccountsStore } from '@/stores/accounts';
 
 type MenuItemType = 'Wallet' | 'Staking' | 'Polkaswap';
 
@@ -28,6 +26,8 @@ type MenuItemType = 'Wallet' | 'Staking' | 'Polkaswap';
   components: { MenuItem },
 })
 export default class Menu extends Vue {
+  accountsStore = useAccountsStore();
+
   walletItems: string[] = [
     Components.Currencies,
     Components.Nfts,
@@ -35,15 +35,13 @@ export default class Menu extends Vue {
     Components.Export,
     Components.Nodes,
   ];
-  stakingItems: string[] = [Components.MyStake];
 
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: NetworkName;
+  stakingItems: string[] = [Components.MyStake];
 
   get menuItems() {
     const array: MenuItemType[] = [Components.Wallet, Components.Staking];
 
-    if (IS_PRODUCTION || (!IS_PRODUCTION && !isSameString(this.selectedNetwork, SORA_MAINNET)))
+    if (IS_PRODUCTION || (!IS_PRODUCTION && !isSameString(this.accountsStore.selectedNetwork, SORA_MAINNET)))
       array.push(Components.Polkaswap);
 
     return array;

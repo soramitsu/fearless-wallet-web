@@ -24,17 +24,17 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { GetAssetPrice, PoolParams } from '@/store';
+import type { PoolParams } from '@/stores';
 import type { MarketType } from '@/interfaces';
-import type { TokenGroup } from '@extension-base/background/types/types';
 import { getShareOfPool } from '@/extension/messaging';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { getXORCurrency } from '@/helpers/currencies';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({})
 export default class PoolDescription extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   estimatedYourShare = '';
   _poolParams: PoolParams | null = null;
 
@@ -47,21 +47,18 @@ export default class PoolDescription extends Vue {
   @Prop(String) amount2!: string;
   @Prop(String) fee!: string;
   @Prop(String) extrinsicType!: 'addLiquidity' | 'removeLiquidity' | '';
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
   get soraMainAsset() {
     return this.currencyXOR.symbol;
   }
 
   get currencyXOR() {
-    return getXORCurrency(this.balances);
+    return getXORCurrency(this.accountsStore.balances);
   }
 
   get feePrice() {
     const fee = this.fee ?? 0;
-    const balance = this.getAssetPrice(this.currencyXOR?.priceId ?? '').price * +fee;
+    const balance = this.networksStore.getAssetPrice(this.currencyXOR?.priceId ?? '').price * +fee;
 
     return this.$n(+balance, 'price');
   }

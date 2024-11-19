@@ -35,19 +35,17 @@
 </template>
 
 <script lang="ts">
-import { Getter } from 'vuex-class';
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import type { SelectedWallet } from '@/store';
-import type { Networks } from '@/interfaces/networks';
+
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type { ExportType } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { exportJSON, exportMnemonic, exportRowSeed } from '@/extension/messaging';
 import { isSameString, setClipboard } from '@/helpers';
 import { downloadJsonAccount } from '@/helpers/files';
 import MnemonicBackupForm from '@/screens/addWallet/MnemonicBackupForm.vue';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 enum ExportTypeText {
   mnemonic = 'Mnemonic',
@@ -57,14 +55,14 @@ enum ExportTypeText {
 
 @Component({ components: { MnemonicBackupForm } })
 export default class ExportForm extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   json: KeyringPair$Json = {} as KeyringPair$Json;
   isLoading = false;
   seed = '';
 
   @Prop(String) password!: string;
   @Prop(String) exportType!: ExportType;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.allNetworks) networks!: Networks;
 
   get exportTypeText() {
     return ExportTypeText[this.exportType];
@@ -111,14 +109,14 @@ export default class ExportForm extends Vue {
   }
 
   get addressByNetwork() {
-    return BaseApi.formatAddress(this.selectedWallet, this.network);
+    return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.network);
   }
 
   async mounted() {
     this.isLoading = true;
 
     if (this.isMnemonic) {
-      const { seed } = await exportMnemonic(this.selectedWallet.address, this.password);
+      const { seed } = await exportMnemonic(this.accountsStore.selectedWallet.address, this.password);
 
       this.seed = seed;
     } else if (this.isRowSeed) {
@@ -140,7 +138,7 @@ export default class ExportForm extends Vue {
   }
 
   async downloadJsonFile() {
-    const chainId = this.networks.find(({ name }) => isSameString(name, this.network))!.chainId;
+    const chainId = this.networksStore.networks.find(({ name }) => isSameString(name, this.network))!.chainId;
     const meta = { ...this.json.meta, genesisHash: `0x${chainId}` } as unknown as Record<string, string>;
 
     downloadJsonAccount(this.addressByNetwork, this.json, meta);

@@ -25,7 +25,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
   const relayChain = CHAIN_IDS[parentId!] ?? (networkName as RelayChainName);
 
   if (networkName === 'Equilibrium') {
-    const pallet = api!.rx.query.system.account(address);
+    const pallet = api!.rx.query.system.account(address ?? '');
 
     const sub = pallet.subscribe((balances: any) => {
       const asV0 = balances.data['asV0'];
@@ -101,10 +101,10 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
 
       const pallet =
         type === 'normal' || isSoraXOR
-          ? query.system.account(address)
+          ? query.system.account(address ?? '')
           : type === 'assets'
-          ? (query.assets as any).account(options, address)
-          : query.tokens.accounts(address, options);
+          ? (query.assets as any).account(options, address ?? '')
+          : query.tokens?.accounts(address, options);
 
       const onBalanceFetch = (balances: any) => {
         const balance =
@@ -136,7 +136,7 @@ function subscribeTokensBalance(address: string, networkKey: string, api: ApiPro
         );
       };
 
-      const sub: Subscription = pallet.subscribe(onBalanceFetch);
+      const sub: Subscription = pallet?.subscribe(onBalanceFetch);
 
       return () => sub.unsubscribe();
     } catch (err: any) {
@@ -249,8 +249,10 @@ export async function fetchBalance(address: string, networkKey: string, state: S
   const isSoraXOR =
     symbol === SORA_UTILITY_ASSET && (isSameString(networkKey, SORA_MAINNET) || isSameString(networkKey, SORA_TEST));
 
-  if (type === 'normal' || isSoraXOR) response = query.system.account(address);
-  else if (type === 'assets') response = (query.assets as any).account(options, address);
+  console.info('[debug] response', address);
+
+  if (type === 'normal' || isSoraXOR) response = query.system.account(address ?? '');
+  else if (type === 'assets') response = (query.assets as any).account(options, address ?? '');
   else response = query.tokens.accounts(address, options);
 
   const balances = await response;

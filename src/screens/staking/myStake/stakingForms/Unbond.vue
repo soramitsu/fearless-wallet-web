@@ -79,7 +79,7 @@ export default class Unbond extends Vue {
   .disclaimer {
     display: flex;
     align-items: center;
-    font-size: 14px;
+    font-size: 0.875em;
     color: $default-white;
     margin: 0 0 10px 16px;
 

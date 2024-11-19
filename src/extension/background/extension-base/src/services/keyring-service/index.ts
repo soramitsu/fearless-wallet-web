@@ -8,6 +8,7 @@ import { u8aToHex } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
 import AccountsStore from '@extension-base/stores/Accounts';
 import KeyringStore from '@extension-base/stores/KeyringStore';
+import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import type { EventService } from '@extension-base/services';
 import type {
   RequestChangePassword,
@@ -22,6 +23,7 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { KeyringAddressType, KeyringItemType } from '@subwallet/ui-keyring/types';
 import type { KeyringPair, KeyringPair$Json } from '@subwallet/keyring/types';
 import { isSameString } from '@/helpers';
+import { IS_EXTENSION } from '@/consts/global';
 
 export class KeyringService {
   readonly currentAccountSubject = new BehaviorSubject<CurrentAccountState>(null);
@@ -84,7 +86,7 @@ export class KeyringService {
     return keyring.loadAll({
       store: new AccountsStore(),
       type: 'sr25519',
-      password_store: new KeyringStore(),
+      password_store: IS_EXTENSION ? new KeyringStore() : new KeyringStoreWeb(),
     });
   }
 

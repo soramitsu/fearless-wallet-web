@@ -5,7 +5,6 @@ import { state } from '@extension-base/background/handlers';
 import { type BalanceItem } from '@extension-base/api/evm/types';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
-export type HandleTxResponse<T extends BasicTxResponse> = (data: T) => void;
 
 interface TransferParams {
   balance: BalanceItem;
@@ -22,7 +21,7 @@ interface TransactionObject {
 
 interface MakeTransferParams extends TransferParams {
   privateKey: string;
-  callback: (data: BasicTxResponse) => void;
+  callback?: (data: BasicTxResponse) => void;
 }
 
 export interface HandleTransferProps extends MakeTransferParams {
@@ -36,11 +35,11 @@ export async function handleTransfer({ callback, networkKey, privateKey, tx }: H
   try {
     await signer.sendTransaction(tx);
 
-    callback({ status: true });
+    callback?.({ status: true });
   } catch (error: any) {
     console.warn(error);
 
-    callback({
+    callback?.({
       status: false,
       errors: [
         {

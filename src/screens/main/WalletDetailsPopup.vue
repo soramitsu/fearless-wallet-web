@@ -30,9 +30,11 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
 import { forgetAccount, initGoogleAuth, updateCurrentAccount } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
+import { IS_EXTENSION } from '@/consts/global';
 
 @Component
 export default class WalletDetailsPopup extends Vue {
+  readonly isExtension = IS_EXTENSION;
   accountsStore = useAccountsStore();
 
   @Prop(Number) buttonTopClick!: number;
@@ -49,7 +51,7 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   get isExportPossible() {
-    return !this.isMobileWallet;
+    return !this.isMobileWallet && this.isExtension;
   }
 
   get top() {

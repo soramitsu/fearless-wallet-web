@@ -269,14 +269,14 @@ export class NftService {
     }
   }
 
-  nftSubscribe(id: string, port: Port): ChainNftState {
+  nftSubscribe(id: string, port?: Port): ChainNftState {
     const cb = createSubscription<'pri(nft.subscribe)'>(id, port);
 
     const subscription = this.nftSubject.subscribe({
       next: (rs) => cb(rs),
     });
 
-    port.onDisconnect.addListener((): void => {
+    port?.onDisconnect.addListener((): void => {
       unsubscribe(id);
       subscription.unsubscribe();
     });

@@ -17,7 +17,7 @@ export default class Disclaimer extends Vue {}
 .disclaimer {
   margin-top: 16px;
   text-align: left;
-  font-size: 14px;
+  font-size: 0.875em;
   padding: 0 16px;
   color: $gray-color;
 

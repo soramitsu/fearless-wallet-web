@@ -127,7 +127,7 @@ export default class YourValidators extends Vue {
   }
 
   .sub-label {
-    font-size: 12px;
+    font-size: 0.75em;
     text-align: left;
     color: $grayish-white-2;
     margin: 10px 0;

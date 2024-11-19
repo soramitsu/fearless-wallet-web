@@ -18,7 +18,7 @@ const { name, value } = defineProps({
 .name {
   color: $gray-color;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 0.75em;
   line-height: 20px;
   text-transform: uppercase;
 }

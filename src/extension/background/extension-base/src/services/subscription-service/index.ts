@@ -241,14 +241,19 @@ export function unsubscribe(id: string): void {
 
 export function createSubscription<TMessageType extends MessageTypesWithSubscriptions>(
   id: string,
-  port: Port
+  port?: Port
 ): (data: SubscriptionMessageTypes[TMessageType] | null) => void {
-  SubscriptionService.subscriptions[id] = port;
+  SubscriptionService.subscriptions[id] = port ?? 'sw-messages';
 
   return (subscription: unknown): void => {
     if (SubscriptionService.subscriptions[id]) {
       try {
-        port.postMessage({ id, subscription });
+        if (port) {
+          port.postMessage({ id, subscription });
+        } else {
+          const channel = new BroadcastChannel('sw-messages');
+          channel.postMessage({ id, subscription });
+        }
       } catch (error) {
         console.info('Error occurred while trying to post message', error);
 

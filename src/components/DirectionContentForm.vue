@@ -102,12 +102,12 @@ const value2Cut = computed(() => `${fiatSymbol.value} ${n(+_value2.value, 'price
 
       .amount {
         font-weight: 800;
-        font-size: 22px;
+        font-size: 1.375em;
         color: white;
         margin-bottom: 5px;
 
         .price {
-          font-size: 12px;
+          font-size: 0.75em;
           color: $gray-color;
         }
       }

@@ -5,18 +5,18 @@ type StoreValue = Record<string, unknown>;
 const lastError = (type: string): void => {
   const error = chrome.runtime.lastError;
 
-  if (error) console.error(`BaseStore.${type}:: runtime.lastError:`, error);
+  if (error) console.error(`BaseExtensionStore.${type}:: runtime.lastError:`, error);
 };
 
-export default abstract class BaseStore<T> {
-  #prefix: string;
+export default abstract class BaseExtensionStore<T> {
+  readonly prefix: string;
 
   constructor(prefix: string | null) {
-    this.#prefix = prefix ? `${prefix}:` : '';
+    this.prefix = prefix ? `${prefix}:` : '';
   }
 
   public getPrefix(): string {
-    return this.#prefix;
+    return this.prefix;
   }
 
   public all(update: (key: string, value: T) => void): void {
@@ -36,7 +36,7 @@ export default abstract class BaseStore<T> {
       for (let i = 0; i < entries.length; i++) {
         const [key, value] = entries[i];
 
-        if (key.startsWith(this.#prefix)) map[key.replace(this.#prefix, '')] = value as T;
+        if (key.startsWith(this.prefix)) map[key.replace(this.prefix, '')] = value as T;
       }
 
       update(map);
@@ -44,7 +44,7 @@ export default abstract class BaseStore<T> {
   }
 
   public get(_key: string, update: (value: T) => void): void {
-    const key = `${this.#prefix}${_key}`;
+    const key = `${this.prefix}${_key}`;
 
     chrome.storage.local.get([key], (result: StoreValue) => {
       lastError('get');
@@ -54,7 +54,7 @@ export default abstract class BaseStore<T> {
   }
 
   public remove(_key: string, update?: () => void): void {
-    const key = `${this.#prefix}${_key}`;
+    const key = `${this.prefix}${_key}`;
 
     chrome.storage.local.remove(key, () => {
       lastError('remove');
@@ -64,7 +64,7 @@ export default abstract class BaseStore<T> {
   }
 
   public set(_key: string, value: T, update?: () => void): void {
-    const key = `${this.#prefix}${_key}`;
+    const key = `${this.prefix}${_key}`;
 
     chrome.storage.local.set({ [key]: value }, () => {
       lastError('set');

@@ -109,11 +109,11 @@ const txWallet = computed(() => {
   flex-flow: row nowrap;
 }
 .list-item--wallet-name {
-  font-size: 16px;
+  font-size: 1em;
   font-weight: 400;
 }
 .list-item__address {
-  font-size: 14px;
+  font-size: 0.875em;
   font-style: normal;
   font-weight: 400;
 }

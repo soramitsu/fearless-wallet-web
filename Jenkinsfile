@@ -33,6 +33,15 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'FL_OKLINK_API_KEY', variable: 'VUE_APP_FL_WEB_X1_TESTNET_API_KEY']
 ]
 
+def jobParams  = [
+    [$class: 'BooleanParameterDefinition', name: 'upload_to_nexus', defaultValue: false, description: 'Upload builds to nexus (master,stage and develop branches upload always)'],
+    [$class: 'BooleanParameterDefinition', name: 'upload_to_google', defaultValue: false, description: 'Upload builds to google (master branches upload always)'],
+    [$class: 'BooleanParameterDefinition', name: 'upload_to_firefox', defaultValue: false, description: 'Upload builds to firefox (master branches upload always)'],
+    [$class: 'BooleanParameterDefinition', name: 'squash_commits', defaultValue: false, description: 'Squash all commits'],
+    [$class: 'StringParameterDefinition', name: 'squash_commits_message', defaultValue: '', trim: true],
+    [$class: 'BooleanParameterDefinition', name: 'isWeb', defaultValue: true, description: 'build as web version']
+]
+
 
 def pipeline = new org.js.AppArtifactsPipeline(
     steps:                      this,
@@ -66,6 +75,22 @@ def pipeline = new org.js.AppArtifactsPipeline(
     downstreamJobParams:        [
         [$class: 'StringParameterValue', name: 'targetBranch', value: env.BRANCH_NAME],
         [$class: 'StringParameterValue', name: 'typeTest', value: 'tests:fearless-smoke']
-    ]
+    ],
+    dockerImageName:            'fearless/wallet-web',
+    dockerRegistryCred:         'bot-fearless-rw',
+    buildDockerImage:           'build-tools/node:20-alpine',
+    webPreBuildCmds:            ['corepack enable && yarn set version 3.4.1 && yarn install'],
+    k8sPrDeploy:                true,
+    vaultPrPath:                "argocd-cc/src/charts/fearless/wallet-web/environments/tachi/",
+    vaultUser:                  "fearless-rw",
+    vaultCredId:                "fearlessVaultCreds",
+    valuesDestPath:             "argocd-cc/src/charts/fearless/wallet-web/",
+    devValuesPath:              "dev/dev/",
+    initialSecretName:          "fearless-dev-wallet-web-wallet-web-web-eso-base",
+    initialNameSpace:           "fearless-dev-web",
+    targetNameSpace:            "fearless-${env.CHANGE_ID}-web",
+    targetSecretName:           "fearless-${env.CHANGE_ID}-wallet-web-pr-wallet-web-eso-base",
+    dockerImageTags:            ['web-build': 'dev'],
+    jobParams:                  jobParams
 )
 pipeline.runPipeline()

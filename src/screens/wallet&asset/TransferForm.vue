@@ -232,6 +232,7 @@ import { checkTransfer, checkCrossChain, checkScamAddress } from '@/extension/me
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import { isNetworkGroup } from '@/helpers/common';
 import { IS_POPUP } from '@/consts/globalClient';
+import { IS_EXTENSION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -396,6 +397,8 @@ export default class TransferForm extends Vue {
   }
 
   get top() {
+    if (!IS_EXTENSION) return 120;
+
     if (this.showSelectedAssetPopup) return 220;
 
     if (this.showSelectNetworkPopup) return 150;
@@ -404,6 +407,8 @@ export default class TransferForm extends Vue {
   }
 
   get left() {
+    if (!IS_EXTENSION) return 0;
+
     if (this.showSelectedAssetPopup || (this.showDestNetPopup && IS_POPUP)) return 160;
 
     return -160;
@@ -1013,11 +1018,11 @@ export default class TransferForm extends Vue {
 
   .s-icon-arrows-arrow-right-24 {
     color: $default-white;
-    font-size: 30px !important;
+    font-size: 1.875em !important;
   }
 
   .balance {
-    font-size: 22px;
+    font-size: 1.375em;
     line-height: 28px;
     max-width: 245px;
   }

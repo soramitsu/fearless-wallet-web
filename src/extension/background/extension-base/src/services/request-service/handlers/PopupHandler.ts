@@ -1,8 +1,9 @@
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import { type RequestService } from '@extension-base/services';
 import { chrome } from '@extension-base/utils/crossenv';
+import { IS_EXTENSION } from '@/consts/global';
 
-const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
+const NOTIFICATION_URL = IS_EXTENSION ? chrome.runtime.getURL('popup.html') : '';
 
 export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
   focused: true,

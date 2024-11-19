@@ -190,7 +190,7 @@ export default class About extends Vue {
 }
 
 .descriptions {
-  font-size: 14px;
+  font-size: 0.875em;
   color: $default-white;
   text-align: left;
   line-height: 20px;
@@ -215,7 +215,7 @@ export default class About extends Vue {
     }
 
     .label {
-      font-size: 12px;
+      font-size: 0.75em;
       font-weight: 600;
       text-align: left;
       color: $grayish-white;
@@ -225,7 +225,7 @@ export default class About extends Vue {
     .amount-info {
       display: flex;
       align-items: center;
-      font-size: 20px;
+      font-size: 1.25em;
       font-weight: 600;
       margin-bottom: 5px;
       height: 23px;
@@ -240,7 +240,7 @@ export default class About extends Vue {
     }
 
     .value {
-      font-size: 14px;
+      font-size: 0.875em;
       color: $grayish-white;
     }
 
@@ -277,6 +277,14 @@ export default class About extends Vue {
     .loading {
       height: 23px;
       margin-bottom: 5px;
+    }
+  }
+}
+
+.fw-web {
+  .about-form {
+    .about-stake {
+      grid-auto-columns: auto !important;
     }
   }
 }

@@ -211,7 +211,7 @@ export default class SendForm extends Vue {
 
   .summary-label {
     text-align: left;
-    font-size: 18px;
+    font-size: 1.125em;
     font-weight: 600;
   }
 
@@ -236,7 +236,7 @@ export default class SendForm extends Vue {
       .value {
         color: $default-white;
         font-weight: 300;
-        font-size: 12px;
+        font-size: 0.75em;
         margin-top: 3px;
       }
     }

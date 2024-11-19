@@ -1,17 +1,8 @@
-import { chrome } from '@extension-base/utils/crossenv';
-import type { IState } from '@extension-base/background/types/types';
+import { StorageExtension } from '@extension-base/stores/StorageExtension';
+import { StorageWeb } from '@extension-base/stores/StorageWeb';
+import { IS_EXTENSION } from '@/consts/global';
 
-class Storage {
-  set(value: Partial<IState>) {
-    return chrome.storage.local.set(value);
-  }
-
-  get(key: (keyof IState)[]): Promise<Pick<IState, (typeof key)[number]>> {
-    return chrome.storage.local.get(key) as Promise<Pick<IState, (typeof key)[number]>>;
-  }
-}
-
-export const storage = new Storage();
+export const storage = IS_EXTENSION ? new StorageExtension() : new StorageWeb();
 
 export async function initStorage() {
   const { authUrls, addressBook, selectedNetworks } = await storage.get([

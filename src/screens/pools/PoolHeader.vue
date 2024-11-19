@@ -88,7 +88,7 @@ export default class PoolHeader extends Vue {
       display: flex;
       align-items: center;
       font-weight: 700;
-      font-size: 24px;
+      font-size: 1.5em;
       line-height: 35px;
     }
 
@@ -100,7 +100,7 @@ export default class PoolHeader extends Vue {
 
     .tvl {
       color: $gray-color;
-      font-size: 14px;
+      font-size: 0.875em;
     }
   }
 }

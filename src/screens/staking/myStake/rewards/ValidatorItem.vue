@@ -90,7 +90,7 @@ export default class ValidatorItem extends Vue {
     .price {
       color: $gray-color;
       margin-top: 3px;
-      font-size: 12px;
+      font-size: 0.75em;
     }
   }
 }

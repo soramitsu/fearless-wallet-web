@@ -80,10 +80,10 @@ const tMessage = computed(() => {
 }
 
 .text-small {
-  font-size: 14px;
+  font-size: 0.875em;
 }
 
 .text-big {
-  font-size: 18px;
+  font-size: 1.125em;
 }
 </style>

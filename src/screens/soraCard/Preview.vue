@@ -247,7 +247,7 @@ export default class Preview extends Vue {
   .card-descriptions {
     margin-top: 25px;
     font-weight: 700;
-    font-size: 18px;
+    font-size: 1.125em;
   }
 
   .card-get {

@@ -31,12 +31,12 @@ export default class VerifyEmailForm extends Vue {
 
   .sent-text {
     margin-top: 40px;
-    font-size: 20px;
+    font-size: 1.25em;
     color: $default-white;
   }
 
   .email {
-    font-size: 20px;
+    font-size: 1.25em;
     color: $plain-white;
   }
 }

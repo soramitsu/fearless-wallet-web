@@ -222,7 +222,7 @@ const onReject = () => {
 
   &__name {
     grid-area: name;
-    font-size: 16px;
+    font-size: 1em;
     color: $default-white;
     line-height: 22px;
     place-self: start;
@@ -231,7 +231,7 @@ const onReject = () => {
   &__address {
     grid-area: address;
     color: $gray-color;
-    font-size: 12px;
+    font-size: 0.75em;
     line-height: 16px;
     place-self: flex-start;
   }
@@ -283,7 +283,7 @@ const onReject = () => {
   justify-content: space-between;
   padding: 16px;
   width: 100%;
-  font-size: 16px;
+  font-size: 1em;
   font-weight: 400;
   color: $default-white;
 
@@ -342,7 +342,7 @@ const onReject = () => {
   .list__header {
     text-align: left;
     padding: 16px 0 0 16px;
-    font-size: 16px;
+    font-size: 1em;
     font-weight: 600;
     line-height: 24px;
     color: $default-white;
@@ -353,7 +353,7 @@ const onReject = () => {
     align-items: flex-start;
     gap: 9px;
     padding: 16px;
-    font-size: 14px;
+    font-size: 0.875em;
     font-weight: 400;
     line-height: 19px;
     color: $grayish-white;

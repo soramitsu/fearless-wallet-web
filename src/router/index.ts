@@ -9,13 +9,13 @@ import {
   isNeedMigration,
   isOnboardingRequired,
 } from '@/extension/messaging';
-import { IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
+import { IS_EXTENSION, IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
 
 Vue.use(VueRouter);
 
 const router = new VueRouter({
   mode: 'hash',
-  base: process.env.BASE_URL,
+  base: IS_EXTENSION ? process.env.BASE_URL : undefined,
   routes,
 });
 

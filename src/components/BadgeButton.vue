@@ -23,7 +23,7 @@ const onClick = () => emit('click');
   background: $secondary-background-color;
   border-radius: 30px;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 0.75em;
   text-transform: uppercase;
   color: $plain-white;
   margin: 5px 14px 0 0;

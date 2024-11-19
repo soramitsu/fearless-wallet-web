@@ -77,7 +77,7 @@ const onNavigate = () => {
   gap: 4px;
   padding: 20px;
   text-align: start;
-  font-size: 12px;
+  font-size: 0.75em;
   font-weight: 400;
   line-height: 15px;
   color: $grayish-white;
@@ -97,7 +97,7 @@ const onNavigate = () => {
 
   .title--main {
     font-weight: 600;
-    font-size: 16px;
+    font-size: 1em;
     line-height: 20px;
     color: #ffffff;
   }

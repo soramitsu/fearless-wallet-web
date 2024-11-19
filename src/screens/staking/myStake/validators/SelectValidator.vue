@@ -58,7 +58,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { SelectionValidator } from '@/interfaces';
 import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
-import type { NetworkParams } from '@/store';
+import type { NetworkParams } from '@/stores';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import ValidatorItem from '@/screens/staking/myStake/validators/ValidatorItem.vue';
 import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vue';

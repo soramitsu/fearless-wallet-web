@@ -52,12 +52,7 @@
 
 <script lang="ts">
 import { Component, Vue, Ref } from 'vue-property-decorator';
-import { Getter, Action, Mutation } from 'vuex-class';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
-import type { AuthUrls } from '@extension-base/background/types/types';
-import type { AsyncFn, Fn } from '@/interfaces';
-import type { SelectedWallet, WalletInfo } from '@/store';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
 import Preview from '@/screens/soraCard/Preview.vue';
@@ -65,9 +60,6 @@ import Status from '@/screens/soraCard/Status.vue';
 import GetXORPopup from '@/screens/soraCard/GetXORPopup.vue';
 import { StepsKyc, VerificationStatus, KycStatus } from '@/consts/soraCard';
 import { soraCardController } from '@/controllers';
-import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
-import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
-import { MutationTypes as SoraCardMutationTypes } from '@/store/soraCard/mutations';
 import StepsKYCPopup from '@/screens/soraCard/stepsKYC/StepsKYCPopup.vue';
 import TermsAndConditions from '@/screens/soraCard/stepsKYC/TermsAndConditions.vue';
 import KycPrepare from '@/screens/soraCard/stepsKYC/KycPrepare.vue';
@@ -78,9 +70,10 @@ import KycView from '@/screens/soraCard/stepsKYC/KycView.vue';
 import { URLS } from '@/consts/urls';
 import { IS_EXTENSION } from '@/consts/global';
 import { updateAuthorization, approvePolkaswapAuthRequest } from '@/extension/messaging';
-import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
-import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { subscribeCardToken } from '@/util/soraCard';
+import { useExtensionStore } from '@/stores/extension';
+import { useAccountsStore } from '@/stores/accounts';
+import { useSoraCardStore } from '@/stores/soraCard';
 
 @Component({
   components: {
@@ -100,6 +93,9 @@ import { subscribeCardToken } from '@/util/soraCard';
 export default class SoraCardPage extends Vue {
   readonly isExtension = IS_EXTENSION;
 
+  extensionStore = useExtensionStore();
+  accountsStore = useAccountsStore();
+  soraCardStore = useSoraCardStore();
   showCountriesForm = false;
   showGetXORPopup = false;
   userApplied = false;
@@ -108,18 +104,6 @@ export default class SoraCardPage extends Vue {
   step: StepsKyc | -1 = -1;
 
   @Ref('termsAndConditions') readonly termsAndConditions!: TermsAndConditions;
-  @Getter(ExtensionGettersTypes.authList) authlist!: AuthUrls;
-  @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;
-  @Getter(SoraCardGettersTypes.wantsToPassKycAgain) wantsToPassKycAgain!: boolean;
-  @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
-  @Action(SoraCardActionTypes.GET_USER_KYC_ATTEMPT) getUserKycAttempt!: AsyncFn;
-  @Action(ExtensionActionTypes.GET_AUTHLIST) getAuthList!: AsyncFn<void>;
-  @Mutation(SoraCardMutationTypes.SET_KYC_STATUS) setKycStatus!: Fn<KycStatus>;
-  @Mutation(SoraCardMutationTypes.SET_VERIFICATION_STATUS) setVerificationStatus!: Fn<VerificationStatus>;
 
   get fillSteps() {
     return this.userApplied ? [2, 3] : [1];
@@ -196,26 +180,30 @@ export default class SoraCardPage extends Vue {
     if (this.isExtension) {
       if (!this.hasTokens) subscribeCardToken(this.checkKyc);
 
-      this.getAuthList();
+      this.extensionStore.getAuthList();
     }
 
     soraCardController.clearPayWingsKeysFromLocalStorage();
 
-    this.getUserKycAttempt();
+    this.soraCardStore.getUserKycAttempt();
     this.checkKyc();
   }
 
   async checkKyc() {
-    await this.getUserStatus();
+    await this.soraCardStore.getUserStatus();
 
-    if (this.currentStatus === VerificationStatus.Rejected && this.wantsToPassKycAgain && this.hasFreeAttempts) {
+    if (
+      this.soraCardStore.currentStatus === VerificationStatus.Rejected &&
+      this.soraCardStore.wantsToPassKycAgain &&
+      this.soraCardStore.hasFreeAttempts
+    ) {
       if (this.isExtension) this.openPolkaswap();
       else this.step = StepsKyc.KycView;
 
       return;
     }
 
-    if (this.currentStatus) {
+    if (this.soraCardStore.currentStatus) {
       this.step = StepsKyc.Status;
 
       return;
@@ -238,8 +226,8 @@ export default class SoraCardPage extends Vue {
 
   openStartPage(withoutCheck: boolean) {
     if (withoutCheck) {
-      this.setKycStatus(KycStatus.Completed);
-      this.setVerificationStatus(VerificationStatus.Pending);
+      this.soraCardStore.setKycStatus(KycStatus.Completed);
+      this.soraCardStore.setVerificationStatus(VerificationStatus.Pending);
 
       this.step = StepsKyc.Status;
 
@@ -327,10 +315,10 @@ export default class SoraCardPage extends Vue {
 
   async openPolkaswap() {
     const { POLKASWAP } = URLS;
-    const { address: selectedAddress, name } = this.selectedWallet;
+    const { address: selectedAddress, name } = this.accountsStore.selectedWallet;
 
     const stripPolkaswap = stripUrl(POLKASWAP);
-    const polkaswapAuth = this.authlist[stripPolkaswap];
+    const polkaswapAuth = this.extensionStore.authList[stripPolkaswap];
 
     // polkaswap authorized
     if (polkaswapAuth) {
@@ -340,7 +328,9 @@ export default class SoraCardPage extends Vue {
       if (!authorizedAccounts.includes(selectedAddress)) {
         const activeAccounts = [
           selectedAddress,
-          ...this.wallets.filter(({ address }) => authorizedAccounts.includes(address)).map(({ address }) => address),
+          ...this.accountsStore.accounts
+            .filter(({ address }) => authorizedAccounts.includes(address))
+            .map(({ address }) => address),
         ];
 
         await updateAuthorization(activeAccounts, stripPolkaswap, 'substrate');

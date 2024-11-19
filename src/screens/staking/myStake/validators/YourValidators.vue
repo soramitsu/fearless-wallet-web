@@ -62,7 +62,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { NetworkParams } from '@/store';
+import type { NetworkParams } from '@/stores';
 import ValidatorItem from '@/screens/staking/myStake/validators/ValidatorItem.vue';
 
 @Component({

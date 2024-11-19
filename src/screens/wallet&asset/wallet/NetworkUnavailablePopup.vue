@@ -23,19 +23,17 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Mutation } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
-import type { Fn } from '@/interfaces';
 import { Components } from '@/router/routes';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class NetworkUnavailablePopup extends Vue {
+  accountsStore = useAccountsStore();
   isDontShowAgain = false;
 
   @Prop(Array) networks!: NetworkJson[];
   @Prop(String) network!: string;
-  @Mutation(AccountsMutationTypes.HIDE_NETWORK_WARNING) hideNetworkWarning!: Fn<string>;
 
   get headers() {
     return this.haveMoreOneNodes
@@ -52,7 +50,7 @@ export default class NetworkUnavailablePopup extends Vue {
   }
 
   openSwitchNode() {
-    if (this.isDontShowAgain) this.hideNetworkWarning(this.network);
+    if (this.isDontShowAgain) this.accountsStore.hideNetworkWarning(this.network);
 
     this.$router.push({
       name: Components.Nodes,
@@ -61,7 +59,7 @@ export default class NetworkUnavailablePopup extends Vue {
   }
 
   close() {
-    if (this.isDontShowAgain) this.hideNetworkWarning(this.network);
+    if (this.isDontShowAgain) this.accountsStore.hideNetworkWarning(this.network);
 
     this.$emit('closePopup');
   }

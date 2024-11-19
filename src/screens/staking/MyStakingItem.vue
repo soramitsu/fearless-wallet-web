@@ -14,7 +14,7 @@
           <Loading v-if="isLoading" :width="28" />
 
           <template v-else>
-            <div class="fiat" data-testid="fiat">{{ fiatSymbol }}{{ fiatValue }}</div>
+            <div class="fiat" data-testid="fiat">{{ accountsStore.fiatSymbol }}{{ fiatValue }}</div>
 
             <Icon icon="chevron-right" class="chevron" data-testid="stakingDetails" />
           </template>
@@ -64,28 +64,24 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { TokenGroup } from '@extension-base/background/types/types';
-import type { NetworkJson } from '@extension-base/types';
-import type { NetworkParams, GetAssetPrice } from '@/store';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import type { NetworkParams } from '@/stores';
 import { Components } from '@/router/routes';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { getUtilityAsset } from '@/helpers/currencies';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class MyStakingItem extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
+
   @Prop(Object) stakingNetwork!: NetworkParams;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
   get fiatValue() {
-    const stakingCurrency = getUtilityAsset(this.balances, this.network);
+    const stakingCurrency = getUtilityAsset(this.accountsStore.balances, this.network);
     const priceId = stakingCurrency?.priceId ?? '';
-    const price = this.getAssetPrice(priceId).price;
+    const price = this.networksStore.getAssetPrice(priceId).price;
     const value = getCostOfAssets(this.totalStake, price, 'string').toString();
 
     return this.$n(+value, 'price');

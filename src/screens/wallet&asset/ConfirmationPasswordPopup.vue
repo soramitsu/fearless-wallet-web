@@ -81,11 +81,10 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+
 import type { RequestStaking } from '@extension-base/services/staking-service/types';
 import type { NftTx } from '@extension-base/services/nft-service/types';
 import type {
-  AccountJson,
   RequestCheckTransfer,
   RequestCheckCrossChain,
   RequestTransfer,
@@ -96,25 +95,26 @@ import type {
   ResponseMakeSwap,
   ResponseNftTransfer,
 } from '@extension-base/background/types/types';
-import type { NetworkJson } from '@extension-base/types';
 import type { SwapOptions, StakingOperation } from '@/interfaces';
-import type { GetNetwork, GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import type { RequestPool } from '@extension-base/services/pools-service/types';
 import type { PoolsOperation } from '@/interfaces/pools';
 import { makeSwap, makeTransfer, makeCrossChain, makeStaking, makePool } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { IS_EXTENSION } from '@/consts/global';
 import { sendNft } from '@/extension/messaging/nfts';
 import { isSora, setClipboard } from '@/helpers';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: { SignMobile },
 })
 export default class ConfirmationPasswordPopup extends Vue {
   readonly isExtension = IS_EXTENSION;
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
+
   hash: string | undefined = undefined;
   signedPayload: null = null;
   transactionState: 'pending' | 'success' | 'failed' | null = null;
@@ -129,19 +129,14 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(Object) currency?: TokenGroup;
   @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain | RequestStaking | SwapOptions | NftTx | RequestPool;
   @Prop(String) extrinsicType!: 'transfer' | 'crossChain' | 'swap' | 'nft' | StakingOperation | PoolsOperation;
-  @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get firstIconUrl() {
     if (this.extrinsicType === 'crossChain')
-      return this.networks.find(({ name }) => name.toLowerCase() === this.firstIcon.toLowerCase())?.icon ?? '';
+      return (
+        this.networksStore.networks.find(({ name }) => name.toLowerCase() === this.firstIcon.toLowerCase())?.icon ?? ''
+      );
 
-    const tokenGroup = this.balances.find(({ groupId }) => groupId === this.firstIcon);
+    const tokenGroup = this.accountsStore.balances.find(({ groupId }) => groupId === this.firstIcon);
 
     if (tokenGroup) return tokenGroup.icon;
 
@@ -150,9 +145,11 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   get secondIconUrl() {
     if (this.extrinsicType === 'crossChain')
-      return this.networks.find(({ name }) => name.toLowerCase() === this.secondIcon.toLowerCase())?.icon ?? '';
+      return (
+        this.networksStore.networks.find(({ name }) => name.toLowerCase() === this.secondIcon.toLowerCase())?.icon ?? ''
+      );
 
-    const tokenGroup = this.balances.find(({ groupId }) => groupId === this.secondIcon);
+    const tokenGroup = this.accountsStore.balances.find(({ groupId }) => groupId === this.secondIcon);
 
     if (tokenGroup) return tokenGroup.icon;
 
@@ -167,13 +164,13 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transactionAddress() {
-    return this.selectedWallet.address;
+    return this.accountsStore.selectedWallet.address;
   }
 
   get isSignMobile() {
     const encodedAddress = BaseApi.encodeAddress(this.transactionAddress);
 
-    return this.accounts.some((account) => account.address === encodedAddress && account.isMobile);
+    return this.accountsStore.accounts.some((account) => account.address === encodedAddress && account.isMobile);
   }
 
   get isSuccess() {
@@ -213,7 +210,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     const sumValue = +this.value + +this.feeValue;
     const value = this.isSuccess ? sumValue : +this.feeValue;
 
-    return `${this.fiatSymbol}${this.$n(value, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(value, 'price')}`;
   }
 
   get isTransactionInit() {
@@ -302,7 +299,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   openExplorer() {
-    const network = this.getNetwork((this.tx as NftTx).network);
+    const network = this.networksStore.getNetwork((this.tx as NftTx).network);
     const explorerUrl = network.externalApi?.explorers ? network?.externalApi?.explorers[0].url : '';
 
     const hostname = new URL(explorerUrl).hostname;

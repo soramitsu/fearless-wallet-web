@@ -6,8 +6,7 @@ import {
 import { type NetworkJson } from '@extension-base/types';
 import { getSubstrateGenesisHash } from '@extension-base/services/network-service/helpers';
 import { type ChainData, type SessionProposalNamespaces } from '@/interfaces/walletconnect';
-import { useStore } from '@/store';
-import { GettersTypes as NetworkGettersTypes } from '@/store/networks/getters';
+import { useNetworksStore } from '@/stores/networks';
 
 export const findChainInfoByHalfGenesisHash = (
   chainMap: NetworkJson[],
@@ -35,8 +34,8 @@ export const chainNamesFromRequest = (
   key: string,
   isRequired: boolean
 ): ChainData[] => {
-  const store = useStore();
-  const networks: NetworkJson[] = store.getters[NetworkGettersTypes.allNetworks];
+  const networksStore = useNetworksStore();
+  const networks = networksStore.networks;
   const chains = namespaces[key].chains;
   const names: ChainData[] = [];
 

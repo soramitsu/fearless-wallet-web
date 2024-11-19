@@ -94,23 +94,21 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { AccountJson } from '@extension-base/background/types/types';
 import { Components } from '@/router/routes';
 import { URLS } from '@/consts/urls';
 import { hasMasterPassword, initGoogleAuth } from '@/extension/messaging';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class Welcome extends Vue {
+  accountsStore = useAccountsStore();
+
   showGoogleAuthPopup = false;
   isAuthFlowInit = false;
   hasMasterPassword = false;
 
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
-
   get showBackWalletIcon() {
-    return this.accounts.length !== 0;
+    return this.accountsStore.accounts.length !== 0;
   }
 
   get accessToken() {

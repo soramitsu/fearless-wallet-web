@@ -41,30 +41,31 @@
 </template>
 
 <script lang="ts" setup>
-import { type AuthorizeRequest, type AccountJson } from '@extension-base/background/types/types';
 import { computed, ref, set, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
+import type { AuthorizeRequest, AccountJson } from '@extension-base/background/types/types';
+import type { WalletInfo } from '@/stores';
 import { Components } from '@/router/routes';
-import { type WalletInfo, useStore } from '@/store';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { IS_POPUP } from '@/consts/globalClient';
+import { useExtensionStore } from '@/stores/extension';
+import { useAccountsStore } from '@/stores/accounts';
 
 const state = ref<Record<string, WalletInfo>>({});
 const selectAll = ref(true);
 
-const store = useStore();
+const extensionStore = useExtensionStore();
+const accountsStore = useAccountsStore();
 const router = useRouter();
 const { t } = useI18n();
 
-const requests = computed<AuthorizeRequest[]>(() => store.getters[ExtensionGettersTypes.authRequests]);
-const request = computed<AuthorizeRequest>(() => requests.value[0]);
+const requests = computed(() => extensionStore.authRequests);
+const request = computed(() => requests.value[0]);
 const accountAuthType = computed(() => request.value.request.accountAuthType);
 
 const accounts = computed<AccountJson[]>(() => {
-  const accounts: AccountJson[] = store.getters[AccountsGettersTypes.getAccounts];
+  const accounts: AccountJson[] = accountsStore.accounts;
 
   return accounts.filter(({ ethereumAddress }) => {
     if (accountAuthType.value === 'evm' && !ethereumAddress) return false;
@@ -129,12 +130,12 @@ const onApprove = () => {
     .filter(({ active }) => active)
     .map(({ address }) => address);
 
-  store.dispatch('APPROVE_AUTH_REQUEST', { id: request.value.id, accounts });
+  extensionStore.approveAuthRequests({ id: request.value.id, accounts });
 
   redirect();
 };
 
-const onReject = () => store.dispatch('REJECT_AUTH_REQUEST', request.value.id);
+const onReject = () => extensionStore.rejectAuthRequests(request.value.id);
 </script>
 
 <style lang="scss">

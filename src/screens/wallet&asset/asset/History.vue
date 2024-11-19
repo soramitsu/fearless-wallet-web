@@ -38,37 +38,24 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
 import HistoryItem from './HistoryItem.vue';
-import type {
-  AsyncFn,
-  FilterHistory,
-  GetHistory,
-  HistoryElement,
-  SoraHistoryElement,
-  SubqueryHistory,
-} from '@/interfaces';
-import type { FetchHistory, GetNetwork, SelectedWallet } from '@/store';
+import type { FilterHistory, HistoryElement, SoraHistoryElement, SubqueryHistory } from '@/interfaces';
 import type { TokenGroup } from '@extension-base/background/types/types';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
-import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { isSora } from '@/helpers';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({ components: { HistoryItem } })
 export default class History extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
   refreshTimeout = 30000;
 
   @Prop(Object) currency!: TokenGroup;
-  @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Action(NetworksActionTypes.FETCH_HISTORY) fetchHistory!: AsyncFn<FetchHistory>;
 
   get historyDropdownOption() {
     const options = [
@@ -104,11 +91,11 @@ export default class History extends Vue {
   }
 
   get address() {
-    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
+    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.accountsStore.selectedWallet.ethereumAddress;
 
-    const network = this.getNetwork(this.selectedNetwork);
+    const network = this.networksStore.getNetwork(this.selectedNetwork);
 
-    return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
+    return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, network.addressPrefix);
   }
 
   get historyTimestamp() {
@@ -121,7 +108,7 @@ export default class History extends Vue {
     if (!this.selectedNetwork)
       return { nodes: [], pageInfo: { endCursor: '0', startCursor: '0' }, timestamp: Number.MIN_VALUE };
 
-    return this.getHistory(this.assetId, this.selectedNetwork.toLowerCase());
+    return this.networksStore.getHistory(this.assetId, this.selectedNetwork.toLowerCase());
   }
 
   get historyItems(): HistoryElement[] {
@@ -153,9 +140,9 @@ export default class History extends Vue {
   }
 
   get isMainNetwork() {
-    if (this.selectedNetwork === '' || this.balances.length === 0) return false;
+    if (this.selectedNetwork === '' || this.accountsStore.balances.length === 0) return false;
 
-    const { groupId } = getUtilityAsset(this.balances, this.selectedNetwork);
+    const { groupId } = getUtilityAsset(this.accountsStore.balances, this.selectedNetwork);
 
     return this.assetId === groupId;
   }
@@ -184,7 +171,7 @@ export default class History extends Vue {
 
     const options = { networkName: this.selectedNetwork, assetId: this.assetId };
 
-    this.fetchHistory(options).finally(() => {
+    this.networksStore.fetchHistory(options).finally(() => {
       this.showLoader = false;
     });
   }

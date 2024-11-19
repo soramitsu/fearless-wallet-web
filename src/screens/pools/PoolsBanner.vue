@@ -1,5 +1,5 @@
 <template>
-  <div v-if="showPoolsBanner">
+  <div v-if="poolsStore.showPoolsBanner">
     <Icon icon="banner-pools" :hover="false" class="banner-pools" data-testid="bannerPools" />
 
     <div class="details-button center" data-testid="openPoolsBtn" @click="openPoolsPage">
@@ -14,23 +14,19 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter, Mutation } from 'vuex-class';
-import type { Fn } from '@/interfaces';
-import { MutationTypes as PoolsMutationTypes } from '@/store/pools/mutations';
-import { GettersTypes as PoolsGettersTypes } from '@/store/pools/getters';
 import { Components } from '@/router/routes';
+import { usePoolsStore } from '@/stores/pools';
 
 @Component({})
 export default class PoolsBanner extends Vue {
-  @Mutation(PoolsMutationTypes.HIDE_POOLS_BANNER) hidePoolsBanner!: Fn<boolean>;
-  @Getter(PoolsGettersTypes.showPoolsBanner) showPoolsBanner!: boolean;
+  poolsStore = usePoolsStore();
 
   openPoolsPage() {
     this.$router.push({ name: Components.Pools });
   }
 
   hideBanner() {
-    this.hidePoolsBanner();
+    this.poolsStore.hidePoolsBanner();
   }
 }
 </script>

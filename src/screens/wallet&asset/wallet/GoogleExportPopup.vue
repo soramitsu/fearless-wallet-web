@@ -56,20 +56,15 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { AccountJson } from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
+import type { ICreateFile } from '@/interfaces';
 import { createGoogleFile, exportJSON, validatePassword } from '@/extension/messaging';
-import { type ICreateFile } from '@/interfaces';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component
 export default class GoogleExportPopup extends Vue {
   password = '';
   isErrorPassword = false;
   status: 'prepare' | 'upload' | 'uploaded' | 'await' = 'await';
-
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get selectedWalletAddress() {
     return this.$route.query.wallet as string;

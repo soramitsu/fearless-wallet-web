@@ -20,35 +20,37 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+
 import type { HistoryElement, NetworkName } from '@/interfaces';
 import type { TokenGroup } from '@extension-base/background/types/types';
-import type { GetNetwork, SelectedWallet } from '@/store';
+
 import { getType, getTypeFormatted, getHistoryValue, getSignTransfer } from '@/helpers/history';
 import { getFormattedDate, cut, isSora } from '@/helpers';
 import { type SoraHistoryElement, TransactionType } from '@/interfaces/history';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+
 import BaseApi from '@/util/BaseApi';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class HistoryItem extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
+
   @Prop(Object) historyElement!: HistoryElement;
   @Prop(Object) token!: TokenGroup;
   @Prop(String) network!: NetworkName;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get signTransfer() {
     return getSignTransfer(this.historyElement, this.address, this.network);
   }
 
   get address() {
-    if (BaseApi.isEthereumNetwork(this.network.toLowerCase())) return this.selectedWallet.ethereumAddress;
+    if (BaseApi.isEthereumNetwork(this.network.toLowerCase())) return this.accountsStore.selectedWallet.ethereumAddress;
 
-    const network = this.getNetwork(this.network);
+    const network = this.networksStore.getNetwork(this.network);
 
-    return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
+    return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, network.addressPrefix);
   }
 
   get asset() {
@@ -82,7 +84,7 @@ export default class HistoryItem extends Vue {
   }
 
   get networkJson() {
-    return this.getNetwork(this.network);
+    return this.networksStore.getNetwork(this.network);
   }
 
   get networkHistoryType() {

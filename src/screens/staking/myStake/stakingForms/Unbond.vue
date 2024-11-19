@@ -30,19 +30,19 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { GetAssetPrice, NetworkParams } from '@/store';
+import type { NetworkParams } from '@/stores';
 import type { TokenGroup } from '@extension-base/background/types/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class Unbond extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
+
   @Prop({ type: Object }) stakingCurrency!: TokenGroup;
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @Prop({ type: String }) fee!: string;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get asset() {
     return this.stakingNetwork.asset;
@@ -51,13 +51,13 @@ export default class Unbond extends Vue {
   get stakingAssetPrice() {
     const priceId = this.stakingCurrency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get valueString() {
     const value = +this.fee * this.stakingAssetPrice;
 
-    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
   }
 
   get period() {

@@ -90,17 +90,14 @@ import { WALLET_CONNECT_SUPPORTED_METHODS } from '@extension-base/services/walle
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import WalletChooseForm from './WalletChooseForm.vue';
 import type { ChainData } from '@/interfaces/walletconnect';
-import type { WalletConnectSessionRequest } from '@extension-base/services/wallet-connect-service/types';
-import type { AccountJson } from '@extension-base/background/types/types';
-import { useStore } from '@/store';
 import { approveWalletConnectSession, rejectWalletConnectSession } from '@/extension/messaging';
 import { useNotify } from '@/plugins/soramitsuUI';
 import { transformNamespaces } from '@/util/walletConnect';
 import { cut } from '@/helpers';
 import { Components } from '@/router/routes';
-import { GettersTypes as AccountsGetterType } from '@/store/accounts/getters';
-import { GettersTypes as ExtensionGetterType } from '@/store/extension/getters';
 import { IS_POPUP } from '@/consts/globalClient';
+import { useExtensionStore } from '@/stores/extension';
+import { useAccountsStore } from '@/stores/accounts';
 
 const notificationPopupMessage = {
   subtext: 'walletConnect.unsupportedMethodsPopup',
@@ -109,7 +106,8 @@ const notificationPopupMessage = {
 
 const showNotificationPopup = ref(false);
 const router = useRouter();
-const store = useStore();
+const extensionStore = useExtensionStore();
+const accountsStore = useAccountsStore();
 const notify = useNotify();
 const { t } = useI18n();
 
@@ -118,20 +116,20 @@ const permissionList = [
   { text: t('walletConnect.permissions.viewBalances'), iconColor: 'success' },
   { text: t('walletConnect.permissions.transferAssets'), iconColor: 'error' },
 ];
-const wallets = ref<AccountJson[]>(
-  (store.getters[AccountsGetterType.getAccounts] as AccountJson[]).filter((el) => el.ethereumAddress && !el.isMobile)
-);
+
+const wallets = ref(accountsStore.accounts.filter((el) => el.ethereumAddress && !el.isMobile));
 
 const selectedAddress = ref<string>(wallets.value[0]?.ethereumAddress ?? '');
 const cutAddress = computed(() => cut(selectedAddress.value));
 const selectedWalletName = computed(
   () => wallets.value.find(({ ethereumAddress }) => ethereumAddress === selectedAddress.value)?.name ?? ''
 );
-const request = computed<WalletConnectSessionRequest>(() => store.getters[ExtensionGetterType.wcConnectRequests][0]);
+const request = computed(() => extensionStore.wcConnectRequests[0]);
 const id = computed(() => request.value.id);
 const url = computed(() => request.value.url);
 const title = computed(() => request.value.request.params.proposer.metadata.name);
 const showWalletSelect = ref(false);
+
 const isSupportAllMethods = computed(() => {
   for (const namespace of Object.values(request.value.request.params.requiredNamespaces)) {
     for (const method of namespace.methods) {

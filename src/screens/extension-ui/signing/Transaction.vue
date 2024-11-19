@@ -46,30 +46,28 @@ import { reactive, computed, onMounted } from 'vue';
 import { type GenericExtrinsicPayload } from '@polkadot/types/extrinsic/ExtrinsicPayload';
 import { formatUnits } from 'ethers';
 import { type EvmRequestPayload } from '@extension-base/services/request-service/types';
-import type { SignerPayloadJSON } from '@polkadot/types/types';
-import type { AccountJson, SigningRequest } from '@extension-base/background/types/types';
+import type { SigningRequest } from '@extension-base/background/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import type { ApprovePayload } from '@/store/extension/actions';
-import type { SignRequests } from '@/store/extension/types';
 import BaseApi from '@/util/BaseApi';
 import WalletInfo from '@/screens/extension-ui/signing/WalletInfo.vue';
 import InfoList from '@/screens/extension-ui/InfoList.vue';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
-import { useStore, type SelectedWallet } from '@/store';
 import { cut } from '@/helpers';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as ExtensionGetterTypes } from '@/store/extension/getters';
+import { useExtensionStore } from '@/stores/extension';
+import { useAccountsStore } from '@/stores/accounts';
 
 const state = reactive({
   isDisabled: false,
 });
 
-const store = useStore();
+const extensionStore = useExtensionStore();
+const accountsStore = useAccountsStore();
 
-const payload = computed<SignerPayloadJSON>(() => store.getters[ExtensionGetterTypes.signRequestPayload]);
-const requests = computed<SignRequests>(() => store.getters[ExtensionGetterTypes.signRequests]);
-const accounts = computed<AccountJson[]>(() => store.getters[AccountsGettersTypes.getAccounts]);
-const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
+const payload = computed(() => extensionStore.signRequestPayload);
+const requests = computed(() => extensionStore.signAllRequests);
+const accounts = computed(() => accountsStore.accounts);
+const selectedWallet = computed(() => accountsStore.selectedWallet);
 
 const transactionAddress = computed(() => payload.value?.address ?? selectedWallet.value.address);
 const request = computed<SigningRequest | EvmRequestPayload>(
@@ -104,7 +102,7 @@ const accountName = computed(() => {
   return request.value.data[0].from ?? request.value.data[0];
 });
 
-const onSignApprove = (data: ApprovePayload) => store.dispatch('APPROVE_SIGN', data);
+const onSignApprove = (data: ApprovePayload) => extensionStore.approveSign(data);
 
 onMounted(async () => {
   if (isSignMobile.value) onSignApprove({ id: request.value.id });
@@ -164,7 +162,7 @@ const txInfo = computed(() => {
   return info;
 });
 
-const onReject = async () => store.dispatch('SIGN_CANCEL', request.value.id);
+const onReject = async () => extensionStore.signCancel(request.value.id);
 
 const sendExtrinsic = async () => {
   state.isDisabled = true;

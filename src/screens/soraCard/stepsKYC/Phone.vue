@@ -59,24 +59,18 @@
 
 <script lang="ts">
 import { Component, Vue, Ref, Watch, Prop } from 'vue-property-decorator';
-import { Getter, Action, Mutation } from 'vuex-class';
 import { type FPNumber } from '@sora-substrate/util';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
 import type FInput from '@/components/FInput.vue';
-import type { AsyncFn, Fn } from '@/interfaces';
-import type { SelectedWallet } from '@/store';
-import type { TokenGroup } from '@extension-base/background/types/types';
 import { validatePhoneNumber } from '@/helpers';
 import { RESEND_INTERVAL, OTP_CODE_LENGTH, VerificationStatus, StepsKyc } from '@/consts/soraCard';
-import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
-import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
 import { soraCardController } from '@/controllers';
-import { MutationTypes as SoraCardMutationTypes } from '@/store/soraCard/mutations';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { calculateXOREuroBalance, isValidEuroBalanceXor } from '@/util/soraCard';
 import { getXORCurrency } from '@/helpers/currencies';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
+import { useAccountsStore } from '@/stores/accounts';
+import { useSoraCardStore } from '@/stores/soraCard';
 
 @Component({
   components: { Disclaimer },
@@ -84,6 +78,8 @@ import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
 export default class Phone extends Vue {
   readonly otpCodeLength = OTP_CODE_LENGTH;
   readonly soraNetworkName = SORA_NETWORK_NAME;
+  accountsStore = useAccountsStore();
+  soraCardStore = useSoraCardStore();
   countryCodeInternal = '';
   phoneNumberInternal = '';
   verificationCode = '';
@@ -98,24 +94,13 @@ export default class Phone extends Vue {
   @Ref('countryCode') readonly countryCodeComponent!: typeof FInput;
   @Ref('phoneNumber') readonly phoneNumberComponent!: typeof ValidatedInput;
   @Ref('verificationCode') private readonly otpComponent!: typeof ValidatedInput;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(SoraCardGettersTypes.authLogin) authLogin!: any;
-  @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;
-  @Getter(SoraCardGettersTypes.wantsToPassKycAgain) wantsToPassKycAgain!: boolean;
-  @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
-  @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;
-  @Action(SoraCardActionTypes.INIT_AUTH_LOGIN) initAuthLogin!: AsyncFn;
-  @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
-  @Action(SoraCardActionTypes.GET_USER_KYC_ATTEMPT) getUserKycAttempt!: AsyncFn;
-  @Mutation(SoraCardMutationTypes.SET_WILL_TO_KYC_PASS_KYC_AGAIN) setWillToPassKycAgain!: Fn<boolean>;
 
   get currencyXOR() {
-    return getXORCurrency(this.balances);
+    return getXORCurrency(this.accountsStore.balances);
   }
 
   get euroBalanceXOR() {
-    return calculateXOREuroBalance(this.currencyXOR, this.xorPerEuroRatio) ?? 0;
+    return calculateXOREuroBalance(this.currencyXOR, this.soraCardStore.xorPerEuroRatio as FPNumber) ?? 0;
   }
 
   get isValidEuroBalanceXor() {
@@ -255,11 +240,11 @@ export default class Phone extends Vue {
     this.countryCodeComponent.input.focus();
     soraCardController.removePWEmail();
 
-    await this.initAuthLogin();
+    await this.soraCardStore.initAuthLogin();
 
-    if (!this.authLogin) return;
+    if (!this.soraCardStore.authLogin) return;
 
-    this.authLogin
+    this.soraCardStore.authLogin
       .on('SendOtp-Success', () => {
         this.smsSent = true;
 
@@ -286,20 +271,20 @@ export default class Phone extends Vue {
         this.$emit('confirm', StepsKyc.Email);
       })
       .on('Otp-Verification-Success', async () => {
-        await this.getUserStatus();
+        await this.soraCardStore.getUserStatus();
 
-        if (this.currentStatus === VerificationStatus.Rejected) {
-          await this.getUserKycAttempt();
+        if (this.soraCardStore.currentStatus === VerificationStatus.Rejected) {
+          await this.soraCardStore.getUserKycAttempt();
 
-          if (this.wantsToPassKycAgain && this.hasFreeAttempts) {
+          if (this.soraCardStore.wantsToPassKycAgain && this.soraCardStore.hasFreeAttempts) {
             this.$emit('confirm', StepsKyc.KycView);
-            this.setWillToPassKycAgain(false);
+            this.soraCardStore.setWillToPassKycAgain(false);
 
             return;
           }
         }
 
-        if (this.currentStatus) this.$emit('confirm');
+        if (this.soraCardStore.currentStatus) this.$emit('confirm');
         else {
           if (!this.isValidEuroBalanceXor) {
             this.notPassedKycAndNotHasXorEnough = true;
@@ -327,7 +312,7 @@ export default class Phone extends Vue {
   verifyCode(): void {
     this.verifyOtpBtnLoading = true;
 
-    this.authLogin.PayWingsOtpCredentialVerification(this.verificationCode).catch((error: string) => {
+    this.soraCardStore.authLogin.PayWingsOtpCredentialVerification(this.verificationCode).catch((error: string) => {
       this.verifyOtpBtnLoading = false;
       this.verificationCode = '';
       this.enteredOTpCodeIsIncorrect = true;
@@ -339,7 +324,7 @@ export default class Phone extends Vue {
   sendCode() {
     if (!this.isPhoneNumberValid || this.smsSent) return;
 
-    this.authLogin
+    this.soraCardStore.authLogin
       .PayWingsSendOtp(`${this.countryCode}${this.phoneNumber}`, 'Your verification code is: @Otp')
       .catch((error: string) => {
         console.error('[SoraCard]: Auth', error);

@@ -101,22 +101,17 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
-import { type FPNumber } from '@sora-substrate/util';
 import { NETWORK_STATUS } from '@extension-base//api/types/networks';
-import type { GetNetwork, SelectedWallet } from '@/store';
-import type { AsyncFn } from '@/interfaces';
-import type { TokenGroup } from '@extension-base/background/types/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { type FPNumber } from '@sora-substrate/util';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
 import { soraCardController } from '@/controllers';
-import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { IS_EXTENSION } from '@/consts/global';
 import { calculateXorRestPrice, calculateXOREuroBalance, isValidEuroBalanceXor } from '@/util/soraCard';
-import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { getXORCurrency } from '@/helpers/currencies';
 import { SORA_NETWORK_NAME } from '@/consts/sora';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
+import { useSoraCardStore } from '@/stores/soraCard';
 
 @Component({
   components: { UnsupportedCountries },
@@ -125,16 +120,12 @@ export default class Preview extends Vue {
   readonly isExtension = IS_EXTENSION;
   readonly soraNetworkName = SORA_NETWORK_NAME;
 
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
-  @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
-  @Action(SoraCardActionTypes.GET_XOR_PER_EURO_RATIO) getXorPerEuroRatio!: AsyncFn;
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
+  soraCardStore = useSoraCardStore();
 
   get networkIsReady() {
-    const network = this.getNetwork(this.soraNetworkName);
+    const network = this.networksStore.getNetwork(this.soraNetworkName);
 
     return network?.networkStatus === NETWORK_STATUS.CONNECTED;
   }
@@ -150,13 +141,13 @@ export default class Preview extends Vue {
   }
 
   get haveFreePass() {
-    if (this.hasFreeAttempts == null) return true;
+    if (this.soraCardStore.hasFreeAttempts == null) return true;
 
-    return this.hasFreeAttempts;
+    return this.soraCardStore.hasFreeAttempts;
   }
 
   get currencyXOR() {
-    return getXORCurrency(this.balances);
+    return getXORCurrency(this.accountsStore.balances);
   }
 
   get isValidEuroBalanceXor() {
@@ -166,7 +157,7 @@ export default class Preview extends Vue {
   get euroBalanceXOR() {
     if (!this.currencyXOR) return 0;
 
-    return calculateXOREuroBalance(this.currencyXOR, this.xorPerEuroRatio) ?? 0;
+    return calculateXOREuroBalance(this.currencyXOR, this.soraCardStore.xorPerEuroRatio as FPNumber) ?? 0;
   }
 
   get restPriceXOR() {
@@ -176,7 +167,7 @@ export default class Preview extends Vue {
         euroToPayInXor: '0',
       };
 
-    return calculateXorRestPrice(this.currencyXOR, this.xorPerEuroRatio);
+    return calculateXorRestPrice(this.currencyXOR, this.soraCardStore.xorPerEuroRatio as FPNumber);
   }
 
   get classesStatusXOR() {
@@ -200,9 +191,10 @@ export default class Preview extends Vue {
     const euroToPayInXor = +(this.restPriceXOR?.euroToPayInXor ?? 0);
     const euro = euroToPay > 100 ? 100 : euroToPay;
 
-    return `${this.$n(euroToPayInXor, 'decimal')} XOR (${this.fiatSymbol}${this.$n(euro, 'price')}) ${this.$t(
-      'soraCard.leftXORForFreeCard'
-    )}`;
+    return `${this.$n(euroToPayInXor, 'decimal')} XOR (${this.accountsStore.fiatSymbol}${this.$n(
+      euro,
+      'price'
+    )}) ${this.$t('soraCard.leftXORForFreeCard')}`;
   }
 
   get iconFreeCard() {
@@ -222,12 +214,12 @@ export default class Preview extends Vue {
   }
 
   async created() {
-    this.getXorPerEuroRatio();
+    this.soraCardStore.getXorPerEuroRatio();
   }
 
   @Watch('currencyXOR')
   currencyXORWatcher() {
-    this.getXorPerEuroRatio();
+    this.soraCardStore.getXorPerEuroRatio();
   }
 
   haveCard() {

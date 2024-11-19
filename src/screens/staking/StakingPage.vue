@@ -56,24 +56,21 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
-import type { NetworkJson } from '@extension-base/types';
-import type { AsyncFn, StakingTab } from '@/interfaces';
-import type { TokenGroup } from '@extension-base/background/types/types';
-import type { NetworkParams, SelectedWallet, GetAssetPrice, GetStakingParamsProps } from '@/store';
+import type { StakingTab } from '@/interfaces';
+import type { NetworkParams } from '@/stores';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { networksIsPending } from '@/helpers/shimmers';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import StakingSettings from '@/screens/staking/StakingSettings.vue';
 import StakingItem from '@/screens/staking/StakingItem.vue';
 import MyStakingItem from '@/screens/staking/MyStakingItem.vue';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+
 import Bond from '@/screens/staking/Bond.vue';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { isSubstrString, isSameString } from '@/helpers';
-import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { useStakingStore } from '@/stores/staking';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: {
@@ -85,29 +82,24 @@ import { getCostOfAssets } from '@/controllers/transferHelpers';
   },
 })
 export default class StakingPage extends Vue {
+  stakingStore = useStakingStore();
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   activeTabName: StakingTab | '' = '';
   filterValue = '';
   isLoading = false;
   stakingNetwork: Nullable<NetworkParams> = null;
 
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(StakingGettersTypes.stakingItems) stakingItems!: NetworkParams[];
-  @Getter(StakingGettersTypes.myStakingItems) myStakingItems!: NetworkParams[];
-  @Action(StakingActionTypes.GET_STAKING_PARAMS) getStakingParams!: AsyncFn<GetStakingParamsProps>;
-
   get filteredStakingItems() {
-    if (this.filterValue === '') return this.stakingItems;
+    if (this.filterValue === '') return this.stakingStore.stakingItems;
 
-    return this.stakingItems.filter(({ network }) => isSubstrString(network, this.filterValue));
+    return this.stakingStore.stakingItems.filter(({ network }) => isSubstrString(network, this.filterValue));
   }
 
   get filteredMyStakingItems() {
-    if (this.filterValue === '') return this.myStakingItems;
+    if (this.filterValue === '') return this.stakingStore.myStakingItems;
 
-    return this.myStakingItems.filter(({ network }) => isSubstrString(network, this.filterValue));
+    return this.stakingStore.myStakingItems.filter(({ network }) => isSubstrString(network, this.filterValue));
   }
 
   get haveFilteredItems() {
@@ -127,11 +119,11 @@ export default class StakingPage extends Vue {
   }
 
   get showStakingItems() {
-    return this.stakingItems.length !== 0;
+    return this.stakingStore.stakingItems.length !== 0;
   }
 
   get showMyStakingItems() {
-    return this.myStakingItems.length !== 0;
+    return this.stakingStore.myStakingItems.length !== 0;
   }
 
   get showBond() {
@@ -139,8 +131,8 @@ export default class StakingPage extends Vue {
   }
 
   get showLoading() {
-    const networks = this.networks.filter(({ name }) =>
-      this.myStakingItems.some(({ network }) => isSameString(name, network))
+    const networks = this.networksStore.networks.filter(({ name }) =>
+      this.stakingStore.myStakingItems.some(({ network }) => isSameString(name, network))
     );
 
     return networksIsPending(networks);
@@ -151,9 +143,9 @@ export default class StakingPage extends Vue {
   }
 
   get stakingBalance() {
-    return this.myStakingItems.reduce((sum, { totalStake, assetId }) => {
-      const { priceId } = this.balances.find(({ groupId }) => groupId === assetId)!;
-      const assetPrice = this.getAssetPrice(priceId ?? '').price;
+    return this.stakingStore.myStakingItems.reduce((sum, { totalStake, assetId }) => {
+      const { priceId } = this.accountsStore.balances.find(({ groupId }) => groupId === assetId)!;
+      const assetPrice = this.networksStore.getAssetPrice(priceId ?? '').price;
       const value = getCostOfAssets(totalStake, assetPrice) as number;
 
       return sum + value;
@@ -169,7 +161,7 @@ export default class StakingPage extends Vue {
 
     if (this.showMyStakingItems && !this.showStakingItems) updateTab();
 
-    await this.getStakingParams();
+    await this.stakingStore.getStakingParams();
 
     if (this.activeTabName === '') updateTab();
   }
@@ -188,7 +180,7 @@ export default class StakingPage extends Vue {
   async updateTabStakingParams() {
     this.isLoading = true;
 
-    await this.getStakingParams({ delay: 5000 });
+    await this.stakingStore.getStakingParams({ delay: 5000 });
 
     this.isLoading = false;
   }

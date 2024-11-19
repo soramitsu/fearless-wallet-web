@@ -1,5 +1,5 @@
 <template>
-  <div v-if="showSoraCardBanner" class="sora-banner">
+  <div v-if="accountsStore.showSoraCardBanner" class="sora-banner">
     <img src="@/assets/icons/sora-card-banner.png" class="banner" alt="sora card banner" />
 
     <div class="close-button" @click="hideBanner">
@@ -12,32 +12,27 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter, Mutation } from 'vuex-class';
-import type { Fn } from '@/interfaces';
 import { VerificationStatus } from '@/consts/soraCard';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
-import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { windowOpen } from '@/extension/messaging';
 import { IS_POPUP } from '@/consts/globalClient';
+import { useAccountsStore } from '@/stores/accounts';
+import { useSoraCardStore } from '@/stores/soraCard';
 
 @Component({})
 export default class SoraCardBanner extends Vue {
-  @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
-  @Mutation(AccountsMutationTypes.SET_SORA_CARD_BANNER_VISIBILITY)
-  setSoraCardBannerVisibility!: Fn<boolean>;
-  @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;
+  accountsStore = useAccountsStore();
+  soraCardStore = useSoraCardStore();
 
   get statusText() {
-    if (this.currentStatus !== null && this.currentStatus !== VerificationStatus.None)
-      return `soraCard.statuses.${this.currentStatus.toLowerCase()}.statusText`;
+    if (this.soraCardStore.currentStatus !== null && this.soraCardStore.currentStatus !== VerificationStatus.None)
+      return `soraCard.statuses.${this.soraCardStore.currentStatus?.toLowerCase()}.statusText`;
 
     return 'soraCard.getCard';
   }
 
   hideBanner() {
-    this.setSoraCardBannerVisibility(false);
+    this.accountsStore.setSoraCardBannerVisibility(false);
   }
 
   openSoraCardForm() {

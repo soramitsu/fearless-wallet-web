@@ -82,24 +82,24 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
-import type { GetAssetPrice, NetworkParams } from '@/store';
+import type { NetworkParams } from '@/stores';
 import type { TokenGroup } from '@extension-base/background/types/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import Scroll from '@/components/Scroll.vue';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: { Scroll },
 })
 export default class ValidatorInfo extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
+
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @Prop({ type: Object }) stakingCurrency!: TokenGroup;
   @Prop({ type: Object }) validator!: FWValidatorInfoFull;
   @Prop({ type: Array }) validators!: FWValidatorInfoFull[];
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get validatorFormHeight() {
     const sub = this.showOversubscribedWarning ? 0 : 55;
@@ -165,7 +165,7 @@ export default class ValidatorInfo extends Vue {
   get stakingAssetPrice() {
     const priceId = this.stakingCurrency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get apy() {
@@ -183,7 +183,7 @@ export default class ValidatorInfo extends Vue {
   get totalStakeValue() {
     const value = +this.totalStake * this.stakingAssetPrice;
 
-    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
   }
 }
 </script>

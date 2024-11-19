@@ -140,26 +140,21 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
-import type { GetAssetPrice, GetPoolsParamsProps, PoolParams } from '@/store';
-import type { TokenGroup } from '@extension-base/background/types/types';
 import PoolDescription from '@/screens/pools/PoolDescription.vue';
 import PoolHeader from '@/screens/pools/PoolHeader.vue';
 import InputsForm from '@/screens/pools/InputsForm.vue';
 import { type RequestPool } from '@/extension/background/extension-base/src/services/pools-service/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { getUtilityAsset, getXORCurrency, isValidAmountAsset } from '@/helpers/currencies';
 import { type PoolsOperation } from '@/interfaces/pools';
 import PolkaswapSettingsHeader from '@/screens/polkaswap/PolkaswapSettingsHeader.vue';
 import PolkaswapSettings from '@/screens/polkaswap/PolkaswapSettings.vue';
 import PolkaswapAlert from '@/screens/polkaswap/PolkaswapAlert.vue';
-import { GettersTypes as PoolsGettersTypes } from '@/store/pools/getters';
 import { isSameString } from '@/helpers';
-import { ActionTypes as PoolsActionTypes } from '@/store/pools/actions';
-import { type SoraFees, type AsyncFn } from '@/interfaces';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
+import { usePoolsStore } from '@/stores/pools';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: {
@@ -173,6 +168,9 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
   },
 })
 export default class PoolDetails extends Vue {
+  accountsStore = useAccountsStore();
+  networksStore = useNetworksStore();
+  poolsStore = usePoolsStore();
   step = 1; // step 1 = pool preview, step 2 = add/remove liquidity, step 3 = add/remove preview, step 4 = my pool
   amount1 = '';
   amount2 = '';
@@ -183,21 +181,16 @@ export default class PoolDetails extends Vue {
   showConfirmationPasswordPopup = false;
   isExchangeB = false;
 
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(PoolsGettersTypes.poolsItems) poolsItems!: PoolParams[];
-  @Getter(PoolsGettersTypes.myPoolsItems) myPoolsItems!: PoolParams[];
-  @Getter(NetworksGettersTypes.soraFees) soraFees!: Nullable<SoraFees>;
-  @Action(PoolsActionTypes.GET_POOLS_PARAMS) getPoolsParams!: AsyncFn<GetPoolsParamsProps>;
-
   get fee() {
-    if (!this.soraFees) return '';
+    if (!this.networksStore.soraFees) return '';
 
-    return this.extrinsicType === 'addLiquidity' ? this.soraFees?.AddLiquidity : this.soraFees?.RemoveLiquidity;
+    return this.extrinsicType === 'addLiquidity'
+      ? this.networksStore.soraFees?.AddLiquidity
+      : this.networksStore.soraFees?.RemoveLiquidity;
   }
 
   get poolParams() {
-    return [...this.poolsItems, ...this.myPoolsItems].find(
+    return [...this.poolsStore.poolsItems, ...this.poolsStore.myPoolsItems].find(
       ({ asset1, asset2 }) => isSameString(asset1.name, this.asset1) && isSameString(asset2.name, this.asset2)
     );
   }
@@ -243,13 +236,13 @@ export default class PoolDetails extends Vue {
   }
 
   get utilityCurrency() {
-    return getUtilityAsset(this.balances, this.network);
+    return getUtilityAsset(this.accountsStore.balances, this.network);
   }
 
   get utilityAssetPrice() {
     const priceId = this.utilityCurrency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get feeValue() {
@@ -257,17 +250,17 @@ export default class PoolDetails extends Vue {
   }
 
   get currency1() {
-    return this.balances.find(({ groupId }) => isSameString(groupId, this.poolParams?.asset1.id));
+    return this.accountsStore.balances.find(({ groupId }) => isSameString(groupId, this.poolParams?.asset1.id));
   }
 
   get currency2() {
-    return this.balances.find(({ groupId }) => isSameString(groupId, this.poolParams?.asset2.id));
+    return this.accountsStore.balances.find(({ groupId }) => isSameString(groupId, this.poolParams?.asset2.id));
   }
 
   get amount1AssetPrice() {
     const priceId = this.poolParams?.asset1.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get amount1Value() {
@@ -275,7 +268,7 @@ export default class PoolDetails extends Vue {
   }
 
   get currencyXOR() {
-    return getXORCurrency(this.balances);
+    return getXORCurrency(this.accountsStore.balances);
   }
 
   get isValidAsset1() {
@@ -412,7 +405,8 @@ export default class PoolDetails extends Vue {
   }
 
   async created() {
-    if (this.poolsItems.length === 0 && this.myPoolsItems.length === 0) await this.getPoolsParams();
+    if (this.poolsStore.poolsItems.length === 0 && this.poolsStore.myPoolsItems.length === 0)
+      await this.poolsStore.getPoolsParams();
 
     if (this.poolParams?.isMyPool) this.step = 4;
   }

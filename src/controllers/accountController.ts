@@ -1,7 +1,8 @@
-import { type NftSettings } from '@extension-base/services/nft-service/types';
+import type { NftSettings } from '@extension-base/services/nft-service/types';
 import type { AccountJson } from '@extension-base/background/types/types';
 import type { Node, NetworkName, WalletAddress } from '@/interfaces';
 import type { Lang } from '@/locales';
+import type { HiddenAssets } from '@/stores/accounts/types';
 import { LocalStorage } from '@/controllers/localStorageController';
 
 class AccountController {
@@ -121,7 +122,7 @@ class AccountController {
     this.lsAccount.set(this.selectedFiatStorageName, fiat);
   }
 
-  public getHiddenAssets(): Record<WalletAddress, string[]> {
+  public getHiddenAssets(): HiddenAssets {
     return this.lsAccount.get(this.hiddenAssets).value ?? {};
   }
 

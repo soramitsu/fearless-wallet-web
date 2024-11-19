@@ -77,14 +77,11 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
-import type { TokenGroup } from '@extension-base/background/types/types';
-import type { GetNetwork, SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { cut, setClipboard } from '@/helpers';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class ReceiveForm extends Vue {
@@ -94,26 +91,24 @@ export default class ReceiveForm extends Vue {
     localeProps: { value: 'QR' },
   };
 
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   filterValue = '';
   selectedNetwork = 'polkadot';
   showSelectNetworkPopup = false;
-
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get selectedAssetId() {
     return this.$route.params.assetId ?? '';
   }
 
   get assetNetworks() {
-    const currency = this.balances.find(({ groupId }) => groupId === this.selectedAssetId);
+    const currency = this.accountsStore.balances.find(({ groupId }) => groupId === this.selectedAssetId);
     const filter = this.filterValue.toLowerCase();
 
     return (
       currency?.balances
         .map(({ name, icon }) => {
-          const network = this.getNetwork(name);
+          const network = this.networksStore.getNetwork(name);
 
           return {
             name: network.name,
@@ -126,9 +121,9 @@ export default class ReceiveForm extends Vue {
   }
 
   get address() {
-    if (this.selectedWallet.address === '') return '';
+    if (this.accountsStore.selectedWallet.address === '') return '';
 
-    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
+    return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork);
   }
 
   get cutAddress() {

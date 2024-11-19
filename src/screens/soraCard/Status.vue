@@ -43,32 +43,25 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter, Mutation } from 'vuex-class';
-import type { Fn } from '@/interfaces';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
-import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { VerificationStatus } from '@/consts/soraCard';
 import { Components } from '@/router/routes';
-import { MutationTypes as SoraCardMutationTypes } from '@/store/soraCard/mutations';
 import { IS_EXTENSION } from '@/consts/global';
+import { useSoraCardStore } from '@/stores/soraCard';
 
 @Component({
   components: { UnsupportedCountries },
 })
 export default class Status extends Vue {
   readonly isExtension = IS_EXTENSION;
-
-  @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
-  @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;
-  @Getter(SoraCardGettersTypes.rejectReason) rejectReason!: string;
-  @Mutation(SoraCardMutationTypes.SET_WILL_TO_KYC_PASS_KYC_AGAIN) setWillToPassKycAgain!: Fn<boolean>;
+  soraCardStore = useSoraCardStore();
 
   get isRejected() {
-    return this.currentStatus === VerificationStatus.Rejected;
+    return this.soraCardStore.currentStatus === VerificationStatus.Rejected;
   }
 
   get isRejectedAndNotFreeAttempts() {
-    return this.isRejected && !this.hasFreeAttempts;
+    return this.isRejected && !this.soraCardStore.hasFreeAttempts;
   }
 
   get statusesClasses() {
@@ -83,33 +76,33 @@ export default class Status extends Vue {
   get iconName() {
     if (this.isRejectedAndNotFreeAttempts) return require('@/assets/icons/sora-card-rejected.png');
 
-    return require(`@/assets/icons/sora-card-${this.currentStatus.toLowerCase()}.png`);
+    return require(`@/assets/icons/sora-card-${this.soraCardStore.currentStatus?.toLowerCase()}.png`);
   }
 
   get statusText() {
     if (this.isRejectedAndNotFreeAttempts) return 'soraCard.statuses.noFreeAttempts.text1';
 
-    return `soraCard.statuses.${this.currentStatus.toLowerCase()}.text1`;
+    return `soraCard.statuses.${this.soraCardStore.currentStatus?.toLowerCase()}.text1`;
   }
 
   get statusDescription() {
     if (this.isRejectedAndNotFreeAttempts) return 'soraCard.statuses.noFreeAttempts.text2';
 
-    return `soraCard.statuses.${this.currentStatus.toLowerCase()}.text2`;
+    return `soraCard.statuses.${this.soraCardStore.currentStatus?.toLowerCase()}.text2`;
   }
 
   get additionalText() {
-    return this.isRejected && this.rejectReason ? this.rejectReason : '';
+    return this.isRejected && this.soraCardStore.rejectReason ? this.soraCardStore.rejectReason : '';
   }
 
   get statusDescription2() {
     if (this.isRejectedAndNotFreeAttempts) return 'soraCard.statuses.noFreeAttempts.text3';
 
-    return `soraCard.statuses.${this.currentStatus.toLowerCase()}.text3`;
+    return `soraCard.statuses.${this.soraCardStore.currentStatus?.toLowerCase()}.text3`;
   }
 
   get showSecondButton() {
-    return this.isRejected && this.hasFreeAttempts;
+    return this.isRejected && this.soraCardStore.hasFreeAttempts;
   }
 
   get textRetryBtn() {
@@ -129,7 +122,7 @@ export default class Status extends Vue {
     }
 
     if (this.isRejected) {
-      this.setWillToPassKycAgain(true);
+      this.soraCardStore.setWillToPassKycAgain(true);
       this.$emit('openStartPage');
     } else alert('support'); // TODO
   }

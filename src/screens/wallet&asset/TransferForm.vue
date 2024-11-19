@@ -197,7 +197,6 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch, PropSync } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import { getNativeAssetName, getSubstrateEvmAssetName } from '@extension-base/background/handlers/utils';
 import { TransferErrorCode } from '@extension-base/background/types/types';
@@ -208,18 +207,12 @@ import WarningAddressPopup from './WarningAddressPopup.vue';
 import type {
   RequestCheckTransfer,
   RequestCheckCrossChain,
-  TokenGroup,
-  AccountJson,
   ResponseCheckTransfer,
   ResponseCheckCrossChain,
 } from '@extension-base/background/types/types';
-import type { NetworkJson } from '@extension-base/types';
-import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import BaseApi from '@/util/BaseApi';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import {
   getCurrencyOptions,
   calcTransferableSendMinusFee,
@@ -239,6 +232,8 @@ import { checkTransfer, checkCrossChain, checkScamAddress } from '@/extension/me
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import { isNetworkGroup } from '@/helpers/common';
 import { IS_POPUP } from '@/consts/globalClient';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: {
@@ -251,6 +246,8 @@ import { IS_POPUP } from '@/consts/globalClient';
   },
 })
 export default class TransferForm extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   timeoutSubscription: NodeJS.Timeout | undefined;
   timeoutSetMax: NodeJS.Timeout | undefined;
   showSelectedAssetPopup = false;
@@ -280,14 +277,6 @@ export default class TransferForm extends Vue {
   @PropSync('value', { type: String }) syncedValue!: string;
   @PropSync('partialFee', { type: String }) syncedFee!: string;
   @PropSync('destNetFee', { type: String, default: '0' }) syncedDestNetFee!: string;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetworkInManagement!: string;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get scamMessage() {
     const key =
@@ -310,9 +299,9 @@ export default class TransferForm extends Vue {
   }
 
   get filteredWallets() {
-    if (this.isCrossChain) return this.wallets;
+    if (this.isCrossChain) return this.accountsStore.accounts;
 
-    return this.wallets.filter(({ active }) => !active);
+    return this.accountsStore.accounts.filter(({ active }) => !active);
   }
 
   get formHeader() {
@@ -342,16 +331,20 @@ export default class TransferForm extends Vue {
   }
 
   get originalNetworkUtilityAsset() {
-    const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === this.originalUtilityId));
+    const currency = this.accountsStore.balances.find(({ balances }) =>
+      balances.some(({ id }) => id === this.originalUtilityId)
+    );
 
     return currency?.symbol ?? '';
   }
 
   get originalAssetPrice() {
-    const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === this.originalUtilityId));
+    const currency = this.accountsStore.balances.find(({ balances }) =>
+      balances.some(({ id }) => id === this.originalUtilityId)
+    );
     const priceId = currency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get syncedFeeCut() {
@@ -359,7 +352,7 @@ export default class TransferForm extends Vue {
   }
 
   get fiatFeeCut() {
-    return `${this.fiatSymbol}${this.$n(+this.syncedFee * this.originalAssetPrice, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(+this.syncedFee * this.originalAssetPrice, 'price')}`;
   }
 
   get destNetFeeCut() {
@@ -367,7 +360,7 @@ export default class TransferForm extends Vue {
   }
 
   get destNetFiatFeeCut() {
-    return `${this.fiatSymbol}${this.$n(+this.syncedDestNetFee * this.assetPrice, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(+this.syncedDestNetFee * this.assetPrice, 'price')}`;
   }
 
   get firstIcon() {
@@ -381,7 +374,7 @@ export default class TransferForm extends Vue {
   get assetPrice() {
     const priceId = this.currency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get placeholderNetwork() {
@@ -455,7 +448,7 @@ export default class TransferForm extends Vue {
   }
 
   get utilityAsset() {
-    return getUtilityAsset(this.balances, this.syncedNetwork);
+    return getUtilityAsset(this.accountsStore.balances, this.syncedNetwork);
   }
 
   get utilityAssetName() {
@@ -491,7 +484,7 @@ export default class TransferForm extends Vue {
     // для CrossChain транзакций эта проверка не нужна, поэтому всегда возвращаем false
     if (this.isCrossChain) return false;
 
-    return BaseApi.isSameAddress(this.selectedWallet, this.syncedRecipient, this.syncedNetwork);
+    return BaseApi.isSameAddress(this.accountsStore.selectedWallet, this.syncedRecipient, this.syncedNetwork);
   }
 
   get isValidRecipientAddress() {
@@ -505,7 +498,7 @@ export default class TransferForm extends Vue {
   }
 
   get currency() {
-    return this.balances?.find(({ balances }) =>
+    return this.accountsStore.balances?.find(({ balances }) =>
       balances.some((el) => el.id.toLowerCase() === this.syncedAssetId.toLowerCase())
     );
   }
@@ -531,27 +524,27 @@ export default class TransferForm extends Vue {
   }
 
   get isSelectedNetworkGroup() {
-    return isNetworkGroup(this.selectedNetworkInManagement);
+    return isNetworkGroup(this.accountsStore.selectedNetwork);
   }
 
   get assetWithActiveNetworks() {
-    const result = this.balances.filter(({ balances }) => {
+    const result = this.accountsStore.balances.filter(({ balances }) => {
       const prepBalances = balances ?? [];
 
       return prepBalances.some(({ name }) => {
-        const { active, rank, favorite } = this.getNetwork(name);
+        const { active, rank, favorite } = this.networksStore.getNetwork(name);
 
         if (!active) return false;
 
         if (this.isSelectedNetworkGroup) {
-          if (this.selectedNetworkInManagement === POPULAR_NETWORKS && rank) return true;
+          if (this.accountsStore.selectedNetwork === POPULAR_NETWORKS && rank) return true;
 
-          const isNetworkInFavorites = favorite.some((el) => el === this.selectedWallet.address);
+          const isNetworkInFavorites = favorite.some((el) => el === this.accountsStore.selectedWallet.address);
 
-          if (this.selectedNetworkInManagement === FAVORITE_NETWORKS && isNetworkInFavorites) return true;
+          if (this.accountsStore.selectedNetwork === FAVORITE_NETWORKS && isNetworkInFavorites) return true;
         }
 
-        return this.selectedNetworkInManagement.toLowerCase() === name.toLowerCase();
+        return isSameString(this.accountsStore.selectedNetwork, name);
       });
     });
 
@@ -559,14 +552,14 @@ export default class TransferForm extends Vue {
   }
 
   get optionsAssets() {
-    const { xcm, parentId } = this.networks.find(
+    const { xcm, parentId } = this.networksStore.networks.find(
       ({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase()
     )!;
     const relay = (CHAIN_IDS[parentId!] ?? this.syncedNetwork).toLowerCase();
 
-    if (this.isTransfer) return getCurrencyOptions(this.balances);
+    if (this.isTransfer) return getCurrencyOptions(this.accountsStore.balances);
 
-    const balances = this.balances.filter(({ symbol, relayChain }) => {
+    const balances = this.accountsStore.balances.filter(({ symbol, relayChain }) => {
       if (relayChain.toLowerCase() !== relay) return false;
 
       return xcm?.availableAssets.some(({ symbol: _symbol }) => {
@@ -584,7 +577,7 @@ export default class TransferForm extends Vue {
     const walletBalance = this.currency?.balances ?? [];
 
     return walletBalance.flatMap(({ name, icon }) => {
-      const network = this.getNetwork(name);
+      const network = this.networksStore.getNetwork(name);
 
       if (!network.active) return [];
 
@@ -599,7 +592,7 @@ export default class TransferForm extends Vue {
   }
 
   get originNet() {
-    return this.getNetwork(this.syncedNetwork);
+    return this.networksStore.getNetwork(this.syncedNetwork);
   }
 
   get optionsDestNet() {
@@ -611,7 +604,7 @@ export default class TransferForm extends Vue {
     return this.originNet.xcm!.availableDestinations.flatMap(({ assets, chainId }) => {
       if (!assets.some(({ symbol }) => symbol.toLowerCase() === asset)) return [];
 
-      const { name, icon } = this.getNetwork(chainId);
+      const { name, icon } = this.networksStore.getNetwork(chainId);
 
       return {
         name: name,
@@ -657,7 +650,7 @@ export default class TransferForm extends Vue {
   }
 
   get transactionAddress() {
-    return getTransactionAddress(this.selectedWallet, this.syncedNetwork);
+    return getTransactionAddress(this.accountsStore.selectedWallet, this.syncedNetwork);
   }
 
   get tx() {

@@ -37,8 +37,6 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { URLS } from '@/consts/urls';
 import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
 
@@ -47,8 +45,6 @@ import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
 })
 export default class TermsAndConditions extends Vue {
   link = '';
-
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
   openDoc(value: 'terms' | 'privacy' | 'unsupportedCountries') {
     if (value === 'terms') this.link = URLS.SORA_CARD_TERMS;

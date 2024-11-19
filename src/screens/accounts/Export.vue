@@ -35,13 +35,12 @@
 <script lang="ts" setup>
 import { computed, ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
-import { useStore, type SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import { validatePassword } from '@/extension/messaging';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useAccountsStore } from '@/stores/accounts';
 
 const emit = defineEmits(['setPassword']);
-const store = useStore();
+const accountsStore = useAccountsStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -52,7 +51,7 @@ watch(password, () => {
   isWrongPassword.value = false;
 });
 
-const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
+const selectedWallet = computed<SelectedWallet>(() => accountsStore.selectedWallet);
 const network = computed(() => route.params.network);
 
 onMounted(() => {

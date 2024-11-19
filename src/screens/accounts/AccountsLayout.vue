@@ -83,7 +83,6 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import ExportForm from './ExportForm.vue';
 import ExportTypeForm from './ExportTypeForm.vue';
 import EditNodeForm from './EditNodeForm.vue';
@@ -91,13 +90,11 @@ import NodeSettingsPopup from './NodeSettingsPopup.vue';
 import AddEthereumAccountPopup from './AddEthereumAccountPopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import type Nodes from './Nodes.vue';
-import type { NetworkJson } from '@extension-base/types';
-import type { GetNetwork, SelectedWallet } from '@/store';
 import type { ExportType } from '@/interfaces';
 import { Components } from '@/router/routes';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { upsertNetworkMap } from '@/extension/messaging';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: {
@@ -111,6 +108,8 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 })
 export default class AccountsLayout extends Vue {
   readonly routerViewRef = 'routerView';
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   password = '';
   selectedNetwork = '';
   selectedNodeName = '';
@@ -123,10 +122,6 @@ export default class AccountsLayout extends Vue {
   showEditNodeForm = false;
   showNodeSettingsPopup = false;
   showNotificationPopup = false;
-
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get headers() {
     return { text: 'accounts.deleteCustomNode', subtext: this.selectedNodeName };
@@ -177,7 +172,7 @@ export default class AccountsLayout extends Vue {
   }
 
   get showExport() {
-    return !this.isExportRoute && !this.selectedWallet.isMobile;
+    return !this.isExportRoute && !this.accountsStore.selectedWallet.isMobile;
   }
 
   get routeName() {
@@ -247,7 +242,7 @@ export default class AccountsLayout extends Vue {
   }
 
   deleteNode() {
-    const network = this.getNetwork(this.selectedNetwork);
+    const network = this.networksStore.getNetwork(this.selectedNetwork);
     const customNodes = network.customNodes.filter((node) => node.url !== this.selectedNodeUrl);
 
     upsertNetworkMap({

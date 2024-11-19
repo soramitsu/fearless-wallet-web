@@ -13,14 +13,13 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import type { ExportType } from '@/interfaces';
-import type { SelectedWallet } from '@/store';
-import { useStore } from '@/store';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
-const store = useStore();
+import { useAccountsStore } from '@/stores/accounts';
+
+const accountsStore = useAccountsStore();
 const emit = defineEmits(['setExportType']);
 
-const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
+const selectedWallet = computed(() => accountsStore.selectedWallet);
 const showMnemonic = computed(() => !!(selectedWallet.value.isMasterAccount || selectedWallet.value.haveEntropy));
 
 const openExport = (type: ExportType) => emit('setExportType', type);

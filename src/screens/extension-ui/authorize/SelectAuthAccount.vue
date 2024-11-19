@@ -34,7 +34,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import type { WalletInfo } from '@/store';
+import type { WalletInfo } from '@/stores';
 import type { AccountAuthType } from '@extension-base/background/types/types';
 import { cut } from '@/helpers';
 

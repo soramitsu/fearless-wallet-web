@@ -75,27 +75,23 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { Features } from '@/store/extension/types';
-import type { SelectedWallet } from '@/store';
 import { Components } from '@/router/routes';
 import SettingMenuItem from '@/screens/main/SettingMenuItem.vue';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+
 import { IS_EXTENSION } from '@/consts/global';
-import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
+
 import { lockExtension } from '@/extension/messaging';
+import { useExtensionStore } from '@/stores/extension';
 
 @Component({
   components: { SettingMenuItem },
 })
 export default class SettingsPopup extends Vue {
   readonly isExtension = IS_EXTENSION;
-
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(ExtensionGettersTypes.features) features!: Nullable<Features>;
+  extensionStore = useExtensionStore();
 
   get showSoraCard() {
-    return this.features?.fiat?.soraCard;
+    return this.extensionStore.features?.fiat?.soraCard;
   }
 
   get routeName() {

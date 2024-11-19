@@ -16,18 +16,17 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { GetAssetPrice } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class WithdrawUnbonded extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
+
   @Prop({ type: Object }) stakingCurrency!: TokenGroup;
   @Prop({ type: String }) fee!: string;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get asset() {
     return this.stakingCurrency.symbol;
@@ -36,13 +35,13 @@ export default class WithdrawUnbonded extends Vue {
   get stakingAssetPrice() {
     const priceId = this.stakingCurrency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get feeValueString() {
     const value = +this.fee * this.stakingAssetPrice;
 
-    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
   }
 }
 </script>

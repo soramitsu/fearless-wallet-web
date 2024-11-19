@@ -4,8 +4,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { useStore } from '@/store';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { useNetworksStore } from '@/stores/networks';
 
 type Props = {
   name?: string;
@@ -17,7 +16,7 @@ const props = withDefaults(defineProps<Props>(), {
   width: 32,
 });
 
-const store = useStore();
+const networksStore = useNetworksStore();
 
 const style = computed(() => {
   const styles: Record<string, string> = {};
@@ -39,7 +38,7 @@ const iconName = computed(() => {
 
   if (props.name.startsWith('https://')) return props.name;
 
-  const networkIcon = store.getters[NetworksGettersTypes.getNetwork](props.name)?.icon;
+  const networkIcon = networksStore.getNetwork(props.name)?.icon;
 
   return networkIcon || props.name;
 });

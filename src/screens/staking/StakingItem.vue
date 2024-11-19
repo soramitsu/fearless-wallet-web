@@ -126,13 +126,13 @@ export default class StakingItem extends Vue {
       text-align: left;
 
       .stake-name {
-        font-size: 12px;
+        font-size: 0.75em;
         font-weight: 700;
         color: $default-white;
       }
 
       .network-name {
-        font-size: 20px;
+        font-size: 1.25em;
         font-weight: 700;
         line-height: 25px;
       }
@@ -150,20 +150,20 @@ export default class StakingItem extends Vue {
     }
 
     .unstaking {
-      font-size: 12px;
+      font-size: 0.75em;
       font-weight: 400;
       color: $default-white;
     }
 
     .apy {
-      font-size: 20px;
+      font-size: 1.25em;
       font-weight: 700;
       line-height: 25px;
       color: $pink-lavender-color;
     }
 
     .min-bond {
-      font-size: 12px;
+      font-size: 0.75em;
       color: $default-white;
     }
 

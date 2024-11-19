@@ -24,7 +24,7 @@ export function getSummaryTransferableWalletBalance(
 ): number {
   return tokens.reduce((result, token) => {
     const { balances, priceId } = token;
-    const tokenPrice = price.tokenPriceMap[priceId ?? ''] ?? 0;
+    const tokenPrice = price.tokenPriceMap ? price.tokenPriceMap[priceId ?? ''] ?? 0 : 0;
 
     if (!isNetworkGroup(network)) {
       const assetCount = getTransferableBalanceInNetwork(token, network);

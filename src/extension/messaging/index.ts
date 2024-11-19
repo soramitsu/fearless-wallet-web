@@ -1,6 +1,7 @@
 import { getId } from '@extension-base/utils/utils';
 import { PORT_EXTENSION } from '@extension-base/defaults';
 import { chrome } from '@extension-base/utils/crossenv';
+import { handlers as handlersFunc } from '@extension-base/background/handlers';
 import type {
   MessageTypes,
   MessageTypesWithNoSubscriptions,
@@ -10,8 +11,10 @@ import type {
   ResponseTypes,
   SubscriptionMessageTypes,
   Port,
+  TransportRequestMessage,
 } from '@extension-base/background/types/types';
 import type { Message } from '@extension-base/types';
+import { IS_EXTENSION } from '@/consts/global';
 
 interface Handler {
   resolve: (data: any) => void;
@@ -21,28 +24,50 @@ interface Handler {
 
 type Handlers = Record<string, Handler>;
 
-let port: Port | undefined;
+let port: Port | null;
+let isPending = true;
 const handlers: Handlers = {};
 
 function connect() {
-  port = chrome.runtime?.connect({ name: PORT_EXTENSION });
+  console.info('Connecting to background script', PORT_EXTENSION, IS_EXTENSION);
+
+  port = chrome?.extension ? chrome.runtime?.connect({ name: PORT_EXTENSION }) : null;
   port?.onDisconnect.addListener(connect);
 
-  port?.onMessage.addListener((data: Message['data']): void => {
-    const handler = handlers[data.id];
+  if (IS_EXTENSION) {
+    port?.onMessage.addListener((data: Message['data']): void => {
+      const handler = handlers[data.id];
 
-    if (!handler) {
-      console.error(`Unknown response: ${JSON.stringify(data)}`);
+      if (!handler) {
+        console.error(`Unknown response: ${JSON.stringify(data)}`);
 
-      return;
-    }
+        return;
+      }
 
-    if (!handler.subscriber) delete handlers[data.id];
+      if (!handler.subscriber) delete handlers[data.id];
 
-    if (data.subscription && handler.subscriber) handler.subscriber(data.subscription);
-    else if (data.error) handler.reject(new Error(data.error));
-    else handler.resolve(data.response);
-  });
+      if (data.subscription && handler.subscriber) handler.subscriber(data.subscription);
+      else if (data.error) handler.reject(new Error(data.error));
+      else handler.resolve(data.response);
+    });
+  } else {
+    const channel = new BroadcastChannel('sw-messages');
+    channel.addEventListener('message', ({ data }) => {
+      const handler = handlers[data.id];
+
+      if (!handler) {
+        console.error(`Unknown response: ${JSON.stringify(data)}`);
+
+        return;
+      }
+
+      if (!handler.subscriber) delete handlers[data.id];
+
+      if (data.subscription && handler.subscriber) handler.subscriber(data.subscription);
+      else if (data.error) handler.reject(new Error(data.error));
+      else handler.resolve(data.response);
+    });
+  }
 }
 
 // setup a listener for messages, any incoming resolves the promise
@@ -68,7 +93,22 @@ function sendMessage<TMessageType extends MessageTypes>(
 
     handlers[id] = { reject, resolve, subscriber };
 
-    port?.postMessage({ id, message, request: request ?? {} });
+    const notHaveServiceWorker = !('serviceWorker' in navigator) || isPending;
+
+    if (!IS_EXTENSION && notHaveServiceWorker) {
+      console.info('[worker] no worker go direct message');
+
+      handlersFunc({ id, message, request: request ?? {} } as TransportRequestMessage<MessageTypes>);
+    }
+
+    if (IS_EXTENSION) port?.postMessage({ id, message, request: request ?? {} });
+    else {
+      navigator.serviceWorker?.ready.then((registration) => {
+        isPending = false;
+
+        registration?.active?.postMessage({ id, message, request: request ?? {} });
+      });
+    }
   });
 }
 

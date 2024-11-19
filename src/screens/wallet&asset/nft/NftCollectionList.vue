@@ -67,7 +67,7 @@ const onClose = () => emit('toggleAssetsManagementForm', false);
   align-items: center;
   height: 100%;
   color: $grayish-white;
-  font-size: 16px;
+  font-size: 1em;
   font-weight: 400;
 }
 </style>

@@ -32,4 +32,8 @@ defineProps<Props>();
   background-color: rgba(255, 255, 255, 0.24);
   margin: 0 auto;
 }
+
+.fw-web {
+  width: 100%;
+}
 </style>

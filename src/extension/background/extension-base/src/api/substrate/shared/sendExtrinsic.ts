@@ -4,7 +4,7 @@ import type { HandleBasicTx } from '@extension-base/api/evm/transfer';
 
 interface SendExtrinsicProps {
   extrinsic: SubmittableExtrinsic<'promise'>;
-  callback: HandleBasicTx;
+  callback?: HandleBasicTx;
   txState: BasicTxResponse;
   isSavePass?: boolean;
   apiProps: ApiProps;
@@ -17,12 +17,12 @@ export const sendExtrinsic = async ({ callback, extrinsic, txState }: SendExtrin
     if (result.status.isBroadcast) {
       txState.status = true;
 
-      callback(txState);
+      callback?.(txState);
       unsubscribe();
     } else if (result.isError) {
       txState.status = false;
 
-      callback(txState);
+      callback?.(txState);
     }
   });
 };

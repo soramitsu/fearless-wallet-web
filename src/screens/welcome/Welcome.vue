@@ -35,7 +35,6 @@
         <FButton
           class="import-button button--content-wrap"
           size="big"
-          width="169px"
           fontSize="big"
           type="secondary"
           iconName="connectMobile"
@@ -47,9 +46,9 @@
         />
 
         <FButton
+          v-if="isExtension"
           class="import-button button--content-wrap"
           size="big"
-          width="169px"
           fontSize="big"
           type="secondary"
           iconName="googleManage"
@@ -64,7 +63,6 @@
           class="import-button button--content-wrap"
           size="big"
           fontSize="big"
-          width="169px"
           type="secondary"
           iconName="importButton"
           iconType="big"
@@ -98,11 +96,12 @@ import { Components } from '@/router/routes';
 import { URLS } from '@/consts/urls';
 import { hasMasterPassword, initGoogleAuth } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
+import { IS_EXTENSION } from '@/consts/global';
 
 @Component
 export default class Welcome extends Vue {
+  readonly isExtension = IS_EXTENSION;
   accountsStore = useAccountsStore();
-
   showGoogleAuthPopup = false;
   isAuthFlowInit = false;
   hasMasterPassword = false;
@@ -173,6 +172,7 @@ export default class Welcome extends Vue {
   height: $default-height-page;
   justify-content: space-between;
   min-height: 561px;
+
   .back-wallet-container {
     height: 32px;
   }
@@ -183,7 +183,7 @@ export default class Welcome extends Vue {
 
   .privacy-policy {
     margin-top: 17px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 400;
     line-height: 16px;
     color: $grayish-white;
@@ -217,9 +217,24 @@ export default class Welcome extends Vue {
 
   .additional-options {
     display: flex;
-    font-size: 14px;
     line-height: 18px;
     gap: 10px;
+  }
+}
+
+.fw-extension {
+  .button--content-wrap {
+    width: 169px;
+  }
+}
+
+.fw-web {
+  .button--content-wrap {
+    width: 30%;
+  }
+
+  .additional-options {
+    font-size: 1.25em;
   }
 }
 </style>

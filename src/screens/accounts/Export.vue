@@ -104,7 +104,7 @@ const checkPassword = async () => {
 
     .header {
       font-weight: 800;
-      font-size: 22px;
+      font-size: 1.375em;
     }
   }
 }

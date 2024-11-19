@@ -100,6 +100,9 @@ export const isWalletConnectRequest = (id?: string): boolean => {
 
 export const isProposalExpired = (params: ProposalTypes.Struct): boolean => {
   const timeNum = params.expiry;
+
+  if (!timeNum) return true;
+
   const expireTime = new Date(timeNum > 10 ** 12 ? timeNum : timeNum * SEC1);
   const now = new Date();
 

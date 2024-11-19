@@ -31,8 +31,8 @@
       <SearchInput
         v-if="!syncedShowAssetsManagementForm"
         :value="syncedFilterValue"
+        :width="searchInputWidth"
         placeholder="common.search"
-        width="185px"
         class="search"
         data-testid="searchInput"
         @change="changeSyncedFilterValue"
@@ -55,8 +55,8 @@
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import type { TabWallet } from '@/interfaces/common';
 import type { TokenGroup } from '@extension-base/background/types/types';
-
 import { Components } from '@/router/routes';
+import { IS_EXTENSION } from '@/consts/global';
 import { useAccountsStore } from '@/stores/accounts';
 
 interface TabsOptions {
@@ -99,6 +99,10 @@ export default class ContentSettings extends Vue {
 
   get allCurrenciesHidden() {
     return this.balances.every(({ groupId }) => this.accountsStore.hiddenAssets.includes(groupId));
+  }
+
+  get searchInputWidth() {
+    return IS_EXTENSION ? '185px' : '100%';
   }
 
   get toggleButtonText() {
@@ -159,10 +163,22 @@ export default class ContentSettings extends Vue {
 
   .hide-balance-text {
     font-weight: 500;
-    font-size: 14px;
+    font-size: 0.875em;
     line-height: 18px;
     margin-left: 8px;
     user-select: none;
+  }
+}
+
+.fw-web {
+  .content-settings {
+    flex-wrap: wrap;
+    gap: 10px;
+    flex-grow: 2;
+
+    .search-input-wrapper {
+      flex-grow: 2;
+    }
   }
 }
 </style>

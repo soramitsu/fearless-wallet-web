@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div id="app" :class="appMainClass">
     <keep-alive :include="includeKeepAlive">
       <router-view />
     </keep-alive>
@@ -8,6 +8,11 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import { cryptoWaitReady } from '@polkadot/util-crypto';
+import { state } from '@extension-base/background/handlers';
+import { keyring } from '@subwallet/ui-keyring';
+import MigrationService from '@extension-base/services/migration-service';
+import { initStorage } from '@extension-base/stores/Storage';
 import { ALL_NETWORKS } from './consts/networks';
 import { setTitle } from './helpers/common';
 import { useExtensionStore } from './stores/extension';
@@ -47,8 +52,14 @@ export default class App extends Vue {
     return components;
   }
 
+  get appMainClass() {
+    return IS_EXTENSION ? 'fw-extension' : 'fw-web';
+  }
+
   async created() {
     if (IS_EXTENSION) this.extensionStore.subscribeExtensionRequests();
+
+    if (!IS_EXTENSION) await this.setupWeb();
 
     lockExtension();
 
@@ -56,7 +67,7 @@ export default class App extends Vue {
 
     this.setupWallet();
     this.setupNetworks();
-    this.setupBalance();
+    await this.setupBalance();
     this.setupNfts();
     this.networksStore.fetchFiats();
     this.setupPrice();
@@ -85,6 +96,21 @@ export default class App extends Vue {
     const balance = await subscribeBalance((balanceUpdates) => this.accountsStore.setBalance(balanceUpdates));
 
     this.accountsStore.setBalance(balance);
+  }
+
+  async setupWeb() {
+    await cryptoWaitReady()
+      .then(() => {
+        state.keyringService.loadAll();
+        state.eventService.emit('crypto.ready', true);
+
+        keyring.restoreKeyringPassword();
+
+        MigrationService.start();
+      })
+      .catch((error) => console.error('initialization failed', error));
+
+    await initStorage();
   }
 
   async setupNfts() {
@@ -152,16 +178,27 @@ body {
   font-family: 'Sora', sans-serif;
   font-style: normal;
   font-feature-settings: 'tnum' on, 'lnum' on;
-  min-height: $extension-height;
-  min-width: $extension-width;
   height: 100vh;
-  width: $extension-width;
   color: white;
   text-align: center;
-  margin: 0 auto;
   padding: $default-padding;
   background-image: url('@/assets/background.png');
   background-position: center;
   background-size: cover;
+}
+
+.fw-web {
+  font-size: 12px;
+  margin: auto;
+  min-height: 100dvh;
+  min-width: 100dvw;
+}
+
+.fw-extension {
+  font-size: 16px;
+  margin: 0 auto;
+  min-height: $extension-height;
+  min-width: $extension-width;
+  width: $extension-width;
 }
 </style>

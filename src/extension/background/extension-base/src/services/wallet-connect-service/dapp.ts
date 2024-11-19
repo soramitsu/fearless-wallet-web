@@ -150,12 +150,12 @@ export class WalletConnectDAppService {
     return pairing?.uri;
   }
 
-  public async subscribePairing(uri: string, id: string, port: Port) {
+  public async subscribePairing(uri: string, id: string, port?: Port) {
     const cb = createSubscription<'pri(walletConnect.app.subscribePairing)'>(id, port);
 
     this.state.createUnsubscriptionHandle(id, () => {});
 
-    port.onDisconnect.addListener((): void => {
+    port?.onDisconnect.addListener((): void => {
       this.state.cancelSubscription(id);
     });
 

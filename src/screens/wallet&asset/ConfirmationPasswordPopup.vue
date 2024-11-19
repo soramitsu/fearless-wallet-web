@@ -348,6 +348,12 @@ export default class ConfirmationPasswordPopup extends Vue {
     height: 30px;
   }
 
+  .text {
+    font-weight: 700;
+    font-size: 1.125em;
+    width: 250px;
+  }
+
   .row {
     margin-top: 15px;
   }
@@ -362,19 +368,19 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     .s-icon-arrows-arrow-right-24 {
       color: $gray-2-color;
-      font-size: 30px !important;
+      font-size: 1.875em !important;
       margin: 0 10px;
     }
   }
 
   .transfer-amount {
     font-weight: 800;
-    font-size: 20px;
+    font-size: 1.25em;
     margin-bottom: 10px;
   }
 
   .transfer-value {
-    font-size: 16px;
+    font-size: 1em;
     color: $gray-color;
   }
 
@@ -393,7 +399,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   .nft-success-msg {
     color: $gray-color;
-    font-size: 16px;
+    font-size: 1em;
     font-weight: 400;
   }
 

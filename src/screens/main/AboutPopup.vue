@@ -194,13 +194,13 @@ const open = (url: string) => {
 
       .label {
         font-weight: 700;
-        font-size: 14px;
+        font-size: 0.875em;
         color: $default-white;
       }
 
       .sub-label {
         margin-top: 2px;
-        font-size: 12px;
+        font-size: 0.75em;
         color: $grayish-white;
       }
     }

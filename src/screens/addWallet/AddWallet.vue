@@ -403,9 +403,12 @@ export default class AddWallet extends Vue {
     if (step === 2) this.selectedMnemonicElements = [];
     else if (step === 5) this.$router.push({ name: Components.Wallet });
     else if (step === 4) {
+      console.info('[debug] step 5');
       this.isLoading = true;
 
       await this.saveKeypair();
+
+      console.info('[debug] step 5.1');
 
       this.isLoading = false;
 
@@ -634,6 +637,7 @@ export default class AddWallet extends Vue {
   }
 
   async saveKeypairFromSeed() {
+    console.info('[debug] saveKeypairFromSeed');
     const meta: Record<string, unknown> = { name: this.nickname.trim(), ethereumAddress: '' };
     const {
       substrate: { keypairType: substrateKeypairType },
@@ -758,7 +762,7 @@ export default class AddWallet extends Vue {
 
     .content-header {
       font-weight: 600;
-      font-size: 20px;
+      font-size: 1.25em;
       line-height: 25px;
       margin: 13.5px 0 21.5px;
     }

@@ -67,7 +67,7 @@ export default class MnemonicColumns extends Vue {
 .mnemonic-columns {
   display: flex;
   justify-content: space-evenly;
-  font-size: 16px;
+  font-size: 1em;
   font-family: 'Roboto mono', sans-serif;
   font-weight: 400;
 

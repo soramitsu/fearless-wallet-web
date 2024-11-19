@@ -65,7 +65,7 @@
       :showBlur="false"
       :showBackground="false"
       :top="148"
-      :left="-160"
+      :left="popupLeft"
       :height="360"
       :options="assetNetworks"
       @handlerFilter="handlerFilter"
@@ -80,6 +80,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { saveAs } from 'file-saver';
 import BaseApi from '@/util/BaseApi';
 import { cut, setClipboard } from '@/helpers';
+import { IS_EXTENSION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -99,6 +100,10 @@ export default class ReceiveForm extends Vue {
 
   get selectedAssetId() {
     return this.$route.params.assetId ?? '';
+  }
+
+  get popupLeft() {
+    return IS_EXTENSION ? -160 : 0;
   }
 
   get assetNetworks() {
@@ -131,7 +136,7 @@ export default class ReceiveForm extends Vue {
   }
 
   get widthSaveBtn() {
-    return this.showCopyBtn ? '260px' : '530px';
+    return IS_EXTENSION ? (this.showCopyBtn ? '260px' : '530px') : '100%';
   }
 
   get showCopyBtn() {

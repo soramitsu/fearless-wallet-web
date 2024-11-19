@@ -21,6 +21,7 @@
 import { computed, withDefaults } from 'vue';
 import { useI18n } from 'vue-i18n-composable';
 import type { ComponentText } from '@/interfaces';
+// import { IS_EXTENSION } from '@/consts/global';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
@@ -218,15 +219,15 @@ const buttonClasses = computed(() => {
 }
 
 .button-font-size-big {
-  font-size: 18px;
+  font-size: 1.125em;
 }
 
 .button-font-size-medium {
-  font-size: 16px;
+  font-size: 1em;
 }
 
 .button-font-size-small {
-  font-size: 13px;
+  font-size: 0.8125em;
 }
 
 .el-button + .el-button {
@@ -244,14 +245,14 @@ const buttonClasses = computed(() => {
 }
 
 .button--content-wrap > .el-button span {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 400;
   flex-flow: row nowrap;
   white-space: break-spaces;
 }
 
 .button__icon {
-  font-size: 14px;
+  font-size: 0.875rem;
   white-space: break-spaces;
 }
 
@@ -362,7 +363,7 @@ const buttonClasses = computed(() => {
   line-height: 18px;
   flex-flow: column;
   max-width: 140px;
-  font-size: 14px;
+  font-size: 0.875em;
   font-weight: 400;
   gap: 5px;
 }

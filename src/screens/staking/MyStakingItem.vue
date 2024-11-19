@@ -151,7 +151,7 @@ export default class MyStakingItem extends Vue {
     justify-content: space-between;
     align-items: center;
     border-bottom: $default-border;
-    font-size: 14px;
+    font-size: 0.875em;
     text-align: left;
     padding: 5px 0;
     min-height: 45px;
@@ -193,13 +193,13 @@ export default class MyStakingItem extends Vue {
         flex-direction: column;
 
         .stake-name {
-          font-size: 12px;
+          font-size: 0.75em;
           font-weight: 700;
           text-align: left;
         }
 
         .network-name {
-          font-size: 20px;
+          font-size: 1.25em;
           font-weight: 700;
           line-height: 25px;
           text-align: left;

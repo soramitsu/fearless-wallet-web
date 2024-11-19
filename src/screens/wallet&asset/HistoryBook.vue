@@ -192,7 +192,7 @@ export default class HistoryBook extends Vue {
 
     .label {
       font-weight: 700;
-      font-size: 12px;
+      font-size: 0.75em;
       text-transform: uppercase;
       color: $default-white;
       text-align: left;
@@ -235,7 +235,7 @@ export default class HistoryBook extends Vue {
 
         .address {
           color: rgba(255, 255, 255, 0.64);
-          font-size: 14px;
+          font-size: 0.875em;
         }
 
         .full-description {

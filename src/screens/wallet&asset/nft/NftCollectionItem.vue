@@ -54,7 +54,7 @@ const onClick = () =>
   gap: 4px;
   padding: 20px;
   text-align: start;
-  font-size: 16px;
+  font-size: 1em;
   font-weight: 400;
   line-height: 15px;
   color: #ffffff;
@@ -71,7 +71,7 @@ const onClick = () =>
   z-index: 100;
   right: 5px;
   top: 5px;
-  font-size: 12px;
+  font-size: 0.75em;
   font-weight: 700;
   padding: 14px;
 }
@@ -90,7 +90,7 @@ const onClick = () =>
 
   .title--main {
     font-weight: 600;
-    font-size: 16px;
+    font-size: 1em;
     line-height: 20px;
     color: #ffffff;
   }

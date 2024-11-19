@@ -637,7 +637,7 @@ export interface AccountSub {
   url: string;
 }
 
-export type Subscriptions = Record<string, Port>;
+export type Subscriptions = Record<string, Port | string>;
 
 export type Address = {
   name: string;

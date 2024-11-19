@@ -226,7 +226,7 @@ export default class AssetInfo extends Vue {
       line-height: 1px;
 
       .asset__price-item {
-        font-size: 12px;
+        font-size: 0.75em;
         font-weight: 400;
         border-right: solid 1px transparent;
         padding: 4px;
@@ -258,12 +258,12 @@ export default class AssetInfo extends Vue {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: 22px;
+      font-size: 1.375em;
       font-style: normal;
       font-weight: 700;
 
       &--fiat {
-        font-size: 18px;
+        font-size: 1.125em;
       }
     }
 

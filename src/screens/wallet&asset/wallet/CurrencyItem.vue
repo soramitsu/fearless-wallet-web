@@ -257,7 +257,7 @@ export default class CurrencyItem extends Vue {
     const allNetworksDisconnected = this.assetData.balances.every(({ name }) => {
       const network = this.networksStore.getNetwork(name);
 
-      return network.networkStatus === NETWORK_STATUS.DISCONNECTED;
+      return network?.networkStatus === NETWORK_STATUS.DISCONNECTED;
     });
 
     if (allNetworksDisconnected) return true;
@@ -416,7 +416,7 @@ export default class CurrencyItem extends Vue {
     }
 
     .first-row {
-      font-size: 12px;
+      font-size: 0.75em;
       color: $gray-color;
       margin-bottom: 5px;
       height: 14px;
@@ -439,21 +439,21 @@ export default class CurrencyItem extends Vue {
       margin-bottom: 5px;
 
       .currency-name {
-        font-size: 20px;
+        font-size: 1.25em;
         text-transform: uppercase;
         max-width: 220px;
       }
 
       .count-assets {
         max-width: 200px;
-        font-size: 18px;
+        font-size: 1.125em;
         margin: auto 0;
       }
     }
 
     .third-row {
       display: flex;
-      font-size: 12px;
+      font-size: 0.75em;
       color: $default-white;
       height: 14px;
 
@@ -478,7 +478,7 @@ export default class CurrencyItem extends Vue {
   }
 
   .second-row-left {
-    font-size: 20px;
+    font-size: 1.25em;
   }
 
   .activity {

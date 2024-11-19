@@ -573,7 +573,7 @@ export default class MainStakingForm extends Vue {
   }
 
   .controller-description {
-    font-size: 14px;
+    font-size: 0.875em;
     text-align: left;
     color: $default-white;
     margin-bottom: 15px;

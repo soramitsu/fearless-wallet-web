@@ -133,4 +133,12 @@ const switchAgreeWithRules = () => {
     }
   }
 }
+
+.fw-web {
+  .disclaimer {
+    .all-rules {
+      width: auto;
+    }
+  }
+}
 </style>

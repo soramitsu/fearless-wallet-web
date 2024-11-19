@@ -46,7 +46,7 @@ const img = ref(props.name.toLowerCase());
   .name {
     margin-top: 8px;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 0.8125em;
 
     &::first-letter {
       text-transform: capitalize;

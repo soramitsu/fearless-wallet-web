@@ -131,7 +131,7 @@ defineExpose({ input });
   }
 
   .el-input__inner {
-    font-size: 16px !important;
+    font-size: 1em !important;
   }
 
   .s-input .s-placeholder {

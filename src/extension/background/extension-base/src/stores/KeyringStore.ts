@@ -27,7 +27,7 @@ export default class KeyringStore implements PasswordStore {
     chrome.storage.local.remove(FEARLESS_KEYRING, (): void => {
       lastError('remove');
 
-      update && update();
+      update?.();
     });
   }
 
@@ -35,7 +35,7 @@ export default class KeyringStore implements PasswordStore {
     chrome.storage.local.set({ [FEARLESS_KEYRING]: value }, (): void => {
       lastError('set');
 
-      update && update();
+      update?.();
     });
   }
 }

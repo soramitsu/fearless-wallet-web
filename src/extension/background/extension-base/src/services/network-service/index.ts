@@ -264,7 +264,7 @@ export class NetworkService {
 
       delete this.evmApiHandler.api[lowerKey].api;
     } else {
-      this.substrateApiHandler.api[networkKey].provider?.disconnect();
+      this.substrateApiHandler.api[networkKey]?.provider?.disconnect();
 
       delete this.substrateApiHandler.api[lowerKey].api;
     }

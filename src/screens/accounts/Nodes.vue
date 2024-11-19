@@ -266,7 +266,7 @@ export default class Nodes extends Vue {
         color: $plain-white;
         font-weight: 500;
         margin-right: 7px;
-        font-size: 14px;
+        font-size: 0.875em;
         width: 130px;
       }
     }
@@ -284,7 +284,7 @@ export default class Nodes extends Vue {
       display: flex;
 
       .network-name {
-        font-size: 22px;
+        font-size: 1.375em;
         font-weight: 800;
         color: rgba(255, 255, 255, 1);
         margin-bottom: 5px;
@@ -298,7 +298,7 @@ export default class Nodes extends Vue {
         color: $gray-color;
 
         .address {
-          font-size: 13px;
+          font-size: 0.8125em;
           width: 100%;
           margin-right: 5px;
         }

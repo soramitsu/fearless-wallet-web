@@ -214,7 +214,7 @@ export default class StakingPage extends Vue {
     display: flex;
 
     .wallet-balance {
-      font-size: 22px;
+      font-size: 1.375em;
       line-height: 28px;
     }
 

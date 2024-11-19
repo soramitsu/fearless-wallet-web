@@ -18,7 +18,7 @@
 .ethereum-account-popup {
   .header {
     font-weight: 700;
-    font-size: 18px;
+    font-size: 1.125em;
     margin: 10px 0;
   }
 

@@ -264,7 +264,7 @@ export default class NetworkManagement extends Vue {
   background: $secondary-background-color;
   border-radius: 30px;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 0.75em;
   text-transform: uppercase;
   color: $plain-white;
   margin: 5px 14px 0 0;
@@ -297,7 +297,7 @@ export default class NetworkManagement extends Vue {
   align-items: center;
   justify-content: center;
   height: 100%;
-  font-size: 14px;
+  font-size: 0.875em;
   font-weight: 600;
   color: $gray-2-color;
 }

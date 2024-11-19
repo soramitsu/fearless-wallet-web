@@ -22,7 +22,16 @@ module.exports = {
       },
     },
   },
-  productionSourceMap: false,
+  devServer: {
+    client: {
+      overlay: {
+        errors: false,
+        warnings: false,
+        runtimeErrors: false,
+      },
+    },
+  },
+  productionSourceMap: true,
   chainWebpack: (config) => {
     config.plugin('define').tap((definitions) => {
       const def = definitions[0]['process.env'];

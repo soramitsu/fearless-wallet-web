@@ -120,7 +120,7 @@ export default class PolkaswapSettings extends Vue {
     justify-content: center;
     padding: 8px 10px;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 0.75em;
     margin-right: 16px;
     cursor: pointer;
     user-select: none;
@@ -136,7 +136,7 @@ export default class PolkaswapSettings extends Vue {
 }
 
 .slippage-warning {
-  font-size: 12px;
+  font-size: 0.75em;
   color: $gray-color;
   width: 370px;
   margin: 0 auto;

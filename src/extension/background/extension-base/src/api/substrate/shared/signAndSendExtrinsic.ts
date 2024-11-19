@@ -9,7 +9,7 @@ import type { HandleBasicTx } from '@extension-base/api/evm/transfer';
 
 interface SignAndSendExtrinsicProps extends Partial<PrepareExternalRequest> {
   extrinsic: Nullable<SubmittableExtrinsic<'promise'>>;
-  callback: HandleBasicTx;
+  callback?: HandleBasicTx;
   txState?: BasicTxResponse;
   address: string;
   errorMessage: string;
@@ -24,7 +24,7 @@ export const signAndSendExtrinsic = async (
   if (!extrinsic) {
     txState.status = false;
 
-    callback(txState);
+    callback?.(txState);
 
     return;
   }
@@ -55,6 +55,6 @@ export const signAndSendExtrinsic = async (
 
     txState.status = false;
 
-    callback(txState);
+    callback?.(txState);
   }
 };

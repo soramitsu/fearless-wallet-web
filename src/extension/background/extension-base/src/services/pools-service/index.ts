@@ -118,12 +118,12 @@ export class PoolsService {
     return (await Promise.all(promises)).flat();
   }
 
-  public async accountLiquiditySubscribe(id: string, port: Port): Promise<boolean> {
+  public async accountLiquiditySubscribe(id: string, port?: Port): Promise<boolean> {
     const cb = createSubscription<'pri(pools.accountLiquidity)'>(id, port);
 
     const subscription = this.accountLiquiditySubject.subscribe((accountLiquidity) => cb(accountLiquidity));
 
-    port.onDisconnect.addListener((): void => {
+    port?.onDisconnect.addListener((): void => {
       unsubscribe(id);
       subscription.unsubscribe();
     });

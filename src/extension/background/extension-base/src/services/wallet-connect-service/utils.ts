@@ -1,22 +1,19 @@
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import * as encoding from '@walletconnect/encoding';
-import {
-  EIP155_SIGNING_METHODS,
-  type WalletConnectNotSupportRequest,
-  type WalletConnectParamMap,
-  type WalletConnectSessionRequest,
-  type WalletConnectSigningMethod,
-} from '@extension-base/services/wallet-connect-service/types';
-import {
-  findChainInfoByHalfGenesisHash,
-  findChainInfoByChainId,
-} from '@extension-base/services/network-service/helpers';
+import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
+import { getChainInfoByHalfGenesisHash, getChainInfoByChainId } from '@extension-base/services/network-service/helpers';
 import {
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_REQUEST_KEY,
   WALLET_CONNECT_SUPPORT_NAMESPACES,
 } from './consts';
+import type {
+  WalletConnectNotSupportRequest,
+  WalletConnectParamMap,
+  WalletConnectSessionRequest,
+  WalletConnectSigningMethod,
+} from '@extension-base/services/wallet-connect-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { SignClientTypes } from '@walletconnect/types';
 import type { ProposalTypes } from '@walletconnect/types/dist/types/sign-client/proposal';
@@ -116,8 +113,8 @@ export const isSupportWalletConnectNamespace = (namespace: string): boolean => {
 export const isSupportWalletConnectChain = (chain: string, chainInfoMap: Record<string, NetworkJson>): boolean => {
   const [namespace, info] = chain.split(':');
 
-  if (namespace === WALLET_CONNECT_EIP155_NAMESPACE) return !!findChainInfoByChainId(chainInfoMap, parseInt(info));
-  else if (namespace === WALLET_CONNECT_POLKADOT_NAMESPACE) return !!findChainInfoByHalfGenesisHash(chainInfoMap, info);
+  if (namespace === WALLET_CONNECT_EIP155_NAMESPACE) return !!getChainInfoByChainId(chainInfoMap, parseInt(info));
+  else if (namespace === WALLET_CONNECT_POLKADOT_NAMESPACE) return !!getChainInfoByHalfGenesisHash(chainInfoMap, info);
 
   return false;
 };

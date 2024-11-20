@@ -123,7 +123,7 @@ export default class PolkaswapSettingsHeader extends Vue {
     justify-content: center;
     align-items: center;
     font-weight: 700;
-    font-size: 0.75em;
+    font-size: 0.75rem;
     color: $gray-color;
     text-transform: uppercase;
   }

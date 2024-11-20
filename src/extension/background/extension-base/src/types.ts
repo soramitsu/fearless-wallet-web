@@ -1,5 +1,5 @@
-import { type CustomTokenType } from '@extension-base/api/evm/types';
-import { type NETWORK_STATUS } from './api/types/networks';
+import type { CustomTokenType } from '@extension-base/api/evm/types';
+import type { NETWORK_STATUS } from './api/types/networks';
 import type { KeyringPair$Meta } from '@subwallet/keyring/types';
 import type { AssetType, BuyProvider, XcmVersion, ExternalApi } from '@/interfaces';
 
@@ -129,12 +129,6 @@ export interface NetworkJson {
       bridgeParachainId: string;
     }[];
   };
-}
-
-export interface ChainRegistry {
-  chainDecimals: number[];
-  chainTokens: string[];
-  assetsMap: Asset[];
 }
 
 export interface FWKeyringMeta extends KeyringPair$Meta {

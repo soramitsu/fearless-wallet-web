@@ -1,7 +1,7 @@
 import EmailValidator from 'email-validator';
 import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
+import type { NetworkName } from '@/interfaces';
 import { SORA_MAINNET, SORA_NETWORK_NAME, SORA_TEST } from '@/consts/sora';
-import { type NetworkName } from '@/interfaces';
 import { LIBERLAND } from '@/consts/networks';
 
 const MIN_PHONE_LENGTH_WITH_CODE = 8;

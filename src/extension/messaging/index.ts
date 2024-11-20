@@ -24,50 +24,45 @@ interface Handler {
 
 type Handlers = Record<string, Handler>;
 
-let port: Port | null;
+let port: Port | undefined;
 let isPending = true;
+
 const handlers: Handlers = {};
+
+function connectCallback(data: Message['data']) {
+  const handler = handlers[data.id];
+
+  if (!handler) {
+    console.error(`Unknown response: ${JSON.stringify(data)}`);
+
+    return;
+  }
+
+  if (!handler.subscriber) delete handlers[data.id];
+
+  if (data.subscription && handler.subscriber) handler.subscriber(data.subscription);
+  else if (data.error) handler.reject(new Error(data.error));
+  else handler.resolve(data.response);
+}
+
+function connectExtension() {
+  port = chrome.runtime?.connect({ name: PORT_EXTENSION });
+  port?.onDisconnect.addListener(connect);
+
+  port?.onMessage.addListener((data: Message['data']): void => connectCallback(data));
+}
+
+function connectWeb() {
+  const channel = new BroadcastChannel('sw-messages');
+
+  channel.addEventListener('message', ({ data }: { data: Message['data'] }) => connectCallback(data));
+}
 
 function connect() {
   console.info('Connecting to background script', PORT_EXTENSION, IS_EXTENSION);
 
-  port = chrome?.extension ? chrome.runtime?.connect({ name: PORT_EXTENSION }) : null;
-  port?.onDisconnect.addListener(connect);
-
-  if (IS_EXTENSION) {
-    port?.onMessage.addListener((data: Message['data']): void => {
-      const handler = handlers[data.id];
-
-      if (!handler) {
-        console.error(`Unknown response: ${JSON.stringify(data)}`);
-
-        return;
-      }
-
-      if (!handler.subscriber) delete handlers[data.id];
-
-      if (data.subscription && handler.subscriber) handler.subscriber(data.subscription);
-      else if (data.error) handler.reject(new Error(data.error));
-      else handler.resolve(data.response);
-    });
-  } else {
-    const channel = new BroadcastChannel('sw-messages');
-    channel.addEventListener('message', ({ data }) => {
-      const handler = handlers[data.id];
-
-      if (!handler) {
-        console.error(`Unknown response: ${JSON.stringify(data)}`);
-
-        return;
-      }
-
-      if (!handler.subscriber) delete handlers[data.id];
-
-      if (data.subscription && handler.subscriber) handler.subscriber(data.subscription);
-      else if (data.error) handler.reject(new Error(data.error));
-      else handler.resolve(data.response);
-    });
-  }
+  if (IS_EXTENSION) connectExtension();
+  else connectWeb();
 }
 
 // setup a listener for messages, any incoming resolves the promise

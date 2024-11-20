@@ -14,7 +14,7 @@
       <InfoRow
         text="assets.networkFee"
         :value="fee ? `${fee} ${soraMainAsset}` : undefined"
-        :price="`${fiatSymbol} ${feePrice}`"
+        :price="`${accountsStore.fiatSymbol} ${feePrice}`"
         icon="info"
         :iconClasses="['network-fee']"
       />

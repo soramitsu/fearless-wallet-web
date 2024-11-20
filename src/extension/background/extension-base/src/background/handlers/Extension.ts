@@ -9,7 +9,6 @@ import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/ev
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/sora';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
-import { createSubscription, unsubscribe } from '@extension-base/services';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
@@ -151,7 +150,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private cancelSubscription(id: string): boolean {
-    return this.state.cancelSubscription(id);
+    return this.state.subscriptionService.cancelSubscription(id);
   }
 
   accountsCreate({ suri, type, meta }: RequestAccountCreateSuri): string {
@@ -271,43 +270,34 @@ export default class Extension extends FWExtensionBase {
     });
   }
 
-  cancelSubscriptionHandle(id: string, port?: Port, unsubscribeFunc?: () => void): void {
-    port?.onDisconnect.addListener((): void => {
-      this.cancelSubscription(id);
-      unsubscribeFunc?.();
-    });
-  }
-
   async addressesSubscribe(id: string, port?: Port): Promise<AccountJson[]> {
-    const cb = createSubscription<'pri(addresses.subscribe)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pri(addresses.subscribe)'>(id, port);
 
     const transformedAddresses = this.convertAccounts(this.state.keyringService.addressSubject.value);
 
-    const subscription = this.state.keyringService.addressSubject.subscribe((addresses: SubjectInfo): void => {
+    const addressSubscription = this.state.keyringService.addressSubject.subscribe((addresses: SubjectInfo): void => {
       cb(this.convertAccounts(addresses));
     });
 
-    port?.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    this.state.subscriptionService.setUnsubscriptionHandle(id, addressSubscription.unsubscribe);
+
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return transformedAddresses;
   }
 
   async accountsSubscribe(id: string, port?: Port): Promise<AccountJson[]> {
-    const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pri(accounts.subscribe)'>(id, port);
 
     const transformedAccounts = this.convertAccounts(this.state.keyringService.accountSubject.value);
 
-    const subscription = this.state.keyringService.accountSubject.subscribe((accounts: SubjectInfo): void => {
+    const accountSubscription = this.state.keyringService.accountSubject.subscribe((accounts: SubjectInfo): void => {
       cb(this.convertAccounts(accounts));
     });
 
-    port?.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    this.state.subscriptionService.setUnsubscriptionHandle(id, accountSubscription.unsubscribe);
+
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return transformedAccounts;
   }
@@ -388,14 +378,13 @@ export default class Extension extends FWExtensionBase {
   }
 
   authorizeSubscribe(id: string, port?: Port): boolean {
-    const cb = createSubscription<'pri(authorize.requests)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pri(authorize.requests)'>(id, port);
 
-    const subscription = this.state.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
+    const authSubscription = this.state.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
 
-    port?.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    this.state.subscriptionService.setUnsubscriptionHandle(id, authSubscription.unsubscribe);
+
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return true;
   }
@@ -427,16 +416,15 @@ export default class Extension extends FWExtensionBase {
   }
 
   metadataSubscribe(id: string, port?: Port): boolean {
-    const cb = createSubscription<'pri(metadata.requests)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pri(metadata.requests)'>(id, port);
 
-    const subscription = this.state.requestService.metaSubject.subscribe((requests: MetadataRequest[]): void =>
+    const metaSubscription = this.state.requestService.metaSubject.subscribe((requests: MetadataRequest[]): void =>
       cb(requests)
     );
 
-    port?.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    this.state.subscriptionService.setUnsubscriptionHandle(id, metaSubscription.unsubscribe);
+
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return true;
   }
@@ -697,29 +685,27 @@ export default class Extension extends FWExtensionBase {
   }
 
   signingSubscribe(id: string, port?: Port): boolean {
-    const cb = createSubscription<'pri(signing.requests)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pri(signing.requests)'>(id, port);
 
-    const subscription = this.state.requestService.signSubject.subscribe((requests: SigningRequest[]): void =>
+    const signSubscription = this.state.requestService.signSubject.subscribe((requests: SigningRequest[]): void =>
       cb(requests)
     );
 
-    port?.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    this.state.subscriptionService.setUnsubscriptionHandle(id, signSubscription.unsubscribe);
+
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return true;
   }
 
   signingEvmSubscribe(id: string, port?: Port): boolean {
-    const cb = createSubscription<'pri(signing.evmRequests)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pri(signing.evmRequests)'>(id, port);
 
-    const subscription = this.state.requestService.signEvmSubject.subscribe((requests): void => cb(requests));
+    const signEvmSubscription = this.state.requestService.signEvmSubject.subscribe((requests): void => cb(requests));
 
-    port?.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    this.state.subscriptionService.setUnsubscriptionHandle(id, signEvmSubscription.unsubscribe);
+
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return true;
   }
@@ -768,14 +754,6 @@ export default class Extension extends FWExtensionBase {
     this.state.requestService.authorizeCancel({ id });
   }
 
-  private createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
-    this.state.createUnsubscriptionHandle(id, unsubscribe);
-  }
-
-  private getTotalBalances() {
-    return this.state.balanceService.getTotalBalances();
-  }
-
   private async fetchEvmBalance({ assetId, ethereumAddress }: FetchEvmBalancePayload) {
     if (!this.state.ready) return;
 
@@ -783,15 +761,13 @@ export default class Extension extends FWExtensionBase {
   }
 
   private subscribeBalance(id: string, port?: Port): Promise<BalanceJson> {
-    const cb = createSubscription<'pri(balance.subscription)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pri(balance.subscription)'>(id, port);
 
-    const balanceSubscription = this.state.balanceService.balanceSubject.subscribe({
-      next: (rs) => cb(rs),
-    });
+    const balanceSubscription = this.state.balanceService.balanceSubject.subscribe({ next: (rs) => cb(rs) });
 
-    this.createUnsubscriptionHandle(id, balanceSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, balanceSubscription.unsubscribe);
 
-    this.cancelSubscriptionHandle(id, port);
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return this.state.balanceService.getBalance();
   }
@@ -807,8 +783,8 @@ export default class Extension extends FWExtensionBase {
     });
   }
 
-  private subscribePrice(id: string, port?: Port): Promise<PriceJson> {
-    const cb = createSubscription<'pri(price.subscription)'>(id, port);
+  private subscribePrice(id: string, port?: chrome.runtime.Port): Promise<PriceJson> {
+    const cb = this.state.subscriptionService.createSubscription<'pri(price.subscription)'>(id, port);
 
     const priceSubscription = this.state.pricesService.getSubject().subscribe({
       next: (rs) => {
@@ -816,25 +792,23 @@ export default class Extension extends FWExtensionBase {
       },
     });
 
-    this.createUnsubscriptionHandle(id, priceSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, priceSubscription.unsubscribe);
 
-    this.cancelSubscriptionHandle(id, port);
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return this.getPrice();
   }
 
   public async soraFeesSubscribe(id: string, port?: Port) {
-    const cb = createSubscription<'pri(accounts.soraFees.subscribe)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pri(accounts.soraFees.subscribe)'>(id, port);
 
     const soraFeesSubscription = this.state.soraFees.subscribe({
-      next: (rs) => cb(rs!),
+      next: (rs) => cb(rs),
     });
 
-    this.createUnsubscriptionHandle(id, soraFeesSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, soraFeesSubscription.unsubscribe);
 
-    this.cancelSubscriptionHandle(id, port);
-
-    return this.state.soraFees.value;
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
   }
 
   private async checkSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
@@ -934,7 +908,7 @@ export default class Extension extends FWExtensionBase {
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
     const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
 
-    const callback = createSubscription<'pri(accounts.makeTransfer)'>(id, port);
+    const callback = this.state.subscriptionService.createSubscription<'pri(accounts.makeTransfer)'>(id, port);
 
     let transferProm: Promise<void> | undefined;
 
@@ -985,7 +959,7 @@ export default class Extension extends FWExtensionBase {
       setTimeout(() => this.cancelSubscription(id), 500);
     }
 
-    this.cancelSubscriptionHandle(id, port);
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return { status: true };
   }
@@ -1043,7 +1017,7 @@ export default class Extension extends FWExtensionBase {
     const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
     const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
 
-    const callback = createSubscription<'pri(accounts.makeCrossChain)'>(id, port);
+    const callback = this.state.subscriptionService.createSubscription<'pri(accounts.makeCrossChain)'>(id, port);
 
     const params: MakeCrossChainProps = {
       assetId,
@@ -1084,7 +1058,7 @@ export default class Extension extends FWExtensionBase {
       setTimeout(() => this.cancelSubscription(id), 500);
     }
 
-    this.cancelSubscriptionHandle(id, port);
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return { status: true };
   }
@@ -1100,21 +1074,21 @@ export default class Extension extends FWExtensionBase {
   }
 
   private subscribeNetworkMap(id: string, port?: Port): Record<string, NetworkJson> {
-    const cb = createSubscription<'pri(networkMap.getSubscription)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pri(networkMap.getSubscription)'>(id, port);
 
-    const networkMapSubscription = this.state.networkService.networkMapStore.getSubject().subscribe({
-      next: (rs) => cb(rs),
-    });
+    const networkMapSubscription = this.state.networkService.networkMapStore
+      .getSubject()
+      .subscribe({ next: (rs) => cb(rs) });
 
-    this.createUnsubscriptionHandle(id, networkMapSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, networkMapSubscription.unsubscribe);
 
-    this.cancelSubscriptionHandle(id, port);
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return this.state.networkService.networkMap;
   }
 
   private subscribeSelectedNetworks(id: string, port?: Port) {
-    const cb = createSubscription<'pri(selectedNetworks.getSubscription)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pri(selectedNetworks.getSubscription)'>(id, port);
 
     const selectedNetworksSubscription = this.state.networkService.selectedNetworksStore.getSubject().subscribe({
       next: (rs) => {
@@ -1124,9 +1098,9 @@ export default class Extension extends FWExtensionBase {
       },
     });
 
-    this.createUnsubscriptionHandle(id, selectedNetworksSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, selectedNetworksSubscription.unsubscribe);
 
-    this.cancelSubscriptionHandle(id, port);
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
   }
 
   private async soraCardTokenSubscribe(id: string, port?: Port): Promise<boolean> {
@@ -1201,13 +1175,19 @@ export default class Extension extends FWExtensionBase {
       });
   }
 
-  private connectWCSubscribe(id: string, port?: Port): WalletConnectSessionRequest[] {
-    const cb = createSubscription<'pri(walletConnect.requests.connect.subscribe)'>(id, port);
+  private connectWCSubscribe(id: string, port?: chrome.runtime.Port): WalletConnectSessionRequest[] {
+    const cb = this.state.subscriptionService.createSubscription<'pri(walletConnect.requests.connect.subscribe)'>(
+      id,
+      port
+    );
+
     const subscription = this.state.requestService.connectWCSubject.subscribe(
       (requests: WalletConnectSessionRequest[]): void => cb(requests)
     );
 
-    this.cancelSubscriptionHandle(id, port, subscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, subscription.unsubscribe);
+
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return this.state.requestService.allConnectWCRequests;
   }
@@ -1356,14 +1336,16 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  private subscribeWalletConnectSessions(id: string, port?: Port): SessionTypes.Struct[] {
-    const cb = createSubscription<'pri(walletConnect.session.subscribe)'>(id, port);
+  private subscribeWalletConnectSessions(id: string, port?: chrome.runtime.Port): SessionTypes.Struct[] {
+    const cb = this.state.subscriptionService.createSubscription<'pri(walletConnect.session.subscribe)'>(id, port);
 
     const subscription = this.state.walletConnectService.sessionSubject.subscribe((rs) => {
       cb(rs);
     });
 
-    this.cancelSubscriptionHandle(id, port, subscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, subscription.unsubscribe);
+
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return this.state.walletConnectService.sessions ?? [];
   }
@@ -1375,16 +1357,18 @@ export default class Extension extends FWExtensionBase {
   }
 
   wcSigningSubscribe(id: string, port?: Port): boolean {
-    const cb = createSubscription<'pri(walletConnect.signing.requests.subscribe)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pri(walletConnect.signing.requests.subscribe)'>(
+      id,
+      port
+    );
 
-    const subscription = this.state.requestService.signWcSubject.subscribe(
+    const requestSubscription = this.state.requestService.signWcSubject.subscribe(
       (requests: WalletConnectTransactionRequest[]): void => cb(requests)
     );
 
-    port?.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    this.state.subscriptionService.setUnsubscriptionHandle(id, requestSubscription.unsubscribe);
+
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return true;
   }
@@ -1461,12 +1445,18 @@ export default class Extension extends FWExtensionBase {
   }
 
   private WCNotSupportSubscribe(id: string, port?: chrome.runtime.Port): WalletConnectNotSupportRequest[] {
-    const cb = createSubscription<'pri(walletConnect.requests.notSupport.subscribe)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pri(walletConnect.requests.notSupport.subscribe)'>(
+      id,
+      port
+    );
+
     const subscription = this.state.requestService.notSupportWCSubject.subscribe(
       (requests: WalletConnectNotSupportRequest[]): void => cb(requests)
     );
 
-    this.cancelSubscriptionHandle(id, port, subscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, subscription.unsubscribe);
+
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return this.state.requestService.allNotSupportWCRequests;
   }
@@ -1495,8 +1485,8 @@ export default class Extension extends FWExtensionBase {
     return this.state.walletConnectDappService.initPairing();
   }
 
-  private async fetchBalance({ address, networkName }: FetchBalanceRequest): Promise<string> {
-    return await this.state.balanceService.fetchBalance(address, networkName);
+  private async fetchBalance({ address, networkName, ethereumAddress }: FetchBalanceRequest): Promise<string> {
+    return await this.state.balanceService.fetchBalance(address, networkName, ethereumAddress);
   }
 
   changeMasterPassword(request: RequestChangePassword): boolean {
@@ -1661,7 +1651,7 @@ export default class Extension extends FWExtensionBase {
         return this.accountsValidatePassword(request as RequestAccountValidate);
 
       case 'pri(accounts.totalBalances)':
-        return this.getTotalBalances();
+        return this.state.balanceService.getTotalBalances();
 
       /// Transfer, CrossChain, Sora Swap
       case 'pri(accounts.checkTransfer)':

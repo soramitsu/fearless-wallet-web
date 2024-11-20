@@ -1,6 +1,6 @@
 import { logger as createLogger } from '@polkadot/util';
-import { type Subscription } from 'rxjs';
 import { subscribeBalance } from '@extension-base/api/substrate/balance';
+import type { Subscription } from 'rxjs';
 import type State from '@extension-base/background/handlers/State';
 import type { Logger } from '@polkadot/util/types';
 import type {
@@ -9,7 +9,7 @@ import type {
   SubscriptionMessageTypes,
   Subscriptions,
 } from '@extension-base/background/types/types';
-import { type NetworkName } from '@/interfaces';
+import type { NetworkName } from '@/interfaces';
 import { SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 
 type SubscriptionName = 'xorTotalBalance' | NetworkName;
@@ -33,9 +33,11 @@ interface ServiceInfo {
 }
 
 export class SubscriptionService {
-  static subscriptions: Subscriptions = {};
-  public readonly unsubscriptionMap: Record<string, () => void> = {};
-  private serviceSubscription: Subscription | undefined;
+  private logger: Logger;
+  private subscriptionsPorts: Subscriptions = {}; // subscriptions for interaction with client side
+  private serviceInfoSubscription: Subscription | undefined;
+  private subscriptionNetworksMap: SubscriptionMap = {}; // subscriptions for networks balances
+  private unsubscriptionMap: Record<string, () => void> = {};
 
   private serviceInfo: ServiceInfo = {
     address: '',
@@ -43,40 +45,81 @@ export class SubscriptionService {
     networks: { evm: [], substrate: [] },
   };
 
-  private subscriptionMap: SubscriptionMap = {};
-  private logger: Logger;
-
   constructor(private state: State) {
     this.logger = createLogger('Subscription');
+
     this.init();
   }
 
-  getSubscription(name: SubscriptionName): (() => void) | undefined {
-    return this.subscriptionMap[name];
+  // Clear a previous subscriber
+  private unsubscribe(id: string): void {
+    if (this.subscriptionsPorts[id]) delete this.subscriptionsPorts[id];
+    else console.error(`Unable to unsubscribe from ${id}`);
   }
 
-  updateSubscription(payload: UpdateSub) {
-    const { name, func } = payload;
+  createSubscription<TMessageType extends MessageTypesWithSubscriptions>(
+    id: string,
+    port?: Port
+  ): (data: SubscriptionMessageTypes[TMessageType] | null) => void {
+    this.subscriptionsPorts[id] = port ?? 'sw-messages';
 
-    const oldSub = this.getSubscription(name);
+    // 'subscription' is a callback
+    return (subscription: unknown): void => {
+      if (this.subscriptionsPorts[id]) {
+        try {
+          port?.postMessage({ id, subscription });
+        } catch (error) {
+          console.info('Error occurred while trying to post message', error);
+
+          this.unsubscribe(id);
+        }
+      }
+    };
+  }
+
+  setUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
+    this.unsubscriptionMap[id] = unsubscribe;
+  }
+
+  cancelSubscription(id: string): boolean {
+    // Clear subscribe port
+    this.unsubscribe(id);
+
+    if (this.unsubscriptionMap[id]) {
+      this.unsubscriptionMap[id]();
+
+      delete this.unsubscriptionMap[id];
+    }
+
+    return true;
+  }
+
+  getNetworkSubscription(name: SubscriptionName): (() => void) | undefined {
+    return this.subscriptionNetworksMap[name];
+  }
+
+  updateNetworkSubscription(params: UpdateSub) {
+    const { name, func } = params;
+
+    const oldSub = this.getNetworkSubscription(name);
 
     oldSub?.();
 
-    this.subscriptionMap[name] = func;
+    this.subscriptionNetworksMap[name] = func;
   }
 
-  stopAllSubscription(names?: string[]) {
+  stopAllNetworksSubscription(names?: string[]) {
     if (names?.length === 0) return;
 
-    Object.entries(this.subscriptionMap)
+    Object.entries(this.subscriptionNetworksMap)
       .filter(([name]) => names?.includes(name) ?? true)
       .forEach(([name, unsub]) => {
         unsub?.();
 
-        this.subscriptionMap[name] = undefined;
+        this.subscriptionNetworksMap[name] = undefined;
       });
 
-    if (names === undefined) this.subscriptionMap = {};
+    if (names === undefined) this.subscriptionNetworksMap = {};
   }
 
   async start() {
@@ -92,8 +135,8 @@ export class SubscriptionService {
       this.subscribeBalances(account.address, ethAddress, null, null, true);
     });
 
-    if (!this.serviceSubscription)
-      this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
+    if (!this.serviceInfoSubscription)
+      this.serviceInfoSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
           console.info('serviceInfo', serviceInfo);
 
@@ -152,7 +195,7 @@ export class SubscriptionService {
             (name) => !allNewSubstrateNetworks.includes(name)
           );
 
-          this.stopAllSubscription(networkUnsub);
+          this.stopAllNetworksSubscription(networkUnsub);
 
           // обновляем список сетей на балансы которых мы подписаны
           this.serviceInfo.networks.substrate = allNewSubstrateNetworks;
@@ -163,17 +206,6 @@ export class SubscriptionService {
           // тк мы полностью отклюачемся от api, следовательно подписки умирают сами
         },
       });
-  }
-
-  stop() {
-    this.logger.log('Stop subscription');
-
-    if (this.serviceSubscription) {
-      this.serviceSubscription.unsubscribe();
-      this.serviceSubscription = undefined;
-    }
-
-    this.stopAllSubscription();
   }
 
   init() {
@@ -205,64 +237,20 @@ export class SubscriptionService {
 
     if (newEvmNetworks?.length) this.state.fetchEvmBalance({ _networks: newEvmNetworks, ethereumAddress });
 
+    if (isFirstRun)
+      return newNetworks?.forEach((network) => {
+        this.state.balanceService.fetchBalance(address, network, ethereumAddress);
+      });
+
     const unsubList = subscribeBalance(address, ethereumAddress, newNetworks, this.state);
-
-    if (isFirstRun) {
-      // ждем 20 секунд, потом отписываемся, за это время ответят большинство сетей
-      // можно было бы дожидаться и await`ить все подписки разом, но некоторые сети очень долго отвечают
-      setTimeout(() => {
-        unsubList.forEach(async (subPromise) => {
-          const sub = await subPromise;
-
-          sub.unsub();
-        });
-      }, 20000);
-
-      return;
-    }
 
     unsubList.forEach(async (item) => {
       const value = await item;
 
-      this.updateSubscription({
+      this.updateNetworkSubscription({
         name: value.networkName,
         func: value.unsub,
       });
     });
   }
-}
-
-// clear a previous subscriber
-export function unsubscribe(id: string): void {
-  if (SubscriptionService.subscriptions[id]) {
-    delete SubscriptionService.subscriptions[id];
-  } else console.error(`Unable to unsubscribe from ${id}`);
-}
-
-export function createSubscription<TMessageType extends MessageTypesWithSubscriptions>(
-  id: string,
-  port?: Port
-): (data: SubscriptionMessageTypes[TMessageType] | null) => void {
-  SubscriptionService.subscriptions[id] = port ?? 'sw-messages';
-
-  return (subscription: unknown): void => {
-    if (SubscriptionService.subscriptions[id]) {
-      try {
-        if (port) {
-          port.postMessage({ id, subscription });
-        } else {
-          const channel = new BroadcastChannel('sw-messages');
-          channel.postMessage({ id, subscription });
-        }
-      } catch (error) {
-        console.info('Error occurred while trying to post message', error);
-
-        unsubscribe(id);
-      }
-    }
-  };
-}
-
-export function isSubscriptionRunning(id: string): boolean {
-  return !!SubscriptionService.subscriptions[id];
 }

@@ -376,7 +376,7 @@ export class KeyringService {
 
       return true;
     } catch (e) {
-      console.error(e);
+      console.info(e);
 
       return false;
     }

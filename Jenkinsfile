@@ -39,7 +39,7 @@ def jobParams  = [
     [$class: 'BooleanParameterDefinition', name: 'upload_to_firefox', defaultValue: false, description: 'Upload builds to firefox (master branches upload always)'],
     [$class: 'BooleanParameterDefinition', name: 'squash_commits', defaultValue: false, description: 'Squash all commits'],
     [$class: 'StringParameterDefinition', name: 'squash_commits_message', defaultValue: '', trim: true],
-    [$class: 'BooleanParameterDefinition', name: 'isWeb', defaultValue: true, description: 'build as web version']
+    [$class: 'BooleanParameterDefinition', name: 'isWeb', defaultValue: true, description: 'build as the web version']
 ]
 
 

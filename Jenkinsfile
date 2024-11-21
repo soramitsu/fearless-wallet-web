@@ -80,7 +80,6 @@ def pipeline = new org.js.AppArtifactsPipeline(
     initialSecretName:          "fearless-dev-wallet-web-wallet-web-web-eso-base",
     initialNameSpace:           "fearless-dev-web",
     targetNameSpace:            "fearless-${env.CHANGE_ID}-web",
-    targetSecretName:           "fearless-${env.CHANGE_ID}-wallet-web-pr-wallet-web-eso-base",
-    dockerImageTags:            ['feature/web-build_pipeline': 'dev']
+    targetSecretName:           "fearless-${env.CHANGE_ID}-wallet-web-pr-wallet-web-eso-base"
 )
 pipeline.runPipeline()

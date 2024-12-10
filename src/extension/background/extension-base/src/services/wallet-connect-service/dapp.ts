@@ -15,13 +15,9 @@ import {
 } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
 import Provider from '@walletconnect/universal-provider';
-import { createSubscription } from '@extension-base/services';
-import {
-  EIP155_SIGNING_METHODS,
-  type AppSessionInitResponse,
-  type PairingSubjectType,
-} from '@extension-base/services/wallet-connect-service/types';
+import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
 import { isSameAddress } from '@extension-base/utils';
+import type { AppSessionInitResponse, PairingSubjectType } from '@extension-base/services/wallet-connect-service/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
@@ -151,13 +147,11 @@ export class WalletConnectDAppService {
   }
 
   public async subscribePairing(uri: string, id: string, port?: Port) {
-    const cb = createSubscription<'pri(walletConnect.app.subscribePairing)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pri(walletConnect.app.subscribePairing)'>(id, port);
 
-    this.state.createUnsubscriptionHandle(id, () => {});
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => {});
 
-    port?.onDisconnect.addListener((): void => {
-      this.state.cancelSubscription(id);
-    });
+    port?.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
 
     const activePairing = this.pairingSubject.value[uri];
 

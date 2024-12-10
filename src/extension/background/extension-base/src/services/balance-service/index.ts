@@ -198,9 +198,9 @@ export default class BalanceService {
     })!;
   }
 
-  public async fetchBalance(address: string, networkName: NetworkName) {
+  public async fetchBalance(address: string, networkName: NetworkName, ethereumAddress?: string) {
     const api = this.state.getSubstrateApiMap[networkName.toLowerCase()]?.api;
 
-    return await fetchBalance(address, networkName, this.state, api);
+    return await fetchBalance(address, networkName, this.state, api, ethereumAddress);
   }
 }

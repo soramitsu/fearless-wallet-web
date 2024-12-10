@@ -55,13 +55,6 @@
       />
 
       <SettingMenuItem
-        title="common.aboutApp"
-        icon="info"
-        data-testid="aboutApp"
-        @onOpen="openPopup('openAboutPopup')"
-      />
-
-      <SettingMenuItem
         title="common.changePassword"
         icon="key"
         data-testid="changePassword"
@@ -69,6 +62,13 @@
       />
 
       <SettingMenuItem title="common.lockApp" icon="lock" data-testid="lockApp" @onOpen="lock" />
+
+      <SettingMenuItem
+        title="common.aboutApp"
+        icon="info"
+        data-testid="aboutApp"
+        @onOpen="openPopup('openAboutPopup')"
+      />
     </div>
   </Popup>
 </template>
@@ -77,9 +77,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
 import SettingMenuItem from '@/screens/main/SettingMenuItem.vue';
-
 import { IS_EXTENSION } from '@/consts/global';
-
 import { lockExtension } from '@/extension/messaging';
 import { useExtensionStore } from '@/stores/extension';
 

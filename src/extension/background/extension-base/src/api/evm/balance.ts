@@ -64,7 +64,7 @@ async function fetchTokenBalance(ethereumAddress: string, networkKey: string, co
       balanceItem.state = APIItemState.ERROR;
 
       state.disableNetworkMap(networkKey);
-      state.subscriptionService.getSubscription(networkKey)?.();
+      state.subscriptionService.getNetworkSubscription(networkKey)?.();
 
       state.balanceService.setBalanceItem(networkKey, balanceItem, ethereumAddress);
 
@@ -110,7 +110,7 @@ function fetchUtilityBalance(networkKey: string, ethereumAddress: string, state:
       api.apiRetry = retries + 1;
 
       state.disableNetworkMap(networkKey);
-      state.subscriptionService.getSubscription(networkKey)?.();
+      state.subscriptionService.getNetworkSubscription(networkKey)?.();
 
       state.balanceService.setBalanceItem(networkKey, balanceItem, address);
     });

@@ -21,10 +21,8 @@ import {
   ScamService,
   PricesService,
   TimeoutService,
-  isSubscriptionRunning,
-  unsubscribe,
 } from '@extension-base/services';
-import { api as apiSora, type FPNumber } from '@sora-substrate/util';
+import { api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
@@ -49,7 +47,7 @@ import type {
   AuthUrlInfo,
   AuthUrls,
 } from '@extension-base/background/types/types';
-import type { ChainRegistry, NetworkJson } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
@@ -57,8 +55,6 @@ import { isEthereumNetwork } from '@/extension/background/extension-base/src/bac
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
-
-export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
 type Wallet = {
   address: string;
@@ -68,7 +64,6 @@ type Wallet = {
 export default class State {
   public injectedProviders: Map<Port, ProviderInterface> = new Map();
   public providers: Providers = {};
-  public readonly unsubscriptionMap: Record<string, () => void> = {};
   public serviceInfoSubject = new Subject<ServiceInfo>();
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
@@ -79,6 +74,7 @@ export default class State {
     authorizeAccountsCount: 0,
     dAppName: '',
   };
+
   public onboardingService = new OnboardingService();
   public eventService = new EventService();
   public keyringService = new KeyringService(this.eventService);
@@ -89,7 +85,7 @@ export default class State {
   public balanceService = new BalanceService(this);
   public pricesService = new PricesService(this.networkService);
   public nftService = new NftService(this);
-  public soraCardService = new SoraCardService(this.requestService);
+  public soraCardService = new SoraCardService(this.requestService, this);
   public stakingService = new StakingService(this);
   public poolsService = new PoolsService(this);
   public googleService = new GoogleService();
@@ -122,22 +118,6 @@ export default class State {
 
   public get getEvmApiMap() {
     return this.networkService.evmApiHandler.api;
-  }
-
-  public createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
-    this.unsubscriptionMap[id] = unsubscribe;
-  }
-
-  public cancelSubscription(id: string): boolean {
-    if (isSubscriptionRunning(id)) unsubscribe(id);
-
-    if (this.unsubscriptionMap[id]) {
-      this.unsubscriptionMap[id]();
-
-      delete this.unsubscriptionMap[id];
-    }
-
-    return true;
   }
 
   public subscribeServiceInfo() {
@@ -269,7 +249,7 @@ export default class State {
 
     this.networkService.selectedNetworks[this.currentAccount.address] = type;
 
-    const unsub = this.subscriptionService.getSubscription('balance');
+    const unsub = this.subscriptionService.getNetworkSubscription('balance');
 
     unsub?.();
 
@@ -493,8 +473,9 @@ export default class State {
       //@ts-ignore
       apiSora.bridgeProxy.sub.account = { json: null as any, pair };
 
-      // TODO добавить фича тогл
-      // this.subscribeTotalXorBalance();
+      // Needed for Sora card, now not use
+      // TODO: Add to feature toggle
+      // SoraApiHandler.subscribeTotalXorBalance();
     }
 
     this.updateServiceInfo();
@@ -527,20 +508,6 @@ export default class State {
 
     this.nftService.deleteSavedNfts(address);
     this.balanceService.deleteBalance(address);
-  }
-
-  public subscribeTotalXorBalance() {
-    if (!apiSora.api || !apiSora.api.isConnected) return;
-
-    try {
-      const subscription = apiSora.assets
-        .getTotalXorBalanceObservable()
-        .subscribe((xorTotalBalance: FPNumber) => this.balanceService.updateXorTotalBalance(xorTotalBalance));
-
-      this.subscriptionService.updateSubscription({ name: 'xorTotalBalance', func: subscription.unsubscribe });
-    } catch (ex) {
-      console.error('failed subscribe or unsubscribe to XOR balance');
-    }
   }
 
   public getAddressList(value = false): Record<string, boolean> {

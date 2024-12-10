@@ -25,7 +25,7 @@
               :historyElement="historyElement"
               :token="currency"
               :network="selectedNetwork"
-              :address="selectedWallet.address"
+              :address="accountsStore.selectedWallet.address"
               data-testid="historyItem"
               @click.native="openHistoryDetails(historyElement)"
             />

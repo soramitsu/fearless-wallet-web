@@ -1,6 +1,5 @@
 import { NftFilters, type Network } from 'alchemy-sdk';
 import { Subject } from 'rxjs';
-import { createSubscription, unsubscribe } from '@extension-base/services';
 import AlchemyNftController from '@extension-base/services/nft-service/handlers/AlchemyNftSdk';
 import { PROD_NFT_NETWORKS } from '@extension-base/services/nft-service/consts';
 import { storage } from '@extension-base/stores/Storage';
@@ -270,16 +269,15 @@ export class NftService {
   }
 
   nftSubscribe(id: string, port?: Port): ChainNftState {
-    const cb = createSubscription<'pri(nft.subscribe)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pri(nft.subscribe)'>(id, port);
 
-    const subscription = this.nftSubject.subscribe({
+    const nftSubscription = this.nftSubject.subscribe({
       next: (rs) => cb(rs),
     });
 
-    port?.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    this.state.subscriptionService.setUnsubscriptionHandle(id, nftSubscription.unsubscribe);
+
+    port?.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
 
     const account = this.state.currentAccount;
 

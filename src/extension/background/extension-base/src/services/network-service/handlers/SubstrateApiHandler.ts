@@ -1,24 +1,51 @@
-import { api as apiSora, FPNumber, connection as soraConnection } from '@sora-substrate/util';
 import { ApiPromise } from '@polkadot/api';
 import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { WsProvider } from '@polkadot/rpc-provider';
+import { SoraApiHandler } from './SoraApiHandler';
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
 import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import type { NetworkService } from '@extension-base/services/network-service';
 import type { NetworkJson } from '@extension-base/types';
 import type { ApiProps } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
-import type { NetworkName, SoraFees } from '@/interfaces';
+import type { NetworkName } from '@/interfaces';
 import { isSora } from '@/helpers';
-import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
+import { MAX_CONTINUE_RETRY } from '@/consts/networks';
 
 export class SubstrateApiHandler {
   api: Record<NetworkName, ApiProps> = {};
 
   constructor(readonly networkService: NetworkService, public state: State) {}
 
-  async initApi(network: NetworkJson): Promise<void> {
+  refreshDotSamaApi(key: string) {
+    if (this.api[key]) {
+      this.api[key].nodeIndex = 0;
+      this.api[key].apiRetry = 0;
+    }
+
+    const network = this.networkService.getNetworkJson(key);
+
+    this.initApi(network);
+  }
+
+  createApiObject(): ApiProps {
+    return {
+      isEthereum: false,
+      apiStatus: NETWORK_STATUS.CONNECTING,
+      apiRetry: 0,
+      nodeIndex: 0,
+    };
+  }
+
+  resetApiRetries() {
+    Object.values(this.api).forEach((api) => {
+      api.nodeIndex = 0;
+      api.apiRetry = 0;
+    });
+  }
+
+  getListeners(network: NetworkJson) {
     const { name, nodes } = network;
     const networkName = name.toLowerCase();
 
@@ -27,6 +54,7 @@ export class SubstrateApiHandler {
 
     const autoSelectNode = network.isManual ? null : nodes[nodeIndex].url;
     const currentProvider = autoSelectNode ?? network.currentProvider;
+
     const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [
       ['connected', () => this.onConnected(networkName)],
       ['disconnected', () => this.onDisconnect(name)],
@@ -34,11 +62,18 @@ export class SubstrateApiHandler {
       ['error', () => null],
     ];
 
-    if (isSora(networkName)) {
-      soraConnection.open(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
+    return {
+      currentProvider,
+      eventListeners,
+    };
+  }
 
-      return;
-    }
+  async initApi(network: NetworkJson): Promise<void> {
+    const networkName = network.name.toLowerCase();
+
+    const { currentProvider, eventListeners } = this.getListeners(network);
+
+    if (isSora(networkName)) return SoraApiHandler.initApi(currentProvider, eventListeners);
 
     try {
       const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS, undefined, 10000);
@@ -52,29 +87,32 @@ export class SubstrateApiHandler {
     }
   }
 
-  createApiObject(): ApiProps {
-    return {
-      isEthereum: false,
-      apiStatus: NETWORK_STATUS.CONNECTING,
-      apiRetry: 0,
-      nodeIndex: 0,
-    };
-  }
-
-  onConnected(networkName: string) {
-    if (isSora(networkName)) this.api[networkName].api = soraConnection.api!;
+  onConnected(networkName: NetworkName) {
+    if (isSora(networkName)) this.api[networkName].api = SoraApiHandler.getApiInstance();
 
     this.api[networkName].apiRetry = 0;
     this.api[networkName].apiStatus = NETWORK_STATUS.CONNECTED;
   }
 
-  async onDisconnect(networkName: string) {
+  async onReady(networkName: NetworkName) {
+    if (isSora(networkName)) SoraApiHandler.initialize(this.state);
+
+    const account = this.state.currentAccount;
+
+    if (!account) return;
+
+    this.state.subscriptionService.getNetworkSubscription(networkName)?.();
+    this.state.subscriptionService.subscribeBalances(account.address, account.ethereumAddress, [networkName], []);
+    this.state.balanceService.updateUtilityED(networkName);
+  }
+
+  async onDisconnect(networkName: NetworkName) {
     const api = this.api[networkName.toLowerCase()];
     const netName = this.networkService.getNetworkJson(networkName).name;
     const network = this.networkService.networkMap[netName];
 
     if (api === undefined) {
-      this.state.subscriptionService.getSubscription(networkName)?.(); //clean up;
+      this.state.subscriptionService.getNetworkSubscription(networkName)?.(); //clean up;
 
       return;
     }
@@ -102,48 +140,5 @@ export class SubstrateApiHandler {
 
       this.state.disableNetworkMap(networkName);
     }
-  }
-
-  async onReady(networkName: string) {
-    if (isSora(networkName)) {
-      await apiSora.initialize(false);
-      await apiSora.calcStaticNetworkFees();
-
-      const fees = Object.fromEntries(
-        Object.entries(apiSora.NetworkFee).map(([operation, value]) => [
-          operation,
-          FPNumber.fromCodecValue(value).toString(),
-        ])
-      ) as SoraFees;
-
-      this.state.soraFees.next(fees);
-      this.state.subscribeTotalXorBalance();
-    }
-
-    const account = this.state.currentAccount;
-
-    if (!account) return;
-
-    this.state.subscriptionService.getSubscription(networkName)?.();
-    this.state.subscriptionService.subscribeBalances(account.address, account.ethereumAddress, [networkName], []);
-    this.state.balanceService.updateUtilityED(networkName);
-  }
-
-  public refreshDotSamaApi(key: string) {
-    if (this.api[key]) {
-      this.api[key].nodeIndex = 0;
-      this.api[key].apiRetry = 0;
-    }
-
-    const network = this.networkService.getNetworkJson(key);
-
-    this.initApi(network);
-  }
-
-  resetApiRetries() {
-    Object.values(this.api).forEach((api) => {
-      api.nodeIndex = 0;
-      api.apiRetry = 0;
-    });
   }
 }

@@ -8,7 +8,6 @@ import {
   transformAddresses,
   withErrorLog,
 } from '@extension-base/background/handlers/helpers';
-import { createSubscription, unsubscribe } from '@extension-base/services';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import { type RequestArguments } from '@json-rpc-tools/utils';
@@ -84,7 +83,7 @@ export default class Tabs {
   }
 
   async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<string> {
-    const cb = createSubscription<'pub(accounts.subscribe)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pub(accounts.subscribe)'>(id, port);
 
     this.accountSubs[id] = {
       subscription: this.state.keyringService.accountSubject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
@@ -117,7 +116,8 @@ export default class Tabs {
 
     delete this.accountSubs[id];
 
-    unsubscribe(id);
+    this.state.subscriptionService.cancelSubscription(id);
+
     sub.subscription.unsubscribe();
 
     return true;
@@ -181,12 +181,13 @@ export default class Tabs {
   }
 
   async rpcSubscribe(request: RequestRpcSubscribe, id: string, port: Port): Promise<boolean> {
-    const innerCb = createSubscription<'pub(rpc.subscribe)'>(id, port);
+    const innerCb = this.state.subscriptionService.createSubscription<'pub(rpc.subscribe)'>(id, port);
     const cb = (_error: Error | null, data: SubscriptionMessageTypes['pub(rpc.subscribe)']): void => innerCb(data);
     const subscriptionId = await this.state.rpcSubscribe(request, cb, port);
 
     port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
+      this.state.subscriptionService.cancelSubscription(id);
+
       withErrorLog(() => this.rpcUnsubscribe({ ...request, subscriptionId }, port));
     });
 
@@ -194,15 +195,14 @@ export default class Tabs {
   }
 
   async rpcSubscribeConnected(request: null, id: string, port: Port): Promise<boolean> {
-    const innerCb = createSubscription<'pub(rpc.subscribeConnected)'>(id, port);
+    const innerCb = this.state.subscriptionService.createSubscription<'pub(rpc.subscribeConnected)'>(id, port);
+
     const cb = (_error: Error | null, data: SubscriptionMessageTypes['pub(rpc.subscribeConnected)']): void =>
       innerCb(data);
 
     this.state.rpcSubscribeConnected(request, cb, port);
 
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-    });
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
 
     return Promise.resolve(true);
   }
@@ -271,7 +271,7 @@ export default class Tabs {
 
   private async evmSubscribeEvents(url: string, id: string, port: chrome.runtime.Port) {
     // This method will be called after DApp request connect to extension
-    const cb = createSubscription<'evm(events.subscribe)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'evm(events.subscribe)'>(id, port);
 
     const emitEvent = (eventName: EvmEventType, payload: any) => {
       cb({ type: eventName, payload });
@@ -353,7 +353,7 @@ export default class Tabs {
 
     this.evmEventEmitterMap[url][id] = emitEvent;
 
-    this.state.createUnsubscriptionHandle(id, () => {
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
       if (this.evmEventEmitterMap[url][id]) delete this.evmEventEmitterMap[url][id];
 
       Object.entries(eventMap).forEach(([event, callback]) => {
@@ -362,12 +362,11 @@ export default class Tabs {
 
       accountListSubscription.unsubscribe();
       authUrlSubscription.unsubscribe();
+
       clearInterval(networkCheckInterval);
     });
 
-    port.onDisconnect.addListener((): void => {
-      this.state.cancelSubscription(id);
-    });
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
 
     return true;
   }
@@ -551,22 +550,18 @@ export default class Tabs {
   }
 
   private async handleEvmSend(id: string, url: string, port: chrome.runtime.Port, request: RequestEvmProviderSend) {
-    const cb = createSubscription<'evm(provider.send)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'evm(provider.send)'>(id, port);
     const evmState = await this.getEvmState(url);
 
     const provider = evmState.web3!;
 
-    // this.checkAndHandleProviderStatus(provider);
-
     provider.send(request.jsonrpc, []).then((result) => {
       cb({ error: null, result });
 
-      this.state.cancelSubscription(id);
+      this.state.subscriptionService.cancelSubscription(id);
     });
 
-    port.onDisconnect.addListener((): void => {
-      this.state.cancelSubscription(id);
-    });
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
 
     return true;
   }

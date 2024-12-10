@@ -182,9 +182,9 @@ export function subscribeBalance(
         const isSoraNetwork = isSora(networkName);
         const timespan = Date.now();
 
-        const addressForNetwork = isEthereumNetwork(networkName) ? ethereumAddress : address;
+        const addressByNetwork = isEthereumNetwork(networkName) ? ethereumAddress : address;
 
-        if (addressForNetwork === '')
+        if (addressByNetwork === '')
           return {
             networkName,
             unsub: () => {},
@@ -198,7 +198,7 @@ export function subscribeBalance(
             apiProps.api.isReadyOrError
               .then(() => {
                 try {
-                  const unsub = subscribeTokensBalance(addressForNetwork, networkName, apiProps.api!, state);
+                  const unsub = subscribeTokensBalance(addressByNetwork, networkName, apiProps.api!, state);
 
                   res({ networkName, unsub });
                 } catch (e) {
@@ -212,7 +212,7 @@ export function subscribeBalance(
           apiProps.api?.isReadyOrError
             .then(() => {
               try {
-                const unsub = subscribeTokensBalance(addressForNetwork, networkName, apiProps.api!, state);
+                const unsub = subscribeTokensBalance(addressByNetwork, networkName, apiProps.api!, state);
 
                 res({ networkName, unsub });
               } catch (e) {
@@ -236,9 +236,17 @@ export function subscribeBalance(
   return unsubListPromises;
 }
 
-export async function fetchBalance(address: string, networkKey: string, state: State, api?: ApiPromise) {
-  const { id, symbol, type, precision } = getUtilityProps(networkKey, state);
+export async function fetchBalance(
+  address: string,
+  networkName: NetworkName,
+  state: State,
+  api?: ApiPromise,
+  ethereumAddress?: string
+) {
+  const { id, symbol, type, precision } = getUtilityProps(networkName, state);
   const options = getAssetOptions(id, state.networkService.assetsMap);
+
+  const addressByNetwork = isEthereumNetwork(networkName) ? ethereumAddress! : address;
 
   if (!api) return '0';
 
@@ -247,13 +255,11 @@ export async function fetchBalance(address: string, networkKey: string, state: S
   let response;
 
   const isSoraXOR =
-    symbol === SORA_UTILITY_ASSET && (isSameString(networkKey, SORA_MAINNET) || isSameString(networkKey, SORA_TEST));
+    symbol === SORA_UTILITY_ASSET && (isSameString(networkName, SORA_MAINNET) || isSameString(networkName, SORA_TEST));
 
-  console.info('[debug] response', address);
-
-  if (type === 'normal' || isSoraXOR) response = query.system.account(address ?? '');
-  else if (type === 'assets') response = (query.assets as any).account(options, address ?? '');
-  else response = query.tokens.accounts(address, options);
+  if (type === 'normal' || isSoraXOR) response = query.system.account(addressByNetwork);
+  else if (type === 'assets') response = (query.assets as any).account(options, addressByNetwork);
+  else response = query.tokens.accounts(addressByNetwork, options);
 
   const balances = await response;
 

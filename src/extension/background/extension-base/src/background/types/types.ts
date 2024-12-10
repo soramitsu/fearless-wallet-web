@@ -118,6 +118,7 @@ export interface RequestAddressCreate {
 
 export interface FetchBalanceRequest {
   address: string;
+  ethereumAddress?: string;
   networkName: NetworkName;
 }
 

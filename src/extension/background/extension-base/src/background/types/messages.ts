@@ -117,6 +117,7 @@ import type {
   RequestChangePassword,
   RequestUnlockExtension,
   RequestMigratePassword,
+  DecryptForCosignerData,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -264,6 +265,7 @@ export interface RequestSignatures {
 
   // Public/external requests, i.e. from a page
   'pub(soraCard.token)': [string, null];
+  'pub(decrypt.cosigner)': [DecryptForCosignerData, string];
   'pub(accounts.list)': [null, InjectedAccount[]];
   'pub(accounts.subscribe)': [null, string, InjectedAccount[]];
   'pub(accounts.unsubscribe)': [RequestAccountUnsubscribe, boolean];

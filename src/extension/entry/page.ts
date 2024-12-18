@@ -1,12 +1,23 @@
 /* eslint-disable prefer-rest-params */
 import '@polkadot/extension-inject/crossenv';
 import { MESSAGE_ORIGIN_CONTENT } from '@extension-base/defaults';
-import { enable, handleResponse, initEvmProvider, redirectIfPhishing, saveSoraCardToken } from '@extension-base/page';
+import {
+  decryptForCosigner,
+  enable,
+  handleResponse,
+  initEvmProvider,
+  redirectIfPhishing,
+  saveSoraCardToken,
+} from '@extension-base/page';
 import { eip6963ProviderInfo } from '@extension-base/const';
 import type { FWEvmProvider } from '@extension-base/page/types';
 import type Injected from '@extension-base/page/Injected';
 import type { Message } from '@extension-base/types';
-import type { MessageTypes, TransportRequestMessage } from '@extension-base/background/types/types';
+import type {
+  DecryptForCosignerData,
+  MessageTypes,
+  TransportRequestMessage,
+} from '@extension-base/background/types/types';
 import type { InjectedWindow } from '@/extension/entry/types';
 import { APP_VERSION } from '@/consts/global';
 
@@ -193,6 +204,7 @@ class Page {
     windowInject.injectedWeb3[walletKey] = {
       enable: (origin: string): Promise<Injected> => enable(origin),
       saveSoraCardToken: (token: string) => saveSoraCardToken(token),
+      decryptForCosigner: (token: DecryptForCosignerData) => decryptForCosigner(token),
       version: APP_VERSION,
     };
   }

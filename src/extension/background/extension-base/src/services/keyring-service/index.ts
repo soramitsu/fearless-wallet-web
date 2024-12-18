@@ -4,13 +4,15 @@ import { addresses as addressesObservable } from '@subwallet/ui-keyring/observab
 import { BehaviorSubject } from 'rxjs';
 import CurrentAccountStore, { type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import { decodePair } from '@polkadot/keyring/pair/decode';
-import { u8aToHex } from '@polkadot/util';
+import { u8aToHex, hexToU8a } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
 import AccountsStore from '@extension-base/stores/Accounts';
 import KeyringStore from '@extension-base/stores/KeyringStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
+import { api } from '@sora-substrate/sdk';
 import type { EventService } from '@extension-base/services';
 import type {
+  DecryptForCosignerData,
   RequestChangePassword,
   RequestExportSeed,
   RequestMigratePassword,
@@ -435,5 +437,19 @@ export class KeyringService {
 
       return false;
     }
+  }
+
+  decryptForCosigner({ address, data, cosignerName }: DecryptForCosignerData) {
+    const pair = this.getPair(address);
+
+    if (!pair) throw new Error('Key pair not exist');
+
+    const { privateKey } = this.accountExportPrivateKey({ address });
+
+    const u8aPrivateKey = hexToU8a(privateKey);
+
+    const dataDecrypted = api.crypto.decryptForCosigner(data, cosignerName, u8aPrivateKey);
+
+    return dataDecrypted;
   }
 }

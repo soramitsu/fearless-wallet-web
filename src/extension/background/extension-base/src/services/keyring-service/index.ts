@@ -13,6 +13,7 @@ import { api } from '@sora-substrate/sdk';
 import type { EventService } from '@extension-base/services';
 import type {
   DecryptForCosignerData,
+  EncryptByCosignerData,
   RequestChangePassword,
   RequestExportSeed,
   RequestMigratePassword,
@@ -439,7 +440,7 @@ export class KeyringService {
     }
   }
 
-  decryptForCosigner({ address, data, cosignerName }: DecryptForCosignerData) {
+  decryptForCosigner({ address, data, encryptorPublicKey }: DecryptForCosignerData) {
     const pair = this.getPair(address);
 
     if (!pair) throw new Error('Key pair not exist');
@@ -448,8 +449,18 @@ export class KeyringService {
 
     const u8aPrivateKey = hexToU8a(privateKey);
 
-    const dataDecrypted = api.crypto.decryptForCosigner(data, cosignerName, u8aPrivateKey);
+    return api.crypto.decryptForCosigner(address, encryptorPublicKey, data, u8aPrivateKey);
+  }
 
-    return dataDecrypted;
+  encryptByCosigner({ address, data, cosigners }: EncryptByCosignerData) {
+    const pair = this.getPair(address);
+
+    if (!pair) throw new Error('Key pair not exist');
+
+    const { privateKey } = this.accountExportPrivateKey({ address });
+
+    const u8aPrivateKey = hexToU8a(privateKey);
+
+    return api.crypto.encryptBySigner(data, cosigners, u8aPrivateKey);
   }
 }

@@ -1,5 +1,5 @@
 /* eslint-disable no-use-before-define */
-import { type FinalEncryptedStructure } from '@sora-substrate/sdk';
+import { type Cosigners, type FinalEncryptedStructure } from '@sora-substrate/sdk';
 import type { NftTx, NftSettings } from '@extension-base/services/nft-service/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { ScamInfo } from '@extension-base/services/scam-service/types';
@@ -153,8 +153,14 @@ export type MessageTypes = keyof RequestSignatures;
 
 export interface DecryptForCosignerData {
   address: string;
-  cosignerName: string;
+  encryptorPublicKey: Uint8Array;
   data: FinalEncryptedStructure;
+}
+
+export interface EncryptByCosignerData {
+  address: string;
+  data: string;
+  cosigners: Cosigners;
 }
 
 export type RequestTypes = {

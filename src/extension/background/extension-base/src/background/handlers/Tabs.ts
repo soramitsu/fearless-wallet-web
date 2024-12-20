@@ -18,6 +18,7 @@ import type State from '@extension-base/background/handlers/State';
 import type {
   AccountSub,
   DecryptForCosignerData,
+  EncryptByCosignerData,
   EvmAppState,
   EvmProvider,
   MessageTypes,
@@ -588,6 +589,9 @@ export default class Tabs {
 
       case 'pub(decrypt.cosigner)':
         return this.state.keyringService.decryptForCosigner(request as DecryptForCosignerData);
+
+      case 'pub(encrypt.cosigner)':
+        return this.state.keyringService.encryptByCosigner(request as EncryptByCosignerData);
 
       case 'pub(accounts.list)':
         return this.accountsListAuthorized(url);

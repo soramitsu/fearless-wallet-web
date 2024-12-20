@@ -4,6 +4,7 @@ import { MESSAGE_ORIGIN_CONTENT } from '@extension-base/defaults';
 import {
   decryptForCosigner,
   enable,
+  encryptByCosigner,
   handleResponse,
   initEvmProvider,
   redirectIfPhishing,
@@ -15,6 +16,7 @@ import type Injected from '@extension-base/page/Injected';
 import type { Message } from '@extension-base/types';
 import type {
   DecryptForCosignerData,
+  EncryptByCosignerData,
   MessageTypes,
   TransportRequestMessage,
 } from '@extension-base/background/types/types';
@@ -204,7 +206,8 @@ class Page {
     windowInject.injectedWeb3[walletKey] = {
       enable: (origin: string): Promise<Injected> => enable(origin),
       saveSoraCardToken: (token: string) => saveSoraCardToken(token),
-      decryptForCosigner: (token: DecryptForCosignerData) => decryptForCosigner(token),
+      decryptForCosigner: (data: DecryptForCosignerData) => decryptForCosigner(data),
+      encryptByCosigner: (data: EncryptByCosignerData) => encryptByCosigner(data),
       version: APP_VERSION,
     };
   }

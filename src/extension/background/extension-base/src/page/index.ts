@@ -5,6 +5,7 @@ import { FearlessWalletEvmProvider } from '@extension-base/page/FearlessWalletEv
 import type { FWEvmProvider, Handlers } from '@extension-base/page/types';
 import type {
   DecryptForCosignerData,
+  EncryptByCosignerData,
   MessageTypes,
   MessageTypesWithNoSubscriptions,
   MessageTypesWithNullRequest,
@@ -69,6 +70,11 @@ export async function saveSoraCardToken(token: string): Promise<void> {
 // function to decrypt data, called by a decentralized application (Polkaswap)
 export async function decryptForCosigner(data: DecryptForCosignerData): Promise<string> {
   return await sendMessage('pub(decrypt.cosigner)', data);
+}
+
+// function to encrypt data, called by a decentralized application (Polkaswap)
+export async function encryptByCosigner(data: EncryptByCosignerData): Promise<string> {
+  return await sendMessage('pub(encrypt.cosigner)', data);
 }
 
 // redirect users if this page is considered as phishing, otherwise return false

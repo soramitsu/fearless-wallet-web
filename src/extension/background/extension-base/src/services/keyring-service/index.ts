@@ -1,10 +1,10 @@
-import { isEthereumAddress, base64Decode, mnemonicToMiniSecret } from '@polkadot/util-crypto';
+import { isEthereumAddress, base64Decode, mnemonicToMiniSecret, sr25519PairFromSeed } from '@polkadot/util-crypto';
 import { accounts as accountsObservable } from '@subwallet/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@subwallet/ui-keyring/observable/addresses';
 import { BehaviorSubject } from 'rxjs';
 import CurrentAccountStore, { type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import { decodePair } from '@polkadot/keyring/pair/decode';
-import { u8aToHex, hexToU8a } from '@polkadot/util';
+import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
 import AccountsStore from '@extension-base/stores/Accounts';
 import KeyringStore from '@extension-base/stores/KeyringStore';
@@ -371,6 +371,19 @@ export class KeyringService {
     return { seed: rawSeed };
   }
 
+  public accountExportSecretKey(request: RequestExportSeed) {
+    const { seed } = this.exportMnemonic(request);
+
+    if (!seed) return null;
+
+    // Convert mnemonic to raw seed (32 bytes for sr25519)
+    const seedU8 = mnemonicToMiniSecret(seed);
+
+    const { secretKey } = sr25519PairFromSeed(seedU8);
+
+    return secretKey;
+  }
+
   unlockKeyring({ password }: RequestUnlockExtension): boolean {
     try {
       this.password = password;
@@ -445,26 +458,26 @@ export class KeyringService {
 
     if (!pair) throw new Error('Key pair not exist');
 
-    const { seed } = this.accountExportRawSeed({ address });
+    const secretKey = this.accountExportSecretKey({ address, password: this.password });
 
-    if (seed === '') throw new Error('Seckret key in undefined');
+    if (secretKey === null) throw new Error('Seckret key is undefined');
 
-    const u8aPrivateKey = hexToU8a(seed);
-
-    return api.crypto.decryptForCosigner(address, encryptorPublicKey, data, u8aPrivateKey);
+    return api.crypto.decryptForCosigner(address, encryptorPublicKey, data, secretKey);
   }
 
   encryptByCosigner({ address, data, cosigners }: EncryptByCosignerData) {
+    if (this.password === '') throw new Error('First unlock the extension');
+
     const pair = this.getPair(address);
 
     if (!pair) throw new Error('Key pair not exist');
 
-    const { seed } = this.accountExportRawSeed({ address });
+    const secretKey = this.accountExportSecretKey({ address, password: this.password });
 
-    if (seed === '') throw new Error('Seckret key in undefined');
+    if (secretKey === null) throw new Error('Seckret key is undefined');
 
-    const u8aPrivateKey = hexToU8a(seed);
+    const _cosigners = Object.fromEntries(Object.entries(cosigners).map(([key, value]) => [key, hexToU8a(value)]));
 
-    return api.crypto.encryptBySigner(data, cosigners, u8aPrivateKey);
+    return api.crypto.encryptBySigner(data, _cosigners, secretKey);
   }
 }

@@ -445,9 +445,11 @@ export class KeyringService {
 
     if (!pair) throw new Error('Key pair not exist');
 
-    const { privateKey } = this.accountExportPrivateKey({ address });
+    const { seed } = this.accountExportRawSeed({ address });
 
-    const u8aPrivateKey = hexToU8a(privateKey);
+    if (seed === '') throw new Error('Seckret key in undefined');
+
+    const u8aPrivateKey = hexToU8a(seed);
 
     return api.crypto.decryptForCosigner(address, encryptorPublicKey, data, u8aPrivateKey);
   }
@@ -457,9 +459,11 @@ export class KeyringService {
 
     if (!pair) throw new Error('Key pair not exist');
 
-    const { privateKey } = this.accountExportPrivateKey({ address });
+    const { seed } = this.accountExportRawSeed({ address });
 
-    const u8aPrivateKey = hexToU8a(privateKey);
+    if (seed === '') throw new Error('Seckret key in undefined');
+
+    const u8aPrivateKey = hexToU8a(seed);
 
     return api.crypto.encryptBySigner(data, cosigners, u8aPrivateKey);
   }

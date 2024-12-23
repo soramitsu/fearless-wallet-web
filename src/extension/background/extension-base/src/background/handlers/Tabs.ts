@@ -17,6 +17,8 @@ import { CRON_GET_API_MAP_STATUS } from '@extension-base/const/intervals';
 import type State from '@extension-base/background/handlers/State';
 import type {
   AccountSub,
+  DecryptForCosignerData,
+  EncryptByCosignerData,
   EvmAppState,
   EvmProvider,
   MessageTypes,
@@ -584,6 +586,12 @@ export default class Tabs {
 
       case 'pub(soraCard.token)':
         return this.saveSoraCardRefreshToken(request as string);
+
+      case 'pub(decrypt.cosigner)':
+        return this.state.keyringService.decryptForCosigner(request as DecryptForCosignerData);
+
+      case 'pub(encrypt.cosigner)':
+        return this.state.keyringService.encryptByCosigner(request as EncryptByCosignerData);
 
       case 'pub(accounts.list)':
         return this.accountsListAuthorized(url);

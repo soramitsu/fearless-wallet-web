@@ -156,11 +156,9 @@
 
 <script lang="ts">
 import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
-import { type AccountJson, type TokenGroup } from '@extension-base/background/types/types';
-import type { GetAssetPrice, GetStakingNetwork, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import type { TokenGroup } from '@extension-base/background/types/types';
+import type { NetworkParams } from '@/stores';
+import { type StakingOperation, type StakingOperationParams, WalletEcosystem } from '@/interfaces';
 import WithdrawUnbonded from '@/screens/staking/myStake/stakingForms/WithdrawUnbonded.vue';
 import Unbond from '@/screens/staking/myStake/stakingForms/Unbond.vue';
 import Rebond from '@/screens/staking/myStake/stakingForms/Rebond.vue';
@@ -168,17 +166,17 @@ import BondExtra from '@/screens/staking/myStake/stakingForms/BondExtra.vue';
 import ControllerAccount from '@/screens/staking/myStake/stakingForms/ControllerAccount.vue';
 import Payee from '@/screens/staking/myStake/stakingForms/Payee.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { getCostOfAssets } from '@/helpers/transfers';
 import { calcTransferableSendMinusFee, isValidAmountAsset } from '@/helpers/currencies';
 import BaseApi from '@/util/BaseApi';
 import { checkController, fetchBalance } from '@/extension/messaging';
-import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
-import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
-import { type SoraFees, type AsyncFn, type StakingOperation, type StakingOperationParams } from '@/interfaces';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import { getClipboard } from '@/helpers';
+import { useStakingStore } from '@/stores/staking';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: {
@@ -195,6 +193,9 @@ import { getClipboard } from '@/helpers';
   },
 })
 export default class MainStakingForm extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
+  stakingStore = useStakingStore();
   showConfirmationPasswordPopup = false;
   isSuggested = false;
   showHistoryBook = false;
@@ -212,16 +213,9 @@ export default class MainStakingForm extends Vue {
   @Prop({ type: Object }) rewardedCurrency!: TokenGroup;
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @Prop({ type: String }) type!: StakingOperation;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(NetworksGettersTypes.soraFees) soraFees!: Nullable<SoraFees>;
-  @Action(StakingActionTypes.GET_MY_STAKING_INFO) getMyStakingInfo!: AsyncFn<GetStakingNetworkProps>;
 
   get fee() {
-    if (!this.soraFees) return '';
+    if (!this.networksStore.soraFees) return '';
 
     const {
       StakingBondExtra,
@@ -230,7 +224,7 @@ export default class MainStakingForm extends Vue {
       StakingSetController,
       StakingWithdrawUnbonded,
       StakingSetPayee,
-    } = this.soraFees;
+    } = this.networksStore.soraFees;
 
     if (this.isBondExtra) return StakingBondExtra;
     else if (this.isUnbond) return StakingUnbond;
@@ -315,9 +309,9 @@ export default class MainStakingForm extends Vue {
   }
 
   get filteredWallets() {
-    if (this.isPayee || this.isControllerAccount) return this.wallets;
+    if (this.isPayee || this.isControllerAccount) return this.accountsStore.accounts;
 
-    return this.wallets.filter(({ active }) => !active);
+    return this.accountsStore.accounts.filter(({ active }) => !active);
   }
 
   get isPayee() {
@@ -425,7 +419,7 @@ export default class MainStakingForm extends Vue {
   get stakingAssetPrice() {
     const priceId = this.stakingCurrency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get feeValue() {
@@ -437,13 +431,13 @@ export default class MainStakingForm extends Vue {
   }
 
   get accountName() {
-    return this.selectedWallet.name;
+    return this.accountsStore.selectedWallet.name;
   }
 
   get tx() {
     return {
       amount: this.amount,
-      from: this.selectedWallet.address,
+      from: this.accountsStore.selectedWallet.address,
       networkName: this.network,
       controllerAddress: this.controllerAddress,
       payee: this.payoutAddress,
@@ -463,11 +457,15 @@ export default class MainStakingForm extends Vue {
       this.amount = lastUnbond;
     } else if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
 
-    if (this.stakingNetwork.isController)
-      this.stashBalance = await fetchBalance({
+    if (this.stakingNetwork.isController) {
+      const balances = await fetchBalance({
         address: this.stakingNetwork.stashAddress,
-        networkName: this.stakingNetwork.network,
+        networks: [this.stakingNetwork.network],
+        walletEcosystem: WalletEcosystem.Substrate,
       });
+
+      this.stashBalance = balances[0].balance;
+    }
   }
 
   toggleEditBook(address: string = '') {
@@ -500,7 +498,7 @@ export default class MainStakingForm extends Vue {
     this.showConfirmationPasswordPopup = false;
 
     if (closeForm) {
-      this.getMyStakingInfo({ network: this.network });
+      this.stakingStore.getMyStakingInfo({ network: this.network });
       this.closeForm();
     }
   }
@@ -579,7 +577,7 @@ export default class MainStakingForm extends Vue {
   }
 
   .controller-description {
-    font-size: 14px;
+    font-size: 0.875em;
     text-align: left;
     color: $default-white;
     margin-bottom: 15px;

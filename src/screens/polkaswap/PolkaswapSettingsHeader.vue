@@ -58,7 +58,7 @@ export default class PolkaswapSettingsHeader extends Vue {
 <style lang="scss" scoped>
 .header-content {
   height: 64px;
-  font-size: 24px;
+  font-size: 1.5em;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -69,7 +69,7 @@ export default class PolkaswapSettingsHeader extends Vue {
 .header {
   display: flex;
   align-items: flex-end;
-  font-size: 18px;
+  font-size: 1.125em;
   font-weight: 700;
   text-transform: capitalize;
 
@@ -123,7 +123,7 @@ export default class PolkaswapSettingsHeader extends Vue {
     justify-content: center;
     align-items: center;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 0.75rem;
     color: $gray-color;
     text-transform: uppercase;
   }

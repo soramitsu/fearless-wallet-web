@@ -227,25 +227,23 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { type RequestBond, type FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
-import type { GetAssetPrice, SelectedWallet, NetworkParams } from '@/store';
+import type { RequestBond, FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
+import type { NetworkParams } from '@/stores';
 import type { SelectionValidator } from '@/interfaces';
-import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectValidator from '@/screens/staking/myStake/validators/SelectValidator.vue';
 import FiltersPopup from '@/screens/staking/myStake/validators/FiltersPopup.vue';
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
 import { getBondAndNominateNetworkFee } from '@/extension/messaging';
 import { calcTransferableSendMinusFee, getUtilityAsset, isValidAmountAsset } from '@/helpers/currencies';
-import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { getCostOfAssets } from '@/helpers/transfers';
 import BaseApi from '@/util/BaseApi';
 import { cut, getClipboard } from '@/helpers';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: {
@@ -259,6 +257,8 @@ import WalletInfo from '@/screens/main/WalletInfo.vue';
   },
 })
 export default class Bond extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   state: Record<string, SelectionValidator> = {};
   selectedValidator: FWValidatorInfoFull | null = null;
   payoutAddress = '';
@@ -274,11 +274,6 @@ export default class Bond extends Vue {
   newAddress = '';
 
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
 
   get isValidPayoutAddress() {
     if (this.payoutAddress === '') return true;
@@ -299,23 +294,23 @@ export default class Bond extends Vue {
   }
 
   get stakingAssetId() {
-    if (this.balances.length === 0) return '';
+    if (this.accountsStore.balances.length === 0) return '';
 
-    const { groupId } = getUtilityAsset(this.balances, this.network);
+    const { groupId } = getUtilityAsset(this.accountsStore.balances, this.network);
 
     return groupId;
   }
 
   get stakingCurrency() {
-    return this.balances.find(({ groupId }) => groupId === this.stakingAssetId);
+    return this.accountsStore.balances.find(({ groupId }) => groupId === this.stakingAssetId);
   }
 
   get accountName() {
-    return this.selectedWallet.name;
+    return this.accountsStore.selectedWallet.name;
   }
 
   get filteredWallets() {
-    return this.wallets.filter(({ active }) => !active);
+    return this.accountsStore.accounts.filter(({ active }) => !active);
   }
 
   get showMyWalletsButton() {
@@ -399,7 +394,7 @@ export default class Bond extends Vue {
   }
 
   get selectedAccountName() {
-    return this.selectedWallet.name;
+    return this.accountsStore.selectedWallet.name;
   }
 
   get textMinHint() {
@@ -419,7 +414,7 @@ export default class Bond extends Vue {
   get stakingAssetPrice() {
     const priceId = this.stakingCurrency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get amountString() {
@@ -429,19 +424,19 @@ export default class Bond extends Vue {
   get amountValueString() {
     const value = +this.amount * this.stakingAssetPrice;
 
-    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
   }
 
   get feeMaxValueString() {
     const value = +this.feeMax * this.stakingAssetPrice;
 
-    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
   }
 
   get feeValueString() {
     const value = +this.fee * this.stakingAssetPrice;
 
-    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
   }
 
   get maxNominations() {
@@ -470,7 +465,7 @@ export default class Bond extends Vue {
   get tx() {
     return {
       amount: this.amount,
-      from: this.selectedWallet.address,
+      from: this.accountsStore.selectedWallet.address,
       networkName: this.network,
       payoutAddress: this.payoutAddress,
       validators: this.selectedValidators,
@@ -648,7 +643,7 @@ export default class Bond extends Vue {
     text-align: left;
     line-height: 20px;
     margin: 20px 16px 16px;
-    font-size: 14px;
+    font-size: 0.875em;
 
     .icon {
       margin-right: 10px;

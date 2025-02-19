@@ -43,7 +43,6 @@ import {
 import ElementUIPlugin, { Message, MessageBox, Notification } from '@soramitsu-ui/ui-vue2/lib/plugins/elementUI';
 
 import SoramitsuUIStorePlugin from '@soramitsu-ui/ui-vue2/lib/plugins/soramitsuUIStore';
-
 import store from '@/store';
 
 type SNotificationParams = {

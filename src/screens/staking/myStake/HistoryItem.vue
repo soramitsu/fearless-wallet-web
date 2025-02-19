@@ -24,28 +24,23 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
-import type { TokenGroup } from '@extension-base/background/types/types';
 import { getFormattedDate } from '@/helpers';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { getHistoryValue } from '@/helpers/history';
 import BaseApi from '@/util/BaseApi';
 import { type SoraHistoryElement } from '@/interfaces/history';
 import { type NetworkName } from '@/interfaces';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class HistoryItem extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
+
   @Prop({ type: Object }) history!: SoraHistoryElement;
   @Prop({ type: String }) stakingAssetId!: string;
   @Prop({ type: String }) rewardedAssetId!: string;
   @Prop({ type: String }) network!: NetworkName;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get operationName() {
     return this.$t(`history.${this.history.method}`);
@@ -78,31 +73,31 @@ export default class HistoryItem extends Vue {
   }
 
   get currency() {
-    return this.balances.find(({ groupId }) => groupId === this.stakingAssetId);
+    return this.accountsStore.balances.find(({ groupId }) => groupId === this.stakingAssetId);
   }
 
   get rewardedCurrency() {
-    return this.balances.find(({ groupId }) => groupId === this.rewardedAssetId);
+    return this.accountsStore.balances.find(({ groupId }) => groupId === this.rewardedAssetId);
   }
 
   get assetPrice() {
     const priceId = this.currency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get address() {
-    if (BaseApi.isEthereumNetwork(this.network.toLowerCase())) return this.selectedWallet.ethereumAddress;
+    if (BaseApi.isEthereumNetwork(this.network.toLowerCase())) return this.accountsStore.selectedWallet.ethereumAddress;
 
-    const network = this.getNetwork(this.network);
+    const network = this.networksStore.getNetwork(this.network);
 
-    return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
+    return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, network.addressPrefix);
   }
 
   get value() {
     const value = this.historyValue.value * this.assetPrice;
 
-    return `${this.fiatSymbol}${this.$n(value, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(value, 'price')}`;
   }
 
   openDetails() {
@@ -127,12 +122,12 @@ export default class HistoryItem extends Vue {
     display: flex;
 
     .name {
-      font-size: 16px;
+      font-size: 1em;
       color: $default-white;
     }
 
     .date {
-      font-size: 12px;
+      font-size: 0.75rem;
       color: $grayish-white-2;
       text-align: left;
       margin-top: 5px;
@@ -163,7 +158,7 @@ export default class HistoryItem extends Vue {
     }
 
     .value {
-      font-size: 12px;
+      font-size: 0.75rem;
       color: $grayish-white-2;
       text-align: right;
       margin-top: 5px;

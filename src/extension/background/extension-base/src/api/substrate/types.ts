@@ -13,7 +13,7 @@ interface CrossChainProps {
 }
 
 interface MakeCrossChainProps extends CrossChainProps {
-  callback: (data: BasicTxResponse) => void;
+  callback?: (data: BasicTxResponse) => void;
   relayChain?: RelayChainName;
   isMobile: boolean;
 }

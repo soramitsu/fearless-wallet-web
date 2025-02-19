@@ -26,13 +26,13 @@ import {
 } from '@extension-base/services/wallet-connect-service/types';
 import { formatEther, formatUnits } from 'ethers';
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import type { AccountJson } from '@extension-base/background/types/types';
-import { useStore } from '@/store';
-import { cut } from '@/helpers';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useAccountsStore } from '@/stores/accounts';
+import { cut, isSameString } from '@/helpers';
+import { useNetworksStore } from '@/stores/networks';
 
-const store = useStore();
+const accountsStore = useAccountsStore();
+const networksStore = useNetworksStore();
+
 const props = defineProps<{ request: WalletConnectTransactionRequest }>();
 const method = props.request.params.request.method;
 const params = props.request.params.request.params;
@@ -69,7 +69,7 @@ const requestData = computed(() => {
 
   if (isEvmTxRequest.value) {
     const [, chainId] = props.request.params.chainId.split(':');
-    const network: string = store.getters[NetworksGettersTypes.getNetwork](chainId)?.name ?? `${baseKey}.networkError`;
+    const network: string = networksStore.getNetwork(chainId)?.name ?? `${baseKey}.networkError`;
     const { value, gas } = Array.isArray(params) ? params[0] : params;
 
     data[`${baseKey}.network`] = network;
@@ -81,9 +81,9 @@ const requestData = computed(() => {
 });
 
 const txWallet = computed(() => {
-  const accounts: AccountJson[] = store.getters[AccountsGettersTypes.getAccounts];
+  const accounts = accountsStore.accounts;
 
-  return accounts.find(({ ethereumAddress }) => ethereumAddress.toLowerCase() === address.value.toLowerCase());
+  return accounts.find(({ ethereumAddress }) => isSameString(ethereumAddress, address.value));
 });
 </script>
 
@@ -109,11 +109,11 @@ const txWallet = computed(() => {
   flex-flow: row nowrap;
 }
 .list-item--wallet-name {
-  font-size: 16px;
+  font-size: 1em;
   font-weight: 400;
 }
 .list-item__address {
-  font-size: 14px;
+  font-size: 0.875em;
   font-style: normal;
   font-weight: 400;
 }

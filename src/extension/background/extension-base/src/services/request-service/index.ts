@@ -45,7 +45,7 @@ export class RequestService {
   readonly evmRequestHandler: EvmRequestHandler;
 
   constructor(readonly keyringService: KeyringService, private readonly state: State) {
-    this.popupHandler = new PopupHandler(this);
+    this.popupHandler = new PopupHandler(state);
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
     this.metadataRequestHandler = new MetadataRequestHandler(this);
@@ -71,7 +71,7 @@ export class RequestService {
     // Not open new popup and use existed
     const popupList = this.popupHandler.popup;
 
-    if (popupList && popupList.length > 0) chrome.windows.update(popupList[0], { focused: true })?.catch(console.error);
+    if (popupList?.length > 0) chrome.windows.update(popupList[0], { focused: true })?.catch(console.error);
     else this.popupHandler.popupOpen();
   }
 

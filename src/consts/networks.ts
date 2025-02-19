@@ -1,4 +1,4 @@
-import { type NetworkName } from '@/interfaces';
+import type { NetworkName } from '@/interfaces';
 
 const SUBSTRATE_ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
 
@@ -30,8 +30,13 @@ const KUSAMA = 'kusama';
 const WESTEND = 'westend';
 const ROCOCO = 'rococo';
 const LIBERLAND = 'liberland';
+const EQUILIBRIUM = 'equilibrium';
+const TON_MAINNET = 'ton mainnet';
+const TON_TESTNET = 'ton testnet';
 
 const RELAY_CHAINS = [POLKADOT, KUSAMA, WESTEND, ROCOCO];
+
+const NATIVE_TON_NETWORKS = [TON_MAINNET, TON_TESTNET];
 
 const NATIVE_PARACHAINS = [
   'statemint',
@@ -52,6 +57,9 @@ const NETWORKS_GROUPS = [ALL_NETWORKS, POPULAR_NETWORKS, FAVORITE_NETWORKS];
 
 const POLKADOT_ID = '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3';
 const KUSAMA_ID = 'b0a8d493285c2df73290dfb7e61f870f17b41801197a149ca93654499ea3dafe';
+
+const TON_ICON =
+  'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/TON.svg';
 
 const CHAIN_IDS: Record<string, NetworkName> = {
   [POLKADOT_ID]: 'Polkadot',
@@ -131,5 +139,10 @@ export {
   KUSAMA,
   WESTEND,
   ROCOCO,
+  TON_MAINNET,
+  TON_TESTNET,
   LIBERLAND,
+  EQUILIBRIUM,
+  NATIVE_TON_NETWORKS,
+  TON_ICON,
 };

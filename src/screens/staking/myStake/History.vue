@@ -14,24 +14,22 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import HistoryItem from '@/screens/staking/myStake/HistoryItem.vue';
-import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
-import { type GetStakingHistory, type GetStakingNetwork } from '@/store';
 import { type SoraHistoryElement, type NetworkName } from '@/interfaces';
+import { useStakingStore } from '@/stores/staking';
 
 @Component({
   components: { HistoryItem },
 })
 export default class History extends Vue {
+  stakingStore = useStakingStore();
+
   @Prop({ type: String }) network!: NetworkName;
   @Prop({ type: String }) stakingAssetId!: string;
   @Prop({ type: String }) rewardedAssetId!: string;
-  @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
-  @Getter(StakingGettersTypes.getStakingHistory) getStakingHistory!: GetStakingHistory;
 
   get history() {
-    return this.getStakingHistory(
+    return this.stakingStore.getStakingHistory(
       this.network,
       this.stakingAssetId,
       this.stakingNetwork.stashAddress,
@@ -40,7 +38,7 @@ export default class History extends Vue {
   }
 
   get stakingNetwork() {
-    return this.getStakingNetwork(this.network);
+    return this.stakingStore.getStakingNetwork(this.network);
   }
 }
 </script>

@@ -16,6 +16,7 @@
         :style="inputStyle"
         @blur="$emit('blur', $event)"
         @input="$emit('change', $event)"
+        @keydown.native="keydownPress"
       />
     </div>
   </FCorners>
@@ -70,7 +71,7 @@ const wrapperClasses = computed(() => {
   ];
 });
 
-const emit = defineEmits(['blur', 'change']);
+const emit = defineEmits(['blur', 'change', 'pressEnter']);
 
 const vModel = computed({
   get: () => props.value,
@@ -104,6 +105,12 @@ const inputClasses = computed(() => {
   ];
 });
 
+const keydownPress = (event: Event) => {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  //@ts-ignore
+  if (event.key === 'Enter') emit('pressEnter');
+};
+
 defineExpose({ input });
 </script>
 
@@ -131,7 +138,7 @@ defineExpose({ input });
   }
 
   .el-input__inner {
-    font-size: 16px !important;
+    font-size: 1em !important;
   }
 
   .s-input .s-placeholder {

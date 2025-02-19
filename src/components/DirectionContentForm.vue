@@ -25,10 +25,9 @@
 <script lang="ts" setup>
 import { computed, withDefaults } from 'vue';
 import { useI18n } from 'vue-i18n-composable';
-import { type GetAssetPrice, useStore } from '@/store';
-import { getCostOfAssets } from '@/controllers/transferHelpers';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { getCostOfAssets } from '@/helpers/transfers';
+import { useAccountsStore } from '@/stores/accounts';
+import { useNetworksStore } from '@/stores/networks';
 
 interface Props {
   isExchangeB?: boolean;
@@ -57,7 +56,8 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const { n } = useI18n();
-const store = useStore();
+const accountsStore = useAccountsStore();
+const networksStore = useNetworksStore();
 
 const directionIcons = computed(() => [
   'img',
@@ -69,11 +69,10 @@ const directionIcons = computed(() => [
 const amount1Cut = computed(() => `${n(+props.amount1, 'decimal')} ${props.asset1.toUpperCase()}`);
 const amount2Cut = computed(() => `${n(+props.amount2, 'decimal')} ${props.asset2.toUpperCase()}`);
 
-const fiatSymbol = computed<string>(() => store.getters[AccountsGettersTypes.fiatSymbol]);
-const getAssetPrice: GetAssetPrice = (priceId) => store.getters[NetworksGettersTypes.getAssetPrice](priceId);
+const fiatSymbol = computed<string>(() => accountsStore.fiatSymbol);
 
-const assetPrice1 = computed(() => getAssetPrice(props.priceId1).price);
-const assetPrice2 = computed(() => getAssetPrice(props.priceId2).price);
+const assetPrice1 = computed(() => networksStore.getAssetPrice(props.priceId1).price);
+const assetPrice2 = computed(() => networksStore.getAssetPrice(props.priceId2).price);
 
 const _value1 = computed(() => props.value1 ?? getCostOfAssets(+props.amount1 ?? 0, assetPrice1.value));
 const _value2 = computed(() => props.value2 ?? getCostOfAssets(+props.amount2 ?? 0, assetPrice2.value));
@@ -103,12 +102,12 @@ const value2Cut = computed(() => `${fiatSymbol.value} ${n(+_value2.value, 'price
 
       .amount {
         font-weight: 800;
-        font-size: 22px;
+        font-size: 1.375em;
         color: white;
         margin-bottom: 5px;
 
         .price {
-          font-size: 12px;
+          font-size: 0.75rem;
           color: $gray-color;
         }
       }

@@ -95,7 +95,7 @@ export interface MakeTransferParams {
   from: string;
   amount: string;
   assetId: string;
-  callback: (data: BasicTxResponse) => void;
+  callback?: (data: BasicTxResponse) => void;
   isMobile: boolean;
   state: State;
 }

@@ -8,7 +8,6 @@ import {
 import { type u128 } from '@polkadot/types';
 import { type AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
 import { BehaviorSubject } from 'rxjs';
-import { createSubscription, unsubscribe } from '@extension-base/services';
 import { type DemeterAccountPool } from '@sora-substrate/util/build/demeterFarming/types';
 import { type AccountLockedPool } from '@sora-substrate/util/build/ceresLiquidityLocker/types';
 import type {
@@ -118,15 +117,16 @@ export class PoolsService {
     return (await Promise.all(promises)).flat();
   }
 
-  public async accountLiquiditySubscribe(id: string, port: Port): Promise<boolean> {
-    const cb = createSubscription<'pri(pools.accountLiquidity)'>(id, port);
+  public async accountLiquiditySubscribe(id: string, port?: Port): Promise<boolean> {
+    const cb = this.state.subscriptionService.createSubscription<'pri(pools.accountLiquidity)'>(id, port);
 
-    const subscription = this.accountLiquiditySubject.subscribe((accountLiquidity) => cb(accountLiquidity));
+    const accountLiquiditySubscription = this.accountLiquiditySubject.subscribe((accountLiquidity) =>
+      cb(accountLiquidity)
+    );
 
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    this.state.subscriptionService.setUnsubscriptionHandle(id, accountLiquiditySubscription.unsubscribe);
+
+    port?.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
 
     return true;
   }

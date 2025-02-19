@@ -10,14 +10,14 @@
 
     <Scroll>
       <ul class="account__list">
-        <li v-for="(account, index) in props.accounts" class="auth-account" :key="index">
+        <li v-for="(account, index) in props.accounts" class="auth-account" :key="account.address">
           <div class="checkbox">
             <Checkbox
               class="account__checkbox"
               size="big"
               :label="$t(account.name)"
               :value="account.active"
-              @change="emit('onSelect', $event, account.name)"
+              @change="emit('onSelect', $event, account.address)"
             />
 
             <div v-if="account.isMobile" class="account__checkbox--mobile-icon">{{ $t('mobile') }}</div>
@@ -34,7 +34,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import type { WalletInfo } from '@/store';
+import type { WalletInfo } from '@/stores';
 import type { AccountAuthType } from '@extension-base/background/types/types';
 import { cut } from '@/helpers';
 
@@ -88,7 +88,7 @@ const cutAddress = (account: WalletInfo) => {
 }
 
 .account__checkbox--mobile-icon {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: $gray-color;
   background: $secondary-background-color;
   letter-spacing: 0.03em;
@@ -124,6 +124,6 @@ const cutAddress = (account: WalletInfo) => {
 }
 
 .account__checkbox .el-checkbox__label {
-  font-size: 16px;
+  font-size: 1em;
 }
 </style>

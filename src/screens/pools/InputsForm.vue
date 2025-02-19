@@ -47,17 +47,18 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
-import type { GetAssetPrice, PoolParams } from '@/store';
+import type { PoolParams } from '@/stores';
 import type { TokenGroup } from '@/extension/background/extension-base/src/background/types/types';
 import { calcTransferableSendMinusFee } from '@/helpers/currencies';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { getCostOfAssets } from '@/controllers/transferHelpers';
+
+import { getCostOfAssets } from '@/helpers/transfers';
 import { getAmountPoolValue } from '@/extension/messaging';
+import { useNetworksStore } from '@/stores/networks';
 
 @Component({})
 export default class InputsForm extends Vue {
+  networksStore = useNetworksStore();
   percent = 0;
   isPercentChanging = false;
 
@@ -69,7 +70,6 @@ export default class InputsForm extends Vue {
   @Prop({ type: Object }) currency2!: TokenGroup;
   @Prop({ type: String }) fee!: string;
   @Prop(String) extrinsicType!: 'addLiquidity' | 'removeLiquidity' | '';
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get isRemoveLiquidity() {
     return this.extrinsicType === 'removeLiquidity';
@@ -110,13 +110,13 @@ export default class InputsForm extends Vue {
   get assetPrice1() {
     const priceId = this.poolParams.asset1.priceId;
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get assetPrice2() {
     const priceId = this.poolParams.asset2.priceId;
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get value1() {
@@ -294,7 +294,7 @@ export default class InputsForm extends Vue {
   padding: 0 5px;
 
   .slider-value {
-    font-size: 24px;
+    font-size: 1.5em;
     font-weight: 700;
     text-align: left;
     color: $pink-color;

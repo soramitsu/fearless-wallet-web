@@ -27,13 +27,12 @@
 import { ref, onBeforeUnmount, onMounted, computed } from 'vue';
 import { changeNftSettings } from '@/extension/messaging/nfts';
 import { accountController } from '@/controllers';
-import { type SelectedWallet, useStore } from '@/store';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useAccountsStore } from '@/stores/accounts';
 
-const store = useStore();
+const accountsStore = useAccountsStore();
 const emit = defineEmits(['handleClose']);
 const nftSettings = ref({ spam: false, airdrop: false });
-const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
+const selectedWallet = computed(() => accountsStore.selectedWallet);
 
 onMounted(() => {
   const settings = accountController.getNftSettings();

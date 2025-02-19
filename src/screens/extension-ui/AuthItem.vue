@@ -18,7 +18,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { stripUrl } from '@extension-base/background/handlers/helpers';
+import { stripUrl } from '@/extension/background/extension-base/src/background/helpers';
 
 const { authorizedAccounts, url } = defineProps<{
   url: string;
@@ -63,7 +63,7 @@ const onRemoveAuth = () => emits('remove', stripedUrl.value);
 }
 
 .auth-item-name {
-  font-size: 16px;
+  font-size: 1em;
 }
 
 .auth-content {

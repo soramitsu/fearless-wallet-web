@@ -25,9 +25,8 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import type { NetworkJson } from '@extension-base/types';
-import type { SelectedWallet } from '@/store/accounts/types';
-import { useStore } from '@/store';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import type { SelectedWallet } from '@/stores/accounts/types';
+import { useAccountsStore } from '@/stores/accounts';
 
 type Props = {
   network: NetworkJson;
@@ -37,10 +36,10 @@ type Props = {
 };
 
 const props = withDefaults(defineProps<Props>(), { isNetworkGroup: false });
-const store = useStore();
+const accountsStore = useAccountsStore();
 const emit = defineEmits(['onToggleFavorite', 'onChangeNetwork']);
 
-const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
+const selectedWallet = computed<SelectedWallet>(() => accountsStore.selectedWallet);
 
 const iconColor = computed(() => (props.isSelected ? 'purple' : ''));
 const iconType = computed(() => (props.isNetworkGroup ? 'check' : 'star'));
@@ -87,7 +86,7 @@ const prepOpacity = computed(() => (props.isAvailable ? '1' : '0.5'));
   display: flex;
   flex-flow: row nowrap;
   color: v-bind(prepColor);
-  font-size: 16px;
+  font-size: 1em;
   border: solid 1px transparent;
   border-bottom-color: $default-background-color;
   padding-top: 16px;

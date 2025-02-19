@@ -43,6 +43,8 @@
           v-if="showCreateForm"
           :step="step"
           :mnemonic="mnemonic"
+          :mnemonicLength="mnemonicLength"
+          :isSubstrate="isSubstrate"
           :selectedMnemonicElements="selectedMnemonicElements"
           @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
           @update:selectedMnemonicElements="updateSelectedMnemonicElements"
@@ -59,6 +61,7 @@
           :ethereumJson="ethereumJson"
           :passwordJson="passwordJson"
           :isOnlyEthereumAccount="isOnlyEthereumAccount"
+          :isSubstrate="isSubstrate"
           @setImportValue="setImportValue"
           @reset="reset"
           @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
@@ -137,17 +140,15 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import type { DerivationPaths, ImportType, ValidateJsonResult, MnemonicConfirmation } from '@/interfaces';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
-import type { SelectedWallet } from '@/store';
+import { WalletEcosystem } from '@/interfaces';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
 import ImportWallet from '@/screens/addWallet/ImportWallet.vue';
 import NicknameForm from '@/screens/addWallet/NicknameForm.vue';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import AddEthereumAccountPopup from '@/screens/addWallet/AddEthereumAccountPopup.vue';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { type WarningValueName } from '@/consts/messages';
@@ -160,8 +161,12 @@ import {
   windowOpen,
   addAccount,
   updatePairMeta,
+  generateMnemonic,
+  mnemonicValidate,
 } from '@/extension/messaging';
 import { IS_POPUP } from '@/consts/globalClient';
+import { useAccountsStore } from '@/stores/accounts';
+import { type FWKeyringMeta } from '@/extension/background/extension-base/src/types';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
 
@@ -178,7 +183,7 @@ type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'sub
 export default class AddWallet extends Vue {
   readonly isPopup = IS_POPUP;
   readonly countSteps = 4;
-
+  accountsStore = useAccountsStore();
   step = 1;
   nickname = '';
   mnemonic = '';
@@ -197,8 +202,6 @@ export default class AddWallet extends Vue {
   address: string | null = null;
   isLoading = false;
 
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-
   get confirmMnemonicStep() {
     return this.step === 3 && this.isCreateWallet;
   }
@@ -209,6 +212,18 @@ export default class AddWallet extends Vue {
 
   get walletType() {
     return this.$route.params.type;
+  }
+
+  get walletEcosystem() {
+    return (this.$route.params.walletEcosystem ?? 'substrate') as WalletEcosystem;
+  }
+
+  get isSubstrate() {
+    return this.walletEcosystem === 'substrate';
+  }
+
+  get mnemonicLength() {
+    return this.walletEcosystem === 'ton' ? 24 : 12;
   }
 
   get isDifferentPasswords() {
@@ -362,6 +377,8 @@ export default class AddWallet extends Vue {
   }
 
   get suriEthereum() {
+    if (!this.isSubstrate) return '';
+
     const {
       ethereum: { value: ethereumDerivationPath },
     } = this.derivationPaths;
@@ -410,7 +427,7 @@ export default class AddWallet extends Vue {
 
       this.isLoading = false;
 
-      if (this.isOnlyEthereumAccount) this.$router.push({ name: Components.Wallet }).catch(() => {});
+      if (this.isOnlyEthereumAccount) this.$router.push({ name: Components.Wallet });
     }
   }
 
@@ -542,8 +559,9 @@ export default class AddWallet extends Vue {
   }
 
   async createFlow() {
-    if (this.step === 1 && !this.mnemonic.length) this.mnemonic = BaseApi.generateMnemonic();
-    else if (this.step === 2) await this.validateSuri();
+    if (this.step === 1 && !this.mnemonic.length) {
+      this.mnemonic = await generateMnemonic(this.walletEcosystem, this.mnemonicLength);
+    } else if (this.step === 2) await this.validateSuri();
     else if (this.step === 3) this.validateSequenceMnemonic();
   }
 
@@ -601,8 +619,9 @@ export default class AddWallet extends Vue {
       ethereum: { value: ethereumDerivationPath },
       substrate,
     } = this.derivationPaths;
+
     const ETHDP = (ethereumDerivationPath[0] === '/' ? ethereumDerivationPath.slice(1) : ethereumDerivationPath).trim();
-    const isValidMnemonic = this.mnemonic ? BaseApi.isValidPhrase(this.mnemonic.trim()) : true;
+    const isValidMnemonic = this.mnemonic ? await mnemonicValidate(this.walletEcosystem, this.mnemonic.trim()) : true;
     const isValidSubstratePhrase = substrate.value ? await isDerivationPathValid(substrate) : true;
     const isValidEthereumDP = ethereumDerivationPath ? BaseApi.isValidEthereumDerivationPath(ETHDP) : true;
     const isValidSubstrateRawSeed = this.substrateRawSeed ? BaseApi.isHex(this.substrateRawSeed) : true;
@@ -635,19 +654,24 @@ export default class AddWallet extends Vue {
   }
 
   async saveKeypairFromSeed() {
-    const meta: Record<string, unknown> = { name: this.nickname.trim(), ethereumAddress: '' };
+    const meta: FWKeyringMeta = {
+      name: this.nickname.trim(),
+      ethereumAddress: '',
+      walletEcosystem: this.walletEcosystem,
+    };
+
     const {
       substrate: { keypairType: substrateKeypairType },
       ethereum: { keypairType: ethereumKeypairType },
     } = this.derivationPaths;
 
-    if (this.isOnlyEthereumAccount) meta.name = this.selectedWallet.name;
+    if (this.isOnlyEthereumAccount) meta.name = this.accountsStore.selectedWallet.name;
 
     if (this.suriEthereum !== '') {
       const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta);
 
       if (this.isOnlyEthereumAccount) {
-        updatePairMeta(this.selectedWallet.address, { ethereumAddress });
+        updatePairMeta(this.accountsStore.selectedWallet.address, { ethereumAddress });
 
         return '';
       }
@@ -655,7 +679,7 @@ export default class AddWallet extends Vue {
       meta.ethereumAddress = ethereumAddress;
     }
 
-    const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta);
+    const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta, this.walletEcosystem);
 
     return address;
   }
@@ -667,7 +691,10 @@ export default class AddWallet extends Vue {
       const ethereumAddress = await jsonRestore(this.ethereumJSON, this.passwordEthereumJson);
 
       if (this.isOnlyEthereumAccount) {
-        updatePairMeta(this.selectedWallet.address, { ethereumAddress });
+        updatePairMeta(this.accountsStore.selectedWallet.address, {
+          ethereumAddress,
+          walletEcosystem: WalletEcosystem.Substrate,
+        });
 
         return '';
       }
@@ -759,7 +786,7 @@ export default class AddWallet extends Vue {
 
     .content-header {
       font-weight: 600;
-      font-size: 20px;
+      font-size: 1.25rem;
       line-height: 25px;
       margin: 13.5px 0 21.5px;
     }

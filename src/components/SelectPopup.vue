@@ -184,6 +184,7 @@ export default class SelectPopup extends Vue {
       margin-right: 10px;
       opacity: 0.65;
       user-select: none;
+      border-radius: 50%;
     }
   }
 
@@ -211,7 +212,7 @@ export default class SelectPopup extends Vue {
     font-weight: 400;
 
     &__token {
-      font-size: 12px;
+      font-size: 0.75rem;
       color: $gray-color;
     }
   }

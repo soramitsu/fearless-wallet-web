@@ -1,7 +1,7 @@
 /* eslint-disable prefer-rest-params */
 import '@polkadot/extension-inject/crossenv';
 import { MESSAGE_ORIGIN_CONTENT } from '@extension-base/defaults';
-import { enable, handleResponse, initEvmProvider, redirectIfPhishing, saveSoraCardToken } from '@extension-base/page';
+import { enable, handleResponse, initEvmProvider, redirectIfPhishing } from '@extension-base/page';
 import { eip6963ProviderInfo } from '@extension-base/const';
 import type { FWEvmProvider } from '@extension-base/page/types';
 import type Injected from '@extension-base/page/Injected';
@@ -186,13 +186,12 @@ announceProvider();
 class Page {
   private static inject() {
     // small helper with the typescript types, just cast window
-    const windowInject: any = window as Window & InjectedWindow; // don't clobber the existing object, we will add it (or create as needed)
+    const windowInject = window as Window & InjectedWindow; // don't clobber the existing object, we will add it (or create as needed)
 
-    windowInject.injectedWeb3 = windowInject.injectedWeb3 || {}; // add our enable and saveSoraCardToken functions
+    windowInject.injectedWeb3 = windowInject.injectedWeb3 || {}; // add our enable function
 
     windowInject.injectedWeb3[walletKey] = {
       enable: (origin: string): Promise<Injected> => enable(origin),
-      saveSoraCardToken: (token: string) => saveSoraCardToken(token),
       version: APP_VERSION,
     };
   }

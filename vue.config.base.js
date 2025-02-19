@@ -22,7 +22,16 @@ module.exports = {
       },
     },
   },
-  productionSourceMap: false,
+  devServer: {
+    client: {
+      overlay: {
+        errors: false,
+        warnings: false,
+        runtimeErrors: false,
+      },
+    },
+  },
+  productionSourceMap: true,
   chainWebpack: (config) => {
     config.plugin('define').tap((definitions) => {
       const def = definitions[0]['process.env'];
@@ -35,6 +44,8 @@ module.exports = {
       def.RAMP_PROD_API_KEY = JSON.stringify(process.env.RAMP_PROD_API_KEY);
       def.MOONPAY_TEST_API_KEY = JSON.stringify(process.env.MOONPAY_TEST_API_KEY);
       def.MOONPAY_PROD_API_KEY = JSON.stringify(process.env.MOONPAY_PROD_API_KEY);
+      def.FL_WEB_TON_API_KEY = JSON.stringify(process.env.FL_WEB_TON_API_KEY);
+      def.FL_DWELLIR_API_KEY = JSON.stringify(process.env.FL_DWELLIR_API_KEY);
       def.FL_WEB_ETHERSCAN_API_KEY = JSON.stringify(process.env.FL_WEB_ETHERSCAN_API_KEY);
       def.FL_WEB_BSCSCAN_API_KEY = JSON.stringify(process.env.FL_WEB_BSCSCAN_API_KEY);
       def.FL_WEB_POLYGONSCAN_API_KEY = JSON.stringify(process.env.FL_WEB_POLYGONSCAN_API_KEY);

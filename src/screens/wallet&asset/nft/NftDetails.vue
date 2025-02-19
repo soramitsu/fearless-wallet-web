@@ -57,26 +57,26 @@
 import { useRouter, useRoute } from 'vue-router/composables';
 import { computed, onMounted } from 'vue';
 import type { FearlessNft, NftCollection } from '@extension-base/services/nft-service/types';
-import { type SelectedWallet, useStore } from '@/store';
 import { cut, setClipboard } from '@/helpers';
 import { Components } from '@/router/routes';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useAccountsStore } from '@/stores/accounts';
 
 const router = useRouter();
 const route = useRoute();
-const store = useStore();
-const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
+const accountsStore = useAccountsStore();
+
+const selectedWallet = computed(() => accountsStore.selectedWallet);
 const id = computed(() => route.params.id);
 const contract = computed(() => route.params.contract);
-const nfts = computed<NftCollection[]>(() => store.getters[AccountsGettersTypes.nfts] ?? {});
+const nfts = computed<NftCollection[]>(() => accountsStore.nftsByActiveNetworks ?? {});
 const collection = computed<NftCollection>(
   () => nfts.value.find((nft) => nft.address === contract.value) ?? { ownedNfts: [], address: '', network: '' }
 );
 
 const nft = computed<Partial<FearlessNft>>(() => {
-  const nftCollectionFromStore: FearlessNft[] =
-    store.getters[AccountsGettersTypes.availableNfts][contract.value]?.collection ?? [];
-  const ownedNfts: FearlessNft[] = [...collection.value.ownedNfts] ?? [];
+  const nftCollectionFromStore = accountsStore.availableNfts[contract.value]?.collection ?? [];
+
+  const ownedNfts = collection.value.ownedNfts ?? [];
 
   return (
     ownedNfts.find((ownedNft) => ownedNft.id === id.value) ??
@@ -139,7 +139,7 @@ const onShare = () => {
 
   &__desc {
     font-weight: 400;
-    font-size: 14px;
+    font-size: 0.875em;
     padding: 15px 0;
     color: $default-white;
     overflow-wrap: anywhere;

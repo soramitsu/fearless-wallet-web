@@ -26,37 +26,59 @@
 </template>
 
 <script lang="ts">
-import { Getter } from 'vuex-class';
 import { Vue, Component, Watch } from 'vue-property-decorator';
-import type { SelectedWallet } from '@/store';
-import type { Networks } from '@/interfaces';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { accountUpdateName } from '@/extension/messaging';
 import { getChainAccounts } from '@/helpers/accounts';
-import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
+import { type SelectedWallet } from '@/stores';
+import { isSameString } from '@/helpers';
 
 @Component({})
 export default class AccountSetting extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   selectedNetwork = '';
   selectedAddress = '';
   newName = '';
 
-  @Getter(NetworksGettersTypes.allNetworks) networks!: Networks;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-
   get chainAccounts() {
-    return getChainAccounts(this.networks, this.selectedWallet);
+    return getChainAccounts(this.networksStore.networks, this.accountsStore.selectedWallet);
   }
 
   get relayChains() {
-    const counterEVM = this.networks.filter(({ name }) => isNativeEVMNetwork(name)).length;
-    const counterSubstrate = this.networks.filter(({ name }) => !isNativeEVMNetwork(name)).length;
+    const counterEVM = this.networksStore.networks.filter(({ ecosystem }) =>
+      isSameString(ecosystem, 'ethereum')
+    ).length;
+
+    const counterSubstrate = this.networksStore.networks.filter(
+      ({ ecosystem }) => isSameString(ecosystem, 'substrate') || isSameString(ecosystem, 'ethereumBased')
+    ).length;
+
+    const counterTon = this.networksStore.networks.filter(({ ecosystem }) => isSameString(ecosystem, 'ton')).length;
+
+    if (this.accountsStore.selectedWallet.isTon) {
+      return [
+        {
+          name: 'TON',
+          count: counterTon.toString(),
+          type: 'ton',
+        },
+      ];
+    }
 
     return [
-      { name: 'EVM', count: counterEVM.toString(), type: 'evm' },
-      { name: 'Substrate', count: counterSubstrate.toString(), type: 'substrate' },
+      {
+        name: 'EVM',
+        count: counterEVM.toString(),
+        type: 'evm',
+      },
+      {
+        name: 'Substrate',
+        count: counterSubstrate.toString(),
+        type: 'substrate',
+      },
     ];
   }
 
@@ -66,7 +88,7 @@ export default class AccountSetting extends Vue {
   }
 
   mounted() {
-    this.newName = this.selectedWallet.name;
+    this.newName = this.accountsStore.selectedWallet.name;
   }
 
   back() {
@@ -78,7 +100,7 @@ export default class AccountSetting extends Vue {
   }
 
   blurInputName() {
-    const { address, name } = this.selectedWallet;
+    const { address, name } = this.accountsStore.selectedWallet;
 
     if (this.newName === '') {
       this.newName = name;
@@ -86,7 +108,7 @@ export default class AccountSetting extends Vue {
       return;
     }
 
-    accountUpdateName(address, this.newName);
+    accountUpdateName(address, this.newName, this.accountsStore.selectedWallet.walletEcosystem!);
   }
 
   openChainAccounts(type: string) {

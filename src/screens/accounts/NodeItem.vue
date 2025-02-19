@@ -79,7 +79,7 @@ export default class NodeItem extends Vue {
 
   .url {
     font-weight: 400;
-    font-size: 14px;
+    font-size: 0.875em;
     text-align: left;
     width: 410px;
     height: 21px;

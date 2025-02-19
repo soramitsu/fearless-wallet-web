@@ -1,6 +1,5 @@
 import { type KeyringAddress } from '@subwallet/ui-keyring/types';
 import type {
-  AllowedPath,
   ActiveTabAuthorizeStatus,
   RequestChangePassword,
   RequestUnlockExtension,
@@ -8,11 +7,7 @@ import type {
 } from '@extension-base/background/types/types';
 import { sendMessage } from '@/extension/messaging/index';
 
-export async function subscribeSoraCardToken(cb: (token: string) => void): Promise<boolean> {
-  return sendMessage('pri(soraCard.token)', null, cb);
-}
-
-export function windowOpen(path: AllowedPath): Promise<boolean> {
+export function windowOpen(path: string): Promise<boolean> {
   return sendMessage('pri(window.open)', path);
 }
 

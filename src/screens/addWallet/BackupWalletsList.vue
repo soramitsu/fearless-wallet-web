@@ -53,19 +53,18 @@
 </template>
 
 <script lang="ts">
-import { Getter } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { FilesState } from '@/interfaces';
-import type { SelectedWallet } from '@/store/accounts/types';
 import { cut } from '@/helpers';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { isJsonValid, jsonRestore, updateCurrentAccount, migrateMasterPassword } from '@/extension/messaging';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class BackupWalletsList extends Vue {
+  accountsStore = useAccountsStore();
+
   @Prop(Array) items!: FilesState[];
   @Prop({ default: false }) isGoogle!: boolean;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   setItemValue(index: number, data: Record<string, string | boolean>) {
     this.$emit('setItemValue', index, data);
@@ -114,7 +113,7 @@ export default class BackupWalletsList extends Vue {
 
       const address = await jsonRestore(json, password);
 
-      await updateCurrentAccount(address || this.selectedWallet.address);
+      await updateCurrentAccount(address || this.accountsStore.selectedWallet.address);
 
       this.setItemValue(index, { isComplete: true, isLoading: false });
     }
@@ -206,7 +205,7 @@ export default class BackupWalletsList extends Vue {
     flex-shrink: 1;
 
     .account__checkbox .el-checkbox__label {
-      font-size: 16px;
+      font-size: 1em;
     }
 
     .checkbox {

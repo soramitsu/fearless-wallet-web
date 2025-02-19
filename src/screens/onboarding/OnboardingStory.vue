@@ -30,7 +30,7 @@ defineProps<{ story: OnboardingStory }>();
 
   &__title {
     font-family: Unbounded, sans-serif;
-    font-size: 24px;
+    font-size: 1.5em;
     font-weight: 700;
   }
 
@@ -38,7 +38,7 @@ defineProps<{ story: OnboardingStory }>();
     max-width: 380px;
     height: 60px;
     flex-shrink: 0;
-    font-size: 16px;
+    font-size: 1em;
     font-style: normal;
     font-weight: 400;
     line-height: normal;

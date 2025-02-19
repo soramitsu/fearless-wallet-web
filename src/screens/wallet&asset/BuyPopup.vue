@@ -16,25 +16,24 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { Features } from '@/store/extension/types';
 import type { BuyProvider } from '@/interfaces';
 import { getProviderUrl } from '@/helpers/currencies';
-import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
+import { useExtensionStore } from '@/stores/extension';
 
 @Component
 export default class BuyPopup extends Vue {
+  extensionStore = useExtensionStore();
+
   @Prop(String) asset!: string;
   @Prop(String) address!: string;
   @Prop(Array) providers!: ('ramp' | 'moonpay')[];
-  @Getter(ExtensionGettersTypes.features) features!: Nullable<Features>;
 
   get headerText() {
     return this.$t('assets.buyHeader', { asset: this.asset });
   }
 
   get providersFiltered() {
-    return this.providers.filter((provider) => this.features?.fiat[provider]);
+    return this.providers.filter((provider) => this.extensionStore.features?.fiat[provider]);
   }
 
   openProvider(providerName: BuyProvider) {

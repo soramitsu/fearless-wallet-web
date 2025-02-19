@@ -116,7 +116,7 @@ export default class FiltersPopup extends Vue {
     .descriptions {
       margin-top: 5px;
       color: $grayish-white-2;
-      font-size: 14px;
+      font-size: 0.875em;
       cursor: pointer;
     }
 

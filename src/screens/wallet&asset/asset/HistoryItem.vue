@@ -1,16 +1,16 @@
 <template>
   <div class="history-item">
-    <ExternalLogo :name="token.icon" />
+    <ExternalLogo :name="token.icon" class="asset-icon" />
 
     <div class="column">
       <div class="first-row">
-        <div data-testid="hash">{{ hash }}</div>
+        <div data-testid="hash">{{ addressHistory }}</div>
 
         <div :class="valueClasses" data-testid="valueHistory">{{ value }} {{ assetToUpperCase }}</div>
       </div>
 
       <div class="second-row">
-        <div data-testid="tModule">{{ tModule }}</div>
+        <div data-testid="tModule">{{ typeHistory }}</div>
 
         <div data-testid="date">{{ date }}</div>
       </div>
@@ -20,35 +20,34 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { HistoryElement, NetworkName } from '@/interfaces';
+import type { HistoryElement, NetworkName, TonEvent } from '@/interfaces';
 import type { TokenGroup } from '@extension-base/background/types/types';
-import type { GetNetwork, SelectedWallet } from '@/store';
-import { getType, getTypeFormatted, getHistoryValue, getSignTransfer } from '@/helpers/history';
-import { getFormattedDate, cut, isSora } from '@/helpers';
+import { getType, getTypeFormatted, getHistoryValue, getSignTransfer, TransferType } from '@/helpers/history';
+import { getFormattedDate, cut, isSora, isTonNetwork } from '@/helpers';
 import { type SoraHistoryElement, TransactionType } from '@/interfaces/history';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class HistoryItem extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
+
   @Prop(Object) historyElement!: HistoryElement;
   @Prop(Object) token!: TokenGroup;
   @Prop(String) network!: NetworkName;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get signTransfer() {
     return getSignTransfer(this.historyElement, this.address, this.network);
   }
 
   get address() {
-    if (BaseApi.isEthereumNetwork(this.network.toLowerCase())) return this.selectedWallet.ethereumAddress;
+    if (BaseApi.isEthereumNetwork(this.network.toLowerCase())) return this.accountsStore.selectedWallet.ethereumAddress;
 
-    const network = this.getNetwork(this.network);
+    const network = this.networksStore.getNetwork(this.network);
 
-    return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
+    return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, network.addressPrefix);
   }
 
   get asset() {
@@ -57,6 +56,10 @@ export default class HistoryItem extends Vue {
 
   get isSora() {
     return isSora(this.network);
+  }
+
+  get isTon() {
+    return isTonNetwork(this.network);
   }
 
   get success() {
@@ -82,7 +85,7 @@ export default class HistoryItem extends Vue {
   }
 
   get networkJson() {
-    return this.getNetwork(this.network);
+    return this.networksStore.getNetwork(this.network);
   }
 
   get networkHistoryType() {
@@ -97,17 +100,24 @@ export default class HistoryItem extends Vue {
     return `${values.signTransfer}${this.$n(values.value, 'decimalPrecise')}`;
   }
 
-  get hash() {
+  get addressHistory() {
     if (this.isSora) {
       const element = this.historyElement as unknown as SoraHistoryElement;
 
       return this.$t(`history.${element.method}`);
     }
 
+    if (this.isTon) {
+      const element = this.historyElement as unknown as TonEvent;
+      const value = this.typeFormatted === TransferType.Incoming ? element!.from : element!.to;
+
+      return cut(value);
+    }
+
     const { transfer, reward } = this.historyElement;
 
     if (this.type === TransactionType.transfer) {
-      const value = this.typeFormatted === 'incomingTransfer' ? transfer!.from : transfer!.to;
+      const value = this.typeFormatted === TransferType.Incoming ? transfer!.from : transfer!.to;
 
       return cut(value);
     }
@@ -120,9 +130,9 @@ export default class HistoryItem extends Vue {
     return getTypeFormatted(this.historyElement, this.address, this.network);
   }
 
-  get tModule() {
-    if (this.typeFormatted === 'incomingTransfer' || this.typeFormatted === 'outgoingTransfer')
-      return this.$t(this.typeFormatted);
+  get typeHistory() {
+    if (this.typeFormatted === TransferType.Incoming || this.typeFormatted === TransferType.Outgoing)
+      return this.$t(`history.${this.typeFormatted}`);
 
     return this.typeFormatted;
   }
@@ -148,6 +158,10 @@ export default class HistoryItem extends Vue {
     color: $reject-color;
   }
 
+  .asset-icon {
+    border-radius: 50%;
+  }
+
   .column {
     display: flex;
     flex-direction: column;
@@ -165,7 +179,7 @@ export default class HistoryItem extends Vue {
       display: flex;
       justify-content: space-between;
       color: rgba(255, 255, 255, 0.64);
-      font-size: 14px;
+      font-size: 0.875em;
       margin-top: 2px;
     }
   }

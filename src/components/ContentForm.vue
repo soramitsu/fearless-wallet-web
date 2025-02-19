@@ -8,7 +8,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { APP_HEIGHT } from '@/consts/global';
+import { APP_HEIGHT, IS_EXTENSION } from '@/consts/global';
 
 type BackgroundType = 'black' | 'light-black';
 
@@ -27,6 +27,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const contentFormStyle = computed(() => {
   const styles: Record<string, string> = {};
+
+  if (!(IS_EXTENSION || props.height)) return { height: '100%' };
 
   if (props.isStaticHeight) styles.height = `${props.height}px`;
   else if (props.height !== undefined) {

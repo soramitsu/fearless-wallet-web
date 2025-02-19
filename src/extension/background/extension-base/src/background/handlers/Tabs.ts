@@ -2,13 +2,6 @@ import { PHISHING_PAGE_REDIRECT } from '@extension-base/defaults';
 import { checkIfDenied } from '@polkadot/phishing';
 import { chrome } from '@extension-base/utils/crossenv';
 import { isNumber } from '@polkadot/util';
-import {
-  stripUrl,
-  transformAccounts,
-  transformAddresses,
-  withErrorLog,
-} from '@extension-base/background/handlers/helpers';
-import { createSubscription, unsubscribe } from '@extension-base/services';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import { type RequestArguments } from '@json-rpc-tools/utils';
@@ -42,7 +35,11 @@ import type {
   MetadataDef,
   ProviderMeta,
 } from '@polkadot/extension-inject/types';
-
+import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
+import {
+  transformAccounts,
+  transformAddresses,
+} from '@/extension/background/extension-base/src/background/helpers/accounts';
 type EvmEmitterCallback = (eventName: EvmEventType, payload: unknown) => void;
 
 export default class Tabs {
@@ -75,8 +72,8 @@ export default class Tabs {
   }
 
   async accountsListAuthorized(url: string): Promise<InjectedAccount[]> {
-    const transformedAccounts = transformAccounts({ accounts: this.state.keyringService.accountSubjectValue });
-    const transformedAddresses = transformAddresses({ accounts: this.state.keyringService.addressesSubjectValue });
+    const transformedAccounts = transformAccounts({ accounts: this.state.keyringService.accountSubject.value });
+    const transformedAddresses = transformAddresses({ accounts: this.state.keyringService.addressSubject.value });
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
     const filteredAuths = await this.filterForAuthorizedAccounts(totalAccounts, url);
 
@@ -84,13 +81,13 @@ export default class Tabs {
   }
 
   async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<string> {
-    const cb = createSubscription<'pub(accounts.subscribe)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'pub(accounts.subscribe)'>(id, port);
 
     this.accountSubs[id] = {
       subscription: this.state.keyringService.accountSubject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
         const transformedAccounts = transformAccounts({ accounts });
         const transformedMobileAccount = transformAddresses({
-          accounts: this.state.keyringService.addressesSubjectValue,
+          accounts: this.state.keyringService.addressSubject.value,
         });
         const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
 
@@ -117,7 +114,8 @@ export default class Tabs {
 
     delete this.accountSubs[id];
 
-    unsubscribe(id);
+    this.state.subscriptionService.cancelSubscription(id);
+
     sub.subscription.unsubscribe();
 
     return true;
@@ -181,12 +179,13 @@ export default class Tabs {
   }
 
   async rpcSubscribe(request: RequestRpcSubscribe, id: string, port: Port): Promise<boolean> {
-    const innerCb = createSubscription<'pub(rpc.subscribe)'>(id, port);
+    const innerCb = this.state.subscriptionService.createSubscription<'pub(rpc.subscribe)'>(id, port);
     const cb = (_error: Error | null, data: SubscriptionMessageTypes['pub(rpc.subscribe)']): void => innerCb(data);
     const subscriptionId = await this.state.rpcSubscribe(request, cb, port);
 
     port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
+      this.state.subscriptionService.cancelSubscription(id);
+
       withErrorLog(() => this.rpcUnsubscribe({ ...request, subscriptionId }, port));
     });
 
@@ -194,15 +193,14 @@ export default class Tabs {
   }
 
   async rpcSubscribeConnected(request: null, id: string, port: Port): Promise<boolean> {
-    const innerCb = createSubscription<'pub(rpc.subscribeConnected)'>(id, port);
+    const innerCb = this.state.subscriptionService.createSubscription<'pub(rpc.subscribeConnected)'>(id, port);
+
     const cb = (_error: Error | null, data: SubscriptionMessageTypes['pub(rpc.subscribeConnected)']): void =>
       innerCb(data);
 
     this.state.rpcSubscribeConnected(request, cb, port);
 
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-    });
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
 
     return Promise.resolve(true);
   }
@@ -236,10 +234,6 @@ export default class Tabs {
     return false;
   }
 
-  saveSoraCardRefreshToken(token: string): void {
-    this.state.soraCardService.tokenSubject.next(token);
-  }
-
   async getEvmState(url: string): Promise<EvmAppState> {
     let defaultChain: string | undefined;
 
@@ -271,7 +265,7 @@ export default class Tabs {
 
   private async evmSubscribeEvents(url: string, id: string, port: chrome.runtime.Port) {
     // This method will be called after DApp request connect to extension
-    const cb = createSubscription<'evm(events.subscribe)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'evm(events.subscribe)'>(id, port);
 
     const emitEvent = (eventName: EvmEventType, payload: any) => {
       cb({ type: eventName, payload });
@@ -353,7 +347,7 @@ export default class Tabs {
 
     this.evmEventEmitterMap[url][id] = emitEvent;
 
-    this.state.createUnsubscriptionHandle(id, () => {
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
       if (this.evmEventEmitterMap[url][id]) delete this.evmEventEmitterMap[url][id];
 
       Object.entries(eventMap).forEach(([event, callback]) => {
@@ -362,12 +356,11 @@ export default class Tabs {
 
       accountListSubscription.unsubscribe();
       authUrlSubscription.unsubscribe();
+
       clearInterval(networkCheckInterval);
     });
 
-    port.onDisconnect.addListener((): void => {
-      this.state.cancelSubscription(id);
-    });
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
 
     return true;
   }
@@ -551,22 +544,18 @@ export default class Tabs {
   }
 
   private async handleEvmSend(id: string, url: string, port: chrome.runtime.Port, request: RequestEvmProviderSend) {
-    const cb = createSubscription<'evm(provider.send)'>(id, port);
+    const cb = this.state.subscriptionService.createSubscription<'evm(provider.send)'>(id, port);
     const evmState = await this.getEvmState(url);
 
     const provider = evmState.web3!;
 
-    // this.checkAndHandleProviderStatus(provider);
-
     provider.send(request.jsonrpc, []).then((result) => {
       cb({ error: null, result });
 
-      this.state.cancelSubscription(id);
+      this.state.subscriptionService.cancelSubscription(id);
     });
 
-    port.onDisconnect.addListener((): void => {
-      this.state.cancelSubscription(id);
-    });
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
 
     return true;
   }
@@ -586,9 +575,6 @@ export default class Tabs {
     switch (type) {
       case 'pub(authorize.tab)':
         return this.authorize(url, request as RequestAuthorizeTab);
-
-      case 'pub(soraCard.token)':
-        return this.saveSoraCardRefreshToken(request as string);
 
       case 'pub(accounts.list)':
         return this.accountsListAuthorized(url);

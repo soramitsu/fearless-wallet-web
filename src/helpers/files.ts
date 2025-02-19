@@ -10,7 +10,7 @@ export const downloadJsonAccount = (fileName: string, json: KeyringPair$Json, me
   delete metaCopy['isMasterPassword'];
   delete metaCopy['isMobile'];
 
-  const jsonSubstrate = JSON.stringify({ ...json, metaCopy });
+  const jsonSubstrate = JSON.stringify({ ...json, meta: metaCopy });
 
   const blobSubstrate = new Blob([jsonSubstrate], { type: 'application/json; charset=utf-8' });
 

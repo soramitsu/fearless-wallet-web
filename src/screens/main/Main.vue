@@ -43,7 +43,8 @@
         @closeSelectWalletPopup="setSelectWalletPopupVisible"
       />
     </keep-alive>
-    <Menu />
+
+    <Menu v-if="showMenu" />
   </div>
 </template>
 
@@ -58,6 +59,7 @@ import FiatsPopup from './FiatsPopup.vue';
 import AboutPopup from './AboutPopup.vue';
 import LanguagePopup from './LanguagePopup.vue';
 import ManageAuths from '@/screens/extension-ui/ManageAuths.vue';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: {
@@ -73,6 +75,8 @@ import ManageAuths from '@/screens/extension-ui/ManageAuths.vue';
   },
 })
 export default class Main extends Vue {
+  accountsStore = useAccountsStore();
+
   buttonTopClick = 0;
   selectedWalletAddress = '';
   showSettings = false;
@@ -86,6 +90,10 @@ export default class Main extends Vue {
 
   get highlightSettingsIcon() {
     return this.showSettings || this.showAboutPopup || this.showLanguagePopup || this.showFiatsPopup;
+  }
+
+  get showMenu() {
+    return this.accountsStore.selectedWallet.isSubstrate;
   }
 
   deactivated() {

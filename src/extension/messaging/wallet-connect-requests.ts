@@ -6,7 +6,7 @@ import type {
   RequestApproveConnectWalletSession,
   RequestRejectConnectWalletSession,
   WalletConnectNotSupportRequest,
-  RequestApproveWalletConnectNotSupport,
+  // RequestApproveWalletConnectNotSupport,
   RequestRejectWalletConnectNotSupport,
   WalletConnectTransactionRequest,
   PairingSubjectType,
@@ -49,9 +49,9 @@ export function subscribeWalletNotSupportedConnectRequest(
   return sendMessage('pri(walletConnect.requests.notSupport.subscribe)', null, cb);
 }
 
-export function approveWalletConnectNotSupport(request: RequestApproveWalletConnectNotSupport): Promise<boolean> {
-  return sendMessage('pri(walletConnect.notSupport.approve)', request);
-}
+// export function approveWalletConnectNotSupport(request: RequestApproveWalletConnectNotSupport): Promise<boolean> {
+//   return sendMessage('pri(walletConnect.notSupport.approve)', request);
+// }
 
 export function rejectWalletConnectNotSupport(request: RequestRejectWalletConnectNotSupport): Promise<boolean> {
   return sendMessage('pri(walletConnect.notSupport.reject)', request);
@@ -63,13 +63,8 @@ export function subscribeWalletConnectRequest(
   return sendMessage('pri(walletConnect.signing.requests.subscribe)', null, cb);
 }
 
-export function walletConnectRequestApprove(
-  address: string,
-  password: string,
-  topic: string,
-  isSavePass: boolean
-): Promise<boolean> {
-  return sendMessage('pri(walletConnect.request.approve)', { address, password, topic, isSavePass });
+export function walletConnectRequestApprove(address: string, topic: string): Promise<boolean> {
+  return sendMessage('pri(walletConnect.request.approve)', { address, topic });
 }
 
 export function walletConnectRequestReject(topic: string): Promise<boolean> {

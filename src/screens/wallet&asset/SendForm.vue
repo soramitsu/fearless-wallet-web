@@ -20,7 +20,7 @@
       <div>
         <div class="row direction-column">
           <FInput
-            :value="selectedWallet.name"
+            :value="accountsStore.selectedWallet.name"
             placeholder="assets.from"
             size="big"
             :readonly="true"
@@ -54,20 +54,19 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
-import type { TokenGroup } from '@extension-base/background/types/types';
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { addNumbers } from '@/helpers/numbers';
 import { getUtilityAsset } from '@/helpers/currencies';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { isSameString } from '@/helpers';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: { TransferForm },
 })
 export default class SendForm extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   partialFee = '';
   selectedNetwork = '';
   assetId = '';
@@ -75,14 +74,8 @@ export default class SendForm extends Vue {
   amount = '';
   value = '';
 
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
-
   get currency() {
-    return this.balances.find(({ balances }) =>
+    return this.accountsStore.balances.find(({ balances }) =>
       balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase())
     );
   }
@@ -92,7 +85,7 @@ export default class SendForm extends Vue {
   }
 
   get partialFeeString() {
-    const utilityAsset = getUtilityAsset(this.balances, this.selectedNetwork);
+    const utilityAsset = getUtilityAsset(this.accountsStore.balances, this.selectedNetwork);
     const symbol = utilityAsset ? utilityAsset.symbol : '';
 
     return `${this.$n(+this.partialFee, 'decimalPrecise')} ${symbol.toUpperCase()}`;
@@ -103,11 +96,11 @@ export default class SendForm extends Vue {
   }
 
   get assetPrice() {
-    return this.getAssetPrice(this.currency?.priceId ?? '')?.price ?? 0;
+    return this.networksStore.getAssetPrice(this.currency?.priceId ?? '')?.price ?? 0;
   }
 
   get originNet() {
-    return this.getNetwork(this.selectedNetwork);
+    return this.networksStore.getNetwork(this.selectedNetwork);
   }
 
   get originalUtilityId() {
@@ -115,18 +108,20 @@ export default class SendForm extends Vue {
   }
 
   get feeAssetPrice() {
-    const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === this.originalUtilityId));
+    const currency = this.accountsStore.balances.find(({ balances }) =>
+      balances.some(({ id }) => id === this.originalUtilityId)
+    );
     const priceId = currency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get fiatFeeString() {
-    return `${this.fiatSymbol}${this.$n(+this.partialFee * this.feeAssetPrice, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(+this.partialFee * this.feeAssetPrice, 'price')}`;
   }
 
   get valueString() {
-    return `${this.fiatSymbol}${this.$n(+this.value, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(+this.value, 'price')}`;
   }
 
   get amountString() {
@@ -157,7 +152,7 @@ export default class SendForm extends Vue {
   }
 
   get fiatTotalString() {
-    return `${this.fiatSymbol}${this.$n(this.total * this.assetPrice, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(this.total * this.assetPrice, 'price')}`;
   }
 
   created() {
@@ -215,7 +210,7 @@ export default class SendForm extends Vue {
 
   .summary-label {
     text-align: left;
-    font-size: 18px;
+    font-size: 1.125em;
     font-weight: 600;
   }
 
@@ -240,7 +235,7 @@ export default class SendForm extends Vue {
       .value {
         color: $default-white;
         font-weight: 300;
-        font-size: 12px;
+        font-size: 0.75rem;
         margin-top: 3px;
       }
     }

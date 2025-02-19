@@ -1,10 +1,7 @@
 import type { NetworkJson } from '@extension-base/types';
+import { isSameString } from '@/helpers';
 
-export function getSubstrateGenesisHash(chainInfo: NetworkJson) {
-  return chainInfo.genesisHash || '';
-}
-
-export const findChainInfoByChainId = (chainMap: Record<string, NetworkJson>, chainId?: number): NetworkJson | null => {
+export const getChainInfoByChainId = (chainMap: Record<string, NetworkJson>, chainId?: number): NetworkJson | null => {
   if (!chainId) return null;
 
   for (const chainInfo of Object.values(chainMap)) {
@@ -16,23 +13,18 @@ export const findChainInfoByChainId = (chainMap: Record<string, NetworkJson>, ch
   return null;
 };
 
-export const findChainInfoByHalfGenesisHash = (
-  chainMap: Record<string, NetworkJson>,
+export const getChainInfoByHalfGenesisHash = (
+  chainMap: Record<string, NetworkJson> | NetworkJson[],
   halfGenesisHash?: string
-): NetworkJson | null => {
-  if (!halfGenesisHash) {
-    return null;
-  }
+): NetworkJson | undefined => {
+  if (!halfGenesisHash) return;
 
-  for (const chainInfo of Object.values(chainMap)) {
-    if (
-      getSubstrateGenesisHash(chainInfo)
-        ?.toLowerCase()
-        .substring(2, 2 + 32) === halfGenesisHash.toLowerCase()
-    ) {
-      return chainInfo;
-    }
-  }
+  const chainInfo = Object.values(chainMap).find((chainInfo) => {
+    const substrateGenesisHash = chainInfo.genesisHash ?? '';
+    const substrHash = substrateGenesisHash?.substring(2, 2 + 32);
 
-  return null;
+    return isSameString(substrHash, halfGenesisHash);
+  });
+
+  return chainInfo;
 };

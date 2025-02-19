@@ -3,7 +3,7 @@
     verticalPlacement="top"
     horizontalPlacement="right"
     placeholder="common.searchCurrency"
-    :value="selectedFiat"
+    :value="accountsStore.selectedFiat"
     :top="50"
     :showAnimation="showAnimation"
     :options="filteredOptionsFiats"
@@ -14,28 +14,23 @@
 </template>
 
 <script lang="ts">
-import { Getter, Mutation } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { FiatJson } from '@/interfaces/common';
-import type { Fn } from '@/interfaces';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { updateFiatSymbol } from '@/extension/messaging';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class FiatsPopup extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   filterValue = '';
 
   @Prop(Boolean) showAnimation!: boolean;
-  @Getter(NetworksGettersTypes.fiats) fiats!: FiatJson[];
-  @Getter(AccountsGettersTypes.selectedFiat) selectedFiat!: string;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: Fn<string>;
 
   get filteredOptionsFiats() {
     const filter = this.filterValue.trim().toLowerCase();
 
-    return this.fiats
+    return this.networksStore.fiats
       .filter(({ name }) => name.toLowerCase().includes(filter))
       .map(({ name, id, icon }) => {
         return { name: name, value: id, icon };
@@ -48,7 +43,8 @@ export default class FiatsPopup extends Vue {
 
   toggleSelectedFiat(id: string) {
     updateFiatSymbol(id).then(() => {
-      this.setSelectedFiat(id);
+      this.accountsStore.setSelectedFiat(id);
+
       this.$emit('handlerClose');
     });
   }

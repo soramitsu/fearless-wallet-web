@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div id="app" :class="appMainClass">
     <keep-alive :include="includeKeepAlive">
       <router-view />
     </keep-alive>
@@ -8,83 +8,78 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Mutation, Getter, Action } from 'vuex-class';
+import { cryptoWaitReady } from '@polkadot/util-crypto';
+import { state } from '@extension-base/background/handlers';
+import { keyring } from '@subwallet/ui-keyring';
+import MigrationService from '@extension-base/services/migration-service';
+import { initStorage } from '@extension-base/stores/Storage';
 import { ALL_NETWORKS } from './consts/networks';
-import { setTitle } from './helpers/common';
-import type { ChainNftState } from '@extension-base/services/nft-service/types';
-import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
-import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps, SetSoraFee } from '@/store';
-import type { AsyncFn, Fn } from '@/interfaces';
-import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
-import { MutationTypes as ExtensionMutationTypes } from '@/store/extension/mutations';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useExtensionStore } from './stores/extension';
+import { useNetworksStore } from './stores/networks';
+import { useAccountsStore } from './stores/accounts';
+import { Components } from './router/routes';
+import { IS_POPUP } from './consts/globalClient';
+import type { AccountJson, PriceJson } from '@extension-base/background/types/types';
+import { setTitle } from '@/helpers/only-web';
 import {
   soraFeesSubscribe,
   pingServiceWorker,
   subscribeAccounts,
-  subscribeAddresses,
   subscribeBalance,
   subscribeNetworkMap,
   subscribePrice,
   lockExtension,
   subscribeSelectedNetworks,
+  updateCurrentNetwork,
 } from '@/extension/messaging';
-import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { IS_EXTENSION } from '@/consts/global';
-import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { getNftSubscribe } from '@/extension/messaging/nfts';
 
 @Component({})
 export default class App extends Vue {
-  @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
-  @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
-  @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: Fn<SetNetworksStatusProps>;
-  @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: Fn<SetAssetsPriceProps>;
-  @Mutation(NetworksMutationTypes.SET_SORA_FEES) setSoraFees!: Fn<SetSoraFee>;
-  @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: Fn<SetAccountsProps>;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: Fn<string>;
-  @Mutation(AccountsMutationTypes.SET_NFTS) setNfts!: Fn<ChainNftState>;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
-  @Mutation(ExtensionMutationTypes.SET_ONBOARDING) setOnboarding!: (payload: boolean) => void;
-  @Action(NetworksActionTypes.FETCH_FIATS) fetchFiats!: AsyncFn;
-  @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
-  @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<AccountJson>;
-  @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
-  @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: AsyncFn;
-  @Action(ExtensionActionTypes.FETCH_FEATURES) fetchFeatures!: AsyncFn;
+  extensionStore = useExtensionStore();
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
 
   pingInterval: NodeJS.Timer | undefined = undefined;
 
   get includeKeepAlive() {
     const components = ['Main'];
 
-    // Нужно чтобы не слетало состояние SwapForm при переходе к дисклеймеру
-    if (this.showPolkaswapAlert) components.push('SwapForm');
+    // It was necessary to prevent the SwapForm state from being reset when navigating to the Disclaimer page
+    if (this.accountsStore.showPolkaswapAlert) components.push('SwapForm');
 
     return components;
   }
 
-  async created() {
-    if (IS_EXTENSION) this.extensionSubscribe();
+  get appMainClass() {
+    return IS_EXTENSION ? 'fw-extension' : 'fw-web';
+  }
 
+  async created() {
     lockExtension();
+
+    if (IS_EXTENSION) {
+      const hasRequests = await this.extensionStore.subscribeExtensionRequests();
+
+      if (IS_POPUP && hasRequests) return;
+    }
+
+    if (!IS_EXTENSION) await this.setupWeb();
 
     setTitle();
 
     this.setupWallet();
     this.setupNetworks();
-    this.setupBalance();
+    this.networksStore.getFiats();
+
+    await this.setupBalance();
+
     this.setupNfts();
-    this.fetchFiats();
     this.setupPrice();
     this.setupSWPing();
 
-    await this.fetchFeatures();
-
-    this.getUserStatus(); // SORA Card
+    this.extensionStore.fetchFeatures();
   }
 
   setupSWPing() {
@@ -102,25 +97,43 @@ export default class App extends Vue {
   }
 
   async setupBalance() {
-    const balance = await subscribeBalance((balanceUpdates) => this.setBalance(balanceUpdates));
+    const balance = await subscribeBalance((balanceUpdates) => {
+      this.accountsStore.setIsBalanceLoading(false);
+      this.accountsStore.setBalance(balanceUpdates);
+    });
 
-    this.setBalance(balance);
+    this.accountsStore.setBalance(balance);
+  }
+
+  async setupWeb() {
+    await cryptoWaitReady()
+      .then(() => {
+        state.keyringService.loadAll();
+        state.eventService.emit('crypto.ready', true);
+
+        keyring.restoreKeyringPassword();
+
+        MigrationService.start();
+      })
+      .catch((error) => console.error('initialization failed', error));
+
+    await initStorage();
   }
 
   async setupNfts() {
-    const ownedNfts = await getNftSubscribe((nftUpdates) => this.setNfts(nftUpdates));
+    const ownedNfts = await getNftSubscribe((nftUpdates) => this.accountsStore.setNfts(nftUpdates));
 
-    this.setNfts(ownedNfts);
+    this.accountsStore.setNfts(ownedNfts);
   }
 
   async setupNetworks() {
     const nets = await subscribeNetworkMap((networksUpdates) =>
-      this.setNetworks({ networks: Object.values(networksUpdates) })
+      this.networksStore.setNetworks({ networks: Object.values(networksUpdates) })
     );
 
-    this.setNetworks({ networks: Object.values(nets) });
+    this.networksStore.setNetworks({ networks: Object.values(nets) });
 
-    await subscribeSelectedNetworks((network) => this.setSelectedNetwork(network));
+    await subscribeSelectedNetworks((network) => this.accountsStore.setSelectedNetwork(network));
   }
 
   async setupPrice() {
@@ -131,19 +144,28 @@ export default class App extends Vue {
     this.updatePrice(prices);
   }
 
-  updatePrice({ currency, tokenPriceMap, tokenPriceChange }: PriceJson) {
-    this.setSelectedFiat(currency);
-    this.setPrices({ tokenPriceMap, tokenPriceChange });
+  updatePrice({ fiat, tokenPriceMap, tokenPriceChange }: PriceJson) {
+    this.accountsStore.setSelectedFiat(fiat);
+    this.networksStore.setPrices({ tokenPriceMap, tokenPriceChange });
   }
 
-  onAccountUpdate(accounts: AccountJson[], isMobileUpdate = false) {
+  onAccountUpdate(accounts: AccountJson[]) {
     const selectedAccount = accounts.find((account) => account.active);
 
-    this.setAccounts({ accounts, isMobileUpdate });
+    this.accountsStore.setAccounts({ accounts });
 
-    if (selectedAccount || !this.wallets.length) {
-      this.setSelectedWallet(selectedAccount);
-      this.setSelectedNetwork(selectedAccount && selectedAccount.network ? selectedAccount.network : ALL_NETWORKS);
+    if (!selectedAccount) return;
+
+    this.accountsStore.setSelectedWallet(selectedAccount);
+
+    if (this.networksStore.networks.length === 1) {
+      updateCurrentNetwork(this.networksStore.networks[0].name);
+
+      this.accountsStore.setSelectedNetwork(this.networksStore.networks[0].name);
+    } else this.accountsStore.setSelectedNetwork(selectedAccount?.network ?? ALL_NETWORKS);
+
+    if (selectedAccount?.address !== this.accountsStore.selectedWallet.address) {
+      this.$router.push({ name: Components.Wallet }).catch(() => {});
     }
   }
 
@@ -152,8 +174,7 @@ export default class App extends Vue {
 
     this.onAccountUpdate(accounts);
 
-    subscribeAddresses((accounts) => this.onAccountUpdate(accounts, true));
-    soraFeesSubscribe((fees) => this.setSoraFees({ fees }));
+    soraFeesSubscribe((fees) => this.networksStore.setSoraFees({ fees }));
   }
 }
 </script>
@@ -170,16 +191,27 @@ body {
   font-family: 'Sora', sans-serif;
   font-style: normal;
   font-feature-settings: 'tnum' on, 'lnum' on;
-  min-height: $extension-height;
-  min-width: $extension-width;
   height: 100vh;
-  width: $extension-width;
   color: white;
   text-align: center;
-  margin: 0 auto;
   padding: $default-padding;
   background-image: url('@/assets/background.png');
   background-position: center;
   background-size: cover;
+}
+
+.fw-web {
+  font-size: 12px;
+  margin: auto;
+  min-height: 100dvh;
+  min-width: 100dvw;
+}
+
+.fw-extension {
+  font-size: 16px;
+  margin: 0 auto;
+  min-height: $extension-height;
+  min-width: $extension-width;
+  width: $extension-width;
 }
 </style>

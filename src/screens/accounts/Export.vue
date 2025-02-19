@@ -35,13 +35,12 @@
 <script lang="ts" setup>
 import { computed, ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
-import { useStore, type SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import { validatePassword } from '@/extension/messaging';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useAccountsStore } from '@/stores/accounts';
 
 const emit = defineEmits(['setPassword']);
-const store = useStore();
+const accountsStore = useAccountsStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -52,15 +51,14 @@ watch(password, () => {
   isWrongPassword.value = false;
 });
 
-const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
 const network = computed(() => route.params.network);
 
 onMounted(() => {
-  if (selectedWallet.value.isMobile) router.back();
+  if (accountsStore.selectedWallet.isMobile) router.back();
 });
 
 const noEthereumAccount = computed(
-  () => selectedWallet.value.ethereumAddress === '' && BaseApi.isEthereumNetwork(network.value)
+  () => accountsStore.selectedWallet.ethereumAddress === '' && BaseApi.isEthereumNetwork(network.value)
 );
 
 const warningText = computed(() => {
@@ -72,8 +70,7 @@ const changePassword = (value: string) => {
 };
 
 const checkPassword = async () => {
-  const addressByNetwork = BaseApi.formatAddress(selectedWallet.value, network.value);
-  const validatePass = await validatePassword(addressByNetwork, password.value);
+  const validatePass = await validatePassword(password.value);
 
   isWrongPassword.value = !validatePass;
 
@@ -105,7 +102,7 @@ const checkPassword = async () => {
 
     .header {
       font-weight: 800;
-      font-size: 22px;
+      font-size: 1.375em;
     }
   }
 }

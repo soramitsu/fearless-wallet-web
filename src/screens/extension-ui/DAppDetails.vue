@@ -17,15 +17,17 @@
 import { computed, onMounted, set, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
 import type { AuthType } from '@extension-base/background/types/types';
+import type { WalletInfo } from '@/stores';
 import { updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
-import { type WalletInfo, useStore } from '@/store';
-import { GettersTypes as AccountsGetterType } from '@/store/accounts/getters';
-import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
+
+import { useExtensionStore } from '@/stores/extension';
+import { useAccountsStore } from '@/stores/accounts';
 
 const router = useRouter();
 const route = useRoute();
-const store = useStore();
+const extensionStore = useExtensionStore();
+const accountsStore = useAccountsStore();
 
 const selectAll = ref(false);
 const state = ref<Record<string, WalletInfo>>({});
@@ -51,13 +53,14 @@ const prepAccounts = computed<string[]>(() => {
     .map(({ address, ethereumAddress }) => (isEVM.value ? ethereumAddress : address));
 });
 
+const list = computed(() => extensionStore.authList);
+
 const isAllSelected = () => Object.values(state.value).every(({ active }) => active);
-const list = computed(() => store.getters[ExtensionGettersTypes.authList]);
 
 onMounted(async () => {
-  await store.dispatch('GET_AUTHLIST');
+  await extensionStore.getAuthList();
 
-  const wallets: WalletInfo[] = store.getters[AccountsGetterType.getWallets];
+  const wallets: WalletInfo[] = accountsStore.getWallets;
 
   const { authorizedAccounts, evmAuthorizedAccount } = list.value[url.value] ?? {};
 
@@ -66,7 +69,7 @@ onMounted(async () => {
       ? ethereumAddress === evmAuthorizedAccount
       : authorizedAccounts.some((el: string) => el === address);
 
-    set(state.value, name, {
+    set(state.value, address, {
       name,
       isMobile,
       address,
@@ -79,10 +82,10 @@ onMounted(async () => {
 });
 
 const onSelect = (value: boolean, name: string) => {
+  state.value[name].active = value;
+
   if (showSelectAll.value) selectAll.value = selectAll.value = isAllSelected();
   else Object.keys(state.value).forEach((key) => (state.value[key].active = false));
-
-  state.value[name].active = value;
 };
 
 const onSelectAll = (value: boolean) => {
@@ -98,7 +101,7 @@ const onSelectAll = (value: boolean) => {
 
 const updateAuths = async () => {
   await updateAuthorization(prepAccounts.value, url.value, authType.value);
-  await store.dispatch('GET_AUTHLIST');
+  await extensionStore.getAuthList();
 
   router.back();
 };

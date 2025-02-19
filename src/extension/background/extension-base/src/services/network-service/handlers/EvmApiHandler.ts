@@ -14,11 +14,13 @@ export class EvmApiHandler {
     this.initEvmApi(this.networkMap[network]);
   }
 
-  initEvmApi(network: NetworkJson | undefined) {
+  initEvmApi(network: NetworkJson) {
     if (network === undefined) return;
 
     const { name } = network;
     const currentProvider = getCurrentProvider(network);
+
+    this.destroyApi(network.name);
 
     if (currentProvider) this.api[name.toLowerCase()] = this.createEvmProvider(currentProvider);
   }
@@ -27,7 +29,7 @@ export class EvmApiHandler {
     const apiKey = getEvmApiKey(url);
     const providerUrl = `${url}${apiKey ?? ''}`;
 
-    const provider = url.startsWith('http')
+    const api = url.startsWith('http')
       ? new JsonRpcProvider(providerUrl, undefined, {
           batchStallTime: 10,
           batchMaxCount: 30,
@@ -35,8 +37,16 @@ export class EvmApiHandler {
       : new WebSocketProvider(providerUrl);
 
     return {
-      api: provider,
+      api,
       timeout: {},
     };
+  }
+
+  destroyApi(network: string) {
+    const networkLower = network.toLowerCase();
+
+    this.api[networkLower]?.api?.destroy();
+
+    delete this.api[networkLower];
   }
 }

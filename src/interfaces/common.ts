@@ -2,10 +2,6 @@ import type { WarningValueName } from '@/consts/messages';
 import { type INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import { type Components } from '@/router/routes';
 
-type Fn<T = null, R = void> = (props?: T) => R;
-type AsyncFn<T = null, R = void> = (props?: T) => Promise<R>;
-type TCallback<T> = (payload: T) => void;
-
 interface CustomEvent extends Event {
   target: HTMLDivElement;
 }
@@ -27,9 +23,7 @@ type PoolsTab = 'all' | 'my';
 type ExportType = 'mnemonic' | 'rawSeed' | 'json';
 type ImportType = 'mnemonic' | 'rawSeed' | 'json';
 type FilterHistory = 'all' | 'transfer' | 'reward' | 'extrinsic';
-
 type WalletAddress = string;
-
 type DerivationPath = typeof INITIAL_DERIVATION_PATHS.substrate;
 type DerivationPaths = typeof INITIAL_DERIVATION_PATHS;
 
@@ -86,6 +80,11 @@ interface ChangeWalletBalance {
   amount: number;
 }
 
+enum WalletEcosystem {
+  Substrate = 'substrate',
+  Ton = 'ton',
+}
+
 type Placement =
   | 'top'
   | 'right'
@@ -113,8 +112,6 @@ export {
   MenuItem,
   ToggleFnProp,
   MenuItems,
-  Fn,
-  AsyncFn,
   TabWallet,
   ValidateJsonResult,
   WalletAddress,
@@ -124,9 +121,9 @@ export {
   ComponentText,
   AddressMeta,
   CustomEvent,
-  TCallback,
   ChangeWalletBalance,
   StakingTab,
   MyStakingTab,
   PoolsTab,
+  WalletEcosystem,
 };

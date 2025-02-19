@@ -1,4 +1,4 @@
-import { FPNumber } from '@sora-substrate/math';
+import { FPNumber } from '@sora-substrate/util';
 import type { Asset } from '@extension-base/types';
 
 export function getAssetOptions(assetId: string, assetsMap: Asset[]) {

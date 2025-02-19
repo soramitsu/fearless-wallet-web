@@ -9,6 +9,7 @@
         data-testid="networkSearch"
         @change="changeFilterValue"
       />
+
       <Tooltip text="common.copied" target=".search-input" placement="bottom" />
 
       <Tabs :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
@@ -59,22 +60,15 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Action, Getter, Mutation } from 'vuex-class';
-import { type AccountJson } from '@extension-base/background/types/types';
 import NetworkItem from './NetworkItem.vue';
-import type { NetworkJson } from '@extension-base/types';
 import type { Tab } from '@/interfaces/ui';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
-import { ActionTypes as NetworksActionsTypes } from '@/store/networks/actions';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { isNetworkGroup } from '@/helpers/common';
-import { type SetFavoriteNetwork, type Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { updateCurrentNetwork } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { IS_POPUP } from '@/consts/globalClient';
-
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 type Tabs = {
   [ALL_NETWORKS]: Tab;
   [POPULAR_NETWORKS]: Tab;
@@ -102,21 +96,16 @@ export default class NetworkManagement extends Vue {
     },
   };
 
+  accountsStore = useAccountsStore();
+  networksStore = useNetworksStore();
   filterValue = '';
   activeTab: keyof Tabs = ALL_NETWORKS;
   value = '';
 
   @Prop(String) type!: keyof Tabs | string;
-  @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
-  @Getter(AccountGettersTypes.selectedNetwork) selectedNetwork!: string;
-  @Getter(AccountGettersTypes.selectedWallet) selectedWallet!: Wallet;
-  @Getter(AccountGettersTypes.getAccounts) accounts!: AccountJson[];
-  @Action(NetworksActionsTypes.TOGGLE_FAVORITE_NETWORK) setFavorite!: (props: SetFavoriteNetwork) => Promise<boolean>;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
 
   get isGroupSelected() {
-    return this.selectedNetwork === this.activeTab;
+    return this.accountsStore.selectedNetwork === this.activeTab;
   }
 
   get networkListClasses() {
@@ -128,10 +117,10 @@ export default class NetworkManagement extends Vue {
   }
 
   get filterByGroupNetworks() {
-    if (this.activeTab === ALL_NETWORKS) return this.allNetworks;
+    if (this.activeTab === ALL_NETWORKS) return this.networksStore.networks;
 
     if (this.activeTab === POPULAR_NETWORKS) {
-      return this.allNetworks
+      return this.networksStore.networks
         .filter(({ rank }) => rank !== undefined)
         .sort((a, b) => {
           if (a.rank === undefined || b.rank === undefined) return 0;
@@ -140,8 +129,8 @@ export default class NetworkManagement extends Vue {
         });
     }
 
-    return this.allNetworks.filter(({ favorite }) =>
-      favorite.some((address) => address === this.selectedWallet.address)
+    return this.networksStore.networks.filter(({ favorite }) =>
+      favorite.some((address) => address === this.accountsStore.selectedWallet.address)
     );
   }
 
@@ -164,6 +153,19 @@ export default class NetworkManagement extends Vue {
     return this.filteredOptionsNetworks.length !== 0;
   }
 
+  get selectedAccount() {
+    return this.accountsStore.accounts.find(({ active }) => active);
+  }
+
+  async mounted() {
+    if (isNetworkGroup(this.accountsStore.selectedNetwork))
+      this.activeTab = this.accountsStore.selectedNetwork as keyof Tabs;
+  }
+
+  beforeDestroy() {
+    updateCurrentNetwork(this.accountsStore.selectedNetwork);
+  }
+
   changeFilterValue(value: string) {
     this.filterValue = value;
   }
@@ -172,18 +174,10 @@ export default class NetworkManagement extends Vue {
     return `header.networkManagement.${key}`;
   }
 
-  async mounted() {
-    if (isNetworkGroup(this.selectedNetwork)) this.activeTab = this.selectedNetwork as keyof Tabs;
-  }
-
-  get selectedAccount() {
-    return this.accounts.find((el) => el.address === this.selectedWallet.address);
-  }
-
   isAvailableNetwork(network: string): boolean {
-    const selectedNetwork = this.getNetwork(network);
+    const selectedNetwork = this.networksStore.getNetwork(network);
 
-    if (this.selectedWallet.isMobile) {
+    if (this.accountsStore.selectedWallet.isMobile) {
       if (!this.selectedAccount) return false;
 
       if (!this.selectedAccount.chains) return false;
@@ -193,13 +187,13 @@ export default class NetworkManagement extends Vue {
       return available;
     }
 
-    if (this.selectedWallet.ethereumAddress === '' && BaseApi.isEthereumNetwork(network)) return false;
+    if (!this.accountsStore.selectedWallet.hasEthereum && BaseApi.isEthereumNetwork(network)) return false;
 
     return true;
   }
 
   isNetworkSelected(name: string) {
-    return this.selectedNetwork === name;
+    return this.accountsStore.selectedNetwork === name;
   }
 
   updateActiveTab(tab: Tab) {
@@ -211,7 +205,7 @@ export default class NetworkManagement extends Vue {
 
     const network = this.tabs[this.activeTab].name;
 
-    this.setSelectedNetwork(network);
+    this.accountsStore.setSelectedNetwork(network);
 
     const prepNotification = this.$t(this.getLocale('groupSelected'), {
       group: this.$t(this.tabs[this.activeTab].label),
@@ -225,7 +219,7 @@ export default class NetworkManagement extends Vue {
 
     if (isSelected) return;
 
-    this.setSelectedNetwork(network);
+    this.accountsStore.setSelectedNetwork(network);
 
     const prepNotification = this.$t(this.getLocale('networkSelected'), { network }).toString();
 
@@ -233,7 +227,10 @@ export default class NetworkManagement extends Vue {
   }
 
   async toggleFavorite(network: string) {
-    const isFavorite = await this.setFavorite({ networkName: network, address: this.selectedWallet.address });
+    const isFavorite = await this.networksStore.toggleFavoriteNetwork({
+      networkName: network,
+      address: this.accountsStore.selectedWallet.address,
+    });
 
     const t = this.getLocale(isFavorite ? 'deleteFavorite' : 'addFavorite');
     const prepNotification = this.$t(t, { network });
@@ -243,10 +240,6 @@ export default class NetworkManagement extends Vue {
       message: '',
       type: 'success',
     });
-  }
-
-  beforeDestroy() {
-    updateCurrentNetwork(this.selectedNetwork);
   }
 }
 </script>
@@ -271,7 +264,7 @@ export default class NetworkManagement extends Vue {
   background: $secondary-background-color;
   border-radius: 30px;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 0.75rem;
   text-transform: uppercase;
   color: $plain-white;
   margin: 5px 14px 0 0;
@@ -304,7 +297,7 @@ export default class NetworkManagement extends Vue {
   align-items: center;
   justify-content: center;
   height: 100%;
-  font-size: 14px;
+  font-size: 0.875em;
   font-weight: 600;
   color: $gray-2-color;
 }

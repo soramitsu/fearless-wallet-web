@@ -29,11 +29,8 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { NetworkJson } from '@extension-base/types';
+
 import type { HistoryElement } from '@/interfaces/history';
-import type { TokenGroup } from '@extension-base/background/types/types';
-import type { GetAssetPrice, GetNetwork, SelectedWallet } from '@/store';
 import HistoryDetailsForm from '@/screens/wallet&asset/asset/HistoryDetailsForm.vue';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
@@ -43,11 +40,11 @@ import CrossChainForm from '@/screens/wallet&asset/CrossChainForm.vue';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import BaseApi from '@/util/BaseApi';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NETWORKS_GROUPS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common/index';
 import { IS_POPUP } from '@/consts/globalClient';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: {
@@ -62,32 +59,25 @@ import { IS_POPUP } from '@/consts/globalClient';
   },
 })
 export default class Asset extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   historyElement: HistoryElement | Record<string, string> | null = null;
   showBuyPopup = false;
   showTipPopup = false;
   filterValue = '';
-
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get showHistoryDetailsForm() {
     return this.historyElement !== null;
   }
 
   get isGroupIcon() {
-    return isNetworkGroup(this.selectedNetwork);
+    return isNetworkGroup(this.accountsStore.selectedNetwork);
   }
 
   get selectedNetworkIcon() {
     if (this.isGroupIcon) return 'all-networks';
 
-    return this.getNetwork(this.selectedNetwork).icon;
+    return this.networksStore.getNetwork(this.accountsStore.selectedNetwork).icon;
   }
 
   get selectedLocalNetwork() {
@@ -95,7 +85,7 @@ export default class Asset extends Vue {
   }
 
   get isHistoryPage() {
-    if (!NETWORKS_GROUPS.includes(this.selectedNetwork)) return false;
+    if (!NETWORKS_GROUPS.includes(this.accountsStore.selectedNetwork)) return false;
 
     return this.selectedLocalNetwork === '';
   }
@@ -112,7 +102,7 @@ export default class Asset extends Vue {
 
   get currentCurrency() {
     return (
-      this.balances.find(
+      this.accountsStore.balances.find(
         ({ groupId: id, balances }) =>
           id === this.selectedAssetId || balances.some(({ id }) => id === this.selectedAssetId)
       )! ?? {}
@@ -120,9 +110,9 @@ export default class Asset extends Vue {
   }
 
   get displayAddressByNetwork() {
-    if (this.isHistoryPage) return BaseApi.formatAddress(this.selectedWallet, this.mainNetwork);
+    if (this.isHistoryPage) return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.mainNetwork);
 
-    return BaseApi.formatAddress(this.selectedWallet, this.selectedLocalNetwork);
+    return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedLocalNetwork);
   }
 
   get selectedAssetId() {
@@ -142,7 +132,7 @@ export default class Asset extends Vue {
   }
 
   get assetPrice() {
-    return this.getAssetPrice(this.currentCurrency.priceId ?? '');
+    return this.networksStore.getAssetPrice(this.currentCurrency.priceId ?? '');
   }
 
   toggleVisible(value = true) {
@@ -192,7 +182,7 @@ export default class Asset extends Vue {
       align-items: center;
       height: 32px;
       padding: 12px;
-      font-size: 12px;
+      font-size: 0.75rem;
       line-height: 18px;
       border-radius: 20px;
       background-color: $default-background-color;

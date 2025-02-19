@@ -87,7 +87,7 @@ const classesSubtext = computed(() => ['subtext', `subtext-${props.sizeWidth}`])
 
   .text {
     font-weight: 700;
-    font-size: 18px;
+    font-size: 1.125em;
     line-height: 150%;
     margin-bottom: 4px;
   }

@@ -1,6 +1,10 @@
 {
   "welcome": {
     "importWallet": "Import wallet",
+    "ecosystemEvmSubstrate": "Create or import Substrate or EVM accounts",
+    "ecosystemTon": "Connect to the fastest growing ecosystem ever",
+    "joinEvmSubstrate": "Join EVM or Substrate",
+    "joinTon": "Join TON",
     "connectMobile": "Connect mobile",
     "manageGoogle": "Connect Google Drive",
     "deFiWallet": "The DeFi Wallet From The Future",
@@ -63,7 +67,7 @@
       },
       "mnemonic": {
         "text": "Mnemonic is invalid",
-        "subtext": "Please, make sure your input contains 12 words"
+        "subtext": "Please, make sure your input contains 12 or 24 words"
       },
       "substrateDP": {
         "text": "Substrate Derivation Path is invalid",
@@ -156,7 +160,7 @@
     "walletManagement": "Wallet management",
     "settingsAndManagement": "Settings and account management",
     "settings": {
-      "accounts": "Accounts",
+      "walletBackup": "Wallet Backup",
       "currency": "Currency",
       "polkaswapDisclaimer": "Polkaswap disclaimer",
       "language": {
@@ -279,8 +283,6 @@
     "invalidNetworkText": "Is not network address",
     "invalidNetworkSubtext": "The address doesn't match the destination network. You should select another network",
     "existentialDepositText": "Operation will remove account",
-    "15min": "Do not ask for a password for 15 min.",
-    "15minExtend": "Extend the period without password by 15 minutes",
     "version": "Version",
     "transaction": "Transaction",
     "transactionDone": "Transaction Done",
@@ -326,6 +328,7 @@
     "copyAddress": "Copy address",
     "subscan": "View in Subscan",
     "etherscan": "View in Etherscan",
+    "tonviewer": "View in Tonviewer",
     "deleteCustomNode": "Delete custom node?",
     "careful": "Be careful",
     "invalidNodeAddress": "Invalid node address format",
@@ -399,103 +402,6 @@
       }
     }
   },
-  "soraCard": {
-    "getCard": "Get SORA Card",
-    "title": "SORA Card",
-    "cardDescriptions": "Top up SORA Card with fiat or crypto and pay online, in-store or withdraw in ATM",
-    "cardGet": "Get Euro IBAN account and Mastercard Debit Card connected to your SORA Wallet",
-    "haveCard": "I already have a card",
-    "issueCardFee": "Issue card for 12 €",
-    "issueCardFree": "Issue card for free",
-    "serviceFee": "annual service fee",
-    "cardIssuance": "card issuance",
-    "free": "Free",
-    "getXOR": "Get more XOR",
-    "hold€100": "If you hold at least €100 worth of XOR in your SORA account",
-    "applicationFee": "or €12 application fee",
-    "leftXORForFreeCard": "left for a FREE card",
-    "haveXORForFreeCard": "You have enough XOR for a FREE card",
-    "noHaveFreeTry": "You already used your free try",
-    "warningKYC": "To get an IBAN and SORA Card, users are required to pass a KYC process. The is required compliance. The SORA community does not and will not collect any of your personal data.",
-    "disclaimerSoraCard": "The significance of these problems is so obvious that the strengthening and development of the structure requires the definition and refinement of systems of mass participation. The task of the organization, in particular the further development of various forms of activity, contributes to the preparation and implementation of directions for progressive development. On the other hand, a new model of organizational activity plays an important role in the formation of significant financial and administrative conditions. The significance of these problems is so obvious that the strengthening.",
-    "phoneConfirmation": "Phone confirmation",
-    "emailConfirmation": "Email confirmation",
-    "completeKYC": "Complete KYC",
-    "unsupportedCountries": "Unsupported Countries",
-    "phoneNumber": "Phone number",
-    "code": "Code",
-    "verificationCode": "Verification code",
-    "confirmSMScode": "Confirm SMS code",
-    "sendVerificationEmail": "Send verification email",
-    "codeLength": "Code length 6 characters",
-    "wellSendEmail": "We’ll send you a verification email",
-    "firstName": "First Name",
-    "lastName": "Last Name",
-    "useRealName": "Use you real name",
-    "resend": "Resend in",
-    "sendCode": "Send code",
-    "sendIn": "Send in",
-    "invalidPhone": "Invalid phone number",
-    "invalidEmail": "Invalid email",
-    "countriesLabel": "Unfortunately, at this moment we are not able to support the following countries:",
-    "verifyContactInfo": "Verify contact info",
-    "emailPhone": "Email and phone number",
-    "verifyDocuments": "Verify documents",
-    "selfieDocument": "Selfie with a document",
-    "submitPersonalData": "Submit personal data",
-    "nameAddress": "Full name & proof of address",
-    "residentsCountries": "Residents from certain countries can not apply for SORA Card at this moment",
-    "seeList": "See the list",
-    "getXORLabel": "You can swap for XOR or buy with Euro",
-    "buyXORWithEUR": "Buy XOR with EUR",
-    "swapXOR": "Swap crypto for XOR",
-    "invalidCode": "Code incorrect",
-    "emailSent": "Follow the magic link that has been sent to",
-    "useAnotherEmail": "Use another email",
-    "numberNotFound": "Number not found",
-    "tryAgain": "Try again",
-    "support": "Support",
-    "getPrepared": "Get prepared",
-    "cardDetails": "Card details",
-    "prepareAttention": "You have only 2 free attempts to pass the KYC process. Every other attempt after that will cost €3.80. Paid attempts will be available after the next update of the app.",
-    "prepare": "To complete the KYC you will need to:",
-    "prepareSteps": {
-      "step1": "Submit a photo of your ID document",
-      "stepDescription1": "Passport, Driver License, ID card or Residence Permit",
-      "step2": "Take a selfie",
-      "stepDescription2": "Guidance will be provided during the process",
-      "step3": "Submit a photo of proof of address",
-      "stepDescription3": "An official document (utility bill, bank statement, government statement or correspondence) that contains your full name and address, and that is not older then 3 months",
-      "step4": "Submit your personal info",
-      "stepDescription4": "Fill in the form with your name and address"
-    },
-    "statuses": {
-      "pending": {
-        "statusText": "Verification in progress",
-        "text1": "Your KYC is completed. Waiting for the results",
-        "text2": "You have successfully completed your KYC application. The review is pending and you can expect a decision shortly.",
-        "text3": "Usually the decision is made the same day. In some cases can take up to 3 days."
-      },
-      "rejected": {
-        "statusText": "Verification rejected",
-        "text1": "Verification rejected",
-        "text2": "Your application has been rejected.",
-        "text3": "Reason for rejection:"
-      },
-      "accepted": {
-        "statusText": "Card is on the way",
-        "text1": "Verification is successful!",
-        "text2": "Your KYC verification has been successful. We already started the preparation to send your SORA Card.",
-        "text3": ""
-      },
-      "noFreeAttempts": {
-        "statusText": "No more free attempts",
-        "text1": "No more free attempts",
-        "text2": "You have used your free attempts to pass the KYC process.",
-        "text3": "We kindly ask you to wait until the next update of the application to proceed with paid attempts."
-      }
-    }
-  },
   "disclaimers": {
     "swapDisclaimer1": "Polkaswap is maintained by the SORA community. Before continuing to use Polkaswap, please review the",
     "swapDisclaimer2": "and documentation, which includes a detailed explanation on how Polkaswap works, as well as the",
@@ -513,8 +419,8 @@
   },
   "history": {
     "transfer": "Transfer",
-    "outgoingTransfer": "Outgoing transfer",
-    "incomingTransfer": "Incoming transfer",
+    "outgoing": "Outgoing transfer",
+    "incoming": "Incoming transfer",
     "swap": "Swap",
     "bond": "Stake",
     "unbond": "Unstake",
@@ -683,7 +589,6 @@
     "authorize": "Authorize",
     "meta": "Meta",
     "transaction": "Transaction",
-    "soraCard": "Sora card",
     "soraSwap": "Sora swap",
     "polkaswapDisclaimer": "Polkaswap disclaimer",
     "wallet": "Wallet",

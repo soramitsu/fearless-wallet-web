@@ -111,7 +111,7 @@ export default class StakingSettings extends Vue {
 
   .hide-balance-text {
     font-weight: 500;
-    font-size: 14px;
+    font-size: 0.875em;
     line-height: 18px;
     margin-left: 8px;
     user-select: none;

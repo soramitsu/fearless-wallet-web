@@ -90,6 +90,14 @@ const aboveFormClasses = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+.fw-web {
+  .form-background {
+    width: 100dvw;
+    .form {
+      width: 100dvw;
+    }
+  }
+}
 .form-background {
   height: 100%;
   width: $extension-width;
@@ -148,7 +156,7 @@ const aboveFormClasses = computed(() => {
 
     .header-content {
       height: 64px;
-      font-size: 24px;
+      font-size: 1.5rem;
       display: flex;
       justify-content: space-between;
       padding: $default-padding;
@@ -178,7 +186,7 @@ const aboveFormClasses = computed(() => {
     }
 
     .header {
-      font-size: 18px;
+      font-size: 1.125em;
       font-weight: 700;
       margin: auto 0;
       text-transform: capitalize;

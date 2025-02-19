@@ -8,7 +8,7 @@
             <div class="amount">{{ activeStake }}</div>
             <div>{{ stakingAssetName }}</div>
           </div>
-          <div class="value" data-testid="valueOne">{{ fiatSymbol }}{{ activeStakeValue }}</div>
+          <div class="value" data-testid="valueOne">{{ accountsStore.fiatSymbol }}{{ activeStakeValue }}</div>
         </div>
 
         <div class="two block">
@@ -21,7 +21,7 @@
             <div>{{ rewardedAsset }}</div>
           </div>
 
-          <div class="value" data-testid="valueTwo">{{ fiatSymbol }}{{ rewardedValue }}</div>
+          <div class="value" data-testid="valueTwo">{{ accountsStore.fiatSymbol }}{{ rewardedValue }}</div>
         </div>
 
         <div class="three block">
@@ -36,7 +36,7 @@
               <Tooltip :text="unbondDetails" target=".info-unbond" />
             </template>
           </div>
-          <div class="value" data-testid="valueThree">{{ fiatSymbol }}{{ unbondValue }}</div>
+          <div class="value" data-testid="valueThree">{{ accountsStore.fiatSymbol }}{{ unbondValue }}</div>
         </div>
 
         <div class="four block">
@@ -45,7 +45,7 @@
             <div class="amount">{{ redeemAmount }}</div>
             <div>{{ stakingAssetName }}</div>
           </div>
-          <div class="value" data-testid="valueFour">{{ fiatSymbol }}{{ redeemableValue }}</div>
+          <div class="value" data-testid="valueFour">{{ accountsStore.fiatSymbol }}{{ redeemableValue }}</div>
         </div>
       </div>
     </ContentForm>
@@ -63,33 +63,28 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import type { MyStakingTab } from '@/interfaces/common';
-import type { GetAssetPrice, GetStakingNetwork, SelectedWallet, GetStakingHistory } from '@/store';
 import type { TokenGroup } from '@extension-base/background/types/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
 import { type SoraHistoryElement } from '@/interfaces';
+import { useStakingStore } from '@/stores/staking';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class About extends Vue {
   readonly dotsVerticalRef = 'dotsVertical';
+  networksStore = useNetworksStore();
+  stakingStore = useStakingStore();
+  accountsStore = useAccountsStore();
   activeTabName: MyStakingTab = 'about';
   isLoading = false;
 
   @Prop({ type: Object }) stakingCurrency!: TokenGroup;
   @Prop({ type: Object }) rewardedCurrency!: TokenGroup;
   @Prop({ type: String }) network!: string;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
-  @Getter(StakingGettersTypes.getStakingHistory) getStakingHistory!: GetStakingHistory;
 
   get history() {
-    return this.getStakingHistory(
+    return this.stakingStore.getStakingHistory(
       this.network,
       this.stakingCurrency.groupId,
       this.stakingNetwork.stashAddress,
@@ -111,7 +106,7 @@ export default class About extends Vue {
   }
 
   get stakingNetwork() {
-    return this.getStakingNetwork(this.network);
+    return this.stakingStore.getStakingNetwork(this.network);
   }
 
   get activeStake() {
@@ -151,13 +146,13 @@ export default class About extends Vue {
   get stakingAssetPrice() {
     const priceId = this.stakingCurrency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get rewardedAssetPrice() {
     const priceId = this.rewardedCurrency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get activeStakeValue() {
@@ -195,7 +190,7 @@ export default class About extends Vue {
 }
 
 .descriptions {
-  font-size: 14px;
+  font-size: 0.875em;
   color: $default-white;
   text-align: left;
   line-height: 20px;
@@ -220,7 +215,7 @@ export default class About extends Vue {
     }
 
     .label {
-      font-size: 12px;
+      font-size: 0.75rem;
       font-weight: 600;
       text-align: left;
       color: $grayish-white;
@@ -230,7 +225,7 @@ export default class About extends Vue {
     .amount-info {
       display: flex;
       align-items: center;
-      font-size: 20px;
+      font-size: 1.25rem;
       font-weight: 600;
       margin-bottom: 5px;
       height: 23px;
@@ -245,7 +240,7 @@ export default class About extends Vue {
     }
 
     .value {
-      font-size: 14px;
+      font-size: 0.875em;
       color: $grayish-white;
     }
 
@@ -282,6 +277,14 @@ export default class About extends Vue {
     .loading {
       height: 23px;
       margin-bottom: 5px;
+    }
+  }
+}
+
+.fw-web {
+  .about-form {
+    .about-stake {
+      grid-auto-columns: auto !important;
     }
   }
 }

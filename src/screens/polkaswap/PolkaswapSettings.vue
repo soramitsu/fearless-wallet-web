@@ -4,7 +4,6 @@
       v-if="showMarketType"
       :value="syncedMarketType"
       :options="optionsSubstrateKeyPair"
-      :disabled="false"
       placeholder="assets.market"
       size="big"
       class="row"
@@ -120,7 +119,7 @@ export default class PolkaswapSettings extends Vue {
     justify-content: center;
     padding: 8px 10px;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 0.75rem;
     margin-right: 16px;
     cursor: pointer;
     user-select: none;
@@ -136,7 +135,7 @@ export default class PolkaswapSettings extends Vue {
 }
 
 .slippage-warning {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: $gray-color;
   width: 370px;
   margin: 0 auto;

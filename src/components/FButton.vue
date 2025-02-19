@@ -104,8 +104,8 @@ const prepIconName = computed(() => {
 });
 
 const containerButtonClasses = computed(() => {
-  // for "small" and "mini" sizes also medium
-  const sizeName = props.size === 'big' ? 'big' : 'medium';
+  // for "mini" sizes also small
+  const sizeName = props.size === 'big' ? 'big' : props.size === 'medium' ? 'medium' : 'small';
 
   return [
     `button-size-${sizeName}`,
@@ -124,7 +124,7 @@ const containerButtonStyle = computed(() => {
 });
 
 const buttonClasses = computed(() => {
-  const classes = ['button', `button-font-size-${props.fontSize}`];
+  const classes = ['button', 'btn-content', `button-font-size-${props.fontSize}`];
 
   if (props.iconType === 'big') classes.push('button__icon');
 
@@ -180,14 +180,10 @@ const buttonClasses = computed(() => {
 </script>
 
 <style lang="scss" scoped>
-.button-size-big {
-  .el-button {
-    clip-path: $big-clip-path-left-top-and-right-bottom;
-  }
-
-  .button {
-    width: 100%;
-  }
+.btn-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .import-button {
@@ -196,6 +192,16 @@ const buttonClasses = computed(() => {
 
 .import-button .el-button {
   padding: 12px 38px;
+}
+
+.button-size-big {
+  .el-button {
+    clip-path: $big-clip-path-left-top-and-right-bottom;
+  }
+
+  .button {
+    width: 100%;
+  }
 }
 
 .button-size-medium {
@@ -209,6 +215,18 @@ const buttonClasses = computed(() => {
   }
 }
 
+.button-size-small {
+  .el-button {
+    clip-path: $medium-clip-path-left-top-and-right-bottom;
+  }
+
+  .button {
+    width: 100%;
+    padding: 10px 10px;
+    height: 32px;
+  }
+}
+
 .button-warning {
   .el-button {
     background-color: $simple-orange-color;
@@ -218,15 +236,15 @@ const buttonClasses = computed(() => {
 }
 
 .button-font-size-big {
-  font-size: 18px;
+  font-size: 1.125em;
 }
 
 .button-font-size-medium {
-  font-size: 16px;
+  font-size: 1em;
 }
 
 .button-font-size-small {
-  font-size: 13px;
+  font-size: 0.75em;
 }
 
 .el-button + .el-button {
@@ -244,14 +262,14 @@ const buttonClasses = computed(() => {
 }
 
 .button--content-wrap > .el-button span {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 400;
   flex-flow: row nowrap;
   white-space: break-spaces;
 }
 
 .button__icon {
-  font-size: 14px;
+  font-size: 0.875rem;
   white-space: break-spaces;
 }
 
@@ -362,7 +380,7 @@ const buttonClasses = computed(() => {
   line-height: 18px;
   flex-flow: column;
   max-width: 140px;
-  font-size: 14px;
+  font-size: 0.875em;
   font-weight: 400;
   gap: 5px;
 }

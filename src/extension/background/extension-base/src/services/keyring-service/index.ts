@@ -1,4 +1,10 @@
-import { isEthereumAddress, base64Decode, mnemonicToMiniSecret } from '@polkadot/util-crypto';
+import {
+  isEthereumAddress,
+  base64Decode,
+  mnemonicToMiniSecret,
+  mnemonicGenerate,
+  mnemonicValidate,
+} from '@polkadot/util-crypto';
 import { accounts as accountsObservable } from '@subwallet/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@subwallet/ui-keyring/observable/addresses';
 import { BehaviorSubject } from 'rxjs';
@@ -8,12 +14,16 @@ import { u8aToHex } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
 import AccountsStore from '@extension-base/stores/Accounts';
 import KeyringStore from '@extension-base/stores/KeyringStore';
+import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
+import { TonKeyringService } from './TonKeyring';
 import type { EventService } from '@extension-base/services';
 import type {
   RequestChangePassword,
   RequestExportSeed,
+  RequestGenerateMnemonic,
   RequestMigratePassword,
   RequestUnlockExtension,
+  RequestValidateMnemonic,
   ResponseExportPrivateKey,
   ResponseExportSeed,
 } from '../../background/types/types';
@@ -21,11 +31,17 @@ import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { KeyringAddressType, KeyringItemType } from '@subwallet/ui-keyring/types';
 import type { KeyringPair, KeyringPair$Json } from '@subwallet/keyring/types';
+import { WalletEcosystem } from '@/interfaces';
 import { isSameString } from '@/helpers';
+import { IS_EXTENSION } from '@/consts/global';
+
+export type WordCount = 12 | 15 | 18 | 21 | 24;
 
 export class KeyringService {
-  readonly currentAccountSubject = new BehaviorSubject<CurrentAccountState>(null);
   private readonly currentAccountStore = new CurrentAccountStore();
+  readonly tonKeyring = new TonKeyringService(this);
+  readonly currentAccountSubject = new BehaviorSubject<CurrentAccountState>(null);
+
   private password = '';
 
   constructor(eventService: EventService) {
@@ -38,24 +54,12 @@ export class KeyringService {
       .catch(console.error);
   }
 
-  get currentAccount(): CurrentAccountState {
-    return this.currentAccountSubject.value;
-  }
-
   get addressSubject() {
     return addressesObservable.subject;
   }
 
   get accountSubject() {
     return accountsObservable.subject;
-  }
-
-  get addressesSubjectValue() {
-    return keyring.addresses.subject.value;
-  }
-
-  get accountSubjectValue() {
-    return keyring.accounts.subject.value;
   }
 
   get hasAccounts() {
@@ -84,8 +88,16 @@ export class KeyringService {
     return keyring.loadAll({
       store: new AccountsStore(),
       type: 'sr25519',
-      password_store: new KeyringStore(),
+      password_store: IS_EXTENSION ? new KeyringStore() : new KeyringStoreWeb(),
     });
+  }
+
+  getAccounts() {
+    return keyring.getAccounts().map((item) => ({ ...item, meta: item.meta as FWKeyringMeta }));
+  }
+
+  getAddresses() {
+    return keyring.getAddresses().map((item) => ({ ...item, meta: item.meta as FWKeyringMeta }));
   }
 
   getAllAccounts() {
@@ -100,34 +112,52 @@ export class KeyringService {
     return this.getAllAccounts().filter(({ address }) => isEthereumAddress(address));
   }
 
-  getAccounts() {
-    return keyring.getAccounts();
+  // return all walletEcosystem accounts [substrate[without ethereum], ton]
+  getAllMainAccounts() {
+    return [...this.getAllSubstrateAccounts(), ...this.tonKeyring.getAccounts()];
   }
 
-  getAddresses() {
-    return keyring.getAddresses();
+  triggerWalletsSubscription(address: string, walletEcosystem: WalletEcosystem) {
+    if (walletEcosystem === 'ton') {
+      const accountsSubject = this.tonKeyring.accountSubject;
+
+      accountsSubject.next(accountsSubject.getValue());
+
+      return;
+    }
+
+    if (this.getAddress(address)) {
+      addressesObservable.subject.next(addressesObservable.subject.getValue());
+
+      return;
+    }
+
+    accountsObservable.subject.next(accountsObservable.subject.getValue());
   }
 
-  triggerWalletsSubscription(): boolean {
-    const accountsSubject = accountsObservable.subject;
-    const addressSubject = addressesObservable.subject;
+  async addAccount(suri: string, meta: FWKeyringMeta, walletEcosystem: WalletEcosystem, type?: KeypairType) {
+    if (walletEcosystem === 'ton') {
+      const account = await this.tonKeyring.createAccount(suri, meta.name!, this.password);
 
-    accountsSubject.next(accountsSubject.getValue());
-    addressSubject.next(addressSubject.getValue());
+      return account.address.toString();
+    }
 
-    return true;
-  }
-
-  addAccount(suri: string, meta: FWKeyringMeta, type?: KeypairType) {
     const {
       pair: { address },
-    } = keyring.addUri(suri, { ...meta, isMobile: false }, type);
+    } = keyring.addUri(suri, { ...meta, isMobile: false, walletEcosystem: WalletEcosystem.Substrate }, type);
 
     return address;
   }
 
   saveAddress(address: string, meta: FWKeyringMeta, type: KeyringAddressType) {
-    keyring.saveAddress(address, meta, type);
+    keyring.saveAddress(
+      address,
+      {
+        ...meta,
+        walletEcosystem: WalletEcosystem.Substrate,
+      },
+      type
+    );
   }
 
   backupAccount(address: string, password: string) {
@@ -152,17 +182,19 @@ export class KeyringService {
     try {
       const keyringAddress = isEthereumAddress(address) ? address : this.encodeAddress(address);
 
-      return this.getAccounts().find(({ address }) => isSameString(address, keyringAddress))?.meta.name;
+      return this.getAllSubstrateAccounts().find(({ address }) => isSameString(address, keyringAddress))?.meta.name;
     } catch {
       return undefined;
     }
   }
 
-  getAccount(address: string) {
+  getAccount(address: string, walletEcosystem = WalletEcosystem.Substrate) {
     try {
+      if (walletEcosystem === 'ton') return this.tonKeyring.getAccount(address);
+
       return keyring.getAccount(address);
     } catch {
-      return null;
+      return undefined;
     }
   }
 
@@ -171,7 +203,8 @@ export class KeyringService {
   }
 
   forgetAccount(address: string) {
-    return keyring.forgetAccount(address);
+    if (this.tonKeyring.accountSubject.value[address]) this.tonKeyring.forgetAccount(address);
+    else keyring.forgetAccount(address);
   }
 
   forgetAddress(address: string) {
@@ -186,7 +219,7 @@ export class KeyringService {
 
     const ethereumAddress = (file.meta as FWKeyringMeta).ethereumAddress ?? '';
 
-    if (this.getAccount(ethereumAddress) === null) delete file.meta.ethereumAddress;
+    if (!this.getAccount(ethereumAddress)) delete file.meta.ethereumAddress;
 
     return keyring.restoreAccount(file, password, withMasterPassword);
   }
@@ -207,9 +240,10 @@ export class KeyringService {
 
     const { address } = pair;
     const isEthereum = isEthereumAddress(address);
-    const substrateAddress = this.getSubstrateAddress(address);
 
+    const substrateAddress = this.getSubstrateAddress(address);
     const substratePair = isEthereum ? this.getPair(substrateAddress) : pair;
+
     const ethereumAddress = isEthereum ? address : (substratePair?.meta.ethereumAddress as string | undefined);
     const ethereumPair = isEthereum ? pair : ethereumAddress ? this.getPair(ethereumAddress) : undefined;
 
@@ -261,22 +295,12 @@ export class KeyringService {
     return keyring.createFromUri(suri, meta, keypairType);
   }
 
-  getSubstrateAccounts() {
-    const accounts = this.getAccounts().filter(({ address }) => !isEthereumAddress(address));
-    const addresses = this.getAddresses();
-
-    return [...accounts, ...addresses];
-  }
-
   getSubstrateAddress(address: string) {
     if (!isEthereumAddress(address)) return address;
 
-    const accounts = this.getSubstrateAccounts();
-    const addresses = this.getAddresses();
+    const accounts = this.getAllSubstrateAccounts();
 
-    const account =
-      accounts.find(({ meta: { ethereumAddress } }) => isSameString(ethereumAddress as string, address)) ||
-      addresses.find(({ meta: { ethereumAddress } }) => isSameString(ethereumAddress as string, address));
+    const account = accounts.find(({ meta: { ethereumAddress } }) => isSameString(ethereumAddress as string, address));
 
     return account?.address ?? address;
   }
@@ -304,6 +328,41 @@ export class KeyringService {
     return !!account.meta.isMobile;
   }
 
+  getDataAccounts({ address, walletEcosystem }: RequestExportSeed) {
+    if (walletEcosystem === WalletEcosystem.Ton) {
+      const { cipherSeed } = this.tonKeyring.accountSubject.value[address];
+      const value = this.tonKeyring.decode(cipherSeed);
+
+      return { value };
+    }
+
+    try {
+      const pair = keyring.getPair(address);
+      const value = pair.exportMnemonic(this.password);
+
+      return { value };
+    } catch (err) {
+      console.info();
+    }
+
+    try {
+      const pair = keyring.getPair(address);
+      const value1 = this.backupAccount(address, this.password);
+      let value2;
+
+      if ((pair.meta as any)?.ethereumAddress) {
+        value2 = this.backupAccount((pair.meta as any).ethereumAddress, this.password);
+      }
+
+      return {
+        value: `${JSON.stringify(value1)}_${this.password}`,
+        value2: value2 ? `${JSON.stringify(value2)}_${this.password}` : undefined,
+      };
+    } catch {
+      return { value: '' };
+    }
+  }
+
   changeMasterPassword({ newPassword, oldPassword }: RequestChangePassword): boolean {
     try {
       this.password = newPassword;
@@ -318,7 +377,34 @@ export class KeyringService {
     }
   }
 
-  exportMnemonic({ address, password }: RequestExportSeed): ResponseExportSeed {
+  async mnemonicGenerate({ walletEcosystem, wordCount }: RequestGenerateMnemonic): Promise<string> {
+    if (walletEcosystem === 'ton') {
+      const seed = await this.tonKeyring.generateMnemonic(undefined, wordCount);
+
+      return seed.join(' ');
+    }
+
+    return mnemonicGenerate(wordCount);
+  }
+
+  async mnemonicValidate({ walletEcosystem, seed }: RequestValidateMnemonic): Promise<boolean> {
+    if (walletEcosystem === 'ton') {
+      const value = await this.tonKeyring.validateMnemonic(seed.split(' '));
+
+      return value;
+    }
+
+    return mnemonicValidate(seed);
+  }
+
+  exportMnemonic({ address, password, walletEcosystem }: RequestExportSeed): ResponseExportSeed {
+    if (walletEcosystem === WalletEcosystem.Ton) {
+      const { cipherSeed } = this.tonKeyring.accountSubject.value[address];
+      const seed = this.tonKeyring.decodeMnemonic(cipherSeed);
+
+      return { seed };
+    }
+
     try {
       const pair = keyring.getPair(address);
       const seed = pair.exportMnemonic(password!);
@@ -373,7 +459,7 @@ export class KeyringService {
 
       return true;
     } catch (e) {
-      console.error(e);
+      console.info(e);
 
       return false;
     }

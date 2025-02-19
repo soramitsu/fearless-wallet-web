@@ -39,28 +39,27 @@
 </template>
 
 <script lang="ts">
-import { Getter } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { GetNetwork, SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { EXPLORERS_BASE_URLS } from '@/consts/networks';
 import { setClipboard } from '@/helpers';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class AccountSettingsPopup extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
+
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showNodeSwitch!: boolean;
   @Prop(Boolean) showCopyAddress!: boolean;
   @Prop(Boolean) showExport!: boolean;
   @Prop(Number) buttonTopClick!: number;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get networkProps() {
-    return this.getNetwork(this.selectedNetwork);
+    return this.networksStore.getNetwork(this.selectedNetwork);
   }
 
   get explorerType() {
@@ -90,7 +89,7 @@ export default class AccountSettingsPopup extends Vue {
   }
 
   get addressByNetwork() {
-    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
+    return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork);
   }
 
   get lowerCaseSelectedNetwork() {

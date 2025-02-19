@@ -27,31 +27,28 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
-import type { AccountJson } from '@extension-base/background/types/types';
-import type { AsyncFn } from '@/interfaces/common';
 import { Components } from '@/router/routes';
-import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { forgetAccount, initGoogleAuth, updateCurrentAccount } from '@/extension/messaging';
+import { useAccountsStore } from '@/stores/accounts';
+import { IS_EXTENSION } from '@/consts/global';
+import { WalletEcosystem } from '@/interfaces';
 
 @Component
 export default class WalletDetailsPopup extends Vue {
+  readonly isExtension = IS_EXTENSION;
+  accountsStore = useAccountsStore();
+
   @Prop(Number) buttonTopClick!: number;
   @Prop(String) selectedWalletAddress!: string;
-  @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<AccountJson>;
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
-  get selectedWallet() {
-    return this.accounts.find((account) => account.active)!;
-  }
-
-  get isMobileWallet() {
-    return this.accounts.find(({ address, isMobile }) => address === this.selectedWalletAddress && isMobile);
+  get selectedAccount() {
+    return this.accountsStore.accounts.find(({ address }) => address === this.selectedWalletAddress);
   }
 
   get isExportPossible() {
-    return !this.isMobileWallet;
+    if (!this.isExtension || this.selectedAccount?.isMobile) return false;
+
+    return this.selectedAccount?.walletEcosystem === WalletEcosystem.Substrate;
   }
 
   get top() {
@@ -63,13 +60,9 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   async deleteWallet() {
-    await forgetAccount(this.selectedWalletAddress, this.isMobileWallet ? 'mobile' : 'native');
+    await forgetAccount(this.selectedWalletAddress, this.selectedAccount?.isMobile ? 'mobile' : 'native');
 
-    if (this.isMobileWallet) {
-      //TODO
-    }
-
-    if (this.accounts.length === 0) this.$router.push({ name: Components.Welcome });
+    if (this.accountsStore.accounts.length === 0) this.$router.push({ name: Components.Welcome });
     else this.close();
   }
 
@@ -78,7 +71,9 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   async openWalletDetails() {
-    await updateCurrentAccount(this.selectedWalletAddress);
+    const walletInfo = this.accountsStore.accounts.find(({ address }) => address === this.selectedWalletAddress);
+
+    await updateCurrentAccount(this.selectedWalletAddress, walletInfo?.walletEcosystem);
 
     this.$router.push({ name: Components.AccountSetting });
 

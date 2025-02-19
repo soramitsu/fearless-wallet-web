@@ -15,13 +15,9 @@ import {
 } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
 import Provider from '@walletconnect/universal-provider';
-import { createSubscription } from '@extension-base/services';
-import {
-  EIP155_SIGNING_METHODS,
-  type AppSessionInitResponse,
-  type PairingSubjectType,
-} from '@extension-base/services/wallet-connect-service/types';
+import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
 import { isSameAddress } from '@extension-base/utils';
+import type { AppSessionInitResponse, PairingSubjectType } from '@extension-base/services/wallet-connect-service/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
@@ -150,14 +146,12 @@ export class WalletConnectDAppService {
     return pairing?.uri;
   }
 
-  public async subscribePairing(uri: string, id: string, port: Port) {
-    const cb = createSubscription<'pri(walletConnect.app.subscribePairing)'>(id, port);
+  public async subscribePairing(uri: string, id: string, port?: Port) {
+    const cb = this.state.subscriptionService.createSubscription<'pri(walletConnect.app.subscribePairing)'>(id, port);
 
-    this.state.createUnsubscriptionHandle(id, () => {});
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => {});
 
-    port.onDisconnect.addListener((): void => {
-      this.state.cancelSubscription(id);
-    });
+    port?.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
 
     const activePairing = this.pairingSubject.value[uri];
 
@@ -233,7 +227,7 @@ export class WalletConnectDAppService {
       },
       'address'
     );
-    this.state.updateCurrentAccount(encodedAddress);
+    this.state.updateCurrentAccount({ address: encodedAddress });
 
     cb({ status: true });
   }
@@ -261,13 +255,12 @@ export class WalletConnectDAppService {
     const account = this.state.keyringService.getAddresses().find((el) => el.meta.wcTopic === topic);
 
     if (account) {
-      const current = this.state.currentAccount;
       this.state.keyringService.forgetAddress(account?.address);
 
-      if (current?.address === account.address) {
-        const accounts = this.state.keyringService.getSubstrateAccounts();
+      if (this.state.currentAccount?.address === account.address) {
+        const accounts = this.state.keyringService.getAllSubstrateAccounts();
 
-        if (accounts.length) this.state.updateCurrentAccount(accounts[0].address);
+        if (accounts.length) this.state.updateCurrentAccount({ address: accounts[0].address });
         else this.state.setCurrentAccount(null);
       }
 
@@ -383,9 +376,7 @@ export class WalletConnectDAppService {
       return this.app.client.request<{ payload: HexString }>(requestEvent as any);
     };
 
-    if (!chainState.active) {
-      await this.state.setActiveNetworks(networkKey);
-    }
+    if (!chainState.active) await this.state.setActiveNetworks(networkKey);
 
     const res = await createRequest();
 

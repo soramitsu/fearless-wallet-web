@@ -10,7 +10,7 @@ export const RELAY_URL = 'wss://relay.walletconnect.com';
 export const WALLET_CONNECT_METADATA: CoreTypes.Metadata = {
   name: 'Fearless Wallet',
   description:
-    'Non-Custodial and Decentralized wallet for the Polkadot and Kusama ecosystems with the best UX, performance and security.',
+    'Non-Custodial and Decentralized wallet for the Polkadot, Ethereum and TON ecosystems with the best UX, performance and security.',
   url: 'https://fearlesswallet.io/',
   icons: [
     'https://raw.githubusercontent.com/soramitsu/shared-features-utils/ffa1fd2a334530101022536c3b1ab3c063edd238/icons/FW%20icon%20128.png',

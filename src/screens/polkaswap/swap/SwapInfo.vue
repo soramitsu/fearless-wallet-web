@@ -20,7 +20,7 @@
     <InfoRow
       text="assets.networkFee"
       :value="fee ? `${fee} ${soraMainAsset}` : undefined"
-      :price="`${fiatSymbol} ${feePrice}`"
+      :price="`${accountsStore.fiatSymbol} ${feePrice}`"
       icon="info"
       :isLoading="isLoadingFee"
       :iconClasses="['network-fee']"
@@ -31,7 +31,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { firstCharToUp } from '@/helpers';
 import { SORA_UTILITY_ASSET } from '@/consts/sora';
 import { useAccountsStore } from '@/stores/accounts';
@@ -73,7 +73,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const accountsStore = useAccountsStore();
 
-const fiatSymbol = ref(accountsStore.fiatSymbol);
 const soraMainAsset = SORA_UTILITY_ASSET.toUpperCase();
 
 const minMaxLabel = computed(() => (props.isExchangeB ? 'assets.maxSales' : 'assets.minReceived'));

@@ -31,6 +31,7 @@ import { Components } from '@/router/routes';
 import { forgetAccount, initGoogleAuth, updateCurrentAccount } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 import { IS_EXTENSION } from '@/consts/global';
+import { WalletEcosystem } from '@/interfaces';
 
 @Component
 export default class WalletDetailsPopup extends Vue {
@@ -40,18 +41,14 @@ export default class WalletDetailsPopup extends Vue {
   @Prop(Number) buttonTopClick!: number;
   @Prop(String) selectedWalletAddress!: string;
 
-  get selectedWallet() {
-    return this.accountsStore.accounts.find((account) => account.active)!;
-  }
-
-  get isMobileWallet() {
-    return this.accountsStore.accounts.find(
-      ({ address, isMobile }) => address === this.selectedWalletAddress && isMobile
-    );
+  get selectedAccount() {
+    return this.accountsStore.accounts.find(({ address }) => address === this.selectedWalletAddress);
   }
 
   get isExportPossible() {
-    return !this.isMobileWallet && this.isExtension;
+    if (!this.isExtension || this.selectedAccount?.isMobile) return false;
+
+    return this.selectedAccount?.walletEcosystem === WalletEcosystem.Substrate;
   }
 
   get top() {
@@ -63,7 +60,7 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   async deleteWallet() {
-    await forgetAccount(this.selectedWalletAddress, this.isMobileWallet ? 'mobile' : 'native');
+    await forgetAccount(this.selectedWalletAddress, this.selectedAccount?.isMobile ? 'mobile' : 'native');
 
     if (this.accountsStore.accounts.length === 0) this.$router.push({ name: Components.Welcome });
     else this.close();
@@ -74,7 +71,9 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   async openWalletDetails() {
-    await updateCurrentAccount(this.selectedWalletAddress);
+    const walletInfo = this.accountsStore.accounts.find(({ address }) => address === this.selectedWalletAddress);
+
+    await updateCurrentAccount(this.selectedWalletAddress, walletInfo?.walletEcosystem);
 
     this.$router.push({ name: Components.AccountSetting });
 

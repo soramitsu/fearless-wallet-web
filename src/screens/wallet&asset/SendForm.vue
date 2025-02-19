@@ -20,7 +20,7 @@
       <div>
         <div class="row direction-column">
           <FInput
-            :value="selectedWallet.name"
+            :value="accountsStore.selectedWallet.name"
             placeholder="assets.from"
             size="big"
             :readonly="true"
@@ -55,7 +55,6 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
-
 import { addNumbers } from '@/helpers/numbers';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { isSameString } from '@/helpers';
@@ -236,7 +235,7 @@ export default class SendForm extends Vue {
       .value {
         color: $default-white;
         font-weight: 300;
-        font-size: 0.75em;
+        font-size: 0.75rem;
         margin-top: 3px;
       }
     }

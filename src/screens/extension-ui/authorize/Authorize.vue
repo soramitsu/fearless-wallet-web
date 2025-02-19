@@ -62,7 +62,7 @@ const { t } = useI18n();
 
 const requests = computed(() => extensionStore.authRequests);
 const request = computed(() => requests.value[0]);
-const accountAuthType = computed(() => request.value.request.accountAuthType);
+const accountAuthType = computed(() => request.value?.request?.accountAuthType);
 
 const accounts = computed<AccountJson[]>(() => {
   const accounts: AccountJson[] = accountsStore.accounts;

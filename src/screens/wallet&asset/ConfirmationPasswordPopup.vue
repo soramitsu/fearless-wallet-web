@@ -8,12 +8,12 @@
       <template v-else-if="isTransactionFinished">
         <template v-if="extrinsicType !== 'nft'">
           <div class="descriptions">
-            <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" />
+            <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" class="asset-icon" />
 
             <template v-if="secondIcon">
               <SIcon name="arrows-arrow-right-24" />
 
-              <ExternalLogo :name="secondIconUrl" :width="30" />
+              <ExternalLogo :name="secondIconUrl" :width="30" class="asset-icon" />
             </template>
           </div>
           <div class="transfer-amount" data-testid="confirmedTransferAmount">{{ transferAmountString }}</div>
@@ -33,6 +33,7 @@
 
           <template v-if="isSuccess">
             <span class="nft-success-msg" data-testid="nftSuccessMsg">{{ $t('nft.txSuccessMessage') }}</span>
+
             <FButton
               text="common.copyHash"
               class="copy-hash"
@@ -95,15 +96,15 @@ import type {
   ResponseMakeSwap,
   ResponseNftTransfer,
 } from '@extension-base/background/types/types';
-import type { SwapOptions, StakingOperation } from '@/interfaces';
 import type { RequestPool } from '@extension-base/services/pools-service/types';
 import type { PoolsOperation } from '@/interfaces/pools';
+import { type SwapOptions, type StakingOperation } from '@/interfaces';
 import { makeSwap, makeTransfer, makeCrossChain, makeStaking, makePool } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { IS_EXTENSION } from '@/consts/global';
 import { sendNft } from '@/extension/messaging/nfts';
-import { isSora, setClipboard } from '@/helpers';
+import { isSameString, isSora, setClipboard } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -132,9 +133,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   get firstIconUrl() {
     if (this.extrinsicType === 'crossChain')
-      return (
-        this.networksStore.networks.find(({ name }) => name.toLowerCase() === this.firstIcon.toLowerCase())?.icon ?? ''
-      );
+      return this.networksStore.networks.find(({ name }) => isSameString(name, this.firstIcon))?.icon ?? '';
 
     const tokenGroup = this.accountsStore.balances.find(({ groupId }) => groupId === this.firstIcon);
 
@@ -223,6 +222,10 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   get isTransactionFinished() {
     return this.isSuccess || this.isFailed;
+  }
+
+  get isTon() {
+    return this.accountsStore.selectedWallet.isTon;
   }
 
   get isPool() {
@@ -321,7 +324,9 @@ export default class ConfirmationPasswordPopup extends Vue {
     const txCross = this.tx as RequestCheckCrossChain;
 
     // функции выполняются через "@sora-substrate/util, для них не работают колбеки с подпиской
+    // аналогично для TON экосистемы
     if (
+      this.isTon ||
       this.isStaking ||
       this.isPool ||
       this.extrinsicType === 'swap' ||
@@ -371,11 +376,15 @@ export default class ConfirmationPasswordPopup extends Vue {
       font-size: 1.875em !important;
       margin: 0 10px;
     }
+
+    .asset-icon {
+      border-radius: 50%;
+    }
   }
 
   .transfer-amount {
     font-weight: 800;
-    font-size: 1.25em;
+    font-size: 1.25rem;
     margin-bottom: 10px;
   }
 

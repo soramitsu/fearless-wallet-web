@@ -5,7 +5,7 @@
     <template v-else>
       <div class="export-content">
         <div v-if="isMnemonic">
-          <MnemonicBackupForm :mnemonicArray="mnemonicArray"></MnemonicBackupForm>
+          <MnemonicBackupForm :mnemonicArray="mnemonicArray" :mnemonicLength="mnemonicLength"></MnemonicBackupForm>
         </div>
 
         <template v-else>
@@ -68,6 +68,10 @@ export default class ExportForm extends Vue {
     return ExportTypeText[this.exportType];
   }
 
+  get mnemonicLength() {
+    return this.mnemonicArray.length;
+  }
+
   get mnemonicArray() {
     return this.seed.split(' ');
   }
@@ -116,7 +120,8 @@ export default class ExportForm extends Vue {
     this.isLoading = true;
 
     if (this.isMnemonic) {
-      const { seed } = await exportMnemonic(this.accountsStore.selectedWallet.address, this.password);
+      const { address, walletEcosystem } = this.accountsStore.selectedWallet;
+      const { seed } = await exportMnemonic(address, this.password, walletEcosystem);
 
       this.seed = seed;
     } else if (this.isRowSeed) {

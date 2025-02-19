@@ -51,15 +51,14 @@ watch(password, () => {
   isWrongPassword.value = false;
 });
 
-const selectedWallet = computed<SelectedWallet>(() => accountsStore.selectedWallet);
 const network = computed(() => route.params.network);
 
 onMounted(() => {
-  if (selectedWallet.value.isMobile) router.back();
+  if (accountsStore.selectedWallet.isMobile) router.back();
 });
 
 const noEthereumAccount = computed(
-  () => selectedWallet.value.ethereumAddress === '' && BaseApi.isEthereumNetwork(network.value)
+  () => accountsStore.selectedWallet.ethereumAddress === '' && BaseApi.isEthereumNetwork(network.value)
 );
 
 const warningText = computed(() => {
@@ -71,8 +70,7 @@ const changePassword = (value: string) => {
 };
 
 const checkPassword = async () => {
-  const addressByNetwork = BaseApi.formatAddress(selectedWallet.value, network.value);
-  const validatePass = await validatePassword(addressByNetwork, password.value);
+  const validatePass = await validatePassword(password.value);
 
   isWrongPassword.value = !validatePass;
 

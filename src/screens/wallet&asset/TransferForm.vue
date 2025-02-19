@@ -219,7 +219,7 @@ import {
   isValidAmountAsset,
   getUtilityAsset,
 } from '@/helpers/currencies';
-import { cut, getClipboard, isSameString } from '@/helpers';
+import { cut, getClipboard, isSameString, isTonNetwork } from '@/helpers';
 import {
   VALID_SUBSTRATE_ADDRESS,
   VALID_ETHEREUM_ADDRESS,
@@ -227,7 +227,7 @@ import {
   POPULAR_NETWORKS,
   FAVORITE_NETWORKS,
 } from '@/consts/networks';
-import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
+import { getCostOfAssets, getTransactionAddress } from '@/helpers/transfers';
 import { checkTransfer, checkCrossChain, checkScamAddress } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import { isNetworkGroup } from '@/helpers/common';
@@ -349,7 +349,9 @@ export default class TransferForm extends Vue {
   }
 
   get syncedFeeCut() {
-    return `${this.$n(+this.syncedFee, 'decimalPrecise')} ${this.originalNetworkUtilityAsset.toUpperCase()}`;
+    const text = this.isTonNetwork ? `< ` : '';
+
+    return `${text}${this.$n(+this.syncedFee, 'decimalPrecise')} ${this.originalNetworkUtilityAsset.toUpperCase()}`;
   }
 
   get fiatFeeCut() {
@@ -460,6 +462,10 @@ export default class TransferForm extends Vue {
     return this.utilityAsset.symbol.toLowerCase();
   }
 
+  get isTonNetwork() {
+    return isTonNetwork(this.syncedNetwork);
+  }
+
   get buttonDisabled() {
     if (this.isDisableBtn) return true;
 
@@ -486,6 +492,8 @@ export default class TransferForm extends Vue {
   }
 
   get isSameAddress() {
+    if (this.isTonNetwork) return isSameString(this.accountsStore.selectedWallet.address, this.syncedRecipient);
+
     // для CrossChain транзакций эта проверка не нужна, поэтому всегда возвращаем false
     if (this.isCrossChain) return false;
 
@@ -493,9 +501,11 @@ export default class TransferForm extends Vue {
   }
 
   get isValidRecipientAddress() {
-    if (this.syncedRecipient === '') return false;
-
     if (this.isSameAddress) return false;
+
+    if (this.isTonNetwork) return true;
+
+    if (this.syncedRecipient === '') return false;
 
     if (this.isCrossChain && this.syncedDestNet === '') return false;
 
@@ -504,12 +514,12 @@ export default class TransferForm extends Vue {
 
   get currency() {
     return this.accountsStore.balances?.find(({ balances }) =>
-      balances.some((el) => el.id.toLowerCase() === this.syncedAssetId.toLowerCase())
+      balances.some((el) => isSameString(el.id, this.syncedAssetId))
     );
   }
 
   get currencyBalance() {
-    return this.currency?.balances.find(({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase());
+    return this.currency?.balances.find(({ name }) => isSameString(name, this.syncedNetwork));
   }
 
   get transferableAmount() {

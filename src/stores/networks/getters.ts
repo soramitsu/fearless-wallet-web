@@ -1,8 +1,8 @@
 import { useAccountsStore } from '../accounts';
 import type { NetworkJson } from '@extension-base/types';
-import type { GetHistory } from '@/interfaces';
 import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetActiveNodesByNetwork } from './types';
 import type { State } from './state';
+import { WalletEcosystem, type GetHistory } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, NETWORKS_GROUPS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
@@ -22,9 +22,18 @@ export const getters: Getters = {
   networks({ allNetworks }): NetworkJson[] {
     const accountsStore = useAccountsStore();
 
-    const haveEthereumAccount = accountsStore.selectedWallet.ethereumAddress !== '';
+    if (accountsStore.selectedWallet.isTon)
+      return allNetworks.filter(({ ecosystem }) => isSameString(ecosystem, WalletEcosystem.Ton));
 
-    return haveEthereumAccount ? allNetworks : allNetworks.filter(({ name }) => !BaseApi.isEthereumNetwork(name));
+    const substrateAndEvmNetworks = allNetworks.filter(
+      ({ ecosystem }) => !isSameString(ecosystem, WalletEcosystem.Ton)
+    );
+
+    const substrateNetworks = substrateAndEvmNetworks.filter(({ ecosystem }) =>
+      isSameString(ecosystem, WalletEcosystem.Substrate)
+    );
+
+    return accountsStore.selectedWallet.hasEthereum ? substrateAndEvmNetworks : substrateNetworks;
   },
 
   activeNetworkForSelectedWallet({ allNetworks }): NetworkJson[] {
@@ -70,12 +79,14 @@ export const getters: Getters = {
   getAssetPrice:
     ({ assetsPrice }) =>
     (priceId: string) => {
-      if (assetsPrice.tokenPriceMap[priceId] === undefined) return { price: 0, priceChange: 0 };
+      // либо цены нет вообще
+      // либо цена === 0, как в кейсе для сора сабквери прайсинга
+      if (!assetsPrice.tokenPriceMap[priceId]) return { price: 0, priceChange: 0, isExist: false };
 
       const price = assetsPrice.tokenPriceMap[priceId];
       const priceChange = assetsPrice.tokenPriceChange[priceId] / 100;
 
-      return { price, priceChange };
+      return { price, priceChange, isExist: true };
     },
 
   getHistory:

@@ -1,10 +1,11 @@
 <template>
-  <ContentForm :height="214">
+  <ContentForm :height="contentFormHeight">
     <div class="history">
       <div class="history-settings">
         <div class="history-label">{{ $t('assets.history') }}:</div>
 
         <Dropdown
+          v-if="!isTonWallet"
           :value="filterHistoryValue"
           :options="historyDropdownOption"
           data-testid="historyFilter"
@@ -25,7 +26,7 @@
               :historyElement="historyElement"
               :token="currency"
               :network="selectedNetwork"
-              :address="selectedWallet.address"
+              :address="accountsStore.selectedWallet.address"
               data-testid="historyItem"
               @click.native="openHistoryDetails(historyElement)"
             />
@@ -46,6 +47,7 @@ import { getUtilityAsset } from '@/helpers/currencies';
 import { isSora } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { MENU_HEIGHT } from '@/screens/main/Menu.vue';
 
 @Component({ components: { HistoryItem } })
 export default class History extends Vue {
@@ -67,6 +69,10 @@ export default class History extends Vue {
     if (!this.isSora) options.push({ label: 'assets.extrinsic', value: 'extrinsic' });
 
     return options;
+  }
+
+  get contentFormHeight() {
+    return this.isTonWallet ? 209 + MENU_HEIGHT : 209;
   }
 
   get selectedNetwork() {
@@ -121,6 +127,10 @@ export default class History extends Vue {
     return isSora(this.selectedNetwork);
   }
 
+  get isTonWallet() {
+    return this.accountsStore.selectedWallet.isTon;
+  }
+
   get filteredHistory() {
     if (this.filterHistoryValue === 'all') return this.historyItems;
 
@@ -165,7 +175,7 @@ export default class History extends Vue {
   async loadHistory() {
     if (this.historyTimestamp + this.refreshTimeout > Date.now()) return false;
 
-    if (!this.isSora && !this.isEthereumNativeNetwork && !this.isMainNetwork) return;
+    if (!this.isSora && !this.isTonWallet && !this.isEthereumNativeNetwork && !this.isMainNetwork) return;
 
     if (this.historyItems.length === 0) this.showLoader = true;
 

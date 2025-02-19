@@ -171,9 +171,7 @@ const changeFilterValue = (value: string) => {
   filterValue.value = value;
 };
 
-function close() {
-  emit('handlerClose');
-}
+const close = () => emit('handlerClose');
 
 const backgroundClick = (event: CustomEvent) => {
   if (props.closeByBackground && (event.target as Element)?.classList.contains('popup-background')) close();

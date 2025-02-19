@@ -12,7 +12,7 @@
   >
     <div class="wallet-content">
       <WalletInfo
-        v-for="({ name, address, active, isMobile }, index) in sortedWallets"
+        v-for="({ name, address, active, isMobile, walletEcosystem }, index) in sortedWallets"
         :key="name + index"
         :name="name"
         :isSelected="active"
@@ -21,7 +21,7 @@
         class="wallet"
         data-testid="walletContent"
         @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible(...arguments, address)"
-        @setWallet="updateSelectedWallet(address)"
+        @setWallet="updateSelectedWallet(address, walletEcosystem)"
       />
 
       <BorderButton text="wallet.addWallet" iconName="plus-pink" data-testid="addWalletBtn" @click="addWallet" />
@@ -32,8 +32,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import WalletInfo from './WalletInfo.vue';
-import type { CustomEvent } from '@/interfaces';
-
+import type { CustomEvent, WalletEcosystem } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { updateCurrentAccount } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
@@ -43,6 +42,10 @@ import { useAccountsStore } from '@/stores/accounts';
 })
 export default class SelectWalletPopup extends Vue {
   accountsStore = useAccountsStore();
+
+  get sortedWallets() {
+    return this.accountsStore.accounts.sort((a, b) => a.name.localeCompare(b.name));
+  }
 
   addWallet() {
     this.$router.push({ name: Components.Welcome });
@@ -60,8 +63,10 @@ export default class SelectWalletPopup extends Vue {
       this.$emit('toggleWalletDetailsPopupVisible', false);
   }
 
-  updateSelectedWallet(address: string) {
-    updateCurrentAccount(address);
+  async updateSelectedWallet(address: string, walletEcosystem: WalletEcosystem) {
+    if (address !== this.accountsStore.selectedWallet.address) this.accountsStore.setIsBalanceLoading(true);
+
+    await updateCurrentAccount(address, walletEcosystem);
 
     this.close();
   }
@@ -72,10 +77,6 @@ export default class SelectWalletPopup extends Vue {
 
   toggleWalletDetailsPopupVisible(buttonTop: number, address: string) {
     this.$emit('toggleWalletDetailsPopupVisible', undefined, buttonTop, address);
-  }
-
-  get sortedWallets() {
-    return this.accountsStore.accounts.sort((a, b) => a.name.localeCompare(b.name));
   }
 }
 </script>

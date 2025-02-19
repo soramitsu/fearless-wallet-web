@@ -66,7 +66,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { NetworkParams } from '@/stores';
 import { Components } from '@/router/routes';
-import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { getCostOfAssets } from '@/helpers/transfers';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
@@ -193,13 +193,13 @@ export default class MyStakingItem extends Vue {
         flex-direction: column;
 
         .stake-name {
-          font-size: 0.75em;
+          font-size: 0.75rem;
           font-weight: 700;
           text-align: left;
         }
 
         .network-name {
-          font-size: 1.25em;
+          font-size: 1.25rem;
           font-weight: 700;
           line-height: 25px;
           text-align: left;

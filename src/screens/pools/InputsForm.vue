@@ -52,7 +52,7 @@ import type { PoolParams } from '@/stores';
 import type { TokenGroup } from '@/extension/background/extension-base/src/background/types/types';
 import { calcTransferableSendMinusFee } from '@/helpers/currencies';
 
-import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { getCostOfAssets } from '@/helpers/transfers';
 import { getAmountPoolValue } from '@/extension/messaging';
 import { useNetworksStore } from '@/stores/networks';
 

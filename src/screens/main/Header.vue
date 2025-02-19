@@ -10,7 +10,7 @@
           @click.stop="back"
         />
 
-        <Logo v-else size="mini" />
+        <Logo v-else :showWalletLogo="true" size="mini" />
       </div>
 
       <div class="wallet-name">
@@ -50,19 +50,24 @@
         :isGroupIcon="isGroup"
         :icon="selectedNetworkIcon"
         :selectedNetwork="networkManagementButtonText"
+        :isDisable="isDisableNetworkManagementButton"
         data-testid="selectNetwork"
         @onToggle="toggleSelectNetworkPopupVisible"
       />
 
       <div v-if="isPopup" class="background-ellipse connection" @click="toggleConnectionPopup">
-        <Loading v-if="!tabStatus" :width="16" />
+        <Loading v-if="!extensionStore.tabStatus" :width="16" />
 
         <template v-else>
           <div class="connect" :class="statusConnectedClasses"></div>
         </template>
       </div>
 
-      <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" @handlerClose="toggleConnectionPopup" />
+      <ConnectionPopup
+        v-if="showConnectionPopup"
+        :tabStatus="extensionStore.tabStatus"
+        @handlerClose="toggleConnectionPopup"
+      />
 
       <Tooltip text="header.connectionStatus" target=".connection" placement="top" />
       <Tooltip :text="accountsStore.selectedNetwork" target=".network-management" placement="top" />
@@ -90,12 +95,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
-
 import type { TokenGroup } from '@extension-base/background/types/types';
-
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
-
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import { windowOpen } from '@/extension/messaging';
@@ -136,6 +138,8 @@ export default class Header extends Vue {
   }
 
   get isAddressExists() {
+    if (this.accountsStore.selectedWallet.isTon) return true;
+
     if (this.isGroup) return this.routeName === Components.AssetHistory;
 
     return true;
@@ -164,10 +168,8 @@ export default class Header extends Vue {
     );
   }
 
-  get computeActiveNetworks() {
-    if (!this.currentCurrency) return [];
-
-    return this.currentCurrency.balances.filter((network) => this.networksStore.getNetwork(network.name).active);
+  get isDisableNetworkManagementButton() {
+    return this.networksStore.networks.length <= 1;
   }
 
   get networkManagementButtonText() {
@@ -186,6 +188,7 @@ export default class Header extends Vue {
 
     if (this.$route.name === Components.AssetHistory) {
       const asset = this.currentCurrency?.balances.find((el) => el.id === this.selectedAssetId);
+
       if (!asset) return '';
 
       return this.networksStore.getNetwork(asset?.name).icon;
@@ -358,7 +361,7 @@ export default class Header extends Vue {
         flex-flow: row nowrap;
         align-items: center;
         gap: 8px;
-        font-size: 0.75em;
+        font-size: 0.75rem;
         font-weight: 400;
         color: $default-white;
       }
@@ -373,7 +376,7 @@ export default class Header extends Vue {
       align-items: center;
       height: 32px;
       padding: 8px;
-      font-size: 0.75em;
+      font-size: 0.75rem;
       line-height: 18px;
       border-radius: 20px;
       background-color: $default-background-color;

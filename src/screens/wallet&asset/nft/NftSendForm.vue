@@ -228,6 +228,25 @@ const showSubmitBtn = computed(
   () => !popupControls.showHistoryBook && !popupControls.showEditAddressBook && !popupControls.showMyWallets
 );
 
+const validateTx = () => {
+  if (!tx.value.network) return;
+
+  checkNft(tx.value).then((checkData) => {
+    if (checkData?.error === 'insufficientFunds') errors.insufficientFunds = true;
+
+    formInfo.fee = checkData.fee;
+  });
+};
+
+const validateAddress = () => {
+  if (formInfo.to === '' || network.value === '' || isSameAddress.value) errors.incorrectRecipient = true;
+  else {
+    const isValid = BaseApi.validateAddress(formInfo.to, network.value);
+
+    errors.incorrectRecipient = !isValid;
+  }
+};
+
 watch(formInfo, validateAddress);
 watch(tx, validateTx);
 
@@ -267,25 +286,6 @@ const onProceed = () => {
   if (!popupControls.showConfirmScreen) popupControls.showConfirmScreen = true;
   else popupControls.showConfirmationPasswordPopup = true;
 };
-
-function validateAddress() {
-  if (formInfo.to === '' || network.value === '' || isSameAddress.value) errors.incorrectRecipient = true;
-  else {
-    const isValid = BaseApi.validateAddress(formInfo.to, network.value);
-
-    errors.incorrectRecipient = !isValid;
-  }
-}
-
-function validateTx() {
-  if (!tx.value.network) return;
-
-  checkNft(tx.value).then((checkData) => {
-    if (checkData?.error === 'insufficientFunds') errors.insufficientFunds = true;
-
-    formInfo.fee = checkData.fee;
-  });
-}
 </script>
 
 <style lang="scss" scoped>

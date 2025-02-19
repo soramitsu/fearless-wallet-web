@@ -7,13 +7,13 @@ import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isNetworkGroup } from '@/helpers/common';
 
 type Getters = {
-  allPoolsItems(state: State): PoolParams[];
+  allPoolsItemsMap(state: State): PoolParams[];
   poolsItems(state: State): PoolParams[];
   myPoolsItems(state: State): PoolParams[];
 };
 
 export const getters: Getters = {
-  allPoolsItems({ allPoolsItems }): PoolParams[] {
+  allPoolsItemsMap({ allPoolsItems }): PoolParams[] {
     const accountsStore = useAccountsStore();
     const networksStore = useNetworksStore();
 
@@ -80,13 +80,13 @@ export const getters: Getters = {
   },
 
   poolsItems(): PoolParams[] {
-    const allPoolsItems: PoolParams[] = this.allPoolsItems as unknown as PoolParams[];
+    const allPoolsItems: PoolParams[] = this.allPoolsItemsMap as unknown as PoolParams[];
 
     return allPoolsItems.filter(({ isMyPool }) => !isMyPool);
   },
 
   myPoolsItems(): PoolParams[] {
-    const allPoolsItems: PoolParams[] = this.allPoolsItems as unknown as PoolParams[];
+    const allPoolsItems: PoolParams[] = this.allPoolsItemsMap as unknown as PoolParams[];
 
     return allPoolsItems.filter(({ isMyPool }) => isMyPool);
   },

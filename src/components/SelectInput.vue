@@ -223,12 +223,12 @@ export default class SelectInput extends Vue {
 
     .header {
       font-weight: 700;
-      font-size: 0.75em;
+      font-size: 0.75rem;
       text-transform: uppercase;
     }
 
     .price {
-      font-size: 0.75em;
+      font-size: 0.75rem;
     }
 
     input {
@@ -239,7 +239,7 @@ export default class SelectInput extends Vue {
       color: white;
       width: 250px;
       font-weight: 700;
-      font-size: 1.25em;
+      font-size: 1.25rem;
     }
 
     // hide arrows
@@ -285,6 +285,7 @@ export default class SelectInput extends Vue {
       cursor: pointer;
 
       .asset-icon {
+        border-radius: 50%;
         height: 24px !important;
         width: 24px !important;
       }
@@ -309,7 +310,7 @@ export default class SelectInput extends Vue {
 
     .balance {
       display: flex;
-      font-size: 0.75em;
+      font-size: 0.75rem;
       user-select: none;
       max-width: 250px;
       overflow: hidden;

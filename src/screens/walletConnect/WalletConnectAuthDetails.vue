@@ -114,7 +114,7 @@ const onWCRemoveuth = async () => {
   }
 
   &__status {
-    font-size: 0.75em;
+    font-size: 0.75rem;
     color: $gray-color;
   }
 

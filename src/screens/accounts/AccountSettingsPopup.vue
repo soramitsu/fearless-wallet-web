@@ -40,10 +40,8 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
-
 import { EXPLORERS_BASE_URLS } from '@/consts/networks';
 import { setClipboard } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';

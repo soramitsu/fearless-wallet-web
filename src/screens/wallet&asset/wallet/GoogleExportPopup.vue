@@ -123,7 +123,7 @@ export default class GoogleExportPopup extends Vue {
 
     this.status = 'prepare';
 
-    const isValid = await validatePassword(this.selectedWalletAddress, this.password);
+    const isValid = await validatePassword(this.password);
 
     if (!isValid) {
       this.status = 'await';
@@ -230,7 +230,7 @@ export default class GoogleExportPopup extends Vue {
 
   .transfer-amount {
     font-weight: 800;
-    font-size: 1.25em;
+    font-size: 1.25rem;
     margin-bottom: 10px;
   }
 

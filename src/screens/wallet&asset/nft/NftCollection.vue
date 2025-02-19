@@ -121,7 +121,7 @@ const onScroll = async () => {
     },
   };
 
-  store.commit('SET_AVAILABLE_NFTS', avNfts);
+  accountsStore.setAvailableNfts(avNfts);
 };
 </script>
 

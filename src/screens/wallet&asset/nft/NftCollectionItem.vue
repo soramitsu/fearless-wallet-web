@@ -71,7 +71,7 @@ const onClick = () =>
   z-index: 100;
   right: 5px;
   top: 5px;
-  font-size: 0.75em;
+  font-size: 0.75rem;
   font-weight: 700;
   padding: 14px;
 }

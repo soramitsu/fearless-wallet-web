@@ -4,12 +4,12 @@ import type { EvmRequests } from '@extension-base/services/request-service/types
 import type { RequestsPayload } from './types';
 import type { ExtensionStore } from '.';
 import type {
-  RequestApproveConnectWalletSession,
-  RequestRejectConnectWalletSession,
-  WalletConnectNotSupportRequest,
   WalletConnectSessionRequest,
   WalletConnectSessions,
   WalletConnectTransactionRequest,
+  // RequestApproveConnectWalletSession,
+  // RequestRejectConnectWalletSession,
+  // WalletConnectNotSupportRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 import type {
   ActiveTabAuthorizeStatus,
@@ -32,15 +32,15 @@ import {
   cancelSignRequest,
   subscribeSigningRequests,
   isTabAuthorize,
-  approveWalletConnectSession,
-  rejectWalletConnectSession,
   walletConnectSessionsSubscribe,
   walletConnectRequestSubscribe,
   subscribeWalletConnectRequest,
   subscribeEvmSigningRequests,
-  subscribeWalletNotSupportedConnectRequest,
   approveSign,
   approveSignSignature,
+  // approveWalletConnectSession,
+  // rejectWalletConnectSession,
+  // subscribeWalletNotSupportedConnectRequest,
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
@@ -51,28 +51,28 @@ export type ApprovePayload = {
 };
 
 type Actions = {
-  subscribeAuthRequests(this: ExtensionStore): Promise<boolean>;
+  subscribeAuthRequests(this: ExtensionStore): Promise<AuthorizeRequest[]>;
   approveAuthRequests(this: ExtensionStore, props: ApproveAuthRequest): Promise<void>;
   rejectAuthRequests(this: ExtensionStore, props: string): Promise<void>;
   deleteAuthRequests(this: ExtensionStore, props: string): Promise<void>;
 
-  subscribeMetaRequests(this: ExtensionStore): Promise<boolean>;
+  subscribeMetaRequests(this: ExtensionStore): Promise<MetadataRequest[]>;
   approveMetaRequests(this: ExtensionStore, props: MetadataRequest): Promise<void>;
   rejectMetaRequests(this: ExtensionStore, props: MetadataRequest): Promise<void>;
 
   subscribeWcRequests(this: ExtensionStore): Promise<WalletConnectTransactionRequest[]>;
   subscribeWcSessions(this: ExtensionStore): Promise<WalletConnectSessions>;
   subscribeWcConnectRequests(this: ExtensionStore): Promise<WalletConnectSessionRequest[]>;
-  subscribeWcConnectSupportedRequests(this: ExtensionStore): Promise<WalletConnectNotSupportRequest[]>;
-  approveWcRequests(this: ExtensionStore, props: RequestApproveConnectWalletSession): Promise<void>;
-  rejectWcRequests(this: ExtensionStore, props: RequestRejectConnectWalletSession): Promise<void>;
-  rejectWcNotSupportedRequests(this: ExtensionStore, props: RequestRejectConnectWalletSession): Promise<void>;
+  // subscribeWcConnectSupportedRequests(this: ExtensionStore): Promise<WalletConnectNotSupportRequest[]>;
+  // rejectWcNotSupportedRequests(this: ExtensionStore, props: RequestRejectConnectWalletSession): Promise<void>;
+  // approveWcRequests(this: ExtensionStore, props: RequestApproveConnectWalletSession): Promise<void>;
+  // rejectWcRequests(this: ExtensionStore, props: RequestRejectConnectWalletSession): Promise<void>;
 
-  subscribeSignRequests(this: ExtensionStore): Promise<boolean>;
-  subscribeEvmSignRequests(this: ExtensionStore): Promise<boolean>;
+  subscribeSignRequests(this: ExtensionStore): Promise<SigningRequest[]>;
+  subscribeEvmSignRequests(this: ExtensionStore): Promise<EvmRequests>;
   signCancel(this: ExtensionStore, id: string): Promise<void>;
   approveSign(this: ExtensionStore, payload: ApprovePayload): Promise<void>;
-  subscribeExtensionRequests(this: ExtensionStore): Promise<void>;
+  subscribeExtensionRequests(this: ExtensionStore): Promise<boolean>;
   fetchTabStatus(this: ExtensionStore): Promise<void>;
   signSignature(this: ExtensionStore, params: { id: string; payload: { signature: HexString } }): Promise<void>;
   getAuthList(this: ExtensionStore): Promise<void>;
@@ -100,7 +100,7 @@ export const actions: Actions = {
 
     if (type === 'wcConnectRequests') this.wcConnectRequests = requests;
 
-    if (type === 'wcNotSupportedRequests') this.wcNotSupportedRequests = requests;
+    // if (type === 'wcNotSupportedRequests') this.wcNotSupportedRequests = requests;
 
     if (type === 'wcRequests') this.wcRequests = requests;
 
@@ -192,6 +192,7 @@ export const actions: Actions = {
 
   async rejectMetaRequests(payload) {
     await rejectMetaRequest(payload.id);
+
     this.deleteRequest('metaRequests');
     this.fetchTabStatus();
   },
@@ -218,10 +219,10 @@ export const actions: Actions = {
     const callback = (requests: EvmRequests) => {
       this.setRequest({ type: 'signEvmRequests', requests });
 
-      const isRequestsExists = Object.keys(requests).length === 0;
+      const isRequestsExists = Object.keys(requests).length !== 0;
 
-      if (router.currentRoute.name === 'Transaction' && isRequestsExists) router.push({ name: Components.Wallet });
-      else if (!isRequestsExists) router.push({ name: Components.Transaction });
+      if (router.currentRoute.name === 'Transaction' && !isRequestsExists) router.push({ name: Components.Wallet });
+      else if (isRequestsExists) router.push({ name: Components.Transaction });
     };
 
     return subscribeEvmSigningRequests(callback);
@@ -256,15 +257,17 @@ export const actions: Actions = {
   },
 
   async subscribeExtensionRequests() {
+    const signEvm = this.subscribeEvmSignRequests();
     const auth = this.subscribeAuthRequests();
     const sign = this.subscribeSignRequests();
-    const signEvm = this.subscribeEvmSignRequests();
     const meta = this.subscribeMetaRequests();
     const wcConnectRequests = this.subscribeWcConnectRequests();
     const wcSessions = this.subscribeWcSessions();
     const wcRequests = this.subscribeWcRequests();
 
-    await Promise.all([auth, sign, signEvm, meta, wcConnectRequests, wcSessions, wcRequests]);
+    const promises = await Promise.all([wcSessions, signEvm, auth, sign, meta, wcConnectRequests, wcRequests]);
+
+    return !!Object.keys(promises[1]).length || !!promises.slice(2).flat().length;
   },
 
   async fetchTabStatus() {
@@ -279,19 +282,6 @@ export const actions: Actions = {
     this.setFeatures(data);
   },
 
-  async approveWcRequests(payload) {
-    await approveWalletConnectSession(payload);
-    this.deleteRequest('wcConnectRequests');
-
-    this.fetchTabStatus();
-  },
-
-  async rejectWcRequests(payload) {
-    await rejectWalletConnectSession(payload);
-
-    this.deleteRequest('wcConnectRequests');
-  },
-
   async subscribeWcConnectRequests() {
     const callback = (requests: WalletConnectSessionRequest[]) => {
       this.setRequest({ type: 'wcConnectRequests', requests });
@@ -304,23 +294,36 @@ export const actions: Actions = {
     return walletConnectRequestSubscribe(callback);
   },
 
-  async subscribeWcConnectSupportedRequests() {
-    const callback = (requests: WalletConnectNotSupportRequest[]) => {
-      this.setRequest({ type: 'wcNotSupportedRequests', requests });
+  // async approveWcRequests(payload) {
+  //   await approveWalletConnectSession(payload);
+  //   this.deleteRequest('wcConnectRequests');
 
-      console.info(requests, 'WC not supported requests');
+  //   this.fetchTabStatus();
+  // },
 
-      if (requests.length) router.push({ name: Components.WalletConnectNotSupportedRequest });
-    };
+  // async rejectWcRequests(payload) {
+  //   await rejectWalletConnectSession(payload);
 
-    return subscribeWalletNotSupportedConnectRequest(callback);
-  },
+  //   this.deleteRequest('wcConnectRequests');
+  // },
 
-  async rejectWcNotSupportedRequests(payload) {
-    await rejectWalletConnectSession(payload);
+  // async subscribeWcConnectSupportedRequests() {
+  //   const callback = (requests: WalletConnectNotSupportRequest[]) => {
+  //     this.setRequest({ type: 'wcNotSupportedRequests', requests });
 
-    this.deleteRequest('wcNotSupportedRequests');
-  },
+  //     console.info(requests, 'WC not supported requests');
+
+  //     if (requests.length) router.push({ name: Components.WalletConnectNotSupportedRequest });
+  //   };
+
+  //   return subscribeWalletNotSupportedConnectRequest(callback);
+  // },
+
+  // async rejectWcNotSupportedRequests(payload) {
+  //   await rejectWalletConnectSession(payload);
+
+  //   this.deleteRequest('wcNotSupportedRequests');
+  // },
 
   async subscribeWcRequests() {
     const callback = (requests: WalletConnectTransactionRequest[]) => {

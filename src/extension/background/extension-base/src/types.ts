@@ -1,7 +1,7 @@
-import { type CustomTokenType } from '@extension-base/api/evm/types';
-import { type NETWORK_STATUS } from './api/types/networks';
+import type { CustomTokenType } from '@extension-base/api/evm/types';
+import type { NETWORK_STATUS } from './api/types/networks';
 import type { KeyringPair$Meta } from '@subwallet/keyring/types';
-import type { AssetType, BuyProvider, XcmVersion, ExternalApi } from '@/interfaces';
+import type { AssetType, BuyProvider, XcmVersion, ExternalApi, WalletEcosystem } from '@/interfaces';
 
 export interface Message extends MessageEvent {
   data: {
@@ -62,6 +62,12 @@ type Node = {
   name: string;
 };
 
+export type PriceProvider = {
+  type: 'chainlink' | 'sorasubquery';
+  id: string;
+  precision?: 8;
+};
+
 export type Asset = {
   id: string;
   type: AssetType;
@@ -77,12 +83,16 @@ export type Asset = {
   isUtility?: true;
   isNative?: true;
   existentialDeposit?: string;
+  tonType: 'normal' | 'jetton';
+  priceProvider?: PriceProvider;
 };
 
 type XcmAssets = {
   id: string;
   symbol: string;
 };
+
+export type NetworkEcosystem = 'substrate' | 'ton' | 'ethereumBased' | 'ethereum';
 
 export interface NetworkJson {
   // General Information
@@ -99,7 +109,6 @@ export interface NetworkJson {
   // Metadata get after connect to provider
   genesisHash: string; // identifier for network
   ss58Format: number;
-  chainType?: 'substrate' | 'ethereum';
   disabled: boolean;
   // Ethereum related information for predefined network only
   isEthereum?: boolean; // Only show network with isEthereum=true when select one EVM account // user input
@@ -116,6 +125,7 @@ export interface NetworkJson {
   customNodes: Node[];
   nodes: Node[];
   addressPrefix: number;
+  ecosystem: NetworkEcosystem;
   types: TypesForMobile;
   options?: ('testnet' | 'polkaswap' | 'ethereum' | 'crowdloans' | 'poolStaking')[];
   rank?: number;
@@ -131,12 +141,6 @@ export interface NetworkJson {
   };
 }
 
-export interface ChainRegistry {
-  chainDecimals: number[];
-  chainTokens: string[];
-  assetsMap: Asset[];
-}
-
 export interface FWKeyringMeta extends KeyringPair$Meta {
   isMobile?: boolean;
   isMasterAccount?: boolean;
@@ -144,4 +148,5 @@ export interface FWKeyringMeta extends KeyringPair$Meta {
   wcTopic?: string;
   ethereumAddress?: string;
   name?: string;
+  walletEcosystem?: WalletEcosystem;
 }

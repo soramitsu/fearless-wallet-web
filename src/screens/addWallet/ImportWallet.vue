@@ -1,6 +1,15 @@
 <template>
   <div class="import-wallet">
+    <FInput
+      v-if="!isSubstrate"
+      :placeholder="placeholderTypeImportValue"
+      :value="typeImportValue"
+      :readonly="true"
+      size="big"
+    />
+
     <FSelect
+      v-else
       :value="typeImport"
       placeholder="common.sourceType"
       size="big"
@@ -19,7 +28,7 @@
       size="big"
       data-testid="textarea"
       :placeholder="placeholderTypeImportValue"
-      :maxlength="130"
+      :maxlength="200"
       :height="170"
       :value="inputValue"
       @change="changeInputValue"
@@ -80,11 +89,16 @@ export default class ImportWallet extends Vue {
   @Prop(String) ethereumJson!: string;
   @Prop(Number) step!: number;
   @Prop(Boolean) isOnlyEthereumAccount!: boolean;
+  @Prop(Boolean) isSubstrate!: boolean;
   @PropSync('passwordJson', { type: String }) syncedPasswordJson!: string;
   @Ref('valueInput') readonly valueInputComponent!: typeof FInput;
 
   get inputValue() {
     return this[this.field];
+  }
+
+  get typeImportValue() {
+    return this.optionsImport.find(({ value }) => value === this.typeImport)?.label ?? '';
   }
 
   set inputValue(value: string) {
@@ -115,6 +129,8 @@ export default class ImportWallet extends Vue {
   }
 
   get showSlot() {
+    if (!this.isSubstrate) return false;
+
     return this.typeImport === 'mnemonic' || (this.typeImport === 'rawSeed' && this.step === 1);
   }
 

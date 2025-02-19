@@ -14,6 +14,7 @@
       :typeText="typeText"
       :type="type"
       @change="emitChange"
+      @pressEnter="emitPressEnter"
     />
 
     <div v-show="showErrorText" class="error-descriptions" data-testid="errorDescriptions">
@@ -65,9 +66,10 @@ const props = withDefaults(defineProps<FInputProps>(), {
   cursorPointer: false,
 });
 
-const emit = defineEmits(['change']);
+const emit = defineEmits(['change', 'pressEnter']);
 
 const emitChange = (value: string | number) => emit('change', value);
+const emitPressEnter = () => emit('pressEnter');
 
 const inputRef = ref<typeof FInput | null>(null);
 

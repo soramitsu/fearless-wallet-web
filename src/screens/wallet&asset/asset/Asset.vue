@@ -182,7 +182,7 @@ export default class Asset extends Vue {
       align-items: center;
       height: 32px;
       padding: 12px;
-      font-size: 0.75em;
+      font-size: 0.75rem;
       line-height: 18px;
       border-radius: 20px;
       background-color: $default-background-color;

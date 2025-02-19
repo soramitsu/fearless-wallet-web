@@ -87,16 +87,15 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 
 import type { FWValidatorInfoFull, RequestNominate } from '@extension-base/services/staking-service/types';
-import type { SelectionValidator } from '@/interfaces';
 import type { NetworkParams } from '@/stores';
 import type { TokenGroup } from '@extension-base/background/types/types';
+import { type SelectionValidator, WalletEcosystem } from '@/interfaces';
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
 import YourValidators from '@/screens/staking/myStake/validators/YourValidators.vue';
 import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vue';
-
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { fetchBalance, getNominateNetworkFee } from '@/extension/messaging';
-import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { getCostOfAssets } from '@/helpers/transfers';
 import { isValidAmountAsset } from '@/helpers/currencies';
 import { useStakingStore } from '@/stores/staking';
 import { useNetworksStore } from '@/stores/networks';
@@ -276,11 +275,15 @@ export default class YourValidatorsManagement extends Vue {
       });
     });
 
-    if (this.stakingNetwork.isController)
-      this.stashBalance = await fetchBalance({
+    if (this.stakingNetwork.isController) {
+      const balances = await fetchBalance({
         address: this.stakingNetwork.stashAddress,
-        networkName: this.stakingNetwork.network,
+        networks: [this.stakingNetwork.network],
+        walletEcosystem: WalletEcosystem.Substrate,
       });
+
+      this.stashBalance = balances[0].balance;
+    }
   }
 
   closeForm() {

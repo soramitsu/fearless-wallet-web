@@ -56,7 +56,6 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { FilesState } from '@/interfaces';
 import { cut } from '@/helpers';
-
 import { isJsonValid, jsonRestore, updateCurrentAccount, migrateMasterPassword } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 

@@ -31,7 +31,8 @@ export const getCurrentProvider = (data: NetworkJson): string | undefined => {
 
   if (data.currentProvider.startsWith('custom') && data.customNodes.length)
     return data.customNodes.find((value) => value.url === data.currentProvider)?.url;
-  else return data.nodes.find((value) => value.url === data.currentProvider)?.url;
+
+  return data.nodes.find((value) => value.url === data.currentProvider)?.url;
 };
 
 export function reformatAddress(address: string, networkPrefix = 42, isEthereum = false): string {

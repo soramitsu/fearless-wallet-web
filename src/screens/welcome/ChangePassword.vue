@@ -114,7 +114,7 @@ const close = (isClose = true) => {
   }
 
   // If the password already existed or there are created accounts, then we "change the password" and not "set it"
-  // Need to go to the Wallet age
+  // Need to go to the Wallet page
   if (alreadyHasMasterPassword.value || hasAccount.value) {
     router.push({ name: Components.Wallet });
 
@@ -130,8 +130,13 @@ const close = (isClose = true) => {
 
       initGoogleAuth().finally(() => (isAuthFlowInit.value = false));
     }
-  } else if (componentName) router.push({ name: componentName, params: { type } });
-  else router.push({ name: 'AddWallet', params: { type: 'create' } });
+  } else if (componentName)
+    router.push({ name: componentName, params: { type, walletEcosystem: route.params.walletEcosystem } });
+  else
+    router.push({
+      name: 'AddWallet',
+      params: { type: 'create' },
+    });
 };
 
 const changePassword = async () => {

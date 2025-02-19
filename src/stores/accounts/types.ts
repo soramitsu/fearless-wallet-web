@@ -1,10 +1,11 @@
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
-import type { WalletAddress, NetworkName } from '@/interfaces';
+import type { WalletAddress, NetworkName, WalletEcosystem } from '@/interfaces';
 import { type AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
 export interface Wallet {
   address: string;
   ethereumAddress: string;
+  walletEcosystem?: WalletEcosystem;
   isMobile?: boolean;
   isMasterAccount?: boolean;
   isMasterPassword?: boolean;
@@ -13,6 +14,9 @@ export interface Wallet {
 
 export interface SelectedWallet extends Wallet {
   name: string;
+  isSubstrate: boolean;
+  isTon: boolean;
+  hasEthereum: boolean;
 }
 
 export type HiddenAssets = {
@@ -26,7 +30,6 @@ export type SetHiddenAsset = {
 
 export type SetAccountsProps = {
   accounts: AccountJson[];
-  isMobileUpdate: boolean;
 };
 
 export type SetAutoSelectNode = {

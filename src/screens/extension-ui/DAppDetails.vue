@@ -27,7 +27,7 @@ import { useAccountsStore } from '@/stores/accounts';
 const router = useRouter();
 const route = useRoute();
 const extensionStore = useExtensionStore();
-const accountStore = useAccountsStore();
+const accountsStore = useAccountsStore();
 
 const selectAll = ref(false);
 const state = ref<Record<string, WalletInfo>>({});
@@ -53,13 +53,14 @@ const prepAccounts = computed<string[]>(() => {
     .map(({ address, ethereumAddress }) => (isEVM.value ? ethereumAddress : address));
 });
 
-const isAllSelected = () => Object.values(state.value).every(({ active }) => active);
 const list = computed(() => extensionStore.authList);
+
+const isAllSelected = () => Object.values(state.value).every(({ active }) => active);
 
 onMounted(async () => {
   await extensionStore.getAuthList();
 
-  const wallets: WalletInfo[] = accountStore.getWallets;
+  const wallets: WalletInfo[] = accountsStore.getWallets;
 
   const { authorizedAccounts, evmAuthorizedAccount } = list.value[url.value] ?? {};
 
@@ -68,7 +69,7 @@ onMounted(async () => {
       ? ethereumAddress === evmAuthorizedAccount
       : authorizedAccounts.some((el: string) => el === address);
 
-    set(state.value, name, {
+    set(state.value, address, {
       name,
       isMobile,
       address,
@@ -81,10 +82,10 @@ onMounted(async () => {
 });
 
 const onSelect = (value: boolean, name: string) => {
+  state.value[name].active = value;
+
   if (showSelectAll.value) selectAll.value = selectAll.value = isAllSelected();
   else Object.keys(state.value).forEach((key) => (state.value[key].active = false));
-
-  state.value[name].active = value;
 };
 
 const onSelectAll = (value: boolean) => {

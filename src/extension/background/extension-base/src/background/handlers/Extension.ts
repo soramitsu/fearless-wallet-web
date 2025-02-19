@@ -12,7 +12,6 @@ import { stripUrl, withErrorLog } from '@extension-base/background/handlers/help
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
-import { type MetadataDef } from '@polkadot/extension-inject/types';
 import {
   isProposalExpired,
   isSupportWalletConnectNamespace,
@@ -43,6 +42,7 @@ import {
 } from '@extension-base/services/wallet-connect-service/consts';
 import { type MakeCrossChainProps } from '../../api/substrate/types';
 import { EXTENSION_URL } from '../../const';
+import type { MetadataDef } from '@polkadot/extension-inject/types';
 import type { EvmRequestsSubjectPayload } from '@extension-base/services/request-service/types';
 import type {
   RequestUpdateMeta,

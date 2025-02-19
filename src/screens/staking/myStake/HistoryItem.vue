@@ -127,7 +127,7 @@ export default class HistoryItem extends Vue {
     }
 
     .date {
-      font-size: 0.75em;
+      font-size: 0.75rem;
       color: $grayish-white-2;
       text-align: left;
       margin-top: 5px;
@@ -158,7 +158,7 @@ export default class HistoryItem extends Vue {
     }
 
     .value {
-      font-size: 0.75em;
+      font-size: 0.75rem;
       color: $grayish-white-2;
       text-align: right;
       margin-top: 5px;

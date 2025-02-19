@@ -34,6 +34,7 @@
         :isError="isError"
         :showPassword="true"
         :value="password"
+        @pressEnter="unlock"
         @change="changeSyncedPassword"
       />
 

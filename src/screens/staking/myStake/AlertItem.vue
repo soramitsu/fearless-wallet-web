@@ -81,7 +81,7 @@ export default class AlertItem extends Vue {
     }
 
     .date {
-      font-size: 0.75em;
+      font-size: 0.75rem;
       color: $grayish-white-2;
     }
   }

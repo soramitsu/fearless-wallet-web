@@ -1,8 +1,9 @@
 import type { SetAutoSelectNode, SetAccountsProps, SetHiddenAsset } from './types';
 import type { AccountJson, BalanceJson } from '@extension-base/background/types/types';
 import type { AccountStore } from '@/stores/accounts';
-import type { ChainNftState } from '@extension-base/services/nft-service/types';
+import type { AvailableNftState, ChainNftState } from '@extension-base/services/nft-service/types';
 import { accountController } from '@/controllers/accountController';
+import { WalletEcosystem } from '@/interfaces';
 
 type Actions = {
   setSelectedWallet(this: AccountStore, props: AccountJson | undefined): void;
@@ -15,28 +16,29 @@ type Actions = {
   setSelectedNetwork(this: AccountStore, network: string): void;
   hidePolkaswapAlert(this: AccountStore): void;
   hideNetworkWarning(this: AccountStore, network: string): void;
-  setSoraCardBannerVisibility(this: AccountStore, value: boolean): void;
+  setIsBalanceLoading(this: AccountStore, value: boolean): void;
+  setAvailableNfts(this: AccountStore, nfts: AvailableNftState): void;
 };
 
 export const actions: Actions = {
-  setSoraCardBannerVisibility(value) {
-    accountController.setHidingSoraCardBannerTime(Date.now());
-
-    this.soraCardBannerVisibility = value;
-  },
-
   setSelectedWallet(account) {
     this.selectedWallet = {
       address: account?.address ?? '',
       ethereumAddress: account?.ethereumAddress ?? '',
+      walletEcosystem: account?.walletEcosystem,
       name: account?.name ?? '',
       isMobile: account?.isMobile ?? false,
       isMasterAccount: account?.isMasterAccount ?? false,
       isMasterPassword: account?.isMasterPassword ?? false,
       haveEntropy: account?.haveEntropy ?? false,
+      isSubstrate: account?.walletEcosystem === WalletEcosystem.Substrate,
+      isTon: account?.walletEcosystem === WalletEcosystem.Ton,
+      hasEthereum: account?.ethereumAddress !== '',
     };
+  },
 
-    accountController.setSelectedWalletAddress(account?.address);
+  setAvailableNfts(nfts) {
+    this.availableNfts = nfts;
   },
 
   setBalance({ details, saveSequence = false }) {
@@ -67,6 +69,10 @@ export const actions: Actions = {
     this.$state.nfts = nfts;
   },
 
+  setIsBalanceLoading(value) {
+    this.isBalanceLoading = value;
+  },
+
   setHiddenAssets({ groupId, value }) {
     const address = this.selectedWallet.address;
     const hiddenAssets = this.hiddenAssetsForAllAccounts[address] ?? [];
@@ -93,23 +99,11 @@ export const actions: Actions = {
   },
 
   setSelectedFiat(fiatName) {
-    accountController.setSelectedFiat(fiatName);
-
     this.selectedFiat = fiatName;
   },
 
-  setAccounts({ accounts, isMobileUpdate }) {
-    if (isMobileUpdate) {
-      const nativeWallets = this.accounts.filter((account) => !account.isMobile);
-
-      this.accounts = [...nativeWallets, ...accounts];
-    } else {
-      const mobileWallets = this.accounts.filter((account) => account.isMobile);
-
-      this.accounts = [...mobileWallets, ...accounts];
-    }
-
-    accountController.setAccounts(this.accounts);
+  setAccounts({ accounts }) {
+    this.accounts = accounts;
   },
 
   setSelectedNetwork(network) {
@@ -117,8 +111,6 @@ export const actions: Actions = {
       selectedWallet: { address },
       selectedNetworks,
     } = this;
-
-    accountController.setSelectedNetwork(address, network);
 
     this.selectedNetworks = { ...selectedNetworks, [address]: network };
   },

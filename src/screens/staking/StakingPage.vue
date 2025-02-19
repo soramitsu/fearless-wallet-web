@@ -67,7 +67,7 @@ import MyStakingItem from '@/screens/staking/MyStakingItem.vue';
 
 import Bond from '@/screens/staking/Bond.vue';
 import { isSubstrString, isSameString } from '@/helpers';
-import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { getCostOfAssets } from '@/helpers/transfers';
 import { useStakingStore } from '@/stores/staking';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';

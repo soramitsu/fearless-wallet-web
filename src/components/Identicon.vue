@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="identicon">
     <div v-if="isEthereumAddress(address)" v-html="getJdenticon(address)"></div>
 
     <Ident v-else :size="24" theme="polkadot" :value="address" />
@@ -18,3 +18,9 @@ withDefaults(defineProps<{ address: string }>(), {
 const getJdenticon = (address: string) => toSvg(address, 24);
 const isEthereumAddress = (address: string) => BaseApi.isEthereumAddress(address);
 </script>
+
+<style lang="scss" scoped>
+.identicon {
+  display: flex;
+}
+</style>

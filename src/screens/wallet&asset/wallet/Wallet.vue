@@ -12,15 +12,13 @@
       <Loading v-if="showLoadingBalance" :width="28" class="balance-loading" />
     </header>
 
-    <SoraCardBanner />
-
     <ContentForm :height="contentFormHeight">
       <div class="content">
         <WalletSettings
           :activeTabName="activeTabName"
           :filterValue="filterValue"
           :showAssetsManagementForm="showAssetsManagementForm"
-          :balances="filteredCurrencies"
+          :tokenGroups="filteredTokenGroups"
           @update:filterValue="updateFilterValue"
           @update:activeTabName="updateActiveTabName"
           @update:showAssetsManagementForm="toggleAssetsManagementForm"
@@ -28,8 +26,7 @@
         />
 
         <router-view
-          :isEmptyBalances="isEmptyBalances"
-          :balances="filteredCurrencies"
+          :balances="filteredTokenGroups"
           :showAssetsManagementForm="showAssetsManagementForm"
           :filterValue="filterValue"
           @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
@@ -64,7 +61,6 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { TabWallet } from '@/interfaces';
-import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
@@ -76,23 +72,20 @@ import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.v
 import { ALL_NETWORKS } from '@/consts/networks';
 import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers/currencies';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance, isNetworkGroup } from '@/helpers/common';
-import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
-import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 import { networksIsPending } from '@/helpers/shimmers';
 import BaseApi from '@/util/BaseApi';
 import { fetchEvmBalance } from '@/extension/messaging';
 import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { MENU_HEIGHT } from '@/screens/main/Menu.vue';
 
 @Component({
   components: {
     SendForm,
-    Currencies,
     ReceiveForm,
     WalletBalance,
-    SoraCardBanner,
     WalletSettings,
     NetworkManagement,
     NetworkUnavailablePopup,
@@ -117,17 +110,13 @@ export default class Wallet extends Vue {
   }
 
   get contentFormHeight() {
-    const subtractionNumber = this.accountsStore.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
+    const isTonWallet = this.accountsStore.selectedWallet.isTon;
 
-    return CONTENT_FORM_HEIGHT - subtractionNumber;
+    return isTonWallet ? CONTENT_FORM_HEIGHT + MENU_HEIGHT : CONTENT_FORM_HEIGHT;
   }
 
   get showNetworkUnavailablePopup() {
     return this.networkUnavailable !== '';
-  }
-
-  get isEmptyBalances() {
-    return this.accountsStore.balances.length === 0;
   }
 
   get showWarningIcon() {
@@ -170,11 +159,10 @@ export default class Wallet extends Vue {
     );
   }
 
-  get sortedCurrencies() {
-    const balances =
-      this.accountsStore.selectedWallet.ethereumAddress === ''
-        ? this.accountsStore.balances.filter((el) => !BaseApi.isEthereumNetwork(el.mainNetwork))
-        : this.accountsStore.balances;
+  get sortedTokenGroups() {
+    const balances = this.accountsStore.selectedWallet.hasEthereum
+      ? this.accountsStore.balances
+      : this.accountsStore.balances.filter((el) => !BaseApi.isEthereumNetwork(el.mainNetwork));
 
     const { address } = this.accountsStore.selectedWallet;
 
@@ -218,31 +206,26 @@ export default class Wallet extends Vue {
     return !navigator.onLine || isPendingExists;
   }
 
-  get filteredCurrencies() {
+  get filteredTokenGroups() {
     const isAllNetworks = isSameString(this.accountsStore.selectedNetwork, ALL_NETWORKS);
 
-    const currencies = this.accountsStore.selectedWallet.isMobile
-      ? this.sortedCurrencies.filter(({ balances }) => {
+    const tokenGroups = this.accountsStore.selectedWallet.isMobile
+      ? this.sortedTokenGroups.filter(({ balances }) => {
           return balances.some((balance) => {
             const account = this.accountsStore.accounts.find(
               ({ address }) => address === this.accountsStore.selectedWallet.address
             );
+
             const network = this.networksStore.getNetwork(balance.name);
 
-            if (account && account.chains) {
-              if (!account.chains.some((el) => network.chainId.includes(el))) return false;
-
-              return true;
-            }
-
-            return false;
+            return account?.chains?.some((el) => network.chainId.includes(el));
           });
         })
-      : this.sortedCurrencies;
+      : this.sortedTokenGroups;
 
     const filteredByNetwork = isAllNetworks
-      ? currencies
-      : currencies.filter(({ balances }) => {
+      ? tokenGroups
+      : tokenGroups.filter(({ balances }) => {
           return balances.some((balance) => filterBalanceItemsByNetwork(balance, this.accountsStore.selectedNetwork));
         });
 

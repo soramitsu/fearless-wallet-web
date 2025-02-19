@@ -63,6 +63,7 @@ export class NotSupportWCRequestHandler {
     };
 
     this.updateIconNotSupportWC();
+
     this.requestService.popupOpen();
   }
 

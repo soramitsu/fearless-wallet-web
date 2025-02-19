@@ -1,12 +1,5 @@
 import { type RouteConfig } from 'vue-router';
-import {
-  getStakingNetwork,
-  haveAuthRequests,
-  haveMetaRequests,
-  hasSelectedWallet,
-  haveSignRequests,
-  showSoraCard,
-} from './helpers';
+import { getStakingNetwork, haveAuthRequests, haveMetaRequests, hasSelectedWallet, haveSignRequests } from './helpers';
 import { keyringIsLocked } from '@/extension/messaging';
 import ResetWallet from '@/screens/welcome/ResetWallet.vue';
 import Unlock from '@/screens/welcome/Unlock.vue';
@@ -55,7 +48,6 @@ const ReceiveForm = () => import('@/screens/wallet&asset/ReceiveForm.vue');
 const CrossChainForm = () => import('@/screens/wallet&asset/CrossChainForm.vue');
 
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
-const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
 const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/Disclaimer.vue');
 
 const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/AddWallet.vue');
@@ -104,7 +96,6 @@ export enum Components {
   SendForm = 'SendForm',
   ReceiveForm = 'ReceiveForm',
   CrossChainForm = 'CrossChainForm',
-  SoraCard = 'SoraCard',
   Staking = 'Staking',
   MyStake = 'MyStake',
   Pools = 'Pools',
@@ -281,6 +272,12 @@ const routes: Array<RouteConfig> = [
     meta: {
       title: 'transaction',
     },
+    beforeEnter: (to, from, next) => {
+      const extensionStore = useExtensionStore();
+
+      if (haveSignRequests(extensionStore)) next();
+      else next({ name: Components.Wallet });
+    },
   },
   {
     path: '/send/:assetId/:network',
@@ -339,20 +336,6 @@ const routes: Array<RouteConfig> = [
         component: WalletConnectAuthDetails,
       },
     ],
-  },
-  {
-    path: '/sora-card',
-    name: Components.SoraCard,
-    component: SoraCard,
-    beforeEnter: (to, from, next) => {
-      const extensionStore = useExtensionStore();
-
-      if (showSoraCard(extensionStore)) next();
-      else next({ name: Components.Wallet });
-    },
-    meta: {
-      title: 'soraCard',
-    },
   },
   {
     path: '/sora-swap',

@@ -1,6 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
 import { assert } from '@polkadot/util';
-import { stripUrl } from '@extension-base/background/handlers/helpers';
 import AuthorizeStore from '@extension-base/stores/Authorize';
 import { getId } from '@extension-base/utils';
 import { type DAppChainInfoPayload } from '@extension-base/services/request-service/types';
@@ -16,6 +15,7 @@ import type {
   AuthUrlInfo,
 } from '@extension-base/background/types/types';
 import type { KeyringService, NetworkService, RequestService } from '@extension-base/services';
+import { stripUrl } from '@/extension/background/extension-base/src/background/helpers';
 import { isSameString } from '@/helpers';
 
 const AUTH_URLS_KEY = 'authUrls';
@@ -236,7 +236,7 @@ export class AuthRequestHandler {
   }
 
   getEvmNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {
-    const networks = this.networkService.evmNativeNetworkValues;
+    const networks = this.networkService.activeNetworkByEcosystem.evm;
     const defaultChain = options.defaultChain;
 
     if (defaultChain) return networks.find(({ name }) => isSameString(name, defaultChain)) ?? networks[0];

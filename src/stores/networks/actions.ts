@@ -1,34 +1,34 @@
-import axios from 'axios';
 import { useAccountsStore } from '../accounts';
 import { type NetworksStore } from '.';
 import type {
+  FetchTonHistory,
   HistoryProps,
   NetworkFavoriteProps,
   RemoveNetworkFavoriteProps,
-  SetAssetsPriceProps,
   SetNetworksStatusProps,
   SetSoraFee,
 } from './types';
 import type { FetchHistory, ToggleFavorite } from '@/stores';
-import type { AssetId, FiatJson, SoraHistoryElement } from '@/interfaces';
-import type { TokenGroup } from '@extension-base/background/types/types';
+import type { AssetId, SoraHistoryElement, TonEventTokens } from '@/interfaces';
+import type { BasePriceJson, TokenGroup } from '@extension-base/background/types/types';
 import type { History } from '@/stores/networks/types';
 import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import BaseApi from '@/util/BaseApi';
-import { fetchHistory } from '@/subquery/fetchingHistory';
-import { URLS } from '@/consts/urls';
+import { fetchHistory } from '@/history/fetchingHistory';
 import { getUtilityAsset } from '@/helpers/currencies';
-import { toggleFavoriteNetwork } from '@/extension/messaging';
-import { isSameString, isSora } from '@/helpers';
+import { toggleFavoriteNetwork, getHistory } from '@/extension/messaging';
+import { isSameString, isSora, isTonNetwork } from '@/helpers';
 import { getFormattedHistory } from '@/helpers/history';
 import { SORA_VAL_ASSET_ID, SORA_XOR_ASSET_ID } from '@/consts/sora';
+import { getFiats } from '@/extension/messaging/price';
 
 type Actions = {
-  fetchFiats(this: NetworksStore): Promise<void>;
+  getFiats(this: NetworksStore): Promise<void>;
   fetchHistory(this: NetworksStore, props: FetchHistory): Promise<void>;
+  fetchTonNetwork(this: NetworksStore, props: FetchTonHistory): Promise<void>;
   toggleFavoriteNetwork(this: NetworksStore, props: ToggleFavorite): Promise<boolean>;
   setNetworks(this: NetworksStore, props: SetNetworksStatusProps): void;
-  setPrices(this: NetworksStore, props: SetAssetsPriceProps): void;
+  setPrices(this: NetworksStore, props: BasePriceJson): void;
   setSoraFees(this: NetworksStore, props: SetSoraFee): void;
   removeFavoriteNetwork(this: NetworksStore, props: RemoveNetworkFavoriteProps): void;
   setFavoriteNetwork(this: NetworksStore, props: NetworkFavoriteProps): void;
@@ -99,22 +99,40 @@ export const actions: Actions = {
     } else saveHistory(assetId, history);
   },
 
-  async fetchFiats() {
+  async getFiats() {
     if (this.fiats.length === 0) {
-      const { data: fiats } = await axios.get<FiatJson[]>(URLS.FIATS);
+      const fiats = await getFiats();
 
       this.fiats = fiats;
     }
   },
 
+  async fetchTonNetwork({ address, networkName }) {
+    const history = await getHistory(address, networkName);
+
+    Object.entries(history as TonEventTokens).forEach(([key, value]) =>
+      this.setHistory({
+        networkName: networkName.toLowerCase(),
+        walletAddress: address,
+        history: value,
+        assetId: key,
+        serviceType: 'ton',
+      })
+    );
+  },
+
   async fetchHistory({ networkName, assetId, address }) {
+    if (!networkName) return;
+
+    const accountsStore = useAccountsStore();
+    const wallet = address ? { address, ethereumAddress: address } : accountsStore.selectedWallet;
+
+    if (isTonNetwork(networkName)) return this.fetchTonNetwork({ address: wallet.address, networkName });
+
     const { externalApi } = this.getNetwork(networkName);
 
     if (!externalApi?.history) return;
 
-    const accountsStore = useAccountsStore();
-
-    const wallet = address ? { address, ethereumAddress: address } : accountsStore.selectedWallet;
     const formattedAddress = BaseApi.formatAddress(wallet, networkName);
 
     const { type, url: historyUrl } = externalApi.history;
@@ -130,9 +148,7 @@ export const actions: Actions = {
     if (!asset) return;
 
     const utilityId = isNativeEvm
-      ? asset.balances.find(
-          ({ name, isUtility }) => name && name.toLowerCase() === networkName.toLowerCase() && isUtility
-        )?.id
+      ? asset.balances.find(({ name, isUtility }) => isSameString(name, networkName) && isUtility)?.id
       : asset?.groupId;
 
     const isUtility = isNativeEvm ? utilityId !== undefined : assetId === utilityId;
@@ -141,20 +157,21 @@ export const actions: Actions = {
     // TODO: когда появится история других токенов отрефаткорить данную логику
     if (!isSora(networkName)) if (!isUtility && type !== 'etherscan') return;
 
-    const searchedAsset = asset.balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase());
+    const searchedAsset = asset.balances.find(({ name }) => isSameString(name, networkName));
 
     if (!searchedAsset) return;
 
     const history = await fetchHistory(url, formattedAddress, type, networkName, searchedAsset.id, isUtility);
 
-    if (history)
+    if (history) {
       this.setHistory({
         networkName: networkName.toLowerCase(),
         walletAddress: BaseApi.formatAddress(wallet),
-        history,
+        history: history as History,
         assetId,
         serviceType: type,
       });
+    }
   },
 
   async toggleFavoriteNetwork({ address, networkName }) {

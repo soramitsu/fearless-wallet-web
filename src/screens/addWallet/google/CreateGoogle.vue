@@ -79,7 +79,7 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
 import type { TranslateResult } from 'vue-i18n';
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { WarningValueName } from '@/consts/messages';
-import type { DerivationPaths, MnemonicConfirmation } from '@/interfaces';
+import { type DerivationPaths, WalletEcosystem, type MnemonicConfirmation } from '@/interfaces';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 import NickNameForm from '@/screens/addWallet/NicknameForm.vue';
@@ -94,6 +94,7 @@ import {
   exportJSON,
   updateCurrentAccount,
   getExtensionPassword,
+  generateMnemonic,
 } from '@/extension/messaging';
 
 @Component({
@@ -200,8 +201,8 @@ export default class CreateGoogle extends Vue {
     return `${this.mnemonic}${ethereumDP}`;
   }
 
-  mounted() {
-    this.mnemonic = BaseApi.generateMnemonic();
+  async mounted() {
+    this.mnemonic = await generateMnemonic();
   }
 
   @Watch('step')
@@ -319,7 +320,12 @@ export default class CreateGoogle extends Vue {
   }
 
   async saveKeypairFromSeed() {
-    const meta: FWKeyringMeta = { name: this.nickname.trim(), ethereumAddress: '' };
+    const meta: FWKeyringMeta = {
+      name: this.nickname.trim(),
+      ethereumAddress: '',
+      walletEcosystem: WalletEcosystem.Substrate,
+    };
+
     const {
       substrate: { keypairType: substrateKeypairType },
       ethereum: { keypairType: ethereumKeypairType },

@@ -158,7 +158,7 @@
 import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkParams } from '@/stores';
-import type { StakingOperation, StakingOperationParams } from '@/interfaces';
+import { type StakingOperation, type StakingOperationParams, WalletEcosystem } from '@/interfaces';
 import WithdrawUnbonded from '@/screens/staking/myStake/stakingForms/WithdrawUnbonded.vue';
 import Unbond from '@/screens/staking/myStake/stakingForms/Unbond.vue';
 import Rebond from '@/screens/staking/myStake/stakingForms/Rebond.vue';
@@ -166,7 +166,7 @@ import BondExtra from '@/screens/staking/myStake/stakingForms/BondExtra.vue';
 import ControllerAccount from '@/screens/staking/myStake/stakingForms/ControllerAccount.vue';
 import Payee from '@/screens/staking/myStake/stakingForms/Payee.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { getCostOfAssets } from '@/helpers/transfers';
 import { calcTransferableSendMinusFee, isValidAmountAsset } from '@/helpers/currencies';
 import BaseApi from '@/util/BaseApi';
 import { checkController, fetchBalance } from '@/extension/messaging';
@@ -457,11 +457,15 @@ export default class MainStakingForm extends Vue {
       this.amount = lastUnbond;
     } else if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
 
-    if (this.stakingNetwork.isController)
-      this.stashBalance = await fetchBalance({
+    if (this.stakingNetwork.isController) {
+      const balances = await fetchBalance({
         address: this.stakingNetwork.stashAddress,
-        networkName: this.stakingNetwork.network,
+        networks: [this.stakingNetwork.network],
+        walletEcosystem: WalletEcosystem.Substrate,
       });
+
+      this.stashBalance = balances[0].balance;
+    }
   }
 
   toggleEditBook(address: string = '') {

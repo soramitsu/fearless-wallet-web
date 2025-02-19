@@ -1,7 +1,7 @@
 import type { NetworkJson } from '@extension-base/types';
 import { sendMessage } from '@/extension/messaging/index';
 
-export function upsertNetworkMap(data: NetworkJson): Promise<boolean> {
+export function upsertNetworkMap(data: NetworkJson): Promise<void> {
   return sendMessage('pri(networkMap.upsert)', data);
 }
 

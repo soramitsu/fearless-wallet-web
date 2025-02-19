@@ -1,4 +1,5 @@
 import { type APIItemState } from '@extension-base/api/types/networks';
+import { type Address } from '@ton/core';
 import type { AssetType } from '@/interfaces';
 
 export interface BalanceChildItem {
@@ -30,11 +31,17 @@ export interface BalanceItem {
   frozen?: string;
   total?: string;
   transferable?: string;
-  muchTotal?: string; // only for Sora
   timestamp?: number;
   chain?: string;
   chainHash?: string;
   address?: string;
+
+  // sora
+  muchTotal?: string;
+
+  // ton
+  walletAddress?: Address;
+  assetIcon?: string;
 }
 
 export enum CustomTokenType {

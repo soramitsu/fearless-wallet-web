@@ -53,7 +53,7 @@ const inputStyle = computed(() => {
 
   .s-icon-basic-search-24 {
     color: $gray-color;
-    font-size: 1.25em !important;
+    font-size: 1.25rem !important;
     margin-left: -30px;
   }
 }

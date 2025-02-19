@@ -104,7 +104,7 @@ import type { PayoutRewards, RewardsResponse } from '@extension-base/services/st
 import type { NetworkParams } from '@/stores';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { getCostOfAssets } from '@/helpers/transfers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
 import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
 import { getPayoutsFee, fetchBalance, getRewards } from '@/extension/messaging';
@@ -112,6 +112,7 @@ import { isValidAmountAsset } from '@/helpers/currencies';
 import { useStakingStore } from '@/stores/staking';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { WalletEcosystem } from '@/interfaces';
 
 @Component({
   components: {
@@ -250,11 +251,15 @@ export default class PendingRewardForm extends Vue {
 
     this.getPayoutsFee();
 
-    if (this.stakingNetwork.isController)
-      this.stashBalance = await fetchBalance({
+    if (this.stakingNetwork.isController) {
+      const balances = await fetchBalance({
         address: this.stakingNetwork.stashAddress,
-        networkName: this.network,
+        networks: [this.network],
+        walletEcosystem: WalletEcosystem.Substrate,
       });
+
+      this.stashBalance = balances[0].balance;
+    }
   }
 
   async getRewards() {

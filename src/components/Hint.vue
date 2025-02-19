@@ -50,7 +50,7 @@ const getSize = computed(() => (props.size === 'big' ? 'info-text--big' : 'info-
 .hint {
   color: $grayish-white;
   display: flex;
-  font-size: 0.75em;
+  font-size: 0.75rem;
   align-items: center;
   text-align: left;
 

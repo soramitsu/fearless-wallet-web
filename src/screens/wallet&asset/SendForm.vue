@@ -235,7 +235,7 @@ export default class SendForm extends Vue {
       .value {
         color: $default-white;
         font-weight: 300;
-        font-size: 0.75em;
+        font-size: 0.75rem;
         margin-top: 3px;
       }
     }

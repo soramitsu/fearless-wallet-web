@@ -3,7 +3,7 @@
     <ContentForm :height="160" :isStaticHeight="true" :bottomRightCorner="true">
       <div class="asset-info">
         <div class="asset__icon">
-          <ExternalLogo :name="icon" :width="82" />
+          <ExternalLogo :name="icon" :width="82" class="asset-logo" />
         </div>
 
         <div class="asset-info__content">
@@ -109,6 +109,8 @@ export default class AssetInfo extends Vue {
   }
 
   get showSettingsPopup() {
+    if (this.accountsStore.selectedWallet.isTon) return false;
+
     return this.selectedAssetNetwork !== '' && this.selectedAssetNetwork !== undefined;
   }
 
@@ -206,6 +208,10 @@ export default class AssetInfo extends Vue {
     justify-content: center;
     padding: 14px;
     margin: 16px;
+
+    .asset-logo {
+      border-radius: 50%;
+    }
   }
 
   .asset-info__content {
@@ -226,7 +232,7 @@ export default class AssetInfo extends Vue {
       line-height: 1px;
 
       .asset__price-item {
-        font-size: 0.75em;
+        font-size: 0.75rem;
         font-weight: 400;
         border-right: solid 1px transparent;
         padding: 4px;

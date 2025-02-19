@@ -16,8 +16,8 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { stripUrl } from '@extension-base/background/handlers/helpers';
 import type { SessionTypes } from '@walletconnect/types';
+import { stripUrl } from '@/extension/background/extension-base/src/background/helpers';
 import { Components } from '@/router/routes';
 import Favicon from '@/components/Favicon.vue';
 

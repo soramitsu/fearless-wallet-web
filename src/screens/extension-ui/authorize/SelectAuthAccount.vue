@@ -88,7 +88,7 @@ const cutAddress = (account: WalletInfo) => {
 }
 
 .account__checkbox--mobile-icon {
-  font-size: 0.75em;
+  font-size: 0.75rem;
   color: $gray-color;
   background: $secondary-background-color;
   letter-spacing: 0.03em;

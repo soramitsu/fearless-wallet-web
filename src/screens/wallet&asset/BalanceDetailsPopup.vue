@@ -143,7 +143,7 @@ export default class LockedDetailsPopup extends Vue {
       }
 
       .fiat-value {
-        font-size: 0.75em;
+        font-size: 0.75rem;
         line-height: 20px;
         color: $grayish-white;
       }

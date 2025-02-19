@@ -27,18 +27,19 @@
             From
 
             <div class="item-value item-icon">
-              <Identicon :address="fromAddress" />
+              <Identicon v-if="!isTon" :address="fromAddress" />
 
               {{ displayFromAddress }}
 
               <Icon icon="copy" className="copy" @click="copy(fromAddress)" />
             </div>
           </div>
+
           <div class="item">
             To
 
             <div class="item-value item-icon">
-              <Identicon :address="toAddress" />
+              <Identicon v-if="!isTon" :address="toAddress" />
 
               {{ displayToAddress }}
 
@@ -77,13 +78,13 @@
           <div class="item-value" data-testid="eraValue">{{ era }}</div>
         </div>
 
-        <div class="item" data-testid="moduleLabel">
+        <div v-if="!!moduleType" class="item" data-testid="moduleLabel">
           Module
 
           <div class="item-value" data-testid="moduleValue">{{ moduleType }}</div>
         </div>
 
-        <div class="item" data-testid="methodLabel">
+        <div v-if="!!method" class="item" data-testid="methodLabel">
           Method
 
           <div class="item-value" data-testid="methodValue">{{ method }}</div>
@@ -117,13 +118,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-
-import type { HistoryElement } from '@/interfaces/history';
-
-import type { SoraHistoryElement } from '@/interfaces';
+import { type HistoryElement, type TonEvent, type SoraHistoryElement, TransactionType } from '@/interfaces';
 import { getType, getSignTransfer, getHistoryValue, getHumanTransferFee } from '@/helpers/history';
 import { cut, getFormattedDate, setClipboard } from '@/helpers';
-
 import BaseApi from '@/util/BaseApi';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
@@ -137,12 +134,16 @@ export default class HistoryDetailsForm extends Vue {
   @Prop(String) historyType!: string;
   @Prop(Object) historyElement!: HistoryElement;
 
-  get showTargetAmount() {
-    return this.isSora && (this.historyElement as unknown as SoraHistoryElement).method === 'swap';
+  get historyElementSoraType() {
+    return this.historyElement as unknown as SoraHistoryElement;
   }
 
-  get isTransfer() {
-    return this.type === 'transfer';
+  get historyElementTonType() {
+    return this.historyElement as unknown as TonEvent;
+  }
+
+  get showTargetAmount() {
+    return this.isSora && this.historyElementSoraType.method === 'swap';
   }
 
   get networkProps() {
@@ -162,7 +163,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get explorerType() {
-    return this.selectedNetworkJson?.externalApi?.history?.type;
+    return this.selectedNetworkJson?.externalApi?.explorers?.[0]?.type;
   }
 
   get haveExplorers() {
@@ -174,31 +175,48 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get buttonText() {
-    return this.$t(this.explorerType === 'etherscan' ? 'accounts.etherscan' : 'accounts.subscan');
+    const explorerType =
+      this.explorerType === 'etherscan'
+        ? 'accounts.etherscan'
+        : this.explorerType === 'tonviewer'
+        ? 'accounts.tonviewer'
+        : 'accounts.subscan';
+
+    return this.$t(explorerType);
+  }
+
+  get showFee() {
+    if (this.isSora) return this.historyElementSoraType.method !== 'rewarded';
+
+    if (this.isTon) return this.signTransfer === '-';
+
+    return this.isTransfer && this.signTransfer === '-';
+  }
+
+  get isTransfer() {
+    return this.type === 'transfer' || this.isTon;
   }
 
   get isReward() {
     return this.type === 'reward';
   }
 
-  get showFee() {
-    if (this.isSora) return (this.historyElement as unknown as SoraHistoryElement).method !== 'rewarded';
-
-    return this.isTransfer && this.signTransfer === '-';
-  }
-
   get isSora() {
     return this.type === 'sora';
   }
 
+  get isTon() {
+    return this.type === TransactionType.ton;
+  }
+
   get showAmount() {
-    if (this.isSora) return true;
+    if (this.isSora || this.isTon) return true;
 
     return this.isTransfer;
   }
 
   get statusIsSuccess() {
-    if (this.isSora) return (this.historyElement as unknown as SoraHistoryElement).execution.success;
+    if (this.isSora) return this.historyElementSoraType.execution.success;
 
     const { success } = this.historyElement!;
 
@@ -228,7 +246,9 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get fromAddress() {
-    return this.historyElement.transfer!.from;
+    if (this.isTon) return this.historyElementTonType?.from;
+
+    return this.historyElement.transfer?.from;
   }
 
   get displayFromAddress() {
@@ -236,7 +256,9 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get toAddress() {
-    return this.historyElement.transfer!.to;
+    if (this.isTon) return this.historyElementTonType?.to;
+
+    return this.historyElement.transfer?.to;
   }
 
   get displayToAddress() {
@@ -244,13 +266,15 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get moduleType() {
-    if (this.isSora) return (this.historyElement as unknown as SoraHistoryElement).module;
+    if (this.isSora) return this.historyElementSoraType.module;
 
     return this.historyElement!.module;
   }
 
   get method() {
-    if (this.isSora) return (this.historyElement as unknown as SoraHistoryElement).method;
+    if (this.isSora) return this.historyElementSoraType.method;
+
+    if (this.isTon) return this.historyElementTonType.method;
 
     return this.historyElement?.method;
   }
@@ -266,9 +290,14 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get value() {
-    const { value } = getHistoryValue(this.historyElement, this.assetId, this.selectedNetwork, this.address);
+    const { value, signTransfer } = getHistoryValue(
+      this.historyElement,
+      this.assetId,
+      this.selectedNetwork,
+      this.address
+    );
 
-    return this.$n(value, 'decimalPrecise');
+    return `${signTransfer}${this.$n(value, 'decimalPrecise')}`;
   }
 
   get targetValue() {
@@ -316,6 +345,18 @@ export default class HistoryDetailsForm extends Vue {
     if (this.explorerType === 'etherscan' || this.explorerType === 'oklink') {
       if (this.explorerUrl) {
         const url = this.explorerUrl.replace('{type}', 'tx').replace('{value}', this.historyElement?.blockHash ?? '');
+
+        window.open(url);
+      }
+
+      return;
+    }
+
+    if (this.explorerType === 'tonviewer') {
+      if (this.explorerUrl) {
+        const url = this.explorerUrl
+          .replace('{type}', 'transaction')
+          .replace('{value}', this.historyElementTonType?.eventId ?? '');
 
         window.open(url);
       }

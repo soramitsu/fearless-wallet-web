@@ -1,11 +1,4 @@
-import {
-  decodeAddress,
-  encodeAddress,
-  mnemonicGenerate,
-  mnemonicValidate,
-  hdValidatePath,
-  isEthereumAddress,
-} from '@polkadot/util-crypto';
+import { decodeAddress, encodeAddress, hdValidatePath, isEthereumAddress } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import type { KeyringPairs$Json } from '@subwallet/ui-keyring/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
@@ -17,7 +10,6 @@ import { IS_PRODUCTION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-type WordCount = 12 | 15 | 18 | 21 | 24;
 type WalletTypes = 'mobile' | 'native';
 
 export default class BaseApi {
@@ -41,16 +33,8 @@ export default class BaseApi {
     return { birth, death };
   }
 
-  public static generateMnemonic(numWords: WordCount = 12): string {
-    return mnemonicGenerate(numWords);
-  }
-
   public static isHex(value: string): boolean {
     return isHex(value);
-  }
-
-  public static isValidPhrase(value: string): boolean {
-    return mnemonicValidate(value);
   }
 
   public static isValidEthereumDerivationPath(value: string): boolean {
@@ -99,10 +83,6 @@ export default class BaseApi {
     }
   }
 
-  public static decodeAddress(address: string): Uint8Array {
-    return decodeAddress(address, false);
-  }
-
   public static isEthereumAddress(address: string): boolean {
     return isEthereumAddress(address);
   }
@@ -119,7 +99,7 @@ export default class BaseApi {
     if (!isEthereumNetwork && BaseApi.isEthereumAddress(address)) return false;
 
     try {
-      const publicKey = BaseApi.decodeAddress(address);
+      const publicKey = decodeAddress(address, false);
 
       if (!isEthereumNetwork) BaseApi.encodeAddress(publicKey);
 

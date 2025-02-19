@@ -1,31 +1,21 @@
-import assert from 'assert';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { ethers } from 'ethers';
 import type {
-  CachedUnlocks,
   RequestAccountExport,
   RequestAccountName,
   RequestJsonValidate,
-  RequestSigningIsLocked,
   ResponseAccountExport,
-  ResponseSigningIsLocked,
   ValidateJsonResult,
   RequestUpdateMeta,
 } from '@extension-base/background/types/types';
-
 import type State from '@extension-base/background/handlers/State';
-import type { KeyringPair } from '@subwallet/keyring/types';
 import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
-import { type DerivationPath } from '@/interfaces';
+import { WalletEcosystem, type DerivationPath } from '@/interfaces';
 import { isSameString } from '@/helpers';
 
 export default class FWExtensionBase {
-  public cachedUnlocks: CachedUnlocks;
-
-  constructor(protected state: State) {
-    this.cachedUnlocks = {};
-  }
+  constructor(protected state: State) {}
 
   migrateExportJSON(address: string): Promise<ResponseAccountExport> {
     return new Promise((resolve) => {
@@ -101,57 +91,11 @@ export default class FWExtensionBase {
     return true;
   }
 
-  accountUpdateName({ address, name }: RequestAccountName): boolean {
-    this.state.keyringService.saveAccountMeta(address, { name });
+  accountUpdateName({ address, name, walletEcosystem }: RequestAccountName): boolean {
+    if (walletEcosystem === WalletEcosystem.Ton) this.state.keyringService.tonKeyring.updateAccountName(address, name);
+    else this.state.keyringService.saveAccountMeta(address, { name });
 
     return true;
-  }
-
-  getRemainingTime(pair: KeyringPair | null): number {
-    if (!pair) return -1;
-
-    const { address } = pair;
-
-    const savedExpiry = this.cachedUnlocks[address] || this.cachedUnlocks[address.toLowerCase()] || 0;
-
-    const remainingTime = savedExpiry - Date.now();
-
-    return remainingTime;
-  }
-
-  refreshAccountPasswordCache(pair: KeyringPair): number {
-    const remainingTime = this.getRemainingTime(pair);
-    const ethereumAddress = pair.meta.ethereumAddress as string;
-
-    if (remainingTime < 0) {
-      this.cachedUnlocks[pair.address] = 0;
-
-      this.state.keyringService.lockPair(pair);
-
-      if (ethereumAddress) {
-        this.cachedUnlocks[ethereumAddress] = 0;
-
-        this.state.keyringService.lockPair(ethereumAddress);
-      }
-
-      return 0;
-    }
-
-    return remainingTime;
-  }
-
-  signingIsLocked({ address }: RequestSigningIsLocked): ResponseSigningIsLocked {
-    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
-    const pair = this.state.keyringService.getPair(substrateAddress);
-
-    assert(pair, 'Unable to find pair');
-
-    const remainingTime = this.refreshAccountPasswordCache(pair);
-
-    return {
-      isLocked: pair.isLocked,
-      remainingTime,
-    };
   }
 
   jsonValid({ file, password, isSubstrate }: RequestJsonValidate): ValidateJsonResult {

@@ -3,8 +3,8 @@ import { IS_PRODUCTION } from '@/consts/global';
 const BASE_URL = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils';
 
 const CHAINS = IS_PRODUCTION
-  ? `${BASE_URL}/master/chains/v11/chains.json`
-  : `${BASE_URL}/develop-free/chains/v11/chains_dev.json`;
+  ? `${BASE_URL}/master/chains/v13/chains.json`
+  : `${BASE_URL}/develop-free/chains/v13/chains_dev.json`;
 
 const FIATS = `${BASE_URL}/master/fiat/fiats.json`;
 
@@ -28,14 +28,8 @@ const BASE_URLS_PREFIX = {
   GOOGLE: 'https://accounts.google.com',
 };
 
-const BASE_URLS_SUFFIX = {
-  SUBSCAN: 'subscan.io',
-};
-
 const FEARLESS_TERMS = 'https://fearlesswallet.io/terms/';
 const FEARLESS_PRIVACY = 'https://fearlesswallet.io/privacy/';
-const SORA_CARD_PRIVACY = 'https://soracard.com/terms/en/polkaswap/';
-const SORA_CARD_TERMS = 'https://soracard.com/privacy/en/polkaswap/';
 const FEARLESS_WALLET = 'https://fearlesswallet.io/';
 const WIKI = 'https://wiki.fearlesswallet.io/';
 const GITHUB = 'https://github.com/soramitsu/shared-features-utils';
@@ -73,8 +67,6 @@ const URLS = {
   POLKASWAP_FAQ,
   POLKASWAP_MEMORANDUM,
   POLKASWAP_POLICY,
-  SORA_CARD_PRIVACY,
-  SORA_CARD_TERMS,
   POLKASWAP,
   XCM_LOCATIONS,
   XCM_FEES,
@@ -82,18 +74,4 @@ const URLS = {
   SCAM,
 };
 
-function isSafeForExternalOpen(url: string): boolean {
-  if (!url) {
-    return false;
-  }
-
-  if (Object.values(URLS).includes(url)) return true;
-
-  if (Object.values(BASE_URLS_PREFIX).some((item) => url.startsWith(item))) return true;
-
-  if (Object.values(BASE_URLS_SUFFIX).some((item) => url.includes(item))) return true;
-
-  return false;
-}
-
-export { URLS, BASE_URLS_PREFIX, isSafeForExternalOpen };
+export { URLS, BASE_URLS_PREFIX };

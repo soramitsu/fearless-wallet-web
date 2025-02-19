@@ -2,7 +2,7 @@
   <div class="mnemonic-backup-form">
     <Hint class="seed-hint" iconName="warning" text="addWallet.backupNonDigital" />
 
-    <MnemonicColumns :mnemonicArray="mnemonicArray" />
+    <MnemonicColumns :mnemonicArray="mnemonicArray" :mnemonicLength="mnemonicLength" />
 
     <slot></slot>
   </div>
@@ -10,9 +10,11 @@
 
 <script lang="ts" setup>
 import MnemonicColumns from './MnemonicColumns.vue';
+import type { WordCount } from '@extension-base/services';
 
 type Props = {
   mnemonicArray: string[];
+  mnemonicLength: WordCount;
 };
 
 defineProps<Props>();

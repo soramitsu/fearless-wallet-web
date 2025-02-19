@@ -441,7 +441,7 @@ export default class MyStake extends Vue {
       }
 
       .label {
-        font-size: 0.75em;
+        font-size: 0.75rem;
         font-weight: 600;
         text-align: left;
         color: $grayish-white;
@@ -449,7 +449,7 @@ export default class MyStake extends Vue {
       }
 
       .amount {
-        font-size: 1.25em;
+        font-size: 1.25rem;
         font-weight: 600;
         margin-bottom: 5px;
       }

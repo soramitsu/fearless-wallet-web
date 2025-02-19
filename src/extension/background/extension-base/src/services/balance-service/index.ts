@@ -1,24 +1,38 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import { storage } from '@extension-base/stores/Storage';
 import { Subject } from 'rxjs';
-import { type FPNumber } from '@sora-substrate/util';
-import { getMockCurrencies } from '@extension-base/background/handlers/helpers';
 import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
-import { fetchBalance } from '@extension-base/api/substrate/balance';
+import { type GetBalancesProps } from '../subscription-service';
+import SubstrateBalanceService from './SubstrateBalanceService';
+import EvmBalanceService from './EvmBalanceService';
+import { TonBalanceService } from './TonBalanceService';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem } from '@extension-base/api/evm/types';
-import type { BalanceMap, BalanceJson, ResponseTotalBalances } from '@extension-base/background/types/types';
-import { SORA_XOR_ASSET_ID, SORA_NETWORK_NAME } from '@/consts/sora';
-import { isSameString } from '@/helpers';
+import type {
+  BalanceMap,
+  BalanceJson,
+  ResponseTotalBalances,
+  ResponseBalanceRequest,
+  TokenGroup,
+} from '@extension-base/background/types/types';
+import { getMockAssets } from '@/extension/background/extension-base/src/background/helpers/assets';
+import { isSameString, isTonNetwork } from '@/helpers';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { getSummaryTransferableWalletBalance, getChangeWalletBalance } from '@/helpers/common';
-import { type NetworkName } from '@/interfaces';
+import { type RelayChainName, WalletEcosystem, type NetworkName } from '@/interfaces';
 
 export default class BalanceService {
-  public balanceMap: BalanceMap = {};
-  public balanceSubject = new Subject<BalanceJson>();
+  substrateBalanceService: SubstrateBalanceService;
+  evmBalanceService: EvmBalanceService;
+  tonBalanceService: TonBalanceService;
+  balanceMap: BalanceMap = {};
+  balanceSubject = new Subject<BalanceJson>();
 
-  constructor(private state: State) {}
+  constructor(private state: State) {
+    this.substrateBalanceService = new SubstrateBalanceService(state);
+    this.evmBalanceService = new EvmBalanceService(state);
+    this.tonBalanceService = new TonBalanceService(state);
+  }
 
   getAccountBalance(address: string) {
     return this.balanceMap[address];
@@ -30,14 +44,10 @@ export default class BalanceService {
     delete this.balanceMap[address];
   }
 
-  public updateBalanceStore(networkKey: string, item: Partial<BalanceItem>) {
-    const currentAccount = this.state.currentAccount;
-
-    if (currentAccount)
-      this.updateBalanceStorage(networkKey, currentAccount.address, item).catch((e) => console.warn(e));
+  public updateBalanceStore(networkKey: string, item: Partial<BalanceItem>, address: string) {
+    this.updateBalanceStorage(networkKey, address, item).catch((e) => console.warn(e));
   }
 
-  // Balance
   private async updateBalanceStorage(chain: string, address: string, item: Partial<BalanceItem>) {
     if (item.state !== APIItemState.READY) return;
 
@@ -58,19 +68,6 @@ export default class BalanceService {
     await storage.set({ balances: copyBalance });
   }
 
-  public async updateXorTotalBalance(muchTotal: FPNumber): Promise<void> {
-    const address = this.state.getAccountAddress();
-
-    if (!address) return;
-
-    const currencyIndex = this.balanceMap[address].findIndex(({ groupId }) => groupId === SORA_XOR_ASSET_ID);
-
-    const token = this.balanceMap[address][currencyIndex];
-    const index = token.balances.findIndex(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
-
-    this.balanceMap[address][currencyIndex].balances[index].muchTotal = muchTotal.toString();
-  }
-
   public async updateUtilityED(networkName: NetworkName): Promise<void> {
     const existentialDeposit =
       this.state.networkService.substrateApiHandler.api[
@@ -83,11 +80,11 @@ export default class BalanceService {
 
     allAccounts.forEach(({ address }) => {
       const currencyIndex = this.balanceMap[address].findIndex(({ balances }) =>
-        balances.find(({ isUtility, name }) => isUtility && name.toLowerCase() === networkName.toLowerCase())
+        balances.find(({ isUtility, name }) => isUtility && isSameString(name, networkName))
       );
 
       const token = this.balanceMap[address][currencyIndex];
-      const index = token.balances.findIndex(({ name }) => name.toLowerCase() === networkName.toLowerCase());
+      const index = token.balances.findIndex(({ name }) => isSameString(name, networkName));
 
       this.balanceMap[address][currencyIndex].balances[index].existentialDeposit =
         existentialDeposit?.toString() ?? '0';
@@ -95,49 +92,87 @@ export default class BalanceService {
   }
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
-    const isAccountExists = this.state.keyringService.getAllAccounts().some((el) => el.address === address);
+    const isAccountExists = this.state.keyringService.getAllMainAccounts().some((el) => el.address === address);
 
     if (!isAccountExists) return;
 
-    const { reserved, free, locked, frozen, total, transferable, state, id, relayChain, symbol } = item;
     const accountAddress = this.state.keyringService.getSubstrateAddress(address);
-    const balancesByAddress = this.balanceMap[accountAddress];
 
-    const currencyIndex = balancesByAddress.findIndex(({ groupId, symbol: _symbol, relayChain: _relayChain }) => {
-      const isExistingAssetId = groupId === id;
-      const isExistingDisplayName = _symbol === symbol;
-      const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
+    const groupIndex = this.balanceMap[accountAddress].findIndex(({ groupId, symbol, relayChain }) => {
+      const isExistingAssetId = groupId === item.id;
+      const isExistingDisplayName = symbol === item.symbol;
+      const isExistingAsset = isExistingDisplayName && relayChain === item.relayChain;
 
       return isExistingAssetId || isExistingAsset;
     });
 
-    if (currencyIndex === -1) throw new Error(`Failed to find ${symbol} on ${networkKey}`);
+    if (groupIndex === -1) {
+      if (isTonNetwork(networkKey)) {
+        this.setJettonBalanceItem(networkKey, item, accountAddress);
 
-    const asset = balancesByAddress[currencyIndex];
+        return;
+      } else throw new Error(`Failed to find ${item.symbol} on ${networkKey}`);
+    }
 
-    const assetIndex = asset.balances.findIndex(({ name }) => {
+    const assetIndex = this.balanceMap[accountAddress][groupIndex].balances.findIndex(({ name }) => {
       const key = PREP_NETWORKS_NAME[name] ?? name;
 
       return isSameString(key, networkKey);
     });
 
-    const balanceItem = asset.balances[assetIndex];
-
-    asset.balances[assetIndex] = {
-      ...balanceItem,
-      reserved,
-      free,
-      locked,
-      frozen,
-      total,
-      transferable,
-      state: state!,
+    this.balanceMap[accountAddress][groupIndex].balances[assetIndex] = {
+      ...this.balanceMap[accountAddress][groupIndex].balances[assetIndex],
+      reserved: item.reserved,
+      free: item.free,
+      locked: item.locked,
+      frozen: item.frozen,
+      total: item.total,
+      transferable: item.transferable,
+      state: item.state!,
       timestamp: +new Date(),
     };
 
-    this.updateBalanceStore(networkKey, item);
+    this.updateBalanceStore(networkKey, item, address);
 
-    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 300);
+    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
+  }
+
+  public setJettonBalanceItem(networkKey: string, item: Partial<BalanceItem>, accountAddress: string) {
+    const balance: BalanceItem = {
+      address: accountAddress,
+      icon: item.icon!,
+      name: networkKey,
+      precision: item.precision!,
+      state: APIItemState.READY,
+      total: item.total,
+      transferable: item.transferable,
+      reserved: '0',
+      frozen: '0',
+      locked: '0',
+      mainNetwork: networkKey,
+      symbol: item.symbol!,
+      type: 'jetton',
+      id: item.id!,
+      walletAddress: item.walletAddress,
+    };
+
+    const asset: TokenGroup = {
+      icon: item.assetIcon!,
+      groupId: item.id!,
+      mainNetwork: networkKey,
+      providers: [],
+      symbol: item.symbol!,
+      tokenName: item.name!,
+      relayChain: item.relayChain as RelayChainName,
+      priceId: item.symbol,
+      balances: [balance],
+    };
+
+    this.balanceMap[accountAddress].push(asset);
+
+    this.updateBalanceStore(networkKey, balance, accountAddress);
+
+    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
   }
 
   public async publishBalance() {
@@ -180,11 +215,11 @@ export default class BalanceService {
     return { details: [] };
   }
 
-  public generateDefaultBalance(address: string) {
+  public generateDefaultBalance(address: string, walletEcosystem: WalletEcosystem) {
     if (address === '') return;
 
     if (this.balanceMap?.[address] === undefined)
-      this.balanceMap[address] = getMockCurrencies(this.state.networkService.networkMap);
+      this.balanceMap[address] = getMockAssets(this.state.networkService.networkMap, walletEcosystem);
   }
 
   getTokenBalance(address: string, assetId: string, relayChain?: string) {
@@ -198,9 +233,24 @@ export default class BalanceService {
     })!;
   }
 
-  public async fetchBalance(address: string, networkName: NetworkName, ethereumAddress?: string) {
-    const api = this.state.getSubstrateApiMap[networkName.toLowerCase()]?.api;
+  public async fetchBalance({
+    address,
+    ethereumAddress,
+    evmNetworks = [],
+    substrateNetworks = [],
+    tonNetworks = [],
+    walletEcosystem,
+  }: GetBalancesProps): Promise<ResponseBalanceRequest[]> {
+    if (walletEcosystem === WalletEcosystem.Ton) return this.tonBalanceService.fetchBalance(address, tonNetworks);
 
-    return await fetchBalance(address, networkName, this.state, api, ethereumAddress);
+    const evmBalances = await this.evmBalanceService.fetchBalance({ networks: evmNetworks, ethereumAddress });
+
+    const substrateBalances = await this.substrateBalanceService.fetchBalance({
+      address,
+      networks: substrateNetworks,
+      ethereumAddress,
+    });
+
+    return [...substrateBalances, ...evmBalances];
   }
 }

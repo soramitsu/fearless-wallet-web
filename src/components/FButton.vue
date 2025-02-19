@@ -21,7 +21,6 @@
 import { computed, withDefaults } from 'vue';
 import { useI18n } from 'vue-i18n-composable';
 import type { ComponentText } from '@/interfaces';
-// import { IS_EXTENSION } from '@/consts/global';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
@@ -105,8 +104,8 @@ const prepIconName = computed(() => {
 });
 
 const containerButtonClasses = computed(() => {
-  // for "small" and "mini" sizes also medium
-  const sizeName = props.size === 'big' ? 'big' : 'medium';
+  // for "mini" sizes also small
+  const sizeName = props.size === 'big' ? 'big' : props.size === 'medium' ? 'medium' : 'small';
 
   return [
     `button-size-${sizeName}`,
@@ -125,7 +124,7 @@ const containerButtonStyle = computed(() => {
 });
 
 const buttonClasses = computed(() => {
-  const classes = ['button', `button-font-size-${props.fontSize}`];
+  const classes = ['button', 'btn-content', `button-font-size-${props.fontSize}`];
 
   if (props.iconType === 'big') classes.push('button__icon');
 
@@ -181,14 +180,10 @@ const buttonClasses = computed(() => {
 </script>
 
 <style lang="scss" scoped>
-.button-size-big {
-  .el-button {
-    clip-path: $big-clip-path-left-top-and-right-bottom;
-  }
-
-  .button {
-    width: 100%;
-  }
+.btn-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .import-button {
@@ -199,6 +194,16 @@ const buttonClasses = computed(() => {
   padding: 12px 38px;
 }
 
+.button-size-big {
+  .el-button {
+    clip-path: $big-clip-path-left-top-and-right-bottom;
+  }
+
+  .button {
+    width: 100%;
+  }
+}
+
 .button-size-medium {
   .el-button {
     clip-path: $medium-clip-path-left-top-and-right-bottom;
@@ -207,6 +212,18 @@ const buttonClasses = computed(() => {
   .button {
     width: 100%;
     padding: 10px 10px;
+  }
+}
+
+.button-size-small {
+  .el-button {
+    clip-path: $medium-clip-path-left-top-and-right-bottom;
+  }
+
+  .button {
+    width: 100%;
+    padding: 10px 10px;
+    height: 32px;
   }
 }
 
@@ -227,7 +244,7 @@ const buttonClasses = computed(() => {
 }
 
 .button-font-size-small {
-  font-size: 0.8125em;
+  font-size: 0.75em;
 }
 
 .el-button + .el-button {

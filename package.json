@@ -1,13 +1,13 @@
 {
   "name": "fearless-wallet",
-  "version": "2.7.1",
+  "version": "3.0.1",
   "private": true,
   "author": {
     "email": "fearless.web@soramitsu.co.jp",
     "name": "Soramitsu",
     "url": "https://soramitsu.co.jp"
   },
-  "description": "Non-Custodial and Decentralized wallet for the Polkadot and Kusama ecosystems with the best UX, performance and security.",
+  "description": "Non-Custodial and Decentralized wallet for the Polkadot, Ethereum and TON ecosystems with the best UX, performance and security.",
   "browserslist": "last 2 Chrome versions, last 2 Firefox versions",
   "scripts": {
     "serve": "env-cmd -f .env.web vue-cli-service serve",
@@ -31,6 +31,7 @@
   "dependencies": {
     "@json-rpc-tools/utils": "^1.7.6",
     "@metamask/safe-event-emitter": "^3.0.0",
+    "@orbs-network/ton-access": "^2.3.3",
     "@polkadot/api": "^10.9.1",
     "@polkadot/extension-chains": "^0.46.5",
     "@polkadot/extension-dapp": "^0.46.5",
@@ -42,6 +43,11 @@
     "@sora-substrate/util": "1.40.0",
     "@soramitsu-ui/ui-vue2": "^1.1.0",
     "@subwallet/ui-keyring": "0.1.7",
+    "@ton-api/client": "^0.3.0",
+    "@ton/core": "^0.59.0",
+    "@ton/crypto": "^3.3.0",
+    "@ton/ton": "^15.1.0",
+    "@tonconnect/ui": "^2.0.9",
     "@vespaiach/axios-fetch-adapter": "^0.3.1",
     "@vueuse/core": "^10.7.2",
     "@walletconnect/encoding": "^1.0.2",
@@ -50,7 +56,9 @@
     "alchemy-sdk": "^3.0.0",
     "axios": "^0.28.0",
     "bignumber.js": "^9.0.2",
+    "bip39": "3.1.0",
     "country-code-emoji": "^2.3.0",
+    "crypto-js": "^4.2.0",
     "date-fns": "^2.28.0",
     "element-ui": "^2.15.13",
     "email-validator": "^2.0.4",
@@ -67,6 +75,7 @@
     "rxjs": "^7.5.6",
     "svg-sprite-loader": "^6.0.11",
     "tippy.js": "^6.3.7",
+    "tonweb-mnemonic": "1.0.1",
     "uuidv4": "^6.2.13",
     "vue": "2.7.14",
     "vue-class-component": "^7.2.6",
@@ -81,6 +90,7 @@
   "devDependencies": {
     "@open-web3/orml-types": "^2.0.1",
     "@polkadot/types": "^10.9.1",
+    "@types/bip39": "3.0.0",
     "@types/chrome": "^0.0.200",
     "@types/crypto-js": "^4.2.2",
     "@types/file-saver": "^2.0.5",

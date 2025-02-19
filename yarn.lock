@@ -3648,6 +3648,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@noble/hashes@npm:^1.2.0":
+  version: 1.7.1
+  resolution: "@noble/hashes@npm:1.7.1"
+  checksum: 4f1b56428a10323feef17e4f437c9093556cb18db06f94d254043fadb69c3da8475f96eb3f8322d41e8670117d7486475a8875e68265c2839f60fd03edd6a616
+  languageName: node
+  linkType: hard
+
 "@node-ipc/js-queue@npm:2.0.3":
   version: 2.0.3
   resolution: "@node-ipc/js-queue@npm:2.0.3"
@@ -3761,6 +3768,15 @@ __metadata:
   peerDependencies:
     "@polkadot/api": ^8.12.2
   checksum: aa01716f15328260ffeb3d1e5c2cf01664c4af4872c625a9ea590fa56581a0f39a02a92ce5f860b27ac22e56091b0d4a6a03f90810b29e5f9abcdfaf09487fe4
+  languageName: node
+  linkType: hard
+
+"@orbs-network/ton-access@npm:^2.3.3":
+  version: 2.3.3
+  resolution: "@orbs-network/ton-access@npm:2.3.3"
+  dependencies:
+    isomorphic-fetch: ^3.0.0
+  checksum: 3a6c3dd3b7ae00011fc7aa987090550155ae17e959abb45c541ece5d2212d8954adaee911f8cd5d973a8c45230b8fe8086ee95a986aacb51d7dfed53ab71b949
   languageName: node
   linkType: hard
 
@@ -5285,6 +5301,115 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ton-api/client@npm:^0.3.0":
+  version: 0.3.0
+  resolution: "@ton-api/client@npm:0.3.0"
+  dependencies:
+    core-js-pure: ^3.38.0
+  peerDependencies:
+    "@ton/core": ">=0.59.0"
+  checksum: 61cd9e9fa5fa02b648b0a858b7f1648fc60794ad97b6037321b4fe880494d6cf059c1b41857b8cd4d89e5c821d2e81d8355eaca6ed17ccf877499bb46742fc3d
+  languageName: node
+  linkType: hard
+
+"@ton/core@npm:^0.59.0":
+  version: 0.59.0
+  resolution: "@ton/core@npm:0.59.0"
+  dependencies:
+    symbol.inspect: 1.0.1
+  peerDependencies:
+    "@ton/crypto": ">=3.2.0"
+  checksum: 29099d3bb87ad548bf69689ab0b4167e5275747597850577ba961c3c0b8cd5a15e8eadfa3540726ae5eff8453fc2b79c468138208e24b3eabd19b80a03845384
+  languageName: node
+  linkType: hard
+
+"@ton/crypto-primitives@npm:2.1.0":
+  version: 2.1.0
+  resolution: "@ton/crypto-primitives@npm:2.1.0"
+  dependencies:
+    jssha: 3.2.0
+  checksum: 71119f74461ae17bf2cfe7e0a6fcea8d4e359665ea6878b0c935cfd83ca0d84f9c299df3467adb1b1b7ba50f7d446732f2c13b5ea5e26dc1703a6dc24063be3a
+  languageName: node
+  linkType: hard
+
+"@ton/crypto@npm:^3.3.0":
+  version: 3.3.0
+  resolution: "@ton/crypto@npm:3.3.0"
+  dependencies:
+    "@ton/crypto-primitives": 2.1.0
+    jssha: 3.2.0
+    tweetnacl: 1.0.3
+  checksum: e25036de9850b284dac53ef51dbf00ce63f9d451b2a3a2720d91e9f5b3d6b335e045510cd38d99cce8095b468ad312da76f607ca99a5b66d1b5059c9844b4098
+  languageName: node
+  linkType: hard
+
+"@ton/ton@npm:^15.1.0":
+  version: 15.1.0
+  resolution: "@ton/ton@npm:15.1.0"
+  dependencies:
+    axios: ^1.6.7
+    dataloader: ^2.0.0
+    symbol.inspect: 1.0.1
+    teslabot: ^1.3.0
+    zod: ^3.21.4
+  peerDependencies:
+    "@ton/core": ">=0.59.0"
+    "@ton/crypto": ">=3.2.0"
+  checksum: 85ba204cd74416f27f61902b468b62b1625b07bff52ef9926ba7351878462fbf56f4e8cc2c638825b50656c91022444dbb7be1866d952e84a5ec61eada87deac
+  languageName: node
+  linkType: hard
+
+"@tonconnect/isomorphic-eventsource@npm:^0.0.2":
+  version: 0.0.2
+  resolution: "@tonconnect/isomorphic-eventsource@npm:0.0.2"
+  dependencies:
+    eventsource: ^2.0.2
+  checksum: e19ab965129e6be8a019c8d8d3a2e2b88aca4b9b42389b747370f96a2411de79676b96122040e068396f8fd54662e0dab947d9d6bd41dc403172343cc6de8796
+  languageName: node
+  linkType: hard
+
+"@tonconnect/isomorphic-fetch@npm:^0.0.3":
+  version: 0.0.3
+  resolution: "@tonconnect/isomorphic-fetch@npm:0.0.3"
+  dependencies:
+    node-fetch: ^2.6.9
+  checksum: cb9c72d760263b92a17fdba05c5888d650fcaad7df1f91770ee6c218e829f02256e695e4a2086c62f27cabece8c0952fab2d00f7a613060a8d433ff1b8dd8c37
+  languageName: node
+  linkType: hard
+
+"@tonconnect/protocol@npm:^2.2.6":
+  version: 2.2.6
+  resolution: "@tonconnect/protocol@npm:2.2.6"
+  dependencies:
+    tweetnacl: ^1.0.3
+    tweetnacl-util: ^0.15.1
+  checksum: 9e46951a6c5f26d45220ddfe23899c432969de1d319dc383e6eb68958beb2cd8a07adc731e5fa3f2640c41b698d526d605950b81ea2473b356a0f8c2b96fa60b
+  languageName: node
+  linkType: hard
+
+"@tonconnect/sdk@npm:3.0.5":
+  version: 3.0.5
+  resolution: "@tonconnect/sdk@npm:3.0.5"
+  dependencies:
+    "@tonconnect/isomorphic-eventsource": ^0.0.2
+    "@tonconnect/isomorphic-fetch": ^0.0.3
+    "@tonconnect/protocol": ^2.2.6
+  checksum: e55f5eaf9ddabc16eea4f2d4caf80e4999e892051f82d84f6b662bda629fcb781441a45ed862a47added5288a56f1802f19f1dc3a83e07ccdd278af240be4bf8
+  languageName: node
+  linkType: hard
+
+"@tonconnect/ui@npm:^2.0.9":
+  version: 2.0.9
+  resolution: "@tonconnect/ui@npm:2.0.9"
+  dependencies:
+    "@tonconnect/sdk": 3.0.5
+    classnames: ^2.3.2
+    deepmerge: ^4.2.2
+    ua-parser-js: ^1.0.35
+  checksum: ce631f557e3219fdd2e15c9ffdc485adc200843b0609e0c15fdc7f2ca44cee0ee0e8c2abcec569f022d213551fe54383a599535af5a51d1c6742c14dd6ed61e1
+  languageName: node
+  linkType: hard
+
 "@tootallnate/once@npm:1":
   version: 1.1.2
   resolution: "@tootallnate/once@npm:1.1.2"
@@ -5344,6 +5469,15 @@ __metadata:
   dependencies:
     "@babel/types": ^7.20.7
   checksum: 58341e23c649c0eba134a1682d4f20d027fad290d92e5740faa1279978f6ed476fc467ae51ce17a877e2566d805aeac64eae541168994367761ec883a4150221
+  languageName: node
+  linkType: hard
+
+"@types/bip39@npm:3.0.0":
+  version: 3.0.0
+  resolution: "@types/bip39@npm:3.0.0"
+  dependencies:
+    bip39: "*"
+  checksum: 6bf1c6e684cf2ecbd80066475f522be2ec2e76513d3f1973efcfbc0801b6f78d0a8d92ff09aa8b9b1b1f31d53a884f861798b00c856243c837b77096262dc2c0
   languageName: node
   linkType: hard
 
@@ -8221,6 +8355,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"bip39@npm:*, bip39@npm:3.1.0":
+  version: 3.1.0
+  resolution: "bip39@npm:3.1.0"
+  dependencies:
+    "@noble/hashes": ^1.2.0
+  checksum: 1224e763ffc6b097052ed8abd57f0e521ad6d31f1645be0d0a15f4417c13f8461f00e47e9cf7c8c784bd533f4fb1ee3ab020f258c7df45ee5dc722b4b0336cfc
+  languageName: node
+  linkType: hard
+
 "bl@npm:^4.1.0":
   version: 4.1.0
   resolution: "bl@npm:4.1.0"
@@ -8828,6 +8971,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"classnames@npm:^2.3.2":
+  version: 2.5.1
+  resolution: "classnames@npm:2.5.1"
+  checksum: da424a8a6f3a96a2e87d01a432ba19315503294ac7e025f9fece656db6b6a0f7b5003bb1fbb51cbb0d9624d964f1b9bb35a51c73af9b2434c7b292c42231c1e5
+  languageName: node
+  linkType: hard
+
 "clean-css@npm:^5.2.2":
   version: 5.3.2
   resolution: "clean-css@npm:5.3.2"
@@ -9309,6 +9459,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"core-js-pure@npm:^3.38.0":
+  version: 3.39.0
+  resolution: "core-js-pure@npm:3.39.0"
+  checksum: cdcb1eec4eb9308fcf5cfe18a95322c388b05c11e66b5b0ac296a08f8f2106b458ecfe8aca0155d62ed2c5e150485b68073937e7b0a563fbc287563c4475a7c1
+  languageName: node
+  linkType: hard
+
 "core-js@npm:^2.4.0":
   version: 2.6.12
   resolution: "core-js@npm:2.6.12"
@@ -9783,6 +9940,13 @@ __metadata:
     es-errors: ^1.3.0
     is-data-view: ^1.0.1
   checksum: 7f0bf8720b7414ca719eedf1846aeec392f2054d7af707c5dc9a753cc77eb8625f067fa901e0b5127e831f9da9056138d894b9c2be79c27a21f6db5824f009c2
+  languageName: node
+  linkType: hard
+
+"dataloader@npm:^2.0.0":
+  version: 2.2.2
+  resolution: "dataloader@npm:2.2.2"
+  checksum: 4dabd247089c29f194e94d5434d504f99156c5c214a03463c20f3f17f40398d7e179edee69a27c16e315519ac8739042a810090087ae26449a0e685156a02c65
   languageName: node
   linkType: hard
 
@@ -11298,6 +11462,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"eventsource@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "eventsource@npm:2.0.2"
+  checksum: c0072d972753e10c705d9b2285b559184bf29d011bc208973dde9c8b6b8b7b6fdad4ef0846cecb249f7b1585e860fdf324cbd2ac854a76bc53649e797496e99a
+  languageName: node
+  linkType: hard
+
 "evp_bytestokey@npm:^1.0.0, evp_bytestokey@npm:^1.0.3":
   version: 1.0.3
   resolution: "evp_bytestokey@npm:1.0.3"
@@ -11593,6 +11764,7 @@ __metadata:
     "@json-rpc-tools/utils": ^1.7.6
     "@metamask/safe-event-emitter": ^3.0.0
     "@open-web3/orml-types": ^2.0.1
+    "@orbs-network/ton-access": ^2.3.3
     "@polkadot/api": ^10.9.1
     "@polkadot/extension-chains": ^0.46.5
     "@polkadot/extension-dapp": ^0.46.5
@@ -11605,6 +11777,12 @@ __metadata:
     "@sora-substrate/util": 1.40.0
     "@soramitsu-ui/ui-vue2": ^1.1.0
     "@subwallet/ui-keyring": 0.1.7
+    "@ton-api/client": ^0.3.0
+    "@ton/core": ^0.59.0
+    "@ton/crypto": ^3.3.0
+    "@ton/ton": ^15.1.0
+    "@tonconnect/ui": ^2.0.9
+    "@types/bip39": 3.0.0
     "@types/chrome": ^0.0.200
     "@types/crypto-js": ^4.2.2
     "@types/file-saver": ^2.0.5
@@ -11636,7 +11814,9 @@ __metadata:
     autoprefixer: ^10.4.14
     axios: ^0.28.0
     bignumber.js: ^9.0.2
+    bip39: 3.1.0
     country-code-emoji: ^2.3.0
+    crypto-js: ^4.2.0
     css-unicode-loader: ^1.0.3
     date-fns: ^2.28.0
     element-ui: ^2.15.13
@@ -11671,6 +11851,7 @@ __metadata:
     serviceworker-webpack-plugin: ^1.0.1
     svg-sprite-loader: ^6.0.11
     tippy.js: ^6.3.7
+    tonweb-mnemonic: 1.0.1
     ts-jest: ^27.0.5
     typescript: 5.2.2
     uuidv4: ^6.2.13
@@ -13659,6 +13840,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"isomorphic-fetch@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "isomorphic-fetch@npm:3.0.0"
+  dependencies:
+    node-fetch: ^2.6.1
+    whatwg-fetch: ^3.4.1
+  checksum: e5ab79a56ce5af6ddd21265f59312ad9a4bc5a72cebc98b54797b42cb30441d5c5f8d17c5cd84a99e18101c8af6f90c081ecb8d12fd79e332be1778d58486d75
+  languageName: node
+  linkType: hard
+
 "istanbul-lib-coverage@npm:^3.0.0, istanbul-lib-coverage@npm:^3.2.0":
   version: 3.2.0
   resolution: "istanbul-lib-coverage@npm:3.2.0"
@@ -14661,6 +14852,13 @@ __metadata:
   bin:
     jsonrepair: bin/cli.js
   checksum: 59fc3610687cf158f96f7d8a15fa65eecc35909f6fc247608fce28e63cf4eb50f579e20da38113537c837ea63b60b5dc31405255a9f05fb0e4646be301d642b8
+  languageName: node
+  linkType: hard
+
+"jssha@npm:3.2.0":
+  version: 3.2.0
+  resolution: "jssha@npm:3.2.0"
+  checksum: 2adb8a9a57a79360379e843c0548e240d072c2ef12aef39ef6a784315686bd6f65501e9353fdd2f3a604f64af07e7eab04a0ed92b221cdfea97d671d7b8e14f4
   languageName: node
   linkType: hard
 
@@ -15788,7 +15986,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-fetch@npm:^2.6.12":
+"node-fetch@npm:^2.6.1, node-fetch@npm:^2.6.12, node-fetch@npm:^2.6.9":
   version: 2.7.0
   resolution: "node-fetch@npm:2.7.0"
   dependencies:
@@ -19477,6 +19675,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"symbol.inspect@npm:1.0.1":
+  version: 1.0.1
+  resolution: "symbol.inspect@npm:1.0.1"
+  checksum: 47fa8d38d0bc5d04c06df2f71bba1a723ee0e015ca042c47b29c11f107877dd1a2e2d2154c9ef5eec11e92e4165d126c844f06d05da80e477581c8f284f05fdf
+  languageName: node
+  linkType: hard
+
 "tapable@npm:^0.1.8":
   version: 0.1.10
   resolution: "tapable@npm:0.1.10"
@@ -19588,6 +19793,13 @@ __metadata:
   bin:
     terser: bin/terser
   checksum: 19a6710e17ff3f20d3b0661090640a572ce5ff6f2e95c731bb5a9eb1dcc1fe563cd0f1e4a22cde89b2717667336252bc2adb8894bdfbec6d1996b3e70b44f365
+  languageName: node
+  linkType: hard
+
+"teslabot@npm:^1.3.0":
+  version: 1.5.0
+  resolution: "teslabot@npm:1.5.0"
+  checksum: 1494f83b9070f3d0882c7ce089a69ea46f0f30ee24c14036880ed5f49882cd80ff47f1c5543c9c973d250596896640130c16b221e84be296474a02f65e7187d0
   languageName: node
   linkType: hard
 
@@ -19761,6 +19973,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tonweb-mnemonic@npm:1.0.1":
+  version: 1.0.1
+  resolution: "tonweb-mnemonic@npm:1.0.1"
+  dependencies:
+    tweetnacl: ^1.0.3
+  checksum: e55100b01fd8bbdee5e5df62992b3b744dc9943b866452fc42b63f51a4b90ee9108465547a17aa99a93f880bc7fd6c2fffdda76cf9356f92d278ffeef810953a
+  languageName: node
+  linkType: hard
+
 "totalist@npm:^1.0.0":
   version: 1.1.0
   resolution: "totalist@npm:1.1.0"
@@ -19927,7 +20148,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tweetnacl@npm:^1.0.3":
+"tweetnacl-util@npm:^0.15.1":
+  version: 0.15.1
+  resolution: "tweetnacl-util@npm:0.15.1"
+  checksum: ae6aa8a52cdd21a95103a4cc10657d6a2040b36c7a6da7b9d3ab811c6750a2d5db77e8c36969e75fdee11f511aa2b91c552496c6e8e989b6e490e54aca2864fc
+  languageName: node
+  linkType: hard
+
+"tweetnacl@npm:1.0.3, tweetnacl@npm:^1.0.3":
   version: 1.0.3
   resolution: "tweetnacl@npm:1.0.3"
   checksum: e4a57cac188f0c53f24c7a33279e223618a2bfb5fea426231991652a13247bea06b081fd745d71291fcae0f4428d29beba1b984b1f1ce6f66b06a6d1ab90645c
@@ -20134,6 +20362,15 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 07106822b4305de3f22835cbba949a2b35451cad50888759b6818421290ff95d522b38ef7919e70fb381c5fe9c1c643d7dea22c8b31652a717ddbd57b7f4d554
+  languageName: node
+  linkType: hard
+
+"ua-parser-js@npm:^1.0.35":
+  version: 1.0.39
+  resolution: "ua-parser-js@npm:1.0.39"
+  bin:
+    ua-parser-js: script/cli.js
+  checksum: 19455df8c2348ef53f2e150e7406d3a025a619c2fd69722a1e63363d5ba8d91731ef7585f2dce7d8f14c8782734b4d704c05f246dca5f7565b5ae7d318084f2a
   languageName: node
   linkType: hard
 
@@ -20987,6 +21224,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"whatwg-fetch@npm:^3.4.1":
+  version: 3.6.20
+  resolution: "whatwg-fetch@npm:3.6.20"
+  checksum: c58851ea2c4efe5c2235f13450f426824cf0253c1d45da28f45900290ae602a20aff2ab43346f16ec58917d5562e159cd691efa368354b2e82918c2146a519c5
+  languageName: node
+  linkType: hard
+
 "whatwg-fetch@npm:^3.6.2":
   version: 3.6.17
   resolution: "whatwg-fetch@npm:3.6.17"
@@ -21632,5 +21876,12 @@ __metadata:
     normalize-path: ^1.0.0
     strip-indent: ^2.0.0
   checksum: 6810adaf6be7b6cc115ed9454e5a4e8e0949deecb107d65dc0c196051e862f04d6394ad12fbef0d51e6c730329992ae98625ba82cba5e34775023ddb6dc921b8
+  languageName: node
+  linkType: hard
+
+"zod@npm:^3.21.4":
+  version: 3.23.8
+  resolution: "zod@npm:3.23.8"
+  checksum: 15949ff82118f59c893dacd9d3c766d02b6fa2e71cf474d5aa888570c469dbf5446ac5ad562bb035bf7ac9650da94f290655c194f4a6de3e766f43febd432c5c
   languageName: node
   linkType: hard

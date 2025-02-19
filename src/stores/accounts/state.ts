@@ -3,7 +3,6 @@ import type { AccountJson, TokenGroup } from '@extension-base/background/types/t
 import type { SelectedWallet, SelectedNetworks, AutoSelectNode, HiddenAssets } from './types';
 import type { NetworkName } from '@/interfaces';
 import { accountController } from '@/controllers';
-import { SORA_CARD_BANNER_RERUN } from '@/consts/soraCard';
 
 export type State = {
   selectedWallet: SelectedWallet;
@@ -19,24 +18,24 @@ export type State = {
   hiddenWarningNetworks: NetworkName[];
   qr: string | null;
   showPolkaswapAlert: boolean;
-  soraCardBannerVisibility: boolean;
+  isBalanceLoading: boolean;
 };
 
 export const state = (): State => {
   return {
-    selectedWallet: accountController.getSelectedWallet(),
-    selectedFiat: accountController.getSelectedFiat(),
-    selectedNetworks: accountController.getSelectedNetwork(),
+    selectedWallet: { address: '', ethereumAddress: '', name: '' } as SelectedWallet,
+    selectedFiat: 'usd',
+    selectedNetworks: {},
     balances: [],
     nfts: {},
     availableNfts: {},
     hiddenAssetsForAllAccounts: accountController.getHiddenAssets(),
-    accounts: accountController.getAccounts(),
+    accounts: [],
     isCustomSorted: accountController.getCustomSort(),
     autoSelectNode: accountController.getAutoSelectNodesValue(),
     showPolkaswapAlert: !accountController.getAgreeSwapDisclaimer(),
     hiddenWarningNetworks: accountController.getHiddenWarningNetworks(),
-    soraCardBannerVisibility: Date.now() - accountController.getHidingSoraCardBannerTime() >= SORA_CARD_BANNER_RERUN,
     qr: null,
+    isBalanceLoading: false,
   };
 };

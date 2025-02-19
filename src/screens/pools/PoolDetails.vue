@@ -144,7 +144,7 @@ import PoolDescription from '@/screens/pools/PoolDescription.vue';
 import PoolHeader from '@/screens/pools/PoolHeader.vue';
 import InputsForm from '@/screens/pools/InputsForm.vue';
 import { type RequestPool } from '@/extension/background/extension-base/src/services/pools-service/types';
-import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { getCostOfAssets } from '@/helpers/transfers';
 import { getUtilityAsset, getXORCurrency, isValidAmountAsset } from '@/helpers/currencies';
 import { type PoolsOperation } from '@/interfaces/pools';
 import PolkaswapSettingsHeader from '@/screens/polkaswap/PolkaswapSettingsHeader.vue';

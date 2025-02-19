@@ -145,7 +145,7 @@ export default class PoolItem extends Vue {
 
       .earn {
         display: flex;
-        font-size: 0.75em;
+        font-size: 0.75rem;
         color: $grayish-white-2;
 
         .asset {

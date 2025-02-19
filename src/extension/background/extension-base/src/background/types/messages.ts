@@ -29,7 +29,7 @@ import type {
   PairingSubjectType,
   RequestApproveConnectWalletSession,
   RequestApproveWalletConnect,
-  RequestApproveWalletConnectNotSupport,
+  // RequestApproveWalletConnectNotSupport,
   RequestConnectWalletConnect,
   RequestDisconnectWalletConnectSession,
   RequestReconnectConnectWalletSession,
@@ -84,9 +84,6 @@ import type {
   RequestSigningApprove,
   RequestSigningApproveSignature,
   RequestSigningCancel,
-  RequestSigningIsLocked,
-  ResponseSigningIsLocked,
-  AllowedPath,
   GoogleFileId,
   ActiveTabAuthorizeStatus,
   RequestCheckTransfer,
@@ -109,7 +106,7 @@ import type {
   RequestSigningSubscribe,
   FetchBalanceRequest,
   ResponseNftTransfer,
-  FetchEvmBalancePayload,
+  FetchBalancePayload,
   RequestCheckScam,
   ResponseCheckScam,
   RequestExportSeed,
@@ -117,6 +114,11 @@ import type {
   RequestChangePassword,
   RequestUnlockExtension,
   RequestMigratePassword,
+  RequestGenerateMnemonic,
+  RequestValidateMnemonic,
+  RequestUpdateCurrentAccount,
+  ResponseBalanceRequest,
+  RequestGetHistory,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -136,6 +138,8 @@ import type {
   FilesResponse,
   SoraFees,
   OnboardingStories,
+  FiatJson,
+  TonEventTokens,
 } from '@/interfaces';
 
 export interface RequestSignatures {
@@ -160,31 +164,32 @@ export interface RequestSignatures {
   'pri(accounts.update.meta)': [RequestUpdateMeta, boolean];
   'pri(accounts.export.json)': [RequestAccountExport, ResponseAccountExport];
   'pri(migrate.export.json)': [string, ResponseAccountExport];
-  'pri(accounts.export.mnemonic)': [RequestExportSeed, ResponseExportSeed];
-  'pri(accounts.export.rowSeed)': [RequestExportSeed, ResponseExportSeed];
+  'pri(keyring.export.mnemonic)': [RequestExportSeed, ResponseExportSeed];
+  'pri(keyring.export.rowSeed)': [RequestExportSeed, ResponseExportSeed];
+  'pri(keyring.generateMnemonic)': [RequestGenerateMnemonic, string];
+  'pri(keyring.mnemonicValidate)': [RequestValidateMnemonic, boolean];
   'pri(accounts.forget)': [RequestAccountForget, boolean];
   'pri(accounts.list)': [null, InjectedAccount[]];
   'pri(accounts.name)': [RequestAccountName, boolean];
   'pri(accounts.subscribe)': [null, AccountJson[], AccountJson[]];
-  'pri(addresses.subscribe)': [null, AccountJson[], AccountJson[]];
   'pri(accounts.validate)': [RequestAccountValidate, boolean];
-  'pri(accounts.update.current)': [string, boolean];
+  'pri(accounts.update.current)': [RequestUpdateCurrentAccount, boolean];
   'pri(accounts.update.currentNetwork)': [string, boolean];
   'pri(accounts.totalBalances)': [null, ResponseTotalBalances[]];
+  'pri(accounts.getHistory)': [RequestGetHistory, TonEventTokens];
 
   // App Management - networks
   // Network, APIs, Custom tokens functions
   'pri(app.port.ping)': [null, boolean];
-  'pri(networkMap.upsert)': [NetworkJson, boolean];
+  'pri(networkMap.upsert)': [NetworkJson, void];
   'pri(networkMap.getSubscription)': [null, Record<string, NetworkJson>, Record<string, NetworkJson>];
   'pri(selectedNetworks.getSubscription)': [null, string, string];
   'pri(networkMap.toggle.favorite)': [string, void];
 
   // Authorize
-  'pri(authorize.approve.polkaswap)': [string[], null];
   'pri(authorize.approve)': [RequestAuthorizeApprove, boolean];
   'pri(authorize.list)': [null, ResponseAuthorizeList];
-  'pri(authorize.requests)': [null, boolean, AuthorizeRequest[]];
+  'pri(authorize.requests)': [null, AuthorizeRequest[], AuthorizeRequest[]];
   'pri(authorize.remove)': [string, ResponseAuthorizeList];
   'pri(authorize.delete.request)': [string, void];
   'pri(authorize.cancel)': [string, boolean];
@@ -194,14 +199,13 @@ export interface RequestSignatures {
   'pri(accounts.json.valid)': [RequestJsonValidate, ValidateJsonResult];
   'pri(metadata.approve)': [RequestMetadataApprove, boolean];
   'pri(metadata.reject)': [RequestMetadataReject, boolean];
-  'pri(metadata.requests)': [null, boolean, MetadataRequest[]];
+  'pri(metadata.requests)': [null, MetadataRequest[], MetadataRequest[]];
   'pri(signing.approve)': [RequestSigningApprove, boolean];
   'pri(signing.approve.signature)': [RequestSigningApproveSignature, boolean];
   'pri(signing.cancel)': [RequestSigningCancel, boolean];
-  'pri(signing.isLocked)': [RequestSigningIsLocked, ResponseSigningIsLocked];
-  'pri(signing.requests)': [null, boolean, SigningRequest[]];
+  'pri(signing.requests)': [null, SigningRequest[], SigningRequest[]];
 
-  'pri(window.open)': [AllowedPath, boolean];
+  'pri(window.open)': [string, boolean];
   'pri(google.auth)': [GoogleAuthTypes, void];
   'pri(google.verify.token)': [{ token: string }, VerifyTokenResponse | null];
   'pri(google.get.files)': [{ token: string }, IGetFilesResponse];
@@ -243,14 +247,15 @@ export interface RequestSignatures {
 
   // Ether
   'pri(balance)': [null, BalanceJson];
-  'pri(fetch.evm.balance)': [FetchEvmBalancePayload, void];
+  'pri(fetch.evm.balance)': [FetchBalancePayload, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
-  'pri(fetch.balance)': [FetchBalanceRequest, string];
-  'pri(signing.evmRequests)': [null, boolean, EvmRequests];
+  'pri(fetch.balance)': [FetchBalanceRequest, ResponseBalanceRequest[]];
+  'pri(signing.evmRequests)': [null, EvmRequests, EvmRequests];
 
+  // price
   'pri(price.update.currency)': [string, void];
   'pri(price.subscription)': [null, PriceJson, PriceJson];
-  'pri(soraCard.token)': [null, boolean, string];
+  'pri(price.getFiats)': [null, FiatJson[]];
 
   // Evm
   'evm(events.subscribe)': [RequestEvmEvents, boolean, EvmEvent];
@@ -263,7 +268,6 @@ export interface RequestSignatures {
   'pri(onboarding.setComplete)': [null, void];
 
   // Public/external requests, i.e. from a page
-  'pub(soraCard.token)': [string, null];
   'pub(accounts.list)': [null, InjectedAccount[]];
   'pub(accounts.subscribe)': [null, string, InjectedAccount[]];
   'pub(accounts.unsubscribe)': [RequestAccountUnsubscribe, boolean];
@@ -292,7 +296,7 @@ export interface RequestSignatures {
     WalletConnectNotSupportRequest[],
     WalletConnectNotSupportRequest[]
   ];
-  'pri(walletConnect.notSupport.approve)': [RequestApproveWalletConnectNotSupport, boolean];
+  // 'pri(walletConnect.notSupport.approve)': [RequestApproveWalletConnectNotSupport, boolean];
   'pri(walletConnect.notSupport.reject)': [RequestRejectWalletConnectNotSupport, boolean];
 
   'pri(walletConnect.signing.requests.subscribe)': [

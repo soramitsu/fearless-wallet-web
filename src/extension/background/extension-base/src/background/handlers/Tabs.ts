@@ -2,12 +2,6 @@ import { PHISHING_PAGE_REDIRECT } from '@extension-base/defaults';
 import { checkIfDenied } from '@polkadot/phishing';
 import { chrome } from '@extension-base/utils/crossenv';
 import { isNumber } from '@polkadot/util';
-import {
-  stripUrl,
-  transformAccounts,
-  transformAddresses,
-  withErrorLog,
-} from '@extension-base/background/handlers/helpers';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import { type RequestArguments } from '@json-rpc-tools/utils';
@@ -41,7 +35,11 @@ import type {
   MetadataDef,
   ProviderMeta,
 } from '@polkadot/extension-inject/types';
-
+import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
+import {
+  transformAccounts,
+  transformAddresses,
+} from '@/extension/background/extension-base/src/background/helpers/accounts';
 type EvmEmitterCallback = (eventName: EvmEventType, payload: unknown) => void;
 
 export default class Tabs {
@@ -74,8 +72,8 @@ export default class Tabs {
   }
 
   async accountsListAuthorized(url: string): Promise<InjectedAccount[]> {
-    const transformedAccounts = transformAccounts({ accounts: this.state.keyringService.accountSubjectValue });
-    const transformedAddresses = transformAddresses({ accounts: this.state.keyringService.addressesSubjectValue });
+    const transformedAccounts = transformAccounts({ accounts: this.state.keyringService.accountSubject.value });
+    const transformedAddresses = transformAddresses({ accounts: this.state.keyringService.addressSubject.value });
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
     const filteredAuths = await this.filterForAuthorizedAccounts(totalAccounts, url);
 
@@ -89,7 +87,7 @@ export default class Tabs {
       subscription: this.state.keyringService.accountSubject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
         const transformedAccounts = transformAccounts({ accounts });
         const transformedMobileAccount = transformAddresses({
-          accounts: this.state.keyringService.addressesSubjectValue,
+          accounts: this.state.keyringService.addressSubject.value,
         });
         const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
 
@@ -234,10 +232,6 @@ export default class Tabs {
     }
 
     return false;
-  }
-
-  saveSoraCardRefreshToken(token: string): void {
-    this.state.soraCardService.tokenSubject.next(token);
   }
 
   async getEvmState(url: string): Promise<EvmAppState> {
@@ -581,9 +575,6 @@ export default class Tabs {
     switch (type) {
       case 'pub(authorize.tab)':
         return this.authorize(url, request as RequestAuthorizeTab);
-
-      case 'pub(soraCard.token)':
-        return this.saveSoraCardRefreshToken(request as string);
 
       case 'pub(accounts.list)':
         return this.accountsListAuthorized(url);

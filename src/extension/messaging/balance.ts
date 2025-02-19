@@ -1,4 +1,9 @@
-import { type BalanceJson, type FetchBalanceRequest, type PriceJson } from '@extension-base/background/types/types';
+import {
+  type ResponseBalanceRequest,
+  type BalanceJson,
+  type FetchBalanceRequest,
+  type PriceJson,
+} from '@extension-base/background/types/types';
 
 import { sendMessage } from '@/extension/messaging/index';
 
@@ -22,6 +27,6 @@ export function subscribeBalance(callback: (balanceData: BalanceJson) => void): 
   return sendMessage('pri(balance.subscription)', null, callback);
 }
 
-export function fetchBalance(request: FetchBalanceRequest): Promise<string> {
+export function fetchBalance(request: FetchBalanceRequest): Promise<ResponseBalanceRequest[]> {
   return sendMessage('pri(fetch.balance)', request);
 }

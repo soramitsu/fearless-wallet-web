@@ -22,6 +22,8 @@ import { useAccountsStore } from '@/stores/accounts';
 
 type MenuItemType = 'Wallet' | 'Staking' | 'Polkaswap';
 
+export const MENU_HEIGHT = 70;
+
 @Component({
   components: { MenuItem },
 })
@@ -39,12 +41,20 @@ export default class Menu extends Vue {
   stakingItems: string[] = [Components.MyStake];
 
   get menuItems() {
-    const array: MenuItemType[] = [Components.Wallet, Components.Staking];
+    const array: MenuItemType[] = [Components.Wallet];
 
-    if (IS_PRODUCTION || (!IS_PRODUCTION && !isSameString(this.accountsStore.selectedNetwork, SORA_MAINNET)))
-      array.push(Components.Polkaswap);
+    if (!this.isTonWallet) {
+      if (IS_PRODUCTION || (!IS_PRODUCTION && !isSameString(this.accountsStore.selectedNetwork, SORA_MAINNET)))
+        array.push(Components.Polkaswap);
+
+      array.push(Components.Staking);
+    }
 
     return array;
+  }
+
+  get isTonWallet() {
+    return this.accountsStore.selectedWallet.isTon;
   }
 
   get currentRouteName() {
@@ -91,7 +101,7 @@ export default class Menu extends Vue {
 <style lang="scss" scoped>
 .menu {
   display: flex;
-  min-height: 70px;
+  min-height: 82px;
   justify-content: space-around;
   align-items: center;
   user-select: none;

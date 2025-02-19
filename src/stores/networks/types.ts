@@ -14,6 +14,7 @@ import type {
   SoraHistoryElement,
   SoraFees,
   Network,
+  TonEvent,
 } from '@/interfaces';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { KeyringJson } from '@subwallet/ui-keyring/types';
@@ -44,16 +45,11 @@ export type SetFiatsJsonProps = {
   fiats: FiatJson[];
 };
 
-export type SetAssetsPriceProps = {
-  tokenPriceMap: Record<string, number>;
-  tokenPriceChange: Record<string, number>;
-};
-
 export type SetAssetsPriceIntervalProps = {
   interval: NodeJS.Timer;
 };
 
-export type History = SubqueryHistory | GiantsquidHistoryItem[] | HistoryElement[] | SoraHistoryElement[];
+export type History = SubqueryHistory | GiantsquidHistoryItem[] | HistoryElement[] | SoraHistoryElement[] | TonEvent[];
 
 export type HistoryProps = {
   history: History;
@@ -93,6 +89,11 @@ export type FetchHistory = {
   networkName: NetworkName;
   assetId: string;
   address?: string;
+};
+
+export type FetchTonHistory = {
+  address: string;
+  networkName: NetworkName;
 };
 
 export type ToggleFavorite = {

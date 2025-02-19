@@ -1,9 +1,10 @@
 import type { NetworkJson } from '@extension-base/types';
-import type { AssetsPrice, History, FiatJson, SoraFees } from '@/interfaces';
+import type { History, FiatJson, SoraFees } from '@/interfaces';
+import type { BasePriceJson } from '@/extension/background/extension-base/src/background/types/types';
 
 export type State = {
   allNetworks: NetworkJson[];
-  assetsPrice: AssetsPrice;
+  assetsPrice: BasePriceJson;
   fiats: FiatJson[];
   history: History;
   soraFees: Nullable<SoraFees>;

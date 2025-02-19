@@ -9,6 +9,7 @@
         data-testid="networkSearch"
         @change="changeFilterValue"
       />
+
       <Tooltip text="common.copied" target=".search-input" placement="bottom" />
 
       <Tabs :activeTab="activeTab" :tabs="tabs" @update:activeTab="updateActiveTab" />
@@ -68,7 +69,6 @@ import BaseApi from '@/util/BaseApi';
 import { IS_POPUP } from '@/consts/globalClient';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-
 type Tabs = {
   [ALL_NETWORKS]: Tab;
   [POPULAR_NETWORKS]: Tab;
@@ -153,12 +153,8 @@ export default class NetworkManagement extends Vue {
     return this.filteredOptionsNetworks.length !== 0;
   }
 
-  changeFilterValue(value: string) {
-    this.filterValue = value;
-  }
-
-  getLocale(key: string): string {
-    return `header.networkManagement.${key}`;
+  get selectedAccount() {
+    return this.accountsStore.accounts.find(({ active }) => active);
   }
 
   async mounted() {
@@ -166,8 +162,16 @@ export default class NetworkManagement extends Vue {
       this.activeTab = this.accountsStore.selectedNetwork as keyof Tabs;
   }
 
-  get selectedAccount() {
-    return this.accountsStore.accounts.find((el) => el.address === this.accountsStore.selectedWallet.address);
+  beforeDestroy() {
+    updateCurrentNetwork(this.accountsStore.selectedNetwork);
+  }
+
+  changeFilterValue(value: string) {
+    this.filterValue = value;
+  }
+
+  getLocale(key: string): string {
+    return `header.networkManagement.${key}`;
   }
 
   isAvailableNetwork(network: string): boolean {
@@ -183,7 +187,7 @@ export default class NetworkManagement extends Vue {
       return available;
     }
 
-    if (this.accountsStore.selectedWallet.ethereumAddress === '' && BaseApi.isEthereumNetwork(network)) return false;
+    if (!this.accountsStore.selectedWallet.hasEthereum && BaseApi.isEthereumNetwork(network)) return false;
 
     return true;
   }
@@ -237,10 +241,6 @@ export default class NetworkManagement extends Vue {
       type: 'success',
     });
   }
-
-  beforeDestroy() {
-    updateCurrentNetwork(this.accountsStore.selectedNetwork);
-  }
 }
 </script>
 
@@ -264,7 +264,7 @@ export default class NetworkManagement extends Vue {
   background: $secondary-background-color;
   border-radius: 30px;
   font-weight: 700;
-  font-size: 0.75em;
+  font-size: 0.75rem;
   text-transform: uppercase;
   color: $plain-white;
   margin: 5px 14px 0 0;

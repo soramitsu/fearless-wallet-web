@@ -100,7 +100,7 @@ export default class AccountsItem extends Vue {
     width: 395px;
 
     .network-name {
-      font-size: 0.75em;
+      font-size: 0.75rem;
       font-weight: 700;
       color: $gray-color;
       height: 16px;
@@ -109,7 +109,7 @@ export default class AccountsItem extends Vue {
     .asset-name {
       font-weight: 700;
       color: rgba(255, 255, 255, 1);
-      font-size: 1.25em;
+      font-size: 1.25rem;
       height: 30px;
       line-height: 30px;
     }

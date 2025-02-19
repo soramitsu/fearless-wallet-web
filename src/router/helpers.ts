@@ -8,8 +8,7 @@ const hasSelectedWallet = (accountsStore: AccountStore) => accountsStore.selecte
 const haveAuthRequests = (extensionStore: ExtensionStore): number => extensionStore.authRequests.length;
 const haveSignRequests = (extensionStore: ExtensionStore): number => extensionStore.signRequests.length;
 const haveMetaRequests = (extensionStore: ExtensionStore): number => extensionStore.metaRequests.length;
-const showSoraCard = (extensionStore: ExtensionStore): boolean => !!extensionStore.features?.fiat?.soraCard;
 const getStakingNetwork = async (stakingStore: StakingStore, network: NetworkName): Promise<NetworkParams> =>
   await new Promise((res) => setTimeout(() => res(stakingStore.getStakingNetwork(network)), 100));
 
-export { getStakingNetwork, haveAuthRequests, hasSelectedWallet, showSoraCard, haveMetaRequests, haveSignRequests };
+export { getStakingNetwork, haveAuthRequests, hasSelectedWallet, haveMetaRequests, haveSignRequests };

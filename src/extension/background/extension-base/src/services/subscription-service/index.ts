@@ -1,5 +1,4 @@
 import { logger as createLogger } from '@polkadot/util';
-import { subscribeBalance } from '@extension-base/api/substrate/balance';
 import type { Subscription } from 'rxjs';
 import type State from '@extension-base/background/handlers/State';
 import type { Logger } from '@polkadot/util/types';
@@ -10,12 +9,11 @@ import type {
   Subscriptions,
 } from '@extension-base/background/types/types';
 import type { NetworkName } from '@/interfaces';
-import { SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
-
-type SubscriptionName = 'xorTotalBalance' | NetworkName;
+import { WalletEcosystem } from '@/interfaces';
+import { isSameString } from '@/helpers';
 
 type UpdateSub = {
-  name: SubscriptionName;
+  name: NetworkName;
   func: () => void;
 };
 
@@ -29,20 +27,31 @@ interface ServiceInfo {
   networks: {
     substrate: NetworkName[];
     evm: NetworkName[];
+    ton: NetworkName[];
   };
+}
+
+export interface GetBalancesProps {
+  address: string;
+  ethereumAddress: string;
+  walletEcosystem?: WalletEcosystem;
+  substrateNetworks?: NetworkName[];
+  evmNetworks?: NetworkName[];
+  tonNetworks?: NetworkName[];
+  isFirstRun?: boolean;
 }
 
 export class SubscriptionService {
   private logger: Logger;
   private subscriptionsPorts: Subscriptions = {}; // subscriptions for interaction with client side
   private serviceInfoSubscription: Subscription | undefined;
-  private subscriptionNetworksMap: SubscriptionMap = {}; // subscriptions for networks balances
+  subscriptionNetworksMap: SubscriptionMap = {}; // subscriptions for networks balances
   private unsubscriptionMap: Record<string, () => void> = {};
 
   private serviceInfo: ServiceInfo = {
     address: '',
     ethereumAddress: '',
-    networks: { evm: [], substrate: [] },
+    networks: { evm: [], substrate: [], ton: [] },
   };
 
   constructor(private state: State) {
@@ -94,116 +103,126 @@ export class SubscriptionService {
     return true;
   }
 
-  getNetworkSubscription(name: SubscriptionName): (() => void) | undefined {
-    return this.subscriptionNetworksMap[name];
-  }
-
   updateNetworkSubscription(params: UpdateSub) {
     const { name, func } = params;
 
-    const oldSub = this.getNetworkSubscription(name);
+    const oldSub = this.subscriptionNetworksMap[name];
 
     oldSub?.();
 
     this.subscriptionNetworksMap[name] = func;
   }
 
-  stopAllNetworksSubscription(names?: string[]) {
-    if (names?.length === 0) return;
+  cancelNetworkSubscription(networkName: string) {
+    const unsub = this.subscriptionNetworksMap[networkName];
 
-    Object.entries(this.subscriptionNetworksMap)
-      .filter(([name]) => names?.includes(name) ?? true)
-      .forEach(([name, unsub]) => {
-        unsub?.();
+    unsub?.();
 
-        this.subscriptionNetworksMap[name] = undefined;
-      });
-
-    if (names === undefined) this.subscriptionNetworksMap = {};
+    delete this.subscriptionNetworksMap[networkName];
   }
 
   async start() {
     this.logger.log('Starting subscription');
 
     const accountsExceptCurrent = this.state.keyringService
-      .getSubstrateAccounts()
-      .filter((el) => el.address !== this.state.currentAccount?.address);
+      .getAllMainAccounts()
+      .filter(({ address }) => !isSameString(address, this.state.currentAccount?.address));
 
-    accountsExceptCurrent.forEach((account) => {
-      const ethAddress = (account.meta.ethereumAddress as string) ?? '';
-
-      this.subscribeBalances(account.address, ethAddress, null, null, true);
-    });
+    accountsExceptCurrent.forEach(({ address, meta }) =>
+      this.fetchNetworkBalances({
+        address,
+        ethereumAddress: meta.ethereumAddress ?? '',
+        walletEcosystem: meta.walletEcosystem!,
+        substrateNetworks: this.state.networkService.activeNetworkByEcosystem.substrateList,
+        evmNetworks: this.state.networkService.activeNetworkByEcosystem.evmList,
+        tonNetworks: this.state.networkService.activeNetworkByEcosystem.tonList,
+        isFirstRun: true,
+      })
+    );
 
     if (!this.serviceInfoSubscription)
-      this.serviceInfoSubscription = this.state.subscribeServiceInfo().subscribe({
+      this.serviceInfoSubscription = this.state.serviceInfoSubject.subscribe({
         next: (serviceInfo) => {
           console.info('serviceInfo', serviceInfo);
 
-          this.state.cronService.updateCron(serviceInfo);
+          this.state.timeoutService.lazyNext(
+            'updateServiceInfo',
+            () => {
+              this.state.cronService.updateCron(serviceInfo);
+              this.state.nftService.publishNfts();
 
-          if (!serviceInfo.currentAccountInfo) return;
+              if (!serviceInfo.currentAccountInfo) return;
 
-          const { address, ethereumAddress } = serviceInfo.currentAccountInfo;
+              const { address, ethereumAddress } = serviceInfo.currentAccountInfo;
+              const {
+                address: oldAddress,
+                ethereumAddress: oldEthereumAddress,
+                networks: oldNetworks,
+              } = this.serviceInfo;
 
-          const allNewSubstrateNetworks = Object.keys(serviceInfo?.apiMap.substrate ?? {});
-          const newSubstrateNetworksWithoutSubscribe = allNewSubstrateNetworks.filter(
-            (network) => !this.serviceInfo?.networks.substrate.includes(network)
-          );
+              const isNewAddress = oldAddress !== address;
+              const isNewEthereumAddress = !oldEthereumAddress && ethereumAddress !== '';
 
-          const allNewEvmNetworks = Object.keys(serviceInfo?.apiMap.evm ?? {});
-          const newEvmNetworksWithoutSubscribe = allNewEvmNetworks.filter(
-            (network) => !this.serviceInfo?.networks.evm.includes(network)
-          );
+              const currentSubstrateNetworks = Object.keys(serviceInfo.apiMap.substrate);
+              const currentEvmNetworks = Object.keys(serviceInfo.apiMap.evm);
+              const currentTonNetworks = Object.keys(serviceInfo.apiMap.ton);
 
-          const addressHasChanged = this.serviceInfo.address !== address;
-          const thereIsEthereumAddress = this.serviceInfo.ethereumAddress === '' && ethereumAddress !== '';
-
-          // если изменился адрес или появились новые сети на которые мы сейчас не подписаны, то подписываемся
-          if (
-            addressHasChanged ||
-            thereIsEthereumAddress ||
-            newSubstrateNetworksWithoutSubscribe.length !== 0 ||
-            newEvmNetworksWithoutSubscribe.length !== 0
-          ) {
-            if (addressHasChanged) {
-              this.state.balanceService.publishBalance();
-
-              // если адрес изменился, то подписываемся на все сети
-              this.subscribeBalances(address, ethereumAddress, null, null);
-            } else if (thereIsEthereumAddress) {
-              this.subscribeBalances(address, ethereumAddress, SUBSTRATE_ETHEREUM_NETWORKS, null);
-            } else {
-              // если адрес не менялся, подписываемся только на новые сети(которые только что включили)
-              this.subscribeBalances(
+              this.serviceInfo = {
                 address,
                 ethereumAddress,
-                newSubstrateNetworksWithoutSubscribe,
-                newEvmNetworksWithoutSubscribe
+                networks: {
+                  substrate: currentSubstrateNetworks,
+                  evm: currentEvmNetworks,
+                  ton: currentTonNetworks,
+                },
+              };
+
+              // TODO возможно нужно перенести данные отписки в функцию которая отключает API сети
+              this.serviceInfo?.networks.substrate.forEach((name) => {
+                // если сетей нет в списке сетей на балансы которых мы должны быть подписанными, то удаляем подписку
+                if (!currentSubstrateNetworks.includes(name)) this.cancelNetworkSubscription(name);
+              });
+
+              if (isNewAddress) {
+                this.fetchNetworkBalances({
+                  ...serviceInfo.currentAccountInfo,
+                  substrateNetworks: this.state.networkService.activeNetworkByEcosystem.substrateList,
+                  evmNetworks: this.state.networkService.activeNetworkByEcosystem.evmList,
+                  tonNetworks: this.state.networkService.activeNetworkByEcosystem.tonList,
+                });
+
+                return;
+              }
+
+              if (isNewEthereumAddress) {
+                this.fetchNetworkBalances({
+                  ...serviceInfo.currentAccountInfo,
+                  evmNetworks: this.state.networkService.activeNetworkByEcosystem.evmList,
+                });
+
+                return;
+              }
+
+              const newSubstrateNetworks = currentSubstrateNetworks.filter(
+                (network) => !oldNetworks.substrate.includes(network)
               );
-            }
+              const newEvmNetworks = currentEvmNetworks.filter((network) => !oldNetworks.evm.includes(network));
+              const newTonNetworks = currentTonNetworks.filter((network) => !oldNetworks.ton.includes(network));
 
-            this.state.nftService.publishNfts();
-            this.serviceInfo.address = address;
-            this.serviceInfo.ethereumAddress = ethereumAddress;
-          }
+              // если адрес не менялся, подписываемся только на новые сети(которые только что включили)
+              this.fetchNetworkBalances({
+                ...serviceInfo.currentAccountInfo,
+                evmNetworks: newEvmNetworks,
+                substrateNetworks: newSubstrateNetworks,
+                tonNetworks: newTonNetworks,
+              });
 
-          // если сетей нет в списке сетей на балансы которых нужно быть подписанными
-          // то удаляем ее подписку
-          // P.S этого можно не делать, тк api сети уже disconnect, но все же удалим подписку
-          const networkUnsub = this.serviceInfo?.networks.substrate.filter(
-            (name) => !allNewSubstrateNetworks.includes(name)
+              // кейс, когда было [sora, polkadot, kusama]
+              // стало [sora], обрабатывать и отписываться от подписок на балансы не нужно,
+              // тк мы полностью отклюачемся от api, следовательно подписки умирают сами
+            },
+            1000
           );
-
-          this.stopAllNetworksSubscription(networkUnsub);
-
-          // обновляем список сетей на балансы которых мы подписаны
-          this.serviceInfo.networks.substrate = allNewSubstrateNetworks;
-          this.serviceInfo.networks.evm = allNewEvmNetworks;
-
-          // кейс, когда было [sora, polkadot, kusama]
-          // стало [sora], обрабатывать и отписываться от подписок на балансы не нужно,
-          // тк мы полностью отклюачемся от api, следовательно подписки умирают сами
         },
       });
   }
@@ -226,23 +245,27 @@ export class SubscriptionService {
     });
   }
 
-  async subscribeBalances(
-    address: string,
-    ethereumAddress: string,
-    newNetworks: NetworkName[] | null,
-    newEvmNetworks: NetworkName[] | null,
-    isFirstRun?: boolean
-  ) {
-    if (isFirstRun) this.state.balanceService.generateDefaultBalance(address);
+  async fetchNetworkBalances(props: GetBalancesProps) {
+    const { address, walletEcosystem, isFirstRun } = props;
 
-    if (newEvmNetworks?.length) this.state.fetchEvmBalance({ _networks: newEvmNetworks, ethereumAddress });
+    if (isFirstRun) {
+      this.state.balanceService.generateDefaultBalance(address, walletEcosystem!);
 
-    if (isFirstRun)
-      return newNetworks?.forEach((network) => {
-        this.state.balanceService.fetchBalance(address, network, ethereumAddress);
-      });
+      this.state.balanceService.fetchBalance(props);
 
-    const unsubList = subscribeBalance(address, ethereumAddress, newNetworks, this.state);
+      return;
+    }
+
+    this.state.balanceService.fetchBalance({
+      ...props,
+      substrateNetworks: [], // Удаялем сабстрейт сети потому что подписываемся на балансы через WS
+    });
+
+    if (walletEcosystem === WalletEcosystem.Substrate) this.subscribeSubstrateBalances(props);
+  }
+
+  async subscribeSubstrateBalances(props: GetBalancesProps) {
+    const unsubList = this.state.balanceService.substrateBalanceService.subscribeSubstrateBalances(props, this.state);
 
     unsubList.forEach(async (item) => {
       const value = await item;

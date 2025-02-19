@@ -1,8 +1,8 @@
-/* eslint-disable no-use-before-define */
+import { type TonApiClient } from '@ton-api/client';
+import { type WordCount } from '../../services';
 import type { NftTx, NftSettings } from '@extension-base/services/nft-service/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { ScamInfo } from '@extension-base/services/scam-service/types';
-import type { ALLOWED_PATH } from '@extension-base/defaults';
 import type { Subscription } from 'rxjs';
 import type { JsonRpcProvider, WebSocketProvider } from 'ethers';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
@@ -15,7 +15,7 @@ import type { ApiPromise } from '@polkadot/api';
 import type { HexString } from '@polkadot/util/types';
 import type { KeyringPair$Json, KeyringPair } from '@subwallet/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
+import type { FWKeyringMeta, NetworkJson, PriceProvider } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { TypeRegistry } from '@polkadot/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
@@ -30,8 +30,9 @@ import type {
   BuyProvider,
   MarketType,
   SwapOptions,
+  WalletEcosystem,
 } from '@/interfaces';
-import { type WarningValueName } from '@/consts/messages';
+import type { WarningValueName } from '@/consts/messages';
 
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
@@ -119,7 +120,14 @@ export interface RequestAddressCreate {
 export interface FetchBalanceRequest {
   address: string;
   ethereumAddress?: string;
-  networkName: NetworkName;
+  networks: NetworkName[];
+  walletEcosystem: WalletEcosystem;
+}
+
+export interface ResponseBalanceRequest {
+  network: NetworkName;
+  balance: string;
+  assetId: string;
 }
 
 export interface SubscribeBalanceRequest {
@@ -194,6 +202,7 @@ export interface RequestAccountCreateSuri {
   suri: string;
   type?: KeypairType;
   meta: FWKeyringMeta;
+  walletEcosystem: WalletEcosystem;
 }
 
 export interface BalanceJson {
@@ -206,11 +215,16 @@ export interface RequestMobileSign {
   id: string;
 }
 
-export interface PriceJson {
+export type TokenPrice = Record<string, number>;
+
+export interface BasePriceJson {
+  tokenPriceMap: TokenPrice;
+  tokenPriceChange: TokenPrice;
+}
+
+export interface PriceJson extends BasePriceJson {
   ready?: boolean;
-  currency: string;
-  tokenPriceMap: Record<string, number>;
-  tokenPriceChange: Record<string, number>;
+  fiat: string;
 }
 
 export enum TransferErrorCode {
@@ -272,8 +286,15 @@ export interface EvmApiProps {
   timeout: Record<string, number>;
 }
 
-export type FetchEvmBalancePayload = {
-  _networks?: NetworkName[];
+export interface TonApiProps {
+  api: TonApiClient;
+  nodeIndex?: number;
+  apiStatus: NETWORK_STATUS;
+}
+
+export type FetchBalancePayload = {
+  networks?: NetworkName[];
+  address?: string;
   ethereumAddress?: string;
   assetId?: string;
   force?: boolean;
@@ -398,11 +419,21 @@ export interface RequestUpdateMeta {
 export interface RequestAccountName {
   address: string;
   name: string;
+  walletEcosystem: WalletEcosystem;
 }
 
 export interface RequestAccountValidate {
-  address: string;
   password: string;
+}
+
+export interface RequestGetHistory {
+  address?: string;
+  network: NetworkName;
+}
+
+export interface RequestUpdateCurrentAccount {
+  address: string;
+  walletEcosystem?: WalletEcosystem;
 }
 
 export interface RequestAccountExport {
@@ -433,6 +464,17 @@ export interface RequestExportSeed {
   address: string;
   password?: string;
   isEVM?: boolean;
+  walletEcosystem?: WalletEcosystem;
+}
+
+export interface RequestGenerateMnemonic {
+  wordCount: WordCount;
+  walletEcosystem: WalletEcosystem;
+}
+
+export interface RequestValidateMnemonic {
+  seed: string;
+  walletEcosystem: WalletEcosystem;
 }
 
 export interface ResponseExportSeed {
@@ -446,6 +488,7 @@ export type EvmApiMap = Record<string, EvmApiProps>;
 export interface ApiMap {
   substrate: Record<string, ApiProps>;
   evm: EvmApiMap;
+  ton: Record<string, TonApiProps>;
 }
 
 export interface RequestActiveTabsUrlUpdate {
@@ -484,17 +527,7 @@ export interface RequestSigningCancel {
   id: string;
 }
 
-export interface RequestSigningIsLocked {
-  address: string;
-}
-
-export interface ResponseSigningIsLocked {
-  isLocked: boolean;
-  remainingTime: number;
-}
-
 // Responses
-
 export type ResponseTypes = {
   [MessageType in MessageTypes]: RequestSignatures[MessageType][1];
 };
@@ -547,10 +580,6 @@ export interface RequestJsonValidate {
   password: string;
   isSubstrate?: boolean;
 }
-
-type TAllowPath = typeof ALLOWED_PATH;
-
-export type AllowedPath = TAllowPath[number];
 
 export interface ResponseAuthorizeList {
   list: AuthUrls;
@@ -631,8 +660,6 @@ export interface SignRequest extends Resolver<ResponseSigning> {
   url: string;
 }
 
-export type CachedUnlocks = Record<string, number>;
-
 export interface AccountSub {
   subscription: Subscription;
   url: string;
@@ -661,7 +688,6 @@ export type IState = {
   accountSubs: Record<string, AccountSub>;
   windows: number[];
   fiatSymbol: string;
-  cachedUnlocks: CachedUnlocks;
   balances: Record<WalletAddress, Record<AssetName, Record<NetworkName, BalanceItem>>>;
   connectedTabsUrl: string[];
   transaction: Record<string, TransactionHistoryItem[]>;
@@ -732,6 +758,7 @@ export interface TokenGroup {
   providers: BuyProvider[];
   balances: BalanceItem[];
   color?: string;
+  priceProvider?: PriceProvider;
 }
 
 export type BalanceMap = Record<WalletAddress, TokenGroup[]>;

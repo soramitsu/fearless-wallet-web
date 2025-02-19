@@ -1,6 +1,6 @@
 import { type Route } from 'vue-router';
+import { setTitle } from '@/helpers/only-web';
 import { Components } from '@/router/routes';
-import { setTitle } from '@/helpers/common';
 import { FEARLESS_TITLE } from '@/consts/global';
 import { i18n } from '@/locales';
 import { IS_POPUP } from '@/consts/globalClient';
@@ -10,9 +10,9 @@ const updateTitle = (to: Route) => {
   if (IS_POPUP) return;
   const { name, meta, params } = to;
 
-  const accountStore = useAccountsStore();
+  const accountsStore = useAccountsStore();
 
-  const tokenBalances = accountStore.balances;
+  const tokenBalances = accountsStore.balances;
   const haveBalances = tokenBalances.length !== 0;
   const IsAssetsNetworkPage = name === Components.AssetNetworks;
   const IsAssetsHistoryPage = name === Components.AssetHistory;

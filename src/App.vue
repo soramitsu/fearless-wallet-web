@@ -14,22 +14,23 @@ import { keyring } from '@subwallet/ui-keyring';
 import MigrationService from '@extension-base/services/migration-service';
 import { initStorage } from '@extension-base/stores/Storage';
 import { ALL_NETWORKS } from './consts/networks';
-import { setTitle } from './helpers/common';
 import { useExtensionStore } from './stores/extension';
 import { useNetworksStore } from './stores/networks';
 import { useAccountsStore } from './stores/accounts';
-import { useSoraCardStore } from './stores/soraCard';
+import { Components } from './router/routes';
+import { IS_POPUP } from './consts/globalClient';
 import type { AccountJson, PriceJson } from '@extension-base/background/types/types';
+import { setTitle } from '@/helpers/only-web';
 import {
   soraFeesSubscribe,
   pingServiceWorker,
   subscribeAccounts,
-  subscribeAddresses,
   subscribeBalance,
   subscribeNetworkMap,
   subscribePrice,
   lockExtension,
   subscribeSelectedNetworks,
+  updateCurrentNetwork,
 } from '@/extension/messaging';
 import { IS_EXTENSION } from '@/consts/global';
 import { getNftSubscribe } from '@/extension/messaging/nfts';
@@ -39,7 +40,6 @@ export default class App extends Vue {
   extensionStore = useExtensionStore();
   networksStore = useNetworksStore();
   accountsStore = useAccountsStore();
-  soraCardStore = useSoraCardStore();
 
   pingInterval: NodeJS.Timer | undefined = undefined;
 
@@ -57,25 +57,29 @@ export default class App extends Vue {
   }
 
   async created() {
-    if (IS_EXTENSION) this.extensionStore.subscribeExtensionRequests();
+    lockExtension();
+
+    if (IS_EXTENSION) {
+      const hasRequests = await this.extensionStore.subscribeExtensionRequests();
+
+      if (IS_POPUP && hasRequests) return;
+    }
 
     if (!IS_EXTENSION) await this.setupWeb();
-
-    lockExtension();
 
     setTitle();
 
     this.setupWallet();
     this.setupNetworks();
+    this.networksStore.getFiats();
+
     await this.setupBalance();
+
     this.setupNfts();
-    this.networksStore.fetchFiats();
     this.setupPrice();
     this.setupSWPing();
 
-    await this.extensionStore.fetchFeatures();
-
-    this.soraCardStore.getUserStatus(); // SORA Card
+    this.extensionStore.fetchFeatures();
   }
 
   setupSWPing() {
@@ -93,7 +97,10 @@ export default class App extends Vue {
   }
 
   async setupBalance() {
-    const balance = await subscribeBalance((balanceUpdates) => this.accountsStore.setBalance(balanceUpdates));
+    const balance = await subscribeBalance((balanceUpdates) => {
+      this.accountsStore.setIsBalanceLoading(false);
+      this.accountsStore.setBalance(balanceUpdates);
+    });
 
     this.accountsStore.setBalance(balance);
   }
@@ -137,21 +144,28 @@ export default class App extends Vue {
     this.updatePrice(prices);
   }
 
-  updatePrice({ currency, tokenPriceMap, tokenPriceChange }: PriceJson) {
-    this.accountsStore.setSelectedFiat(currency);
+  updatePrice({ fiat, tokenPriceMap, tokenPriceChange }: PriceJson) {
+    this.accountsStore.setSelectedFiat(fiat);
     this.networksStore.setPrices({ tokenPriceMap, tokenPriceChange });
   }
 
-  onAccountUpdate(accounts: AccountJson[], isMobileUpdate = false) {
+  onAccountUpdate(accounts: AccountJson[]) {
     const selectedAccount = accounts.find((account) => account.active);
 
-    this.accountsStore.setAccounts({ accounts, isMobileUpdate });
+    this.accountsStore.setAccounts({ accounts });
 
-    if (selectedAccount || !this.accountsStore.accounts.length) {
-      this.accountsStore.setSelectedWallet(selectedAccount);
-      this.accountsStore.setSelectedNetwork(
-        selectedAccount && selectedAccount.network ? selectedAccount.network : ALL_NETWORKS
-      );
+    if (!selectedAccount) return;
+
+    this.accountsStore.setSelectedWallet(selectedAccount);
+
+    if (this.networksStore.networks.length === 1) {
+      updateCurrentNetwork(this.networksStore.networks[0].name);
+
+      this.accountsStore.setSelectedNetwork(this.networksStore.networks[0].name);
+    } else this.accountsStore.setSelectedNetwork(selectedAccount?.network ?? ALL_NETWORKS);
+
+    if (selectedAccount?.address !== this.accountsStore.selectedWallet.address) {
+      this.$router.push({ name: Components.Wallet }).catch(() => {});
     }
   }
 
@@ -160,7 +174,6 @@ export default class App extends Vue {
 
     this.onAccountUpdate(accounts);
 
-    subscribeAddresses((accounts) => this.onAccountUpdate(accounts, true));
     soraFeesSubscribe((fees) => this.networksStore.setSoraFees({ fees }));
   }
 }

@@ -44,6 +44,7 @@ export default class FiatsPopup extends Vue {
   toggleSelectedFiat(id: string) {
     updateFiatSymbol(id).then(() => {
       this.accountsStore.setSelectedFiat(id);
+
       this.$emit('handlerClose');
     });
   }

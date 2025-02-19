@@ -25,7 +25,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import type { NetworkJson } from '@extension-base/types';
-import type { SelectedWallet } from '@/store/accounts/types';
+import type { SelectedWallet } from '@/stores/accounts/types';
 import { useAccountsStore } from '@/stores/accounts';
 
 type Props = {

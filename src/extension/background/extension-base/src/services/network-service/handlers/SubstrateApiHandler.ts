@@ -9,7 +9,7 @@ import type { NetworkService } from '@extension-base/services/network-service';
 import type { NetworkJson } from '@extension-base/types';
 import type { ApiProps } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
-import type { NetworkName } from '@/interfaces';
+import { type NetworkName } from '@/interfaces';
 import { isSora } from '@/helpers';
 import { MAX_CONTINUE_RETRY } from '@/consts/networks';
 
@@ -18,12 +18,21 @@ export class SubstrateApiHandler {
 
   constructor(readonly networkService: NetworkService, public state: State) {}
 
-  refreshDotSamaApi(key: string) {
-    if (this.api[key]) {
-      this.api[key].nodeIndex = 0;
-      this.api[key].apiRetry = 0;
-    }
+  async destroyApi(network: string) {
+    const networkLower = network.toLowerCase();
 
+    if (!this.api[networkLower]) return;
+
+    this.api[networkLower].apiRetry = 0;
+
+    await this.api[networkLower]?.api?.disconnect();
+    await this.api[networkLower]?.provider?.disconnect();
+
+    delete this.api[networkLower]?.api;
+    delete this.api[networkLower]?.provider;
+  }
+
+  refreshDotSamaApi(key: string) {
     const network = this.networkService.getNetworkJson(key);
 
     this.initApi(network);
@@ -38,13 +47,6 @@ export class SubstrateApiHandler {
     };
   }
 
-  resetApiRetries() {
-    Object.values(this.api).forEach((api) => {
-      api.nodeIndex = 0;
-      api.apiRetry = 0;
-    });
-  }
-
   getListeners(network: NetworkJson) {
     const { name, nodes } = network;
     const networkName = name.toLowerCase();
@@ -52,12 +54,15 @@ export class SubstrateApiHandler {
     if (this.api[networkName] === undefined) this.api[networkName] = this.createApiObject();
     const { nodeIndex } = this.api[networkName];
 
-    const autoSelectNode = network.isManual ? null : nodes[nodeIndex].url;
-    const currentProvider = autoSelectNode ?? network.currentProvider;
+    let currentProvider = network.isManual ? network.currentProvider : nodes[nodeIndex ?? 0].url;
+
+    if (currentProvider.includes('dwellir')) {
+      currentProvider = `${currentProvider}/${process.env.FL_DWELLIR_API_KEY}`;
+    }
 
     const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [
       ['connected', () => this.onConnected(networkName)],
-      ['disconnected', () => this.onDisconnect(name)],
+      ['disconnected', () => this.onDisconnected(name)],
       ['ready', () => this.onReady(networkName)],
       ['error', () => null],
     ];
@@ -68,23 +73,19 @@ export class SubstrateApiHandler {
     };
   }
 
-  async initApi(network: NetworkJson): Promise<void> {
+  async initApi(network: NetworkJson) {
     const networkName = network.name.toLowerCase();
 
     const { currentProvider, eventListeners } = this.getListeners(network);
 
     if (isSora(networkName)) return SoraApiHandler.initApi(currentProvider, eventListeners);
 
-    try {
-      const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS, undefined, 10000);
+    const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS, undefined, 10000);
 
-      this.api[networkName].api = new ApiPromise({ provider, noInitWarn: true });
-      this.api[networkName].provider = provider;
+    this.api[networkName].api = new ApiPromise({ provider, noInitWarn: true });
+    this.api[networkName].provider = provider;
 
-      eventListeners.forEach(([eventName, callback]) => this.api[networkName].api?.on(eventName, callback));
-    } catch {
-      this.onDisconnect(networkName);
-    }
+    eventListeners.forEach(([eventName, callback]) => this.api[networkName].api?.on(eventName, callback));
   }
 
   onConnected(networkName: NetworkName) {
@@ -101,18 +102,22 @@ export class SubstrateApiHandler {
 
     if (!account) return;
 
-    this.state.subscriptionService.getNetworkSubscription(networkName)?.();
-    this.state.subscriptionService.subscribeBalances(account.address, account.ethereumAddress, [networkName], []);
+    this.state.subscriptionService.subscribeSubstrateBalances({
+      address: account.address,
+      ethereumAddress: account.ethereumAddress,
+      substrateNetworks: [networkName],
+    });
+
     this.state.balanceService.updateUtilityED(networkName);
   }
 
-  async onDisconnect(networkName: NetworkName) {
+  async onDisconnected(networkName: NetworkName) {
     const api = this.api[networkName.toLowerCase()];
     const netName = this.networkService.getNetworkJson(networkName).name;
     const network = this.networkService.networkMap[netName];
 
     if (api === undefined) {
-      this.state.subscriptionService.getNetworkSubscription(networkName)?.(); //clean up;
+      this.state.subscriptionService.cancelNetworkSubscription(networkName);
 
       return;
     }
@@ -121,20 +126,12 @@ export class SubstrateApiHandler {
 
     if (api.apiRetry < MAX_CONTINUE_RETRY) return;
 
-    api.provider?.disconnect();
+    await this.destroyApi(networkName);
 
     api.nodeIndex += 1;
 
-    if (api.nodeIndex <= network.nodes.length - 1) {
-      api.apiRetry = 0;
-      api.provider = undefined;
-      api.api = undefined;
-
-      if (navigator.onLine) this.initApi(network);
-      else {
-        api.apiStatus = NETWORK_STATUS.DISCONNECTED;
-        this.state.disableNetworkMap(networkName);
-      }
+    if (api.nodeIndex <= network.nodes.length - 1 && navigator.onLine) {
+      this.initApi(network);
     } else {
       api.apiStatus = NETWORK_STATUS.DISCONNECTED; // попробовали все ноды, не смогли подключиться, ставим статус дисконнект
 

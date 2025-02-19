@@ -25,7 +25,7 @@
 <script lang="ts" setup>
 import { computed, withDefaults } from 'vue';
 import { useI18n } from 'vue-i18n-composable';
-import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { getCostOfAssets } from '@/helpers/transfers';
 import { useAccountsStore } from '@/stores/accounts';
 import { useNetworksStore } from '@/stores/networks';
 
@@ -107,7 +107,7 @@ const value2Cut = computed(() => `${fiatSymbol.value} ${n(+_value2.value, 'price
         margin-bottom: 5px;
 
         .price {
-          font-size: 0.75em;
+          font-size: 0.75rem;
           color: $gray-color;
         }
       }

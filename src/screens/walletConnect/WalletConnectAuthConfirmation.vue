@@ -126,12 +126,12 @@ const selectedWalletName = computed(
 );
 const request = computed(() => extensionStore.wcConnectRequests[0]);
 const id = computed(() => request.value.id);
-const url = computed(() => request.value.url);
-const title = computed(() => request.value.request.params.proposer.metadata.name);
+const url = computed(() => request.value?.url);
+const title = computed(() => request.value?.request.params.proposer.metadata.name);
 const showWalletSelect = ref(false);
 
 const isSupportAllMethods = computed(() => {
-  for (const namespace of Object.values(request.value.request.params.requiredNamespaces)) {
+  for (const namespace of Object.values(request.value?.request.params.requiredNamespaces)) {
     for (const method of namespace.methods) {
       if (!WALLET_CONNECT_SUPPORTED_METHODS.some((el) => el === method)) return false;
     }
@@ -231,7 +231,7 @@ const onReject = () => {
   &__address {
     grid-area: address;
     color: $gray-color;
-    font-size: 0.75em;
+    font-size: 0.75rem;
     line-height: 16px;
     place-self: flex-start;
   }

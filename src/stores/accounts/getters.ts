@@ -1,4 +1,3 @@
-import { useExtensionStore } from '../extension';
 import { useNetworksStore } from '../networks';
 import type { NftCollection } from '@extension-base/services/nft-service/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -14,7 +13,6 @@ type Getters = {
   getFiatId(state: State): string;
   hiddenAssets(state: State): string[];
   getWallets(state: State): WalletInfo[];
-  showSoraCardBanner(state: State): boolean;
   getShowWarningNetwork(state: State): GetShowWarningNetworks;
   getAutoSelectNodesValueByNetwork(state: State): GetAutoSelectNodesValueByNetwork;
   isCustomSort(state: State): (address: string) => boolean;
@@ -88,13 +86,4 @@ export const getters: Getters = {
     (address: string) => {
       return isCustomSorted[address] ?? false;
     },
-
-  showSoraCardBanner({ soraCardBannerVisibility }) {
-    const extensionStore = useExtensionStore();
-
-    const features = extensionStore.$state.features;
-    const soraCard = features?.fiat?.soraCard;
-
-    return !!soraCard && soraCardBannerVisibility;
-  },
 };

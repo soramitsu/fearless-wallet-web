@@ -7,15 +7,23 @@ import type {
   HistoryServiceType,
   NetworkName,
   SoraHistoryElement,
+  TonEvent,
 } from '@/interfaces';
 import type { History } from '@/stores/networks/types';
 import { TransactionType } from '@/interfaces';
-import { firstCharToUp, isSora } from '@/helpers';
+import { firstCharToUp, isSora, isTonNetwork } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
+export enum TransferType {
+  Outgoing = 'outgoing',
+  Incoming = 'incoming',
+}
+
 function getType(historyElement: HistoryElement, networkName?: NetworkName): TransactionType {
   if (isSora(networkName ?? '')) return TransactionType.sora;
+
+  if (isTonNetwork(networkName ?? '')) return TransactionType.ton;
 
   const { transfer } = historyElement;
 
@@ -33,6 +41,12 @@ function getSignTransfer(historyElement: HistoryElement, address: string, networ
     return element.method === 'rewarded' ? '+' : '-';
   }
 
+  if (type === TransactionType.ton) {
+    const element = historyElement as unknown as TonEvent;
+
+    return element.isOutEvent ? '-' : '+';
+  }
+
   if (type === TransactionType.transfer) {
     const { transfer } = historyElement;
     const from = transfer?.from ?? '';
@@ -46,6 +60,12 @@ function getSignTransfer(historyElement: HistoryElement, address: string, networ
 function getTypeFormatted(historyElement: HistoryElement, address: string, networkName: NetworkName) {
   const type = getType(historyElement, networkName);
 
+  if (type === TransactionType.ton) {
+    const element = historyElement as unknown as TonEvent;
+
+    return element.isOutEvent ? TransferType.Outgoing : TransferType.Incoming;
+  }
+
   if (type === TransactionType.sora) {
     const element = historyElement as unknown as SoraHistoryElement;
 
@@ -55,7 +75,7 @@ function getTypeFormatted(historyElement: HistoryElement, address: string, netwo
   const signTransfer = getSignTransfer(historyElement, address, networkName);
 
   if (type === TransactionType.transfer) {
-    return signTransfer === '+' ? 'incomingTransfer' : 'outgoingTransfer';
+    return signTransfer === '+' ? TransferType.Incoming : TransferType.Outgoing;
   }
 
   // reward
@@ -97,6 +117,13 @@ function getHumanTransferFee(historyElement: HistoryElement, networkName: Networ
     return getHumanFeeValue(networkFee, networkName);
   }
 
+  if (type === TransactionType.ton) {
+    const element = historyElement as unknown as TonEvent;
+    const { networkFee } = element;
+
+    return getHumanFeeValue(networkFee, networkName);
+  }
+
   const { transfer } = historyElement;
 
   if (type === TransactionType.transfer) {
@@ -127,8 +154,8 @@ function getHistoryValue(
   const withFee = _withFee && signTransfer === '-';
 
   if (historyType === 'oklink') {
-    const amount = historyElement.transfer?.amount ? historyElement.transfer.amount : 0;
-    const fee = historyElement.transfer?.fee ? historyElement.transfer.fee : 0;
+    const amount = historyElement.transfer?.amount ?? 0;
+    const fee = historyElement.transfer?.fee ?? 0;
 
     if (withFee) return { signTransfer, value: +amount + +fee };
 
@@ -149,6 +176,15 @@ function getHistoryValue(
     const result = withFee && element.method !== 'rewarded' ? +dataValue + fee : +dataValue;
 
     return { signTransfer, value: result, targetValue };
+  }
+
+  if (type === TransactionType.ton) {
+    const element = historyElement as unknown as TonEvent;
+    const amount = element.amount ?? element.amountIn ?? 0;
+
+    const value = getHumanValue(amount, assetId, networkName);
+
+    return { signTransfer, value: value };
   }
 
   const { transfer, reward } = historyElement;
@@ -200,6 +236,12 @@ function getFormattedHistory(history: History, serviceType: HistoryServiceType):
         timestamp: (+historyElement.timestamp / 1000).toString(),
       };
     });
+
+    return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
+  }
+
+  if (serviceType === 'ton') {
+    const nodes: HistoryElement[] = history as HistoryElement[];
 
     return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
   }

@@ -1,4 +1,4 @@
-import { getAssetBalance } from '../../helpers';
+import { getAssetBalance } from '../../../background/helpers';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { Asset } from '@sora-substrate/util/src/assets/types';
 import type { NetworkName } from '@/interfaces';
@@ -18,7 +18,7 @@ function getSoraAsset(props: Props): Asset {
 
   return {
     address: currencyId!,
-    symbol: symbol,
+    symbol,
     name: symbol,
     decimals: precision,
     isMintable: true,

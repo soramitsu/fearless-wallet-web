@@ -18,7 +18,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { stripUrl } from '@extension-base/background/handlers/helpers';
+import { stripUrl } from '@/extension/background/extension-base/src/background/helpers';
 
 const { authorizedAccounts, url } = defineProps<{
   url: string;

@@ -1,12 +1,28 @@
 <template>
   <div>
-    <template v-if="showMnemonic">
-      <InfoRow text="accounts.mnemonic" iconValue="chevron-right" :isHoverRow="true" @click="openExport('mnemonic')" />
+    <InfoRow
+      v-if="isTonWallet || hasSubstrateMnemonic"
+      text="accounts.mnemonic"
+      iconValue="chevron-right"
+      :isHoverRow="true"
+      @click="openExport('mnemonic')"
+    />
 
-      <InfoRow text="accounts.rawSeed" iconValue="chevron-right" :isHoverRow="true" @click="openExport('rawSeed')" />
-    </template>
+    <InfoRow
+      v-if="hasSubstrateMnemonic"
+      text="accounts.rawSeed"
+      iconValue="chevron-right"
+      :isHoverRow="true"
+      @click="openExport('rawSeed')"
+    />
 
-    <InfoRow text="accounts.json" iconValue="chevron-right" :isHoverRow="true" @click="openExport('json')" />
+    <InfoRow
+      v-if="!isTonWallet"
+      text="accounts.json"
+      iconValue="chevron-right"
+      :isHoverRow="true"
+      @click="openExport('json')"
+    />
   </div>
 </template>
 
@@ -20,7 +36,11 @@ const accountsStore = useAccountsStore();
 const emit = defineEmits(['setExportType']);
 
 const selectedWallet = computed(() => accountsStore.selectedWallet);
-const showMnemonic = computed(() => !!(selectedWallet.value.isMasterAccount || selectedWallet.value.haveEntropy));
+const isTonWallet = computed(() => selectedWallet.value.isTon);
+
+const hasSubstrateMnemonic = computed(
+  () => !!(selectedWallet.value.isMasterAccount || selectedWallet.value.haveEntropy)
+);
 
 const openExport = (type: ExportType) => emit('setExportType', type);
 </script>

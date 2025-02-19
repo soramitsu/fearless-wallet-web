@@ -16,13 +16,11 @@ const PORT_EXTENSION = `${PORT_PREFIX}-extension`;
 const MESSAGE_ORIGIN_PAGE = `${PORT_PREFIX}-page`;
 const MESSAGE_ORIGIN_CONTENT = `${PORT_PREFIX}-content`;
 
-const ALLOWED_PATH = ['/', '/account/import-ledger', '/account/restore-json', '/sora-card'] as const;
 const PHISHING_PAGE_REDIRECT = '/phishing-page-detected';
 const PASSWORD_EXPIRY_MIN = 15;
 const PASSWORD_EXPIRY_MS = PASSWORD_EXPIRY_MIN * MIN1;
 
 export {
-  ALLOWED_PATH,
   PASSWORD_EXPIRY_MIN,
   PASSWORD_EXPIRY_MS,
   PHISHING_PAGE_REDIRECT,

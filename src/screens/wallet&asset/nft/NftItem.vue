@@ -77,7 +77,7 @@ const onNavigate = () => {
   gap: 4px;
   padding: 20px;
   text-align: start;
-  font-size: 0.75em;
+  font-size: 0.75rem;
   font-weight: 400;
   line-height: 15px;
   color: $grayish-white;

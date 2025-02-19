@@ -14,18 +14,18 @@
 
       <ValidatedInput
         :value="address"
+        :isError="isErrorAddress"
         placeholder="assets.walletAddress"
         class="row"
         errorDescriptions="accounts.invalidAccountAddress"
-        :isError="isErrorAddress"
         data-testId="walletAddressInput"
         @change="changeAddress"
       />
 
       <Checkbox
         :value="saveForAllNetworks"
-        size="medium"
         :label="$t('assets.saveAddressForAllNetwork')"
+        size="medium"
         class="row"
         data-testid="saveForAllNetworks"
         @change="onSave"
@@ -45,10 +45,13 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { storage } from '@extension-base/stores/Storage';
-
 import BaseApi from '@/util/BaseApi';
+import { useAccountsStore } from '@/stores/accounts';
+
 @Component
 export default class EditAddressBook extends Vue {
+  accountStore = useAccountsStore();
+
   name = '';
   address = '';
   saveForAllNetworks = false;
@@ -65,10 +68,12 @@ export default class EditAddressBook extends Vue {
   get isErrorAddress() {
     const address = this.address.trim();
 
-    return (
-      address.length !== 0 &&
-      !(BaseApi.validateAddress(address, 'polkadot') || BaseApi.validateAddress(address, 'moonbeam'))
-    );
+    if (address.length === 0) return false;
+
+    // TODO ton
+    if (this.accountStore.selectedWallet.isTon) return false;
+
+    return !(BaseApi.validateAddress(address, 'polkadot') || BaseApi.validateAddress(address, 'moonbeam'));
   }
 
   changeName(value: string) {

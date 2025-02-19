@@ -80,6 +80,11 @@ interface ChangeWalletBalance {
   amount: number;
 }
 
+enum WalletEcosystem {
+  Substrate = 'substrate',
+  Ton = 'ton',
+}
+
 type Placement =
   | 'top'
   | 'right'
@@ -120,4 +125,5 @@ export {
   StakingTab,
   MyStakingTab,
   PoolsTab,
+  WalletEcosystem,
 };

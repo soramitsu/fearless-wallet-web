@@ -23,7 +23,7 @@
         target=".hide-zero"
         placementTooltip="right"
         :label="toggleButtonText"
-        @click="$emit('toggleCurrenciesVisible', allCurrenciesHidden)"
+        @click="$emit('toggleCurrenciesVisible', allTokenGroupsHidden)"
       />
     </div>
 
@@ -33,18 +33,19 @@
         :value="syncedFilterValue"
         :width="searchInputWidth"
         placeholder="common.search"
-        class="search"
         data-testid="searchInput"
         @change="changeSyncedFilterValue"
       />
 
       <CircleButton
+        v-if="!isTonWallet"
         backgroundColor="none"
         tooltipText="wallet.assetManagement"
         placement="left"
         :target="target"
         :iconName="iconName"
         data-testid="filterBtn"
+        class="filter-btn"
         @click="toggleAssetsManagementVisible"
       />
     </div>
@@ -56,7 +57,6 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import type { TabWallet } from '@/interfaces/common';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import { Components } from '@/router/routes';
-import { IS_EXTENSION } from '@/consts/global';
 import { useAccountsStore } from '@/stores/accounts';
 
 interface TabsOptions {
@@ -69,44 +69,54 @@ interface TabsOptions {
 
 @Component
 export default class ContentSettings extends Vue {
-  readonly tabsOptions: TabsOptions[] = [
-    {
-      label: 'wallet.currencies',
-      tabName: Components.Currencies,
-      tooltipText: 'wallet.fungibleTokens',
-      classes: 'currencies-tab',
-      target: '.currencies-tab',
-    },
-    {
-      label: 'wallet.nfts',
-      tabName: Components.Nfts,
-      tooltipText: 'wallet.nonFungibleTokens',
-      classes: 'currencies-tab',
-      target: '.currencies-tab',
-    },
-  ];
-
   accountsStore = useAccountsStore();
 
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;
   @PropSync('filterValue', { type: String }) syncedFilterValue!: string;
   @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
-  @Prop(Array) balances!: TokenGroup[];
+  @Prop(Array) tokenGroups!: TokenGroup[];
+
+  get tabsOptions() {
+    const baseTabs: TabsOptions[] = [
+      {
+        label: 'wallet.currencies',
+        tabName: Components.Currencies,
+        tooltipText: 'wallet.fungibleTokens',
+        classes: 'currencies-tab',
+        target: '.currencies-tab',
+      },
+    ];
+
+    if (!this.accountsStore.selectedWallet.isTon)
+      baseTabs.push({
+        label: 'wallet.nfts',
+        tabName: Components.Nfts,
+        tooltipText: 'wallet.nonFungibleTokens',
+        classes: 'currencies-tab',
+        target: '.currencies-tab',
+      });
+
+    return baseTabs;
+  }
+
+  get isTonWallet() {
+    return this.accountsStore.selectedWallet.isTon;
+  }
 
   get target() {
     return `.${this.iconName}`;
   }
 
-  get allCurrenciesHidden() {
-    return this.balances.every(({ groupId }) => this.accountsStore.hiddenAssets.includes(groupId));
+  get allTokenGroupsHidden() {
+    return this.tokenGroups.every(({ groupId }) => this.accountsStore.hiddenAssets.includes(groupId));
   }
 
   get searchInputWidth() {
-    return IS_EXTENSION ? '185px' : '100%';
+    return '100%';
   }
 
   get toggleButtonText() {
-    return this.allCurrenciesHidden ? 'wallet.showAllBalances' : 'wallet.hideZero';
+    return this.allTokenGroupsHidden ? 'wallet.showAllBalances' : 'wallet.hideZero';
   }
 
   get iconName() {
@@ -157,8 +167,8 @@ export default class ContentSettings extends Vue {
     }
   }
 
-  .search {
-    margin-right: 16px;
+  .filter-btn {
+    margin-left: 16px;
   }
 
   .hide-balance-text {

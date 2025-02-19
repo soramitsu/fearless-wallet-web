@@ -3,7 +3,6 @@ import { Subject } from 'rxjs';
 import AlchemyNftController from '@extension-base/services/nft-service/handlers/AlchemyNftSdk';
 import { PROD_NFT_NETWORKS } from '@extension-base/services/nft-service/consts';
 import { storage } from '@extension-base/stores/Storage';
-import { getContract } from '@extension-base/api/evm/contracts';
 import { parseEther, formatUnits, Wallet, type Contract } from 'ethers';
 import {
   BasicTxErrorCode,
@@ -152,7 +151,11 @@ export class NftService {
   async sendNft(tx: RequestNftTransfer): Promise<ResponseNftTransfer> {
     const { from, contract: contractAddress } = tx;
     const api = this.state.getEvmApi(tx.network)?.api;
-    const contract = await getContract(contractAddress, api, tx.type === 'ERC721' ? 'ERC721' : 'ERC1155');
+    const contract = await this.state.evmContractService.getContract(
+      contractAddress,
+      api,
+      tx.type === 'ERC721' ? 'ERC721' : 'ERC1155'
+    );
 
     this.state.keyringService.unlockPair(from);
 
@@ -205,7 +208,13 @@ export class NftService {
     if (!api) throw new Error('API not found');
     const networkJson = this.state.networkService.getNetworkJson(network);
     const utilityAsset = networkJson.assets.find((el) => el.isUtility)!;
-    const contract = await getContract(contractAddress, api, type === 'ERC721' ? 'ERC721' : 'ERC1155');
+
+    const contract = await this.state.evmContractService.getContract(
+      contractAddress,
+      api,
+      type === 'ERC721' ? 'ERC721' : 'ERC1155'
+    );
+
     const feeData = await api.getFeeData();
     const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
 

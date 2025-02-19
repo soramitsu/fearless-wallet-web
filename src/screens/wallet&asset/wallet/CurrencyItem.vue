@@ -1,8 +1,14 @@
 <template>
-  <Lazy v-if="showCurrencyItem" :timeoutCallback="timeoutCallback" class="currency-item" @click.native="openAssetPage">
+  <LazyRender
+    v-if="showCurrencyItem"
+    :timeoutCallback="timeoutCallback"
+    class="currency-item"
+    @click.native="openAssetPage"
+  >
     <div v-if="showAssetsManagementForm" class="drag-icon">
       <SIcon name="basic-menu-24" class="handle" />
     </div>
+
     <div class="img-container">
       <ExternalLogo class="asset-icon" :name="assetData.icon" :width="42" />
     </div>
@@ -29,6 +35,7 @@
           </template>
         </template>
       </div>
+
       <div class="row second-row">
         <div class="currency-name overflow" data-testid="currencyName">{{ assetData.symbol.toUpperCase() }}</div>
 
@@ -38,11 +45,12 @@
           {{ totalAssetBalanceValue }}
         </div>
       </div>
-      <div class="row third-row">
-        <div class="price row" data-testid="price">
-          {{ assetPrice }}
 
-          <div :class="changePriceClasses" data-testid="changePrice">{{ assetPriceChange }}</div>
+      <div v-if="showPriceRow" class="row third-row">
+        <div class="price row" data-testid="price">
+          {{ assetFiat }}
+
+          <div :class="changePriceClasses" data-testid="changePrice">{{ assetFiatChange }}</div>
         </div>
 
         <Shimmer v-if="showShimmers" height="14px" width="70px" />
@@ -93,7 +101,7 @@
         />
       </template>
     </div>
-  </Lazy>
+  </LazyRender>
 </template>
 
 <script lang="ts">
@@ -123,6 +131,10 @@ export default class CurrencyItem extends Vue {
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
 
+  get showPriceRow() {
+    return this.priceJson.isExist;
+  }
+
   get networkJson() {
     return this.networksStore.getNetwork(this.selectedNetwork);
   }
@@ -148,16 +160,12 @@ export default class CurrencyItem extends Vue {
     });
   }
 
-  get balancesLength() {
-    return this.filteredBalances.length;
-  }
-
   get isAdditional() {
-    return this.balancesLength > this.countDisplayedNetworks;
+    return this.filteredBalances.length > this.countDisplayedNetworks;
   }
 
   get additionalCount() {
-    return this.balancesLength - (this.countDisplayedNetworks - 1);
+    return this.filteredBalances.length - (this.countDisplayedNetworks - 1);
   }
 
   get tokenName() {
@@ -179,10 +187,7 @@ export default class CurrencyItem extends Vue {
       return network.name;
     }
 
-    if (
-      BaseApi.isEthereumNetwork(this.assetData.mainNetwork) &&
-      this.accountsStore.selectedWallet.ethereumAddress === ''
-    ) {
+    if (BaseApi.isEthereumNetwork(this.assetData.mainNetwork) && !this.accountsStore.selectedWallet.hasEthereum) {
       const networkWithTokens = activeNetworks.find(({ transferable }) => transferable && transferable !== '0')?.name;
       const network = this.networksStore.getNetwork(networkWithTokens ?? this.assetData.balances[0].name);
 
@@ -198,7 +203,7 @@ export default class CurrencyItem extends Vue {
     return this.assetData.groupId;
   }
 
-  get tokenPrice() {
+  get priceJson() {
     return this.networksStore.getAssetPrice(this.assetData.priceId ?? '');
   }
 
@@ -268,18 +273,18 @@ export default class CurrencyItem extends Vue {
     );
   }
 
-  get assetPrice() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(this.tokenPrice.price, 'price')}`;
+  get assetFiat() {
+    return `${this.accountsStore.fiatSymbol}${this.$n(this.priceJson.price, 'price')}`;
   }
 
   get transferableFiatBalanceValue() {
     return `${this.accountsStore.fiatSymbol}${this.$n(this.transferableFiatBalance, 'price')}`;
   }
 
-  get assetPriceChange() {
-    if (this.tokenPrice.priceChange === 0) return '';
+  get assetFiatChange() {
+    if (!this.priceJson.priceChange) return '';
 
-    return this.$n(this.tokenPrice.priceChange, 'percent');
+    return this.$n(this.priceJson.priceChange, 'percent');
   }
 
   get totalAssetBalanceValue() {
@@ -291,14 +296,14 @@ export default class CurrencyItem extends Vue {
   }
 
   get transferableFiatBalance() {
-    return this.transferableAssetBalance * this.tokenPrice.price;
+    return this.transferableAssetBalance * this.priceJson.price;
   }
 
   get changePriceClasses() {
     const classes = ['price-change'];
 
-    if (this.tokenPrice.priceChange > 0) classes.push('up-price');
-    else if (this.tokenPrice.priceChange < 0) classes.push('down-price');
+    if (this.priceJson.priceChange > 0) classes.push('up-price');
+    else if (this.priceJson.priceChange < 0) classes.push('down-price');
 
     return classes;
   }
@@ -416,7 +421,7 @@ export default class CurrencyItem extends Vue {
     }
 
     .first-row {
-      font-size: 0.75em;
+      font-size: 0.75rem;
       color: $gray-color;
       margin-bottom: 5px;
       height: 14px;
@@ -439,7 +444,7 @@ export default class CurrencyItem extends Vue {
       margin-bottom: 5px;
 
       .currency-name {
-        font-size: 1.25em;
+        font-size: 1.25rem;
         text-transform: uppercase;
         max-width: 220px;
       }
@@ -453,7 +458,7 @@ export default class CurrencyItem extends Vue {
 
     .third-row {
       display: flex;
-      font-size: 0.75em;
+      font-size: 0.75rem;
       color: $default-white;
       height: 14px;
 
@@ -478,7 +483,7 @@ export default class CurrencyItem extends Vue {
   }
 
   .second-row-left {
-    font-size: 1.25em;
+    font-size: 1.25rem;
   }
 
   .activity {
@@ -508,6 +513,7 @@ export default class CurrencyItem extends Vue {
 
     .asset-icon {
       margin-right: 13px;
+      border-radius: 50%;
     }
   }
 
@@ -515,6 +521,7 @@ export default class CurrencyItem extends Vue {
     margin-right: 3px;
     opacity: 0.5;
     user-select: none;
+    border-radius: 50%;
 
     &:last-child {
       margin-right: 0;

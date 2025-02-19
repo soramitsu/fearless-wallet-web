@@ -1,9 +1,9 @@
 import { FPNumber } from '@sora-substrate/util';
 import { APIItemState } from '@extension-base/api/types/networks';
-import type { NetworkName, AssetsPrice, BuyProvider } from '@/interfaces';
+import type { NetworkName, BuyProvider } from '@/interfaces';
 import type { NetworkJson } from '@extension-base/types';
 import type { BalanceItem } from '@extension-base/api/evm/types';
-import type { TokenGroup } from '@extension-base/background/types/types';
+import type { BasePriceJson, TokenGroup } from '@extension-base/background/types/types';
 import { getNativeAssetName } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS, ALL_NETWORKS } from '@/consts/networks';
@@ -18,7 +18,7 @@ export function getTransferableBalanceInNetwork(token: TokenGroup, network: stri
   return token.balances?.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
 }
 
-function defaultSortingCurrencies(currencies: TokenGroup[], { tokenPriceMap }: AssetsPrice, network: NetworkName) {
+function defaultSortingCurrencies(currencies: TokenGroup[], { tokenPriceMap }: BasePriceJson, network: NetworkName) {
   const relayChains = [];
 
   const currenciesThatReady = currencies.filter(({ balances }) =>

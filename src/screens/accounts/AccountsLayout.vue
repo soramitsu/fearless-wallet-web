@@ -136,6 +136,8 @@ export default class AccountsLayout extends Vue {
   }
 
   get showBackIcon() {
+    if (this.accountsStore.selectedWallet.isTon) return false;
+
     return !this.isAccountSetting;
   }
 
@@ -185,6 +187,8 @@ export default class AccountsLayout extends Vue {
 
   setPassword(password: string = '') {
     this.password = password;
+
+    if (this.accountsStore.selectedWallet.isTon) this.setExportType('mnemonic');
   }
 
   handlerAccept() {

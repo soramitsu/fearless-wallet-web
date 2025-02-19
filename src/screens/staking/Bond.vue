@@ -236,7 +236,7 @@ import FiltersPopup from '@/screens/staking/myStake/validators/FiltersPopup.vue'
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
 import { getBondAndNominateNetworkFee } from '@/extension/messaging';
 import { calcTransferableSendMinusFee, getUtilityAsset, isValidAmountAsset } from '@/helpers/currencies';
-import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { getCostOfAssets } from '@/helpers/transfers';
 import BaseApi from '@/util/BaseApi';
 import { cut, getClipboard } from '@/helpers';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';

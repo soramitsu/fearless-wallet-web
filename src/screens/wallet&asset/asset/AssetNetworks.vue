@@ -1,6 +1,6 @@
 <template>
   <Fragment>
-    <ContentForm :height="271">
+    <ContentForm :height="contentFormHeight">
       <div class="networks">
         <div class="networks-settings">
           <TabButton
@@ -62,11 +62,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-
 import { APIItemState } from '@extension-base/api/types/networks';
 import HistoryItem from './HistoryItem.vue';
 import type { TokenGroup } from '@extension-base/background/types/types';
-
 import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
 import { Components } from '@/router/routes';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
@@ -74,6 +72,7 @@ import { fetchEvmBalance } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { MENU_HEIGHT } from '@/screens/main/Menu.vue';
 
 interface TabsOptions {
   label: string;
@@ -117,6 +116,10 @@ export default class AssetNetworks extends Vue {
   showSelectFilterPopup = false;
 
   @Prop(Object) currency!: TokenGroup;
+
+  get contentFormHeight() {
+    return this.accountsStore.selectedWallet.isTon ? 266 + MENU_HEIGHT : 266;
+  }
 
   get filteredNetworks() {
     const baseFilter = this.currency.balances?.filter(({ name, state }) => {

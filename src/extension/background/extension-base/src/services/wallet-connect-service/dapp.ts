@@ -227,7 +227,7 @@ export class WalletConnectDAppService {
       },
       'address'
     );
-    this.state.updateCurrentAccount(encodedAddress);
+    this.state.updateCurrentAccount({ address: encodedAddress });
 
     cb({ status: true });
   }
@@ -255,13 +255,12 @@ export class WalletConnectDAppService {
     const account = this.state.keyringService.getAddresses().find((el) => el.meta.wcTopic === topic);
 
     if (account) {
-      const current = this.state.currentAccount;
       this.state.keyringService.forgetAddress(account?.address);
 
-      if (current?.address === account.address) {
-        const accounts = this.state.keyringService.getSubstrateAccounts();
+      if (this.state.currentAccount?.address === account.address) {
+        const accounts = this.state.keyringService.getAllSubstrateAccounts();
 
-        if (accounts.length) this.state.updateCurrentAccount(accounts[0].address);
+        if (accounts.length) this.state.updateCurrentAccount({ address: accounts[0].address });
         else this.state.setCurrentAccount(null);
       }
 
@@ -377,9 +376,7 @@ export class WalletConnectDAppService {
       return this.app.client.request<{ payload: HexString }>(requestEvent as any);
     };
 
-    if (!chainState.active) {
-      await this.state.setActiveNetworks(networkKey);
-    }
+    if (!chainState.active) await this.state.setActiveNetworks(networkKey);
 
     const res = await createRequest();
 

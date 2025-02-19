@@ -48,7 +48,7 @@ import { formatUnits } from 'ethers';
 import { type EvmRequestPayload } from '@extension-base/services/request-service/types';
 import type { SigningRequest } from '@extension-base/background/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import type { ApprovePayload } from '@/store/extension/actions';
+import type { ApprovePayload } from '@/stores/extension/actions';
 import BaseApi from '@/util/BaseApi';
 import WalletInfo from '@/screens/extension-ui/signing/WalletInfo.vue';
 import InfoList from '@/screens/extension-ui/InfoList.vue';

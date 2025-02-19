@@ -1,10 +1,14 @@
 <template>
   <div class="logo">
-    <div v-if="showLogo" :class="circleClasses" :style="styleCircle">
-      <div :class="circleBlurClasses">
-        <Icon icon="fw-logo" className="img" :style="sizeIconLogo" />
+    <template v-if="showLogo">
+      <img v-if="showWalletLogo && isTonWallet" :src="tonIcon" :style="styleCircle" />
+
+      <div v-else :class="circleClasses" :style="styleCircle">
+        <div :class="circleBlurClasses">
+          <Icon icon="fw-logo" className="img" :style="sizeIconLogo" />
+        </div>
       </div>
-    </div>
+    </template>
 
     <div v-if="text" class="text">{{ $t(text) }}</div>
     <div v-if="subtext" class="subtext">{{ $t(subtext) }}</div>
@@ -13,6 +17,8 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
+import { useAccountsStore } from '@/stores/accounts';
+import { TON_ICON } from '@/consts/networks';
 
 type SizeLogo = 'mini' | 'small' | 'medium' | 'big';
 type TypeLogo = 'primary' | 'secondary';
@@ -23,7 +29,12 @@ interface Props {
   size?: SizeLogo;
   typeLogo?: TypeLogo;
   showLogo?: boolean;
+  showWalletLogo?: boolean;
 }
+
+const tonIcon = TON_ICON;
+
+const accountsStore = useAccountsStore();
 
 const props = withDefaults(defineProps<Props>(), {
   size: 'medium',
@@ -37,6 +48,7 @@ const circleSizes = {
   medium: '72px',
   big: '96px',
 };
+
 const iconSizes = {
   mini: {
     height: '18px',
@@ -55,6 +67,8 @@ const iconSizes = {
     width: '85px',
   },
 };
+
+const isTonWallet = computed(() => accountsStore.selectedWallet.isTon);
 
 const circleClasses = computed(() => ['circle', `circle-${props.typeLogo}`]);
 

@@ -8,7 +8,7 @@ import type { NetworkName } from '@/interfaces';
 import type State from '@extension-base/background/handlers/State';
 import { getJettonAssetId, isSameString } from '@/helpers';
 
-export const FETCH_INTERVAL = 2900250;
+export const FETCH_INTERVAL = 2900450;
 
 export class TonBalanceService {
   baseUrl = 'https://tonscanner.org';

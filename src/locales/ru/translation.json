@@ -321,6 +321,7 @@
     "copyAddress": "Копировать адрес",
     "subscan": "Смотреть в Subscan",
     "etherscan": "Смотреть в Etherscan",
+    "tonviewer": "Смотреть в Tonviewer",
     "deleteCustomNode": "Удалить пользовательскую ноду?",
     "careful": "Будьте осторожны",
     "invalidNodeAddress": "Неверный формат адреса ноды",

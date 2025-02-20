@@ -90,10 +90,6 @@ export default class Payee extends Vue {
     return cut(this.accountsStore.selectedWallet.name);
   }
 
-  get filteredWallets() {
-    return this.accountsStore.accounts.filter(({ active }) => !active);
-  }
-
   get stakingAssetPrice() {
     const priceId = this.stakingCurrency?.priceId ?? '';
 

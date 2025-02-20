@@ -1,10 +1,11 @@
 import { useNetworksStore } from '../networks';
 import type { NftCollection } from '@extension-base/services/nft-service/types';
 import type { NetworkJson } from '@extension-base/types';
-import type { WalletInfo, GetAutoSelectNodesValueByNetwork, GetShowWarningNetworks } from './types';
+import type { GetAutoSelectNodesValueByNetwork, GetShowWarningNetworks } from './types';
 import type { State } from './state';
-import type { FiatJson } from '@/interfaces';
+import { WalletEcosystem, type FiatJson } from '@/interfaces';
 import { ALL_NETWORKS } from '@/consts/networks';
+import { type AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
 type Getters = {
   nftsByActiveNetworks(state: State): NftCollection[];
@@ -12,10 +13,10 @@ type Getters = {
   fiatSymbol(state: State): string;
   getFiatId(state: State): string;
   hiddenAssets(state: State): string[];
-  getWallets(state: State): WalletInfo[];
   getShowWarningNetwork(state: State): GetShowWarningNetworks;
   getAutoSelectNodesValueByNetwork(state: State): GetAutoSelectNodesValueByNetwork;
   isCustomSort(state: State): (address: string) => boolean;
+  acountsEcosystem(state: State): AccountJson[];
 };
 
 export const getters: Getters = {
@@ -65,14 +66,16 @@ export const getters: Getters = {
       return autoSelectNode[networkName] ?? true;
     },
 
-  getWallets({ accounts }) {
-    return accounts.map((account) => ({
-      name: account.name,
-      ethereumAddress: account.ethereumAddress,
-      address: account.address,
-      isMobile: !!account.isMobile,
-      active: !!account.active,
-    }));
+  acountsEcosystem({ accounts, selectedWallet: { isSubstrate, isTon } }) {
+    return accounts.filter(({ active, walletEcosystem }) => {
+      if (
+        (walletEcosystem === WalletEcosystem.Ton && isSubstrate) ||
+        (walletEcosystem === WalletEcosystem.Substrate && isTon)
+      )
+        return false;
+
+      return !active;
+    });
   },
 
   getShowWarningNetwork:

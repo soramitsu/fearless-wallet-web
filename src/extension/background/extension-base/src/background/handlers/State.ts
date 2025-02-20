@@ -54,7 +54,6 @@ import { isEthereumNetwork } from '@/extension/background/extension-base/src/bac
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS, TON_MAINNET } from '@/consts/networks';
 import { isSameString } from '@/helpers';
-import { IS_PRODUCTION } from '@/consts/global';
 
 type Wallet = {
   address: string;
@@ -432,7 +431,7 @@ export default class State {
       this.keyringService.triggerWalletsSubscription(address, walletEcosystem);
 
       const activeValue =
-        walletEcosystem === WalletEcosystem.Ton && IS_PRODUCTION
+        walletEcosystem === WalletEcosystem.Ton
           ? TON_MAINNET
           : this.networkService.selectedNetworks[address] ?? POPULAR_NETWORKS;
 

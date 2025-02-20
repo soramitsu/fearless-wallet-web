@@ -60,11 +60,9 @@ const isAllSelected = () => Object.values(state.value).every(({ active }) => act
 onMounted(async () => {
   await extensionStore.getAuthList();
 
-  const wallets: WalletInfo[] = accountsStore.getWallets;
-
   const { authorizedAccounts, evmAuthorizedAccount } = list.value[url.value] ?? {};
 
-  wallets.forEach(({ name, address, ethereumAddress, isMobile }) => {
+  accountsStore.accounts.forEach(({ name, address, ethereumAddress, isMobile }) => {
     const isAuthorized = isEVM.value
       ? ethereumAddress === evmAuthorizedAccount
       : authorizedAccounts.some((el: string) => el === address);

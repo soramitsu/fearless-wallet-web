@@ -77,7 +77,14 @@ export default class AccountSettingsPopup extends Vue {
   }
 
   get buttonText() {
-    return this.$t(this.explorerType === 'etherscan' ? 'accounts.etherscan' : 'accounts.subscan');
+    const explorer =
+      this.explorerType === 'etherscan'
+        ? 'accounts.etherscan'
+        : this.explorerType === 'ton'
+        ? 'accounts.tonviewer'
+        : 'accounts.subscan';
+
+    return this.$t(explorer);
   }
 
   get top() {

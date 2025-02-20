@@ -26,7 +26,7 @@
 
         <div v-else-if="showMyWallets">
           <WalletInfo
-            v-for="({ name, address, ethereumAddress, isMobile }, index) in filteredWallets"
+            v-for="({ name, address, ethereumAddress, isMobile }, index) in acountsEcosystem"
             :key="name + index"
             :name="name"
             :isSelected="getStatusWallet(address, ethereumAddress)"
@@ -299,10 +299,10 @@ export default class TransferForm extends Vue {
     return cut(this.syncedRecipient);
   }
 
-  get filteredWallets() {
+  get acountsEcosystem() {
     if (this.isCrossChain) return this.accountsStore.accounts;
 
-    return this.accountsStore.accounts.filter(({ active }) => !active);
+    return this.accountsStore.acountsEcosystem;
   }
 
   get formHeader() {
@@ -316,7 +316,7 @@ export default class TransferForm extends Vue {
   }
 
   get showMyWalletsButton() {
-    return this.filteredWallets.length !== 0;
+    return this.acountsEcosystem.length !== 0;
   }
 
   get isTransfer() {

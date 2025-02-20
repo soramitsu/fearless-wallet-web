@@ -26,7 +26,7 @@
 
         <div v-else-if="showMyWallets">
           <WalletInfo
-            v-for="({ name, address, ethereumAddress, isMobile }, index) in filteredWallets"
+            v-for="({ name, address, ethereumAddress, isMobile }, index) in acountsEcosystem"
             :key="name + index"
             :name="name"
             :isSelected="getStatusWallet(address, ethereumAddress)"
@@ -309,12 +309,12 @@ export default class Bond extends Vue {
     return this.accountsStore.selectedWallet.name;
   }
 
-  get filteredWallets() {
-    return this.accountsStore.accounts.filter(({ active }) => !active);
+  get acountsEcosystem() {
+    return this.accountsStore.acountsEcosystem;
   }
 
   get showMyWalletsButton() {
-    return this.filteredWallets.length !== 0;
+    return this.acountsEcosystem.length !== 0;
   }
 
   get stakingCurrencyBalance() {

@@ -1,6 +1,3 @@
-// Copyright 2017-2022 @polkadot/react-signer authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
 import { wrapBytes } from '@polkadot/extension-dapp';
 import { u8aToHex } from '@polkadot/util';
 import { type HexString } from '@polkadot/util/types';

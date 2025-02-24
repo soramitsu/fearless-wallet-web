@@ -10,7 +10,9 @@
     </div>
 
     <div class="img-container">
-      <ExternalLogo class="asset-icon" :name="assetData.icon" :width="42" />
+      <img v-if="isCrv" src="@/assets/crv.png" class="asset-icon crv" />
+
+      <ExternalLogo v-else class="asset-icon" :name="assetData.icon" :width="42" />
     </div>
 
     <div class="descriptions-column">
@@ -130,6 +132,10 @@ export default class CurrencyItem extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
+
+  get isCrv() {
+    return this.assetData.symbol === 'crv';
+  }
 
   get showPriceRow() {
     return this.priceJson.isExist;
@@ -514,6 +520,11 @@ export default class CurrencyItem extends Vue {
     .asset-icon {
       margin-right: 13px;
       border-radius: 50%;
+    }
+
+    .crv {
+      width: 42px;
+      height: 42px;
     }
   }
 

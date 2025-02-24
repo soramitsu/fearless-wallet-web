@@ -146,10 +146,6 @@ export class RequestService {
     return this.substrateRequestHandler.signSubject;
   }
 
-  public get allSubstrateRequests(): SigningRequest[] {
-    return this.substrateRequestHandler.allSubstrateRequests;
-  }
-
   public sign(url: string, request: RequestSign, account: AccountJson, id?: string): Promise<ResponseSigning> {
     return this.substrateRequestHandler.sign(url, request, account, id);
   }

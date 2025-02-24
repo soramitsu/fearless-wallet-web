@@ -52,7 +52,7 @@ import { WalletEcosystem } from '@/interfaces';
 import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { URLS } from '@/consts/urls';
-import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS, TON_MAINNET } from '@/consts/networks';
+import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
 
 type Wallet = {
@@ -432,7 +432,7 @@ export default class State {
 
       const activeValue =
         walletEcosystem === WalletEcosystem.Ton
-          ? TON_MAINNET
+          ? 'Ton Mainnet'
           : this.networkService.selectedNetworks[address] ?? POPULAR_NETWORKS;
 
       if (isNew) this.setActiveNetworks(activeValue);

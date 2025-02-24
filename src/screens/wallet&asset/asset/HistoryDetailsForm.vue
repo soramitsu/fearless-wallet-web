@@ -366,7 +366,7 @@ export default class HistoryDetailsForm extends Vue {
 
     const url = this.explorerUrl
       .replace('{type}', 'extrinsic')
-      .replace('{value}', this.historyElement?.blockHash ?? '');
+      .replace('{value}', this.historyElement?.extrinsicHash ?? '');
 
     window.open(url);
   }

@@ -1,7 +1,5 @@
-import { PHISHING_PAGE_REDIRECT } from '@extension-base/defaults';
 import { checkIfDenied } from '@polkadot/phishing';
 import { chrome } from '@extension-base/utils/crossenv';
-import { isNumber } from '@polkadot/util';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import { type RequestArguments } from '@json-rpc-tools/utils';
@@ -209,29 +207,8 @@ export default class Tabs {
     return this.state.rpcUnsubscribe(request, port);
   }
 
-  async redirectPhishingLanding(phishingWebsite: string): Promise<void> {
-    const nonFragment = phishingWebsite.split('#')[0];
-    const encodedWebsite = encodeURIComponent(nonFragment);
-    const url = `${chrome.runtime.getURL('index.html')}#${PHISHING_PAGE_REDIRECT}/${encodedWebsite}`;
-
-    const tabs = await chrome.tabs.query({ url: nonFragment });
-
-    tabs
-      .map(({ id }) => id)
-      .filter((id): id is number => isNumber(id))
-      .forEach((id) => withErrorLog(() => chrome.tabs.update(id, { url })));
-  }
-
   async redirectIfPhishing(url: string): Promise<boolean> {
-    const isInDenyList = await checkIfDenied(url);
-
-    if (isInDenyList) {
-      this.redirectPhishingLanding(url);
-
-      return true;
-    }
-
-    return false;
+    return await checkIfDenied(url);
   }
 
   async getEvmState(url: string): Promise<EvmAppState> {

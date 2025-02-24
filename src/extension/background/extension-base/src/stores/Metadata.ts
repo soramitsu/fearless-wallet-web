@@ -6,7 +6,7 @@ import { IS_EXTENSION } from '@/consts/global';
 
 export default class MetadataStore extends (IS_EXTENSION ? BaseExtensionStore : BaseWebStore)<MetadataDef> {
   constructor() {
-    super(EXTENSION_PREFIX && EXTENSION_PREFIX !== 'polkadot{.js}' ? `${EXTENSION_PREFIX}:metadata` : 'metadata');
+    super(`${EXTENSION_PREFIX}:metadata`);
   }
 
   public set(key: string, value: MetadataDef, update?: () => void): void {

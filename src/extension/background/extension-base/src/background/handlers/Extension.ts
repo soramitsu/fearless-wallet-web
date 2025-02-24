@@ -166,9 +166,11 @@ export default class Extension extends FWExtensionBase {
       type
     );
 
-    if (!isEthereumAddress(address)) this.state.updateCurrentAccount({ address, walletEcosystem });
+    if (!isEthereumAddress(address)) {
+      this.state.updateCurrentAccount({ address, walletEcosystem });
 
-    if (IS_PRODUCTION) this.state.balanceService.tonBalanceService.fetchJettonInfo();
+      if (IS_PRODUCTION) this.state.balanceService.tonBalanceService.fetchJettonInfo();
+    }
 
     return address;
   }

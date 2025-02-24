@@ -4,8 +4,6 @@ declare global {
       VUE_CLI_SERVICE_CONFIG_PATH: string;
       NODE_ENV: 'development' | 'production';
       PORT?: string;
-      PORT_PREFIX: string;
-      EXTENSION_PREFIX: string;
       OAUTH_CLIENT_ID: string;
       EXTENSION_PUBLIC_KEY: string;
       RAMP_TEST_API_KEY: string;

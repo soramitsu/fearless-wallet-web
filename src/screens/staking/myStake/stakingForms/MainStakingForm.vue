@@ -260,7 +260,9 @@ export default class MainStakingForm extends Vue {
         (this.payoutAddress !== '' && !this.isValidPayoutAddress)
       )
         return this.$t('accounts.invalidAccountAddress');
-    } else if (!this.isValidAmountAsset)
+    }
+
+    if (!this.isValidAmountAsset)
       return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
 
     return 'common.confirm';
@@ -309,7 +311,7 @@ export default class MainStakingForm extends Vue {
   }
 
   get acountsEcosystem() {
-    if (this.isPayee || this.isControllerAccount) return this.accountsStore.accounts;
+    if (this.isPayee || this.isControllerAccount) return this.accountsStore.allAcountsEcosystem;
 
     return this.accountsStore.acountsEcosystem;
   }
@@ -332,7 +334,7 @@ export default class MainStakingForm extends Vue {
 
   get confirmBtnDisabled() {
     if (this.isControllerAccount) {
-      if (this.step === 2) return !this.isValidController || !this.isValidControllerAddress;
+      if (this.step === 2) return !this.isValidController || !this.isValidControllerAddress || !this.isValidAmountAsset;
 
       return false;
     }

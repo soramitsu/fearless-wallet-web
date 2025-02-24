@@ -63,7 +63,7 @@ watch(requests, () => {
   if (!requests.value.length) router.back();
 });
 
-const method = computed(() => request.value.params.request.method as EIP155_SIGNING_METHODS);
+const method = computed(() => request.value?.params.request.method as EIP155_SIGNING_METHODS);
 const isSignatureRequest = computed(() => SIGNATURE_METHODS.includes(method.value));
 const origin = request.value.verifyContext.verified.origin;
 

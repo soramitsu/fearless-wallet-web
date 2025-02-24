@@ -9,9 +9,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
-import { state } from '@extension-base/background/handlers';
 import { keyring } from '@subwallet/ui-keyring';
-import MigrationService from '@extension-base/services/migration-service';
 import { initStorage } from '@extension-base/stores/Storage';
 import { ALL_NETWORKS } from './consts/networks';
 import { useExtensionStore } from './stores/extension';
@@ -109,12 +107,14 @@ export default class App extends Vue {
   async setupWeb() {
     await cryptoWaitReady()
       .then(() => {
-        state.keyringService.loadAll();
-        state.eventService.emit('crypto.ready', true);
+        // TODO send message to SW, dont use import state, MigrationService
+
+        // state.keyringService.loadAll();
+        // state.eventService.emit('crypto.ready', true);
 
         keyring.restoreKeyringPassword();
 
-        MigrationService.start();
+        // MigrationService.start();
       })
       .catch((error) => console.error('initialization failed', error));
 

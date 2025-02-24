@@ -525,9 +525,7 @@ export default class State {
 
     if (isEthereumNet) return ethereumAddress;
 
-    const network = this.networkService.networksGithub.find(
-      ({ name }) => name.toLowerCase() === networkName.toLowerCase()
-    )!;
+    const network = this.networkService.networksGithub.find(({ name }) => isSameString(name, networkName))!;
 
     // the only case for try/catch
     // if the user used ethereum account instead of a substratum account(via json or private key)

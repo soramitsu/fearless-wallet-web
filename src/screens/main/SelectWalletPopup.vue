@@ -64,8 +64,6 @@ export default class SelectWalletPopup extends Vue {
   }
 
   async updateSelectedWallet(address: string, walletEcosystem: WalletEcosystem) {
-    if (address !== this.accountsStore.selectedWallet.address) this.accountsStore.setIsBalanceLoading(true);
-
     await updateCurrentAccount(address, walletEcosystem);
 
     this.close();

@@ -10,7 +10,7 @@
     @handlerClose="close"
   >
     <div class="wallet-details">
-      <div v-if="isSubstrate" class="row" @click="openWalletDetails">
+      <div v-if="selectedAccountIsSubstrate" class="row" @click="openWalletDetails">
         <div class="label" data-testid="walletDetails">Wallet Details</div>
       </div>
 
@@ -45,14 +45,14 @@ export default class WalletDetailsPopup extends Vue {
     return this.accountsStore.accounts.find(({ address }) => address === this.selectedWalletAddress);
   }
 
-  get isSubstrate() {
-    return this.accountsStore.selectedWallet.isSubstrate;
+  get selectedAccountIsSubstrate() {
+    return this.selectedAccount?.walletEcosystem === WalletEcosystem.Substrate;
   }
 
   get isExportPossible() {
     if (!this.isExtension || this.selectedAccount?.isMobile) return false;
 
-    return this.selectedAccount?.walletEcosystem === WalletEcosystem.Substrate;
+    return this.selectedAccountIsSubstrate;
   }
 
   get top() {

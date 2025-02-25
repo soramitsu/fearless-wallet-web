@@ -16,6 +16,7 @@ type Getters = {
   getShowWarningNetwork(state: State): GetShowWarningNetworks;
   getAutoSelectNodesValueByNetwork(state: State): GetAutoSelectNodesValueByNetwork;
   isCustomSort(state: State): (address: string) => boolean;
+  allAcountsEcosystem(state: State): AccountJson[];
   acountsEcosystem(state: State): AccountJson[];
 };
 
@@ -66,16 +67,18 @@ export const getters: Getters = {
       return autoSelectNode[networkName] ?? true;
     },
 
-  acountsEcosystem({ accounts, selectedWallet: { isSubstrate, isTon } }) {
-    return accounts.filter(({ active, walletEcosystem }) => {
-      if (
-        (walletEcosystem === WalletEcosystem.Ton && isSubstrate) ||
-        (walletEcosystem === WalletEcosystem.Substrate && isTon)
-      )
-        return false;
+  allAcountsEcosystem({ accounts, selectedWallet: { isSubstrate, isTon } }) {
+    return accounts.filter(
+      ({ walletEcosystem }) =>
+        !(
+          (walletEcosystem === WalletEcosystem.Ton && isSubstrate) ||
+          (walletEcosystem === WalletEcosystem.Substrate && isTon)
+        )
+    );
+  },
 
-      return !active;
-    });
+  acountsEcosystem() {
+    return (this.allAcountsEcosystem as unknown as AccountJson[]).filter(({ active }) => !active);
   },
 
   getShowWarningNetwork:

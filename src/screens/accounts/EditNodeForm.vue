@@ -107,9 +107,9 @@ export default class EditNodeForm extends Vue {
   }
 
   get errorMessage() {
-    if (this.isError) return 'accounts.invalidNodeAddress';
+    if (this.isUrlDuplicate) return 'accounts.customNodeDuplicate';
 
-    return 'accounts.customNodeDuplicate';
+    return 'accounts.invalidNodeAddress';
   }
 
   get isUrlChanged() {

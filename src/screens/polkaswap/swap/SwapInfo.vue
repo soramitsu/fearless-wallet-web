@@ -19,7 +19,7 @@
 
     <InfoRow
       text="assets.networkFee"
-      :value="fee ? `${fee} ${soraMainAsset}` : undefined"
+      :value="fee ? `${$n(fee, 'price')} ${soraMainAsset}` : undefined"
       :price="`${accountsStore.fiatSymbol} ${feePrice}`"
       icon="info"
       :isLoading="isLoadingFee"

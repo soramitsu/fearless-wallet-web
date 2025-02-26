@@ -1,14 +1,22 @@
 import axios from 'axios';
 import { chrome } from '@extension-base/utils/crossenv';
 
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import type { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
+import { type GoogleFileId } from '../../background/types/types';
+import type { KeyringPair$Json } from '@subwallet/keyring/types';
+import type {
+  FilesResponse,
+  GoogleAuthTypes,
+  ICreateFile,
+  IGetFilesResponse,
+  RequestGoogleToken,
+  VerifyTokenResponse,
+} from '@/interfaces';
 import { FEARLESS_TITLE } from '@/consts/global';
 
 export class GoogleService {
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
   private readonly baseUploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-  private readonly extensionRedirectURL = chrome.identity?.getRedirectURL('welcome');
+  private readonly extensionRedirectURL = chrome?.identity?.getRedirectURL('welcome');
   private readonly baseAuthParams = {
     client_id: process.env.OAUTH_CLIENT_ID,
     response_type: 'token',
@@ -68,7 +76,7 @@ ${json}
 --foo_bar_baz--`;
   }
 
-  public async authExtension(type: 'main' | 'export' = 'main', wallet?: string) {
+  public async authExtension({ type = 'main', wallet }: GoogleAuthTypes) {
     return new Promise<void>((res) => {
       chrome.identity.launchWebAuthFlow(
         {
@@ -77,6 +85,7 @@ ${json}
         },
         async (redirect_url) => {
           res();
+
           const searchParams = new URLSearchParams(redirect_url);
           const token =
             searchParams.get('access_token') || searchParams.get(`${this.extensionRedirectURL}#access_token`);
@@ -98,7 +107,7 @@ ${json}
     });
   }
 
-  public async getFiles(token?: string): Promise<IGetFilesResponse> {
+  public async getFiles({ token }: RequestGoogleToken): Promise<IGetFilesResponse> {
     const { data } = await axios.get<IGetFilesResponse>(
       `${this.baseURL}/files?fields=files(id,name,description)&spaces=appDataFolder`,
       {
@@ -112,7 +121,7 @@ ${json}
     return data;
   }
 
-  public async getFile(id: string, token?: string | undefined): Promise<KeyringPair$Json> {
+  public async getFile({ id, token }: GoogleFileId): Promise<KeyringPair$Json> {
     const { data } = await axios.get<KeyringPair$Json>(`${this.baseURL}/files/${id}?alt=media`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -123,7 +132,7 @@ ${json}
     return data;
   }
 
-  public async verifyToken(token: string): Promise<VerifyTokenResponse | null> {
+  public async verifyToken({ token }: RequestGoogleToken): Promise<VerifyTokenResponse | null> {
     const res = await axios
       .get<VerifyTokenResponse>(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`)
       .catch(() => {
@@ -150,7 +159,7 @@ ${json}
     return data;
   }
 
-  async deleteFile(id: string, token: string) {
+  async deleteFile({ id, token }: GoogleFileId) {
     axios.delete(this.baseURL, {
       params: {
         fields: id,

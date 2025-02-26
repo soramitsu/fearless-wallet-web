@@ -136,27 +136,22 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
-import type { MyStakingTab, AsyncFn, GetHistory, HistoryElement } from '@/interfaces';
-import type { TokenGroup } from '@extension-base/background/types/types';
+import type { MyStakingTab, HistoryElement } from '@/interfaces';
 import MyStakeSettings from '@/screens/staking/myStake/MyStakeSettings.vue';
 import About from '@/screens/staking/myStake/About.vue';
 import Alerts from '@/screens/staking/myStake/Alerts.vue';
 import History from '@/screens/staking/myStake/History.vue';
 import MainStakingForm from '@/screens/staking/myStake/stakingForms/MainStakingForm.vue';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { SORA_REWARD_ASSET } from '@/consts/sora';
 import YourValidatorsManagement from '@/screens/staking/myStake/validators/YourValidatorsManagement.vue';
 import PendingRewardForm from '@/screens/staking/myStake/rewards/PendingRewardForm.vue';
 import { isSora } from '@/helpers';
 import { Components } from '@/router/routes';
-import { type FetchHistory, type GetStakingNetwork, type SelectedWallet } from '@/store';
-import { GettersTypes as StakingGettersTypes } from '@/store/staking/getters';
-import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import HistoryDetailsForm from '@/screens/wallet&asset/asset/HistoryDetailsForm.vue';
+import { useStakingStore } from '@/stores/staking';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 type ShowField =
   | 'showBondExtraForm'
@@ -179,6 +174,9 @@ type ShowField =
   },
 })
 export default class MyStake extends Vue {
+  stakingStore = useStakingStore();
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   activeTabName: MyStakingTab = 'about';
   showBondExtraForm = false;
   showUnbondForm = false;
@@ -189,14 +187,6 @@ export default class MyStake extends Vue {
   showPayeeForm = false;
   showPendingRewardForm = false;
   historyElement: HistoryElement | Record<string, string> | null = null;
-
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(StakingGettersTypes.getStakingNetwork) getStakingNetwork!: GetStakingNetwork;
-  @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
-  @Action(StakingActionTypes.GET_STAKING_PARAMS) getStakingParams!: AsyncFn;
-  @Action(NetworksActionTypes.FETCH_HISTORY) fetchHistory!: AsyncFn<FetchHistory>;
 
   get actionOptions() {
     return [
@@ -271,7 +261,7 @@ export default class MyStake extends Vue {
   }
 
   get stakingNetwork() {
-    return this.getStakingNetwork(this.network);
+    return this.stakingStore.getStakingNetwork(this.network);
   }
 
   get showControllerBtn() {
@@ -329,16 +319,16 @@ export default class MyStake extends Vue {
   }
 
   get stakingAssetId() {
-    if (this.balances.length === 0) return '';
+    if (this.accountsStore.balances.length === 0) return '';
 
-    const { groupId } = getUtilityAsset(this.balances, this.network);
+    const { groupId } = getUtilityAsset(this.accountsStore.balances, this.network);
 
     return groupId;
   }
 
   get rewardedAssetId() {
     if (isSora(this.network)) {
-      const { groupId } = this.balances.find(({ symbol }) => symbol === SORA_REWARD_ASSET)!;
+      const { groupId } = this.accountsStore.balances.find(({ symbol }) => symbol === SORA_REWARD_ASSET)!;
 
       return groupId;
     }
@@ -348,27 +338,29 @@ export default class MyStake extends Vue {
   }
 
   get stakingCurrency() {
-    return this.balances.find(({ groupId }) => groupId === this.stakingAssetId);
+    return this.accountsStore.balances.find(({ groupId }) => groupId === this.stakingAssetId);
   }
 
   get rewardedCurrency() {
-    return this.balances.find(({ groupId }) => groupId === this.rewardedAssetId);
+    return this.accountsStore.balances.find(({ groupId }) => groupId === this.rewardedAssetId);
   }
 
   get history() {
     if (!this.network) return [];
 
     const stashHistory =
-      this.getHistory(this.stakingAssetId, this.network.toLowerCase(), this.stakingNetwork.stashAddress)?.nodes ?? [];
+      this.networksStore.getHistory(this.stakingAssetId, this.network.toLowerCase(), this.stakingNetwork.stashAddress)
+        ?.nodes ?? [];
 
     const payeeHistory =
-      this.getHistory(this.stakingAssetId, this.network.toLowerCase(), this.stakingNetwork.payeeAddress)?.nodes ?? [];
+      this.networksStore.getHistory(this.stakingAssetId, this.network.toLowerCase(), this.stakingNetwork.payeeAddress)
+        ?.nodes ?? [];
 
     return [...stashHistory, ...payeeHistory];
   }
 
   created() {
-    if (this.$route.params.paramsLoaded !== 'true') this.getStakingParams();
+    if (this.$route.params.paramsLoaded !== 'true') this.stakingStore.getStakingParams();
 
     this.loadHistory();
   }
@@ -376,14 +368,14 @@ export default class MyStake extends Vue {
   async loadHistory() {
     if (this.history.length !== 0) return;
 
-    this.fetchHistory({
+    this.networksStore.fetchHistory({
       networkName: this.network,
       assetId: this.stakingAssetId,
       address: this.stakingNetwork.stashAddress,
     });
 
     if (this.stakingNetwork.isOtherPayee)
-      this.fetchHistory({
+      this.networksStore.fetchHistory({
         networkName: this.network,
         assetId: this.stakingAssetId,
         address: this.stakingNetwork.payeeAddress,
@@ -432,65 +424,6 @@ export default class MyStake extends Vue {
     height: 100%;
     display: flex;
     flex-direction: column;
-
-    .about-stake {
-      display: grid;
-      grid-auto-columns: 247px;
-      grid-auto-rows: 105px;
-      text-transform: uppercase;
-
-      .block {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: center;
-        text-align: left;
-        padding: 10px 0 0 35px;
-      }
-
-      .label {
-        font-size: 12px;
-        font-weight: 600;
-        text-align: left;
-        color: $grayish-white;
-        margin-bottom: 5px;
-      }
-
-      .amount {
-        font-size: 20px;
-        font-weight: 600;
-        margin-bottom: 5px;
-      }
-
-      .value {
-        font-size: 14px;
-        color: $grayish-white;
-      }
-
-      .one {
-        grid-column: 1;
-        grid-row: 1;
-        border-right: $default-border;
-        border-bottom: $default-border;
-      }
-
-      .two {
-        grid-column: 2;
-        grid-row: 1;
-        border-bottom: $default-border;
-      }
-
-      .three {
-        grid-column: 1;
-        grid-row: 2;
-        border-right: $default-border;
-      }
-
-      .four {
-        grid-column: 2;
-        grid-row: 2;
-      }
-    }
   }
 
   .action-buttons {
@@ -513,6 +446,13 @@ export default class MyStake extends Vue {
       justify-content: center;
       margin-left: 10px;
     }
+  }
+}
+
+.fw-web {
+  .action-buttons {
+    flex-wrap: wrap;
+    gap: 10px;
   }
 }
 </style>

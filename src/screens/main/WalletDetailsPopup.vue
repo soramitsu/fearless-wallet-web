@@ -5,12 +5,12 @@
     :showHeader="false"
     :showBlur="false"
     :showBackground="false"
-    @handlerClose="close"
     :top="top"
     :left="300"
+    @handlerClose="close"
   >
     <div class="wallet-details">
-      <div class="row" @click="openWalletDetails">
+      <div v-if="selectedAccountIsSubstrate" class="row" @click="openWalletDetails">
         <div class="label" data-testid="walletDetails">Wallet Details</div>
       </div>
 
@@ -27,31 +27,32 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter, Mutation } from 'vuex-class';
-import type { AccountJson } from '@extension-base/background/types/types';
-import type { Fn } from '@/interfaces/common';
 import { Components } from '@/router/routes';
-import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { forgetAccount, initGoogleAuth } from '@/extension/messaging';
+import { forgetAccount, initGoogleAuth, updateCurrentAccount } from '@/extension/messaging';
+import { useAccountsStore } from '@/stores/accounts';
+import { IS_EXTENSION } from '@/consts/global';
+import { WalletEcosystem } from '@/interfaces';
 
 @Component
 export default class WalletDetailsPopup extends Vue {
+  readonly isExtension = IS_EXTENSION;
+  accountsStore = useAccountsStore();
+
   @Prop(Number) buttonTopClick!: number;
   @Prop(String) selectedWalletAddress!: string;
-  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: Fn<AccountJson>;
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
-  get selectedWallet() {
-    return this.accounts.find((account) => account.active)!;
+  get selectedAccount() {
+    return this.accountsStore.accounts.find(({ address }) => address === this.selectedWalletAddress);
   }
 
-  get isMobileWallet() {
-    return this.accounts.find(({ address, isMobile }) => address === this.selectedWalletAddress && isMobile);
+  get selectedAccountIsSubstrate() {
+    return this.selectedAccount?.walletEcosystem === WalletEcosystem.Substrate;
   }
 
   get isExportPossible() {
-    return !this.isMobileWallet;
+    if (!this.isExtension || this.selectedAccount?.isMobile) return false;
+
+    return this.selectedAccountIsSubstrate;
   }
 
   get top() {
@@ -63,13 +64,9 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   async deleteWallet() {
-    await forgetAccount(this.selectedWalletAddress, this.isMobileWallet ? 'mobile' : 'native');
+    await forgetAccount(this.selectedWalletAddress, this.selectedAccount?.isMobile ? 'mobile' : 'native');
 
-    if (this.isMobileWallet) {
-      //TODO
-    }
-
-    if (this.accounts.length === 0) this.$router.push({ name: Components.Welcome });
+    if (this.accountsStore.accounts.length === 0) this.$router.push({ name: Components.Welcome });
     else this.close();
   }
 
@@ -77,20 +74,12 @@ export default class WalletDetailsPopup extends Vue {
     initGoogleAuth('export', this.selectedWalletAddress);
   }
 
-  openWalletDetails() {
-    const [account] = this.accounts.filter(({ address }) => address === this.selectedWalletAddress);
+  async openWalletDetails() {
+    const walletInfo = this.accountsStore.accounts.find(({ address }) => address === this.selectedWalletAddress);
 
-    this.setSelectedWallet(account);
+    await updateCurrentAccount(this.selectedWalletAddress, walletInfo?.walletEcosystem);
 
-    this.$router.push({
-      name: Components.AccountSetting,
-      params: {
-        address: this.selectedWallet.address,
-        name: this.selectedWallet.name,
-        ethereumAddress: this.selectedWallet.ethereumAddress,
-        isMobile: this.selectedWallet.isMobile ? 'mobile' : '',
-      },
-    });
+    this.$router.push({ name: Components.AccountSetting });
 
     this.$emit('closeSelectWalletPopup');
   }
@@ -104,7 +93,6 @@ export default class WalletDetailsPopup extends Vue {
   display: flex;
   flex-flow: column;
   max-height: 90px;
-  min-height: 60px;
   overflow: hidden;
   gap: 16px;
   padding: 0 10px;

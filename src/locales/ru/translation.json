@@ -1,10 +1,26 @@
 {
   "welcome": {
     "importWallet": "У меня уже есть кошелек",
+    "joinEvmSubstrate": "Создание или импорт учетных записей Substrate или EVM",
+    "joinTon": "Подключайтесь к самой быстрорастущей экосистеме",
     "connectMobile": "Подключить мобильный кошелек",
     "manageGoogle": "Подключить к Google Drive",
     "deFiWallet": "Децентрализованный кошелек из будущего",
-    "agreeWith": "Продолжая, вы принимаете"
+    "agreeWith": "Продолжая, вы принимаете",
+    "oldPassword": "Старый пароль",
+    "newPassword": "Новый пароль",
+    "reenterNewPassword": "Повторите новый пароль",
+    "masterPasswordSetUp": "Мастер пароль успешно установлен",
+    "successfulChangePassword": "Пароль успешно изменен",
+    "unlock": "Разблокировать",
+    "forgotYourPassword": "Забыли пароль?",
+    "needHelp": "Нужна помощь? Напишите в ",
+    "resetWallet": "Сбросить кошелек",
+    "wantReset": "Вы уверены, что хотите сбросить настройки своего кошелька?",
+    "walletWillBeDeleted": "Ваш текущий кошелек, счета и активы будут удалены из Fearless Wallet. Вам нужно будет повторно импортировать свой исходный счет, используя фразу восстановления или закрытый ключ.",
+    "enterReset": "Чтобы продолжить, введите 'Reset wallet'",
+    "resetWarning": "Сброс кошелька удалит ваши текущие данные и активы. Мы не можем восстановить ваш пароль, так как он хранится только на вашем устройстве. Попробуйте другие пароли. Если вы хотите сбросить кошелек, импортируйте свою исходную фразу восстановления. Продолжайте, только если у вас есть фраза восстановления.",
+    "passwordWarning": "Ваш пароль используется для разблокировки кошелька и надежно хранится на вашем устройстве. Мы рекомендуем использовать 12 символов, включая заглавные и строчные буквы, символы и цифры."
   },
   "addWallet": {
     "createWallet": "Создать новый кошелек",
@@ -140,7 +156,7 @@
     "walletManagement": "Управление кошельком",
     "settingsAndManagement": "Настройки и управление аккаунтом",
     "settings": {
-      "accounts": "Аккаунты",
+      "walletBackup": "Бекап кошелька",
       "currency": "Валюты",
       "polkaswapDisclaimer": "Polkaswap disclaimer",
       "language": {
@@ -262,8 +278,6 @@
     "invalidNetworkText": "Это не адрес выбранной сети",
     "invalidNetworkSubtext": "Адрес не соответствует сети назначения. Вам следует выбрать другую сеть",
     "existentialDepositText": "Операция удалит аккаунт",
-    "15min": "Не запрашивать пароль в течение 15 мин.",
-    "15minExtend": "Продлить период без пароля на 15 минут",
     "version": "Версия",
     "transaction": "Транзакция",
     "transactionDone": "Транзакция завершена",
@@ -298,18 +312,18 @@
     "dontNeedAccount": "Мне не нужен аккаунт",
     "exportWarning": "Передача или копирование вашего секрета — операция с высоким риском, никому не отправляйте его. Хотите продолжить процесс обмена/копирования?",
     "notEthereumAccount": "Вы не добавили учетную запись ethereum.",
-    "export": "Экспорт аккаунта",
-    "exportJson": "Экспорт JSON",
-    "wantExportJson": "Я хочу экспортировать JSON",
+    "downloadFile": "Скачать файл",
+    "exportAccount": "Экспорт аккаунта",
+    "wantExwantExportportJson": "Я хочу экспортировать",
     "validatePass": "Подтверждение пароля",
-    "passwordWallet": "Пароль для текущего кошелька",
+    "passwordApp": "Пароль от приложения",
     "switchNode": "Сменить ноду",
     "copyAddress": "Копировать адрес",
     "subscan": "Смотреть в Subscan",
     "etherscan": "Смотреть в Etherscan",
+    "tonviewer": "Смотреть в Tonviewer",
     "deleteCustomNode": "Удалить пользовательскую ноду?",
     "careful": "Будьте осторожны",
-    "sharingSecret": "Копирование или передача вашего секретного ключа очень рисковано, не отправляй его никому. Вы хотите продолжить?",
     "invalidNodeAddress": "Неверный формат адреса ноды",
     "customNodeDuplicate": "У вас уже есть нода с таким адресом",
     "addNode": "Добавить ноду",
@@ -325,6 +339,10 @@
     "account": "Аккаунт",
     "chainAccounts": "чейн аккаунты",
     "substrateChainAccounts": "Сабстрейт чейн аккаунты",
+    "mnemonic": "Мнемоника",
+    "rawSeed": "Приватный ключ",
+    "json": "JSON",
+    "backupKeyPair": "Экспорт Ключевой пары",
     "addEthereumAccounts": "Добавить аккаунты Moonbeam и Moonriver?"
   },
   "auth": {
@@ -359,7 +377,7 @@
       "title": "Доступы приложения",
       "viewAddress": "Просматривать адрес вашего кошелька",
       "viewBalances": "Просматривать баланс ваших токенов",
-      "transferAssets": "Отправлять токены без вашего разрешения"
+      "transferAssets": "Отправлять токены после вашего подтверждения"
     },
     "notifications": {
       "sessionExpired": {
@@ -369,103 +387,6 @@
       "sessionApproved": {
         "title": "Кошелек присоединен",
         "message": ""
-      }
-    }
-  },
-  "soraCard": {
-    "getCard": "Получить карту СОРА",
-    "title": "SORA Card",
-    "cardDescriptions": "Пополняйте карту SORA с помощью фиата или криптовалюты и оплачивайте онлайн, в магазине или в банкомате.",
-    "cardGet": "Получите счет Euro IBAN и дебетовую карту Mastercard, подключенную к вашему кошельку SORA",
-    "haveCard": "У меня уже есть карта",
-    "issueCardFee": "Выпуск карты за 12 €",
-    "issueCardFree": "Выпустить карту бесплатно",
-    "serviceFee": "годовая плата за обслуживание",
-    "cardIssuance": "выпуск карты",
-    "free": "Бесплатный",
-    "getXOR": "Получите XOR",
-    "hold€100": "Если вы держите XOR на сумму не менее 100 евро в своей учетной записи SORA",
-    "applicationFee": "или €12 регистрационный сбор",
-    "leftXORForFreeCard": "осталось для БЕСПЛАТНОЙ карты",
-    "haveXORForFreeCard": "У вас достаточно XOR для БЕСПЛАТНОЙ карты",
-    "noHaveFreeTry": "Вы уже использовали бесплатные попытки KYC",
-    "warningKYC": "Чтобы получить карту IBAN и SORA, пользователи должны пройти процесс KYC. Требуемое соответствие. Сообщество SORA не собирает и не будет собирать какие-либо ваши личные данные.",
-    "disclaimerSoraCard": "The significance of these problems is so obvious that the strengthening and development of the structure requires the definition and refinement of systems of mass participation. The task of the organization, in particular the further development of various forms of activity, contributes to the preparation and implementation of directions for progressive development. On the other hand, a new model of organizational activity plays an important role in the formation of significant financial and administrative conditions. The significance of these problems is so obvious that the strengthening.",
-    "phoneConfirmation": "Подтверждение телефона",
-    "emailConfirmation": "Подтверждение Email",
-    "completeKYC": "Завершить KYC",
-    "unsupportedCountries": "Неподдерживаемые страны",
-    "phoneNumber": "номер телефона",
-    "code": "Код",
-    "verificationCode": "Код верефикации",
-    "confirmSMScode": "Подтвердить СМС-код",
-    "sendVerificationEmail": "Отправить письмо с подтверждением",
-    "codeLength": "Длина кода 6 символов",
-    "wellSendEmail": "Мы отправим вам письмо с подтверждением",
-    "firstName": "Имя",
-    "lastName": "Фамилия",
-    "useRealName": "Используйте свое настоящее имя",
-    "resend": "Отправить повторно через",
-    "sendCode": "Отправить код",
-    "sendIn": "Отправить через",
-    "invalidPhone": "Недопустимый номер телефона",
-    "invalidEmail": "Недопустимый email",
-    "countriesLabel": "К сожалению, в данный момент мы не можем поддерживать следующие страны:",
-    "verifyContactInfo": "Подтвердить контактную информацию",
-    "emailPhone": "Электронная почта и номер телефона",
-    "verifyDocuments": "Проверить документы",
-    "selfieDocument": "Селфи с документом",
-    "submitPersonalData": "Отправить личные данные",
-    "nameAddress": "Полное имя и подтверждение адреса",
-    "residentsCountries": "Жители некоторых стран не могут подать заявку на карту SORA Card в данный момент",
-    "seeList": "Посмотреть список",
-    "getXORLabel": "Вы можете обменять токены на XOR или купить XOR за евро",
-    "buyXORWithEUR": "Купить XOR за EUR",
-    "swapXOR": "Обмен криптовалюты на XOR",
-    "invalidCode": "Неверный код",
-    "emailSent": "Перейдите по волшебной ссылке, которая была отправлена",
-    "useAnotherEmail": "Использовать другой адрес электронной почты",
-    "numberNotFound": "Номер не найден",
-    "tryAgain": "Попробовать еще раз",
-    "support": "Поддержка",
-    "getPrepared": "Подготовка",
-    "cardDetails": "Детали карты",
-    "prepareAttention": "У вас есть только 2 бесплатных попытки пройти процесс KYC. Каждая вторая попытка после этого будет стоить 3,80 евро. Платные попытки будут доступны после следующего обновления приложения.",
-    "prepare": "Для прохождения KYC вам необходимо:",
-    "prepareSteps": {
-      "step1": "Отправьте фотографию документа, удостоверяющего личность",
-      "stepDescription1": "Паспорт, водительские права, удостоверение личности или вид на жительство",
-      "step2": "Сделать селфи",
-      "stepDescription2": "Консультации будут даны в процессе",
-      "step3": "Отправьте фотографию подтверждения адреса",
-      "stepDescription3": "Официальный документ (счет за коммунальные услуги, выписка из банка, правительственная выписка или корреспонденция), содержащий ваше полное имя и адрес, и не старше 3 месяцев.",
-      "step4": "Отправьте свою личную информацию",
-      "stepDescription4": "Заполните форму, указав свое имя и адрес"
-    },
-    "statuses": {
-      "pending": {
-        "statusText": "Выполняется проверка",
-        "text1": "Ваш KYC завершен. В ожидании результатов",
-        "text2": "Вы успешно заполнили заявку на KYC. Проверка ожидает решения, и вы можете ожидать решения в ближайшее время",
-        "text3": "Обычно решение принимается в тот же день. В некоторых случаях может занять до 3 дней."
-      },
-      "rejected": {
-        "statusText": "Верицикация отклонена",
-        "text1": "Верицикация отклонена",
-        "text2": "Ваша заявка отклонена.",
-        "text3": "Причина отклонения:"
-      },
-      "accepted": {
-        "statusText": "Карта в пути",
-        "text1": "Проверка прошла успешно!",
-        "text2": "Ваша проверка KYC прошла успешно. Мы уже начали подготовку к отправке вашей карты SORA.",
-        "text3": ""
-      },
-      "noFreeAttempts": {
-        "statusText": "Нет бесплатных попыток",
-        "text1": "Нет бесплатных попыток",
-        "text2": "Вы использовали свои бесплатные попытки для прохождения процесса KYC.",
-        "text3": "Убедительно просим вас дождаться следующего обновления приложения, чтобы продолжить платные попытки."
       }
     }
   },
@@ -486,8 +407,8 @@
   },
   "history": {
     "transfer": "Трансфер",
-    "outgoingTransfer": "Исходящий трансфер",
-    "incomingTransfer": "Входящий трансфер",
+    "outgoing": "Исходящий трансфер",
+    "incoming": "Входящий трансфер",
     "swap": "Своп",
     "bond": "Стейк",
     "unbond": "Анстейк",
@@ -636,7 +557,6 @@
     "authorize": "Авторизация",
     "meta": "Мета",
     "transaction": "Транзакция",
-    "soraCard": "Sora card",
     "soraSwap": "Sora swap",
     "polkaswapDisclaimer": "Polkaswap дисклеймер",
     "wallet": "кошелек",
@@ -649,7 +569,11 @@
     "polkaswap": "Polkaswap",
     "send": "Отправить",
     "receive": "Получить",
-    "crossChain": "Скросс-чейн"
+    "crossChain": "Скросс-чейн",
+    "changePassword": "Смена пароля",
+    "unlock": "Разблокировка",
+    "reset": "Сброс",
+    "migration": "Миграция"
   },
   "nft": {
     "owned": "Принадлежит",
@@ -663,13 +587,27 @@
     "noNft": "Пока что тут нет никаких NFT. Купите или сминтите NFT, чтобы их увидеть тут.",
     "txSuccessMessage": "Ваш NFT трансфер прошел успешно"
   },
+  "migration": {
+    "upgradeKeyStorage": "Обновление хранилища ключей",
+    "selectWallets": "Выберите кошельки",
+    "actionRequired": "Обновление хранилища ключей: требуется действие",
+    "upgradingSecure": "Мы переходим на более безопасный метод хранения ключей. Пожалуйста, выполните следующие действия:",
+    "createMasterPass": "Создайте мастер-пароль. Этот мастер-пароль будет использоваться для всех ваших кошельков.",
+    "enterPass": "Введите пароли для ваших текущих кошельков. Если вы не помните пароль кошелька, он будет сброшен. Вы можете повторно импортировать кошелек позже.",
+    "accessLost": "Доступ к этому кошельку будет утерян. Вы сможете повторно импортировать кошелек позже. Вам понадобится мнемоническая фраза или резервная копия JSON.",
+    "skipWarning": "Если вы пропустите шаг пароля кошелька, кошелек будет сброшен. Вы можете повторно импортировать кошелек позже с помощью мнемонической парольной фразы"
+  },
   "common": {
+    "lockApp": "Заблокировать расширение",
+    "changePassword": "Сменить пароль",
+    "createPassword": "Создать пароль",
     "wc": "Wallet Connect",
+    "substrateDApps": "Substrate DApps",
     "connect": "Подключить",
     "approve": "Подтвердить",
     "reject": "Отменить",
     "sign": "Подписать",
-    "enterAccountPass": "Пароль от этого аккаунта",
+    "dapps": "DApps",
     "privacyPolicy": "Политика Конфиденциальности",
     "termsConditions": "Условия и положения",
     "disclaimer": "Отказ от ответственности",
@@ -689,6 +627,7 @@
     "close": "Закрыть",
     "save": "Сохранить",
     "yes": "Да",
+    "yesSure": "Да, я уверен",
     "no": "Нет",
     "search": "Поиск",
     "searchNetwork": "Поиск по сетям",
@@ -755,6 +694,8 @@
     "days": "дней",
     "featureOff": "Временно недоступно",
     "estimateFeeError": "Не удалось посчитать фии",
-    "copyHash": "Скопировать hash"
+    "copyHash": "Скопировать hash",
+    "fearlessSupport": "Fearless support",
+    "evmDApps":"EVM DApps"
   }
 }

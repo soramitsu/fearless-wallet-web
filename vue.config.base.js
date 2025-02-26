@@ -22,19 +22,28 @@ module.exports = {
       },
     },
   },
-  productionSourceMap: false,
+  devServer: {
+    client: {
+      overlay: {
+        errors: false,
+        warnings: false,
+        runtimeErrors: false,
+      },
+    },
+  },
+  productionSourceMap: true,
   chainWebpack: (config) => {
     config.plugin('define').tap((definitions) => {
       const def = definitions[0]['process.env'];
 
-      def.EXTENSION_PREFIX = JSON.stringify(process.env.EXTENSION_PREFIX);
       def.IS_EXTENSION = JSON.stringify(process.env.IS_EXTENSION);
       def.OAUTH_CLIENT_ID = JSON.stringify(process.env.OAUTH_CLIENT_ID);
-      def.PORT_PREFIX = JSON.stringify(process.env.PORT_PREFIX);
       def.RAMP_TEST_API_KEY = JSON.stringify(process.env.RAMP_TEST_API_KEY);
       def.RAMP_PROD_API_KEY = JSON.stringify(process.env.RAMP_PROD_API_KEY);
       def.MOONPAY_TEST_API_KEY = JSON.stringify(process.env.MOONPAY_TEST_API_KEY);
       def.MOONPAY_PROD_API_KEY = JSON.stringify(process.env.MOONPAY_PROD_API_KEY);
+      def.FL_WEB_TON_API_KEY = JSON.stringify(process.env.FL_WEB_TON_API_KEY);
+      def.FL_DWELLIR_API_KEY = JSON.stringify(process.env.FL_DWELLIR_API_KEY);
       def.FL_WEB_ETHERSCAN_API_KEY = JSON.stringify(process.env.FL_WEB_ETHERSCAN_API_KEY);
       def.FL_WEB_BSCSCAN_API_KEY = JSON.stringify(process.env.FL_WEB_BSCSCAN_API_KEY);
       def.FL_WEB_POLYGONSCAN_API_KEY = JSON.stringify(process.env.FL_WEB_POLYGONSCAN_API_KEY);

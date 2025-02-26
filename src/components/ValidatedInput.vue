@@ -14,6 +14,7 @@
       :typeText="typeText"
       :type="type"
       @change="emitChange"
+      @pressEnter="emitPressEnter"
     />
 
     <div v-show="showErrorText" class="error-descriptions" data-testid="errorDescriptions">
@@ -25,7 +26,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, withDefaults } from 'vue';
+import { ref, computed } from 'vue';
 import FInput from '@/components/FInput.vue';
 
 type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
@@ -35,7 +36,7 @@ type Size = 'small' | 'medium' | 'big';
 type FInputProps = {
   errorDescriptions: string;
   placeholder: string;
-  isError: boolean;
+  isError?: boolean;
   maxlength?: number;
   showPassword?: boolean;
   readonly?: boolean;
@@ -65,9 +66,10 @@ const props = withDefaults(defineProps<FInputProps>(), {
   cursorPointer: false,
 });
 
-const emit = defineEmits(['change']);
+const emit = defineEmits(['change', 'pressEnter']);
 
 const emitChange = (value: string | number) => emit('change', value);
+const emitPressEnter = () => emit('pressEnter');
 
 const inputRef = ref<typeof FInput | null>(null);
 
@@ -88,7 +90,7 @@ defineExpose({ input });
     flex-direction: row;
     align-items: center;
     gap: 5px;
-    font-size: 14px;
+    font-size: 0.875em;
     color: #ee7700;
     text-align: left;
     margin-top: 15px;

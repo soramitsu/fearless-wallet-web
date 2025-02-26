@@ -1,9 +1,7 @@
 import { BehaviorSubject } from 'rxjs';
 import { logger as createLogger } from '@polkadot/util/logger';
-import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
-import { getId, isInternalRequest } from '@extension-base/utils';
+import { getId } from '@extension-base/utils';
 import type { Logger } from '@polkadot/util/types';
-import type { SignerPayloadJSON } from '@polkadot/types/types/extrinsic';
 import type {
   Resolver,
   SignRequest,
@@ -12,20 +10,15 @@ import type {
   AccountJson,
   SigningRequest,
 } from '@extension-base/background/types/types';
-import type { KeyringService, RequestService } from '@extension-base/services';
+import type { RequestService } from '@extension-base/services';
 import type State from '@extension-base/background/handlers/State';
 
 export class SubstrateRequestHandler {
   readonly logger: Logger;
-
-  readonly substrateRequests: Record<string, SignRequest> = {};
+  private readonly substrateRequests: Record<string, SignRequest> = {};
   public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
 
-  constructor(
-    private readonly requestService: RequestService,
-    private readonly keyringService: KeyringService,
-    public readonly state: State
-  ) {
+  constructor(private readonly requestService: RequestService, public readonly state: State) {
     this.logger = createLogger('SubstrateRequestHandler');
   }
 
@@ -39,7 +32,6 @@ export class SubstrateRequestHandler {
       id,
       request,
       url,
-      isInternal: isInternalRequest(url),
     }));
   }
 
@@ -91,38 +83,6 @@ export class SubstrateRequestHandler {
 
       this.updateIconSign();
       this.requestService.popupOpen();
-    });
-  }
-
-  public signTransaction(
-    id: string,
-    address: string,
-    url: string,
-    payload: SignerPayloadJSON
-  ): Promise<ResponseSigning> {
-    return new Promise((resolve, reject): void => {
-      const existingAccount = this.keyringService.getAccounts().find((el) => el.address === address);
-
-      if (!existingAccount) return reject();
-
-      const account: AccountJson = {
-        address: existingAccount.address,
-        name: existingAccount.meta.name as string,
-        ethereumAddress: (existingAccount.meta.ethereumAddress as string) ?? '',
-        ...existingAccount.meta,
-      };
-
-      this.substrateRequests[id] = {
-        ...this.signComplete(id, resolve, reject),
-        account,
-        id,
-        request: new RequestExtrinsicSign(payload),
-        url,
-      };
-
-      this.updateIconSign();
-
-      if (!isInternalRequest(url)) this.requestService.popupOpen();
     });
   }
 

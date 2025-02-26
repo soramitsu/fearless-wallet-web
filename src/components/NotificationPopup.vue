@@ -18,7 +18,6 @@
       <FButton
         v-if="showAcceptButton"
         class="button"
-        size="medium"
         :text="acceptButtonText"
         data-testid="acceptBtn"
         @click="$emit('handlerAccept')"
@@ -27,7 +26,6 @@
       <BorderButton
         v-if="showRejectButton"
         class="button reject-button"
-        size="medium"
         :text="rejectButtonText"
         data-testid="closeBtn"
         @click="$emit('handlerClose')"
@@ -37,7 +35,7 @@
 </template>
 
 <script lang="ts" setup>
-import { withDefaults, computed } from 'vue';
+import { computed } from 'vue';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 
@@ -89,7 +87,7 @@ const classesSubtext = computed(() => ['subtext', `subtext-${props.sizeWidth}`])
 
   .text {
     font-weight: 700;
-    font-size: 18px;
+    font-size: 1.125em;
     line-height: 150%;
     margin-bottom: 4px;
   }

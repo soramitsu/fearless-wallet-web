@@ -65,7 +65,7 @@
 
         <div v-else-if="popupControls.showMyWallets">
           <WalletInfo
-            v-for="{ name, address, ethereumAddress, isMobile } in filteredWallets"
+            v-for="{ name, address, ethereumAddress, isMobile } in acountsEcosystem"
             :key="ethereumAddress"
             :name="name"
             :isSelected="getStatusWallet(ethereumAddress)"
@@ -103,11 +103,7 @@
 import { computed, reactive, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
-import { type NetworkJson } from '@extension-base/types';
-import type { NftCollection, NftTx } from '@extension-base/services/nft-service/types';
-import type { AccountJson } from '@extension-base/background/types/types';
 import { cut, getClipboard } from '@/helpers';
-import { type SelectedWallet, useStore } from '@/store';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
@@ -116,10 +112,12 @@ import { checkNft } from '@/extension/messaging/nfts';
 import ContentForm from '@/components/ContentForm.vue';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useAccountsStore } from '@/stores/accounts';
+import { useNetworksStore } from '@/stores/networks';
 
-const store = useStore();
+const accountsStore = useAccountsStore();
+const networksStore = useNetworksStore();
+
 const route = useRoute();
 const router = useRouter();
 const { t, n } = useI18n();
@@ -146,20 +144,19 @@ const formInfo = reactive({
 
 const id = computed(() => route.params.id);
 const contract = computed(() => route.params.contract);
-const nfts = computed<NftCollection[]>(() => store.getters[AccountsGettersTypes.nfts] ?? {});
+const nfts = computed(() => accountsStore.nftsByActiveNetworks ?? {});
 
-const collection = computed<NftCollection | undefined>(() => nfts.value.find((nft) => nft.address === contract.value));
+const collection = computed(() => nfts.value.find((nft) => nft.address === contract.value));
 
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value));
-const wallets = computed<AccountJson[]>(() => store.getters[AccountsGettersTypes.getAccounts]);
-const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
+const selectedWallet = computed(() => accountsStore.selectedWallet);
 const image = computed(() => nft.value?.image ?? require('@/assets/fearless-logo-animated.gif'));
 
-const filteredWallets = computed(() =>
-  wallets.value.filter(({ active, ethereumAddress }) => !active && ethereumAddress)
+const acountsEcosystem = computed(() =>
+  accountsStore.acountsEcosystem.filter(({ ethereumAddress }) => !!ethereumAddress)
 );
-const showMyWalletsButton = computed(() => filteredWallets.value.length !== 0);
+const showMyWalletsButton = computed(() => acountsEcosystem.value.length !== 0);
 const recipientCut = computed(() => cut(formInfo.to));
 const network = computed(() => nft.value?.network ?? '');
 
@@ -167,7 +164,7 @@ const isSameAddress = computed(() => BaseApi.isSameAddress(selectedWallet.value,
 const isDisabled = computed(() => formInfo.to === '' || errors.incorrectRecipient || errors.insufficientFunds);
 
 const assetSymbol = computed(() => {
-  const net: NetworkJson = store.getters[NetworksGettersTypes.getNetwork](network.value);
+  const net = networksStore.getNetwork(network.value);
 
   return net?.assets.find(({ isUtility }) => isUtility)?.symbol ?? '';
 });
@@ -209,7 +206,7 @@ const nftDetails = computed(() => ({
   'assets.networkFee': formatFeeString,
 }));
 
-const tx = computed<NftTx>(() => ({
+const tx = computed(() => ({
   type: nft.value?.type ?? '',
   contract: contract.value,
   to: formInfo.to,
@@ -230,8 +227,28 @@ const showSubmitBtn = computed(
   () => !popupControls.showHistoryBook && !popupControls.showEditAddressBook && !popupControls.showMyWallets
 );
 
+const validateTx = () => {
+  if (!tx.value.network) return;
+
+  checkNft(tx.value).then((checkData) => {
+    if (checkData?.error === 'insufficientFunds') errors.insufficientFunds = true;
+
+    formInfo.fee = checkData.fee;
+  });
+};
+
+const validateAddress = () => {
+  if (formInfo.to === '' || network.value === '' || isSameAddress.value) errors.incorrectRecipient = true;
+  else {
+    const isValid = BaseApi.validateAddress(formInfo.to, network.value);
+
+    errors.incorrectRecipient = !isValid;
+  }
+};
+
 watch(formInfo, validateAddress);
 watch(tx, validateTx);
+
 onMounted(validateTx);
 
 const onConfirmClose = () => router.push({ name: Components.Nfts });
@@ -268,25 +285,6 @@ const onProceed = () => {
   if (!popupControls.showConfirmScreen) popupControls.showConfirmScreen = true;
   else popupControls.showConfirmationPasswordPopup = true;
 };
-
-function validateAddress() {
-  if (formInfo.to === '' || network.value === '' || isSameAddress.value) errors.incorrectRecipient = true;
-  else {
-    const isValid = BaseApi.validateAddress(formInfo.to, network.value);
-
-    errors.incorrectRecipient = !isValid;
-  }
-}
-
-function validateTx() {
-  if (!tx.value.network) return;
-
-  checkNft(tx.value).then((checkData) => {
-    if (checkData?.error === 'insufficientFunds') errors.insufficientFunds = true;
-
-    formInfo.fee = checkData.fee;
-  });
-}
 </script>
 
 <style lang="scss" scoped>

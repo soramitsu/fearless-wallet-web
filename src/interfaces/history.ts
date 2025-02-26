@@ -146,6 +146,7 @@ enum TransactionType {
   transfer = 'transfer',
   reward = 'reward',
   sora = 'sora',
+  ton = 'ton',
 }
 
 type ZetaHistoryItem = {
@@ -195,6 +196,27 @@ type ZetaHistory = {
   items: ZetaHistoryItem[];
 };
 
+interface TonEvent {
+  amount?: string;
+  from?: string;
+  to?: string;
+  comment?: string;
+  eventId?: string;
+  amountIn?: string;
+  amountOut?: string;
+  dex?: string;
+  userWallet?: string;
+  timestamp?: number;
+  method: string;
+  networkFee: string;
+  symbol: string;
+  symbolIn?: string;
+  isOutEvent: boolean;
+  success: boolean;
+}
+
+type TonEventTokens = Record<string, TonEvent[]>;
+
 export {
   TransactionType,
   GetHistory,
@@ -203,10 +225,12 @@ export {
   SubqueryHistory,
   GiantsquidHistoryItem,
   Reward,
+  TonEventTokens,
   HistoryElement,
   Transfer,
   SoraHistoryElement,
   X1HistoryElement,
   ZetaHistoryItem,
   ZetaHistory,
+  TonEvent,
 };

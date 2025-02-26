@@ -2,9 +2,14 @@ $extension-width: 561px;
 $extension-height: 600px;
 $default-height-page: 100%;
 
-$header-height: 48px;
-$default-padding: 16px;
-$default-border-radius: 8px;
+@function toRem($value) {
+    $remValue: ($value / 16) + rem;
+    @return $remValue;
+}
+
+$header-height: toRem(48);
+$default-padding: toRem(16);
+$default-border-radius: toRem(8);
 
 $pink-lavender-color: #bb77ff;
 $purple-color: rgba(119, 0, 238, 1);

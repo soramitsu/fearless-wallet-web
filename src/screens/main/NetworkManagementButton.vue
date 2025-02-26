@@ -1,7 +1,7 @@
 <template>
-  <div :class="assetPageWrapperClasses">
+  <div :class="containerClasses">
     <div class="network-management" :class="assetPageClasses" data-testid="networkManagement" @click.stop="onToggle">
-      <Icon v-if="isGroupIcon" :icon="icon" className="icon--network" width="16" height="16" />
+      <Icon v-if="isGroupIcon" :icon="icon" :hover="false" className="icon--network" width="16" height="16" />
       <ExternalLogo v-else :name="icon" :width="16" class="icon--network" />
 
       <span class="network__title" data-testid="networkTitle">{{ selectedNetwork }}</span>
@@ -16,6 +16,7 @@ import { Components } from '@/router/routes';
 @Component({})
 export default class NetworkManagementButton extends Vue {
   @Prop(Boolean) isGroupIcon!: boolean;
+  @Prop(Boolean) isDisable!: boolean;
   @Prop(String) icon!: string;
   @Prop(String) selectedNetwork!: string;
 
@@ -25,19 +26,21 @@ export default class NetworkManagementButton extends Vue {
     return route === Components.AssetNetworks || route === Components.AssetHistory;
   }
 
-  get assetPageWrapperClasses() {
-    if (this.isAssetPage) return 'network-management--cursor-not-allowed';
-
-    return '';
+  get containerClasses() {
+    return {
+      'network-management--cursor-not-allowed': this.isAssetPage || this.isDisable,
+    };
   }
 
   get assetPageClasses() {
-    if (this.isAssetPage) return 'network-management--disabled';
-
-    return '';
+    return {
+      'network-management--disabled': this.isAssetPage,
+    };
   }
 
   onToggle() {
+    if (this.isDisable) return;
+
     this.$emit('onToggle');
   }
 }

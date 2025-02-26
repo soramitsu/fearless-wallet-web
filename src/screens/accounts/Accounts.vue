@@ -14,40 +14,38 @@
 </template>
 
 <script lang="ts">
-import { Getter } from 'vuex-class';
-import { Vue, Component, Watch } from 'vue-property-decorator';
+import { Vue, Component } from 'vue-property-decorator';
 import AccountsItem from './AccountsItem.vue';
-import type { SelectedWallet } from '@/store';
-import type { Networks } from '@/interfaces';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { getChainAccounts } from '@/helpers/accounts';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
+import { isSameString } from '@/helpers';
 
 @Component({
   components: { AccountsItem },
 })
 export default class Account extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   selectedNetwork = '';
   selectedAddress = '';
   newName = '';
 
-  @Getter(NetworksGettersTypes.allNetworks) networks!: Networks;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-
   get chainAccounts() {
-    const networks = this.networks.filter(({ name }) => {
-      if (this.isEVM) return isNativeEVMNetwork(name);
+    const networks = this.networksStore.networks.filter(({ ecosystem }) => {
+      if (this.isEVM) return isSameString(ecosystem, 'ethereum');
 
-      return !isNativeEVMNetwork(name);
+      if (this.isTon) return isSameString(ecosystem, 'ton');
+
+      return isSameString(ecosystem, 'substrate') || isSameString(ecosystem, 'ethereumBased');
     });
 
-    return getChainAccounts(networks, this.selectedWallet);
+    return getChainAccounts(networks, this.accountsStore.selectedWallet);
   }
 
   get isMobile() {
-    return !!this.selectedWallet.isMobile;
+    return !!this.accountsStore.selectedWallet.isMobile;
   }
 
   get type() {
@@ -58,17 +56,12 @@ export default class Account extends Vue {
     return this.type === 'evm';
   }
 
-  get isSubstrate() {
-    return this.type === 'substrate';
-  }
-
-  @Watch('selectedWallet')
-  selectedWalletWatcher({ name }: SelectedWallet) {
-    this.newName = name;
+  get isTon() {
+    return this.type === 'ton';
   }
 
   mounted() {
-    this.newName = this.selectedWallet.name;
+    this.newName = this.accountsStore.selectedWallet.name;
   }
 
   back() {

@@ -14,7 +14,7 @@
           @keypress="IsNumber"
         />
 
-        <div class="price" data-testid="fiatAmount">{{ fiatSymbol }}{{ valueCut }}</div>
+        <div class="price" data-testid="fiatAmount">{{ accountsStore.fiatSymbol }}{{ valueCut }}</div>
       </div>
 
       <div class="column right-column">
@@ -48,13 +48,12 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
-import type { TokenGroup } from '@extension-base/background/types/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class SelectInput extends Vue {
+  accountsStore = useAccountsStore();
   inputIsFocused = false;
 
   @Prop({ default: '' }) text!: string;
@@ -68,8 +67,6 @@ export default class SelectInput extends Vue {
   @Prop({ default: false }) showOriginValue!: boolean;
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
   get showIconRotate() {
     return this.showIcon && !this.readonly;
@@ -131,7 +128,7 @@ export default class SelectInput extends Vue {
   }
 
   get tokenGroup() {
-    return this.balances.find(({ groupId }) => groupId === this.assetId);
+    return this.accountsStore.balances.find(({ groupId }) => groupId === this.assetId);
   }
 
   get assetIcon() {
@@ -226,12 +223,12 @@ export default class SelectInput extends Vue {
 
     .header {
       font-weight: 700;
-      font-size: 12px;
+      font-size: 0.75rem;
       text-transform: uppercase;
     }
 
     .price {
-      font-size: 12px;
+      font-size: 0.75rem;
     }
 
     input {
@@ -242,7 +239,7 @@ export default class SelectInput extends Vue {
       color: white;
       width: 250px;
       font-weight: 700;
-      font-size: 20px;
+      font-size: 1.25rem;
     }
 
     // hide arrows
@@ -288,6 +285,7 @@ export default class SelectInput extends Vue {
       cursor: pointer;
 
       .asset-icon {
+        border-radius: 50%;
         height: 24px !important;
         width: 24px !important;
       }
@@ -312,7 +310,7 @@ export default class SelectInput extends Vue {
 
     .balance {
       display: flex;
-      font-size: 12px;
+      font-size: 0.75rem;
       user-select: none;
       max-width: 250px;
       overflow: hidden;
@@ -327,6 +325,16 @@ export default class SelectInput extends Vue {
 
       .balance-value-readonly {
         cursor: default;
+      }
+    }
+  }
+}
+
+.fw-web {
+  .select {
+    .left-column {
+      input {
+        width: 100%;
       }
     }
   }

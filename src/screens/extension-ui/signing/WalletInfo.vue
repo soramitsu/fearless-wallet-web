@@ -18,7 +18,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { cut } from '@/helpers';
+import { cut, setClipboard } from '@/helpers';
 
 type Props = {
   address: string;
@@ -30,7 +30,7 @@ const cutAddress = computed(() => cut(props.address, 14));
 const cutName = computed(() => cut(props.name, 16));
 
 function saveToClipboard() {
-  navigator.clipboard.writeText(props.address);
+  setClipboard(props.address);
 }
 </script>
 
@@ -88,13 +88,13 @@ function saveToClipboard() {
 }
 
 .wallet__name {
-  font-size: 18px;
+  font-size: 1.125em;
   font-weight: 700;
   line-height: 30px;
 }
 
 .wallet__address {
-  font-size: 14px;
+  font-size: 0.875em;
   max-width: 400px;
   overflow: hidden;
   cursor: pointer;

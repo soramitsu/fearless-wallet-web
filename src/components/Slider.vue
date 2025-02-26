@@ -36,7 +36,7 @@ const emit = defineEmits(['updateValue', 'change']);
 
 const vModel = computed({
   get: () => props.value,
-  set: (value: boolean) => emit('updateValue', value),
+  set: (value: number) => emit('updateValue', value),
 });
 </script>
 

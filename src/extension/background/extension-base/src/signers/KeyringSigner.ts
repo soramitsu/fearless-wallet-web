@@ -1,13 +1,10 @@
-// Copyright 2017-2022 @polkadot/react-signer authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
 import { wrapBytes } from '@polkadot/extension-dapp';
 import { u8aToHex } from '@polkadot/util';
 import { type HexString } from '@polkadot/util/types';
 import { state } from '@extension-base/background/handlers';
 import type { Registry, SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { Signer, SignerResult } from '@polkadot/api/types';
-import type { KeyringPair } from '@polkadot/keyring/types';
+import type { KeyringPair } from '@subwallet/keyring/types';
 
 interface KeyringSignerProps {
   registry: Registry;

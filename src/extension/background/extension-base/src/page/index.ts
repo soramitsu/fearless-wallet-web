@@ -60,11 +60,6 @@ export async function enable(origin: string): Promise<Injected> {
   return new Injected(sendMessage);
 }
 
-// function to send a refresh token, called by a decentralized application (Polkaswap)
-export async function saveSoraCardToken(token: string): Promise<void> {
-  await sendMessage('pub(soraCard.token)', token);
-}
-
 // redirect users if this page is considered as phishing, otherwise return false
 export async function redirectIfPhishing(): Promise<boolean> {
   const res = await sendMessage('pub(phishing.redirectIfDenied)');
@@ -90,6 +85,6 @@ export function handleResponse<TMessageType extends MessageTypes>(
   else handler.resolve(data.response);
 }
 
-export function initEvmProvider(version: string): FWEvmProvider {
-  return new FearlessWalletEvmProvider(sendMessage, version);
+export function initEvmProvider(): FWEvmProvider {
+  return new FearlessWalletEvmProvider(sendMessage);
 }

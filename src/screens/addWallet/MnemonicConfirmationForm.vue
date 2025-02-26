@@ -4,7 +4,7 @@
       {{ $t('addWallet.securityWritten') }}
     </div>
 
-    <MnemonicColumns :mnemonicArray="selectedMnemonicArray" />
+    <MnemonicColumns :mnemonicArray="selectedMnemonicArray" :mnemonicLength="mnemonicLength" />
 
     <div class="hint">{{ $t('addWallet.selectPassphraseWords') }}</div>
 
@@ -28,6 +28,7 @@
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import MnemonicColumns from './MnemonicColumns.vue';
 import type { MnemonicConfirmation } from '@/interfaces/common';
+import type { WordCount } from '@extension-base/services';
 
 @Component({
   components: {
@@ -36,6 +37,7 @@ import type { MnemonicConfirmation } from '@/interfaces/common';
 })
 export default class MnemonicConfirmationForm extends Vue {
   @Prop(Array) mnemonicMix!: string[];
+  @Prop(Number) mnemonicLength!: WordCount;
   @PropSync('selectedMnemonicElements', { type: Array }) syncedSelectedMnemonicElements!: MnemonicConfirmation[];
 
   get selectedMnemonicArray() {

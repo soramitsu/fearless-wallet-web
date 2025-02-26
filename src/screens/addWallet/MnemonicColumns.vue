@@ -1,21 +1,11 @@
 <template>
   <div class="mnemonic-columns">
-    <div>
-      <div v-for="(mnemonicElement, index) in mnemonicOne" :key="index" class="mnemonic-element">
+    <div v-for="(column, index1) in columns" :key="index1">
+      <div v-for="(mnemonicElement, index2) in column" :key="index2" class="mnemonic-element">
         <div class="mnemonic-number">
-          {{ getNumberString(index + 1) }}
+          {{ getNumberString(index1 + 1, index2 + 1) }}
         </div>
-        <div data-testid="mnemonicElement">
-          {{ mnemonicElement }}
-        </div>
-      </div>
-    </div>
 
-    <div>
-      <div v-for="(mnemonicElement, index) in mnemonicTwo" :key="index" class="mnemonic-element">
-        <div class="mnemonic-number">
-          {{ getNumberString(midpoint + index + 1) }}
-        </div>
         <div data-testid="mnemonicElement">
           {{ mnemonicElement }}
         </div>
@@ -27,13 +17,28 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
+const COLUMN_ELEMENTS = {
+  24: 8,
+  12: 6,
+};
+
 @Component
 export default class MnemonicColumns extends Vue {
   @Prop(Array) mnemonicArray!: string[];
-  @Prop({ default: 12 }) mnemonicLength!: number;
+  @Prop({ default: 12 }) mnemonicLength!: keyof typeof COLUMN_ELEMENTS;
 
-  get midpoint() {
-    return Math.ceil(this.mnemonicLength / 2);
+  get columnElements() {
+    return COLUMN_ELEMENTS[this.mnemonicLength];
+  }
+
+  get columns() {
+    const columns = this.mnemonicLength / this.columnElements;
+
+    return new Array(columns).fill('').map((item, index) => {
+      const startIndex = index * this.columnElements;
+
+      return this.mnemonicArrayValidLength.slice(startIndex, startIndex + this.columnElements);
+    });
   }
 
   get mnemonicArrayValidLength() {
@@ -44,16 +49,24 @@ export default class MnemonicColumns extends Vue {
     return array.fill('', this.mnemonicArray.length, this.mnemonicLength);
   }
 
-  get mnemonicOne() {
-    return this.mnemonicArrayValidLength.slice(0, this.midpoint);
+  get columnOne() {
+    return this.mnemonicArrayValidLength.slice(0, this.columnElements);
   }
 
-  get mnemonicTwo() {
-    return this.mnemonicArrayValidLength.slice(this.midpoint, this.mnemonicLength);
+  get columnTwo() {
+    return this.mnemonicArrayValidLength.slice(this.columnElements, this.columnElements * 2);
   }
 
-  getNumberString(number: number) {
-    return number.toString().padStart(2, '0');
+  get columnTree() {
+    if (this.mnemonicLength === 12) return [];
+
+    return this.mnemonicArrayValidLength.slice(this.columnElements * 2, this.columnElements * 3);
+  }
+
+  getNumberString(number1: number, number2: number) {
+    const baseValue = number1 * number2;
+
+    return baseValue.toString().padStart(2, '0');
   }
 }
 </script>
@@ -67,7 +80,7 @@ export default class MnemonicColumns extends Vue {
 .mnemonic-columns {
   display: flex;
   justify-content: space-evenly;
-  font-size: 16px;
+  font-size: 1em;
   font-family: 'Roboto mono', sans-serif;
   font-weight: 400;
 

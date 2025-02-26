@@ -98,17 +98,13 @@ type AssetPrices = {
 interface AssetPrice {
   price: number;
   priceChange: number;
+  isExist: boolean;
 }
 
 type AssetName = string;
 
 type AssetId = string;
 
-type AssetsPrice = {
-  tokenPriceMap: Record<string, number>;
-  tokenPriceChange: Record<string, number>;
-};
-
 type KeysAssetPricesJson = keyof AssetPrices;
 
-export { KeysAssetPricesJson, AssetsPrice, AssetName, AssetPrices, AssetPrice, AssetId };
+export { KeysAssetPricesJson, AssetName, AssetPrices, AssetPrice, AssetId };

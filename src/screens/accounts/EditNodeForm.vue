@@ -41,14 +41,13 @@
 
 <script lang="ts">
 import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
 import { upsertNetworkMap } from '@/extension/messaging';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { type GetNetwork } from '@/store';
+import { useNetworksStore } from '@/stores/networks';
 
 @Component
 export default class EditNodeForm extends Vue {
+  networksStore = useNetworksStore();
   name = '';
   url = '';
   isError = false;
@@ -57,15 +56,13 @@ export default class EditNodeForm extends Vue {
   @Prop({ type: String, default: '' }) nodeName!: string;
   @Prop({ type: String, default: '' }) nodeUrl!: string;
   @Prop(Boolean) isActive!: boolean;
-  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get buttonText() {
     return this.isEdit ? 'common.save' : 'accounts.addNode';
   }
 
   get networkJson() {
-    return this.getNetwork(this.network);
+    return this.networksStore.getNetwork(this.network);
   }
 
   get isEdit() {
@@ -110,9 +107,9 @@ export default class EditNodeForm extends Vue {
   }
 
   get errorMessage() {
-    if (this.isError) return 'accounts.invalidNodeAddress';
+    if (this.isUrlDuplicate) return 'accounts.customNodeDuplicate';
 
-    return 'accounts.customNodeDuplicate';
+    return 'accounts.invalidNodeAddress';
   }
 
   get isUrlChanged() {

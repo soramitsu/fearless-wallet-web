@@ -57,6 +57,15 @@ const clickIcon = () => {
 </script>
 
 <style lang="scss" scoped>
+.fw-web {
+  .wrapper {
+    .rotate-input {
+      flex: 0 0 95dvw;
+      width: 95dvw;
+    }
+  }
+}
+
 .wrapper {
   display: flex;
   justify-content: space-between;

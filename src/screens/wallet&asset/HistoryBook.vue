@@ -10,7 +10,9 @@
 
             <div v-for="address in historyAddresses" :key="address" class="row" @click="setRecipient(address)">
               <div class="description">
-                <Identicon :address="address" />
+                <img v-if="isTonWallet" :src="tonIcon" />
+
+                <Identicon v-else :address="address" />
 
                 <div class="full-description">
                   <div class="address" data-testid="address">{{ cut(address) }}</div>
@@ -31,7 +33,9 @@
               @click="setRecipient(address)"
             >
               <div class="description">
-                <Identicon :address="address" />
+                <img v-if="isTonWallet" :src="tonIcon" />
+
+                <Identicon v-else :address="address" />
 
                 <div class="full-description">
                   <div class="name" data-testid="name">{{ name }}</div>
@@ -60,28 +64,26 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
 import { storage } from '@extension-base/stores/Storage';
 import { toSvg } from 'jdenticon';
-import { type AddressBook } from '@extension-base/background/types/types';
-import type { AsyncFn, GetHistory } from '@/interfaces';
-import type { FetchHistory, GetNetwork } from '@/store';
+import type { AddressBook } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { cut, isSora } from '@/helpers/';
+import { cut, isSameString, isSora } from '@/helpers/';
 import { getType } from '@/helpers/history';
-import { type SoraHistoryElement, TransactionType } from '@/interfaces/history';
-import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
+import { type SoraHistoryElement, TransactionType, type TonEvent } from '@/interfaces/history';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
+import { TON_ICON } from '@/consts/networks';
 
 @Component
 export default class HistoryBook extends Vue {
+  accountsStore = useAccountsStore();
+  networksStore = useNetworksStore();
   addressBook: AddressBook = {};
+  tonIcon = TON_ICON;
 
   @Prop(String) network!: string;
   @Prop(String) assetId!: string;
-  @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
-  @Action(NetworksActionTypes.FETCH_HISTORY) fetchHistory!: AsyncFn<FetchHistory>;
 
   get showHistoryAndBook() {
     return this.showHistory || this.book.length !== 0;
@@ -92,7 +94,7 @@ export default class HistoryBook extends Vue {
   }
 
   get addressPrefix() {
-    return this.getNetwork(this.network)?.addressPrefix;
+    return this.networksStore.getNetwork(this.network)?.addressPrefix;
   }
 
   get book() {
@@ -101,31 +103,47 @@ export default class HistoryBook extends Vue {
     return Array.from(new Set(addresses));
   }
 
-  get historyAddresses() {
+  get isTonWallet() {
+    return this.accountsStore.selectedWallet.isTon;
+  }
+
+  get addressByConditions() {
     if (!this.network) return [];
 
-    const history = this.getHistory(this.assetId, this.network.toLowerCase());
+    const history = this.networksStore.getHistory(this.assetId, this.network.toLowerCase());
 
     if (!history) return [];
 
-    const addresses = isSora(this.network)
-      ? (history.nodes as unknown as SoraHistoryElement[]).flatMap((item) => {
-          if (item.method !== 'transfer') return [];
+    if (isSora(this.network)) {
+      return (history.nodes as unknown as SoraHistoryElement[]).flatMap((item) => {
+        if (item.method !== 'transfer') return [];
 
-          return BaseApi.encodeAddress(item.data?.to ?? '', this.addressPrefix) ?? [];
-        })
-      : history?.nodes.flatMap((item) => {
-          if (getType(item) !== TransactionType.transfer) return [];
+        return BaseApi.encodeAddress(item.data?.to ?? '', this.addressPrefix) ?? [];
+      });
+    }
 
-          return BaseApi.encodeAddress(item.transfer?.to ?? '', this.addressPrefix) ?? [];
-        });
+    if (this.isTonWallet) {
+      return (history.nodes as unknown as TonEvent[]).flatMap((item) => item.to ?? []);
+    }
 
-    return Array.from(new Set(addresses))
+    return history?.nodes.flatMap((item) => {
+      if (getType(item) !== TransactionType.transfer) return [];
+
+      return BaseApi.encodeAddress(item.transfer?.to ?? '', this.addressPrefix) ?? [];
+    });
+  }
+
+  get historyAddresses() {
+    return Array.from(new Set(this.addressByConditions))
       .filter(
         (address) =>
-          !this.book.some(
-            ({ address: addressFromBook }) => BaseApi.encodeAddress(address) === BaseApi.encodeAddress(addressFromBook)
-          )
+          !this.book.some(({ address: addressFromBook }) => {
+            if (this.isTonWallet) {
+              return isSameString(address, addressFromBook);
+            }
+
+            return isSameString(BaseApi.encodeAddress(address), BaseApi.encodeAddress(addressFromBook));
+          })
       )
       .slice(0, 11);
   }
@@ -163,7 +181,7 @@ export default class HistoryBook extends Vue {
   loadHistory() {
     if (this.historyAddresses.length !== 0) return;
 
-    this.fetchHistory({ networkName: this.network, assetId: this.assetId });
+    this.networksStore.fetchHistory({ networkName: this.network, assetId: this.assetId });
   }
 
   getJdenticon(address: string) {
@@ -198,7 +216,7 @@ export default class HistoryBook extends Vue {
 
     .label {
       font-weight: 700;
-      font-size: 12px;
+      font-size: 0.75rem;
       text-transform: uppercase;
       color: $default-white;
       text-align: left;
@@ -241,7 +259,7 @@ export default class HistoryBook extends Vue {
 
         .address {
           color: rgba(255, 255, 255, 0.64);
-          font-size: 14px;
+          font-size: 0.875em;
         }
 
         .full-description {

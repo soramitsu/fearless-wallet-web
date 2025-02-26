@@ -27,25 +27,23 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { APIItemState } from '@extension-base/api/types/networks';
-import type { TokenGroup } from '@extension-base/background/types/types';
-import type { PoolParams } from '@/store';
+import type { PoolParams } from '@/stores';
 import { isSameString } from '@/helpers';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class PoolItem extends Vue {
+  accountsStore = useAccountsStore();
+
   @Prop(Object) poolParams!: PoolParams;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
   get network() {
     return this.poolParams.network;
   }
 
   get tvl() {
-    return `${this.fiatSymbol}${this.$n(+this.poolParams.tvl, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(+this.poolParams.tvl, 'price')}`;
   }
 
   get assetId1() {
@@ -69,11 +67,11 @@ export default class PoolItem extends Vue {
   }
 
   get poolCurrency1() {
-    return this.balances?.find(({ groupId }) => groupId === this.assetId1);
+    return this.accountsStore.balances?.find(({ groupId }) => groupId === this.assetId1);
   }
 
   get poolCurrency2() {
-    return this.balances?.find(({ groupId }) => groupId === this.assetId2);
+    return this.accountsStore.balances?.find(({ groupId }) => groupId === this.assetId2);
   }
 
   get isLoading() {
@@ -147,7 +145,7 @@ export default class PoolItem extends Vue {
 
       .earn {
         display: flex;
-        font-size: 12px;
+        font-size: 0.75rem;
         color: $grayish-white-2;
 
         .asset {

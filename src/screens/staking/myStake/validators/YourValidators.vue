@@ -62,7 +62,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { NetworkParams } from '@/store';
+import type { NetworkParams } from '@/stores';
 import ValidatorItem from '@/screens/staking/myStake/validators/ValidatorItem.vue';
 
 @Component({
@@ -127,7 +127,7 @@ export default class YourValidators extends Vue {
   }
 
   .sub-label {
-    font-size: 12px;
+    font-size: 0.75rem;
     text-align: left;
     color: $grayish-white-2;
     margin: 10px 0;

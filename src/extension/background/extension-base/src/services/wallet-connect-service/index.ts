@@ -16,10 +16,13 @@ import WalletConnectStorage from '@extension-base/services/wallet-connect-servic
 import {
   ALL_WALLET_CONNECT_EVENT,
   DEFAULT_WALLET_CONNECT_OPTIONS,
+  WALLET_CONNECT_EIP155_NAMESPACE,
+  WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import type State from '@extension-base/background/handlers/State';
 import type { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
 import type { RequestService } from '@extension-base/services';
+import { isSameString } from '@/helpers';
 export class WalletConnectService {
   private client?: WalletConnect;
 
@@ -57,12 +60,12 @@ export class WalletConnectService {
     return !!sessions.length || !!pairings.length || !!subscriptions.length || !!history.length || !!proposals.length;
   }
 
-  public addConnection(uri: string) {
-    console.info(uri);
-  }
-
   public get sessions(): SessionTypes.Struct[] {
     return this.client?.session.values || [];
+  }
+
+  public addConnection(uri: string) {
+    console.info(uri);
   }
 
   private updateSessions() {
@@ -81,6 +84,7 @@ export class WalletConnectService {
 
   async initClient(force?: boolean) {
     this.removeListener();
+
     const isHaveData = await this.haveData();
 
     if (force || isHaveData) {
@@ -148,6 +152,7 @@ export class WalletConnectService {
 
   private onSessionRequest(requestEvent: SignClientTypes.EventArguments['session_request']) {
     this.checkClient();
+
     const { id, params, topic } = requestEvent;
     const { chainId, request } = params;
     const method = request.method as WalletConnectSigningMethod;
@@ -230,6 +235,25 @@ export class WalletConnectService {
   private removeListener() {
     ALL_WALLET_CONNECT_EVENT.forEach((event) => {
       this.client?.removeAllListeners(event);
+    });
+  }
+
+  removeSessions(address: string, ethereumAddress?: string) {
+    this.sessions.forEach((session) => {
+      const evm = session.namespaces[WALLET_CONNECT_EIP155_NAMESPACE] ?? [];
+      const polkadot = session.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE] ?? [];
+
+      if (ethereumAddress && evm?.accounts?.length) {
+        const [, , evmAddress] = evm.accounts[0].split(':');
+
+        if (isSameString(ethereumAddress, evmAddress)) return this.disconnect(session.topic);
+      }
+
+      if (polkadot?.accounts?.length) {
+        const [, , substrateAddress] = polkadot.accounts[0].split(':');
+
+        if (isSameString(address, substrateAddress)) this.disconnect(session.topic);
+      }
     });
   }
 }

@@ -18,9 +18,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+
 import type { ResponseTotalBalances } from '@extension-base/background/types/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+
 import { type CustomEvent } from '@/interfaces';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import { getTotalBalances } from '@/extension/messaging';
@@ -30,6 +30,7 @@ import { getTotalBalances } from '@/extension/messaging';
 })
 export default class WalletInfo extends Vue {
   readonly dotsHorizontalRef = 'dotsHorizontal';
+
   showWalletMenu = false;
   totalBalances: ResponseTotalBalances[] = [];
   interval: NodeJS.Timer | undefined;
@@ -43,7 +44,6 @@ export default class WalletInfo extends Vue {
   @Prop(Boolean) isMobile!: boolean;
   @Prop({ default: false }) isSelected!: boolean;
   @Prop({ default: true }) showMenu!: boolean;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
   get totalBalance() {
     return this.totalBalances.find(({ address }) => address === this.address);
@@ -120,7 +120,7 @@ export default class WalletInfo extends Vue {
   }
 
   .name {
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     color: $gray-color;
@@ -158,7 +158,7 @@ export default class WalletInfo extends Vue {
   }
 
   .balance {
-    font-size: 18px;
+    font-size: 1.125em;
     line-height: 22px;
   }
 }

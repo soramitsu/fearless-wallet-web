@@ -32,14 +32,12 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import History from './History.vue';
 import type { TokenGroup } from '@extension-base/background/types/types';
-import type { Features } from '@/store/extension/types';
 import AssetActionButtons from '@/screens/wallet&asset/asset/AssetActionButtons.vue';
-import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import BaseApi from '@/util/BaseApi';
 import { fetchEvmBalance } from '@/extension/messaging';
+import { useExtensionStore } from '@/stores/extension';
 
 @Component({
   components: {
@@ -48,10 +46,10 @@ import { fetchEvmBalance } from '@/extension/messaging';
   },
 })
 export default class AssetHistory extends Vue {
+  extensionStore = useExtensionStore();
   showPopupButton = false;
 
   @Prop(Object) currency!: TokenGroup;
-  @Getter(ExtensionGettersTypes.features) features!: Nullable<Features>;
 
   get selectedAssetId() {
     return this.$route.params.assetId;
@@ -68,7 +66,7 @@ export default class AssetHistory extends Vue {
   }
 
   get showBuyButton() {
-    const providers = this.providers.filter((provider) => this.features?.fiat[provider]);
+    const providers = this.providers.filter((provider) => this.extensionStore.features?.fiat[provider]);
 
     if (providers.length === 0) return false;
 

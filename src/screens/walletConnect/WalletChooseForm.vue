@@ -18,18 +18,17 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue';
-import type { AccountJson } from '@extension-base/background/types/types';
-import { useStore } from '@/store';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useAccountsStore } from '@/stores/accounts';
 
 const props = defineProps<{
   selectedAddress: string;
 }>();
+
 const emit = defineEmits(['onSelect', 'onClose']);
-const store = useStore();
-const wallets = ref<AccountJson[]>(
-  (store.getters[AccountsGettersTypes.getAccounts] as AccountJson[]).filter((el) => el.ethereumAddress && !el.isMobile)
-);
+
+const accountsStore = useAccountsStore();
+const wallets = ref(accountsStore.accounts.filter((el) => el.ethereumAddress && !el.isMobile));
+
 const close = () => emit('onClose');
 const isSelected = (address: string) => address === props.selectedAddress;
 </script>
@@ -53,7 +52,7 @@ const isSelected = (address: string) => address === props.selectedAddress;
 
   &__name {
     grid-area: name;
-    font-size: 16px;
+    font-size: 1em;
     color: $default-white;
     line-height: 22px;
     place-self: flex-start;
@@ -62,7 +61,7 @@ const isSelected = (address: string) => address === props.selectedAddress;
   &__address {
     grid-area: address;
     color: $gray-color;
-    font-size: 12px;
+    font-size: 0.75rem;
     line-height: 16px;
     place-self: flex-start;
   }

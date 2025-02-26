@@ -1,11 +1,10 @@
 import { APIItemState } from '@extension-base//api/types/networks';
 import { isSameString } from '..';
 import type { NetworkJson } from '@extension-base/types';
-import type { TokenGroup } from '@extension-base/background/types/types';
-import type { AssetsPrice, ChangeWalletBalance, NetworkName } from '@/interfaces';
+import type { BasePriceJson, TokenGroup } from '@extension-base/background/types/types';
+import type { ChangeWalletBalance, NetworkName } from '@/interfaces';
 import { addNumbers } from '@/helpers/numbers';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, NETWORKS_GROUPS, POPULAR_NETWORKS } from '@/consts/networks';
-import { FEARLESS_TITLE } from '@/consts/global';
 
 export function isNetworkGroup(network: string) {
   return NETWORKS_GROUPS.some((group) => group.toLowerCase() === network.toLowerCase());
@@ -18,13 +17,13 @@ export function getTransferableBalanceInNetwork(token: TokenGroup, network: stri
 export function getSummaryTransferableWalletBalance(
   address: string,
   tokens: TokenGroup[],
-  price: AssetsPrice,
+  price: BasePriceJson,
   network: NetworkName, // network name or group name
   networks: NetworkJson[]
 ): number {
   return tokens.reduce((result, token) => {
     const { balances, priceId } = token;
-    const tokenPrice = price.tokenPriceMap[priceId ?? ''] ?? 0;
+    const tokenPrice = price.tokenPriceMap ? price.tokenPriceMap[priceId ?? ''] ?? 0 : 0;
 
     if (!isNetworkGroup(network)) {
       const assetCount = getTransferableBalanceInNetwork(token, network);
@@ -73,7 +72,7 @@ export function getSummaryLockedBalance(token: TokenGroup) {
 
 export function getChangeWalletBalance(
   tokens: TokenGroup[],
-  price: AssetsPrice,
+  price: BasePriceJson,
   network: NetworkName // network name or group name
 ): ChangeWalletBalance {
   const changeAssets = tokens.map((tokenGroup) => {
@@ -102,5 +101,3 @@ export function getChangeWalletBalance(
     amount: totalChangeFiat,
   };
 }
-
-export const setTitle = (title = FEARLESS_TITLE) => (document.title = title);

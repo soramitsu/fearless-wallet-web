@@ -9,7 +9,17 @@
     >
       <div class="accounts-layout">
         <Scroll>
+          <ExportForm
+            v-if="showExportForm"
+            :exportType="exportType"
+            :password="password"
+            @closeHandler="setExportType"
+          />
+
+          <ExportTypeForm v-else-if="showExportType" @setExportType="setExportType" @closeHandler="setPassword" />
+
           <router-view
+            v-else
             :ref="routerViewRef"
             :password="password"
             @setPassword="setPassword"
@@ -32,6 +42,7 @@
       :buttonTopClick="buttonTopClick"
       @handlerClose="closeAccountSettings"
       @openNotificationPopup="openNotificationPopup"
+      @openExportAccountPage="openExportAccountPage"
     />
 
     <EditNodeForm
@@ -57,43 +68,39 @@
       v-if="showNotificationPopup"
       sizeWidth="big"
       rejectButtonText="Cancel"
-      :acceptButtonText="acceptButtonText"
+      acceptButtonText="common.delete"
       :showAcceptButton="true"
       :showRejectButton="true"
-      :showWarningIcon="showWarningIcon"
+      :showWarningIcon="true"
       :headers="headers"
       @handlerClose="closeNotificationPopup"
       @handlerAccept="handlerAccept"
     />
 
     <AddEthereumAccountPopup v-if="showAddEthereumAccountPopup" @handlerClose="closeAddEthereumAccountPopup" />
-
-    <ExportForm v-if="showExportForm" :password="password" @closeHandler="setPassword" />
   </div>
 </template>
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import ExportForm from './ExportForm.vue';
+import ExportTypeForm from './ExportTypeForm.vue';
 import EditNodeForm from './EditNodeForm.vue';
 import NodeSettingsPopup from './NodeSettingsPopup.vue';
 import AddEthereumAccountPopup from './AddEthereumAccountPopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import type Nodes from './Nodes.vue';
-import type { NetworkJson } from '@extension-base/types';
-import type { GetNetwork, SelectedWallet } from '@/store';
+import type { ExportType } from '@/interfaces';
 import { Components } from '@/router/routes';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { upsertNetworkMap } from '@/extension/messaging';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-
-type NotificationType = 'delete' | 'export' | '';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: {
     ExportForm,
     EditNodeForm,
+    ExportTypeForm,
     NodeSettingsPopup,
     AccountSettingsPopup,
     AddEthereumAccountPopup,
@@ -101,61 +108,49 @@ type NotificationType = 'delete' | 'export' | '';
 })
 export default class AccountsLayout extends Vue {
   readonly routerViewRef = 'routerView';
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   password = '';
   selectedNetwork = '';
   selectedNodeName = '';
   selectedNodeUrl = '';
+  exportType: Nullable<ExportType> = null;
   selectedNodeIsActive = false;
   buttonTopClick = 0;
   showAddEthereumAccountPopup = false;
   showAccountSettingsPopup = false;
   showEditNodeForm = false;
   showNodeSettingsPopup = false;
-  notificationType: NotificationType = '';
-
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+  showNotificationPopup = false;
 
   get headers() {
-    return this.notificationType === 'delete'
-      ? { text: 'accounts.deleteCustomNode', subtext: this.selectedNodeName }
-      : this.notificationType === 'export'
-      ? {
-          text: 'accounts.careful',
-          subtext: 'accounts.exportWarning',
-        }
-      : '';
+    return { text: 'accounts.deleteCustomNode', subtext: this.selectedNodeName };
   }
 
   get header() {
     if (this.isAccountsRoute) return 'accounts.chainAccounts';
 
-    if (this.isExportRoute) return 'accounts.export';
+    if (this.isExportRoute) return 'accounts.backupKeyPair';
 
     return 'addWallet.accounts';
   }
 
   get showBackIcon() {
-    if (this.isAccountSetting) return false;
+    if (this.accountsStore.selectedWallet.isTon) return false;
 
-    return true;
+    return !this.isAccountSetting;
   }
 
-  get showExportForm() {
+  get showExportType() {
     return this.password !== '';
   }
 
-  get showWarningIcon() {
-    return this.notificationType === 'delete';
+  get showExportForm() {
+    return this.exportType !== null;
   }
 
   get acceptButtonText() {
-    return this.notificationType === 'delete'
-      ? 'common.delete'
-      : this.notificationType === 'export'
-      ? 'accounts.exportJson'
-      : '';
+    return 'common.delete';
   }
 
   get network() {
@@ -179,27 +174,29 @@ export default class AccountsLayout extends Vue {
   }
 
   get showExport() {
-    return !this.isExportRoute && !this.selectedWallet.isMobile;
+    return !this.isExportRoute && !this.accountsStore.selectedWallet.isMobile;
   }
 
   get routeName() {
     return this.$route.name;
   }
 
-  get showNotificationPopup() {
-    return this.notificationType !== '';
+  setExportType(type: Nullable<ExportType> = null) {
+    this.exportType = type;
   }
 
-  setPassword(password: string) {
+  setPassword(password: string = '') {
     this.password = password;
+
+    if (this.accountsStore.selectedWallet.isTon) this.setExportType('mnemonic');
   }
 
   handlerAccept() {
-    if (this.notificationType === 'delete') this.deleteNode();
-    else if (this.notificationType === 'export') this.openExportAccountScreen();
+    this.deleteNode();
+    this.closeNotificationPopup();
   }
 
-  openExportAccountScreen() {
+  openExportAccountPage() {
     this.$router.push({
       name: Components.Export,
       params: {
@@ -207,7 +204,7 @@ export default class AccountsLayout extends Vue {
       },
     });
 
-    this.closeNotificationPopup();
+    this.closeAccountSettings();
   }
 
   openAccountSettingsPopup(network = '', buttonTop = 0) {
@@ -219,9 +216,7 @@ export default class AccountsLayout extends Vue {
   closeAccountSettings(isReset = true) {
     this.showAccountSettingsPopup = false;
 
-    if (isReset) {
-      this.selectedNetwork = '';
-    }
+    if (isReset) this.selectedNetwork = '';
   }
 
   openNodeSettingsPopup(network = '', nodeName = '', nodeUrl = '', buttonTop: number, isActive: boolean) {
@@ -251,7 +246,7 @@ export default class AccountsLayout extends Vue {
   }
 
   deleteNode() {
-    const network = this.getNetwork(this.selectedNetwork);
+    const network = this.networksStore.getNetwork(this.selectedNetwork);
     const customNodes = network.customNodes.filter((node) => node.url !== this.selectedNodeUrl);
 
     upsertNetworkMap({
@@ -269,8 +264,8 @@ export default class AccountsLayout extends Vue {
     if (setAuto && this.selectedNodeIsActive) nodesComponent.toggleAutoSelectNode(true);
   }
 
-  openNotificationPopup(type: NotificationType) {
-    this.notificationType = type;
+  openNotificationPopup() {
+    this.showNotificationPopup = true;
 
     this.closeNodeSettings();
     this.closeAccountSettings(false);
@@ -281,9 +276,10 @@ export default class AccountsLayout extends Vue {
   }
 
   closeNotificationPopup() {
-    this.notificationType = '';
     this.selectedNodeName = '';
     this.selectedNodeUrl = '';
+
+    this.showNotificationPopup = false;
   }
 
   closeNodeSettings() {
@@ -295,7 +291,9 @@ export default class AccountsLayout extends Vue {
   }
 
   handlerBack() {
-    this.$router.back();
+    if (this.showExportForm) this.setExportType();
+    else if (this.showExportType) this.setPassword();
+    else this.$router.back();
   }
 
   close() {

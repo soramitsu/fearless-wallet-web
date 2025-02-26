@@ -71,11 +71,11 @@
 import { ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
 import { URLS } from '@/consts/urls';
-import { useStore } from '@/store';
+import { useAccountsStore } from '@/stores/accounts';
 
 const router = useRouter();
 const route = useRoute();
-const store = useStore();
+const accountsStore = useAccountsStore();
 
 const urls = URLS;
 const agreeWithRules = ref(false);
@@ -88,7 +88,7 @@ const open = (url: string) => window.open(url);
 const closeForm = () => router.back();
 
 const agree = () => {
-  store.commit('HIDE_POLKASWAP_ALERT');
+  accountsStore.hidePolkaswapAlert();
 
   closeForm();
 };
@@ -130,6 +130,14 @@ const switchAgreeWithRules = () => {
     .important {
       color: $simple-orange-color;
       font-weight: 600;
+    }
+  }
+}
+
+.fw-web {
+  .disclaimer {
+    .all-rules {
+      width: auto;
     }
   }
 }

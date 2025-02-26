@@ -22,7 +22,7 @@ defineProps<Props>();
 
   .info-text {
     text-align: left;
-    font-size: 13px;
+    font-size: 0.8125em;
     margin: auto 0 auto 20px;
     width: 420px;
     line-height: 170%;

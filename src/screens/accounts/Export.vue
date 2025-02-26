@@ -1,7 +1,7 @@
 <template>
   <div class="export">
     <div class="description">
-      <div class="header" data-testid="headerExport">{{ $t('accounts.exportJson') }}</div>
+      <div class="header" data-testid="headerExport">{{ $t('accounts.exportAccount') }}</div>
 
       <InformationBlock class="information" :text="warningText" />
     </div>
@@ -10,7 +10,7 @@
       <ValidatedInput
         :value="password"
         errorDescriptions="common.invalidPassword"
-        placeholder="accounts.passwordWallet"
+        placeholder="accounts.passwordApp"
         data-testid="passwordExport"
         :isError="isWrongPassword"
         :showPassword="true"
@@ -23,7 +23,7 @@
         size="big"
         fontSize="big"
         width="100%"
-        text="accounts.wantExportJson"
+        text="accounts.wantExport"
         data-testid="wantExportJsonBtn"
         :disabled="noEthereumAccount"
         @click="checkPassword"
@@ -35,13 +35,12 @@
 <script lang="ts" setup>
 import { computed, ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
-import { useStore, type SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import { validatePassword } from '@/extension/messaging';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useAccountsStore } from '@/stores/accounts';
 
 const emit = defineEmits(['setPassword']);
-const store = useStore();
+const accountsStore = useAccountsStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -52,15 +51,14 @@ watch(password, () => {
   isWrongPassword.value = false;
 });
 
-const selectedWallet = computed<SelectedWallet>(() => store.getters[AccountsGettersTypes.selectedWallet]);
 const network = computed(() => route.params.network);
 
 onMounted(() => {
-  if (selectedWallet.value.isMobile) router.back();
+  if (accountsStore.selectedWallet.isMobile) router.back();
 });
 
 const noEthereumAccount = computed(
-  () => selectedWallet.value.ethereumAddress === '' && BaseApi.isEthereumNetwork(network.value)
+  () => accountsStore.selectedWallet.ethereumAddress === '' && BaseApi.isEthereumNetwork(network.value)
 );
 
 const warningText = computed(() => {
@@ -72,14 +70,13 @@ const changePassword = (value: string) => {
 };
 
 const checkPassword = async () => {
-  const addressByNetwork = BaseApi.formatAddress(selectedWallet.value, network.value);
-  const validatePass = await validatePassword(addressByNetwork, password.value);
+  const validatePass = await validatePassword(password.value);
 
   isWrongPassword.value = !validatePass;
 
-  if (isWrongPassword.value) return;
+  const pass = isWrongPassword.value ? '' : password.value;
 
-  emit('setPassword', password.value);
+  emit('setPassword', pass);
 };
 </script>
 
@@ -88,7 +85,6 @@ const checkPassword = async () => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  margin-right: 16px;
   height: 100%;
 
   .information {
@@ -96,7 +92,7 @@ const checkPassword = async () => {
   }
 
   .want-export {
-    margin: 16px 0;
+    margin-top: 16px;
   }
 
   .description {
@@ -106,7 +102,7 @@ const checkPassword = async () => {
 
     .header {
       font-weight: 800;
-      font-size: 22px;
+      font-size: 1.375em;
     }
   }
 }

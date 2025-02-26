@@ -1,22 +1,85 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import routes from '@/router/routes';
+import routes, { Components } from '@/router/routes';
 import { updateTitle } from '@/util/routing';
+import {
+  keyringIsLocked,
+  hasMasterPassword,
+  hasAccounts,
+  isNeedMigration,
+  isOnboardingRequired,
+} from '@/extension/messaging';
+import { IS_EXTENSION, IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
 
 Vue.use(VueRouter);
 
 const router = new VueRouter({
   mode: 'hash',
-  base: process.env.BASE_URL,
+  base: IS_EXTENSION ? process.env.BASE_URL : undefined,
   routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   // setTimeout нужен, чтобы установить нужный title после обновления страницы
   // так же, 150ms минимальное время для того, чтобы balances успели подтянуться из SW
   setTimeout(() => updateTitle(to), 150);
 
-  next();
+  const isRequiredOnboarding = await isOnboardingRequired();
+
+  if (IS_PRODUCTION || IS_TEST_ONLY) {
+    if (to.name !== Components.Onboarding && isRequiredOnboarding) {
+      next({ name: Components.Onboarding });
+
+      return;
+    }
+  }
+
+  const needMigration = await isNeedMigration();
+  const isLock = await keyringIsLocked();
+
+  // If the extension is locked, skip the migration step.
+  // This can happen if the user set a password during migration and then locked the extension.
+  if (!isLock && !isRequiredOnboarding) {
+    if (
+      to.name !== Components.MigrationDescription &&
+      to.name !== Components.MigrationAccounts &&
+      to.name !== Components.Onboarding
+    ) {
+      const isFromMigrationDescriptionToChangePass =
+        from.name === Components.MigrationDescription && to.name === Components.ChangePassword;
+
+      if (isFromMigrationDescriptionToChangePass) next();
+      else if (needMigration) next({ name: Components.MigrationDescription });
+      else next();
+    } else if (to.name === Components.MigrationDescription || to.name === Components.MigrationAccounts) {
+      if (!needMigration) next({ name: Components.Welcome });
+      else next();
+    }
+  }
+
+  const hasPass = await hasMasterPassword();
+
+  if (to.name === Components.Welcome) {
+    if (hasPass && isLock) next({ name: Components.Unlock });
+    else next();
+
+    return;
+  }
+
+  if (to.name === Components.ChangePassword) next();
+  else {
+    const hasAccount = await hasAccounts();
+
+    if (!hasPass && !needMigration && hasAccount) next({ name: Components.ChangePassword });
+    else if (to.name === Components.Unlock) {
+      if (!isLock) next({ name: Components.Welcome });
+      else next();
+    } else if (to.name === Components.ResetWallet) next();
+    else {
+      if (isLock && to.name !== Components.Onboarding) next({ name: Components.Unlock });
+      else next();
+    }
+  }
 });
 
 export default router;

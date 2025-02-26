@@ -17,13 +17,12 @@ type Props = {
   text: ComponentText;
 };
 
-const baseClass = 'notifications-icon';
 const props = withDefaults(defineProps<Props>(), { size: 'medium' });
 const { t, tc } = useI18n();
 
 const getClasses = computed(() => {
   return [
-    baseClass,
+    'notifications-icon',
     {
       'warning--orange': props.iconName === 'warning',
     },
@@ -51,7 +50,7 @@ const getSize = computed(() => (props.size === 'big' ? 'info-text--big' : 'info-
 .hint {
   color: $grayish-white;
   display: flex;
-  font-size: 12px;
+  font-size: 0.75rem;
   align-items: center;
   text-align: left;
 
@@ -66,6 +65,8 @@ const getSize = computed(() => (props.size === 'big' ? 'info-text--big' : 'info-
   .notifications-icon {
     display: flex;
     align-items: center;
+    min-width: 20px;
+    min-height: 20px;
     width: 20px;
     height: 20px;
     margin-right: 15px;
@@ -73,14 +74,23 @@ const getSize = computed(() => (props.size === 'big' ? 'info-text--big' : 'info-
 
   .info-text {
     width: 491px;
-    font-size: 14px;
+    font-size: 0.875rem;
     margin: auto 0;
     line-height: 19px;
   }
+
   .info-text--big {
-    font-size: 16px;
+    font-size: 1rem;
     font-weight: 600;
     line-height: 150%;
+  }
+}
+
+.fw-web {
+  .hint {
+    .info-text {
+      width: 100%;
+    }
   }
 }
 </style>

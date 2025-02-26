@@ -6,7 +6,6 @@
     :iconValue="iconValue"
     :hoverIconValue="hoverIconValue"
     :isHoverRow="isHoverRow"
-    :iconAppend="iconAppend"
     :isLoading="isLoading"
     :borderType="borderType"
     :showBorder="showBorder"
@@ -24,7 +23,6 @@
 </template>
 
 <script lang="ts" setup>
-import { withDefaults } from 'vue';
 import Row from '@/components/Row.vue';
 
 type BorderType = 'default' | 'secondary';
@@ -39,7 +37,6 @@ interface Props {
   hoverIconValue?: boolean;
   isHoverRow?: boolean;
   color?: Color;
-  iconAppend?: string;
   borderType?: BorderType;
   isIconPrepend?: boolean;
   isIconValuePrepend?: boolean;
@@ -56,7 +53,6 @@ withDefaults(defineProps<Props>(), {
   icon: '',
   iconValue: '',
   color: 'white',
-  iconAppend: '',
   borderType: 'default',
   isIconPrepend: true,
   showBorder: true,

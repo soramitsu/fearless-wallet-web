@@ -94,4 +94,15 @@ export default class MyStakeSettings extends Vue {
     }
   }
 }
+
+.fw-web {
+  .content-settings {
+    flex-wrap: wrap;
+    gap: 10px;
+
+    .search-input-wrapper {
+      flex-grow: 2;
+    }
+  }
+}
 </style>

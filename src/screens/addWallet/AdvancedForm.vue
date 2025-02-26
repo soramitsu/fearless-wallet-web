@@ -2,6 +2,7 @@
   <AboveForm
     header="addWallet.advanced"
     :showAcceptIcon="showAcceptIcon"
+    :fullScreen="true"
     @closeHandler="closeAdvancedForm"
     @saveChanges="saveChanges"
   >
@@ -147,7 +148,7 @@ export default class AdvancedForm extends Vue {
 
 .example-prompt {
   color: $grayish-white;
-  font-size: 14px;
+  font-size: 0.875em;
   text-align: left;
   line-height: 180%;
   margin: 16px 0;

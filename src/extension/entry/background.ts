@@ -2,10 +2,10 @@ import { chrome } from '@extension-base/utils/crossenv';
 import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { handlers, state } from '@extension-base/background/handlers';
-import AccountsStore from '@extension-base/stores/Accounts';
 import { initStorage } from '@extension-base/stores/Storage';
 import MigrationService from '@extension-base/services/migration-service';
 import axios from 'axios';
+import { keyring } from '@subwallet/ui-keyring';
 import type { TransportRequestMessage, Port, MessageTypes } from '@extension-base/background/types/types';
 import { APP_VERSION } from '@/consts/global';
 
@@ -29,13 +29,14 @@ async function getActiveTabs() {
   });
 }
 
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'update') {
-    state.onboardingService.isRequired = true;
-    state.onboardingService.updateStorage();
+    await state.onboardingService.updateStorage('regular', true);
 
     if (details.previousVersion !== APP_VERSION) chrome.runtime.reload();
   }
+
+  state.onboardingService.init();
 
   initStorage().then(() => state.onInstall());
 
@@ -69,11 +70,11 @@ chrome.tabs.onRemoved.addListener(() => getActiveTabs());
 
 cryptoWaitReady()
   .then(() => {
-    state.keyringService.loadAll(new AccountsStore());
+    state.keyringService.loadAll();
     state.eventService.emit('crypto.ready', true);
 
-    const migrationService = new MigrationService();
+    keyring.restoreKeyringPassword();
 
-    migrationService.start();
+    MigrationService.start();
   })
   .catch((error) => console.error('initialization failed', error));

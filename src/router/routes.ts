@@ -1,12 +1,9 @@
 import { type RouteConfig } from 'vue-router';
-import {
-  getStakingNetwork,
-  haveAuthRequests,
-  haveMetaRequests,
-  haveSelectedWallet,
-  haveSignRequests,
-  showSoraCard,
-} from './helpers';
+import { getStakingNetwork, haveAuthRequests, haveMetaRequests, hasSelectedWallet, haveSignRequests } from './helpers';
+import { keyringIsLocked } from '@/extension/messaging';
+import ResetWallet from '@/screens/welcome/ResetWallet.vue';
+import Unlock from '@/screens/welcome/Unlock.vue';
+import ChangePassword from '@/screens/welcome/ChangePassword.vue';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
@@ -18,20 +15,23 @@ import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import NftCollectionList from '@/screens/wallet&asset/nft/NftCollectionList.vue';
 import NftCollection from '@/screens/wallet&asset/nft/NftCollection.vue';
 import NftDetails from '@/screens/wallet&asset/nft/NftDetails.vue';
+import { useAccountsStore } from '@/stores/accounts';
+import { useExtensionStore } from '@/stores/extension';
+import { useStakingStore } from '@/stores/staking';
 
 const NftSendForm = () => import('@/screens/wallet&asset/nft/NftSendForm.vue');
 const AccountSetting = () => import('@/screens/accounts/AccountSetting.vue');
 const ChainAccounts = () => import('@/screens/accounts/Accounts.vue');
+const Export = () => import('@/screens/accounts/Export.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
 const MobileWalletAuth = () => import('@/screens/mobile-wallet/MobileWalletAuth.vue');
 const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue');
 const AuthManagement = () => import('@/screens/extension-ui/AuthManagement.vue');
 const ManageAuths = () => import('@/screens/extension-ui/ManageAuths.vue');
-const UpdateAuths = () => import('@/screens/extension-ui/authorize/UpdateAuths.vue');
+const DAppDetails = () => import('@/screens/extension-ui/DAppDetails.vue');
 
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
-const Export = () => import('@/screens/accounts/Export.vue');
 const WalletConnectAuthDetails = () => import('@/screens/walletConnect/WalletConnectAuthDetails.vue');
 const WalletConnectInitAuth = () => import('@/screens/walletConnect/WalletConnectInitAuth.vue');
 const WalletConnectAuthConfirmation = () => import('@/screens/walletConnect/WalletConnectAuthConfirmation.vue');
@@ -48,7 +48,6 @@ const ReceiveForm = () => import('@/screens/wallet&asset/ReceiveForm.vue');
 const CrossChainForm = () => import('@/screens/wallet&asset/CrossChainForm.vue');
 
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
-const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
 const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/Disclaimer.vue');
 
 const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/AddWallet.vue');
@@ -61,7 +60,18 @@ const Staking = () => import(/* webpackChunkName: "staking */ '@/screens/staking
 const Pools = () => import(/* webpackChunkName: "pools */ '@/screens/pools/PoolsPage.vue');
 const PoolDetails = () => import(/* webpackChunkName: "pools */ '@/screens/pools/PoolDetails.vue');
 
+const MigrationDescription = (/* webpackChunkName: "migration */) =>
+  import('@/screens/addWallet/keyringMigration/MigrationDescription.vue');
+
+const MigrationAccounts = (/* webpackChunkName: "migration */) =>
+  import('@/screens/addWallet/keyringMigration/MigrationAccounts.vue');
+
 export enum Components {
+  MigrationDescription = 'MigrationDescription',
+  MigrationAccounts = 'MigrationAccounts',
+  Unlock = 'Unlock',
+  ResetWallet = 'ResetWallet',
+  ChangePassword = 'ChangePassword',
   Welcome = 'Welcome',
   AddWallet = 'AddWallet',
   MobileWalletAuth = 'MobileWalletAuth',
@@ -75,7 +85,7 @@ export enum Components {
   Export = 'Export',
   Authorize = 'Authorize',
   ManageAuths = 'ManageAuths',
-  UpdateAuths = 'UpdateAuths',
+  DAppDetails = 'DAppDetails',
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
   CreateGoogle = 'CreateGoogle',
@@ -86,7 +96,6 @@ export enum Components {
   SendForm = 'SendForm',
   ReceiveForm = 'ReceiveForm',
   CrossChainForm = 'CrossChainForm',
-  SoraCard = 'SoraCard',
   Staking = 'Staking',
   MyStake = 'MyStake',
   Pools = 'Pools',
@@ -111,6 +120,47 @@ export enum Components {
 }
 
 const routes: Array<RouteConfig> = [
+  {
+    path: '/migration-description',
+    name: Components.MigrationDescription,
+    component: MigrationDescription,
+    meta: {
+      title: 'migration',
+    },
+  },
+  {
+    path: '/migration-accounts',
+    name: Components.MigrationAccounts,
+    component: MigrationAccounts,
+    meta: {
+      title: 'migration',
+    },
+  },
+
+  {
+    path: '/change-password',
+    name: Components.ChangePassword,
+    component: ChangePassword,
+    meta: {
+      title: 'changePassword',
+    },
+  },
+  {
+    path: '/unlock',
+    name: Components.Unlock,
+    component: Unlock,
+    meta: {
+      title: 'unlock',
+    },
+  },
+  {
+    path: '/reset',
+    name: Components.ResetWallet,
+    component: ResetWallet,
+    meta: {
+      title: 'reset',
+    },
+  },
   {
     path: '/welcome',
     name: Components.Welcome,
@@ -222,6 +272,12 @@ const routes: Array<RouteConfig> = [
     meta: {
       title: 'transaction',
     },
+    beforeEnter: (to, from, next) => {
+      const extensionStore = useExtensionStore();
+
+      if (haveSignRequests(extensionStore)) next();
+      else next({ name: Components.Wallet });
+    },
   },
   {
     path: '/send/:assetId/:network',
@@ -258,7 +314,7 @@ const routes: Array<RouteConfig> = [
         redirect: { name: Components.DAppsAuths },
         children: [
           {
-            path: '/dapps',
+            path: '/dapps/:type',
             name: Components.DAppsAuths,
             component: DAppsAuths,
           },
@@ -270,9 +326,9 @@ const routes: Array<RouteConfig> = [
         ],
       },
       {
-        path: '/dotsama-details/:id',
-        name: Components.UpdateAuths,
-        component: UpdateAuths,
+        path: '/dapp-details/:type/:id',
+        name: Components.DAppDetails,
+        component: DAppDetails,
       },
       {
         path: 'wc-details/:topic',
@@ -280,18 +336,6 @@ const routes: Array<RouteConfig> = [
         component: WalletConnectAuthDetails,
       },
     ],
-  },
-  {
-    path: '/sora-card',
-    name: Components.SoraCard,
-    component: SoraCard,
-    beforeEnter: (to, from, next) => {
-      if (showSoraCard()) next();
-      else next({ name: Components.Wallet });
-    },
-    meta: {
-      title: 'soraCard',
-    },
   },
   {
     path: '/sora-swap',
@@ -331,7 +375,8 @@ const routes: Array<RouteConfig> = [
     component: MyStake,
     beforeEnter: async (to, from, next) => {
       const network = to.params.network;
-      const stakingParams = await getStakingNetwork(network);
+      const stakingStore = useStakingStore();
+      const stakingParams = await getStakingNetwork(stakingStore, network);
 
       if (stakingParams.totalStake === '0') next({ name: Components.Staking });
       else next();
@@ -358,9 +403,11 @@ const routes: Array<RouteConfig> = [
         component: Wallet,
         redirect: { name: Components.Currencies },
         beforeEnter: (to, from, next) => {
-          if (haveAuthRequests()) next({ name: Components.Authorize });
-          else if (haveSignRequests()) next({ name: Components.Transaction });
-          else if (haveMetaRequests()) next({ name: Components.MetaRequest });
+          const extensionStore = useExtensionStore();
+
+          if (haveAuthRequests(extensionStore)) next({ name: Components.Authorize });
+          else if (haveSignRequests(extensionStore)) next({ name: Components.Transaction });
+          else if (haveMetaRequests(extensionStore)) next({ name: Components.MetaRequest });
           else next();
         },
         meta: {
@@ -411,7 +458,9 @@ const routes: Array<RouteConfig> = [
       },
     ],
     beforeEnter: (to, from, next) => {
-      if (!haveSelectedWallet()) next({ name: Components.Welcome });
+      const accountsStore = useAccountsStore();
+
+      if (!hasSelectedWallet(accountsStore)) next({ name: Components.Welcome });
       else next();
     },
   },
@@ -456,8 +505,11 @@ const routes: Array<RouteConfig> = [
   {
     path: '*',
     component: Welcome,
-    beforeEnter: (to, from, next) => {
-      if (haveSelectedWallet()) next({ name: Components.Currencies });
+    beforeEnter: async (to, from, next) => {
+      const isLock = await keyringIsLocked();
+
+      if (isLock) next({ name: Components.Unlock });
+      else if (hasSelectedWallet(useAccountsStore())) next({ name: Components.Currencies });
       else next();
     },
   },

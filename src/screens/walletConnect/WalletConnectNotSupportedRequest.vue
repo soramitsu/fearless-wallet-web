@@ -20,16 +20,15 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
-import type { WalletConnectNotSupportRequest } from '@extension-base/services/wallet-connect-service/types';
 import WalletConnectHeader from '@/screens/walletConnect/WalletConnectHeader.vue';
-import { useStore } from '@/store';
 import { rejectWalletConnectSession } from '@/extension/messaging';
-import { GettersTypes as ExtensionGetterTypes } from '@/store/extension/getters';
+import { useExtensionStore } from '@/stores/extension';
 
-const store = useStore();
+const extensionStore = useExtensionStore();
 const router = useRouter();
 const { t } = useI18n();
-const [request]: WalletConnectNotSupportRequest[] = store.getters[ExtensionGetterTypes.wcNotSupportedRequests];
+
+const request = extensionStore.wcNotSupportedRequests[0];
 
 const id = computed(() => request.id);
 const url = computed(() => request.url);
@@ -53,6 +52,7 @@ const onReject = () => {
   gap: 10px;
   word-break: break-word;
 }
+
 .controls {
   display: flex;
   flex-direction: row;
@@ -71,7 +71,7 @@ const onReject = () => {
   justify-content: space-between;
   padding: 16px;
   width: 100%;
-  font-size: 16px;
+  font-size: 1em;
   font-weight: 400;
   color: $default-white;
 }

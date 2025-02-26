@@ -1,4 +1,6 @@
 import { chrome } from '@extension-base/utils/crossenv';
+
+//TODO: make it work on both platforms
 export default class WalletConnectStorage {
   getKeys(): Promise<string[]> {
     return new Promise((res) => {

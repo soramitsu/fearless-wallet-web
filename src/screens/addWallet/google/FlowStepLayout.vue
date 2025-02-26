@@ -165,7 +165,7 @@ export default class FlowStepLayout extends Vue {
 
     .content-header {
       font-weight: 600;
-      font-size: 20px;
+      font-size: 1.25rem;
       line-height: 25px;
       margin: 13.5px 0 21.5px;
     }
@@ -184,7 +184,6 @@ export default class FlowStepLayout extends Vue {
 
   .controls {
     width: 100%;
-    margin-bottom: 15px;
   }
 }
 </style>

@@ -1,6 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
 import { assert } from '@polkadot/util';
-import { stripUrl } from '@extension-base/background/handlers/helpers';
 import AuthorizeStore from '@extension-base/stores/Authorize';
 import { getId } from '@extension-base/utils';
 import { type DAppChainInfoPayload } from '@extension-base/services/request-service/types';
@@ -16,7 +15,8 @@ import type {
   AuthUrlInfo,
 } from '@extension-base/background/types/types';
 import type { KeyringService, NetworkService, RequestService } from '@extension-base/services';
-import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
+import { stripUrl } from '@/extension/background/extension-base/src/background/helpers';
+import { isSameString } from '@/helpers';
 
 const AUTH_URLS_KEY = 'authUrls';
 
@@ -182,7 +182,7 @@ export class AuthRequestHandler {
     const isNewType = existedAccountAuthType !== 'both' && existedAccountAuthType !== request.accountAuthType;
 
     if (request.accountAuthType === 'evm') {
-      if (existedAuth?.evmAuthorizedAccount !== '' && !request.reConfirm) return false;
+      if (existedAuth && existedAuth?.evmAuthorizedAccount !== '' && !request.reConfirm) return false;
     }
     // Reconfirm if check auth for empty list
     else if (existedAuth) {
@@ -208,7 +208,7 @@ export class AuthRequestHandler {
         request,
         url,
         accountAuthType: existedAuth && existedAuth.accountAuthType !== accountAuthType ? 'both' : accountAuthType,
-        currentEvmNetworkKey: existedAuth ? existedAuth.currentEvmNetworkKey : '0x1',
+        currentEvmNetworkKey: existedAuth ? existedAuth.currentEvmNetworkKey : 'Ethereum',
       };
 
       this.updateIconAuth();
@@ -235,22 +235,15 @@ export class AuthRequestHandler {
     });
   }
 
-  getDAppNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {
-    const networks = this.networkService.networkMap;
+  getEvmNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {
+    const networks = this.networkService.activeNetworkByEcosystem.evm;
     const defaultChain = options.defaultChain;
 
-    let chainInfo: NetworkJson | undefined;
+    if (defaultChain) return networks.find(({ name }) => isSameString(name, defaultChain)) ?? networks[0];
 
-    if (['both', 'evm'].includes(options.accessType)) {
-      const evmChains = Object.values(networks).filter(({ name }) => isNativeEVMNetwork(name));
+    const evmActiveNetwork = networks.find(({ active }) => active);
 
-      chainInfo =
-        (defaultChain
-          ? networks[defaultChain]
-          : evmChains.find((chain) => networks[chain.name.toLowerCase()]?.active)) || evmChains[0];
-    }
-
-    return chainInfo;
+    return evmActiveNetwork ?? networks[0];
   }
 
   public resetWallet() {

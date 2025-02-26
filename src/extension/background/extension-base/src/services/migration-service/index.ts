@@ -2,7 +2,7 @@ import { removeOldMobileWallets } from '@extension-base/services/migration-servi
 import { extension, state } from '@extension-base/background/handlers';
 
 export default class MigrationService {
-  start() {
+  static start() {
     removeOldMobileWallets(extension, state);
   }
 }

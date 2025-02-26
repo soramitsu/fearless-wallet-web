@@ -12,6 +12,7 @@ import type {
   Port,
 } from '@extension-base/background/types/types';
 import type { Message } from '@extension-base/types';
+import { IS_EXTENSION } from '@/consts/global';
 
 interface Handler {
   resolve: (data: any) => void;
@@ -22,27 +23,43 @@ interface Handler {
 type Handlers = Record<string, Handler>;
 
 let port: Port | undefined;
+
 const handlers: Handlers = {};
 
-function connect() {
+function connectCallback(data: Message['data']) {
+  const handler = handlers[data.id];
+
+  if (!handler) {
+    console.error(`Unknown response: ${JSON.stringify(data)}`);
+
+    return;
+  }
+
+  if (!handler.subscriber) delete handlers[data.id];
+
+  if (data.subscription && handler.subscriber) handler.subscriber(data.subscription);
+  else if (data.error) handler.reject(new Error(data.error));
+  else handler.resolve(data.response);
+}
+
+function connectExtension() {
   port = chrome.runtime?.connect({ name: PORT_EXTENSION });
   port?.onDisconnect.addListener(connect);
 
-  port?.onMessage.addListener((data: Message['data']): void => {
-    const handler = handlers[data.id];
+  port?.onMessage.addListener((data: Message['data']): void => connectCallback(data));
+}
 
-    if (!handler) {
-      console.error(`Unknown response: ${JSON.stringify(data)}`);
+function connectWeb() {
+  const channel = new BroadcastChannel('sw-messages');
 
-      return;
-    }
+  channel.addEventListener('message', ({ data }: { data: Message['data'] }) => connectCallback(data));
+}
 
-    if (!handler.subscriber) delete handlers[data.id];
+function connect() {
+  console.info('Connecting to background script', PORT_EXTENSION, IS_EXTENSION);
 
-    if (data.subscription && handler.subscriber) handler.subscriber(data.subscription);
-    else if (data.error) handler.reject(new Error(data.error));
-    else handler.resolve(data.response);
-  });
+  if (IS_EXTENSION) connectExtension();
+  else connectWeb();
 }
 
 // setup a listener for messages, any incoming resolves the promise
@@ -68,13 +85,18 @@ function sendMessage<TMessageType extends MessageTypes>(
 
     handlers[id] = { reject, resolve, subscriber };
 
-    port?.postMessage({ id, message, request: request || {} });
+    if (IS_EXTENSION) port?.postMessage({ id, message, request: request ?? {} });
+    else {
+      navigator.serviceWorker?.ready.then((registration) =>
+        registration?.active?.postMessage({ id, message, request: request ?? {} })
+      );
+    }
   });
 }
 
 connect();
 
-export { sendMessage, connect };
+export { sendMessage };
 
 export * from '@/extension/messaging/staking';
 export * from '@/extension/messaging/pools';

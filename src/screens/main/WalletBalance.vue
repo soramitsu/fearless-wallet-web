@@ -1,6 +1,6 @@
 <template>
   <div :class="containerClasses">
-    <div class="fiat-balance" data-testid="fiatBalance">{{ fiatSymbol }}{{ $n(balance, 'price') }}</div>
+    <div class="fiat-balance" data-testid="fiatBalance">{{ accountsStore.fiatSymbol }}{{ $n(balance, 'price') }}</div>
 
     <div v-if="changeWalletBalance" :class="percentClasses" data-testid="percent">{{ percentString }}</div>
   </div>
@@ -8,16 +8,17 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+
 import type { ChangeWalletBalance } from '@/interfaces';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class WalletBalance extends Vue {
+  accountsStore = useAccountsStore();
+
   @Prop(Object) changeWalletBalance!: ChangeWalletBalance;
   @Prop(Number) balance!: number;
   @Prop({ default: true }) staticWidth!: boolean;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
   get containerClasses() {
     const array = [
@@ -39,7 +40,10 @@ export default class WalletBalance extends Vue {
     const displayAmount = amount < 0 ? amount * -1 : amount;
     const percentage = percent / 100 ?? 0;
 
-    return `${sign}${this.$n(percentage, 'percent')}(${this.fiatSymbol}${this.$n(displayAmount ?? 0, 'price')})`;
+    return `${sign}${this.$n(percentage, 'percent')}(${this.accountsStore.fiatSymbol}${this.$n(
+      displayAmount ?? 0,
+      'price'
+    )})`;
   }
 
   get percentClasses() {
@@ -72,7 +76,7 @@ export default class WalletBalance extends Vue {
   }
 
   .percent {
-    font-size: 12px;
+    font-size: 0.75rem;
     line-height: 18px;
     white-space: nowrap;
     overflow: hidden;

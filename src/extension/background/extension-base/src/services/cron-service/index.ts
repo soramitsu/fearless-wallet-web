@@ -133,13 +133,10 @@ export class CronService {
     });
 
     Object.entries(evm).forEach(([key, api]) => {
-      if (!navigator.onLine) this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.DISCONNECTED);
-      else {
-        api.api?.provider
-          ._waitUntilReady()
-          .then(() => this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED))
-          .catch(() => this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING));
-      }
+      api.api?.provider
+        ._waitUntilReady()
+        .then(() => this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED))
+        .catch(() => this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING));
     });
   }
 

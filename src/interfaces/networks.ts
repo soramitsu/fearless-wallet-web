@@ -1,8 +1,16 @@
 import { type NetworkFeesObject } from '@sora-substrate/util';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Node } from '@/interfaces';
+import { type TON_MAINNET, type TON_TESTNET } from '@/consts/networks';
 
-type RelayChainName = 'polkadot' | 'kusama' | 'westend' | 'rococo' | 'ethereum';
+type RelayChainName =
+  | 'polkadot'
+  | 'kusama'
+  | 'westend'
+  | 'rococo'
+  | 'ethereum'
+  | typeof TON_MAINNET
+  | typeof TON_TESTNET;
 
 type SoraFees = {
   [key in keyof NetworkFeesObject]: string;
@@ -10,7 +18,7 @@ type SoraFees = {
 
 type NetworkName = string;
 
-type HistoryServiceType = 'subsquid' | 'giantsquid' | 'subquery' | 'etherscan' | 'sora' | 'oklink' | 'zeta'; // TODO staking
+type HistoryServiceType = 'ton' | 'subsquid' | 'giantsquid' | 'subquery' | 'etherscan' | 'sora' | 'oklink' | 'zeta'; // TODO staking
 
 interface ExternalApiElement {
   url: string;
@@ -20,13 +28,14 @@ interface ExternalApiElement {
 interface Explorer {
   types: string[];
   url: string;
-  type: 'subscan' | 'polkascan' | 'etherscan';
+  type: 'subscan' | 'polkascan' | 'etherscan' | 'oklink' | 'tonviewer';
 }
 
 type ExternalApi = {
   staking?: ExternalApiElement;
   history?: ExternalApiElement;
   crowdloans?: ExternalApiElement;
+  pricing: ExternalApiElement;
   explorers?: Explorer[];
 };
 
@@ -45,7 +54,9 @@ type AssetType =
   | 'erc20'
   | 'token2'
   | 'assets'
-  | 'assetId'; // TODO add
+  | 'assetId' // TODO add
+  | 'ton'
+  | 'jetton';
 
 type BuyProvider = 'moonpay' | 'ramp';
 
@@ -79,8 +90,6 @@ type Network = {
   rank?: number;
   fees?: SoraFees; // only Sora network
 };
-
-type Networks = Network[];
 
 type EthereumHistoryData = {
   blockHash: string;
@@ -133,13 +142,11 @@ type EthereumHistoryResponse<T> = {
 };
 
 export {
-  Networks,
   Network,
   BuyProvider,
   AssetType,
   NetworkName,
   ExternalApi,
-  NetworkStatus,
   HistoryServiceType,
   SoraFees,
   RelayChainName,

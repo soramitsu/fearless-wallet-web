@@ -48,19 +48,16 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
 import { type AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
-import type { AsyncFn, PoolsTab } from '@/interfaces';
-import type { SelectedWallet, GetPoolsParamsProps, PoolParams } from '@/store';
+import type { PoolsTab } from '@/interfaces';
+import type { PoolParams } from '@/stores';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import PoolsSettings from '@/screens/pools/PoolsSettings.vue';
 import PoolItem from '@/screens/pools/PoolItem.vue';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as PoolsGettersTypes } from '@/store/pools/getters';
 import { isSubstrString } from '@/helpers';
-import { ActionTypes as PoolsActionTypes } from '@/store/pools/actions';
 import { Components } from '@/router/routes';
 import { subscribeAccountLiquidity, unsubscribePools } from '@/extension/messaging';
+import { usePoolsStore } from '@/stores/pools';
 
 @Component({
   components: {
@@ -72,25 +69,21 @@ export default class PoolsPage extends Vue {
   activeTabName: PoolsTab | '' = '';
   filterValue = '';
   isLoading = false;
-
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(PoolsGettersTypes.poolsItems) poolsItems!: PoolParams[];
-  @Getter(PoolsGettersTypes.myPoolsItems) myPoolsItems!: PoolParams[];
-  @Action(PoolsActionTypes.GET_POOLS_PARAMS) getPoolsParams!: AsyncFn<GetPoolsParamsProps>;
+  poolsStore = usePoolsStore();
 
   get filteredPoolsItems() {
-    if (this.filterValue === '') return this.poolsItems;
+    if (this.filterValue === '') return this.poolsStore.poolsItems;
 
-    return this.poolsItems.filter(
+    return this.poolsStore.poolsItems.filter(
       ({ asset1: { name: name1 }, asset2: { name: name2 } }) =>
         isSubstrString(`${name1}${name2}`, this.filterValue) || isSubstrString(`${name1}-${name2}`, this.filterValue)
     );
   }
 
   get filteredMyPoolsItems() {
-    if (this.filterValue === '') return this.myPoolsItems;
+    if (this.filterValue === '') return this.poolsStore.myPoolsItems;
 
-    return this.myPoolsItems.filter(
+    return this.poolsStore.myPoolsItems.filter(
       ({ asset1: { name: name1 }, asset2: { name: name2 } }) =>
         isSubstrString(`${name1}${name2}`, this.filterValue) || isSubstrString(`${name1}-${name2}`, this.filterValue)
     );
@@ -113,11 +106,11 @@ export default class PoolsPage extends Vue {
   }
 
   get showPoolsItems() {
-    return this.poolsItems.length !== 0;
+    return this.poolsStore.poolsItems.length !== 0;
   }
 
   get showMyPoolsItems() {
-    return this.myPoolsItems.length !== 0;
+    return this.poolsStore.myPoolsItems.length !== 0;
   }
 
   get contentFormHeight() {
@@ -154,7 +147,7 @@ export default class PoolsPage extends Vue {
   async updateTabPoolsParams() {
     this.isLoading = true;
 
-    await this.getPoolsParams({ delay: 5000 });
+    await this.poolsStore.getPoolsParams({ delay: 5000 });
 
     this.isLoading = false;
   }
@@ -164,7 +157,7 @@ export default class PoolsPage extends Vue {
 
     if (this.showMyPoolsItems && !this.showPoolsItems) updateTab();
 
-    await this.getPoolsParams();
+    await this.poolsStore.getPoolsParams();
 
     if (this.activeTabName === '') updateTab();
   }

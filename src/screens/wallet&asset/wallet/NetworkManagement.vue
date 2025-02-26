@@ -32,15 +32,11 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import type { NetworkJson } from '@extension-base/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { type SelectedWallet } from '@/store';
 
 @Component
 export default class NetworkManagement extends Vue {
   @Prop(Array) networks!: NetworkJson[];
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 }
 </script>
 
@@ -92,7 +88,7 @@ export default class NetworkManagement extends Vue {
 
           .unavailable {
             color: $gray-color;
-            font-size: 12px;
+            font-size: 0.75rem;
             line-height: 18px;
           }
         }

@@ -32,20 +32,16 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { APIItemState } from '@extension-base/api/types/networks';
-import type { TokenGroup } from '@extension-base/background/types/types';
-import type { NetworkJson } from '@extension-base/types';
-import type { NetworkParams } from '@/store';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import type { NetworkParams } from '@/stores';
 import { isSameString } from '@/helpers';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class StakingItem extends Vue {
+  accountsStore = useAccountsStore();
+
   @Prop(Object) stakingNetwork!: NetworkParams;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
 
   get network() {
     return this.stakingNetwork.network;
@@ -56,7 +52,7 @@ export default class StakingItem extends Vue {
   }
 
   get stakingCurrency() {
-    return this.balances?.find(({ groupId }) => groupId === this.assetId);
+    return this.accountsStore.balances?.find(({ groupId }) => groupId === this.assetId);
   }
 
   get isLoading() {
@@ -130,13 +126,13 @@ export default class StakingItem extends Vue {
       text-align: left;
 
       .stake-name {
-        font-size: 12px;
+        font-size: 0.75rem;
         font-weight: 700;
         color: $default-white;
       }
 
       .network-name {
-        font-size: 20px;
+        font-size: 1.25rem;
         font-weight: 700;
         line-height: 25px;
       }
@@ -154,20 +150,20 @@ export default class StakingItem extends Vue {
     }
 
     .unstaking {
-      font-size: 12px;
+      font-size: 0.75rem;
       font-weight: 400;
       color: $default-white;
     }
 
     .apy {
-      font-size: 20px;
+      font-size: 1.25rem;
       font-weight: 700;
       line-height: 25px;
       color: $pink-lavender-color;
     }
 
     .min-bond {
-      font-size: 12px;
+      font-size: 0.75rem;
       color: $default-white;
     }
 

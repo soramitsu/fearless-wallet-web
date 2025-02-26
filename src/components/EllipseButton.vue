@@ -41,7 +41,7 @@ const classes = computed(() => {
   user-select: none;
   text-transform: uppercase;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 0.75rem;
   cursor: pointer;
 
   &:hover {

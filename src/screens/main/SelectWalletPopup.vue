@@ -12,7 +12,7 @@
   >
     <div class="wallet-content">
       <WalletInfo
-        v-for="({ name, address, active, isMobile }, index) in sortedWallets"
+        v-for="({ name, address, active, isMobile, walletEcosystem }, index) in sortedWallets"
         :key="name + index"
         :name="name"
         :isSelected="active"
@@ -21,7 +21,7 @@
         class="wallet"
         data-testid="walletContent"
         @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible(...arguments, address)"
-        @setWallet="updateSelectedWallet(address)"
+        @setWallet="updateSelectedWallet(address, walletEcosystem)"
       />
 
       <BorderButton text="wallet.addWallet" iconName="plus-pink" data-testid="addWalletBtn" @click="addWallet" />
@@ -31,24 +31,21 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter, Mutation } from 'vuex-class';
 import WalletInfo from './WalletInfo.vue';
-import type { SelectedWallet } from '@/store';
-import type { Fn, CustomEvent } from '@/interfaces';
-import type { AccountJson } from '@extension-base/background/types/types';
-import type { CurrentAccountInfo } from '@extension-base//stores/CurrentAccountStore';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
+import type { CustomEvent, WalletEcosystem } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { updateCurrentAccount } from '@/extension/messaging';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: { WalletInfo },
 })
 export default class SelectWalletPopup extends Vue {
-  @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: Fn<CurrentAccountInfo>;
+  accountsStore = useAccountsStore();
+
+  get sortedWallets() {
+    return this.accountsStore.accounts.sort((a, b) => a.name.localeCompare(b.name));
+  }
 
   addWallet() {
     this.$router.push({ name: Components.Welcome });
@@ -66,8 +63,8 @@ export default class SelectWalletPopup extends Vue {
       this.$emit('toggleWalletDetailsPopupVisible', false);
   }
 
-  updateSelectedWallet(address: string) {
-    updateCurrentAccount(address);
+  async updateSelectedWallet(address: string, walletEcosystem: WalletEcosystem) {
+    await updateCurrentAccount(address, walletEcosystem);
 
     this.close();
   }
@@ -78,10 +75,6 @@ export default class SelectWalletPopup extends Vue {
 
   toggleWalletDetailsPopupVisible(buttonTop: number, address: string) {
     this.$emit('toggleWalletDetailsPopupVisible', undefined, buttonTop, address);
-  }
-
-  get sortedWallets() {
-    return this.wallets.sort((a, b) => a.name.localeCompare(b.name));
   }
 }
 </script>

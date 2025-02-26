@@ -78,13 +78,13 @@ const openValidatorList = (isSuggested: boolean) => emit('openValidatorList', is
   .content {
     padding: $default-padding;
     text-align: left;
-    font-size: 14px;
+    font-size: 0.875em;
     color: $grayish-white;
 
     .label {
       font-weight: 600;
       color: $default-white;
-      font-size: 16px;
+      font-size: 1em;
     }
 
     .sub-label {

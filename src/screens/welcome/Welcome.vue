@@ -7,7 +7,7 @@
           backgroundColor="light-black"
           iconName="chevron-left"
           data-testid="backBtn"
-          @click="backWallet"
+          @click="backToWallet"
         />
       </div>
 
@@ -21,58 +21,75 @@
     </div>
 
     <div>
-      <FButton
-        width="100%"
-        class="create-button"
-        size="big"
-        fontSize="big"
-        text="addWallet.createWallet"
-        data-testid="createWalletBtn"
-        @click="openAddWalletComponent('create')"
-      />
+      <ChoiceEcosystem v-if="showChoiceEcosystem" @setEcosystem="setEcosystem" />
 
-      <div class="additional-options">
+      <div v-else>
         <FButton
-          class="import-button button--content-wrap"
-          size="big"
-          width="169px"
-          fontSize="big"
-          type="secondary"
-          iconName="connectMobile"
-          iconType="big"
-          :text="$t('welcome.connectMobile')"
-          :border="false"
-          data-testid="connectMobileBtn"
-          @click="openAddWalletMobile"
-        />
-
-        <FButton
-          class="import-button button--content-wrap"
-          size="big"
-          width="169px"
-          fontSize="big"
-          type="secondary"
-          iconName="googleManage"
-          iconType="big"
-          :text="$t('welcome.manageGoogle')"
-          :border="false"
-          data-testid="googleManageBtn"
-          @click="manageGoogle"
-        />
-
-        <FButton
-          class="import-button button--content-wrap"
+          v-if="isSubstrate"
+          width="100%"
           size="big"
           fontSize="big"
-          width="169px"
-          type="secondary"
-          iconName="importButton"
-          iconType="big"
-          :text="$t('welcome.importWallet')"
-          :border="false"
-          data-testid="importBtn"
-          @click="openAddWalletComponent('import')"
+          text="addWallet.createWallet"
+          data-testid="createWalletBtn"
+          @click="openAddWalletComponent('create')"
         />
+
+        <div class="additional-options">
+          <FButton
+            v-if="isSubstrate"
+            class="import-button button--content-wrap"
+            size="big"
+            fontSize="big"
+            type="secondary"
+            iconName="connectMobile"
+            iconType="big"
+            text="welcome.connectMobile"
+            :border="false"
+            data-testid="connectMobileBtn"
+            @click="openAddWalletMobile"
+          />
+
+          <FButton
+            v-if="isExtension && isSubstrate"
+            class="import-button button--content-wrap"
+            size="big"
+            fontSize="big"
+            type="secondary"
+            iconName="googleManage"
+            iconType="big"
+            text="welcome.manageGoogle"
+            :border="false"
+            data-testid="googleManageBtn"
+            @click="manageGoogle"
+          />
+
+          <FButton
+            v-if="!isSubstrate"
+            class="import-button button--content-wrap"
+            size="big"
+            fontSize="big"
+            type="secondary"
+            iconName="createButton"
+            iconType="big"
+            text="addWallet.createWallet"
+            :border="false"
+            data-testid="createWalletBtn"
+            @click="openAddWalletComponent('create')"
+          />
+
+          <FButton
+            class="import-button button--content-wrap"
+            size="big"
+            fontSize="big"
+            type="secondary"
+            iconName="importButton"
+            iconType="big"
+            text="welcome.importWallet"
+            :border="false"
+            data-testid="importBtn"
+            @click="openAddWalletComponent('import')"
+          />
+        </div>
       </div>
 
       <div class="privacy-policy" data-testid="infoPolicyText">
@@ -94,39 +111,47 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { AccountJson } from '@extension-base/background/types/types';
 import { Components } from '@/router/routes';
 import { URLS } from '@/consts/urls';
-import { initGoogleAuth } from '@/extension/messaging';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { hasMasterPassword, initGoogleAuth } from '@/extension/messaging';
+import { useAccountsStore } from '@/stores/accounts';
+import { IS_EXTENSION } from '@/consts/global';
+import { type WalletEcosystem } from '@/interfaces';
+import ChoiceEcosystem from '@/screens/welcome/ChoiceEcosystem.vue';
 
-@Component
+@Component({ components: { ChoiceEcosystem } })
 export default class Welcome extends Vue {
+  readonly isExtension = IS_EXTENSION;
+  accountsStore = useAccountsStore();
   showGoogleAuthPopup = false;
   isAuthFlowInit = false;
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
+  hasMasterPassword = false;
+  walletEcosystem: WalletEcosystem | null = null;
+
+  get showChoiceEcosystem() {
+    return !this.walletEcosystem;
+  }
+
+  get isSubstrate() {
+    return this.walletEcosystem === 'substrate';
+  }
 
   get showBackWalletIcon() {
-    return this.accounts.length !== 0;
+    return this.accountsStore.accounts.length !== 0;
   }
 
   get accessToken() {
     return this.$route.params.access_token;
   }
 
-  created() {
+  async created() {
+    this.hasMasterPassword = await hasMasterPassword();
+
     if (this.accessToken) this.showGoogleAuthPopup = true;
   }
 
-  manageGoogle() {
-    if (!this.isAuthFlowInit) {
-      this.isAuthFlowInit = true;
-
-      initGoogleAuth().finally(() => {
-        this.isAuthFlowInit = false;
-      });
-    }
+  setEcosystem(value: WalletEcosystem) {
+    this.walletEcosystem = value;
   }
 
   closeGooglePopup() {
@@ -141,16 +166,50 @@ export default class Welcome extends Vue {
     window.open(URLS.FEARLESS_PRIVACY);
   }
 
-  backWallet() {
+  backToWallet() {
+    if (this.walletEcosystem) {
+      this.walletEcosystem = null;
+
+      return;
+    }
+
     this.$router.push({ name: Components.Wallet });
   }
 
-  openAddWalletComponent(type: string) {
-    this.$router.push({ name: Components.AddWallet, params: { type } });
+  async manageGoogle() {
+    if (!this.hasMasterPassword) {
+      this.$router.push({ name: Components.ChangePassword, params: { name: 'GoogleAuth' } });
+
+      return;
+    }
+
+    if (!this.isAuthFlowInit) {
+      this.isAuthFlowInit = true;
+
+      initGoogleAuth().finally(() => (this.isAuthFlowInit = false));
+    }
   }
 
-  openAddWalletMobile() {
-    this.$router.push({ name: Components.MobileWalletAuth });
+  async openAddWalletComponent(type: string) {
+    if (this.hasMasterPassword)
+      this.$router.push({ name: Components.AddWallet, params: { type, walletEcosystem: this.walletEcosystem! } });
+    else
+      this.$router.push({
+        name: Components.ChangePassword,
+        params: {
+          name: 'AddWallet',
+          type,
+          walletEcosystem: this.walletEcosystem!,
+        },
+      });
+  }
+
+  async openAddWalletMobile() {
+    const path = this.hasMasterPassword
+      ? { name: Components.MobileWalletAuth }
+      : { name: Components.ChangePassword, params: { name: 'MobileWalletAuth' } };
+
+    this.$router.push(path);
   }
 }
 </script>
@@ -162,6 +221,7 @@ export default class Welcome extends Vue {
   height: $default-height-page;
   justify-content: space-between;
   min-height: 561px;
+
   .back-wallet-container {
     height: 32px;
   }
@@ -172,7 +232,7 @@ export default class Welcome extends Vue {
 
   .privacy-policy {
     margin-top: 17px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 400;
     line-height: 16px;
     color: $grayish-white;
@@ -186,17 +246,13 @@ export default class Welcome extends Vue {
     }
   }
 
-  .import-button {
-    margin-top: 10px;
-  }
-
   .button--icon {
     width: 32px;
     height: 32px;
   }
 
   .button--content-wrap {
-    flex-grow: 1;
+    flex: 1 1 100px;
   }
 
   .button__icon--big {
@@ -206,9 +262,25 @@ export default class Welcome extends Vue {
 
   .additional-options {
     display: flex;
-    font-size: 14px;
     line-height: 18px;
     gap: 10px;
+    margin-top: 10px;
+  }
+}
+
+.fw-extension {
+  .button--content-wrap {
+    width: 169px;
+  }
+}
+
+.fw-web {
+  .button--content-wrap {
+    width: 30%;
+  }
+
+  .additional-options {
+    font-size: 1.25rem;
   }
 }
 </style>

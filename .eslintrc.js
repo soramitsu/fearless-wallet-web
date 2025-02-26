@@ -18,7 +18,7 @@ module.exports = {
   rules: {
     'no-console': [process.env.NODE_ENV === 'production' ? 'error' : 'warn', { allow: ['warn', 'error', 'info'] }],
     'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
-    'no-use-before-define': 'warn',
+    'no-use-before-define': 'off',
     'import/order': [
       'error',
       { groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'object', 'type'] },
@@ -62,7 +62,7 @@ module.exports = {
       { blankLine: 'always', prev: 'block', next: '*' },
       { blankLine: 'always', prev: '*', next: 'block' },
     ],
-    'vue/multi-word-component-names': ['warn'],
+    'vue/multi-word-component-names': 'off',
   },
   overrides: [
     {

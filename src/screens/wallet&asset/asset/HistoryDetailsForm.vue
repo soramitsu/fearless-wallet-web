@@ -1,112 +1,115 @@
 <template>
   <AboveForm header="Details" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="details">
-      <div class="descriptions">
-        <div v-if="!isSora && !!extrinsicHash" class="item" data-testid="extrinsicHashLabel">
-          Extrinsic Hash
+      <Scroll>
+        <div class="descriptions">
+          <div v-if="!isSora && !!extrinsicHash" class="item" data-testid="extrinsicHashLabel">
+            Extrinsic Hash
 
-          <div class="item-value item-icon" data-testid="extrinsicHash">
-            {{ displayExtrinsicHash }}
+            <div class="item-value item-icon" data-testid="extrinsicHash">
+              {{ displayExtrinsicHash }}
 
-            <Icon icon="copy" className="copy" data-testid="copyBtn" @click="copy(extrinsicHash)" />
-          </div>
-        </div>
-
-        <div v-if="!!blockHash" class="item" data-testid="extrinsicHashLabel">
-          Block Hash
-
-          <div class="item-value item-icon" data-testid="extrinsicHash">
-            {{ displayBlockHash }}
-
-            <Icon icon="copy" className="copy" data-testid="copyBtn" @click="copy(blockHash)" />
-          </div>
-        </div>
-
-        <template v-if="isTransfer">
-          <div class="item">
-            From
-
-            <div class="item-value item-icon">
-              <Identicon :address="fromAddress" />
-
-              {{ displayFromAddress }}
-
-              <Icon icon="copy" className="copy" @click="copy(fromAddress)" />
+              <Icon icon="copy" className="copy" data-testid="copyBtn" @click="copy(extrinsicHash)" />
             </div>
           </div>
-          <div class="item">
-            To
 
-            <div class="item-value item-icon">
-              <Identicon :address="toAddress" />
+          <div v-if="!!blockHash" class="item" data-testid="extrinsicHashLabel">
+            Block Hash
 
-              {{ displayToAddress }}
+            <div class="item-value item-icon" data-testid="extrinsicHash">
+              {{ displayBlockHash }}
 
-              <Icon icon="copy" className="copy" @click="copy(toAddress)" />
+              <Icon icon="copy" className="copy" data-testid="copyBtn" @click="copy(blockHash)" />
             </div>
           </div>
-        </template>
 
-        <div v-if="isReward" class="item">
-          Validator
+          <template v-if="isTransfer">
+            <div class="item">
+              From
 
-          <div class="item-value item-icon">
-            <Identicon :address="validator" />
+              <div class="item-value item-icon">
+                <Identicon v-if="!isTon" :address="fromAddress" />
 
-            {{ displayValidator }}
+                {{ displayFromAddress }}
 
-            <Icon icon="copy" className="copy" @click="copy(validator)" />
+                <Icon icon="copy" className="copy" @click="copy(fromAddress)" />
+              </div>
+            </div>
+
+            <div class="item">
+              To
+
+              <div class="item-value item-icon">
+                <Identicon v-if="!isTon" :address="toAddress" />
+
+                {{ displayToAddress }}
+
+                <Icon icon="copy" className="copy" @click="copy(toAddress)" />
+              </div>
+            </div>
+          </template>
+
+          <div v-if="isReward" class="item">
+            Validator
+
+            <div class="item-value item-icon">
+              <Identicon :address="validator" />
+
+              {{ displayValidator }}
+
+              <Icon icon="copy" className="copy" @click="copy(validator)" />
+            </div>
+          </div>
+
+          <div class="item" data-testid="statusLabel">
+            Status
+
+            <div :class="statusClasses" data-testid="statusValue">{{ statusText }}</div>
+          </div>
+
+          <div class="item" data-testid="dateLabel">
+            Date
+
+            <div class="item-value" data-testid="dateValue">{{ date }}</div>
+          </div>
+
+          <div v-if="isReward" class="item" data-testid="eraLabel">
+            Era
+
+            <div class="item-value" data-testid="eraValue">{{ era }}</div>
+          </div>
+
+          <div v-if="!!moduleType" class="item" data-testid="moduleLabel">
+            Module
+
+            <div class="item-value" data-testid="moduleValue">{{ moduleType }}</div>
+          </div>
+
+          <div v-if="!!method" class="item" data-testid="methodLabel">
+            Method
+
+            <div class="item-value" data-testid="methodValue">{{ method }}</div>
+          </div>
+
+          <div v-if="showAmount" class="item" data-testid="amountLabel">
+            Amount
+
+            <div class="item-value" data-testid="amountValue">{{ value }}</div>
+          </div>
+
+          <div v-if="showTargetAmount" class="item" data-testid="amountLabel">
+            Target Amount
+
+            <div class="item-value" data-testid="amountValue">{{ targetValue }}</div>
+          </div>
+
+          <div v-if="showFee" class="item" data-testid="feeLabel">
+            Transfer fee
+
+            <div class="item-value" data-testid="feeValue">{{ transferFee }}</div>
           </div>
         </div>
-
-        <div class="item" data-testid="statusLabel">
-          Status
-
-          <div :class="statusClasses" data-testid="statusValue">{{ statusText }}</div>
-        </div>
-
-        <div class="item" data-testid="dateLabel">
-          Date
-
-          <div class="item-value" data-testid="dateValue">{{ date }}</div>
-        </div>
-
-        <div v-if="isReward" class="item" data-testid="eraLabel">
-          Era
-
-          <div class="item-value" data-testid="eraValue">{{ era }}</div>
-        </div>
-
-        <div class="item" data-testid="moduleLabel">
-          Module
-
-          <div class="item-value" data-testid="moduleValue">{{ moduleType }}</div>
-        </div>
-
-        <div class="item" data-testid="methodLabel">
-          Method
-
-          <div class="item-value" data-testid="methodValue">{{ method }}</div>
-        </div>
-
-        <div v-if="showAmount" class="item" data-testid="amountLabel">
-          Amount
-
-          <div class="item-value" data-testid="amountValue">{{ value }}</div>
-        </div>
-
-        <div v-if="showTargetAmount" class="item" data-testid="amountLabel">
-          Target Amount
-
-          <div class="item-value" data-testid="amountValue">{{ targetValue }}</div>
-        </div>
-
-        <div v-if="showFee" class="item" data-testid="feeLabel">
-          Transfer fee
-
-          <div class="item-value" data-testid="feeValue">{{ transferFee }}</div>
-        </div>
-      </div>
+      </Scroll>
 
       <FButton v-if="haveExplorers" size="big" :text="buttonText" @click="openExplorer" />
     </div>
@@ -117,52 +120,52 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-
-import { Getter } from 'vuex-class';
-import type { NetworkJson } from '@extension-base/types';
-import type { HistoryElement } from '@/interfaces/history';
-import type { GetNetwork, SelectedWallet } from '@/store';
+import { type HistoryElement, type TonEvent, type SoraHistoryElement, TransactionType } from '@/interfaces';
 import { getType, getSignTransfer, getHistoryValue, getHumanTransferFee } from '@/helpers/history';
-import { cut, getFormattedDate } from '@/helpers';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { cut, getFormattedDate, setClipboard } from '@/helpers';
 import BaseApi from '@/util/BaseApi';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { type SoraHistoryElement } from '@/interfaces';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({})
 export default class HistoryDetailsForm extends Vue {
-  @Prop(String) assetId!: string;
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
 
+  @Prop(String) assetId!: string;
   @Prop(String) historyType!: string;
   @Prop(Object) historyElement!: HistoryElement;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
-  get showTargetAmount() {
-    return this.isSora && (this.historyElement as unknown as SoraHistoryElement).method === 'swap';
+  get historyElementSoraType() {
+    return this.historyElement as unknown as SoraHistoryElement;
   }
 
-  get isTransfer() {
-    return this.type === 'transfer';
+  get historyElementTonType() {
+    return this.historyElement as unknown as TonEvent;
+  }
+
+  get showTargetAmount() {
+    return this.isSora && this.historyElementSoraType.method === 'swap';
   }
 
   get networkProps() {
-    return this.getNetwork(this.selectedNetwork);
+    return this.networksStore.getNetwork(this.selectedNetwork);
   }
 
   get address() {
-    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
+    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.accountsStore.selectedWallet.ethereumAddress;
 
-    return BaseApi.encodeAddress(this.selectedWallet.address, this.networkProps.addressPrefix);
+    return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, this.networkProps.addressPrefix);
   }
 
   get selectedNetworkJson() {
-    return this.networks.find((network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase());
+    return this.networksStore.networks.find(
+      (network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase()
+    );
   }
 
   get explorerType() {
-    return this.selectedNetworkJson?.externalApi?.history?.type;
+    return this.selectedNetworkJson?.externalApi?.explorers?.[0]?.type;
   }
 
   get haveExplorers() {
@@ -174,31 +177,48 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get buttonText() {
-    return this.$t(this.explorerType === 'etherscan' ? 'accounts.etherscan' : 'accounts.subscan');
+    const explorerType =
+      this.explorerType === 'etherscan'
+        ? 'accounts.etherscan'
+        : this.explorerType === 'tonviewer'
+        ? 'accounts.tonviewer'
+        : 'accounts.subscan';
+
+    return this.$t(explorerType);
+  }
+
+  get showFee() {
+    if (this.isSora) return this.historyElementSoraType.method !== 'rewarded';
+
+    if (this.isTon) return this.signTransfer === '-';
+
+    return this.isTransfer && this.signTransfer === '-';
+  }
+
+  get isTransfer() {
+    return this.type === 'transfer' || this.isTon;
   }
 
   get isReward() {
     return this.type === 'reward';
   }
 
-  get showFee() {
-    if (this.isSora) return (this.historyElement as unknown as SoraHistoryElement).method !== 'rewarded';
-
-    return this.isTransfer && this.signTransfer === '-';
-  }
-
   get isSora() {
     return this.type === 'sora';
   }
 
+  get isTon() {
+    return this.type === TransactionType.ton;
+  }
+
   get showAmount() {
-    if (this.isSora) return true;
+    if (this.isSora || this.isTon) return true;
 
     return this.isTransfer;
   }
 
   get statusIsSuccess() {
-    if (this.isSora) return (this.historyElement as unknown as SoraHistoryElement).execution.success;
+    if (this.isSora) return this.historyElementSoraType.execution.success;
 
     const { success } = this.historyElement!;
 
@@ -228,7 +248,9 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get fromAddress() {
-    return this.historyElement.transfer!.from;
+    if (this.isTon) return this.historyElementTonType?.from;
+
+    return this.historyElement.transfer?.from;
   }
 
   get displayFromAddress() {
@@ -236,7 +258,9 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get toAddress() {
-    return this.historyElement.transfer!.to;
+    if (this.isTon) return this.historyElementTonType?.to;
+
+    return this.historyElement.transfer?.to;
   }
 
   get displayToAddress() {
@@ -244,13 +268,15 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get moduleType() {
-    if (this.isSora) return (this.historyElement as unknown as SoraHistoryElement).module;
+    if (this.isSora) return this.historyElementSoraType.module;
 
     return this.historyElement!.module;
   }
 
   get method() {
-    if (this.isSora) return (this.historyElement as unknown as SoraHistoryElement).method;
+    if (this.isSora) return this.historyElementSoraType.method;
+
+    if (this.isTon) return this.historyElementTonType.method;
 
     return this.historyElement?.method;
   }
@@ -266,9 +292,14 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get value() {
-    const { value } = getHistoryValue(this.historyElement, this.assetId, this.selectedNetwork, this.address);
+    const { value, signTransfer } = getHistoryValue(
+      this.historyElement,
+      this.assetId,
+      this.selectedNetwork,
+      this.address
+    );
 
-    return this.$n(value, 'decimalPrecise');
+    return `${signTransfer}${this.$n(value, 'decimalPrecise')}`;
   }
 
   get targetValue() {
@@ -309,7 +340,7 @@ export default class HistoryDetailsForm extends Vue {
   copy(value?: string) {
     if (!value) return;
 
-    navigator.clipboard.writeText(value);
+    setClipboard(value);
   }
 
   openExplorer() {
@@ -323,9 +354,21 @@ export default class HistoryDetailsForm extends Vue {
       return;
     }
 
+    if (this.explorerType === 'tonviewer') {
+      if (this.explorerUrl) {
+        const url = this.explorerUrl
+          .replace('{type}', 'transaction')
+          .replace('{value}', this.historyElementTonType?.eventId ?? '');
+
+        window.open(url);
+      }
+
+      return;
+    }
+
     const url = this.explorerUrl
       .replace('{type}', 'extrinsic')
-      .replace('{value}', this.historyElement?.blockHash ?? '');
+      .replace('{value}', this.historyElement?.extrinsicHash ?? '');
 
     window.open(url);
   }

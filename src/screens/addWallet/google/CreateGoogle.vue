@@ -15,22 +15,14 @@
       :mnemonic="mnemonic"
       :selectedMnemonicElements="selectedMnemonicElements"
       @update:selectedMnemonicElements="updateSelectedMnemonicElements"
-    >
-      <AdvancedButton @click="toggleAdvancedFormVisible" />
-    </CreateWallet>
+      @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
+    />
 
     <AdvancedForm
       v-if="showAdvancedForm"
       :derivationPaths="derivationPaths"
       @updateDP="updateDP"
       @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
-    />
-
-    <PasswordForm
-      v-if="passwordStep"
-      :isGoogleFlow="true"
-      :showSamePasswordText="false"
-      @updateWalletPassword="updateWalletPassword"
     />
 
     <template v-slot:control>
@@ -83,44 +75,45 @@
 </template>
 
 <script lang="ts">
-import { Getter, Action } from 'vuex-class';
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import type { TranslateResult } from 'vue-i18n';
+import type { FWKeyringMeta } from '@extension-base/types';
+import type { WarningValueName } from '@/consts/messages';
+import { type DerivationPaths, WalletEcosystem, type MnemonicConfirmation } from '@/interfaces';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
-import PasswordForm from '@/screens/addWallet/PasswordForm.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 import NickNameForm from '@/screens/addWallet/NicknameForm.vue';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
-import { type DerivationPaths, type MnemonicConfirmation, type AsyncFn } from '@/interfaces';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import BaseApi from '@/util/BaseApi';
-import { addAccount, createGoogleFile, exportAccountJSON, updateCurrentAccount } from '@/extension/messaging';
-import { type SelectedWallet } from '@/store/accounts/types';
-import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { type WarningValueName } from '@/consts/messages';
+import {
+  addAccount,
+  createGoogleFile,
+  exportJSON,
+  updateCurrentAccount,
+  getExtensionPassword,
+  generateMnemonic,
+} from '@/extension/messaging';
 
 @Component({
   components: {
     AdvancedForm,
     NickNameForm,
     CreateWallet,
-    PasswordForm,
     FlowStepLayout,
     AdvancedButton,
     NegativeMessage,
   },
 })
 export default class CreateGoogle extends Vue {
-  readonly countSteps = 5;
+  readonly countSteps = 4;
   readonly buttonTextForStep: Record<number, TranslateResult> = {
     1: this.$t('common.continue'),
     2: this.$t('addWallet.haveWrittenPassphrase'),
     3: this.$t('addWallet.ConfirmSecretData'),
-    4: this.$t('common.confirm'),
-    5: this.$t('common.finish'),
+    4: this.$t('common.finish'),
   };
 
   selectedMnemonicElements: MnemonicConfirmation[] = [];
@@ -128,14 +121,10 @@ export default class CreateGoogle extends Vue {
   nickname = '';
   mnemonic = '';
   showAdvancedForm = false;
-  walletPassword = '';
   derivationPaths = INITIAL_DERIVATION_PATHS;
   showNotificationPopup = false;
   warningValueName: WarningValueName = '';
   isLoading = false;
-
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
 
   get invalidMessages() {
     if (!this.warningValueName) return {};
@@ -156,16 +145,14 @@ export default class CreateGoogle extends Vue {
     return this.step === 2 || this.step === 3;
   }
 
-  get passwordStep() {
-    return this.step === 4;
-  }
-
   get header() {
     if (this.nickNameStep) return this.$t('addWallet.createWallet');
+
     if (this.step === 2) return this.$t('addWallet.backupPassphrase');
+
     if (this.step === 3) return this.$t('addWallet.confirmPassphrase');
-    if (this.passwordStep) return this.$t('addWallet.setupPassword');
-    if (this.step === 5) return '';
+
+    if (this.step === 4) return '';
 
     return this.$t('addWallet.createWallet');
   }
@@ -178,10 +165,10 @@ export default class CreateGoogle extends Vue {
 
   get disabledProceed() {
     if (this.nickNameStep) return !this.nickname;
-    if (this.isLoading) return true;
-    if (this.step === 3) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
 
-    if (this.passwordStep) return !this.walletPassword;
+    if (this.isLoading) return true;
+
+    if (this.step === 3) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
 
     return false;
   }
@@ -214,13 +201,13 @@ export default class CreateGoogle extends Vue {
     return `${this.mnemonic}${ethereumDP}`;
   }
 
-  mounted() {
-    this.mnemonic = BaseApi.generateMnemonic();
+  async mounted() {
+    this.mnemonic = await generateMnemonic();
   }
 
   @Watch('step')
   async watchStep() {
-    if (this.step === 5) {
+    if (this.step === 4) {
       this.isLoading = true;
 
       const address = await this.saveKeypairFromSeed();
@@ -262,13 +249,8 @@ export default class CreateGoogle extends Vue {
   }
 
   back() {
-    if (this.step === 1) {
-      this.goBack();
-
-      return;
-    }
-
-    this.step -= 1;
+    if (this.step === 1) this.goBack();
+    else this.step -= 1;
   }
 
   proceed() {
@@ -295,10 +277,6 @@ export default class CreateGoogle extends Vue {
     this.step += 1;
   }
 
-  updateWalletPassword(password: string) {
-    this.walletPassword = password;
-  }
-
   setNickname(name: string) {
     this.nickname = name;
   }
@@ -316,13 +294,16 @@ export default class CreateGoogle extends Vue {
   }
 
   async backupWallet(address: string) {
-    const { json } = await exportAccountJSON(address, this.walletPassword);
+    const password = await getExtensionPassword();
+    const { json } = await exportJSON(address, password);
+
     const ethAddress = json.meta.ethereumAddress as string;
     const token = this.$route.params.access_token;
+
     let ethRes;
 
     if (ethAddress) {
-      const { json: ethJson } = await exportAccountJSON(ethAddress, this.walletPassword);
+      const { json: ethJson } = await exportJSON(ethAddress, password);
 
       ethRes = await createGoogleFile({
         json: JSON.stringify(ethJson),
@@ -339,19 +320,24 @@ export default class CreateGoogle extends Vue {
   }
 
   async saveKeypairFromSeed() {
-    const meta: Record<string, unknown> = { name: this.nickname.trim(), ethereumAddress: '' };
+    const meta: FWKeyringMeta = {
+      name: this.nickname.trim(),
+      ethereumAddress: '',
+      walletEcosystem: WalletEcosystem.Substrate,
+    };
+
     const {
       substrate: { keypairType: substrateKeypairType },
       ethereum: { keypairType: ethereumKeypairType },
     } = this.derivationPaths;
 
     if (this.suriEthereum !== '') {
-      const ethereumAddress = await addAccount(this.walletPassword, this.suriEthereum, ethereumKeypairType, meta);
+      const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta);
 
       meta.ethereumAddress = ethereumAddress;
     }
 
-    const address = await addAccount(this.walletPassword, this.suriSubstrate, substrateKeypairType, meta);
+    const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta);
 
     return address;
   }

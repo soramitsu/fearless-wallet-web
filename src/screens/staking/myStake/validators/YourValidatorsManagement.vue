@@ -42,7 +42,7 @@
           :iconClasses="['network-fee']"
         />
 
-        <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
+        <Tooltip text="staking.stakingFee" target=".network-fee" placement="right" />
       </div>
 
       <SelectionValidatorsForm
@@ -85,21 +85,21 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
+
 import type { FWValidatorInfoFull, RequestNominate } from '@extension-base/services/staking-service/types';
-import type { AsyncFn, SelectionValidator } from '@/interfaces';
-import type { GetAssetPrice, GetStakingNetworkProps, NetworkParams, SelectedWallet } from '@/store';
+import type { NetworkParams } from '@/stores';
 import type { TokenGroup } from '@extension-base/background/types/types';
+import { type SelectionValidator, WalletEcosystem } from '@/interfaces';
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
 import YourValidators from '@/screens/staking/myStake/validators/YourValidators.vue';
 import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vue';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { fetchBalance, getNominateNetworkFee } from '@/extension/messaging';
-import { getCostOfAssets } from '@/controllers/transferHelpers';
-import { ActionTypes as StakingActionTypes } from '@/store/staking/actions';
+import { getCostOfAssets } from '@/helpers/transfers';
 import { isValidAmountAsset } from '@/helpers/currencies';
+import { useStakingStore } from '@/stores/staking';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: {
@@ -110,6 +110,9 @@ import { isValidAmountAsset } from '@/helpers/currencies';
   },
 })
 export default class YourValidatorsManagement extends Vue {
+  networksStore = useNetworksStore();
+  stakingStore = useStakingStore();
+  accountsStore = useAccountsStore();
   state: Record<string, SelectionValidator> = {};
   showConfirmationPasswordPopup = false;
   step = 1;
@@ -120,13 +123,9 @@ export default class YourValidatorsManagement extends Vue {
 
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Action(StakingActionTypes.GET_MY_STAKING_INFO) getMyStakingInfo!: AsyncFn<GetStakingNetworkProps>;
 
   get selectedAccountName() {
-    return this.selectedWallet.name;
+    return this.accountsStore.selectedWallet.name;
   }
 
   get network() {
@@ -144,11 +143,11 @@ export default class YourValidatorsManagement extends Vue {
   get stakingAssetPrice() {
     const priceId = this.stakingCurrency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get feeValueString() {
-    return `${this.fiatSymbol}${this.$n(+this.feeValue, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(+this.feeValue, 'price')}`;
   }
 
   get showConfirmButton() {
@@ -176,6 +175,8 @@ export default class YourValidatorsManagement extends Vue {
   }
 
   get fullMatchValidators() {
+    if (this.stakingNetwork.myValidators.length === 0) return false;
+
     return this.stakingNetwork.myValidators.every(({ address }) =>
       this.selectedValidators.some((_address) => address === _address)
     );
@@ -249,7 +250,7 @@ export default class YourValidatorsManagement extends Vue {
 
   get tx() {
     return {
-      from: this.selectedWallet.address,
+      from: this.accountsStore.selectedWallet.address,
       networkName: this.network,
       validators: this.selectedValidators,
     } as RequestNominate;
@@ -274,11 +275,15 @@ export default class YourValidatorsManagement extends Vue {
       });
     });
 
-    if (this.stakingNetwork.isController)
-      this.stashBalance = await fetchBalance({
+    if (this.stakingNetwork.isController) {
+      const balances = await fetchBalance({
         address: this.stakingNetwork.stashAddress,
-        networkName: this.stakingNetwork.network,
+        networks: [this.stakingNetwork.network],
+        walletEcosystem: WalletEcosystem.Substrate,
       });
+
+      this.stashBalance = balances[0].balance;
+    }
   }
 
   closeForm() {
@@ -289,7 +294,7 @@ export default class YourValidatorsManagement extends Vue {
     this.showConfirmationPasswordPopup = false;
 
     if (closeForm) {
-      this.getMyStakingInfo({ network: this.network });
+      this.stakingStore.getMyStakingInfo({ network: this.network });
       this.closeForm();
     }
   }

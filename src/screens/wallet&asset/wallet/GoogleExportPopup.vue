@@ -56,20 +56,15 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { AccountJson } from '@extension-base/background/types/types';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import { createGoogleFile, exportAccountJSON, validatePassword } from '@/extension/messaging';
-import { type ICreateFile } from '@/interfaces';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import type { KeyringPair$Json } from '@subwallet/keyring/types';
+import type { ICreateFile } from '@/interfaces';
+import { createGoogleFile, exportJSON, validatePassword } from '@/extension/messaging';
 
 @Component
 export default class GoogleExportPopup extends Vue {
   password = '';
   isErrorPassword = false;
   status: 'prepare' | 'upload' | 'uploaded' | 'await' = 'await';
-
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get selectedWalletAddress() {
     return this.$route.query.wallet as string;
@@ -128,7 +123,7 @@ export default class GoogleExportPopup extends Vue {
 
     this.status = 'prepare';
 
-    const isValid = await validatePassword(this.selectedWalletAddress, this.password);
+    const isValid = await validatePassword(this.password);
 
     if (!isValid) {
       this.status = 'await';
@@ -139,17 +134,15 @@ export default class GoogleExportPopup extends Vue {
 
     let ethWalletId;
     let substrateWalletId;
-    const { json: substrateJson } = await exportAccountJSON(this.selectedWalletAddress, this.password);
+
+    const { json: substrateJson } = await exportJSON(this.selectedWalletAddress, this.password);
     const isEthereumAddress = !!substrateJson.meta.ethereumAddress;
     const stringifyJson = JSON.stringify(substrateJson);
 
     this.status = 'upload';
 
     if (isEthereumAddress) {
-      const { json: ethereumJson } = await exportAccountJSON(
-        substrateJson.meta.ethereumAddress as string,
-        this.password
-      );
+      const { json: ethereumJson } = await exportJSON(substrateJson.meta.ethereumAddress as string, this.password);
 
       const ethOptions = this.prepUploadMeta(substrateJson);
       ethWalletId = await this.createFile(JSON.stringify(ethereumJson), ethOptions);
@@ -205,7 +198,7 @@ export default class GoogleExportPopup extends Vue {
 
   .text {
     font-weight: 700;
-    font-size: 18px;
+    font-size: 1.125em;
     width: 250px;
   }
 
@@ -215,7 +208,7 @@ export default class GoogleExportPopup extends Vue {
 
   .saved {
     font-weight: 600;
-    font-size: 18px;
+    font-size: 1.125em;
     margin-bottom: 5px;
   }
 
@@ -230,19 +223,19 @@ export default class GoogleExportPopup extends Vue {
 
     .s-icon-arrows-arrow-right-24 {
       color: $gray-2-color;
-      font-size: 30px !important;
+      font-size: 1.875em !important;
       margin: 0 10px;
     }
   }
 
   .transfer-amount {
     font-weight: 800;
-    font-size: 20px;
+    font-size: 1.25rem;
     margin-bottom: 10px;
   }
 
   .transfer-value {
-    font-size: 16px;
+    font-size: 1em;
     color: $gray-color;
   }
 

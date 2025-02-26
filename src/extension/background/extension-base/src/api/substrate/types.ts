@@ -13,9 +13,7 @@ interface CrossChainProps {
 }
 
 interface MakeCrossChainProps extends CrossChainProps {
-  password: string;
-  isSavePass?: boolean;
-  callback: (data: BasicTxResponse) => void;
+  callback?: (data: BasicTxResponse) => void;
   relayChain?: RelayChainName;
   isMobile: boolean;
 }

@@ -78,35 +78,22 @@
 
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator';
-import { Getter, Mutation } from 'vuex-class';
 import { isNativeEVMNetwork } from '@extension-base/background/handlers/utils';
 import NodeItem from './NodeItem.vue';
-import type {
-  SelectedWallet,
-  SetAutoSelectNode,
-  GetAutoSelectNodesValueByNetwork,
-  GetActiveNodesByNetwork,
-  GetNetwork,
-} from '@/store';
-import type { Fn } from '@/interfaces';
 import type { NetworkJson } from '@extension-base/types';
 import BaseApi from '@/util/BaseApi';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+
 import { upsertNetworkMap } from '@/extension/messaging';
-import { cut } from '@/helpers';
+import { cut, setClipboard } from '@/helpers';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: { NodeItem },
 })
 export default class Nodes extends Vue {
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getAutoSelectNodesValueByNetwork)
-  getAutoSelectNodesValueByNetwork!: GetAutoSelectNodesValueByNetwork;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
-  @Getter(NetworksGettersTypes.getActiveNodesByNetwork) getActiveNodesByNetwork!: GetActiveNodesByNetwork;
-  @Mutation(AccountsMutationTypes.SET_AUTO_SELECT_NODE) setAutoSelectNode!: Fn<SetAutoSelectNode>;
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
 
   get heightDefaultNodesForm() {
     const countNodes = this.defaultNodes.length;
@@ -125,11 +112,11 @@ export default class Nodes extends Vue {
   }
 
   get autoSelectNode() {
-    return this.getAutoSelectNodesValueByNetwork(this.selectedNetwork);
+    return this.accountsStore.getAutoSelectNodesValueByNetwork(this.selectedNetwork);
   }
 
   set autoSelectNode(value: boolean) {
-    this.setAutoSelectNode({ value, network: this.selectedNetwork });
+    this.accountsStore.setAutoSelectNode({ value, network: this.selectedNetwork });
   }
 
   get activeNode() {
@@ -142,11 +129,11 @@ export default class Nodes extends Vue {
   }
 
   get formattedAddress() {
-    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
+    return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork);
   }
 
   get address() {
-    if (this.selectedWallet.address === '') return '';
+    if (this.accountsStore.selectedWallet.address === '') return '';
 
     return cut(this.formattedAddress, 5);
   }
@@ -175,7 +162,7 @@ export default class Nodes extends Vue {
   }
 
   get networkJson() {
-    return this.getNetwork(this.selectedNetwork);
+    return this.networksStore.getNetwork(this.selectedNetwork);
   }
 
   get selectedNetworkUpper() {
@@ -212,7 +199,7 @@ export default class Nodes extends Vue {
   }
 
   copyAddress() {
-    navigator.clipboard.writeText(this.formattedAddress);
+    setClipboard(this.formattedAddress);
   }
 
   getActiveStatus(nodeName: string, url: string) {
@@ -279,7 +266,7 @@ export default class Nodes extends Vue {
         color: $plain-white;
         font-weight: 500;
         margin-right: 7px;
-        font-size: 14px;
+        font-size: 0.875em;
         width: 130px;
       }
     }
@@ -297,7 +284,7 @@ export default class Nodes extends Vue {
       display: flex;
 
       .network-name {
-        font-size: 22px;
+        font-size: 1.375em;
         font-weight: 800;
         color: rgba(255, 255, 255, 1);
         margin-bottom: 5px;
@@ -311,7 +298,7 @@ export default class Nodes extends Vue {
         color: $gray-color;
 
         .address {
-          font-size: 13px;
+          font-size: 0.8125em;
           width: 100%;
           margin-right: 5px;
         }

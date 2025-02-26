@@ -3,40 +3,17 @@ import {
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
-import { type NetworkJson } from '@extension-base/types';
-import { getSubstrateGenesisHash } from '@extension-base/services/network-service/helpers';
+import { getChainInfoByHalfGenesisHash } from '@extension-base/services/network-service/helpers';
 import { type ChainData, type SessionProposalNamespaces } from '@/interfaces/walletconnect';
-import { useStore } from '@/store';
-import { GettersTypes as NetworkGettersTypes } from '@/store/networks/getters';
-
-export const findChainInfoByHalfGenesisHash = (
-  chainMap: NetworkJson[],
-  halfGenesisHash?: string
-): NetworkJson | null => {
-  if (!halfGenesisHash) {
-    return null;
-  }
-
-  for (const chainInfo of chainMap) {
-    if (
-      getSubstrateGenesisHash(chainInfo)
-        ?.toLowerCase()
-        .substring(2, 2 + 32) === halfGenesisHash.toLowerCase()
-    ) {
-      return chainInfo;
-    }
-  }
-
-  return null;
-};
+import { useNetworksStore } from '@/stores/networks';
 
 export const chainNamesFromRequest = (
   namespaces: SessionTypes.Namespaces | ProposalTypes.RequiredNamespaces,
   key: string,
   isRequired: boolean
 ): ChainData[] => {
-  const store = useStore();
-  const networks: NetworkJson[] = store.getters[NetworkGettersTypes.allNetworks];
+  const networksStore = useNetworksStore();
+  const networks = networksStore.networks;
   const chains = namespaces[key].chains;
   const names: ChainData[] = [];
 
@@ -58,7 +35,7 @@ export const chainNamesFromRequest = (
     for (const chain of chains) {
       const [, chainId] = chain.split(':');
 
-      const network = findChainInfoByHalfGenesisHash(networks, chainId);
+      const network = getChainInfoByHalfGenesisHash(networks, chainId);
 
       if (network) names.push({ connected: network.active, icon: network.icon, name: network.name });
       else if (isRequired) {

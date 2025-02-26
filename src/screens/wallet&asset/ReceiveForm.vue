@@ -65,7 +65,7 @@
       :showBlur="false"
       :showBackground="false"
       :top="148"
-      :left="-160"
+      :left="popupLeft"
       :height="360"
       :options="assetNetworks"
       @handlerFilter="handlerFilter"
@@ -77,14 +77,12 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
-import type { TokenGroup } from '@extension-base/background/types/types';
-import type { GetNetwork, SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { cut } from '@/helpers';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { cut, setClipboard } from '@/helpers';
+import { IS_EXTENSION } from '@/consts/global';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class ReceiveForm extends Vue {
@@ -94,26 +92,28 @@ export default class ReceiveForm extends Vue {
     localeProps: { value: 'QR' },
   };
 
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   filterValue = '';
   selectedNetwork = 'polkadot';
   showSelectNetworkPopup = false;
-
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get selectedAssetId() {
     return this.$route.params.assetId ?? '';
   }
 
+  get popupLeft() {
+    return IS_EXTENSION ? -160 : 0;
+  }
+
   get assetNetworks() {
-    const currency = this.balances.find(({ groupId }) => groupId === this.selectedAssetId);
+    const currency = this.accountsStore.balances.find(({ groupId }) => groupId === this.selectedAssetId);
     const filter = this.filterValue.toLowerCase();
 
     return (
       currency?.balances
         .map(({ name, icon }) => {
-          const network = this.getNetwork(name);
+          const network = this.networksStore.getNetwork(name);
 
           return {
             name: network.name,
@@ -126,9 +126,9 @@ export default class ReceiveForm extends Vue {
   }
 
   get address() {
-    if (this.selectedWallet.address === '') return '';
+    if (this.accountsStore.selectedWallet.address === '') return '';
 
-    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
+    return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork);
   }
 
   get cutAddress() {
@@ -136,7 +136,7 @@ export default class ReceiveForm extends Vue {
   }
 
   get widthSaveBtn() {
-    return this.showCopyBtn ? '260px' : '530px';
+    return IS_EXTENSION ? (this.showCopyBtn ? '260px' : '530px') : '100%';
   }
 
   get showCopyBtn() {
@@ -166,7 +166,7 @@ export default class ReceiveForm extends Vue {
   }
 
   copyAddress() {
-    navigator.clipboard.writeText(this.address);
+    setClipboard(this.address);
   }
 
   createBlob() {

@@ -1,8 +1,8 @@
 import EmailValidator from 'email-validator';
 import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
+import type { NetworkName } from '@/interfaces';
 import { SORA_MAINNET, SORA_NETWORK_NAME, SORA_TEST } from '@/consts/sora';
-import { type NetworkName } from '@/interfaces';
-import { LIBERLAND } from '@/consts/networks';
+import { LIBERLAND, TON_MAINNET, TON_TESTNET } from '@/consts/networks';
 
 const MIN_PHONE_LENGTH_WITH_CODE = 8;
 
@@ -14,12 +14,16 @@ function firstCharToUp(string: string, onlyFirstChat = true) {
   return `${string.charAt(0).toUpperCase()}${end}`;
 }
 
-function isSameString(string1: string | undefined | null, string2: string | undefined | null) {
-  if (string1 === undefined || string2 === undefined) return false;
+function isSameString(string1: string | undefined | null, value2: string | undefined | null | string[]) {
+  if (string1 === undefined || value2 === undefined) return false;
 
-  if (string1 === null || string2 === null) return false;
+  if (string1 === null || value2 === null) return false;
 
-  return string1.toLowerCase() === string2.toLowerCase();
+  const strint1Lower = string1.toLowerCase();
+
+  if (Array.isArray(value2)) return value2.some((value) => value.toLowerCase() === strint1Lower);
+
+  return strint1Lower === value2.toLowerCase();
 }
 
 function isSubstrString(string1: string, string2: string) {
@@ -41,6 +45,18 @@ function isLiberland(network: NetworkName) {
 
 function isSoraTest(network: string) {
   return isSameString(network, SORA_TEST);
+}
+
+function isSoraMainnet(network: string) {
+  return isSameString(network, SORA_MAINNET);
+}
+
+function isTonMainnet(network: string) {
+  return isSameString(network, TON_MAINNET);
+}
+
+function isTonNetwork(network: string) {
+  return isSameString(network, TON_MAINNET) || isSameString(network, TON_TESTNET);
 }
 
 function validatePhoneNumber(countryCode: string, phoneNumber: string) {
@@ -81,6 +97,14 @@ function getClipboard() {
   return paste;
 }
 
+function setClipboard(str: string) {
+  if ('clipboard' in navigator) navigator.clipboard.writeText(str);
+}
+
+function getJettonAssetId(name: string, symbol: string) {
+  return `${name.toLowerCase()} - ${symbol.toLowerCase()}`;
+}
+
 function getFormattedDate(timestamp: string | number, type: 's' | 'ms' = 's') {
   const date = type === 's' ? secondsToMilliseconds(+timestamp) : +timestamp;
 
@@ -102,9 +126,14 @@ export {
   validatePhoneNumber,
   validateEmail,
   cut,
+  getJettonAssetId,
   getClipboard,
+  setClipboard,
   getFormattedDate,
   isSoraTest,
   isSubstrString,
   isLiberland,
+  isTonMainnet,
+  isSoraMainnet,
+  isTonNetwork,
 };

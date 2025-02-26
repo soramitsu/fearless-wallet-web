@@ -1,10 +1,8 @@
 import { NftFilters, type Network } from 'alchemy-sdk';
 import { Subject } from 'rxjs';
-import { createSubscription, unsubscribe } from '@extension-base/services';
 import AlchemyNftController from '@extension-base/services/nft-service/handlers/AlchemyNftSdk';
 import { PROD_NFT_NETWORKS } from '@extension-base/services/nft-service/consts';
 import { storage } from '@extension-base/stores/Storage';
-import { getContract } from '@extension-base/api/evm/contracts';
 import { parseEther, formatUnits, Wallet, type Contract } from 'ethers';
 import {
   BasicTxErrorCode,
@@ -150,28 +148,23 @@ export class NftService {
     storage.set({ nftSettings: this.hideSettings });
   }
 
-  async sendNft(
-    tx: RequestNftTransfer,
-    savePass: (address: string, ethereumAddress: string | undefined, isSavePass: boolean, isMobile: boolean) => void
-  ): Promise<ResponseNftTransfer> {
+  async sendNft(tx: RequestNftTransfer): Promise<ResponseNftTransfer> {
     const { from, contract: contractAddress } = tx;
     const api = this.state.getEvmApi(tx.network)?.api;
-    const contract = await getContract(contractAddress, api, tx.type === 'ERC721' ? 'ERC721' : 'ERC1155');
-    const pair = this.state.keyringService.getPair(from);
+    const contract = await this.state.evmContractService.getContract(
+      contractAddress,
+      api,
+      tx.type === 'ERC721' ? 'ERC721' : 'ERC1155'
+    );
 
-    if (pair?.isLocked) {
-      const isUnlock = this.state.keyringService.unlockPair(pair, tx.password);
-
-      if (!isUnlock)
-        return { status: false, errors: [{ message: 'Invalid password', code: BasicTxErrorCode.INVALID_PASSWORD }] };
-    }
+    this.state.keyringService.unlockPair(from);
 
     const res = await this.checkSend(tx);
 
     if (res.error)
       return { status: false, errors: [{ message: 'Balance to low', code: BasicTxErrorCode.BALANCE_TO_LOW }] };
 
-    const { privateKey } = this.state.accountExportPrivateKey({ address: from, password: tx.password });
+    const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address: from });
     const signer = new Wallet(privateKey, api);
     const isApproved: boolean = await contract.isApprovedForAll(contract, tx.to);
     const contractMaster = contract.connect(signer) as Contract;
@@ -194,10 +187,6 @@ export class NftService {
 
       txResponse.wait().then(() => this.getNftForActiveNetworks(from, true));
 
-      const substrateAddress = this.state.keyringService.getSubstrateAddress(tx.from);
-
-      savePass(substrateAddress, tx.from, tx.isSavePass, false);
-
       return {
         errors: [],
         hash: txResponse.hash,
@@ -219,7 +208,13 @@ export class NftService {
     if (!api) throw new Error('API not found');
     const networkJson = this.state.networkService.getNetworkJson(network);
     const utilityAsset = networkJson.assets.find((el) => el.isUtility)!;
-    const contract = await getContract(contractAddress, api, type === 'ERC721' ? 'ERC721' : 'ERC1155');
+
+    const contract = await this.state.evmContractService.getContract(
+      contractAddress,
+      api,
+      type === 'ERC721' ? 'ERC721' : 'ERC1155'
+    );
+
     const feeData = await api.getFeeData();
     const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
 
@@ -282,17 +277,16 @@ export class NftService {
     }
   }
 
-  nftSubscribe(id: string, port: Port): ChainNftState {
-    const cb = createSubscription<'pri(nft.subscribe)'>(id, port);
+  nftSubscribe(id: string, port?: Port): ChainNftState {
+    const cb = this.state.subscriptionService.createSubscription<'pri(nft.subscribe)'>(id, port);
 
-    const subscription = this.nftSubject.subscribe({
+    const nftSubscription = this.nftSubject.subscribe({
       next: (rs) => cb(rs),
     });
 
-    port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
-      subscription.unsubscribe();
-    });
+    this.state.subscriptionService.setUnsubscriptionHandle(id, nftSubscription.unsubscribe);
+
+    port?.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
 
     const account = this.state.currentAccount;
 

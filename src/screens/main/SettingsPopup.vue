@@ -3,35 +3,42 @@
     :showHeader="false"
     :showBorder="true"
     :top="50"
-    @handlerClose="$emit('handlerClose')"
     sizeWidth="big"
     verticalPlacement="top"
     horizontalPlacement="right"
+    @handlerClose="$emit('handlerClose')"
   >
     <div class="settings">
-      <SettingMenuItem
-        title="common.wc"
-        icon="wallet-connect"
-        data-testid="walletConnect"
-        @onOpen="open('WalletConnectInitAuth')"
-      />
+      <template v-if="!isTonWallet">
+        <SettingMenuItem
+          title="common.wc"
+          icon="wallet-connect"
+          data-testid="walletConnect"
+          @onOpen="open('WalletConnectInitAuth')"
+        />
+
+        <SettingMenuItem
+          v-if="isExtension"
+          title="common.manageDApp"
+          icon="mechanic-tool"
+          data-testid="manageDApp"
+          @onOpen="openManageAuths"
+        />
+
+        <SettingMenuItem
+          title="header.settings.polkaswapDisclaimer"
+          icon="polkaswap"
+          data-testid="polkaswapDisclaimer"
+          @onOpen="open('PolkaswapDisclaimer')"
+        />
+      </template>
 
       <SettingMenuItem
-        v-if="isExtension"
-        title="common.manageDApp"
-        icon="mechanic-tool"
-        data-testid="manageDApp"
-        @onOpen="openManageAuths"
-      />
-
-      <SettingMenuItem
-        title="header.settings.accounts"
+        title="header.settings.walletBackup"
         icon="account"
         data-testid="accounts"
         @onOpen="open('AccountSetting')"
       />
-
-      <SettingMenuItem v-if="showSoraCard" title="soraCard.title" icon="card" @onOpen="open('SoraCard')" />
 
       <SettingMenuItem
         title="header.settings.currency"
@@ -41,18 +48,20 @@
       />
 
       <SettingMenuItem
-        title="header.settings.polkaswapDisclaimer"
-        icon="polkaswap"
-        data-testid="polkaswapDisclaimer"
-        @onOpen="open('PolkaswapDisclaimer')"
-      />
-
-      <SettingMenuItem
         title="header.settings.language.text"
         icon="language"
         data-testid="language"
         @onOpen="openPopup('openLanguagePopup')"
       />
+
+      <SettingMenuItem
+        title="common.changePassword"
+        icon="key"
+        data-testid="changePassword"
+        @onOpen="open('ChangePassword')"
+      />
+
+      <SettingMenuItem title="common.lockApp" icon="lock" data-testid="lockApp" @onOpen="lock" />
 
       <SettingMenuItem
         title="common.aboutApp"
@@ -66,28 +75,23 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { Features } from '@/store/extension/types';
 import { Components } from '@/router/routes';
 import SettingMenuItem from '@/screens/main/SettingMenuItem.vue';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { type SelectedWallet } from '@/store';
 import { IS_EXTENSION } from '@/consts/global';
-import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
-
-type SettingsItemType = 'AccountSetting' | 'SoraCard' | 'PolkaswapDisclaimer' | 'WalletConnectInitAuth';
+import { lockExtension } from '@/extension/messaging';
+import { useExtensionStore } from '@/stores/extension';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: { SettingMenuItem },
 })
 export default class SettingsPopup extends Vue {
   readonly isExtension = IS_EXTENSION;
+  extensionStore = useExtensionStore();
+  accountsStore = useAccountsStore();
 
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(ExtensionGettersTypes.features) features!: Nullable<Features>;
-
-  get showSoraCard() {
-    return this.features?.fiat?.soraCard;
+  get isTonWallet() {
+    return this.accountsStore.selectedWallet.isTon;
   }
 
   get routeName() {
@@ -99,13 +103,23 @@ export default class SettingsPopup extends Vue {
   }
 
   openManageAuths() {
-    this.$router.push({ name: Components.DAppsAuths });
+    this.$router.push({ name: Components.DAppsAuths, params: { type: 'substrate' } });
   }
 
-  open(name: SettingsItemType) {
-    if (this.routeName !== name) this.$router.push({ name: Components[name] });
+  open(name: keyof typeof Components) {
+    if (this.routeName !== name) {
+      if (this.isTonWallet && name === 'AccountSetting') {
+        this.$router.push({ name: Components.Export });
+      } else this.$router.push({ name: Components[name] });
+    }
 
     this.$emit('handlerClose');
+  }
+
+  lock() {
+    lockExtension(true);
+
+    this.$router.push({ name: Components.Unlock });
   }
 }
 </script>

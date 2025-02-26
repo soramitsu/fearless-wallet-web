@@ -1,7 +1,7 @@
-import { type NftSettings } from '@extension-base/services/nft-service/types';
-import type { AccountJson } from '@extension-base/background/types/types';
+import type { NftSettings } from '@extension-base/services/nft-service/types';
 import type { Node, NetworkName, WalletAddress } from '@/interfaces';
 import type { Lang } from '@/locales';
+import type { HiddenAssets } from '@/stores/accounts/types';
 import { LocalStorage } from '@/controllers/localStorageController';
 
 class AccountController {
@@ -11,28 +11,13 @@ class AccountController {
   private readonly autoSelectNodesStorageName = 'auto-select-nodes';
   private readonly activeNodeStorageName = 'active-node';
   private readonly customNodesStorageName = 'custom-nodes';
-  private readonly selectedFiatStorageName = 'selected-fiat';
-  private readonly selectedWalletStorageName = 'selected-wallet';
-  private readonly selectedNetworkStorageName = 'selected-network';
   private readonly customSort = 'custom-sort';
-  private readonly accounts = 'accounts';
   private readonly assetTipData = 'asset-tip-data';
   private readonly hiddenAssets = 'hidden-assets';
   private readonly agreeSwapDisclaimer = 'agree-swap-disclaimer';
   private readonly hidingPoolsBanner = 'hiding-pools-banner';
   private readonly hiddenWarningNetworks = 'hidden-warning-networks';
-  private readonly hidingSoraCardBannerTime = 'hiding-sora-card-banner-time';
   private readonly nftSettings = 'nftSettings';
-
-  public getHidingSoraCardBannerTime(): number {
-    const values = this.lsAccount.get(this.hidingSoraCardBannerTime);
-
-    return +(values?.value ?? 0);
-  }
-
-  public setHidingSoraCardBannerTime(time: number) {
-    this.lsAccount.set(this.hidingSoraCardBannerTime, time);
-  }
 
   public setAssetTipData(count: number, time: number) {
     this.lsAccount.set(this.assetTipData, { count, time });
@@ -80,25 +65,6 @@ class AccountController {
     this.lsAccount.set(this.langStorageName, lang);
   }
 
-  public getSelectedWallet(): { address: string; ethereumAddress: string; name: string } {
-    const lsFiat = this.lsAccount.get(this.selectedWalletStorageName);
-    const account = this.getAccounts().filter((el) => el.address == lsFiat.value);
-
-    if (account.length) {
-      return {
-        address: account[0].address,
-        ethereumAddress: account[0].ethereumAddress,
-        name: account[0].name ?? '',
-      };
-    }
-
-    return {
-      address: '',
-      ethereumAddress: '',
-      name: '',
-    };
-  }
-
   public setNftSettings(settings: NftSettings) {
     this.lsAccount.set(this.nftSettings, settings);
   }
@@ -107,50 +73,12 @@ class AccountController {
     return this.lsAccount.get(this.nftSettings).value ?? {};
   }
 
-  public setSelectedWalletAddress(address = ''): void {
-    this.lsAccount.set(this.selectedWalletStorageName, address);
-  }
-
-  public getSelectedFiat(): string {
-    const lsFiat = this.lsAccount.get(this.selectedFiatStorageName);
-
-    return lsFiat.value ?? 'usd';
-  }
-
-  public setSelectedFiat(fiat: string): void {
-    this.lsAccount.set(this.selectedFiatStorageName, fiat);
-  }
-
-  public getHiddenAssets(): Record<WalletAddress, string[]> {
+  public getHiddenAssets(): HiddenAssets {
     return this.lsAccount.get(this.hiddenAssets).value ?? {};
   }
 
   public setHiddenAssets(hiddenAssets: Record<WalletAddress, string[]>): void {
     this.lsAccount.set(this.hiddenAssets, hiddenAssets);
-  }
-
-  public getAccounts(): AccountJson[] {
-    return this.lsAccount.get(this.accounts).value ?? [];
-  }
-
-  public setAccounts(accounts: AccountJson[]) {
-    this.lsAccount.set(this.accounts, accounts);
-  }
-
-  public getSelectedNetwork(): Record<string, string> {
-    const lsNetwork = this.lsAccount.get(this.selectedNetworkStorageName);
-
-    return lsNetwork.value ?? {};
-  }
-
-  public setSelectedNetwork(address: string, network: string): void {
-    const prevValue = this.getSelectedNetwork();
-    const newValue = {
-      ...prevValue,
-      [address]: network,
-    };
-
-    this.lsAccount.set(this.selectedNetworkStorageName, newValue);
   }
 
   private getSequenceAssets(): Record<string, string> {

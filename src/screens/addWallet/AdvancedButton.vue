@@ -18,7 +18,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 1em;
     line-height: 170%;
     opacity: 0.95;
 

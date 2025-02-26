@@ -183,17 +183,12 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
-import type { SelectedWallet, GetNetwork, GetAssetPrice } from '@/store';
-import type { TokenGroup } from '@extension-base/background/types/types';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
 import PolkaswapAlert from '@/screens/polkaswap/PolkaswapAlert.vue';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
 import PolkaswapSettings from '@/screens/polkaswap/PolkaswapSettings.vue';
 import PolkaswapSettingsHeader from '@/screens/polkaswap/PolkaswapSettingsHeader.vue';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
 import PoolsBanner from '@/screens/pools/PoolsBanner.vue';
@@ -204,10 +199,12 @@ import {
   calcTransferableSendMinusFee,
   isValidAmountAsset,
 } from '@/helpers/currencies';
-import { getCostOfAssets } from '@/controllers/transferHelpers';
-import { MarketType, type SoraFees, type SwapOptions } from '@/interfaces';
+import { getCostOfAssets } from '@/helpers/transfers';
+import { MarketType, type SwapOptions } from '@/interfaces';
 import { addNumbers } from '@/helpers/numbers';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID } from '@/consts/sora';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 const SWAP_INTERVAL_RECALCULATE = 10000;
 
@@ -225,6 +222,8 @@ const SWAP_INTERVAL_RECALCULATE = 10000;
 })
 export default class SwapForm extends Vue {
   readonly soraNetworkName = SORA_NETWORK_NAME;
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   step = 1;
   slippage = 0.5;
   temporarySlippage = 0.5;
@@ -246,14 +245,6 @@ export default class SwapForm extends Vue {
   tx: SwapOptions = {} as SwapOptions;
   swapInterval!: NodeJS.Timer;
 
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
-  @Getter(NetworksGettersTypes.soraFees) soraFees!: Nullable<SoraFees>;
-
   get showBackIcon() {
     return !this.showSettings;
   }
@@ -263,7 +254,7 @@ export default class SwapForm extends Vue {
   }
 
   get fee() {
-    return this.soraFees?.Swap ?? '';
+    return this.networksStore.soraFees?.Swap ?? '';
   }
 
   get showCloseIcon() {
@@ -275,13 +266,13 @@ export default class SwapForm extends Vue {
   get sendAssetPrice() {
     const priceId = this.sendCurrency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get receiveAssetPrice() {
     const priceId = this.receiveCurrency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get classesSwapIcon() {
@@ -289,12 +280,12 @@ export default class SwapForm extends Vue {
   }
 
   get currencyXOR() {
-    return getXORCurrency(this.balances);
+    return getXORCurrency(this.accountsStore.balances);
   }
 
   get feePrice() {
     const fee = this.fee ?? 0;
-    const balance = this.getAssetPrice(this.currencyXOR?.priceId ?? '').price * +fee;
+    const balance = this.networksStore.getAssetPrice(this.currencyXOR?.priceId ?? '').price * +fee;
 
     return this.$n(+balance, 'price');
   }
@@ -306,11 +297,11 @@ export default class SwapForm extends Vue {
   get minMaxAmountPrice() {
     const price = (
       this.isExchangeB
-        ? getCostOfAssets(+this.minMaxAmount, this.getAssetPrice(this.sendAssetId).price)
-        : getCostOfAssets(+this.minMaxAmount, this.getAssetPrice(this.receiveAssetId).price)
+        ? getCostOfAssets(+this.minMaxAmount, this.networksStore.getAssetPrice(this.sendAssetId).price)
+        : getCostOfAssets(+this.minMaxAmount, this.networksStore.getAssetPrice(this.receiveAssetId).price)
     ) as number;
 
-    return `${this.fiatSymbol} ${this.$n(price ?? 0, 'price')}`;
+    return `${this.accountsStore.fiatSymbol} ${this.$n(price ?? 0, 'price')}`;
   }
 
   get minMaxAmountCut() {
@@ -337,14 +328,14 @@ export default class SwapForm extends Vue {
     const cost = (getCostOfAssets(this.transferableSendAmount, this.sendAssetPrice) as number) ?? 0;
     const value = this.$n(cost, 'price') || '0';
 
-    return `${this.fiatSymbol} ${value}`;
+    return `${this.accountsStore.fiatSymbol} ${value}`;
   }
 
   get BToAValueCut() {
     const cost = (getCostOfAssets(+this.transferableReceiveAmount, this.receiveAssetPrice) as number) ?? 0;
     const value = this.$n(cost, 'price') || '0';
 
-    return `${this.fiatSymbol} ${value}`;
+    return `${this.accountsStore.fiatSymbol} ${value}`;
   }
 
   get widthButton() {
@@ -368,7 +359,7 @@ export default class SwapForm extends Vue {
   }
 
   get sendCurrency() {
-    return this.balances.find(({ groupId }) => groupId === this.sendAssetId);
+    return this.accountsStore.balances.find(({ groupId }) => groupId === this.sendAssetId);
   }
 
   get sendAssetName(): string {
@@ -380,7 +371,7 @@ export default class SwapForm extends Vue {
   }
 
   get receiveCurrency() {
-    return this.balances.find(({ groupId }) => groupId === this.receiveAssetId);
+    return this.accountsStore.balances.find(({ groupId }) => groupId === this.receiveAssetId);
   }
 
   get receiveAssetName(): string {
@@ -397,7 +388,7 @@ export default class SwapForm extends Vue {
 
   get optionsCurrency() {
     const filter = this.filterValue.toLowerCase();
-    const tokensGroupFilteredByNetwork = this.balances.filter(({ balances }) => {
+    const tokensGroupFilteredByNetwork = this.accountsStore.balances.filter(({ balances }) => {
       return balances.some(({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase());
     });
 

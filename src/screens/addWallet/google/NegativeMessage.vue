@@ -24,7 +24,7 @@ defineProps<Props>();
 }
 
 .subtext {
-  font-size: 18px;
+  font-size: 1.125em;
   color: $default-white;
 }
 

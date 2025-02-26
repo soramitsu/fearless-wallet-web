@@ -1,12 +1,10 @@
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
-import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
-import { assert, u8aToHex } from '@polkadot/util';
-import { accounts } from '@polkadot/ui-keyring/observable/accounts';
-import { decodePair } from '@polkadot/keyring/pair/decode';
+import { isEthereumAddress } from '@polkadot/util-crypto';
+import { assert } from '@polkadot/util';
+import { accounts } from '@subwallet/ui-keyring/observable/accounts';
 import {
   EventService,
-  SoraCardService,
   OnboardingService,
   KeyringService,
   StakingService,
@@ -21,18 +19,16 @@ import {
   CronService,
   ScamService,
   PricesService,
-  isSubscriptionRunning,
-  unsubscribe,
+  TimeoutService,
 } from '@extension-base/services';
-import { api as apiSora, type FPNumber } from '@sora-substrate/util';
+import { api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
-import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
-import { fetchEvmAssetBalance } from '@extension-base/api/evm/balance';
-import { REFRESH_TIME } from '@extension-base/api/evm/contracts';
 import BalanceService from '@extension-base/services/balance-service';
 import axios from 'axios';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
-import { NETWORK_STATUS } from '@extension-base/api/types/networks';
+import { KeyringLockService } from '@extension-base/services/keyring-service/KeyringLock';
+import EvmContractService from '../../services/evm-contract-service';
+import { HistoryService } from '../../services/history-service';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   ServiceInfo,
@@ -44,115 +40,99 @@ import type {
   IState,
   ActiveTabAuthorizeStatus,
   Providers,
-  RequestAccountExportPrivateKey,
-  ResponseAccountExportPrivateKey,
-  FetchEvmBalancePayload,
   AuthUrlInfo,
   AuthUrls,
+  RequestUpdateCurrentAccount,
 } from '@extension-base/background/types/types';
-import type { ChainRegistry, NetworkJson } from '@extension-base/types';
+import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
+import { WalletEcosystem } from '@/interfaces';
+import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
 
-export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 type Wallet = {
   address: string;
   ethereumAddress: string;
 };
-export type Passwords = {
-  [address in string]: string | undefined;
-};
 
 export default class State {
-  public passwords: Passwords = {};
-  public injectedProviders: Map<Port, ProviderInterface> = new Map();
-  public providers: Providers = {};
-  public readonly unsubscriptionMap: Record<string, () => void> = {};
-  public serviceInfoSubject = new Subject<ServiceInfo>();
-  public xcmFees: XcmFees = [];
-  public xcmLocations: XcmLocations = [];
-  public lazyMap: Record<string, unknown> = {};
-  public soraFees: BehaviorSubject<SoraFees> = new BehaviorSubject<SoraFees>(apiSora.NetworkFee);
-  public ready = false;
-  public currentTabStatus: ActiveTabAuthorizeStatus = {
+  private ready = false;
+  injectedProviders: Map<Port, ProviderInterface> = new Map();
+  providers: Providers = {};
+  serviceInfoSubject = new Subject<ServiceInfo>();
+  xcmFees: XcmFees = [];
+  xcmLocations: XcmLocations = [];
+  soraFees: BehaviorSubject<SoraFees> = new BehaviorSubject<SoraFees>(apiSora.NetworkFee);
+  currentTabStatus: ActiveTabAuthorizeStatus = {
     isAuthorize: false,
     authorizeAccountsCount: 0,
     dAppName: '',
   };
-  public onboardingService = new OnboardingService();
-  public eventService = new EventService();
-  public keyringService = new KeyringService(this.eventService);
-  public networkService = new NetworkService(this.keyringService, this);
-  public requestService = new RequestService(this.keyringService, this);
-  public walletConnectService = new WalletConnectService(this, this.requestService);
-  public walletConnectDappService = new WalletConnectDAppService(this);
-  public balanceService = new BalanceService(this);
-  public pricesService = new PricesService(this.networkService);
-  public nftService = new NftService(this);
-  public soraCardService = new SoraCardService(this.requestService);
-  public stakingService = new StakingService(this);
-  public poolsService = new PoolsService(this);
-  public googleService = new GoogleService();
-  public cronService = new CronService(this);
-  public scamService = new ScamService(this);
-  public subscriptionService = new SubscriptionService(this);
+
+  onboardingService = new OnboardingService();
+  eventService = new EventService();
+  evmContractService = new EvmContractService();
+  keyringService = new KeyringService(this.eventService);
+  networkService = new NetworkService(this.keyringService, this);
+  requestService = new RequestService(this.keyringService, this);
+  walletConnectService = new WalletConnectService(this, this.requestService);
+  walletConnectDappService = new WalletConnectDAppService(this);
+  balanceService = new BalanceService(this);
+  pricesService = new PricesService(this);
+  nftService = new NftService(this);
+  stakingService = new StakingService(this);
+  poolsService = new PoolsService(this);
+  googleService = new GoogleService();
+  cronService = new CronService(this);
+  scamService = new ScamService(this);
+  subscriptionService = new SubscriptionService(this);
+  timeoutService = new TimeoutService(this);
+  keyringLockService = new KeyringLockService(this);
+  historyService = new HistoryService(this);
 
   constructor() {
     this.injectFromStorage();
-    this.onboardingService.init();
     this.init();
   }
 
-  public get knownMetadata(): MetadataDef[] {
+  get knownMetadata(): MetadataDef[] {
     return knownMetadata();
-  }
-
-  public getEvmApi(key: string) {
-    return this.getEvmApiMap[key.toLowerCase()];
   }
 
   get authSubject() {
     return this.requestService.authSubject;
   }
 
-  public get getSubstrateApiMap() {
+  get getSubstrateApiMap() {
     return this.networkService.substrateApiHandler.api;
   }
 
-  public get getEvmApiMap() {
+  get getEvmApiMap() {
     return this.networkService.evmApiHandler.api;
   }
 
-  public createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
-    this.unsubscriptionMap[id] = unsubscribe;
+  get getTonApiMap() {
+    return this.networkService.tonApiHandler.api;
   }
 
-  public cancelSubscription(id: string): boolean {
-    if (isSubscriptionRunning(id)) unsubscribe(id);
-
-    if (this.unsubscriptionMap[id]) {
-      this.unsubscriptionMap[id]();
-
-      delete this.unsubscriptionMap[id];
-    }
-
-    return true;
+  get currentAccount() {
+    return this.keyringService.currentAccountSubject.value;
   }
 
-  public subscribeServiceInfo() {
-    return this.serviceInfoSubject;
+  getEvmApi(key: string) {
+    return this.getEvmApiMap[key.toLowerCase()];
   }
 
-  public getFromStorage(key: (keyof IState)[]) {
+  getFromStorage(key: (keyof IState)[]) {
     return storage.get(key);
   }
 
-  public isReady() {
+  isReady() {
     return this.ready;
   }
 
@@ -163,11 +143,7 @@ export default class State {
     if (providers) this.providers = providers;
   }
 
-  async approvePolkaswap(authorizedAccounts: string[]): Promise<void> {
-    this.soraCardService.approvePolkaswap(authorizedAccounts);
-  }
-
-  public updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
+  updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
     if (!tab || !tab.url) {
       this.currentTabStatus = {
         isAuthorize: false,
@@ -196,33 +172,35 @@ export default class State {
     this.requestService.getAuthorize(cb);
   }
 
-  public async onInstall() {
-    const currentAccount = this.currentAccount;
-
-    if (currentAccount) {
-      this.setCurrentAccount(currentAccount);
+  async onInstall() {
+    if (this.currentAccount) {
+      this.setCurrentAccount(this.currentAccount);
 
       return;
     }
 
-    const accounts = this.keyringService.getSubstrateAccounts();
+    const allAccounts = this.keyringService.getAllMainAccounts();
 
-    if (accounts.length === 0) this.setCurrentAccount(null);
-    else {
+    if (allAccounts.length) {
       const [
         {
           address,
-          meta: { name, ethereumAddress, isMobile },
+          meta: { name, ethereumAddress, isMobile, walletEcosystem },
         },
-      ] = accounts;
+      ] = allAccounts;
 
       this.setCurrentAccount({
         address,
-        name: name as string,
-        ethereumAddress: ethereumAddress as string,
-        isMobile: isMobile as boolean,
+        name: name!,
+        ethereumAddress: ethereumAddress!,
+        isMobile: isMobile!,
+        walletEcosystem: walletEcosystem!,
       });
+
+      return;
     }
+
+    this.setCurrentAccount(null);
   }
 
   async getAuthInfo(url: string, fromList?: AuthUrls): Promise<AuthUrlInfo | undefined> {
@@ -233,21 +211,15 @@ export default class State {
     return authList[shortenUrl];
   }
 
-  public upsertNetworkMap(data: NetworkJson): boolean {
-    return this.networkService.upsertNetworkMap(data, () => this.updateServiceInfo());
+  disableNetworkMap(networkKey: string) {
+    this.networkService.disableNetworkMap(networkKey);
+
+    this.updateServiceInfo();
+
+    this.requestService.getAuthorize((data) => this.requestService.setAuthorize(data));
   }
 
-  public disableNetworkMap(networkKey: string): boolean {
-    this.networkService.disableNetworkMap(networkKey, () => {
-      this.updateServiceInfo();
-
-      this.requestService.getAuthorize((data) => this.requestService.setAuthorize(data));
-    });
-
-    return true;
-  }
-
-  public updateServiceInfo() {
+  updateServiceInfo() {
     this.serviceInfoSubject.next({
       networkMap: this.networkService.networkMap,
       apiMap: this.networkService.getApiMap,
@@ -268,35 +240,21 @@ export default class State {
     return true;
   }
 
-  public async setActiveNetworks(type: string) {
+  async setActiveNetworks(type: string) {
     if (!this.currentAccount) return;
+
+    if (this.networkService.selectedNetworks[this.currentAccount.address] === type) return;
 
     this.networkService.selectedNetworks[this.currentAccount.address] = type;
 
-    const unsub = this.subscriptionService.getSubscription('balance');
-
-    unsub?.();
-
-    const networks = this.networkService.getActiveNetworks();
+    const activeNetworks = this.networkService.getActiveNetworks();
 
     Object.entries(this.networkService.networkMap).forEach(([networkName, network]) => {
       const networkKey = networkName.toLowerCase();
 
-      network.active = networks.some(({ name }) => isSameString(name, networkKey));
+      network.active = activeNetworks.some(({ name }) => isSameString(name, networkKey));
 
-      const isActive = network.active;
-
-      if (!isActive) {
-        if (this.getEvmApiMap[networkKey]) {
-          this.getEvmApiMap[networkKey].api?.destroy();
-
-          delete this.getEvmApiMap[networkKey];
-        } else if (this.getSubstrateApiMap[networkKey]) {
-          this.getSubstrateApiMap[networkKey].provider?.disconnect();
-
-          delete this.getSubstrateApiMap[networkKey];
-        }
-      }
+      if (!network.active) this.networkService.destroyApi(network.name);
     });
 
     if (this.ready) this.networkService.initNetworkApis();
@@ -304,7 +262,6 @@ export default class State {
     this.networkService.updateNetworkStore();
     this.networkService.saveSelectedNetworks();
 
-    this.fetchEvmBalance({});
     this.updateServiceInfo();
   }
 
@@ -337,7 +294,7 @@ export default class State {
     return uniqNetworks;
   }
 
-  public getAllAddresses(): string[] {
+  getAllAddresses(): string[] {
     return Object.keys(accounts.subject.value);
   }
 
@@ -423,12 +380,8 @@ export default class State {
     addMetadata(meta);
   }
 
-  public getAccountAddress(): string {
+  getAccountAddress(): string {
     return this.currentAccount?.address ?? '';
-  }
-
-  get currentAccount() {
-    return this.keyringService.currentAccount;
   }
 
   fetchXcmInfo() {
@@ -443,15 +396,17 @@ export default class State {
       .catch(() => (this.xcmFees = []));
   }
 
-  public async init() {
+  async init() {
     await this.eventService.waitCryptoReady;
     await this.networkService.initNetworkMap();
 
-    this.keyringService
-      .getSubstrateAccounts()
-      .forEach(({ address }) => this.balanceService.generateDefaultBalance(address));
+    this.keyringService.getAllMainAccounts().forEach(({ address, meta }) => {
+      const { walletEcosystem } = meta as FWKeyringMeta;
 
-    this.ready = true; //Set true if chain json is parsed and data is preped for init apis
+      return this.balanceService.generateDefaultBalance(address, walletEcosystem!);
+    });
+
+    this.ready = true; // Set true if chain json is parsed and data is preped for init apis
     this.fetchXcmInfo();
     this.scamService.refreshScamAddressList();
 
@@ -460,19 +415,27 @@ export default class State {
     this.updateServiceInfo();
   }
 
-  public updateNetworkForNewWallet(address: string) {
+  updateNetworkForNewWallet(address: string) {
     this.setActiveNetworks(this.networkService.selectedNetworks[address] ?? ALL_NETWORKS);
   }
 
-  public updateCurrentAccount(address: string, isNew = true): boolean {
+  updateCurrentAccount(
+    { address, walletEcosystem = WalletEcosystem.Substrate }: RequestUpdateCurrentAccount,
+    isNew = true
+  ): boolean {
     if (isEthereumAddress(address)) return false;
 
-    this.balanceService.generateDefaultBalance(address);
+    this.balanceService.generateDefaultBalance(address, walletEcosystem);
 
-    this.saveCurrentAccountAddress(address, () => {
-      this.keyringService.triggerWalletsSubscription();
+    this.saveCurrentAccountAddress(address, walletEcosystem, () => {
+      this.keyringService.triggerWalletsSubscription(address, walletEcosystem);
 
-      if (isNew) this.setActiveNetworks(this.networkService.selectedNetworks[address] ?? ALL_NETWORKS);
+      const activeValue =
+        walletEcosystem === WalletEcosystem.Ton
+          ? 'Ton Mainnet'
+          : this.networkService.selectedNetworks[address] ?? POPULAR_NETWORKS;
+
+      if (isNew) this.setActiveNetworks(activeValue);
 
       this.nftService.publishNfts();
     });
@@ -480,38 +443,48 @@ export default class State {
     return true;
   }
 
-  public setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null): void {
+  setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null): void {
     this.keyringService.setCurrentAccount(data);
 
     // logic for Sora library
-    if (data?.address && !data.isMobile) {
-      this.poolsService.unsubscribePools();
+    this.poolsService.unsubscribePools();
 
+    const isTonWallet = data?.walletEcosystem === WalletEcosystem.Ton;
+
+    // logic for Sora library
+    if (!isTonWallet && data?.address && !data.isMobile && data.walletEcosystem === 'substrate') {
       const pair = this.keyringService.getPair(data?.address)!;
 
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
       apiSora.account = { json: null as any, pair };
-      apiSora.bridgeProxy.sub.account = { json: null as any, pair };
 
-      // TODO добавить фича тогл
-      // this.subscribeTotalXorBalance();
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      apiSora.bridgeProxy.sub.account = { json: null as any, pair };
     }
 
     this.updateServiceInfo();
     callback();
   }
 
-  public saveCurrentAccountAddress(address: string, callback?: (account: CurrentAccountState) => void) {
+  saveCurrentAccountAddress(
+    address: string,
+    walletEcosystem: WalletEcosystem,
+    callback?: (account: CurrentAccountState) => void
+  ) {
     if (address === '') return this.setCurrentAccount(null);
 
     const {
       meta: { isMobile, name, ethereumAddress },
-    } = this.keyringService.getAccount(address) ?? this.keyringService.getAddress(address)!;
+    } = this.keyringService.getAccount(address, walletEcosystem) ?? this.keyringService.getAddress(address)!;
 
     const accountInfo: CurrentAccountInfo = {
       address,
       isMobile: !!(isMobile as boolean),
       name: name as string,
       ethereumAddress: (ethereumAddress as string) ?? '',
+      walletEcosystem,
     };
 
     this.setCurrentAccount(accountInfo, () => callback?.(accountInfo));
@@ -528,54 +501,7 @@ export default class State {
     this.balanceService.deleteBalance(address);
   }
 
-  public subscribeTotalXorBalance() {
-    if (!apiSora.api || !apiSora.api.isConnected) return;
-
-    try {
-      const subscription = apiSora.assets
-        .getTotalXorBalanceObservable()
-        .subscribe((xorTotalBalance: FPNumber) => this.balanceService.updateXorTotalBalance(xorTotalBalance));
-
-      this.subscriptionService.updateSubscription({ name: 'xorTotalBalance', func: subscription.unsubscribe });
-    } catch (ex) {
-      console.error('failed subscribe or unsubscribe to XOR balance');
-    }
-  }
-
-  public accountExportPrivateKey({
-    address,
-    password,
-  }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    const pass = this.passwords[address] ?? password;
-    const json = this.keyringService.backupAccount(address, pass!);
-
-    if (!json) throw new Error('Json was not exported');
-
-    const decoded = decodePair(pass, base64Decode(json.encoded), json.encoding.type);
-
-    const privateKey = u8aToHex(decoded.secretKey);
-    const publicKey = u8aToHex(decoded.publicKey);
-
-    if (password) this.passwords[address] = password;
-
-    return {
-      privateKey,
-      publicKey,
-    };
-  }
-
-  public lazyNext = (key: string, callback: () => void) => {
-    if (this.lazyMap[key]) clearTimeout(this.lazyMap[key] as number);
-
-    const lazy = setTimeout(() => {
-      callback();
-      clearTimeout(lazy);
-    }, 300);
-
-    this.lazyMap[key] = lazy;
-  };
-
-  public getAddressList(value = false): Record<string, boolean> {
+  getAddressList(value = false): Record<string, boolean> {
     const addressList = Object.keys(accounts.subject.value);
 
     return addressList.reduce((addressList, v) => ({ ...addressList, [v]: value }), {});
@@ -594,46 +520,12 @@ export default class State {
     return isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
   }
 
-  async fetchEvmBalance({ _networks, ethereumAddress: _ethereumAddress, assetId, force }: FetchEvmBalancePayload) {
-    if (!this.ready) return;
-
-    const ethereumAddress = _ethereumAddress ?? this.currentAccount?.ethereumAddress ?? '';
-
-    if (ethereumAddress === '') return;
-
-    const activeEvmNetworks = this.networkService.evmNativeNetworkValues.filter(({ name, active }) => {
-      if (_networks && !_networks.includes(name)) return false;
-
-      return active;
-    });
-
-    if (!activeEvmNetworks.length) return;
-
-    activeEvmNetworks.forEach(({ assets, name, networkStatus }) => {
-      const api = this.getEvmApi(name);
-
-      const timeout = api.timeout[ethereumAddress] ?? Number.MIN_VALUE;
-      const timeDiff = Date.now() - timeout;
-      const shouldSkipUpdate = timeDiff < REFRESH_TIME && !force;
-
-      if (shouldSkipUpdate || networkStatus === NETWORK_STATUS.DISCONNECTED) return;
-
-      // Save timeout [network api][ethereum address]
-      if (api) api.timeout[ethereumAddress] = Date.now();
-
-      if (assetId) fetchEvmAssetBalance(ethereumAddress, name, assetId, this);
-      else assets.forEach(({ id }) => fetchEvmAssetBalance(ethereumAddress, name, id, this));
-    });
-  }
-
   formatAddress({ address, ethereumAddress }: Wallet, networkName: string = 'westend'): string {
     const isEthereumNet = isEthereumNetwork(networkName);
 
     if (isEthereumNet) return ethereumAddress;
 
-    const network = this.networkService.networksGithub.find(
-      ({ name }) => name.toLowerCase() === networkName.toLowerCase()
-    )!;
+    const network = this.networkService.networksGithub.find(({ name }) => isSameString(name, networkName))!;
 
     // the only case for try/catch
     // if the user used ethereum account instead of a substratum account(via json or private key)
@@ -648,7 +540,7 @@ export default class State {
     return this.formatAddress(wallet1) === this.formatAddress(wallet2);
   }
 
-  public async switchEvmNetworkByUrl(shortenUrl: string, networkKey: string): Promise<void> {
+  async switchEvmNetworkByUrl(shortenUrl: string, networkKey: string): Promise<void> {
     const authUrls = await this.requestService.getAuthList();
     const network = this.networkService.getNetworkJson(networkKey);
 

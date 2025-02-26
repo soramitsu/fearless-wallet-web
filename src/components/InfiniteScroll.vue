@@ -3,6 +3,7 @@
     <slot></slot>
   </div>
 </template>
+
 <script lang="ts" setup>
 import { ref } from 'vue';
 import { useInfiniteScroll } from '@vueuse/core';

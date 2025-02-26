@@ -3,7 +3,7 @@ const packageJson = require('../../package.json');
 
 module.exports = (browser) => {
   const baseContentSecurityPolicy =
-    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self';  style-src 'unsafe-inline';img-src 'self' https: data:; frame-src https://soracard.com/; connect-src https: wss: ws:; media-src https:";
+    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; style-src 'unsafe-inline'; img-src 'self' https: data:; frame-src https:; frame-ancestors https:; connect-src https: wss: ws:; media-src https:";
 
   const firefoxBase = {
     manifest_version: 2,

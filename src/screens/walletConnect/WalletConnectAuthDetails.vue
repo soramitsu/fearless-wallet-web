@@ -33,20 +33,19 @@ import { computed, onBeforeMount } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
 import { useI18n } from 'vue-i18n-composable';
 import WalletConnectHeader from './WalletConnectHeader.vue';
-import type { SessionTypes } from '@walletconnect/types';
+import type { ChainData } from '@/interfaces/walletconnect';
 import { transformNamespaces } from '@/util/walletConnect';
-import { useStore } from '@/store';
 import { disconnectWalletConnectConnection } from '@/extension/messaging/wallet-connect-requests';
-import { type ChainData } from '@/interfaces/walletconnect';
-import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
+import { useExtensionStore } from '@/stores/extension';
 
 const route = useRoute();
 const router = useRouter();
-const store = useStore();
+const extensionStore = useExtensionStore();
 const { t } = useI18n();
 const topic = computed(() => route.params.topic);
+
 const request = computed(() => {
-  const list: SessionTypes.Struct[] | null = store.getters[ExtensionGettersTypes.wcSessions];
+  const list = extensionStore.wcSessions;
 
   return list?.find((request) => request.topic === topic.value);
 });
@@ -115,12 +114,12 @@ const onWCRemoveuth = async () => {
   }
 
   &__status {
-    font-size: 12px;
+    font-size: 0.75rem;
     color: $gray-color;
   }
 
   &__name {
-    font-size: 16px;
+    font-size: 1em;
     color: $default-white;
   }
 

@@ -83,22 +83,20 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { getNativeAssetName } from '@extension-base/background/handlers/utils';
 import TransferForm from './TransferForm.vue';
-import type { NetworkJson } from '@extension-base/types';
-import type { SelectedWallet, GetNetwork } from '@/store';
-import type { TokenGroup } from '@extension-base/background/types/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp, cut, isSora, isSameString } from '@/helpers/';
 import { formattedNumber } from '@/helpers/numbers';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { BRIDGE_MIN_VALUES_TO_SORA, BRIDGE_MIN_VALUES_FROM_SORA } from '@/consts/sora';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component({
   components: { TransferForm },
 })
 export default class CrossChainForm extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
   originNetFee = '';
   destNetFee = '';
   assetId = '';
@@ -109,11 +107,6 @@ export default class CrossChainForm extends Vue {
   value = '';
 
   @Prop(String) _originalNetwork!: string;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenGroup[];
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get minValueBridgeToSora() {
     return BRIDGE_MIN_VALUES_TO_SORA[this.originalNetwork.toLowerCase()][this.assetName.toLowerCase()] ?? 0;
@@ -160,7 +153,7 @@ export default class CrossChainForm extends Vue {
   }
 
   get valueString() {
-    return `${this.fiatSymbol}${this.$n(+this.value, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(+this.value, 'price')}`;
   }
 
   get originalNetworkFeeString() {
@@ -172,7 +165,7 @@ export default class CrossChainForm extends Vue {
   }
 
   get currency() {
-    return this.balances.find(({ groupId, balances }) => {
+    return this.accountsStore.balances.find(({ groupId, balances }) => {
       return groupId === this.assetId || balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase());
     });
   }
@@ -182,11 +175,11 @@ export default class CrossChainForm extends Vue {
   }
 
   get originNet() {
-    return this.getNetwork(this.originalNetwork);
+    return this.networksStore.getNetwork(this.originalNetwork);
   }
 
   get destNet() {
-    return this.getNetwork(this.destinationNetwork);
+    return this.networksStore.getNetwork(this.destinationNetwork);
   }
 
   get originNetIcon() {
@@ -199,7 +192,7 @@ export default class CrossChainForm extends Vue {
 
   get originalNetworkUtilityAsset() {
     const utilityId = this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
-    const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === utilityId));
+    const currency = this.accountsStore.balances.find(({ balances }) => balances.some(({ id }) => id === utilityId));
 
     return currency?.symbol ?? '';
   }
@@ -213,7 +206,7 @@ export default class CrossChainForm extends Vue {
     this.originalNetwork = this.$route.params.network;
 
     this.$nextTick(() => {
-      const originNet = this.getNetwork(this.originalNetwork);
+      const originNet = this.networksStore.getNetwork(this.originalNetwork);
       const asset = getNativeAssetName(this.assetName);
 
       const destChainId = originNet?.xcm?.availableDestinations.find(({ assets }) =>
@@ -222,7 +215,7 @@ export default class CrossChainForm extends Vue {
 
       if (!destChainId) return;
 
-      const { name: destName } = this.getNetwork(destChainId)!;
+      const { name: destName } = this.networksStore.getNetwork(destChainId)!;
 
       this.destinationNetwork = destName;
     });

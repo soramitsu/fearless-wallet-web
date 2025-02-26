@@ -26,11 +26,11 @@ const subtext = computed(() => (props.subtext ? t(props.subtext) : ''));
   margin: 30px;
 }
 .header {
-  font-size: 22px;
-  font-weight: 800px;
+  font-size: 1.375em;
+  font-weight: 800;
 }
 .subtext {
-  font-size: 16px;
+  font-size: 1em;
   font-weight: 400;
   max-width: 400px;
   color: $gray-color;

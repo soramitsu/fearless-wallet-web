@@ -1,6 +1,5 @@
 export * from '@extension-base/services/event-service';
 export * from '@extension-base/services/keyring-service';
-export * from '@extension-base/services/sora-card-service';
 export * from '@extension-base/services/network-service';
 export * from '@extension-base/services/request-service';
 export * from '@extension-base/services/onboarding-service';
@@ -14,3 +13,4 @@ export * from '@extension-base/services/cron-service';
 export * from '@extension-base/services/subscription-service';
 export * from '@extension-base/services/scam-service';
 export * from '@extension-base/services/prices-service';
+export * from '@extension-base/services/timeout-service';

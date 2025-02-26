@@ -53,24 +53,22 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { SelectedWallet, GetAssetPrice, NetworkParams } from '@/store';
-import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import type { NetworkParams } from '@/stores';
+import type { TokenGroup } from '@extension-base/background/types/types';
 import { cut } from '@/helpers';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { useNetworksStore } from '@/stores/networks';
+import { useAccountsStore } from '@/stores/accounts';
 
 @Component
 export default class Payee extends Vue {
+  networksStore = useNetworksStore();
+  accountsStore = useAccountsStore();
+
   @Prop({ type: Number }) step!: number;
   @Prop({ type: String }) fee!: string;
   @Prop({ type: Object }) stakingCurrency!: TokenGroup;
   @Prop({ type: Object }) stakingNetwork!: NetworkParams;
   @PropSync('payoutAddress', { type: String }) syncedPayoutAddress!: string;
-  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
-  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get payeeName() {
     return this.stakingNetwork.payeeName;
@@ -89,23 +87,19 @@ export default class Payee extends Vue {
   }
 
   get accountNameCut() {
-    return cut(this.selectedWallet.name);
-  }
-
-  get filteredWallets() {
-    return this.wallets.filter(({ active }) => !active);
+    return cut(this.accountsStore.selectedWallet.name);
   }
 
   get stakingAssetPrice() {
     const priceId = this.stakingCurrency?.priceId ?? '';
 
-    return this.getAssetPrice(priceId).price;
+    return this.networksStore.getAssetPrice(priceId).price;
   }
 
   get valueString() {
     const value = +this.fee * this.stakingAssetPrice;
 
-    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
+    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
   }
 
   setPayoutAddress(value = '') {

@@ -28,7 +28,7 @@ declare module 'vue' {
     InformationBlock: typeof import('@/components/InformationBlock.vue')['InformationBlock'];
     InfoRow: typeof import('@/components/InfoRow.vue')['InfoRow'];
     FInput: typeof import('@/components/FInput.vue')['Input'];
-    Lazy: typeof import('@/components/Lazy.vue')['Lazy'];
+    LazyRender: typeof import('@/components/LazyRender.vue')['LazyRender'];
     Link: typeof import('@/components/FLink.vue')['Link'];
     Loader: typeof import('@/components/Loader.vue')['Loader'];
     Loading: typeof import('@/components/Loading.vue')['Loading'];

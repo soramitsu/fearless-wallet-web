@@ -30,7 +30,9 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'FL_WEB_ARBISCAN_API_KEY', variable: 'FL_WEB_ARBISCAN_API_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_WEB_SNOWTRACE_API_KEY', variable: 'FL_WEB_SNOWTRACE_API_KEY'],
     [$class: 'StringBinding', credentialsId: 'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY', variable: 'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY'],
-    [$class: 'StringBinding', credentialsId: 'FL_OKLINK_API_KEY', variable: 'VUE_APP_FL_WEB_X1_TESTNET_API_KEY']
+    [$class: 'StringBinding', credentialsId: 'FL_OKLINK_API_KEY', variable: 'VUE_APP_FL_WEB_X1_TESTNET_API_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_WEB_TON_API_KEY', variable: 'FL_WEB_TON_API_KEY'],
+    [$class: 'StringBinding', credentialsId: 'FL_DWELLIR_API_KEY', variable: 'FL_DWELLIR_API_KEY']
 ]
 
 
@@ -66,6 +68,20 @@ def pipeline = new org.js.AppArtifactsPipeline(
     downstreamJobParams:        [
         [$class: 'StringParameterValue', name: 'targetBranch', value: env.BRANCH_NAME],
         [$class: 'StringParameterValue', name: 'typeTest', value: 'tests:fearless-smoke']
-    ]
+    ],
+    dockerImageName:            'fearless/wallet-web',
+    dockerRegistryCred:         'bot-fearless-rw',
+    buildDockerImage:           'build-tools/node:20-alpine',
+    webPreBuildCmds:            ['corepack enable && yarn set version 3.4.1 && yarn install'],
+    k8sPrDeploy:                true,
+    vaultPrPath:                "argocd-cc/src/charts/fearless/wallet-web/environments/tachi/",
+    vaultUser:                  "fearless-rw",
+    vaultCredId:                "fearlessVaultCreds",
+    valuesDestPath:             "argocd-cc/src/charts/fearless/wallet-web/",
+    devValuesPath:              "dev/dev/",
+    initialSecretName:          "fearless-dev-wallet-web-wallet-web-web-eso-base",
+    initialNameSpace:           "fearless-dev-web",
+    targetNameSpace:            "fearless-${env.CHANGE_ID}-web",
+    targetSecretName:           "fearless-${env.CHANGE_ID}-wallet-web-pr-wallet-web-eso-base"
 )
 pipeline.runPipeline()

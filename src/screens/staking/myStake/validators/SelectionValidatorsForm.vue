@@ -43,7 +43,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { SelectionValidator } from '@/interfaces';
-import type { NetworkParams } from '@/store';
+import type { NetworkParams } from '@/stores';
 import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
 import SuggestedValidatorDisclaimer from '@/screens/staking/myStake/validators/SuggestedValidatorDisclaimer.vue';
 import OfferValidators from '@/screens/staking/myStake/validators/OfferValidators.vue';

@@ -3,9 +3,9 @@ import { storage } from '@extension-base/stores/Storage';
 import { Subject } from 'rxjs';
 import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
 import { type GetBalancesProps } from '../subscription-service';
+import { TonBalance } from '../ton-balance/TonBalance';
 import SubstrateBalanceService from './SubstrateBalanceService';
 import EvmBalanceService from './EvmBalanceService';
-import { TonBalanceService } from './TonBalanceService';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type {
@@ -24,14 +24,14 @@ import { type RelayChainName, WalletEcosystem, type NetworkName } from '@/interf
 export default class BalanceService {
   substrateBalanceService: SubstrateBalanceService;
   evmBalanceService: EvmBalanceService;
-  tonBalanceService: TonBalanceService;
+  tonBalanceService: TonBalance;
   balanceMap: BalanceMap = {};
   balanceSubject = new Subject<BalanceJson>();
 
   constructor(private state: State) {
     this.substrateBalanceService = new SubstrateBalanceService(state);
     this.evmBalanceService = new EvmBalanceService(state);
-    this.tonBalanceService = new TonBalanceService(state);
+    this.tonBalanceService = new TonBalance(state);
   }
 
   getAccountBalance(address: string) {

@@ -23,7 +23,6 @@ import {
 } from '@extension-base/services';
 import { api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
-import BalanceService from '@extension-base/services/balance-service';
 import axios from 'axios';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
 import { KeyringLockService } from '@extension-base/services/keyring-service/KeyringLock';
@@ -48,10 +47,8 @@ import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
-import { WalletEcosystem } from '@/interfaces';
-import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
+import BalanceService from '@/extension/background/extension-base/src/services/balance';
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
-import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
 

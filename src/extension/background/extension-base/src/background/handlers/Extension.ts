@@ -38,9 +38,9 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
+import { type MakeCrossChainProps } from '../../api/substrate/types';
 import { EXTENSION_URL } from '../../const';
 import { makeTonTransfer, MAX_TON_FEE } from '../../api/ton/transfer';
-import type { MakeCrossChainProps } from '../../api/substrate/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import type { EvmRequests, EvmRequestsSubjectPayload } from '@extension-base/services/request-service/types';
 import type {
@@ -143,7 +143,6 @@ import {
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import { isSameString, isTonNetwork } from '@/helpers';
-import { IS_PRODUCTION } from '@/consts/global';
 
 function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
   return (value as SignerPayloadJSON).genesisHash !== undefined;
@@ -156,23 +155,6 @@ export default class Extension extends FWExtensionBase {
 
   private cancelSubscription(id: string): boolean {
     return this.state.subscriptionService.cancelSubscription(id);
-  }
-
-  async accountsCreate({ suri, type, meta, walletEcosystem }: RequestAccountCreateSuri): Promise<string> {
-    const address = await this.state.keyringService.addAccount(
-      suri,
-      { ...meta, isMobile: false },
-      walletEcosystem,
-      type
-    );
-
-    if (!isEthereumAddress(address)) {
-      this.state.updateCurrentAccount({ address, walletEcosystem });
-
-      if (IS_PRODUCTION) this.state.balanceService.tonBalanceService.fetchJettonInfo();
-    }
-
-    return address;
   }
 
   async accountsForget({ address, type }: RequestAccountForget): Promise<boolean> {
@@ -225,6 +207,19 @@ export default class Extension extends FWExtensionBase {
     this.state.cleanupDeletedAccount(address);
 
     return true;
+  }
+
+  async accountsCreate({ suri, type, meta, walletEcosystem }: RequestAccountCreateSuri): Promise<string> {
+    const address = await this.state.keyringService.addAccount(
+      suri,
+      { ...meta, isMobile: false },
+      walletEcosystem,
+      type
+    );
+
+    if (!isEthereumAddress(address)) this.state.updateCurrentAccount({ address, walletEcosystem });
+
+    return address;
   }
 
   accountsValidatePassword({ password }: RequestAccountValidate): boolean {
@@ -1499,14 +1494,10 @@ export default class Extension extends FWExtensionBase {
     return this.state.walletConnectDappService.initPairing();
   }
 
-  unlockKeyring(request: RequestUnlockExtension): boolean {
+  changeMasterPassword(request: RequestChangePassword): boolean {
     this.state.keyringLockService.setExtensionAutoLockTimeout();
 
-    const isSuccess = this.state.keyringService.unlockKeyring(request as RequestUnlockExtension);
-
-    if (IS_PRODUCTION) this.state.balanceService.tonBalanceService.fetchJettonInfo();
-
-    return isSuccess;
+    return this.state.keyringService.changeMasterPassword(request as RequestChangePassword);
   }
 
   lockKeyring(skipCheck: boolean): boolean {
@@ -1517,10 +1508,12 @@ export default class Extension extends FWExtensionBase {
     return this.state.keyringService.lockKeyring();
   }
 
-  changeMasterPassword(request: RequestChangePassword): boolean {
+  unlockKeyring(request: RequestUnlockExtension): boolean {
     this.state.keyringLockService.setExtensionAutoLockTimeout();
 
-    return this.state.keyringService.changeMasterPassword(request as RequestChangePassword);
+    const isSuccess = this.state.keyringService.unlockKeyring(request as RequestUnlockExtension);
+
+    return isSuccess;
   }
 
   async handle<TMessageType extends MessageTypes>(

@@ -47,6 +47,7 @@ import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
+import { WalletEcosystem } from '@/interfaces';
 import BalanceService from '@/extension/background/extension-base/src/services/balance';
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';

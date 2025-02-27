@@ -19,12 +19,6 @@ export default class Eip155RequestHandler {
     this.requestService = requestService;
   }
 
-  checkAccount(address: string, accounts: string[]) {
-    if (!accounts.find((account) => isSameAddress(account, address))) {
-      throw new Error(getSdkError('UNSUPPORTED_ACCOUNTS').message + ' ' + address);
-    }
-  }
-
   private handleError(topic: string, id: number, e: unknown) {
     let message = (e as Error).message;
 
@@ -97,14 +91,22 @@ export default class Eip155RequestHandler {
           });
       };
 
-      if (!chainState.active)
+      if (chainState.active) createRequest();
+      else
         this.state
           .setActiveNetworks(networkJson.name)
           .then(createRequest)
           .catch(() => {
             throw new Error(getSdkError('USER_REJECTED').message + ' Can not active chain: ' + networkJson.name);
           });
-      else createRequest();
-    } else throw Error(getSdkError('INVALID_METHOD').message + ' ' + method);
+    } else {
+      throw Error(getSdkError('INVALID_METHOD').message + ' ' + method);
+    }
+  }
+
+  checkAccount(address: string, accounts: string[]) {
+    if (!accounts.find((account) => isSameAddress(account, address))) {
+      throw new Error(getSdkError('UNSUPPORTED_ACCOUNTS').message + ' ' + address);
+    }
   }
 }

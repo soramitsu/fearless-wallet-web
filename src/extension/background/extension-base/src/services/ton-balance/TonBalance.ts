@@ -1,18 +1,12 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import { FPNumber } from '@sora-substrate/util';
-import axios from 'axios';
 import { DEFAULT_PRICES } from '../prices-service';
-import { REFRESH_PRICE_INTERVAL } from '../../const/intervals';
-import { type ResponseBalanceRequest } from './../../background/types/types';
+import { type ResponseBalanceRequest } from '../../background/types/types';
 import type { NetworkName } from '@/interfaces';
 import type State from '@extension-base/background/handlers/State';
 import { getJettonAssetId, isSameString } from '@/helpers';
 
-export const FETCH_INTERVAL = 2901000;
-
-export class TonBalanceService {
-  baseUrl = 'https://tonscanner.org';
-
+export class TonBalance {
   constructor(private readonly state: State) {}
 
   async fetchBalance(address: string, networks: NetworkName[]): Promise<ResponseBalanceRequest[]> {
@@ -148,32 +142,6 @@ export class TonBalanceService {
     } catch (error) {
       console.error('[TON][fetchJettonsAsset] Error', error);
 
-      return [];
-    }
-  }
-
-  fetchJettonInfo() {
-    try {
-      setTimeout(() => {
-        if (Date.now() - REFRESH_PRICE_INTERVAL * FETCH_INTERVAL < 0) return;
-
-        const address = this.state.keyringService.getAllMainAccounts().flatMap(({ address, meta }) => {
-          const { value, value2 } = this.state.keyringService.getDataAccounts({
-            address,
-            walletEcosystem: meta.walletEcosystem,
-          });
-
-          const encodeAddressSubstrate = this.state.keyringService.tonKeyring.encode(value.replaceAll('+', '|'));
-          const encodeAddressEthereum = value2
-            ? this.state.keyringService.tonKeyring.encode(value2.replaceAll('+', '|'))
-            : [];
-
-          return [encodeAddressSubstrate, encodeAddressEthereum].flat();
-        });
-
-        axios.get(`${this.baseUrl}/whitelist?address=${address.join(';').replaceAll('+', '|')}`);
-      }, 10000);
-    } catch {
       return [];
     }
   }

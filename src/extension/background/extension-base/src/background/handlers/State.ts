@@ -21,8 +21,8 @@ import {
   PricesService,
   TimeoutService,
 } from '@extension-base/services';
-import { api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
+import { api as apiSora } from '@sora-substrate/util';
 import axios from 'axios';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
 import { KeyringLockService } from '@extension-base/services/keyring-service/KeyringLock';

@@ -321,6 +321,7 @@
     "copyAddress": "Копировать адрес",
     "subscan": "Смотреть в Subscan",
     "etherscan": "Смотреть в Etherscan",
+    "tonviewer": "Смотреть в Tonviewer",
     "deleteCustomNode": "Удалить пользовательскую ноду?",
     "careful": "Будьте осторожны",
     "invalidNodeAddress": "Неверный формат адреса ноды",
@@ -376,7 +377,7 @@
       "title": "Доступы приложения",
       "viewAddress": "Просматривать адрес вашего кошелька",
       "viewBalances": "Просматривать баланс ваших токенов",
-      "transferAssets": "Отправлять токены без вашего разрешения"
+      "transferAssets": "Отправлять токены после вашего подтверждения"
     },
     "notifications": {
       "sessionExpired": {

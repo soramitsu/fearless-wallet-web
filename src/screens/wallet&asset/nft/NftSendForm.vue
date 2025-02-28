@@ -65,7 +65,7 @@
 
         <div v-else-if="popupControls.showMyWallets">
           <WalletInfo
-            v-for="{ name, address, ethereumAddress, isMobile } in filteredWallets"
+            v-for="{ name, address, ethereumAddress, isMobile } in acountsEcosystem"
             :key="ethereumAddress"
             :name="name"
             :isSelected="getStatusWallet(ethereumAddress)"
@@ -150,14 +150,13 @@ const collection = computed(() => nfts.value.find((nft) => nft.address === contr
 
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value));
-const wallets = computed(() => accountsStore.accounts);
 const selectedWallet = computed(() => accountsStore.selectedWallet);
 const image = computed(() => nft.value?.image ?? require('@/assets/fearless-logo-animated.gif'));
 
-const filteredWallets = computed(() =>
-  wallets.value.filter(({ active, ethereumAddress }) => !active && ethereumAddress)
+const acountsEcosystem = computed(() =>
+  accountsStore.acountsEcosystem.filter(({ ethereumAddress }) => !!ethereumAddress)
 );
-const showMyWalletsButton = computed(() => filteredWallets.value.length !== 0);
+const showMyWalletsButton = computed(() => acountsEcosystem.value.length !== 0);
 const recipientCut = computed(() => cut(formInfo.to));
 const network = computed(() => nft.value?.network ?? '');
 

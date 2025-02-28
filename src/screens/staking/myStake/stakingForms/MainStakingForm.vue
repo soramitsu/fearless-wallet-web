@@ -26,7 +26,7 @@
 
         <div v-else-if="showMyWallets">
           <WalletInfo
-            v-for="({ name, address, ethereumAddress, isMobile }, index) in filteredWallets"
+            v-for="({ name, address, ethereumAddress, isMobile }, index) in acountsEcosystem"
             :key="name + index"
             :name="name"
             :isSelected="getStatusWallet(address, ethereumAddress)"
@@ -237,7 +237,7 @@ export default class MainStakingForm extends Vue {
   }
 
   get showMyWalletsButton() {
-    return this.filteredWallets.length !== 0;
+    return this.acountsEcosystem.length !== 0;
   }
 
   get showBtn() {
@@ -260,7 +260,9 @@ export default class MainStakingForm extends Vue {
         (this.payoutAddress !== '' && !this.isValidPayoutAddress)
       )
         return this.$t('accounts.invalidAccountAddress');
-    } else if (!this.isValidAmountAsset)
+    }
+
+    if (!this.isValidAmountAsset)
       return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
 
     return 'common.confirm';
@@ -308,10 +310,10 @@ export default class MainStakingForm extends Vue {
     return this.step === 1;
   }
 
-  get filteredWallets() {
-    if (this.isPayee || this.isControllerAccount) return this.accountsStore.accounts;
+  get acountsEcosystem() {
+    if (this.isPayee || this.isControllerAccount) return this.accountsStore.allAcountsEcosystem;
 
-    return this.accountsStore.accounts.filter(({ active }) => !active);
+    return this.accountsStore.acountsEcosystem;
   }
 
   get isPayee() {
@@ -332,7 +334,7 @@ export default class MainStakingForm extends Vue {
 
   get confirmBtnDisabled() {
     if (this.isControllerAccount) {
-      if (this.step === 2) return !this.isValidController || !this.isValidControllerAddress;
+      if (this.step === 2) return !this.isValidController || !this.isValidControllerAddress || !this.isValidAmountAsset;
 
       return false;
     }

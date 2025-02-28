@@ -1,113 +1,115 @@
 <template>
   <AboveForm header="Details" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="details">
-      <div class="descriptions">
-        <div v-if="!isSora && !!extrinsicHash" class="item" data-testid="extrinsicHashLabel">
-          Extrinsic Hash
+      <Scroll>
+        <div class="descriptions">
+          <div v-if="!isSora && !!extrinsicHash" class="item" data-testid="extrinsicHashLabel">
+            Extrinsic Hash
 
-          <div class="item-value item-icon" data-testid="extrinsicHash">
-            {{ displayExtrinsicHash }}
+            <div class="item-value item-icon" data-testid="extrinsicHash">
+              {{ displayExtrinsicHash }}
 
-            <Icon icon="copy" className="copy" data-testid="copyBtn" @click="copy(extrinsicHash)" />
-          </div>
-        </div>
-
-        <div v-if="!!blockHash" class="item" data-testid="extrinsicHashLabel">
-          Block Hash
-
-          <div class="item-value item-icon" data-testid="extrinsicHash">
-            {{ displayBlockHash }}
-
-            <Icon icon="copy" className="copy" data-testid="copyBtn" @click="copy(blockHash)" />
-          </div>
-        </div>
-
-        <template v-if="isTransfer">
-          <div class="item">
-            From
-
-            <div class="item-value item-icon">
-              <Identicon v-if="!isTon" :address="fromAddress" />
-
-              {{ displayFromAddress }}
-
-              <Icon icon="copy" className="copy" @click="copy(fromAddress)" />
+              <Icon icon="copy" className="copy" data-testid="copyBtn" @click="copy(extrinsicHash)" />
             </div>
           </div>
 
-          <div class="item">
-            To
+          <div v-if="!!blockHash" class="item" data-testid="extrinsicHashLabel">
+            Block Hash
 
-            <div class="item-value item-icon">
-              <Identicon v-if="!isTon" :address="toAddress" />
+            <div class="item-value item-icon" data-testid="extrinsicHash">
+              {{ displayBlockHash }}
 
-              {{ displayToAddress }}
-
-              <Icon icon="copy" className="copy" @click="copy(toAddress)" />
+              <Icon icon="copy" className="copy" data-testid="copyBtn" @click="copy(blockHash)" />
             </div>
           </div>
-        </template>
 
-        <div v-if="isReward" class="item">
-          Validator
+          <template v-if="isTransfer">
+            <div class="item">
+              From
 
-          <div class="item-value item-icon">
-            <Identicon :address="validator" />
+              <div class="item-value item-icon">
+                <Identicon v-if="!isTon" :address="fromAddress" />
 
-            {{ displayValidator }}
+                {{ displayFromAddress }}
 
-            <Icon icon="copy" className="copy" @click="copy(validator)" />
+                <Icon icon="copy" className="copy" @click="copy(fromAddress)" />
+              </div>
+            </div>
+
+            <div class="item">
+              To
+
+              <div class="item-value item-icon">
+                <Identicon v-if="!isTon" :address="toAddress" />
+
+                {{ displayToAddress }}
+
+                <Icon icon="copy" className="copy" @click="copy(toAddress)" />
+              </div>
+            </div>
+          </template>
+
+          <div v-if="isReward" class="item">
+            Validator
+
+            <div class="item-value item-icon">
+              <Identicon :address="validator" />
+
+              {{ displayValidator }}
+
+              <Icon icon="copy" className="copy" @click="copy(validator)" />
+            </div>
+          </div>
+
+          <div class="item" data-testid="statusLabel">
+            Status
+
+            <div :class="statusClasses" data-testid="statusValue">{{ statusText }}</div>
+          </div>
+
+          <div class="item" data-testid="dateLabel">
+            Date
+
+            <div class="item-value" data-testid="dateValue">{{ date }}</div>
+          </div>
+
+          <div v-if="isReward" class="item" data-testid="eraLabel">
+            Era
+
+            <div class="item-value" data-testid="eraValue">{{ era }}</div>
+          </div>
+
+          <div v-if="!!moduleType" class="item" data-testid="moduleLabel">
+            Module
+
+            <div class="item-value" data-testid="moduleValue">{{ moduleType }}</div>
+          </div>
+
+          <div v-if="!!method" class="item" data-testid="methodLabel">
+            Method
+
+            <div class="item-value" data-testid="methodValue">{{ method }}</div>
+          </div>
+
+          <div v-if="showAmount" class="item" data-testid="amountLabel">
+            Amount
+
+            <div class="item-value" data-testid="amountValue">{{ value }}</div>
+          </div>
+
+          <div v-if="showTargetAmount" class="item" data-testid="amountLabel">
+            Target Amount
+
+            <div class="item-value" data-testid="amountValue">{{ targetValue }}</div>
+          </div>
+
+          <div v-if="showFee" class="item" data-testid="feeLabel">
+            Transfer fee
+
+            <div class="item-value" data-testid="feeValue">{{ transferFee }}</div>
           </div>
         </div>
-
-        <div class="item" data-testid="statusLabel">
-          Status
-
-          <div :class="statusClasses" data-testid="statusValue">{{ statusText }}</div>
-        </div>
-
-        <div class="item" data-testid="dateLabel">
-          Date
-
-          <div class="item-value" data-testid="dateValue">{{ date }}</div>
-        </div>
-
-        <div v-if="isReward" class="item" data-testid="eraLabel">
-          Era
-
-          <div class="item-value" data-testid="eraValue">{{ era }}</div>
-        </div>
-
-        <div v-if="!!moduleType" class="item" data-testid="moduleLabel">
-          Module
-
-          <div class="item-value" data-testid="moduleValue">{{ moduleType }}</div>
-        </div>
-
-        <div v-if="!!method" class="item" data-testid="methodLabel">
-          Method
-
-          <div class="item-value" data-testid="methodValue">{{ method }}</div>
-        </div>
-
-        <div v-if="showAmount" class="item" data-testid="amountLabel">
-          Amount
-
-          <div class="item-value" data-testid="amountValue">{{ value }}</div>
-        </div>
-
-        <div v-if="showTargetAmount" class="item" data-testid="amountLabel">
-          Target Amount
-
-          <div class="item-value" data-testid="amountValue">{{ targetValue }}</div>
-        </div>
-
-        <div v-if="showFee" class="item" data-testid="feeLabel">
-          Transfer fee
-
-          <div class="item-value" data-testid="feeValue">{{ transferFee }}</div>
-        </div>
-      </div>
+      </Scroll>
 
       <FButton v-if="haveExplorers" size="big" :text="buttonText" @click="openExplorer" />
     </div>
@@ -366,7 +368,7 @@ export default class HistoryDetailsForm extends Vue {
 
     const url = this.explorerUrl
       .replace('{type}', 'extrinsic')
-      .replace('{value}', this.historyElement?.blockHash ?? '');
+      .replace('{value}', this.historyElement?.extrinsicHash ?? '');
 
     window.open(url);
   }

@@ -9,9 +9,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
-import { state } from '@extension-base/background/handlers';
 import { keyring } from '@subwallet/ui-keyring';
-import MigrationService from '@extension-base/services/migration-service';
 import { initStorage } from '@extension-base/stores/Storage';
 import { ALL_NETWORKS } from './consts/networks';
 import { useExtensionStore } from './stores/extension';
@@ -19,7 +17,7 @@ import { useNetworksStore } from './stores/networks';
 import { useAccountsStore } from './stores/accounts';
 import { Components } from './router/routes';
 import { IS_POPUP } from './consts/globalClient';
-import type { AccountJson, PriceJson } from '@extension-base/background/types/types';
+import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import { setTitle } from '@/helpers/only-web';
 import {
   soraFeesSubscribe,
@@ -30,7 +28,6 @@ import {
   subscribePrice,
   lockExtension,
   subscribeSelectedNetworks,
-  updateCurrentNetwork,
 } from '@/extension/messaging';
 import { IS_EXTENSION } from '@/consts/global';
 import { getNftSubscribe } from '@/extension/messaging/nfts';
@@ -97,23 +94,27 @@ export default class App extends Vue {
   }
 
   async setupBalance() {
-    const balance = await subscribeBalance((balanceUpdates) => {
+    const callback = (balance: BalanceJson) => {
       this.accountsStore.setIsBalanceLoading(false);
-      this.accountsStore.setBalance(balanceUpdates);
-    });
+      this.accountsStore.setBalance(balance);
+    };
 
-    this.accountsStore.setBalance(balance);
+    const balance = await subscribeBalance(callback);
+
+    callback(balance);
   }
 
   async setupWeb() {
     await cryptoWaitReady()
       .then(() => {
-        state.keyringService.loadAll();
-        state.eventService.emit('crypto.ready', true);
+        // TODO send message to SW, dont use import state, MigrationService
+
+        // state.keyringService.loadAll();
+        // state.eventService.emit('crypto.ready', true);
 
         keyring.restoreKeyringPassword();
 
-        MigrationService.start();
+        // MigrationService.start();
       })
       .catch((error) => console.error('initialization failed', error));
 
@@ -152,25 +153,25 @@ export default class App extends Vue {
   onAccountUpdate(accounts: AccountJson[]) {
     const selectedAccount = accounts.find((account) => account.active);
 
+    // если новый аккаунт отличается и мы не нахоимся на форме добавления аккаунта, тогда делаем редирект
+    // это любой кейс смены аккаунта за исключением выше описанного
+    if (
+      selectedAccount?.address !== this.accountsStore.selectedWallet.address &&
+      this.$route.name !== Components.AddWallet
+    ) {
+      this.$router.push({ name: Components.Wallet }).catch(() => {});
+    }
+
     this.accountsStore.setAccounts({ accounts });
 
     if (!selectedAccount) return;
 
     this.accountsStore.setSelectedWallet(selectedAccount);
-
-    if (this.networksStore.networks.length === 1) {
-      updateCurrentNetwork(this.networksStore.networks[0].name);
-
-      this.accountsStore.setSelectedNetwork(this.networksStore.networks[0].name);
-    } else this.accountsStore.setSelectedNetwork(selectedAccount?.network ?? ALL_NETWORKS);
-
-    if (selectedAccount?.address !== this.accountsStore.selectedWallet.address) {
-      this.$router.push({ name: Components.Wallet }).catch(() => {});
-    }
+    this.accountsStore.setSelectedNetwork(selectedAccount?.network ?? ALL_NETWORKS);
   }
 
   async setupWallet() {
-    const accounts = await subscribeAccounts((accounts) => this.onAccountUpdate(accounts));
+    const accounts = await subscribeAccounts(this.onAccountUpdate);
 
     this.onAccountUpdate(accounts);
 

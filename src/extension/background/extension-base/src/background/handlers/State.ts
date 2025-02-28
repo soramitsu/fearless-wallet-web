@@ -23,7 +23,6 @@ import {
 } from '@extension-base/services';
 import { api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
-import BalanceService from '@extension-base/services/balance-service';
 import axios from 'axios';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
 import { KeyringLockService } from '@extension-base/services/keyring-service/KeyringLock';
@@ -48,13 +47,13 @@ import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
+import BalanceService from '@/extension/background/extension-base/src/services/balance';
 import { WalletEcosystem } from '@/interfaces';
 import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { URLS } from '@/consts/urls';
-import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS, TON_MAINNET } from '@/consts/networks';
+import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
-import { IS_PRODUCTION } from '@/consts/global';
 
 type Wallet = {
   address: string;
@@ -432,8 +431,8 @@ export default class State {
       this.keyringService.triggerWalletsSubscription(address, walletEcosystem);
 
       const activeValue =
-        walletEcosystem === WalletEcosystem.Ton && IS_PRODUCTION
-          ? TON_MAINNET
+        walletEcosystem === WalletEcosystem.Ton
+          ? 'Ton Mainnet'
           : this.networkService.selectedNetworks[address] ?? POPULAR_NETWORKS;
 
       if (isNew) this.setActiveNetworks(activeValue);
@@ -526,9 +525,7 @@ export default class State {
 
     if (isEthereumNet) return ethereumAddress;
 
-    const network = this.networkService.networksGithub.find(
-      ({ name }) => name.toLowerCase() === networkName.toLowerCase()
-    )!;
+    const network = this.networkService.networksGithub.find(({ name }) => isSameString(name, networkName))!;
 
     // the only case for try/catch
     // if the user used ethereum account instead of a substratum account(via json or private key)

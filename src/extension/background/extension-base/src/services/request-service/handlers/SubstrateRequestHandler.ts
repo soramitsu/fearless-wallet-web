@@ -1,6 +1,6 @@
 import { BehaviorSubject } from 'rxjs';
 import { logger as createLogger } from '@polkadot/util/logger';
-import { getId, isInternalRequest } from '@extension-base/utils';
+import { getId } from '@extension-base/utils';
 import type { Logger } from '@polkadot/util/types';
 import type {
   Resolver,
@@ -32,7 +32,6 @@ export class SubstrateRequestHandler {
       id,
       request,
       url,
-      isInternal: isInternalRequest(url),
     }));
   }
 

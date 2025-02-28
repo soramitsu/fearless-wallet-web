@@ -1,7 +1,6 @@
 import { getId } from '@extension-base/utils/utils';
 import { PORT_EXTENSION } from '@extension-base/defaults';
 import { chrome } from '@extension-base/utils/crossenv';
-import { handlers as handlersFunc } from '@extension-base/background/handlers';
 import type {
   MessageTypes,
   MessageTypesWithNoSubscriptions,
@@ -11,7 +10,6 @@ import type {
   ResponseTypes,
   SubscriptionMessageTypes,
   Port,
-  TransportRequestMessage,
 } from '@extension-base/background/types/types';
 import type { Message } from '@extension-base/types';
 import { IS_EXTENSION } from '@/consts/global';
@@ -25,7 +23,6 @@ interface Handler {
 type Handlers = Record<string, Handler>;
 
 let port: Port | undefined;
-let isPending = true;
 
 const handlers: Handlers = {};
 
@@ -88,21 +85,11 @@ function sendMessage<TMessageType extends MessageTypes>(
 
     handlers[id] = { reject, resolve, subscriber };
 
-    const notHaveServiceWorker = !('serviceWorker' in navigator) || isPending;
-
-    if (!IS_EXTENSION && notHaveServiceWorker) {
-      console.info('[worker] no worker go direct message');
-
-      handlersFunc({ id, message, request: request ?? {} } as TransportRequestMessage<MessageTypes>);
-    }
-
     if (IS_EXTENSION) port?.postMessage({ id, message, request: request ?? {} });
     else {
-      navigator.serviceWorker?.ready.then((registration) => {
-        isPending = false;
-
-        registration?.active?.postMessage({ id, message, request: request ?? {} });
-      });
+      navigator.serviceWorker?.ready.then((registration) =>
+        registration?.active?.postMessage({ id, message, request: request ?? {} })
+      );
     }
   });
 }

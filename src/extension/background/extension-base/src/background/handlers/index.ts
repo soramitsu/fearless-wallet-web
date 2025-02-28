@@ -12,10 +12,9 @@ export const tabs = new Tabs(state);
 
 export function handlers<TMessageType extends MessageTypes>(
   { id, message, request }: TransportRequestMessage<TMessageType>,
-  port?: Port,
-  extensionPortName = PORT_EXTENSION
+  port?: Port
 ): void {
-  const isExtension = !port || port?.name === extensionPortName;
+  const isExtension = !port || port?.name === PORT_EXTENSION;
 
   if (!port && IS_EXTENSION) return;
 

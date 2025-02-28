@@ -193,6 +193,7 @@ const backgroundClick = (event: CustomEvent) => {
   .popup-container {
     display: flex;
     flex-direction: column;
+    justify-content: center;
     position: relative;
     top: 0;
     min-height: 52px;

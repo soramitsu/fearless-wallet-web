@@ -16,9 +16,9 @@
           @click="setEcosystem('substrate')"
         />
 
-        <Icon icon="ethereum-ecosystem" class="ecosystem-img ethereum-img" />
+        <Icon icon="ethereum-ecosystem" class="ecosystem-img ethereum-img" :hover="false" />
 
-        <Icon icon="substrate-ecosystem" class="ecosystem-img substrate-img" />
+        <Icon icon="substrate-ecosystem" class="ecosystem-img substrate-img" :hover="false" />
       </div>
     </ContentForm>
 
@@ -26,7 +26,7 @@
       <div class="content-form-ecosystem">
         <div>{{ $t('welcome.ecosystemTon') }}</div>
 
-        <Icon icon="ton-ecosystem" class="ecosystem-img ton-img" />
+        <Icon icon="ton-ecosystem" class="ecosystem-img ton-img" :hover="false" />
 
         <FButton
           width="80px"

@@ -332,7 +332,7 @@
     "deleteCustomNode": "Delete custom node?",
     "careful": "Be careful",
     "invalidNodeAddress": "Invalid node address format",
-    "customNodeDuplicate": "You already have that node ",
+    "customNodeDuplicate": "You already have that node",
     "addNode": "Add node",
     "urlAddress": "Url address",
     "network": "Network",
@@ -385,7 +385,7 @@
       "title": "App permissions",
       "viewAddress": "View your wallet address",
       "viewBalances": "View your token balances",
-      "transferAssets": "Transfer your tokens without approval"
+      "transferAssets": "Transfer your tokens with your approval"
     },
     "notifications": {
       "sessionExpired": {

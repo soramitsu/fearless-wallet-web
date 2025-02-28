@@ -108,8 +108,9 @@ export default class SettingsPopup extends Vue {
 
   open(name: keyof typeof Components) {
     if (this.routeName !== name) {
-      if (this.isTonWallet) this.$router.push({ name: Components.Export });
-      else this.$router.push({ name: Components[name] });
+      if (this.isTonWallet && name === 'AccountSetting') {
+        this.$router.push({ name: Components.Export });
+      } else this.$router.push({ name: Components[name] });
     }
 
     this.$emit('handlerClose');

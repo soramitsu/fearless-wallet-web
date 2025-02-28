@@ -11,8 +11,9 @@
                 <h3 class="list__header">{{ $t('walletConnect.permissions.title') }}</h3>
                 <div class="list">
                   <div v-for="(item, index) in permissionList" class="list__item" :key="index">
-                    <Icon icon="check" className="permission-icon" :iconColor="item.iconColor" />
-                    <span>{{ item.text }}</span>
+                    <Icon icon="check" className="permission-icon" iconColor="success" />
+
+                    <span>{{ item }}</span>
                   </div>
                 </div>
               </ContentForm>
@@ -112,9 +113,9 @@ const notify = useNotify();
 const { t } = useI18n();
 
 const permissionList = [
-  { text: t('walletConnect.permissions.viewAddress'), iconColor: 'success' },
-  { text: t('walletConnect.permissions.viewBalances'), iconColor: 'success' },
-  { text: t('walletConnect.permissions.transferAssets'), iconColor: 'error' },
+  t('walletConnect.permissions.viewAddress'),
+  t('walletConnect.permissions.viewBalances'),
+  t('walletConnect.permissions.transferAssets'),
 ];
 
 const wallets = ref(accountsStore.accounts.filter((el) => el.ethereumAddress && !el.isMobile));

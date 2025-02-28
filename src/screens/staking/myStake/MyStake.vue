@@ -67,7 +67,7 @@
         </div>
       </div>
 
-      <ContentForm :height="0">
+      <ContentForm :height="450">
         <Scroll>
           <div class="content">
             <MyStakeSettings
@@ -424,65 +424,6 @@ export default class MyStake extends Vue {
     height: 100%;
     display: flex;
     flex-direction: column;
-
-    .about-stake {
-      display: grid;
-      grid-auto-columns: 247px;
-      grid-auto-rows: 105px;
-      text-transform: uppercase;
-
-      .block {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: center;
-        text-align: left;
-        padding: 10px 0 0 35px;
-      }
-
-      .label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-align: left;
-        color: $grayish-white;
-        margin-bottom: 5px;
-      }
-
-      .amount {
-        font-size: 1.25rem;
-        font-weight: 600;
-        margin-bottom: 5px;
-      }
-
-      .value {
-        font-size: 0.875em;
-        color: $grayish-white;
-      }
-
-      .one {
-        grid-column: 1;
-        grid-row: 1;
-        border-right: $default-border;
-        border-bottom: $default-border;
-      }
-
-      .two {
-        grid-column: 2;
-        grid-row: 1;
-        border-bottom: $default-border;
-      }
-
-      .three {
-        grid-column: 1;
-        grid-row: 2;
-        border-right: $default-border;
-      }
-
-      .four {
-        grid-column: 2;
-        grid-row: 2;
-      }
-    }
   }
 
   .action-buttons {

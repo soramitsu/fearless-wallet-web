@@ -86,5 +86,5 @@ export function handleResponse<TMessageType extends MessageTypes>(
 }
 
 export function initEvmProvider(): FWEvmProvider {
-  return new FearlessWalletEvmProvider(sendMessage);
+  return new FearlessWalletEvmProvider();
 }

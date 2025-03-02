@@ -4,7 +4,6 @@ import { MESSAGE_ORIGIN_CONTENT } from '@extension-base/defaults';
 import { enable, handleResponse, initEvmProvider, redirectIfPhishing } from '@extension-base/page';
 import { eip6963ProviderInfo } from '@extension-base/const';
 import type { FWEvmProvider } from '@extension-base/page/types';
-import type Injected from '@extension-base/page/Injected';
 import type { Message } from '@extension-base/types';
 import type { MessageTypes, TransportRequestMessage } from '@extension-base/background/types/types';
 import type { InjectedWindow } from '@/extension/entry/types';
@@ -16,7 +15,7 @@ const walletKey = 'fearless-wallet';
 win.injectedWeb3 = win.injectedWeb3 || {};
 
 class FearlessWalletPlaceholder {
-  provider: FWEvmProvider | undefined = undefined;
+  provider: FWEvmProvider | undefined = undefined; // TODO ???
   connected = false;
   isConnected = () => false;
 
@@ -130,15 +129,15 @@ if (!win.injectedWeb3[walletKey]) {
     enable: async (origin) => {
       await new Promise((resolve, reject) => {
         let retry = 0;
+
         const interval = setInterval(() => {
           if (++retry > 30) {
             clearInterval(interval);
+
             reject(new Error('Fearless Wallet provider not found'));
           }
 
-          if (!win.injectedWeb3[walletKey].isPlaceholder) {
-            resolve(clearInterval(interval));
-          }
+          if (!win.injectedWeb3[walletKey].isPlaceholder) resolve(clearInterval(interval));
         }, 100);
       });
 
@@ -165,13 +164,13 @@ win.fearlessWallet = new Proxy(new FearlessWalletPlaceholder(), {
 
 const announceProvider = () => {
   const detail = Object.freeze({
+    provider: win.fearlessWallet,
     info: {
       uuid: eip6963ProviderInfo.uuid,
       name: eip6963ProviderInfo.name,
       icon: eip6963ProviderInfo.icon,
       rdns: eip6963ProviderInfo.rdns,
     },
-    provider: win.fearlessWallet,
   });
 
   const event = new CustomEvent('eip6963:announceProvider', { detail });
@@ -184,28 +183,33 @@ win.addEventListener('eip6963:requestProvider', announceProvider);
 announceProvider();
 
 class Page {
-  private static inject() {
-    // small helper with the typescript types, just cast window
-    const windowInject = window as Window & InjectedWindow; // don't clobber the existing object, we will add it (or create as needed)
+  static async init() {
+    this.setMaxListeners();
+    this.injectEvm();
 
-    windowInject.injectedWeb3 = windowInject.injectedWeb3 || {}; // add our enable function
+    const gotRedirected = await redirectIfPhishing();
+
+    if (gotRedirected) return;
+
+    this.injectSubstrate();
+  }
+
+  static injectSubstrate() {
+    const windowInject = window as Window & InjectedWindow;
+
+    windowInject.injectedWeb3 = windowInject.injectedWeb3 || {};
 
     windowInject.injectedWeb3[walletKey] = {
-      enable: (origin: string): Promise<Injected> => enable(origin),
+      enable: (origin: string) => enable(origin),
       version: APP_VERSION,
     };
   }
 
-  // Inject EVM Provider
-  static injectEvmExtension(evmProvider: FWEvmProvider): void {
-    // small helper with the typescript types, just cast window
+  static injectEvm(): void {
+    const evmProvider = initEvmProvider();
     const windowInject = window as Window & InjectedWindow;
 
-    // add our enable function
-    if (windowInject.fearlessWallet)
-      // Provider has been initialized in proxy mode
-      windowInject.fearlessWallet.provider = evmProvider;
-    // Provider has been initialized in direct mode
+    if (windowInject.fearlessWallet) windowInject.fearlessWallet.provider = evmProvider;
     else windowInject.fearlessWallet = evmProvider;
 
     windowInject.dispatchEvent(new Event('fearlesswallet#initialized'));
@@ -219,23 +223,7 @@ class Page {
     });
   }
 
-  static init() {
-    this.setMaxListeners();
-
-    redirectIfPhishing()
-      .then((gotRedirected) => {
-        if (!gotRedirected) this.inject();
-      })
-      .catch((e) => {
-        console.warn(`Unable to determine if the site is in the phishing list: ${(e as Error).message}`);
-
-        this.inject();
-      });
-
-    this.injectEvmExtension(initEvmProvider());
-  }
-
-  private static setMaxListeners() {
+  static setMaxListeners() {
     win.addEventListener('message', ({ data, source }: Message): void => {
       // only allow messages from our window, by the loader
       if (source !== window || data.origin !== MESSAGE_ORIGIN_CONTENT) return;

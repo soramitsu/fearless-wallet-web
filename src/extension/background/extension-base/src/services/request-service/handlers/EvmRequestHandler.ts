@@ -15,25 +15,20 @@ export default class EvmRequestHandler {
     this.requestService = requestService;
   }
 
-  public get numWcSignRequest() {
+  get numWcSignRequest() {
     return Object.keys(this.wcRequests).length;
   }
 
-  public getSignWCRequest(id: string): WCSignRequest {
+  getSignWCRequest(id: string): WCSignRequest {
     return this.wcRequests[id];
   }
 
-  public getEvmSignRequest(id: string) {
+  getEvmSignRequest(id: string) {
     return this.evmRequests[id];
   }
 
-  public get allWcSignRequests(): WalletConnectTransactionRequest[] {
+  get allWcSignRequests(): WalletConnectTransactionRequest[] {
     return Object.values(this.wcRequests).map(({ request }): WalletConnectTransactionRequest => ({ ...request }));
-  }
-
-  private onIncomingRequest() {
-    this.requestService.updateIcon();
-    this.requestService.popupOpen();
   }
 
   onComplete(id: string, type: 'wcRequests' | 'evmRequests') {
@@ -42,27 +37,29 @@ export default class EvmRequestHandler {
     this.requestService.updateIcon(true);
 
     if (type === 'wcRequests') this.signWcSubject.next([...this.allWcSignRequests]);
-    else if (type === 'evmRequests') this.signEvmSubject.next(this[type]);
+    else if (type === 'evmRequests') this.signEvmSubject.next(this.evmRequests);
   }
 
-  public confirmSign(id: string, url: string, method: string, params: any): Promise<ResponseSigning> {
+  confirmSign(id: string, url: string, method: string, params: any): Promise<ResponseSigning> {
     const complete = () => this.onComplete(id, 'evmRequests');
     const values = this.signEvmSubject.getValue();
 
     return new Promise<ResponseSigning>((resolve, reject): void => {
       this.signEvmSubject.next({ ...values, [id]: { url, data: params, id } });
 
-      this.evmRequests[id] = { ...this.signComplete(id, complete, resolve, reject), url, method, data: params, id };
-      this.onIncomingRequest();
+      this.evmRequests[id] = { ...this.signComplete(complete, resolve, reject), url, method, data: params, id };
+
+      this.requestService.updateIcon();
+      this.requestService.popupOpen();
     });
   }
 
-  public onWCSign(request: WalletConnectTransactionRequest): Promise<ResponseSigning> {
+  onWCSign(request: WalletConnectTransactionRequest): Promise<ResponseSigning> {
     return new Promise((resolve, reject): void => {
       const complete = () => this.onComplete(request.topic, 'wcRequests');
 
       this.wcRequests[request.topic] = {
-        ...this.signComplete(request.topic, complete, resolve, reject),
+        ...this.signComplete(complete, resolve, reject),
         request,
       };
 
@@ -76,7 +73,6 @@ export default class EvmRequestHandler {
   }
 
   private signComplete = (
-    id: string,
     complete: () => void,
     resolve: (result: ResponseSigning) => void,
     reject: (error: Error) => void

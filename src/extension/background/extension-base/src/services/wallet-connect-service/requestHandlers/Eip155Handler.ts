@@ -6,18 +6,9 @@ import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-
 import type { SignClientTypes } from '@walletconnect/types';
 import type { WalletConnectService } from '@extension-base/services/wallet-connect-service';
 import type State from '@extension-base/background/handlers/State';
-import type { RequestService } from '@extension-base/services/request-service';
 
-export default class Eip155RequestHandler {
-  private readonly walletConnectService: WalletConnectService;
-  private readonly state: State;
-  private readonly requestService: RequestService;
-
-  constructor(state: State, walletConnectService: WalletConnectService, requestService: RequestService) {
-    this.state = state;
-    this.walletConnectService = walletConnectService;
-    this.requestService = requestService;
-  }
+export class Eip155RequestHandler {
+  constructor(public state: State, public walletConnectService: WalletConnectService) {}
 
   private handleError(topic: string, id: number, e: unknown) {
     let message = (e as Error).message;
@@ -55,10 +46,11 @@ export default class Eip155RequestHandler {
 
       this.checkAccount(address, sessionAccounts);
 
-      this.requestService.evmRequestHandler
+      this.state.requestService.evmRequestHandler
         .onWCSign(requestEvent)
         .then(async ({ payload }) => {
           const response = formatJsonRpcResult(id, payload);
+
           this.walletConnectService.responseRequest({ topic, response });
         })
         .catch((e: any) => this.handleError(topic, id, e));
@@ -78,27 +70,26 @@ export default class Eip155RequestHandler {
       const chainState = this.state.networkService.networkMap[networkJson.name];
 
       const createRequest = () => {
-        this.requestService.evmRequestHandler
+        this.state.requestService.evmRequestHandler
           .onWCSign(requestEvent)
-          .then(async ({ payload }) => {
-            await this.walletConnectService.responseRequest({
+          .then(async ({ payload }) =>
+            this.walletConnectService.responseRequest({
               topic,
               response: formatJsonRpcResult(id, payload),
-            });
-          })
-          .catch((e) => {
-            this.handleError(topic, id, e);
-          });
+            })
+          )
+          .catch((e) => this.handleError(topic, id, e));
       };
 
       if (chainState.active) createRequest();
-      else
+      else {
         this.state
           .setActiveNetworks(networkJson.name)
           .then(createRequest)
           .catch(() => {
             throw new Error(getSdkError('USER_REJECTED').message + ' Can not active chain: ' + networkJson.name);
           });
+      }
     } else {
       throw Error(getSdkError('INVALID_METHOD').message + ' ' + method);
     }

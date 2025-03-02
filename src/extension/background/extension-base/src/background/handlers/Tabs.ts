@@ -3,14 +3,11 @@ import { chrome } from '@extension-base/utils/crossenv';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import { type RequestArguments } from '@json-rpc-tools/utils';
-import { toBeHex, type JsonRpcPayload } from 'ethers';
-import { type RequestEvmProviderSend, type EvmEventType } from '@extension-base/page/types';
-import { CRON_GET_API_MAP_STATUS } from '@extension-base/const/intervals';
+import { type RequestEvmProviderSend } from '@extension-base/page/types';
+import { EipService } from '../../services/eip-service';
 import type State from '@extension-base/background/handlers/State';
 import type {
   AccountSub,
-  EvmAppState,
-  EvmProvider,
   MessageTypes,
   Port,
   RequestAccountUnsubscribe,
@@ -38,16 +35,13 @@ import {
   transformAccounts,
   transformAddresses,
 } from '@/extension/background/extension-base/src/background/helpers/accounts';
-type EvmEmitterCallback = (eventName: EvmEventType, payload: unknown) => void;
 
 export default class Tabs {
-  accountSubs: Record<string, AccountSub>;
-  state: State;
-  private evmEventEmitterMap: Record<string, Record<string, EvmEmitterCallback>> = {};
+  accountSubs: Record<string, AccountSub> = {};
+  eipService: EipService;
 
-  constructor(state: State) {
-    this.state = state;
-    this.accountSubs = {};
+  constructor(public state: State) {
+    this.eipService = new EipService(state);
   }
 
   async filterForAuthorizedAccounts(accounts: InjectedAccount[], url: string): Promise<InjectedAccount[]> {
@@ -63,10 +57,6 @@ export default class Tabs {
         : // if no authorizedAccounts and isAllowed return all - these are old converted urls
           auth.isAllowed
     );
-  }
-
-  authorize(url: string, request: RequestAuthorizeTab): Promise<boolean> {
-    return this.state.requestService.authorizeUrl(url, request);
   }
 
   async accountsListAuthorized(url: string): Promise<InjectedAccount[]> {
@@ -158,7 +148,7 @@ export default class Tabs {
   }
 
   metadataList(): InjectedMetadataKnown[] {
-    return this.state.knownMetadata.map(({ genesisHash, specVersion }) => ({
+    return this.state.requestService.knownMetadata.map(({ genesisHash, specVersion }) => ({
       genesisHash,
       specVersion,
     }));
@@ -211,332 +201,6 @@ export default class Tabs {
     return await checkIfDenied(url);
   }
 
-  async getEvmState(url: string): Promise<EvmAppState> {
-    let defaultChain: string | undefined;
-
-    if (url) {
-      const authInfo = await this.state.getAuthInfo(url);
-
-      if (authInfo?.currentEvmNetworkKey) defaultChain = authInfo?.currentEvmNetworkKey;
-    }
-
-    const currentEvmNetwork = this.state.requestService.getEvmNetworkInfo({
-      defaultChain,
-      url,
-    });
-
-    const api = this.state.networkService.evmApiHandler.api[currentEvmNetwork?.name.toLowerCase() ?? ''].api;
-
-    return {
-      networkKey: currentEvmNetwork?.name,
-      chainId: toBeHex(BigInt(currentEvmNetwork?.chainId || 0)),
-      web3: api,
-    };
-  }
-
-  private async getEvmProvider(url: string): Promise<EvmProvider | undefined> {
-    const evmState = await this.getEvmState(url);
-
-    return evmState.web3;
-  }
-
-  private async evmSubscribeEvents(url: string, id: string, port: chrome.runtime.Port) {
-    // This method will be called after DApp request connect to extension
-    const cb = this.state.subscriptionService.createSubscription<'evm(events.subscribe)'>(id, port);
-
-    const emitEvent = (eventName: EvmEventType, payload: any) => {
-      cb({ type: eventName, payload });
-    };
-
-    // Detect accounts changed
-    let currentAccountList = await this.getEvmCurrentAccount(url);
-
-    const onCurrentAccountChanged = async () => {
-      const newAccountList = await this.getEvmCurrentAccount(url);
-
-      // Compare to void looping reload
-      if (JSON.stringify(currentAccountList) !== JSON.stringify(newAccountList)) {
-        emitEvent('accountsChanged', newAccountList);
-
-        currentAccountList = newAccountList;
-      }
-    };
-
-    const accountListSubscription = this.state.keyringService.currentAccountSubject.subscribe(() => {
-      onCurrentAccountChanged().catch(console.error);
-    });
-
-    // Detect network chain
-    const evmState = await this.getEvmState(url);
-    let currentChainId = evmState.chainId;
-
-    const _onAuthChanged = async () => {
-      // Detect network
-      const { chainId } = await this.getEvmState(url);
-
-      if (chainId !== currentChainId) {
-        emitEvent('chainChanged', chainId);
-
-        currentChainId = chainId;
-      }
-
-      onCurrentAccountChanged();
-    };
-
-    const authUrlSubscription = this.state.requestService.subscribeAuthorizeUrlSubject.subscribe(() => {
-      _onAuthChanged().catch(console.error);
-    });
-
-    // Detect network connection
-    const networkCheck = () => {
-      this.getEvmState(url)
-        .then((evmState) => {
-          evmState.web3
-            ?.getBlock('latest')
-            .then(() => emitEvent('connect', { chainId: evmState?.chainId }))
-            .catch(() => emitEvent('disconnect', 'Chain disconnectied'));
-        })
-        .catch(console.error);
-    };
-
-    const networkCheckInterval = setInterval(networkCheck, CRON_GET_API_MAP_STATUS);
-
-    const provider = await this.getEvmProvider(url);
-
-    const eventMap: Record<string, any> = {};
-
-    eventMap.data = ({ method, params }: JsonRpcPayload) => {
-      emitEvent('message', { type: method, data: params });
-    };
-
-    eventMap.error = (rs: Error) => {
-      emitEvent('error', rs);
-    };
-
-    Object.entries(eventMap).forEach(([event, callback]) => {
-      provider?.on(event, callback);
-    });
-
-    // Add event emitter
-    if (!this.evmEventEmitterMap[url]) {
-      this.evmEventEmitterMap[url] = {};
-    }
-
-    this.evmEventEmitterMap[url][id] = emitEvent;
-
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
-      if (this.evmEventEmitterMap[url][id]) delete this.evmEventEmitterMap[url][id];
-
-      Object.entries(eventMap).forEach(([event, callback]) => {
-        provider?.removeListener(event, callback);
-      });
-
-      accountListSubscription.unsubscribe();
-      authUrlSubscription.unsubscribe();
-
-      clearInterval(networkCheckInterval);
-    });
-
-    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
-
-    return true;
-  }
-
-  // Method may be needed in near future
-  // private async getEvmAccountList(url: string): Promise<string[]> {
-  //   return new Promise((resolve) => {
-  //     const allAccounts = this.state.keyringService.accountSubject.value;
-  //     const allMobileAccounts = this.state.keyringService.addressSubject.value;
-
-  //     const mobileWallets = transformAddresses({ accounts: allMobileAccounts, accountAuthType: 'evm' }).map(
-  //       ({ address }) => address
-  //     );
-
-  //     const transformedAccounts = transformAccounts({
-  //       accounts: allAccounts,
-  //       accountAuthType: 'evm',
-  //     }).map(({ address }) => address);
-
-  //     resolve([...transformedAccounts, ...mobileWallets]);
-  //   });
-  // }
-
-  private async getEvmCurrentAccount(url: string): Promise<string[]> {
-    return new Promise((resolve) => {
-      this.state.getAuthInfo(url).then((authInfo) => {
-        const result = authInfo?.evmAuthorizedAccount ? [authInfo.evmAuthorizedAccount] : [];
-
-        resolve(result);
-      });
-    });
-  }
-
-  async getEvmCurrentChainId(url: string): Promise<string> {
-    const evmState = await this.getEvmState(url);
-
-    return evmState.chainId || '0x0';
-  }
-
-  async getNetworkVersion(url: string) {
-    const chainId = await this.getEvmCurrentChainId(url);
-
-    return parseInt(chainId, 16);
-  }
-
-  private async performWeb3Method(
-    id: string,
-    url: string,
-    { method, params }: RequestArguments,
-    callback?: (result: unknown) => void
-  ) {
-    const provider = await this.getEvmProvider(url);
-
-    return new Promise((resolve, reject) => {
-      provider?._send({ jsonrpc: '2.0', method, params, id: +id }).then((result) => {
-        if ('error' in result[0]) return reject(result[0].error);
-
-        const rs = 'result' in result[0] ? result[0].result : undefined;
-
-        callback?.(rs);
-
-        resolve(rs);
-      });
-    });
-  }
-
-  private async switchEvmNetwork(url: string, { params }: RequestArguments) {
-    const chainId = params[0].chainId as string;
-    const chainIdDec = parseInt(chainId, 16);
-
-    const evmState = await this.getEvmState(url);
-
-    if (evmState.chainId === chainId) return null;
-
-    const networkJson = this.state.networkService.findNetworkJsonByChainId(chainIdDec.toString());
-
-    if (networkJson) await this.state.switchEvmNetworkByUrl(stripUrl(url), networkJson.name);
-    else throw new Error(`Unknown network: ${chainId}`);
-
-    return null;
-  }
-
-  private async requestEvmPermission(url: string, id: string, request: RequestArguments) {
-    await this.authorize(url, {
-      origin: request.params.origin,
-      accountAuthType: 'evm',
-      reConfirm: true,
-    });
-
-    return this.getEvmPermission(url, id);
-  }
-
-  private async getEvmPermission(url: string, id: string) {
-    const account = await this.getEvmCurrentAccount(url);
-
-    return [
-      {
-        id: id,
-        invoker: url,
-        parentCapability: 'eth_accounts',
-        caveats: [{ type: 'restrictReturnedAccounts', value: account }],
-        date: new Date().getTime(),
-      },
-    ];
-  }
-
-  private async revokeEvmPermission(url: string) {
-    const authList = await this.state.requestService.getAuthList();
-
-    const idStr = stripUrl(url);
-
-    this.state.requestService.setAuthorize({
-      ...authList,
-      [idStr]: {
-        ...authList[idStr],
-        evmAuthorizedAccount: '',
-      },
-    });
-  }
-
-  private async evmSign(id: string, url: string, { method, params }: RequestArguments): Promise<string> {
-    const signResult = await this.state.requestService.evmRequestHandler.confirmSign(id, url, method, params);
-
-    if (signResult) return signResult.payload;
-    else throw new Error('Failed to sign message');
-  }
-
-  async evmSendTransaction(id: string, url: string, payload: RequestArguments): Promise<string> {
-    const { method, params } = payload;
-
-    const signResult = await this.state.requestService.evmRequestHandler.confirmSign(id, url, method, params);
-
-    if (signResult) return signResult.payload;
-    else throw new Error('Failed to sign message');
-  }
-
-  private async handleEvmRequest(id: string, url: string, request: RequestArguments): Promise<unknown> {
-    const { method } = request;
-
-    try {
-      switch (method) {
-        case 'eth_chainId':
-          return this.getEvmCurrentChainId(url);
-
-        case 'web3_clientVersion':
-        case 'net_version':
-          return this.getNetworkVersion(url);
-
-        case 'eth_accounts':
-          return this.getEvmCurrentAccount(url);
-
-        case 'wallet_requestPermissions':
-          return this.requestEvmPermission(url, id, request);
-
-        case 'wallet_getPermissions':
-          return this.getEvmPermission(url, id);
-
-        case 'wallet_revokePermissions':
-          return this.revokeEvmPermission(url);
-
-        case 'wallet_switchEthereumChain':
-          return this.switchEvmNetwork(url, request);
-
-        case 'eth_sendTransaction':
-          return this.evmSendTransaction(id, url, request);
-
-        case 'eth_sign':
-        case 'personal_sign':
-        case 'eth_signTypedData':
-        case 'eth_signTypedData_v1':
-        case 'eth_signTypedData_v3':
-        case 'eth_signTypedData_v4':
-          return this.evmSign(id, url, request);
-
-        default:
-          return this.performWeb3Method(id, url, request);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  private async handleEvmSend(id: string, url: string, port: chrome.runtime.Port, request: RequestEvmProviderSend) {
-    const cb = this.state.subscriptionService.createSubscription<'evm(provider.send)'>(id, port);
-    const evmState = await this.getEvmState(url);
-
-    const provider = evmState.web3!;
-
-    provider.send(request.jsonrpc, []).then((result) => {
-      cb({ error: null, result });
-
-      this.state.subscriptionService.cancelSubscription(id);
-    });
-
-    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
-
-    return true;
-  }
-
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -551,7 +215,7 @@ export default class Tabs {
 
     switch (type) {
       case 'pub(authorize.tab)':
-        return this.authorize(url, request as RequestAuthorizeTab);
+        return this.state.requestService.authorizeUrl(url, request as RequestAuthorizeTab);
 
       case 'pub(accounts.list)':
         return this.accountsListAuthorized(url);
@@ -590,14 +254,17 @@ export default class Tabs {
         return this.rpcSubscribeConnected(request as null, id, port);
 
       //EVM
+      case 'evm(authorizeUrl)':
+        return this.eipService.requestEvmPermission(url, id, request as RequestArguments);
+
       case 'evm(events.subscribe)':
-        return this.evmSubscribeEvents(url, id, port);
+        return this.eipService.evmSubscribeEvents(url, id, port);
 
       case 'evm(request)':
-        return this.handleEvmRequest(id, url, request as RequestArguments);
+        return this.eipService.handleEvmRequest(id, url, request as RequestArguments);
 
       case 'evm(provider.send)':
-        return this.handleEvmSend(id, url, port, request as RequestEvmProviderSend);
+        return this.eipService.handleEvmSend(id, url, port, request as RequestEvmProviderSend);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

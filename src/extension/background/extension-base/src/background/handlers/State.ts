@@ -1,5 +1,5 @@
 import { BehaviorSubject, Subject } from 'rxjs';
-import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
+import { addMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { assert } from '@polkadot/util';
 import { accounts } from '@subwallet/ui-keyring/observable/accounts';
@@ -47,7 +47,7 @@ import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
-import BalanceService from '@/extension/background/extension-base/src/services/balance';
+import BalanceService from '@/extension/background/extension-base/src/services/balance-service';
 import { WalletEcosystem } from '@/interfaces';
 import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
@@ -98,10 +98,6 @@ export default class State {
   constructor() {
     this.injectFromStorage();
     this.init();
-  }
-
-  get knownMetadata(): MetadataDef[] {
-    return knownMetadata();
   }
 
   get authSubject() {
@@ -227,17 +223,16 @@ export default class State {
     });
   }
 
-  async setFavoriteNetwork(networkName: string): Promise<boolean> {
+  async setFavoriteNetwork(networkName: string): Promise<void> {
     const network = this.networkService.networkMap[networkName];
     const currentAccount = this.currentAccount;
 
-    if (!currentAccount) return false;
+    if (!currentAccount) return;
 
     const addressIndex = network.favorite.findIndex((address) => address === currentAccount.address);
 
-    addressIndex !== -1 ? network.favorite.splice(addressIndex, 1) : network.favorite.push(currentAccount.address);
-
-    return true;
+    if (addressIndex !== -1) network.favorite.splice(addressIndex, 1);
+    else network.favorite.push(currentAccount.address);
   }
 
   async setActiveNetworks(type: string) {

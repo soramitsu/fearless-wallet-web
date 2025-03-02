@@ -265,9 +265,9 @@ export const actions: Actions = {
     const wcSessions = this.subscribeWcSessions();
     const wcRequests = this.subscribeWcRequests();
 
-    const promises = await Promise.all([wcSessions, signEvm, auth, sign, meta, wcConnectRequests, wcRequests]);
+    const promises = await Promise.all([signEvm, wcSessions, auth, sign, meta, wcConnectRequests, wcRequests]);
 
-    return !!Object.keys(promises[1]).length || !!promises.slice(2).flat().length;
+    return !!Object.keys(promises[0]).length || !!promises.slice(2).flat().length;
   },
 
   async fetchTabStatus() {

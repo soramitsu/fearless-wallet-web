@@ -20,11 +20,11 @@ export function handlers<TMessageType extends MessageTypes>(
 
   const sender = port?.sender as chrome.runtime.MessageSender;
   const from = isExtension ? 'extension' : (sender.tab && sender.tab.url) || sender.url || '<unknown>';
-  const source = `${from}: ${id}: ${message}: ${
-    message === 'evm(request)' && request && 'method' in request ? request?.method : ''
-  }`;
+  // const source = `${from}: ${id}: ${message}: ${
+  //   message === 'evm(request)' && request && 'method' in request ? request?.method : ''
+  // }`;
 
-  console.info(`[in] ${source}`);
+  // console.info(`[in] ${source}`);
 
   const promise = isExtension
     ? extension.handle(id, message, request, port)
@@ -32,7 +32,7 @@ export function handlers<TMessageType extends MessageTypes>(
 
   promise
     .then((response): void => {
-      console.info(`[out] ${source}`);
+      // console.info(`[out] ${source}`);
 
       if (IS_EXTENSION) {
         // between the start and the end of the promise, the user may have closed
@@ -47,7 +47,7 @@ export function handlers<TMessageType extends MessageTypes>(
       }
     })
     .catch((error: Error): void => {
-      console.info(`[err] ${source}:: ${error.message}`);
+      // console.info(`[err] ${source}:: ${error.message}`);
 
       // only send message back to port if it's still connected
       if (port && IS_EXTENSION) port.postMessage({ error: error.message, id });

@@ -3,8 +3,6 @@ import WalletConnect from '@walletconnect/sign-client';
 import { getInternalError, getSdkError, isValidUrl } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
 import { storage } from '@extension-base/stores/Storage';
-import Eip155Handler from '@extension-base/services/wallet-connect-service/requestHandlers/Eip155Handler';
-import PolkadotHandler from '@extension-base/services/wallet-connect-service/requestHandlers/PolkadotHandler';
 import { convertConnectRequest, convertNotSupportRequest } from '@extension-base/services/wallet-connect-service/utils';
 import {
   EIP155_SIGNING_METHODS,
@@ -22,19 +20,26 @@ import {
 import type State from '@extension-base/background/handlers/State';
 import type { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
 import type { RequestService } from '@extension-base/services';
+import { PolkadotHandler } from '@/extension/background/extension-base/src/services/wallet-connect-service/requestHandlers/PolkadotHandler';
+import { Eip155RequestHandler } from '@/extension/background/extension-base/src/services/wallet-connect-service/requestHandlers/Eip155Handler';
 import { isSameString } from '@/helpers';
+
 export class WalletConnectService {
   private client?: WalletConnect;
 
-  readonly eip155RequestHandler: Eip155Handler;
+  readonly eip155RequestHandler: Eip155RequestHandler;
   readonly polkadotRequestHandler: PolkadotHandler;
-  readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]>;
+  readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]> = new BehaviorSubject<SessionTypes.Struct[]>([]);
 
   constructor(private state: State, private readonly requestService: RequestService) {
-    this.sessionSubject = new BehaviorSubject<SessionTypes.Struct[]>([]);
-    this.eip155RequestHandler = new Eip155Handler(this.state, this, requestService);
-    this.polkadotRequestHandler = new PolkadotHandler(this.state, this, requestService);
+    this.eip155RequestHandler = new Eip155RequestHandler(this.state, this);
+    this.polkadotRequestHandler = new PolkadotHandler(this.state, this);
+
     this.initClient().catch(console.error);
+  }
+
+  get sessions() {
+    return this.client?.session.values || [];
   }
 
   private async haveData(): Promise<boolean> {
@@ -46,25 +51,16 @@ export class WalletConnectService {
       'wc@2:core:0.3//history',
     ]);
 
-    const sessionStorage = data['wc@2:client:0.3//session'];
-    const proposalStorage = data['wc@2:client:0.3//proposal'];
-    const historyStorage = data['wc@2:core:0.3//history'];
-    const pairingStorage = data['wc@2:core:0.3//pairing'];
-    const subscriptionStorage = data['wc@2:core:0.3//subscription'];
-    const sessions: Array<unknown> = sessionStorage ? sessionStorage : [];
-    const pairings: Array<unknown> = pairingStorage ? pairingStorage : [];
-    const subscriptions: Array<unknown> = subscriptionStorage ? subscriptionStorage : [];
-    const history: Array<unknown> = historyStorage ? historyStorage : [];
-    const proposals: Array<unknown> = proposalStorage ? proposalStorage : [];
+    const sessions = data['wc@2:client:0.3//session'] ?? [];
+    const pairings = data['wc@2:core:0.3//pairing'] ?? [];
+    const subscriptions = data['wc@2:core:0.3//subscription'] ?? [];
+    const history = data['wc@2:core:0.3//history'] ?? [];
+    const proposals = data['wc@2:client:0.3//proposal'] ?? [];
 
     return !!sessions.length || !!pairings.length || !!subscriptions.length || !!history.length || !!proposals.length;
   }
 
-  public get sessions(): SessionTypes.Struct[] {
-    return this.client?.session.values || [];
-  }
-
-  public addConnection(uri: string) {
+  addConnection(uri: string) {
     console.info(uri);
   }
 
@@ -72,7 +68,7 @@ export class WalletConnectService {
     this.sessionSubject.next(this.sessions);
   }
 
-  public getSession(key: string): SessionTypes.Struct {
+  getSession(key: string): SessionTypes.Struct {
     const session = this.client?.session.get(key);
 
     if (!session) {
@@ -85,17 +81,16 @@ export class WalletConnectService {
   async initClient(force?: boolean) {
     this.removeListener();
 
-    const isHaveData = await this.haveData();
+    const isInit = force || (await this.haveData());
 
-    if (force || isHaveData) {
-      this.client = await WalletConnect.init({
-        ...DEFAULT_WALLET_CONNECT_OPTIONS,
-        storage: new WalletConnectStorage(),
-      });
-    }
+    if (!isInit) return;
+
+    this.client = await WalletConnect.init({
+      ...DEFAULT_WALLET_CONNECT_OPTIONS,
+      storage: new WalletConnectStorage(),
+    });
 
     this.updateSessions();
-
     this.createListener();
   }
 
@@ -105,14 +100,9 @@ export class WalletConnectService {
     await this.client?.respond(response);
   }
 
-  private checkClient() {
-    if (!this.client) {
-      throw new Error(getInternalError('NOT_INITIALIZED').message);
-    }
-  }
-
-  public async connect(uri: string) {
+  async connect(uri: string) {
     if (!isValidUrl(uri)) throw Error(getInternalError('MISSING_OR_INVALID').message);
+
     if (uri.match('@1')) throw Error(getInternalError('UNKNOWN_TYPE').message);
 
     const haveData = await this.haveData();
@@ -130,7 +120,7 @@ export class WalletConnectService {
     });
   }
 
-  public async approveSession(result: ResultApproveWalletConnectSession) {
+  async approveSession(result: ResultApproveWalletConnectSession) {
     this.checkClient();
 
     await this.client?.approve(result);
@@ -138,10 +128,38 @@ export class WalletConnectService {
     this.updateSessions();
   }
 
-  public async rejectSession(id: number) {
+  async rejectSession(id: number) {
     this.checkClient();
 
     await this.client?.reject({ id, reason: getSdkError('USER_REJECTED') });
+  }
+
+  async disconnect(topic: string) {
+    await this.client?.disconnect({
+      topic: topic,
+      reason: getSdkError('USER_DISCONNECTED'),
+    });
+
+    this.updateSessions();
+  }
+
+  removeSessions(address: string, ethereumAddress?: string) {
+    this.sessions.forEach((session) => {
+      const evm = session.namespaces[WALLET_CONNECT_EIP155_NAMESPACE] ?? [];
+      const polkadot = session.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE] ?? [];
+
+      if (ethereumAddress && evm?.accounts?.length) {
+        const [, , evmAddress] = evm.accounts[0].split(':');
+
+        if (isSameString(ethereumAddress, evmAddress)) return this.disconnect(session.topic);
+      }
+
+      if (polkadot?.accounts?.length) {
+        const [, , substrateAddress] = polkadot.accounts[0].split(':');
+
+        if (isSameString(address, substrateAddress)) this.disconnect(session.topic);
+      }
+    });
   }
 
   private onSessionProposal(proposal: SignClientTypes.EventArguments['session_proposal']) {
@@ -163,7 +181,9 @@ export class WalletConnectService {
       const namespaces = Object.keys({ ...requiredNamespaces, ...optionalNamespaces });
       const chains = Object.values(requiredNamespaces).flatMap((namespace) => namespace.chains ?? []);
       const optionalChains = Object.values(optionalNamespaces).flatMap((namespace) => namespace.chains ?? []);
+
       chains.push(...optionalChains);
+
       const [requestNamespace] = chainId.split(':');
 
       if (namespaces.length && !namespaces.includes(requestNamespace)) {
@@ -213,47 +233,25 @@ export class WalletConnectService {
     this.updateExpiry(topic);
   }
 
+  private checkClient() {
+    if (!this.client) {
+      throw new Error(getInternalError('NOT_INITIALIZED').message);
+    }
+  }
+
   private createListener() {
-    this.client?.on('session_proposal', this.onSessionProposal.bind(this));
-    this.client?.on('session_request', this.onSessionRequest.bind(this));
+    this.client?.on('session_proposal', (event) => this.onSessionProposal(event));
+    this.client?.on('session_request', (event) => this.onSessionRequest(event));
+    this.client?.on('session_delete', () => this.updateSessions());
     this.client?.on('session_ping', (data: unknown) => console.info('ping', data));
     this.client?.on('session_event', (data: unknown) => console.info('event', data));
     this.client?.on('session_update', (data: unknown) => console.info('update', data));
-    this.client?.on('session_delete', this.updateSessions.bind(this));
-  }
-
-  public async disconnect(topic: string) {
-    await this.client?.disconnect({
-      topic: topic,
-      reason: getSdkError('USER_DISCONNECTED'),
-    });
-
-    this.updateSessions();
   }
 
   // Remove old listener
   private removeListener() {
     ALL_WALLET_CONNECT_EVENT.forEach((event) => {
       this.client?.removeAllListeners(event);
-    });
-  }
-
-  removeSessions(address: string, ethereumAddress?: string) {
-    this.sessions.forEach((session) => {
-      const evm = session.namespaces[WALLET_CONNECT_EIP155_NAMESPACE] ?? [];
-      const polkadot = session.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE] ?? [];
-
-      if (ethereumAddress && evm?.accounts?.length) {
-        const [, , evmAddress] = evm.accounts[0].split(':');
-
-        if (isSameString(ethereumAddress, evmAddress)) return this.disconnect(session.topic);
-      }
-
-      if (polkadot?.accounts?.length) {
-        const [, , substrateAddress] = polkadot.accounts[0].split(':');
-
-        if (isSameString(address, substrateAddress)) this.disconnect(session.topic);
-      }
     });
   }
 }

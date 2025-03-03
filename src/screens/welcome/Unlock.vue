@@ -38,7 +38,14 @@
         @change="changeSyncedPassword"
       />
 
-      <FButton class="unlock-btn" text="welcome.unlock" :border="false" size="big" @click="unlock" />
+      <FButton
+        class="unlock-btn"
+        text="welcome.unlock"
+        size="big"
+        :disabled="isDisabledBtn"
+        :border="false"
+        @click="unlock"
+      />
 
       <div class="bottom">
         <span class="pink" @click="toggleResetPopup">{{ t('welcome.forgotYourPassword') }}</span>
@@ -69,6 +76,7 @@ const router = useRouter();
 const password = ref('');
 const isError = ref(false);
 const showResetPopup = ref(false);
+const isDisabledBtn = ref(false);
 const isPopup = ref(IS_POPUP);
 const { t } = useI18n();
 
@@ -77,10 +85,18 @@ watch(password, () => (isError.value = false));
 const changeSyncedPassword = (pass: string) => (password.value = pass);
 
 const unlock = async () => {
+  isDisabledBtn.value = true;
+
   const isUnlock = await unlockExtension({ password: password.value });
 
-  if (isUnlock) router.push({ name: Components.Wallet });
-  else isError.value = true;
+  if (isUnlock) {
+    router.push({ name: Components.Wallet });
+
+    return;
+  }
+
+  isDisabledBtn.value = false;
+  isError.value = true;
 };
 
 const openFullScreen = () => {

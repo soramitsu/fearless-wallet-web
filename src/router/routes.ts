@@ -1,25 +1,27 @@
 import { type RouteConfig } from 'vue-router';
 import { getStakingNetwork, haveAuthRequests, haveMetaRequests, hasSelectedWallet, haveSignRequests } from './helpers';
 import { keyringIsLocked } from '@/extension/messaging';
-import ResetWallet from '@/screens/welcome/ResetWallet.vue';
+import { useAccountsStore } from '@/stores/accounts';
+import { useExtensionStore } from '@/stores/extension';
+import { useStakingStore } from '@/stores/staking';
 import Unlock from '@/screens/welcome/Unlock.vue';
-import ChangePassword from '@/screens/welcome/ChangePassword.vue';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
-import WcAuths from '@/screens/extension-ui/WcAuths.vue';
 import DAppsAuths from '@/screens/extension-ui/DAppsAuths.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
-import NftCollectionList from '@/screens/wallet&asset/nft/NftCollectionList.vue';
-import NftCollection from '@/screens/wallet&asset/nft/NftCollection.vue';
-import NftDetails from '@/screens/wallet&asset/nft/NftDetails.vue';
-import { useAccountsStore } from '@/stores/accounts';
-import { useExtensionStore } from '@/stores/extension';
-import { useStakingStore } from '@/stores/staking';
 
+const ResetWallet = () => import('@/screens/welcome/ResetWallet.vue');
+const ChangePassword = () => import('@/screens/welcome/ChangePassword.vue');
+const WcAuths = () => import('@/screens/extension-ui/WcAuths.vue');
+
+const NftDetails = () => import('@/screens/wallet&asset/nft/NftDetails.vue');
+const NftCollection = () => import('@/screens/wallet&asset/nft/NftCollection.vue');
+const NftCollectionList = () => import('@/screens/wallet&asset/nft/NftCollectionList.vue');
 const NftSendForm = () => import('@/screens/wallet&asset/nft/NftSendForm.vue');
+
 const AccountSetting = () => import('@/screens/accounts/AccountSetting.vue');
 const ChainAccounts = () => import('@/screens/accounts/Accounts.vue');
 const Export = () => import('@/screens/accounts/Export.vue');
@@ -39,13 +41,13 @@ const WalletConnectSignConfirmation = () => import('@/screens/walletConnect/Wall
 const WalletConnectNotSupportedRequest = () => import('@/screens/walletConnect/WalletConnectNotSupportedRequest.vue');
 const Onboarding = () => import('@/screens/onboarding/Onboarding.vue');
 
-const AssetNetworks = () =>
-  import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetNetworks.vue');
-const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetHistory.vue');
-
 const SendForm = () => import('@/screens/wallet&asset/SendForm.vue');
 const ReceiveForm = () => import('@/screens/wallet&asset/ReceiveForm.vue');
 const CrossChainForm = () => import('@/screens/wallet&asset/CrossChainForm.vue');
+
+const AssetNetworks = () =>
+  import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetNetworks.vue');
+const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetHistory.vue');
 
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
 const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/Disclaimer.vue');

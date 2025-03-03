@@ -71,7 +71,8 @@ export class RequestService {
     // Not open new popup and use existed
     const popupList = this.popupHandler.popup;
 
-    if (popupList?.length > 0) chrome.windows.update(popupList[0], { focused: true })?.catch(console.error);
+    if (popupList?.length > 0)
+      chrome.windows.update(popupList[0], { focused: true })?.catch(() => this.popupHandler.popupOpen());
     else this.popupHandler.popupOpen();
   }
 

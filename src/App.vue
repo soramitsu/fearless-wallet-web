@@ -56,6 +56,8 @@ export default class App extends Vue {
   async created() {
     lockExtension();
 
+    this.setupWallet();
+
     if (IS_EXTENSION) {
       const hasRequests = await this.extensionStore.subscribeExtensionRequests();
 
@@ -66,7 +68,6 @@ export default class App extends Vue {
 
     setTitle();
 
-    this.setupWallet();
     this.setupNetworks();
     this.networksStore.getFiats();
 

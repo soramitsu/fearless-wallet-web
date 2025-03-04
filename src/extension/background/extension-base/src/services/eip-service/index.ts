@@ -101,11 +101,11 @@ export class EipService {
     });
   }
 
-  async requestEvmPermission(url: string, id: string, request: RequestArguments) {
+  async requestEvmPermission(url: string, id: string, request: RequestArguments, reConfirm = false) {
     await this.state.requestService.authorizeUrl(url, {
       origin: request.params.origin,
       accountAuthType: 'evm',
-      reConfirm: true,
+      reConfirm,
     });
 
     return this.getEvmPermission(url, id);
@@ -286,7 +286,7 @@ export class EipService {
           return this.getEvmCurrentAccount(url);
 
         case 'wallet_requestPermissions':
-          return this.requestEvmPermission(url, id, request);
+          return this.requestEvmPermission(url, id, { ...request }, true);
 
         case 'wallet_getPermissions':
           return this.getEvmPermission(url, id);

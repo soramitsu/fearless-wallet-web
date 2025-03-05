@@ -210,7 +210,7 @@ export default class Tabs {
   ): Promise<ResponseTypes[keyof ResponseTypes]> {
     if (type === 'pub(phishing.redirectIfDenied)') return this.redirectIfPhishing(url);
 
-    if (type !== 'pub(authorize.tab)' && type !== 'evm(request)')
+    if (type !== 'pub(authorize.tab)' && type !== 'evm(request)' && type !== 'evm(authorizeUrl)')
       await this.state.requestService.ensureUrlAuthorized(url);
 
     switch (type) {

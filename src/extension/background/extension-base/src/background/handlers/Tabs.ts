@@ -213,6 +213,15 @@ export default class Tabs {
     if (type !== 'pub(authorize.tab)' && type !== 'evm(request)' && type !== 'evm(authorizeUrl)')
       await this.state.requestService.ensureUrlAuthorized(url);
 
+    if (
+      (type === 'pub(authorize.tab)' ||
+        type === 'evm(authorizeUrl)' ||
+        type === 'evm(events.subscribe)' ||
+        type === 'evm(request)') &&
+      this.state.keyringService.getAllSubstrateAccounts().length === 0
+    )
+      return;
+
     switch (type) {
       case 'pub(authorize.tab)':
         return this.state.requestService.authorizeUrl(url, request as RequestAuthorizeTab);

@@ -1870,6 +1870,10 @@ export default class Extension extends FWExtensionBase {
       case 'pri(nft.settings)':
         return this.state.nftService.changeSettings(request as RequestSettingsChangePayload);
 
+      // popup
+      case 'pri(popup.getIds)':
+        return this.state.requestService.popupHandler.popup;
+
       default:
         throw new Error(`Unable to handle message of type ${type}`);
     }

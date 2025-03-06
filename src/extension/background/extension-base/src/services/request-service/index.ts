@@ -59,14 +59,6 @@ export class RequestService {
   }
 
   // Popup
-  public get popup() {
-    return this.popupHandler.popup;
-  }
-
-  public popupClose(): void {
-    this.popupHandler.popupClose();
-  }
-
   public popupOpen(): void {
     // Not open new popup and use existed
     const popupList = this.popupHandler.popup;

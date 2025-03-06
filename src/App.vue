@@ -11,12 +11,12 @@ import { Component, Vue } from 'vue-property-decorator';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { keyring } from '@subwallet/ui-keyring';
 import { initStorage } from '@extension-base/stores/Storage';
+import { chrome } from '@extension-base/utils/crossenv';
 import { ALL_NETWORKS } from './consts/networks';
 import { useExtensionStore } from './stores/extension';
 import { useNetworksStore } from './stores/networks';
 import { useAccountsStore } from './stores/accounts';
 import { Components } from './router/routes';
-import { IS_POPUP } from './consts/globalClient';
 import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import { setTitle } from '@/helpers/only-web';
 import {
@@ -31,6 +31,7 @@ import {
 } from '@/extension/messaging';
 import { IS_EXTENSION } from '@/consts/global';
 import { getNftSubscribe } from '@/extension/messaging/nfts';
+import { getPopupIds } from '@/extension/messaging/popup';
 
 @Component({})
 export default class App extends Vue {
@@ -59,9 +60,14 @@ export default class App extends Vue {
     this.setupWallet();
 
     if (IS_EXTENSION) {
+      const win = await chrome.windows.getCurrent();
       const hasRequests = await this.extensionStore.subscribeExtensionRequests();
 
-      if (IS_POPUP && hasRequests) return;
+      if (win.type === 'popup') {
+        const popupIds = await getPopupIds();
+
+        if (popupIds.includes(win.id ?? 0) && hasRequests) return;
+      }
     }
 
     if (!IS_EXTENSION) await this.setupWeb();

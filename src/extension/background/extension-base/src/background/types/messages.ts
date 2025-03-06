@@ -322,4 +322,7 @@ export interface RequestSignatures {
   'pri(nft.fetchNftsForContract)': [AvailableNftPayload, AvailableNftResponse];
   'pri(nft.checkSend)': [NftTx, CheckNftResponse];
   'pri(nft.settings)': [RequestSettingsChangePayload, void];
+
+  // popup
+  'pri(popup.getIds)': [null, number[]];
 }

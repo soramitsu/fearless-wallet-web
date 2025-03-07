@@ -11812,7 +11812,7 @@ __metadata:
     "@walletconnect/universal-provider": ^2.10.4
     alchemy-sdk: ^3.0.0
     autoprefixer: ^10.4.14
-    axios: ^0.28.0
+    axios: ^1.8.2
     bignumber.js: ^9.0.2
     bip39: 3.1.0
     country-code-emoji: ^2.3.0

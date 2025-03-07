@@ -56,7 +56,7 @@ function connectWeb() {
 }
 
 function connect() {
-  console.info('Connecting to background script', PORT_EXTENSION, IS_EXTENSION);
+  console.info('Connecting to background script', PORT_EXTENSION);
 
   if (IS_EXTENSION) connectExtension();
   else connectWeb();

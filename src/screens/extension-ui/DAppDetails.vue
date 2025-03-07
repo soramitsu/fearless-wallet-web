@@ -1,6 +1,6 @@
 <template>
   <div class="update-accounts">
-    <SelectAuthAccount
+    <SelectAuthAccountForm
       :selectAll="selectAll"
       :accounts="state"
       :authType="authType"
@@ -9,7 +9,15 @@
       @onSelect="onSelect"
     />
 
-    <FButton class="connect-button" width="100%" size="big" fontSize="big" :text="buttonText" @click="updateAuths" />
+    <FButton
+      class="connect-button"
+      width="100%"
+      size="big"
+      fontSize="big"
+      :disabled="isDisabledApproveBtn"
+      :text="buttonText"
+      @click="updateAuths"
+    />
   </div>
 </template>
 
@@ -19,8 +27,7 @@ import { useRoute, useRouter } from 'vue-router/composables';
 import type { AuthType } from '@extension-base/background/types/types';
 import type { WalletInfo } from '@/stores';
 import { updateAuthorization } from '@/extension/messaging';
-import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
-
+import SelectAuthAccountForm from '@/screens/extension-ui/authorize/SelectAuthAccountForm.vue';
 import { useExtensionStore } from '@/stores/extension';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -36,6 +43,7 @@ const authType = computed(() => (route.params.type ?? 'substrate') as AuthType);
 const isEVM = computed(() => authType.value === 'evm');
 const showSelectAll = computed(() => authType.value !== 'evm');
 const url = computed(() => route.params.id);
+const isDisabledApproveBtn = computed(() => !Object.values(state.value).some(({ active }) => active));
 
 const buttonText = computed(() => {
   const count = Object.values(state.value).filter((el) => el.active).length;
@@ -79,11 +87,12 @@ onMounted(async () => {
   selectAll.value = isAllSelected();
 });
 
-const onSelect = (value: boolean, name: string) => {
-  state.value[name].active = value;
+const onSelect = (value: boolean, address: string) => {
+  if (!showSelectAll.value) Object.keys(state.value).forEach((key) => (state.value[key].active = false));
 
-  if (showSelectAll.value) selectAll.value = selectAll.value = isAllSelected();
-  else Object.keys(state.value).forEach((key) => (state.value[key].active = false));
+  state.value[address].active = value;
+
+  if (showSelectAll.value) selectAll.value = isAllSelected();
 };
 
 const onSelectAll = (value: boolean) => {

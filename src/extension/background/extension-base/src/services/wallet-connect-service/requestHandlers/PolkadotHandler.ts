@@ -7,19 +7,10 @@ import { getWCId, parseRequestParams } from '@extension-base/services/wallet-con
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import type State from '@extension-base/background/handlers/State';
-import type { RequestService } from '@extension-base/services/request-service';
 import type { WalletConnectService } from '@extension-base/services/wallet-connect-service';
 
-export default class Eip155RequestHandler {
-  readonly walletConnectService: WalletConnectService;
-  readonly state: State;
-  readonly requestService: RequestService;
-
-  constructor(state: State, walletConnectService: WalletConnectService, requestService: RequestService) {
-    this.state = state;
-    this.walletConnectService = walletConnectService;
-    this.requestService = requestService;
-  }
+export class PolkadotHandler {
+  constructor(public state: State, public walletConnectService: WalletConnectService) {}
 
   private checkAccount(address: string, accounts: string[]) {
     if (!accounts.find((account) => isSameAddress(account, address))) {
@@ -58,7 +49,7 @@ export default class Eip155RequestHandler {
       const pair = this.state.keyringService.getPair(param.address)!;
       const address = pair.address;
 
-      this.requestService
+      this.state.requestService
         .sign(
           url,
           new RequestBytesSign({ address, data: param.message, type: 'bytes' }),
@@ -86,7 +77,7 @@ export default class Eip155RequestHandler {
       const pair = this.state.keyringService.getPair(param.address)!;
       const address = pair.address;
 
-      this.requestService
+      this.state.requestService
         .sign(
           url,
           new RequestExtrinsicSign(param.transactionPayload),

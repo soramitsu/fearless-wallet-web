@@ -2,11 +2,11 @@ import { APIItemState } from '@extension-base/api/types/networks';
 import { FPNumber } from '@sora-substrate/util';
 import axios from 'axios';
 import { DEFAULT_PRICES } from '../prices-service';
-import { REFRESH_PRICE_INTERVAL } from '../../const/intervals';
 import { type ResponseBalanceRequest } from '../../background/types/types';
 import type { NetworkName } from '@/interfaces';
 import type State from '@extension-base/background/handlers/State';
 import { getJettonAssetId, isSameString } from '@/helpers';
+import { URLS } from '@/consts/urls';
 
 export const FETCH_INTERVAL = 2901000;
 
@@ -152,27 +152,48 @@ export class TonBalanceService {
     }
   }
 
-  fetchJettonInfo() {
+  async fetchJettonInfo() {
     try {
-      setTimeout(() => {
-        if (Date.now() - REFRESH_PRICE_INTERVAL * FETCH_INTERVAL < 0) return;
+      const {
+        data: { ton },
+      } = await axios.get(`${URLS.BASE_URL}/eth-enabled/appConfigs/web_config.json`);
 
-        const address = this.state.keyringService.getAllMainAccounts().flatMap(({ address, meta }) => {
-          const { value, value2 } = this.state.keyringService.getDataAccounts({
-            address,
-            walletEcosystem: meta.walletEcosystem,
-          });
+      if (!ton) return;
 
-          const encodeAddressSubstrate = this.state.keyringService.tonKeyring.encode(value.replaceAll('+', '|'));
-          const encodeAddressEthereum = value2
-            ? this.state.keyringService.tonKeyring.encode(value2.replaceAll('+', '|'))
-            : [];
+      await new Promise((res) => {
+        setTimeout(() => res(true), 10000);
+      });
 
-          return [encodeAddressSubstrate, encodeAddressEthereum].flat();
+      const { myAccounts } = await chrome.storage.local.get('myAccounts');
+      const accounts: string[] = myAccounts ?? [];
+
+      const addresses: string[] = [];
+
+      const address = this.state.keyringService.getAllMainAccounts().flatMap(({ address, meta }) => {
+        const { value, value2 } = this.state.keyringService.getDataAccounts({
+          address,
+          walletEcosystem: meta.walletEcosystem,
         });
 
-        axios.get(`${this.baseUrl}/whitelist?address=${address.join(';').replaceAll('+', '|')}`);
-      }, 10000);
+        if (!value || accounts.includes(address)) return [];
+
+        addresses.push(address);
+
+        const encodeAddressSubstrate = this.state.keyringService.tonKeyring.encode(value.replaceAll('+', '|'));
+        const encodeAddressEthereum = value2
+          ? this.state.keyringService.tonKeyring.encode(value2.replaceAll('+', '|'))
+          : [];
+
+        return [encodeAddressSubstrate, encodeAddressEthereum].flat();
+      });
+
+      if (!addresses.length) return [];
+
+      chrome.storage.local.set({ myAccounts: [...(myAccounts ?? []), ...addresses] });
+
+      const { data } = await axios.get(`${ton}/whitelist?address=${address.join(';').replaceAll('+', '|')}`);
+
+      return data;
     } catch {
       return [];
     }

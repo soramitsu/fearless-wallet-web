@@ -1,6 +1,7 @@
-import { type FWEvmProvider, type SendRequest } from '@extension-base/page/types';
+import { type FWEvmProvider } from '@extension-base/page/types';
 import SafeEventEmitter from '@metamask/safe-event-emitter';
 import { type JsonRpcRequest, type JsonRpcResponse, type JsonRpcSuccess } from 'json-rpc-engine';
+import { sendMessage } from '.';
 import type { RequestArguments } from '@json-rpc-tools/utils';
 import { APP_VERSION } from '@/consts/global';
 
@@ -12,10 +13,9 @@ let subscribeFlag = false;
 
 export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvmProvider {
   protected _connected = false;
-  public readonly isMetaMask = false;
   private isEnabled = false;
 
-  constructor(protected sendMessage: SendRequest) {
+  constructor() {
     super();
 
     this._connected = true;
@@ -25,14 +25,28 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
     return this._connected;
   }
 
+  override on(eventName: string | symbol, listener: (...args: unknown[]) => void) {
+    this.subscribeExtensionEvents();
+    super.on(eventName, listener);
+
+    return this;
+  }
+
+  override once(eventName: string | symbol, listener: (...args: unknown[]) => void) {
+    this.subscribeExtensionEvents();
+    super.once(eventName, listener);
+
+    return this;
+  }
+
   isConnected() {
     return this._connected;
   }
 
-  protected subscribeExtensionEvents() {
+  subscribeExtensionEvents() {
     if (subscribeFlag) return;
 
-    this.sendMessage('evm(events.subscribe)', null, ({ payload, type }) => {
+    sendMessage('evm(events.subscribe)', null, ({ payload, type }) => {
       const messages = [
         'connect',
         'disconnect',
@@ -63,20 +77,6 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
     return this.request<string[]>({ method: 'eth_requestAccounts' });
   }
 
-  override on(eventName: string | symbol, listener: (...args: unknown[]) => void): this {
-    this.subscribeExtensionEvents();
-    super.on(eventName, listener);
-
-    return this;
-  }
-
-  override once(eventName: string | symbol, listener: (...args: unknown[]) => void): this {
-    this.subscribeExtensionEvents();
-    super.once(eventName, listener);
-
-    return this;
-  }
-
   request<T>({ method, params }: RequestArguments): Promise<T> {
     if (!this.isEnabled && method === 'eth_accounts') return this.request({ method: 'eth_requestAccounts' });
 
@@ -87,7 +87,7 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
         return new Promise((resolve, reject) => {
           const origin = document.title !== '' ? document.title : window.location.hostname;
 
-          this.sendMessage('evm(request)', { params: { ...params, origin }, method })
+          sendMessage('evm(request)', { params: { ...params, origin }, method })
             .then((result) => resolve(result as T))
             .catch((e) => reject(e));
         });
@@ -97,7 +97,7 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
         return new Promise((resolve, reject) => {
           const origin = document.title !== '' ? document.title : window.location.hostname;
 
-          this.sendMessage('pub(authorize.tab)', { origin, accountAuthType: 'evm' })
+          sendMessage('evm(authorizeUrl)', { method: '', params: { origin } })
             .then(() => {
               this.isEnabled = true;
 
@@ -110,11 +110,17 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
 
       default:
         return new Promise((resolve, reject) => {
-          this.sendMessage('evm(request)', { params, method })
+          sendMessage('evm(request)', { params, method })
             .then((result) => resolve(result as T))
             .catch((e) => reject(e));
         });
     }
+  }
+
+  sendAsync<T>(payload: JsonRpcRequest<T>, callback: (error: Error | null, result?: JsonRpcResponse<T>) => void): void {
+    this.request<T>(payload)
+      .then((result) => callback(null, { result, id: payload.id, jsonrpc: payload.jsonrpc }))
+      .catch((e) => callback(e));
   }
 
   private _sendSync(payload: JsonRpcRequest<unknown>): JsonRpcResponse<unknown> {
@@ -152,11 +158,5 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
     }
 
     return this._sendSync(methodOrPayload as SendSyncJsonRpcRequest);
-  }
-
-  sendAsync<T>(payload: JsonRpcRequest<T>, callback: (error: Error | null, result?: JsonRpcResponse<T>) => void): void {
-    this.request<T>(payload)
-      .then((result) => callback(null, { result, id: payload.id, jsonrpc: payload.jsonrpc }))
-      .catch((e) => callback(e));
   }
 }

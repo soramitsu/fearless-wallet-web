@@ -8,8 +8,8 @@ import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/ev
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/sora';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
-import { getInternalError } from '@walletconnect/utils';
 import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
+import { getInternalError } from '@walletconnect/utils';
 import {
   isProposalExpired,
   isSupportWalletConnectNamespace,
@@ -634,7 +634,7 @@ export default class Extension extends FWExtensionBase {
 
     if (isJsonPayload(payload)) {
       // Get the metadata for the genesisHash
-      const currentMetadata = this.state.knownMetadata.find(
+      const currentMetadata = this.state.requestService.knownMetadata.find(
         (meta: MetadataDef) => meta.genesisHash === payload.genesisHash
       );
 
@@ -1169,16 +1169,12 @@ export default class Extension extends FWExtensionBase {
   async connectWalletConnect({ uri }: RequestConnectWalletConnect): Promise<Record<string, string> | boolean> {
     return this.state.walletConnectService
       .connect(uri)
-      .then(() => {
-        return true;
-      })
+      .then(() => true)
       .catch((error) => {
         if ((error.message as string).includes(getInternalError('MISSING_OR_INVALID').message))
           return { message: 'walletConnect.pairingErrorMessage' };
         if (error.message === getInternalError('UNKNOWN_TYPE').message)
-          return {
-            message: 'walletConnect.relayNotSupported',
-          };
+          return { message: 'walletConnect.relayNotSupported' };
 
         return { message: 'Unknown error' };
       });
@@ -1512,6 +1508,8 @@ export default class Extension extends FWExtensionBase {
     this.state.keyringLockService.setExtensionAutoLockTimeout();
 
     const isSuccess = this.state.keyringService.unlockKeyring(request as RequestUnlockExtension);
+
+    this.state.balanceService.tonBalanceService.fetchJettonInfo();
 
     return isSuccess;
   }
@@ -1873,6 +1871,10 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(nft.settings)':
         return this.state.nftService.changeSettings(request as RequestSettingsChangePayload);
+
+      // popup
+      case 'pri(popup.getIds)':
+        return this.state.requestService.popupHandler.popup;
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

@@ -260,6 +260,7 @@ export interface RequestSignatures {
   // Evm
   'evm(events.subscribe)': [RequestEvmEvents, boolean, EvmEvent];
   'evm(request)': [RequestArguments, unknown];
+  'evm(authorizeUrl)': [RequestArguments, unknown];
   'evm(provider.send)': [RequestEvmProviderSend, string | number, ResponseEvmProviderSend];
 
   // OnBoarding
@@ -321,4 +322,7 @@ export interface RequestSignatures {
   'pri(nft.fetchNftsForContract)': [AvailableNftPayload, AvailableNftResponse];
   'pri(nft.checkSend)': [NftTx, CheckNftResponse];
   'pri(nft.settings)': [RequestSettingsChangePayload, void];
+
+  // popup
+  'pri(popup.getIds)': [null, number[]];
 }

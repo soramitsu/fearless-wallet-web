@@ -93,11 +93,13 @@ const aboveFormClasses = computed(() => {
 .fw-web {
   .form-background {
     width: 100dvw;
+
     .form {
       width: 100dvw;
     }
   }
 }
+
 .form-background {
   height: 100%;
   width: $extension-width;

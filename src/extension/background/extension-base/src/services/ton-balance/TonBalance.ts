@@ -1,10 +1,12 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import { FPNumber } from '@sora-substrate/util';
+import axios from 'axios';
 import { DEFAULT_PRICES } from '../prices-service';
 import { type ResponseBalanceRequest } from '../../background/types/types';
 import type { NetworkName } from '@/interfaces';
 import type State from '@extension-base/background/handlers/State';
 import { getJettonAssetId, isSameString } from '@/helpers';
+import { URLS } from '@/consts/urls';
 
 export class TonBalance {
   constructor(private readonly state: State) {}

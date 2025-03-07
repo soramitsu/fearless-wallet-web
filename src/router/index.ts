@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
+import { updateTitle } from './helpers';
 import routes, { Components } from '@/router/routes';
-import { updateTitle } from '@/util/routing';
 import {
   keyringIsLocked,
   hasMasterPassword,

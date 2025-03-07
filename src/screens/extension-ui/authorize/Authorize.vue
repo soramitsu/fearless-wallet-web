@@ -8,7 +8,7 @@
           </Alert>
 
           <div class="authorize-account-list">
-            <SelectAuthAccount
+            <SelectAuthAccountForm
               :selectAll="selectAll"
               :showSelectAll="showSelectAll"
               :accounts="state"
@@ -47,7 +47,7 @@ import { useI18n } from 'vue-i18n-composable';
 import type { AuthorizeRequest, AccountJson } from '@extension-base/background/types/types';
 import type { WalletInfo } from '@/stores';
 import { Components } from '@/router/routes';
-import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
+import SelectAuthAccountForm from '@/screens/extension-ui/authorize/SelectAuthAccountForm.vue';
 import { IS_POPUP } from '@/consts/globalClient';
 import { useExtensionStore } from '@/stores/extension';
 import { useAccountsStore } from '@/stores/accounts';
@@ -78,6 +78,8 @@ const showSelectAll = computed(() => accountAuthType.value !== 'evm');
 const isDisabledApproveBtn = computed(() => !Object.values(state.value).some(({ active }) => active));
 const isAccountsExists = computed(() => accounts.value.length > 0);
 
+const isAllSelected = () => Object.values(state.value).every(({ active }) => active);
+
 onMounted(() => {
   const active = showSelectAll.value;
 
@@ -90,6 +92,8 @@ onMounted(() => {
       active,
     });
   });
+
+  selectAll.value = isAllSelected();
 });
 
 watch(requests, (value: AuthorizeRequest[]) => {
@@ -97,10 +101,11 @@ watch(requests, (value: AuthorizeRequest[]) => {
 });
 
 const onSelect = (value: boolean, address: string) => {
-  if (showSelectAll.value) selectAll.value = Object.values(state.value).every(({ active }) => active);
-  else Object.keys(state.value).forEach((key) => (state.value[key].active = false));
+  if (!showSelectAll.value) Object.keys(state.value).forEach((key) => (state.value[key].active = false));
 
   state.value[address].active = value;
+
+  if (showSelectAll.value) selectAll.value = isAllSelected();
 };
 
 const onSelectAll = (value: boolean) => {

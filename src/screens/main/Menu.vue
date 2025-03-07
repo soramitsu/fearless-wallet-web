@@ -12,7 +12,6 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-
 import { Components } from '@/router/routes';
 import MenuItem from '@/screens/main/MenuItem.vue';
 import { IS_PRODUCTION } from '@/consts/global';
@@ -44,10 +43,10 @@ export default class Menu extends Vue {
     const array: MenuItemType[] = [Components.Wallet];
 
     if (!this.isTonWallet) {
+      array.push(Components.Staking);
+
       if (IS_PRODUCTION || (!IS_PRODUCTION && !isSameString(this.accountsStore.selectedNetwork, SORA_MAINNET)))
         array.push(Components.Polkaswap);
-
-      array.push(Components.Staking);
     }
 
     return array;

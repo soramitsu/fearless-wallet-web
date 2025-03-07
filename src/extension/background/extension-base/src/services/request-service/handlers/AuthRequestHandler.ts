@@ -172,6 +172,7 @@ export class AuthRequestHandler {
     request.accountAuthType = accountAuthType;
 
     const idStr = stripUrl(url);
+
     // Do not enqueue duplicate authorization requests.
     const isDuplicate = this.authValues.some((request) => request.idStr === idStr);
 

@@ -3,7 +3,7 @@
     <header class="wallet-header">
       <WalletBalance
         class="wallet-balance"
-        :balance="summaryTransferableBalance"
+        :balance="summaryWalletBalance"
         :changeWalletBalance="changeWalletBalance"
         :staticWidth="false"
         @click.native="$emit('openFiatsPopup', true)"
@@ -71,7 +71,7 @@ import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavai
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers/currencies';
-import { getChangeWalletBalance, getSummaryTransferableWalletBalance, isNetworkGroup } from '@/helpers/common';
+import { getChangeWalletBalance, getSummaryWalletBalance, isNetworkGroup } from '@/helpers/common';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { networksIsPending } from '@/helpers/shimmers';
 import BaseApi from '@/util/BaseApi';
@@ -139,8 +139,8 @@ export default class Wallet extends Vue {
     return this.disconnectedNetworks.filter(({ name }) => !this.accountsStore.getShowWarningNetwork(name));
   }
 
-  get summaryTransferableBalance() {
-    return getSummaryTransferableWalletBalance(
+  get summaryWalletBalance() {
+    return getSummaryWalletBalance(
       this.accountsStore.selectedWallet.address,
       this.accountsStore.balances,
       this.networksStore.assetsPrice,

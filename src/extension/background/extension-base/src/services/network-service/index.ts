@@ -197,13 +197,13 @@ export class NetworkService {
 
       if (!account) return;
 
-      const isSubstrateAddress = account?.meta.walletEcosystem === WalletEcosystem.Substrate;
+      const isTonAddress = account?.meta.walletEcosystem === WalletEcosystem.Ton;
 
       if (value === ALL_NETWORKS) {
         this.networkValues.forEach((network) => {
-          if (isSubstrateAddress && network.ecosystem !== 'ton') return uniqNetworks.add(network);
+          if (isTonAddress && network.ecosystem === 'ton') return uniqNetworks.add(network);
 
-          if (!isSubstrateAddress && network.ecosystem === 'ton') uniqNetworks.add(network);
+          if (!isTonAddress && network.ecosystem !== 'ton') uniqNetworks.add(network);
         });
 
         return;
@@ -213,9 +213,9 @@ export class NetworkService {
         this.networkValues.forEach((network) => {
           if (!network.rank) return;
 
-          if (isSubstrateAddress && network.ecosystem !== 'ton') return uniqNetworks.add(network);
+          if (isTonAddress && network.ecosystem === 'ton') return uniqNetworks.add(network);
 
-          if (!isSubstrateAddress && network.ecosystem === 'ton') uniqNetworks.add(network);
+          if (!isTonAddress && network.ecosystem !== 'ton') uniqNetworks.add(network);
         });
 
         return;
@@ -225,9 +225,9 @@ export class NetworkService {
         this.networkValues.forEach((network) => {
           if (network.favorite.includes(address)) return;
 
-          if (isSubstrateAddress && network.ecosystem !== 'ton') return uniqNetworks.add(network);
+          if (isTonAddress && network.ecosystem === 'ton') return uniqNetworks.add(network);
 
-          if (!isSubstrateAddress && network.ecosystem === 'ton') uniqNetworks.add(network);
+          if (!isTonAddress && network.ecosystem !== 'ton') uniqNetworks.add(network);
         });
 
         return;

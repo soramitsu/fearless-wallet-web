@@ -35,7 +35,7 @@ export const actions: Actions = {
       haveEntropy: account?.haveEntropy ?? false,
       isSubstrate: account?.walletEcosystem === WalletEcosystem.Substrate,
       isTon: account?.walletEcosystem === WalletEcosystem.Ton,
-      hasEthereum: account?.ethereumAddress !== '',
+      hasEthereum: !!account?.ethereumAddress,
     };
   },
 

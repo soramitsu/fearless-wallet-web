@@ -10,7 +10,7 @@ import { FAVORITE_NETWORKS, POPULAR_NETWORKS, ALL_NETWORKS } from '@/consts/netw
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
 import { isSameString, isSora } from '@/helpers';
-import { getSummaryTransferableBalance, isNetworkGroup } from '@/helpers/common';
+import { getSummaryBalance, isNetworkGroup } from '@/helpers/common';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -62,8 +62,8 @@ function defaultSortingCurrencies(currencies: TokenGroup[], { tokenPriceMap }: B
   }
 
   currenciesWithAssetsAndWithFiatBalance.sort((currency1, currency2) => {
-    const totalFiatBalanceOne = +getSummaryTransferableBalance(currency1, network);
-    const totalFiatBalanceTwo = +getSummaryTransferableBalance(currency2, network);
+    const totalFiatBalanceOne = +getSummaryBalance(currency1, network);
+    const totalFiatBalanceTwo = +getSummaryBalance(currency2, network);
 
     const tokenPriceOne = tokenPriceMap[currency1.priceId ?? ''] ?? 0;
     const tokenPriceTwo = tokenPriceMap[currency2.priceId ?? ''] ?? 0;
@@ -72,8 +72,8 @@ function defaultSortingCurrencies(currencies: TokenGroup[], { tokenPriceMap }: B
   });
 
   currenciesWithAssetsAndWithoutFiatBalance.sort((currency1, currency2) => {
-    const totalFiatBalanceOne = +getSummaryTransferableBalance(currency1, network);
-    const totalFiatBalanceTwo = +getSummaryTransferableBalance(currency2, network);
+    const totalFiatBalanceOne = +getSummaryBalance(currency1, network);
+    const totalFiatBalanceTwo = +getSummaryBalance(currency2, network);
 
     return totalFiatBalanceTwo - totalFiatBalanceOne;
   });
@@ -217,10 +217,10 @@ export function getSummaryTransferableBalanceFilteredByActiveNetworks(
   const networksStore = useNetworksStore();
 
   return (
-    token.balances?.reduce((sum, { state, name, transferable }) => {
+    token.balances?.reduce((sum, { state, name, total }) => {
       const network: NetworkJson = networksStore.getNetwork(name);
 
-      if (state === APIItemState.READY && network.active && transferable) sum += +transferable;
+      if (state === APIItemState.READY && network.active && total) sum += +total;
 
       return sum;
     }, 0) ?? 0

@@ -1,9 +1,15 @@
 import { type Injected } from '@polkadot/extension-inject/types';
 import { type FWEvmProvider } from '@extension-base/page/types';
+import {
+  type DecryptForCosignerData,
+  type EncryptByCosignerData,
+} from '../background/extension-base/src/background/types/types';
 type This = typeof globalThis;
 
 export interface InjectedWindowProvider {
   enable: (origin: string) => Promise<Injected>;
+  decryptForCosigner: (data: DecryptForCosignerData) => Promise<string>;
+  encryptByCosigner: (data: EncryptByCosignerData) => Promise<string>;
   isPlaceholder?: boolean;
   version: string;
 }

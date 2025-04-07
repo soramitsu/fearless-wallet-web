@@ -48,15 +48,13 @@ export default class AccountSetting extends Vue {
   }
 
   get relayChains() {
-    const counterEVM = this.networksStore.networks.filter(({ ecosystem }) =>
-      isSameString(ecosystem, 'ethereum')
-    ).length;
+    const counterEVM = this.networksStore.allNets.filter(({ ecosystem }) => isSameString(ecosystem, 'ethereum')).length;
 
-    const counterSubstrate = this.networksStore.networks.filter(
+    const counterSubstrate = this.networksStore.allNets.filter(
       ({ ecosystem }) => isSameString(ecosystem, 'substrate') || isSameString(ecosystem, 'ethereumBased')
     ).length;
 
-    const counterTon = this.networksStore.networks.filter(({ ecosystem }) => isSameString(ecosystem, 'ton')).length;
+    const counterTon = this.networksStore.allNets.filter(({ ecosystem }) => isSameString(ecosystem, 'ton')).length;
 
     if (this.accountsStore.selectedWallet.isTon) {
       return [

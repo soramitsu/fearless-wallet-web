@@ -4,8 +4,10 @@
       <div class="img-container">
         <ExternalLogo :name="icon" class="img" />
       </div>
+
       <div class="description">
         <div class="network-name" data-testid="networkName">{{ getUpperValue(network) }}</div>
+
         <div v-if="addressExist" class="address" data-testid="networkAddress">{{ address }}</div>
       </div>
     </div>

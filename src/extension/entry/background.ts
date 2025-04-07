@@ -7,7 +7,6 @@ import MigrationService from '@extension-base/services/migration-service';
 import axios from 'axios';
 import { keyring } from '@subwallet/ui-keyring';
 import type { TransportRequestMessage, Port, MessageTypes } from '@extension-base/background/types/types';
-import { APP_VERSION } from '@/consts/global';
 
 console.info('background initialization');
 
@@ -30,11 +29,7 @@ async function getActiveTabs() {
 }
 
 chrome.runtime.onInstalled.addListener(async (details) => {
-  if (details.reason === 'update') {
-    await state.onboardingService.updateStorage('regular', true);
-
-    if (details.previousVersion !== APP_VERSION) chrome.runtime.reload();
-  }
+  if (details.reason === 'update') await state.onboardingService.updateStorage('regular', true);
 
   state.onboardingService.init();
 

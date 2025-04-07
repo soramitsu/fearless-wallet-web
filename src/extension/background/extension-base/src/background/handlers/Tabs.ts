@@ -7,6 +7,8 @@ import { type RequestEvmProviderSend } from '@extension-base/page/types';
 import { EipService } from '../../services/eip-service';
 import type State from '@extension-base/background/handlers/State';
 import type {
+  DecryptForCosignerData,
+  EncryptByCosignerData,
   AccountSub,
   MessageTypes,
   Port,
@@ -225,6 +227,12 @@ export default class Tabs {
     switch (type) {
       case 'pub(authorize.tab)':
         return this.state.requestService.authorizeUrl(url, request as RequestAuthorizeTab);
+
+      case 'pub(decrypt.cosigner)':
+        return this.state.keyringService.decryptForCosigner(request as DecryptForCosignerData);
+
+      case 'pub(encrypt.cosigner)':
+        return this.state.keyringService.encryptByCosigner(request as EncryptByCosignerData);
 
       case 'pub(accounts.list)':
         return this.accountsListAuthorized(url);

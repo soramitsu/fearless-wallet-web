@@ -9,6 +9,7 @@ import { ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS, SUBSTRATE_ETHEREUM_NETWORK
 import { IS_PRODUCTION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { isSameString } from '@/helpers';
 
 type WalletTypes = 'mobile' | 'native';
 
@@ -118,12 +119,12 @@ export default class BaseApi {
   }
 
   public static formatAddress({ address, ethereumAddress }: Wallet, networkName: NetworkName = 'westend'): string {
-    const isEthereumNetwork = BaseApi.isEthereumNetwork(networkName);
+    const networksStore = useNetworksStore();
+    const network = networksStore.getNetwork(networkName);
+    const isEthereumNetwork = isSameString(network.ecosystem, 'ethereum');
 
     if (isEthereumNetwork) return ethereumAddress;
 
-    const networksStore = useNetworksStore();
-    const network = networksStore.getNetwork(networkName);
     const prefix = network?.addressPrefix;
 
     // the only case for try/catch

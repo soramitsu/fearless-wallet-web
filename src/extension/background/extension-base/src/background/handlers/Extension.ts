@@ -479,7 +479,6 @@ export default class Extension extends FWExtensionBase {
           const isEthereum = isEthereumAddress(address);
 
           if (!isEthereum) {
-            this.state.updateNetworkForNewWallet(address);
             this.state.updateCurrentAccount({ address });
           }
 

@@ -410,10 +410,6 @@ export default class State {
     this.updateServiceInfo();
   }
 
-  updateNetworkForNewWallet(address: string) {
-    this.setActiveNetworks(this.networkService.selectedNetworks[address] ?? ALL_NETWORKS);
-  }
-
   updateCurrentAccount(
     { address, walletEcosystem = WalletEcosystem.Substrate }: RequestUpdateCurrentAccount,
     isNew = true

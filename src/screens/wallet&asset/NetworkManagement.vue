@@ -30,8 +30,6 @@
       <div v-show="isNetworksExists" class="container" :class="networkListClasses">
         <Scroll>
           <ul class="network__list">
-            <template> </template>
-
             <NetworkItem
               v-for="network in filteredOptionsNetworks"
               :network="network"

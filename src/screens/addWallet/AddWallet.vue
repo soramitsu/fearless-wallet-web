@@ -685,7 +685,15 @@ export default class AddWallet extends Vue {
   }
 
   async saveKeypairFromJson() {
-    const substrateJSON = { ...this.substrateJSON };
+    const substrateJSON = {
+      ...this.substrateJSON,
+      meta: {
+        name: this.substrateJSON.meta?.name ?? this.accountsStore.selectedWallet?.name,
+        whenCreated: this.substrateJSON.meta?.whenCreated ?? Date.now(),
+        walletEcosystem: this.walletEcosystem,
+        ethereumAddress: '',
+      },
+    };
 
     if (this.ethereumJson) {
       const ethereumAddress = await jsonRestore(this.ethereumJSON, this.passwordEthereumJson);

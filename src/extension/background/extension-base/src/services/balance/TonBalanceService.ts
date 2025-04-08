@@ -164,8 +164,8 @@ export class TonBalanceService {
         setTimeout(() => res(true), 10000);
       });
 
-      const { myAccounts } = await chrome.storage.local.get('myAccounts');
-      const accounts: string[] = myAccounts ?? [];
+      const { myAddresses } = await chrome.storage.local.get('myAddresses');
+      const accounts: string[] = myAddresses ?? [];
 
       const addresses: string[] = [];
 
@@ -189,7 +189,7 @@ export class TonBalanceService {
 
       if (!addresses.length) return [];
 
-      chrome.storage.local.set({ myAccounts: [...(myAccounts ?? []), ...addresses] });
+      chrome.storage.local.set({ myAddresses: [...(myAddresses ?? []), ...addresses] });
 
       const { data } = await axios.get(`${ton}/whitelist?address=${address.join(';').replaceAll('+', '|')}`);
 

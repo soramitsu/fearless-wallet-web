@@ -1,3 +1,4 @@
+import { type FinalEncryptedStructure } from '@sora-substrate/sdk';
 import { type TonApiClient } from '@ton-api/client';
 import { type WordCount } from '../../services';
 import type { NftTx, NftSettings } from '@extension-base/services/nft-service/types';
@@ -157,6 +158,21 @@ export interface RequestCurrentAccountAddress {
 export type MessageTypes = keyof RequestSignatures;
 
 // Requests
+export interface DecryptForCosignerData {
+  address: string;
+  encryptorPublicKey: Uint8Array;
+  data: FinalEncryptedStructure;
+}
+
+export interface Cosigners {
+  [name: string]: string;
+}
+
+export interface EncryptByCosignerData {
+  address: string;
+  data: string;
+  cosigners: Cosigners;
+}
 
 export type RequestTypes = {
   [MessageType in MessageTypes]: RequestSignatures[MessageType][0];

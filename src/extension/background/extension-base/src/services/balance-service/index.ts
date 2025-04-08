@@ -18,7 +18,7 @@ import type {
 import { getMockAssets } from '@/extension/background/extension-base/src/background/helpers/assets';
 import { isSameString, isTonNetwork } from '@/helpers';
 import { ALL_NETWORKS } from '@/consts/networks';
-import { getSummaryTransferableWalletBalance, getChangeWalletBalance } from '@/helpers/common';
+import { getSummaryWalletBalance, getChangeWalletBalance } from '@/helpers/common';
 import { type RelayChainName, WalletEcosystem, type NetworkName } from '@/interfaces';
 
 export default class BalanceService {
@@ -185,7 +185,7 @@ export default class BalanceService {
     return new Promise<ResponseTotalBalances[]>((res) =>
       this.state.pricesService.getPrice((prices) => {
         const totalBalances = Object.keys(this.balanceMap).map((address) => {
-          const total = getSummaryTransferableWalletBalance(
+          const total = getSummaryWalletBalance(
             address,
             this.balanceMap[address],
             prices,

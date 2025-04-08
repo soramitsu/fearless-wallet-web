@@ -33,7 +33,7 @@ export default class Account extends Vue {
   newName = '';
 
   get chainAccounts() {
-    const networks = this.networksStore.networks.filter(({ ecosystem }) => {
+    const networks = this.networksStore.allNets.filter(({ ecosystem }) => {
       if (this.isEVM) return isSameString(ecosystem, 'ethereum');
 
       if (this.isTon) return isSameString(ecosystem, 'ton');

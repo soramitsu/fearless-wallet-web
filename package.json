@@ -1,6 +1,6 @@
 {
   "name": "fearless-wallet",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "private": true,
   "author": {
     "email": "fearless.web@soramitsu.co.jp",
@@ -40,6 +40,7 @@
     "@polkadot/rpc-provider": "10.9.1",
     "@polkadot/util": "^12.3.2",
     "@polkadot/vue-identicon": "^2.9.8",
+    "@sora-substrate/sdk": "1.43.0-betaMST-1.0.21",
     "@sora-substrate/util": "1.40.0",
     "@soramitsu-ui/ui-vue2": "^1.1.0",
     "@subwallet/ui-keyring": "0.1.7",

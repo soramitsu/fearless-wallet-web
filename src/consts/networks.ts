@@ -21,6 +21,15 @@ const NATIVE_ETHEREUM_NETWORKS = [
   'x1 testnet',
   'greenfield mainnet',
   'polygon zkevm',
+  'x layer testnet',
+  'x layer mainnet',
+  'manta pacific mainnet',
+  'oasys mainnet',
+  'rootstock mainnet',
+  'latest mainnet',
+  'caga ankara testnet',
+  'zchains',
+  'inevm testnet',
 ];
 
 const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, ...NATIVE_ETHEREUM_NETWORKS];

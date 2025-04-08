@@ -8,6 +8,7 @@ import { ALL_NETWORKS, FAVORITE_NETWORKS, NETWORKS_GROUPS, POPULAR_NETWORKS } fr
 import { isSameString } from '@/helpers';
 
 type Getters = {
+  allNets(state: State): NetworkJson[];
   networks(state: State): NetworkJson[];
   activeNetworkForSelectedWallet(state: State): NetworkJson[];
   favoriteNetworksNames(state: State): { name: string; favorite: string[] }[];
@@ -19,6 +20,19 @@ type Getters = {
 };
 
 export const getters: Getters = {
+  allNets({ allNetworks }): NetworkJson[] {
+    const accountsStore = useAccountsStore();
+
+    if (accountsStore.selectedWallet.isTon)
+      return allNetworks.filter(({ ecosystem }) => isSameString(ecosystem, WalletEcosystem.Ton));
+
+    const substrateAndEvmNetworks = allNetworks.filter(
+      ({ ecosystem }) => !isSameString(ecosystem, WalletEcosystem.Ton)
+    );
+
+    return substrateAndEvmNetworks;
+  },
+
   networks({ allNetworks }): NetworkJson[] {
     const accountsStore = useAccountsStore();
 
